@@ -1,16 +1,17 @@
-# 지도일기 (jidoilgi) — Claude Code 인수인계
+# Map Diary (mapdiary, 예전 이름 지도일기) — Claude Code 인수인계
 
 사용자: 고성식 님 (개발 비전문가, 한국어로 쉽게 설명해 주세요). 친구 김진호 님의 HERE 앱(안드로이드, Firebase `here-native`)과는 **별개 프로젝트**다. HERE 프로젝트/Firebase를 건드리지 말 것.
 
 ## 무엇인가
 **여행 기록 공유 웹앱.** 등산·트래킹·자전거·러닝·캠핑·백패킹·데이트·여행를 기록하고, 다녀온 길을 **공유 카드**(지도 위 경로 그림)와 **짧은 지도 링크**로 보낸다. 문구 "다닌 길이 그대로 일기가 돼요".
-- 2026-09-28에 **다왔나(단체 나들이 인솔, `GilbertGo/allhere`)에서 갈라져 나왔다.** 이름 변천: 다왔나 → 발도장 → 누비 → 지도일기.
+- 2026-09-28에 **다왔나(단체 나들이 인솔, `GilbertGo/allhere`)에서 갈라져 나왔다.** 이름 변천: 다왔나 → 발도장 → 누비 → 지도일기 → **Map Diary**(2026-09-29).
 - **단체 나들이(인솔)는 다왔나 앱이 맡는다.** 이 앱에는 단체 나들이 모드가 없고(2026-09-29 뺌), 예전 주소 `?t=`, `?new=1`만 `../allhere/`로 넘긴다(`DAWATNA`).
 - 사용자가 주로 쓰려는 곳: **산행, 가족여행, 데이트**.
 
 ## 배포
-- GitHub 저장소: `GilbertGo/jidoilgi` (이 폴더 `Documents\GitHub\jidoilgi`), GitHub Pages로 배포
-- 주소: https://gilbertgo.github.io/jidoilgi/
+- GitHub 저장소: `GilbertGo/mapdiary` (2026-09-29 `jidoilgi`에서 이름 바꿈. 이 PC 폴더는 아직 `Documents\GitHub\jidoilgi`), GitHub Pages로 배포
+- 주소: https://gilbertgo.github.io/mapdiary/
+- 예전 주소 `/jidoilgi/`는 별도 저장소 `GilbertGo/jidoilgi`(index.html 하나)가 `?`·`#` 뒤를 그대로 붙여 `/mapdiary/`로 넘긴다. 이미 보낸 짧은 링크가 이걸로 열리니 지우지 말 것.
 - 배포 = `index.html` 수정 → commit → push. 1~2분 뒤 반영. push 전에는 사용자에게 한 번 확인받을 것.
 
 ## 다왔나와 같이 쓰는 것 (중요)
@@ -22,12 +23,12 @@
 - `index.html` — 한 파일에 HTML/CSS/JS가 다 들어 있음. 실시간 통신은 공개 MQTT 브로커 `wss://broker.hivemq.com:8884/mqtt`(retained 메시지). **공개 서버라 보안이 약하고, 짧은 링크·사진은 언제든 사라질 수 있음.** 시험용.
 
 ## URL 규칙
-- `/jidoilgi/` — 첫 화면(`viewLanding`): 기록 중이면 "이어서 보기", **기록 시작**(모드 타일 8개. 누르면 `?walk=1&mode=` 그 모드의 시작 화면으로 바로, 다시 묻지 않음), 지도일기 공유하기. (2026-09-29 그림 같은 파스텔 첫 화면을 시도했다가 사용자가 원래 그래픽이 낫다고 해서 되돌림)
-- `/jidoilgi/?walk=1&mode=모드` — 기록 화면 (hike, run, bike, backpack, camp, travel, date)
-- `/jidoilgi/?s=번호#k=열쇠` — 짧은 지도 링크(받은 사람 화면). `#x=`이면 비밀코드 링크. `&c=1`이면 공유 카드와 보내기 버튼도 보임(카톡 안에서 사진 저장하러 기본 브라우저로 넘어왔을 때)
-- `/jidoilgi/?brag=base64` — 긴 지도 링크(짧은 링크 저장 실패 시 대체)
+- `/mapdiary/` — 첫 화면(`viewLanding`): 기록 중이면 "이어서 보기", **기록 시작**(모드 타일 8개. 누르면 `?walk=1&mode=` 그 모드의 시작 화면으로 바로, 다시 묻지 않음), 지도일기 공유하기. (2026-09-29 그림 같은 파스텔 첫 화면을 시도했다가 사용자가 원래 그래픽이 낫다고 해서 되돌림)
+- `/mapdiary/?walk=1&mode=모드` — 기록 화면 (hike, run, bike, backpack, camp, travel, date)
+- `/mapdiary/?s=번호#k=열쇠` — 짧은 지도 링크(받은 사람 화면). `#x=`이면 비밀코드 링크. `&c=1`이면 공유 카드와 보내기 버튼도 보임(카톡 안에서 사진 저장하러 기본 브라우저로 넘어왔을 때)
+- `/mapdiary/?brag=base64` — 긴 지도 링크(짧은 링크 저장 실패 시 대체)
 - `?t=…`, `?new=1` → 다왔나(`../allhere/`)로 넘김
-- 맨 위 띠의 "⌂ 지도일기"를 누르면 첫 화면. 기록 중이면 먼저 물어봄(`leaveWarn`)
+- 맨 위 띠의 "⌂ Map Diary"를 누르면 첫 화면. 기록 중이면 먼저 물어봄(`leaveWarn`)
 
 ## 주요 기능
 - **기록 모드** (`MODES`): 등산(hike), 트래킹(trek), 자전거, 러닝, 캠핑, 백패킹, 데이트, 여행. 모드마다 차 이동 기준 속도(걷는 모드 15, 러닝 25, 자전거 45 km/h)와 표시 숫자(러닝 평균 페이스, 자전거 평균 속도). `walkMode:{ID}`, 마지막 모드 `lastMode`
@@ -60,6 +61,6 @@
 
 ## 작업 방식
 - 수정 후 브라우저로 직접 열어 확인하고, 쉬운 말로 설명. 작게 바꾸고 확인.
-- 로컬 확인: 이 PC에는 python/node가 없다. PowerShell `HttpListener`로 `Documents\GitHub`를 띄워 `/allhere/`와 `/jidoilgi/`를 같이 확인했다(`.claude/launch.json`은 끝나면 지움). GPS·공유는 `navigator.geolocation`/`navigator.share`를 흉내 내서 시험.
+- 로컬 확인: 이 PC에는 python/node가 없다. PowerShell `HttpListener`로 `Documents\GitHub`를 띄워 `/allhere/`와 `/jidoilgi/`(이 폴더)를 같이 확인했다(`.claude/launch.json`은 끝나면 지움). GPS·공유는 `navigator.geolocation`/`navigator.share`를 흉내 내서 시험.
 - 시험 데이터는 localStorage와 IndexedDB(`baldojang`)에서 비울 것.
 - 사용자는 휴대폰에서 원격 모드로 캡처를 보내며 확인하는 경우가 많다.
