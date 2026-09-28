@@ -22,7 +22,7 @@
 - `index.html` — 한 파일에 HTML/CSS/JS가 다 들어 있음. 실시간 통신은 공개 MQTT 브로커 `wss://broker.hivemq.com:8884/mqtt`(retained 메시지). **공개 서버라 보안이 약하고, 짧은 링크·사진은 언제든 사라질 수 있음.** 시험용.
 
 ## URL 규칙
-- `/jidoilgi/` — 첫 화면(`viewLanding`): 하늘·해·산 그림(`.hero`), 기록 중이면 "이어서 보기", **기록 시작**(파스텔 타일 8개 `modeTiles`, 그림 `TILE_ART`, 색 `TILE_BG`), 지도일기 공유하기
+- `/jidoilgi/` — 첫 화면(`viewLanding`): 기록 중이면 "이어서 보기", **기록 시작**(모드 타일 8개. 누르면 `?walk=1&mode=` 그 모드의 시작 화면으로 바로, 다시 묻지 않음), 지도일기 공유하기. (2026-09-29 그림 같은 파스텔 첫 화면을 시도했다가 사용자가 원래 그래픽이 낫다고 해서 되돌림)
 - `/jidoilgi/?walk=1&mode=모드` — 기록 화면 (hike, run, bike, backpack, camp, travel, date)
 - `/jidoilgi/?s=번호#k=열쇠` — 짧은 지도 링크(받은 사람 화면). `#x=`이면 비밀코드 링크. `&c=1`이면 공유 카드와 보내기 버튼도 보임(카톡 안에서 사진 저장하러 기본 브라우저로 넘어왔을 때)
 - `/jidoilgi/?brag=base64` — 긴 지도 링크(짧은 링크 저장 실패 시 대체)
