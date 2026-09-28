@@ -1401,19 +1401,12 @@ async function endTripAll(t, st) {
   await Promise.all([pub(b + '/info', null), pub(b + '/b', null), pub(b + '/n', null), pub(b + '/leader', null), ...Object.keys(st.members).map(id => pub(b + '/m/' + id, null))]);
 }
 
-// 단체 나들이(인솔)는 다왔나 앱에서 해요 (gilbertgo.github.io/allhere/)
-const DAWATNA = '../allhere/';
+// 단체 나들이 화면(viewHome/viewLeader/viewMember)은 쓰지 않아요. 다른 주소는 모두 첫 화면으로
 function route() {
   if (qs.get('walk') === '1') return viewWalk();
   if (qs.get('s')) return viewShareLink();
   if (qs.get('brag')) return viewBragLink();
-  if (tripId || qs.get('new') === '1') { location.replace(DAWATNA + location.search + location.hash); return; }   // 나들이 링크는 다왔나로
   return viewLanding();
-  if (qs.get('m') === '1') return viewMember();   // 참여 링크는 항상 참여자 화면
-  const leaders = ls.get('leaderKeys', {});
-  const key = keyParam || leaders[tripId];
-  if (key) return viewLeader(key);
-  return viewMember();
 }
 
 route();
@@ -1421,19 +1414,14 @@ route();
 // =====================================================================
 // 1) 산행 만들기
 // =====================================================================
-// 이 휴대폰에 남아 있는 지난 나들이 (내가 만든 계획 + 참여해서 남긴 이동 기록)
+// 이 휴대폰에 남아 있는 내 기록 (여러 날 여행은 한 줄로)
 function pastTrips() {
-  const byT = {}, trips = ls.get('myTrips', []);
-  const at = (t, fallback) => (trips.find(m => m.t === t) || {}).meetAt ?? fallback;
-  const hmTs = (base, hm, plusDay) => { const d = new Date(base); const [h, m] = (hm || '').split(':').map(Number); if (Number.isFinite(h)) d.setHours(h, m || 0, 0, 0); return d.getTime() + (plusDay ? 864e5 : 0); };
-  for (const pl of ls.get('plans', [])) {
-    const tr = trackLoad(pl.id), day = at(pl.id, tr.length ? tr[0][2] : pl.savedAt);
-    const startAt = hmTs(day, pl.startTime), end0 = hmTs(day, pl.endTime);
-    byT[pl.id] = { t: pl.id, info: { name: pl.name, startPlace: pl.startPlace, meetPlace: pl.meetPlace, startAt, meetAt: end0 > startAt ? end0 : hmTs(day, pl.endTime, true), route: pl.route, phase: 'go' } };
-  }
+  const byT = {};
+  // 같은 주소(gilbertgo.github.io)를 쓰는 다왔나의 단체 나들이 기록은 빼요
+  const dawatna = new Set([...ls.get('myTrips', []).map(m => m.t), ...Object.keys(ls.get('joined', {})), ...ls.get('plans', []).map(p => p.id)]);
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue;
-    const t = k.slice(6), tr = trackLoad(t); if (byT[t] || tr.length < 2) continue;
+    const t = k.slice(6), tr = trackLoad(t); if (byT[t] || dawatna.has(t) || tr.length < 2) continue;
     const wp = ls.get('walkPlaces:' + t, {});
     byT[t] = { t, info: { name: ls.get('trackName:' + t, '나들이'), startPlace: wp.start || '출발 지점', meetPlace: wp.end || '도착 지점', startAt: tr[0][2], meetAt: tr[tr.length - 1][2], route: null, phase: 'go' } };
   }
@@ -1447,14 +1435,14 @@ function openPastTrips() {
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'Map Diary 공유하기' },
     el('h2', { text: '어떤 Map Diary를 공유할까요?' }),
-    el('p', { class: 'sub', style: 'margin:0', text: '이 휴대폰에 남은 기록과 나들이예요. 고르면 공유할 카드를 만들어요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '이 휴대폰에 남은 기록이에요. 고르면 공유할 카드를 만들어요.' }),
     list.length ? list.map(x => { const d = new Date(x.info.startAt), tr = trackLoad(x.t);
       return el('button', { class: 'member', onclick: () => { bg.remove(); openBrag(x.info, x.t, 0, false); } },
         el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }),
           el('div', { class: 'dt with-ico' }, ls.get('walkMode:' + x.t, null) ? ico(modeOfT(x.t).k, 15) : null,
             x.album ? `여러 날 ${modeOfT(x.t).label} · ${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'} · 기록 ${x.info.days}개` : (ls.get('walkMode:' + x.t, null) ? `${modeOfT(x.t).label} · ` : '') + `${d.getMonth() + 1}월 ${d.getDate()}일` + (hasRoute(x.info) ? ' · 예정 경로' : '') + (tr.length > 1 ? ` · 이동 기록 ${fmtDist(trackStats(tr, modeOfT(x.t).car).d)}` : ''))),
         el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: '공유하기' })); })
-      : el('p', { class: 'sub center', text: '아직 이 휴대폰에 남은 나들이가 없어요. 나들이를 만들거나 참여하면 여기에 쌓여요.' }),
+      : el('p', { class: 'sub center', text: '아직 이 휴대폰에 남은 기록이 없어요. 기록을 시작하면 여기에 쌓여요.' }),
     el('button', { class: 'btn line small', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
