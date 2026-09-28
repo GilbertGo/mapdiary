@@ -97,6 +97,42 @@ body.noscroll{overflow:hidden}
 .ico svg{display:block}
 .with-ico{display:inline-flex;align-items:center;gap:5px}
 .mode.on{background:var(--pine);color:var(--accent)}
+/* 첫 화면: 하늘·해·산 그림과 큰 색 타일 */
+.hero{position:relative;margin:-20px -20px 0;padding:0 20px 70px;background:linear-gradient(180deg,#BBDAE6 0%,#D7EAEF 55%,#EAF4F4 100%);overflow:hidden}
+.hero .role.leader{margin:0 0 0 -20px;background:transparent;color:#1F3A40}
+body.landing{background:#FAFCFC}
+.hero .role .who{display:none}
+.hero .role .home .hi{filter:invert(1) brightness(.25)}
+.hero .eyebrow{position:relative;z-index:1;display:block;margin-top:30px;font-size:11px;font-weight:700;letter-spacing:.22em;color:#3F7F88}
+.hero h1{position:relative;z-index:1;font-size:42px;font-weight:800;color:#13252B;margin-top:6px;letter-spacing:-.045em;line-height:1.15}
+.hero p{position:relative;z-index:1;margin:8px 0 0;font-size:15.5px;color:#3E5157;max-width:58%;line-height:1.45}
+.hero .art{position:absolute;right:-8px;bottom:26px;width:66%;max-width:280px;height:auto}
+.hero .wave{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:52px;display:block}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin-top:2px}
+.sec h2{font-size:21px;color:#13252B;letter-spacing:-.03em}
+.sec span{font-size:13px;color:#7A8A8E}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{position:relative;overflow:hidden;border:none;border-radius:22px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#17303A;
+  box-shadow:0 1px 2px rgba(20,40,50,.06),0 10px 24px -8px rgba(20,45,60,.30),inset 0 0 0 1px rgba(255,255,255,.5);transition:transform .18s,box-shadow .18s;animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(130% 90% at 12% 0%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%);pointer-events:none}
+.tile svg,.tile b{position:relative}
+.tile svg{width:100%;max-width:134px;height:auto;display:block;filter:drop-shadow(0 1px 0 rgba(255,255,255,.35))}
+.tile svg .w{fill:rgba(255,255,255,.5)}
+.tile b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.tile:active:not(:disabled){transform:scale(.97);box-shadow:0 1px 2px rgba(20,40,50,.06),0 4px 12px -6px rgba(20,45,60,.3)}
+.tile:nth-child(2){animation-delay:.04s}.tile:nth-child(3){animation-delay:.08s}.tile:nth-child(4){animation-delay:.12s}
+.tile:nth-child(5){animation-delay:.16s}.tile:nth-child(6){animation-delay:.2s}.tile:nth-child(7){animation-delay:.24s}.tile:nth-child(8){animation-delay:.28s}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.hero h1,.hero p,.hero .eyebrow{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion:reduce){.tile,.hero h1,.hero p,.hero .eyebrow{animation:none}}
+.lnote{margin:4px 2px 0;font-size:14.5px;line-height:1.55;color:#4F6166;text-align:center}
+.lrow{width:100%;border:none;text-align:left;background:#fff;border-radius:20px;padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 2px rgba(20,40,50,.05),0 10px 26px -12px rgba(20,45,60,.28),inset 0 0 0 1px #E6EEF0}
+.lrow .lic{width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#2D5A48,#1E3B2F);box-shadow:0 6px 14px -6px rgba(30,59,47,.6)}
+.lrow b{display:block;font-size:17px;color:#13252B;letter-spacing:-.02em}
+.lrow small{display:block;font-size:13.5px;color:#6E7F83;margin-top:2px}
+.lrow .chev{color:#A3B3B6}
+.lrow.now{background:linear-gradient(135deg,#24483A,#1E3B2F);box-shadow:0 12px 28px -12px rgba(30,59,47,.7)}
+.lrow.now b{color:var(--accent)} .lrow.now small{color:#C9D6CE} .lrow.now .lic{background:rgba(255,255,255,.12);box-shadow:none;color:var(--accent)} .lrow.now .chev{color:#8FA89A}
 .spot-pin{background:#fff;color:#E0892F;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex!important;align-items:center;justify-content:center;font-size:17px;line-height:1}
 .gallery{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .gallery img{width:96px;height:96px;object-fit:cover;border-radius:14px;flex-shrink:0;cursor:zoom-in;box-shadow:var(--shadow)}
@@ -433,18 +469,19 @@ function trackAdd(t, lat, lng, acc, name) {
 // ---------- 기록 모드 ----------
 // car: 이 속도(km/h)보다 빠르면 차(탈것)로 간 길로 봐요. did: 거리 앞에 붙는 말
 const MODES = [
-  { k: 'hike', label: '하이킹·산행', car: 15, did: '걸은' },
-  { k: 'run', label: '러닝', car: 25, did: '달린' },
+  { k: 'hike', label: '등산', car: 15, did: '걸은' },
+  { k: 'trek', label: '트래킹', car: 15, did: '걸은' },
   { k: 'bike', label: '자전거', car: 45, did: '탄' },
-  { k: 'backpack', label: '백패킹', car: 15, did: '걸은' },
+  { k: 'run', label: '러닝', car: 25, did: '달린' },
   { k: 'camp', label: '캠핑', car: 15, did: '걸은' },
-  { k: 'travel', label: '여행', car: 15, did: '걸은' },
+  { k: 'backpack', label: '백패킹', car: 15, did: '걸은' },
   { k: 'date', label: '데이트', car: 15, did: '걸은' },
-  { k: 'group', label: '단체 나들이', car: 15, did: '걸은' }
+  { k: 'travel', label: '여행', car: 15, did: '걸은' }
 ];
 // ---------- 선 아이콘 (24칸 기준 선 그림. 화면은 SVG로, 자랑 카드는 canvas로 같은 모양을 그려요) ----------
 const ICONS = {
   hike: ['M2.5 19.5 9 8.5l3.5 5.5 2.5-3.5 6.5 9z', 'M15.5 4.5a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
+  trek: ['M11 3.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M12.5 7.5l-1.5 6 -3 7', 'M11 13.5l3.5 2.5 .5 4.5', 'M12.3 8.5l3.2 3 2-1', 'M17.5 8v13', 'M9.5 7.5l-2 5 2.5 1'],
   run: ['M13.2 4.3a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M8.5 20.5l3.2-5.3-2.4-3 3.1-4 3.1 3.1h3.2', 'M11.7 15.2l3.3 1.6 1 3.7', 'M9.3 12.2l-3.6.6'],
   bike: ['M2.5 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M14.5 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M6 16.5l3.5-7h5.5l3 7', 'M9.5 9.5l2.8 7H6', 'M13.5 6.5h2.8l-1.3 3'],
   backpack: ['M7 9a5 5 0 0 1 10 0v10.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5z', 'M9.5 4.2h5', 'M9.5 13.5h5v4h-5z'],
@@ -455,6 +492,8 @@ const ICONS = {
   star: ['M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z'],
   pin: ['M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z', 'M9.8 10a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
   camera: ['M3.5 8A1.5 1.5 0 0 1 5 6.5h2.5L9 4.5h6l1.5 2H19A1.5 1.5 0 0 1 20.5 8v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18z', 'M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0'],
+  share: ['M4.5 12.5v6A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-6', 'M12 3.5v11', 'M7.5 8 12 3.5 16.5 8'],
+  next: ['M9.5 5.5 16 12l-6.5 6.5'],
   lock: ['M6 11h12v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3', 'M12 15v2.5']
 };
 const icoSvg = (k, size, fill) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fill || 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(ICONS[k] || []).map(d => `<path d="${d}"/>`).join('')}</svg>`;
@@ -472,6 +511,31 @@ function modeGrid(sel, on) {
   return el('div', { class: 'modes', role: 'group', 'aria-label': '기록 모드' },
     MODES.map(m => el('button', { class: 'mode' + (m.k === sel ? ' on' : ''), 'aria-pressed': m.k === sel ? 'true' : 'false', onclick: () => on(m.k) },
       el('span', { class: 'ic' }, ico(m.k, 30)), el('span', { text: m.label }))));
+}
+// 첫 화면 큰 타일: 모드마다 파스텔 색과 선 그림 (120×56 칸)
+const TILE_BG = {
+  hike: '#9DB9E6,#D3DFF0', trek: '#77CCC4,#C2E6DA', bike: '#84B394,#BCD6C0', run: '#F79E68,#FAD68E',
+  camp: '#74BBAE,#B3DCCC', backpack: '#D2E29B,#EEF1C0', date: '#FBD28C,#F5A298', travel: '#8BAFE2,#C3D4EE'
+};
+const tree = (x, s = 1) => { const p = (dx, dy) => `${x + dx * s},${50 - (50 - dy) * s}`;
+  return `<path d="M${p(0, 10)} ${p(-8, 24)} ${p(-3, 24)} ${p(-10, 34)} ${p(-4, 34)} ${p(-12, 43)} ${p(12, 43)} ${p(4, 34)} ${p(10, 34)} ${p(3, 24)} ${p(8, 24)}z" class="w"/><path d="M${p(0, 43)} ${p(0, 50)}"/>`; };
+const leaf = (x, y, a) => `<ellipse cx="${x}" cy="${y}" rx="4" ry="1.8" transform="rotate(${a} ${x} ${y})"/>`;
+const TILE_ART = {
+  hike: `<path d="M8 50 36 14 46 27 60 7 80 34 88 25 112 50z" class="w" stroke="none"/><path d="M8 50 36 14 46 27 60 7 80 34 88 25 112 50"/><path d="M31 21 36 14 41 20 38 19 35 23z" fill="#20363C"/><path d="M55 14 60 7 65 14 61 13 58 17z" fill="#20363C"/><path d="M36 14 33 27 39 32 35 42"/><path d="M60 7 56 21 63 28 58 40"/><path d="M88 25 86 35 91 40"/><path d="M46 27 50 34"/>`,
+  trek: tree(18) + tree(102) + `<circle cx="58" cy="11" r="4"/><rect x="47" y="18" width="8" height="12" rx="2" class="w"/><path d="M58 16 55 32 49 41 47 50"/><path d="M55 32 62 40 63 50"/><path d="M57 20 65 27 69 24"/><path d="M68 13 72 50"/>`,
+  bike: `<circle cx="36" cy="36" r="12"/><circle cx="84" cy="36" r="12"/><path d="M36 36 50 20H74L84 36"/><path d="M50 20 60 36H36"/><path d="M60 36 74 20"/><path d="M50 20 47 14M43 14h9"/><path d="M74 20 72 12 79 11"/><circle cx="60" cy="36" r="2"/>`,
+  run: `<path d="M22 50H98"/><g stroke-width="5"><path d="M62 17 56 31"/><path d="M61 19 52 24 47 21"/><path d="M61 19 69 25 75 21"/><path d="M56 31 47 38 40 36"/><path d="M56 31 63 40 62 48"/></g><circle cx="65" cy="9" r="5" fill="#20363C"/>`,
+  camp: `<path d="M34 50H100"/><path d="M42 50 64 12 86 50z" class="w"/><path d="M57 50 64 33 71 50z" fill="#20363C"/><path d="M64 12 60 6M64 12 68 6"/><path d="M12 50 32 44M12 44 32 50"/><path d="M22 43C14 37 19 31 20 24 23 29 25 27 25 22 31 30 30 38 22 43z" fill="#E4763A"/>`,
+  backpack: tree(20, .85) + tree(100, .85) + `<path d="M46 23Q46 14 60 14 74 14 74 23V47Q74 51 70 51H50Q46 51 46 47z" class="w"/><path d="M55 14Q60 7 65 14"/><path d="M46 27H74"/><rect x="51" y="33" width="18" height="12" rx="2"/><path d="M53 23v4M67 23v4"/>`,
+  date: `<path d="M4 34C14 14 30 44 42 26S54 8 60 20"/><path d="M60 20C68 6 78 20 80 28S98 50 116 30"/><path d="M60 45C40 33 42 15 60 23 78 15 80 33 60 45z" stroke-width="2.6" class="w"/><path d="M38 48C28 40 28 26 34 16"/><path d="M82 48C92 40 92 26 86 16"/>` +
+    leaf(31, 40, -60) + leaf(29, 32, -80) + leaf(31, 24, -110) + leaf(35, 44, -30) + leaf(89, 40, 60) + leaf(91, 32, 80) + leaf(89, 24, 110) + leaf(85, 44, 30),
+  travel: `<circle cx="54" cy="30" r="18" class="w"/><ellipse cx="54" cy="30" rx="7.5" ry="18"/><path d="M36 30H72M39 21H69M39 39H69"/><g transform="translate(76 0) scale(1.15) rotate(50 12 12)"><path d="M12 2.5c1 0 1.5 1 1.5 2.5v4.5l8 4.5v2l-8-2.5v4.5l2.5 2v1.5L12 20l-4 1.5V20l2.5-2v-4.5L2.5 16v-2l8-4.5V5c0-1.5.5-2.5 1.5-2.5z" fill="#20363C" stroke-width="1"/></g>`
+};
+function modeTiles(on) {
+  return el('div', { class: 'tiles', role: 'group', 'aria-label': '기록 모드' },
+    MODES.map(m => { const b = el('button', { class: 'tile', style: `background:linear-gradient(135deg,${TILE_BG[m.k]})`, onclick: () => on(m.k) }, el('b', { text: m.label }));
+      b.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 120 56" fill="none" stroke="#20363C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TILE_ART[m.k]}</svg>`);
+      return b; }));
 }
 const modeOfT = t => modeByK(ls.get('walkMode:' + t, 'hike'));
 const fmtPace = (d, ms) => { if (d < 50 || ms <= 0) return '-'; const s = Math.round(ms / 1000 / (d / 1000)); return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`; };
@@ -1457,32 +1521,51 @@ function openPastTrips() {
     el('button', { class: 'btn line small', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
-// 첫 화면: 새 나들이 만들기 / 다녀온 나들이 자랑하기
+// 첫 화면: 기록 시작(모드 타일) / 지도일기 공유하기
 function viewLanding() {
-  const mine = ls.get('myTrips', []);
-  const joinedList = Object.entries(ls.get('joined', {})).map(([t, v]) => ({ t, name: (v && v.name) || '참여한 나들이', at: v && v.at })).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 10);
-  const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
-    el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
-    el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
-  app.replaceChildren(el('div', { class: 'stack' },
-    roleBar('leader', '내 지도일기'),
-    el('div', { style: 'padding:28px 0 36px' },
-      el('h1', { style: 'font-size:34px', text: '지도일기' }),
-      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길이 그대로 일기가 돼요' })),
+  // 큰 줄 버튼: 왼쪽 동그란 아이콘, 제목과 설명, 오른쪽 화살표
+  const rowBtn = (icon, title, desc, now, onclick) => el('button', { class: 'lrow' + (now ? ' now' : ''), onclick },
+    el('span', { class: 'lic' }, ico(icon, 24)),
+    el('span', { class: 'grow' }, el('b', { text: title }), el('small', { text: desc })),
+    el('span', { class: 'chev' }, ico('next', 20)));
+  // 맨 위: 하늘, 구름, 해, 겹겹이 산 그림 (아래는 물결로 바탕색에 이어져요). 다른 화면의 바탕 그림은 끄고
+  document.body.classList.add('landing');
+  const hero = el('div', { class: 'hero' }, roleBar('leader', '내 지도일기'),
+    el('span', { class: 'eyebrow', text: 'MAP DIARY' }),
+    el('h1', { text: '지도일기' }),
+    el('p', { text: '다닌 길이 그대로 일기가 돼요' }));
+  hero.insertAdjacentHTML('beforeend', `<svg class="art" viewBox="0 0 260 170" aria-hidden="true">
+    <defs><radialGradient id="sun" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#FFEB94"/><stop offset=".6" stop-color="#FAC73F"/><stop offset="1" stop-color="#F09A2C"/></radialGradient>
+    <radialGradient id="glow"><stop offset=".45" stop-color="#FFF4C8" stop-opacity=".8"/><stop offset="1" stop-color="#FFF4C8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="mt0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC6CE"/><stop offset="1" stop-color="#C6E0E4"/></linearGradient>
+    <linearGradient id="mt1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#357E8A"/><stop offset="1" stop-color="#245C68"/></linearGradient>
+    <linearGradient id="mt2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6AA4AD"/><stop offset="1" stop-color="#4A838D"/></linearGradient></defs>
+    <circle cx="186" cy="46" r="62" fill="url(#glow)"/><circle cx="186" cy="46" r="32" fill="url(#sun)"/>
+    <g fill="#fff" opacity=".85"><ellipse cx="70" cy="40" rx="22" ry="6"/><ellipse cx="84" cy="35" rx="13" ry="7"/><ellipse cx="236" cy="96" rx="18" ry="5"/></g>
+    <path d="M78 58 83 54 88 58M94 50 98 47 102 50" fill="none" stroke="#3F6A73" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>
+    <path d="M20 170 110 92 150 120 196 84 260 128V170z" fill="url(#mt0)"/>
+    <path d="M60 170 150 58 205 118 232 92 290 170z" fill="url(#mt1)"/>
+    <path d="M150 58 165 86 157 100 176 126 150 170H124z" fill="#A8D0D4" opacity=".5"/>
+    <path d="M150 58 141 70 146 72 150 66 155 74 160 70z" fill="#F4FAFA"/>
+    <path d="M232 92 246 110 238 124 260 150V170H232z" fill="#A8D0D4" opacity=".4"/>
+    <path d="M0 170 88 96 140 170z" fill="url(#mt2)"/>
+    <path d="M88 96 100 116 92 128 108 150 100 170H70z" fill="#CFE6E8" opacity=".55"/></svg>
+    <svg class="wave" viewBox="0 0 400 52" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26C90 52 170 52 250 30S360 6 400 16V52H0z" fill="#FAFCFC" opacity=".55" transform="translate(0 -8)"/><path d="M0 26C90 52 170 52 250 30S360 6 400 16V52H0z" fill="#FAFCFC"/></svg>`);
+  app.replaceChildren(el('div', { class: 'stack', style: 'gap:14px' },
+    hero,
     // 기록 중이면 이어서 보기가 맨 위
-    ls.get('walkNow', null) ? bigBtn([ico(modeOfT(ls.get('walkNow')).k, 24), '기록 중 · 이어서 보기'], '다니던 길을 계속 기록해요', true, () => { location.href = '?walk=1'; }) : null,
-    // 기록 시작: 모드를 고르면 바로 기록 화면으로 (단체 나들이는 나들이 만들기로)
-    el('h2', { style: 'margin-top:4px', text: '기록 시작' }),
-    modeGrid(null, k => { location.href = k === 'group' ? DAWATNA + '?new=1' : `?walk=1&mode=${k}`; }),
-    el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 지도일기로 남아요. 단체 나들이는 다왔나 앱으로 넘어가서 일행을 챙겨요.' }),
-    bigBtn('지도일기 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips)));
+    ls.get('walkNow', null) ? rowBtn(modeOfT(ls.get('walkNow')).k, '기록 중 · 이어서 보기', '다니던 길을 계속 기록해요', true, () => { location.href = '?walk=1'; }) : null,
+    // 기록 시작: 모드를 고르면 바로 기록 화면으로
+    el('div', { class: 'sec' }, el('h2', { text: '기록 시작' }), el('span', { text: '골라서 바로 시작해요' })),
+    modeTiles(k => { location.href = `?walk=1&mode=${k}`; }),
+    el('p', { class: 'lnote', text: '지도일기와 함께한 모든 여정은 아름다운 이야기로 남아요.' }),
+    rowBtn('share', '지도일기 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', false, openPastTrips)));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 지도일기로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
   let id = ls.get('walkNow', null), watch = null, wake = null, wantWake = true, map = null, line = null, dot = null, follow = true, gps = 'wait', phLayer = null, spLayer = null, lastFix = null, nPhotos = 0;
   leaveWarn = () => id && !done ? '첫 화면으로 가면 기록이 잠깐 멈춰요. 다시 들어오면 이어서 기록해요. 갈까요?' : null;
   let pick = qs.get('mode') || ls.get('lastMode', 'hike');   // 고른 모드
-  if (pick === 'group') { location.replace(DAWATNA + '?new=1'); return; }
   const M = () => id ? modeOfT(id) : modeByK(pick);
   const today = new Date(), dayName = `${today.getMonth() + 1}월 ${today.getDate()}일`;
   const defName = () => `${dayName} ${M().label}`;
@@ -1647,7 +1730,7 @@ function viewWalk() {
         el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
         el('h1', { text: '지금 기록하기' }),
         el('div', { class: 'sub', text: '무엇을 하러 가세요?' }),
-        modeGrid(pick, k => { if (k === 'group') { location.href = DAWATNA + '?new=1'; return; } pick = k; draw(); }),
+        modeGrid(pick, k => { pick = k; draw(); }),
         MULTI.includes(pick) ? tripChoice() : null,
         el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 지도일기로 남아요.` }),
