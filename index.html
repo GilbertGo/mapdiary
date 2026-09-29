@@ -2641,8 +2641,11 @@ function viewLanding() {
   app.replaceChildren(el('div', { class: 'stack' },
     roleBar('leader', '내 Map Diary'),
     el('div', { style: 'padding:28px 0 36px' },
-      el('h1', { style: 'font-size:34px', text: 'Map Diary' }),
-      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' })),
+      // 'MD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MD, 받은 MD…)
+      el('h1', { style: 'font-size:34px;display:flex;align-items:center;gap:10px' }, 'Map Diary',
+        el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2', 'aria-label': '줄여서 MD', text: 'MD' })),
+      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' }),
+      el('p', { class: 'sub', style: 'margin:4px 0 0;font-size:13.5px;color:#7A7F76', text: '기록 한 편 한 편을 줄여서 MD라고 불러요' })),
     // 기록 중이면 이어서 보기가 맨 위
     // 기록 중이면 그 기록의 제목과 얼마나 됐는지도 보여줘요
     (() => { const w = ls.get('walkNow', null); if (!w) return null;
