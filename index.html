@@ -1935,7 +1935,7 @@ function viewWalk() {
         } }))));
     document.body.append(bg);
   }
-  let done = null;
+  let done = null, askResume = !!(id && qs.get('mode'));
   function draw() {
     if (done) {
       const tr = trackLoad(done), st = trackStats(tr, M().car);
@@ -1968,6 +1968,22 @@ function viewWalk() {
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
           el('div', { class: 'sub', text: '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' })),
         el('button', { class: 'btn primary full big', onclick: start }, ico(pick, 24), `${modeByK(pick).label} 시작하기`)].filter(Boolean));
+      return;
+    }
+    // 끝내지 않은 기록이 있는데 첫 화면에서 모드를 골라 왔으면, 바로 이어 가지 말고 먼저 물어봐요
+    if (askResume) {
+      const tr = trackLoad(id), at = ls.get('walkAt', Date.now()), d = new Date(at);
+      root.replaceChildren(roleBar('leader', '내 기록'),
+        el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
+        el('h1', { text: '끝내지 않은 기록이 있어요' }),
+        el('div', { class: 'card stack', style: 'gap:6px' },
+          el('b', { class: 'with-ico', style: 'gap:6px' }, ico(M().k, 20), nameOf()),
+          el('div', { class: 'sub', text: `${d.getMonth() + 1}월 ${d.getDate()}일 ${fmtClock(at)}에 시작 · ${M().did} 거리 ${fmtDist(trackStats(tr, M().car).walk)}` })),
+        el('button', { class: 'btn primary full big', text: '이 기록 이어서 하기', onclick: () => { askResume = false; lockWake(); } }),
+        el('button', { class: 'btn line full', onclick: () => {
+          if (!confirm(`'${nameOf()}' 기록은 저장하고 끝낸 뒤, 새 ${modeByK(pick).label} 기록을 시작할 준비를 할까요?`)) return;
+          ls.set('walkNow', null); location.reload();
+        } }, ico(pick, 20), `이 기록은 끝내고 새 ${modeByK(pick).label} 시작`));
       return;
     }
     startGps(); ensureMap();
@@ -2013,7 +2029,7 @@ function viewWalk() {
     stats();
   }
   setInterval(() => { if (id && !done) stats(); }, 15000);
-  if (id) lockWake();
+  if (id && !askResume) lockWake();
   draw();
 }
 function viewHome() {
