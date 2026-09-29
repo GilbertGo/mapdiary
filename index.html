@@ -64,6 +64,7 @@ input::placeholder{color:#B3AC9C}
 .cnt b{display:block;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
 .cnt span{font-size:13px;color:var(--muted)}
 .cnt.warn{background:var(--alert-soft);box-shadow:none} .cnt.warn b{color:var(--alert-ink)} .cnt.warn span{color:var(--alert-ink)}
+.note{font-size:16px;font-weight:600;color:#2D6A4F;line-height:1.5}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .member{width:100%;text-align:left;background:var(--card);border:none;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
 .dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
@@ -346,9 +347,21 @@ function spotsOf(t) {
   return ls.get('walkSpots:' + t, []);
 }
 function spotMarkers(layer, spots) {
-  spots.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng)).forEach(s =>
-    L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'spot-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: icoSvg('star', 18, '#F4A259') }) })
-      .bindTooltip(el('span', { text: s.n || '좋았던 곳' }), { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] }).addTo(layer));
+  spots.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng)).forEach(s => {
+    const mk = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'spot-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: s.k === 'stay' ? icoSvg('pin', 18, '#F4A259') : icoSvg('star', 18, '#F4A259') }) })
+      .bindTooltip(el('span', { text: s.n || (s.k === 'stay' ? '들른 곳' : '좋았던 곳') }), { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] });
+    if (s.m) mk.bindPopup(el('span', { text: s.m }));
+    mk.addTo(layer);
+  });
+}
+// 별표·들른 곳 목록 (메모가 있으면 같이)
+function spotList(spots) {
+  const ss = (spots || []).filter(s => s && s.n);
+  if (!ss.length) return null;
+  return el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' },
+    ss.map(s => el('div', { class: 'row', style: 'gap:8px;align-items:flex-start;flex-wrap:nowrap' },
+      el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
+      el('div', { class: 'grow' }, el('b', { text: s.n }), s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null))));
 }
 // ---------- 따라가기: 남의 MD 길을 내 지도에 깔고 걸어요 ----------
 // guideNext: 기록을 시작하면 붙일 길 / walkGuide:{기록ID} = { name, route: [[lat,lng]…], spots, modeK }
@@ -472,18 +485,26 @@ function showPhoto(p, list) {
   let i = Math.max(0, all.indexOf(p)), url = null;
   const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:pan-y;user-select:none;-webkit-user-drag:none' });
   const cap = el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px' });
+  // 한 줄 메모: 사진 위쪽에. 이 휴대폰에 있는 내 사진이면 ✎로 적거나 고칠 수 있어요 (받은 사진은 보기만)
+  const memo = el('div', { style: 'position:absolute;top:calc(20px + env(safe-area-inset-top,0px));left:16px;right:16px;text-align:center;color:#fff;font-size:17px;font-weight:600;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap' });
+  const mine = r => r && r.t && !String(r.id).startsWith('allhere/');
+  const drawMemo = () => { const r = all[i]; memo.replaceChildren(r.m ? `“${r.m}”` : '',
+    mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: r.m ? '✎ 고치기' : '✎ 한 줄 적기', onclick: async e => {
+      e.stopPropagation(); const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true);
+      if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} drawMemo(); } }) : ''); };
   const close = () => { bg.remove(); if (url) URL.revokeObjectURL(url); };
   const show = n => {
     i = (n + all.length) % all.length; const r = all[i];
     if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); img.src = url; img.style.transform = '';
     cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}누르면 닫혀요`;
+    drawMemo();
   };
   const arrow = (side, d) => el('button', { 'aria-label': d < 0 ? '앞 사진' : '다음 사진', text: d < 0 ? '‹' : '›',
     style: `position:absolute;top:50%;${side}:6px;transform:translateY(-50%);width:44px;height:64px;border:none;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:36px;line-height:1`,
     onclick: e => { e.stopPropagation(); show(i + d); } });
   // 밀기: 손가락이 옆으로 50px 넘게 움직이면 넘기고, 조금만 움직였으면 누른 것으로 봐요
   let x0 = null, y0 = 0, moved = false;
-  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9)', onclick: () => { if (!moved) close(); moved = false; } }, img, cap,
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9)', onclick: () => { if (!moved) close(); moved = false; } }, img, memo, cap,
     all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
   bg.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; moved = false; }, { passive: true });
   bg.addEventListener('touchmove', e => { if (x0 == null || all.length < 2) return; const dx = e.touches[0].clientX - x0; if (Math.abs(dx) > 10) { moved = true; img.style.transform = `translateX(${dx}px)`; } }, { passive: true });
@@ -732,6 +753,7 @@ async function drawBragCard(o) {
     if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, '#2D6A4F'); mx += 46; }
     g.fillText(o.modeLabel, mx, y);
   }
+  if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note}”`, W - 144), 72, y); }   // 한 줄 일기
   // 경로 판
   const PH = (o.photos || []).slice(0, 3);   // 사진이 있으면 지도를 줄이고 아래에 사진 3장
   const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = (PH.length ? 870 : 1040) - py;
@@ -877,7 +899,8 @@ function openBrag(info, t, count, allDone, room) {
       route, startPlace: info.startPlace || '출발 집결지', endPlace: info.meetPlace || '도착지',
       startTime: (info.durText ? mdOf(info.startAt) : '') + fmtClock(info.startAt ?? info.meetAt), endTime: (info.durText ? mdOf(info.meetAt) : '') + fmtClock(info.meetAt), stats,   // 여러 날이면 날짜도
       modes: which === 'mine' ? trackModes(trackLoad(t), M.car) : null,
-      spots: spotsOf(t).slice(0, 10).map(s => ({ n: s.n, lat: s.lat, lng: s.lng })),
+      spots: spotsOf(t).slice(0, 10).map(s => Object.assign({ n: s.n, lat: s.lat, lng: s.lng }, s.m ? { m: s.m } : {}, s.k ? { k: s.k } : {})),
+      note: ls.get('walkNote:' + t, '') || undefined,
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
     if (phs.recs.length) { cardOpts.photoRecs = phs.recs; cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick; }
@@ -1000,7 +1023,7 @@ async function shortLink(o) {
         try {
           const small = await shrinkImage(r.blob, 800, 'blob', 0.72);
           // 비밀코드를 걸면 사진 위치·시각도 잠가요
-          const meta = { lat: r.lat, lng: r.lng, ts: r.ts };
+          const meta = Object.assign({ lat: r.lat, lng: r.lng, ts: r.ts }, r.m ? { m: r.m } : {});
           await pub(`allhere/v1/share/${id}/p/${n}`, o.secret
             ? { d: await sealBytes(await small.arrayBuffer(), k), m: await sealBytes(new TextEncoder().encode(JSON.stringify(meta)), k) }
             : { d: await sealBytes(await small.arrayBuffer(), k), ...meta });
@@ -1136,7 +1159,7 @@ function viewShareLink() {
         const v = JSON.parse(buf.toString());
         const meta = v.m ? JSON.parse(new TextDecoder().decode(await openBytes(v.m, key))) : v;
         const blob = new Blob([await openBytes(v.d, key)], { type: 'image/jpeg' });
-        const rec = { id: t, ts: num(meta.ts) || 0, lat: num(meta.lat), lng: num(meta.lng), blob, thumb: await shrinkImage(blob, 160, 'url', 0.7) };
+        const rec = { id: t, ts: num(meta.ts) || 0, lat: num(meta.lat), lng: num(meta.lng), m: typeof meta.m === 'string' ? meta.m.slice(0, 80) : '', blob, thumb: await shrinkImage(blob, 160, 'url', 0.7) };
         feed.recs.push(rec); feed.recs.sort((a, b) => a.ts - b.ts); feed.on.forEach(fn => fn(rec));
       } catch {}
       return;
@@ -1203,7 +1226,8 @@ function viewBragLink(given, feed) {
     // 기록 중에 보낸 링크의 '지금 여기'는 받는 사람에게는 '마지막 위치'
     ...(o.endPlace === '지금 여기' ? { endPlace: '마지막 위치' } : {}),
     ph: Number.isFinite(o.ph) ? Math.max(0, Math.min(o.ph, 12)) : 0,
-    spots: Array.isArray(o.spots) ? o.spots.slice(0, 10).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)).map(p => ({ n: s(p.n, 30) || '좋았던 곳', lat: p.lat, lng: p.lng })) : [] };
+    spots: Array.isArray(o.spots) ? o.spots.slice(0, 10).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)).map(p => ({ n: s(p.n, 30) || '좋았던 곳', lat: p.lat, lng: p.lng, m: s(p.m, 60), k: p.k === 'stay' ? 'stay' : '' })) : [],
+    note: s(o.note, 120) };
   if (o.modes && (!o.route || o.modes.length !== o.route.length)) o.modes = null;
   const R = Array.isArray(o.route) ? o.route.filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])) : [];
   const img = el('img', { alt: 'Map Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
@@ -1262,13 +1286,14 @@ function viewBragLink(given, feed) {
     el('div', { class: 'stack', style: 'gap:4px' },
       el('div', { class: 'sub with-ico' }, o.dateText || '', o.modeLabel ? [' · ', o.modeK ? ico(o.modeK, 16) : null, o.modeLabel] : null),
       el('h1', { text: o.name }),
+      o.note ? el('div', { class: 'note', text: `“${o.note}”` }) : null,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${o.startPlace} ${o.startTime} → ${o.endPlace} ${o.endTime}` }),
       o.stats.length ? el('div', { class: 'sub', text: o.stats.join(' · ') }) : null),
     // 사진 (잠가서 온 사진을 풀어서 보여줘요)
     phWrap,
     // 2) 지도 + 길찾기
     R.length > 1 ? [
-      mapEl,
+      mapEl, spotList(o.spots),
       // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요
       el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
       // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 카카오맵이 현위치에서 그곳까지 안내
@@ -1526,11 +1551,11 @@ async function roomOf(code) {
 const roomSeal = async (key, obj) => ({ enc: await sealBytes(new TextEncoder().encode(JSON.stringify(obj)), key) });
 const roomOpen = async (key, v) => JSON.parse(new TextDecoder().decode(await openBytes(v.enc, key)));
 // 글 한 줄 받기 창 (이름·방 이름 같은 것)
-function askText(title, label, value, placeholder, sub) {
+function askText(title, label, value, placeholder, sub, max = 40, allowEmpty = false) {
   return new Promise(res => {
-    const iN = el('input', { type: 'text', id: 'at', maxlength: 40, value: value || '', placeholder: placeholder || '' });
-    const sb = el('div', { class: 'sheet-bg', style: 'z-index:3400', onclick: e => { if (e.target === sb) { sb.remove(); res(null); } } });
-    const ok = () => { const v = iN.value.trim(); if (!v) return toast(`${label}을(를) 적어 주세요`); sb.remove(); res(v); };
+    const iN = el('input', { type: 'text', id: 'at', maxlength: max, value: value || '', placeholder: placeholder || '' });
+    const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) { sb.remove(); res(null); } } });
+    const ok = () => { const v = iN.value.trim(); if (!v && !allowEmpty) return toast(`${label}을(를) 적어 주세요`); sb.remove(); res(v); };
     iN.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
     sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': title },
       el('h2', { text: title }), sub ? el('p', { class: 'sub', style: 'margin:0', text: sub }) : null,
@@ -1890,6 +1915,12 @@ async function viewMyOne(t) {
   const mapEl = el('div', { class: 'mapbox', style: 'height:50vh;min-height:300px' });
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal);
   const title = el('h1', { text: info.name });
+  const noteEl = el('div', { class: 'note' });
+  const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? `“${n}” ` : '',
+    el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 고치기' : '✎ 한 줄 일기 쓰기', onclick: async () => {
+      const v = await askText('한 줄 일기', '오늘 한 줄', ls.get('walkNote:' + t, ''), '예: 단풍이 한창이라 사진을 잔뜩 찍었다', '공유 카드와 지도 링크에도 함께 보여요. 비우면 지워요.', 120, true);
+      if (v == null) return; if (v) ls.set('walkNote:' + t, v.slice(0, 120)); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
+  drawNote();
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
     M.k === 'run' ? `페이스 ${fmtPace(st.walk, st.ms)} /km` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, st.ms)}` : '', spots.length ? `별표 ${spots.length}곳` : ''].filter(Boolean);
   const rename = async () => {
@@ -1919,9 +1950,10 @@ async function viewMyOne(t) {
       el('div', { class: 'sub with-ico' }, dateText, ls.get('walkMode:' + t, null) ? [' · ', ico(M.k, 16), M.label] : null, live ? ' · 기록 중' : ''),
       el('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, title,
         el('button', { class: 'btn line small', style: 'height:32px;padding:0 10px;white-space:nowrap;flex:none', text: '✎ 바꾸기', onclick: rename })),
+      noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    mapEl, phBox,
+    mapEl, spotList(spots), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     el('div', { class: 'two' },
@@ -2058,16 +2090,18 @@ function viewWalk() {
     const tr = trackLoad(id), at = lastFix ? [lastFix.lat, lastFix.lng] : tr.length ? [tr[tr.length - 1][0], tr[tr.length - 1][1]] : null;
     if (!at) return toast('아직 위치를 찾는 중이에요. 잠시 뒤에 다시 눌러 주세요');
     const iN = el('input', { type: 'text', id: 'sn', maxlength: 30, placeholder: '예: 서울숲 카페, 전망 좋은 곳' });
+    const iM = el('input', { type: 'text', id: 'sm', maxlength: 60, placeholder: '예: 여기서 김밥 먹음, 단풍이 제일 예뻤던 곳' });
     const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
     const save = () => {
       const list = ls.get('walkSpots:' + id, []);
-      list.push({ n: iN.value.trim() || `좋았던 곳 ${list.length + 1}`, lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() });
+      list.push(Object.assign({ n: iN.value.trim() || `좋았던 곳 ${list.length + 1}`, lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
       ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast('마음에 드는 곳으로 별표를 남겼어요');
     };
     sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '여기 좋아요' },
       el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), '여기 좋아요'),
       el('p', { class: 'sub', style: 'margin:0', text: '지금 있는 곳에 별표를 남겨요. 지도 링크를 받은 사람이 이곳으로 길찾기를 할 수 있어요.' }),
       el('label', { class: 'f', for: 'sn' }, '이름 (선택)', iN),
+      el('label', { class: 'f', for: 'sm' }, '한 줄 메모 (선택)', iM),
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
     document.body.append(sb); setTimeout(() => iN.focus(), 50);
   }
@@ -2146,6 +2180,7 @@ function viewWalk() {
     const iN = el('input', { type: 'text', id: 'wn', maxlength: 40, value: nameOf() });
     const wp0 = ls.get('walkPlaces:' + id, {});   // 기록 중에 '장소 이름 적기'로 적어 둔 게 있으면 채워요
     const iS = el('input', { type: 'text', id: 'ws', maxlength: 30, value: wp0.start || '', placeholder: '예: 동네 공원' }), iE = el('input', { type: 'text', id: 'we', maxlength: 30, value: wp0.end || '', placeholder: '예: 뒷산 정상' });
+    const iD = el('input', { type: 'text', id: 'wd', maxlength: 120, value: ls.get('walkNote:' + id, ''), placeholder: '예: 단풍이 한창이라 사진을 잔뜩 찍었다' });
     const bg = el('div', { class: 'sheet-bg' });
     bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '기록 저장' },
       el('h2', { text: '기록 저장하기' }),
@@ -2154,11 +2189,13 @@ function viewWalk() {
       el('div', { class: 'two' },
         el('label', { class: 'f', for: 'ws' }, '출발한 곳 (선택)', iS),
         el('label', { class: 'f', for: 'we' }, '도착한 곳 (선택)', iE)),
+      el('label', { class: 'f', for: 'wd' }, '오늘 한 줄 (선택)', iD),
       el('div', { class: 'row' },
         el('button', { class: 'btn line small grow', text: '계속 기록하기', onclick: () => bg.remove() }),
         el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
           ls.set('trackName:' + id, iN.value.trim() || defName());
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
+          if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 120)); else localStorage.removeItem('walkNote:' + id);
           stopGps(); wantWake = false; try { wake?.release(); } catch {}
           ls.set('walkNow', null); bg.remove(); done = id; draw();
         } }))));
