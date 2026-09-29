@@ -463,14 +463,36 @@ async function cardPhotos(t) {
 function photoMarkers(map, layer, photos) {
   photos.filter(p => p.lat != null).forEach(p => {
     L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'ph-pin', iconSize: [44, 44], iconAnchor: [22, 22], html: `<img src="${p.thumb}" alt="">` }) })
-      .on('click', () => showPhoto(p)).addTo(layer || map);
+      .on('click', () => showPhoto(p, photos)).addTo(layer || map);
   });
 }
-function showPhoto(p) {
-  const url = URL.createObjectURL(p.blob);
-  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.85)', onclick: () => { bg.remove(); URL.revokeObjectURL(url); } },
-    el('img', { src: url, alt: '찍은 사진', style: 'max-width:100%;max-height:85vh;border-radius:12px' }),
-    el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));color:#fff;font-size:14px', text: `${fmtClock(p.ts)} · 누르면 닫혀요` }));
+// 사진 크게 보기. list를 주면 좌우로 밀거나 ‹ › 를 눌러 앞뒤 사진으로 넘겨요. 사진을 톡 누르면 닫혀요.
+function showPhoto(p, list) {
+  const all = Array.isArray(list) && list.length ? list : [p];
+  let i = Math.max(0, all.indexOf(p)), url = null;
+  const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:pan-y;user-select:none;-webkit-user-drag:none' });
+  const cap = el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px' });
+  const close = () => { bg.remove(); if (url) URL.revokeObjectURL(url); };
+  const show = n => {
+    i = (n + all.length) % all.length; const r = all[i];
+    if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); img.src = url; img.style.transform = '';
+    cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}누르면 닫혀요`;
+  };
+  const arrow = (side, d) => el('button', { 'aria-label': d < 0 ? '앞 사진' : '다음 사진', text: d < 0 ? '‹' : '›',
+    style: `position:absolute;top:50%;${side}:6px;transform:translateY(-50%);width:44px;height:64px;border:none;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:36px;line-height:1`,
+    onclick: e => { e.stopPropagation(); show(i + d); } });
+  // 밀기: 손가락이 옆으로 50px 넘게 움직이면 넘기고, 조금만 움직였으면 누른 것으로 봐요
+  let x0 = null, y0 = 0, moved = false;
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9)', onclick: () => { if (!moved) close(); moved = false; } }, img, cap,
+    all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
+  bg.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; moved = false; }, { passive: true });
+  bg.addEventListener('touchmove', e => { if (x0 == null || all.length < 2) return; const dx = e.touches[0].clientX - x0; if (Math.abs(dx) > 10) { moved = true; img.style.transform = `translateX(${dx}px)`; } }, { passive: true });
+  bg.addEventListener('touchend', e => {
+    if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (all.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { moved = true; show(i + (dx < 0 ? 1 : -1)); }
+    else img.style.transform = '';
+  });
+  show(i);
   document.body.append(bg);
 }
 function trackAdd(t, lat, lng, acc, name) {
@@ -1194,7 +1216,7 @@ function viewBragLink(given, feed) {
   const hasKey = /[#&][kx]=/.test(location.hash);
   const refreshPh = () => {
     if (!phWrap) return;
-    gal.replaceChildren(...feed.recs.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r) })));
+    gal.replaceChildren(...feed.recs.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, feed.recs) })));
     phCount.textContent = !hasKey ? '사진을 보려면 받은 링크를 끝까지 그대로 열어야 해요.'
       : feed.recs.length < o.ph ? `사진을 불러오는 중이에요… (${feed.recs.length}/${o.ph})` : `${feed.recs.length}장 · 누르면 크게 보여요`;
     if (phLayer) { phLayer.clearLayers(); photoMarkers(null, phLayer, feed.recs); }
@@ -1839,7 +1861,7 @@ async function viewMyOne(t) {
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
     const ps = await photoList(t);
-    if (ps.length) { phBox.style.display = ''; gal.replaceChildren(...ps.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r) }))); photoMarkers(m, L.layerGroup().addTo(m), ps); }
+    if (ps.length) { phBox.style.display = ''; gal.replaceChildren(...ps.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) }))); photoMarkers(m, L.layerGroup().addTo(m), ps); }
   }, 0);
 }
 // 첫 화면: 기록 시작(모드 타일) / Map Diary 공유하기
