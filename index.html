@@ -1936,29 +1936,42 @@ function viewWalk() {
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw();
   }
-  function finish() {
+  // 끝내기: 먼저 '정말 끝낼까요?'를 물어보고(실수로 누를 때를 생각해 '계속 기록하기'를 크게), 그다음 이름·장소를 적어 저장해요
+  function askEnd(title, text, yes) {
+    return new Promise(res => {
+      const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) { sb.remove(); res(false); } } });
+      sb.append(el('div', { class: 'sheet', role: 'alertdialog', 'aria-label': title },
+        el('h2', { text: title }), el('p', { class: 'sub', style: 'margin:0', text }),
+        el('button', { class: 'btn primary full big', text: '계속 기록하기', onclick: () => { sb.remove(); res(false); } }),
+        el('button', { class: 'btn line full', style: 'color:var(--alert-ink)', text: yes, onclick: () => { sb.remove(); res(true); } })));
+      document.body.append(sb);
+    });
+  }
+  async function finish() {
     const tr = trackLoad(id);
     if (tr.length < 2) {
-      if (!confirm('아직 기록된 길이 거의 없어요. 그만둘까요?')) return;
+      if (!(await askEnd('기록을 끝낼까요?', '아직 기록된 길이 거의 없어서, 끝내면 이 기록은 남지 않아요.', '기록 지우고 끝내기'))) return;
       stopGps(); try { wake?.release(); } catch {} ls.set('track:' + id, []); ls.set('walkNow', null);
       const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);   // 여행에서도 빼요 (빈 여행이면 여행도 지워요)
       if (al) { al.days = al.days.filter(d => d !== id); if (al.days.length) albumSave(al); else ls.set('albums', albumsLoad().filter(x => x.id !== aid)); }
       photoList(id).then(ps => Promise.all(ps.map(p => photoDel(p.id)))).finally(() => { location.href = './'; }); return;
     }
+    const st0 = trackStats(tr, M().car);
+    if (!(await askEnd('기록을 끝낼까요?', `${nameOf()} · 다닌 시간 ${fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))} · ${M().did} 거리 ${fmtDist(st0.walk)}. 끝내면 더는 길이 그려지지 않아요.`, '끝내기'))) return;
     const iN = el('input', { type: 'text', id: 'wn', maxlength: 40, value: nameOf() });
     const wp0 = ls.get('walkPlaces:' + id, {});   // 기록 중에 '장소 이름 적기'로 적어 둔 게 있으면 채워요
     const iS = el('input', { type: 'text', id: 'ws', maxlength: 30, value: wp0.start || '', placeholder: '예: 동네 공원' }), iE = el('input', { type: 'text', id: 'we', maxlength: 30, value: wp0.end || '', placeholder: '예: 뒷산 정상' });
     const bg = el('div', { class: 'sheet-bg' });
     bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '기록 저장' },
-      el('h2', { text: '기록을 끝낼까요?' }),
-      el('p', { class: 'sub', style: 'margin:0', text: `${M().did} 거리 ${fmtDist(trackStats(tr, M().car).walk)} · ${fmtDur(trackStats(tr).ms)}. 이름을 정하면 저장하고 기록을 끝내요.` }),
+      el('h2', { text: '기록 저장하기' }),
+      el('p', { class: 'sub', style: 'margin:0', text: `${M().did} 거리 ${fmtDist(st0.walk)} · ${fmtDur(trackStats(tr).ms)}. 이름과 장소를 적고 저장하세요.` }),
       el('label', { class: 'f', for: 'wn' }, '이름', iN),
       el('div', { class: 'two' },
         el('label', { class: 'f', for: 'ws' }, '출발한 곳 (선택)', iS),
         el('label', { class: 'f', for: 'we' }, '도착한 곳 (선택)', iE)),
       el('div', { class: 'row' },
-        el('button', { class: 'btn line small grow', text: '계속하기', onclick: () => bg.remove() }),
-        el('button', { class: 'btn primary small grow', text: '저장하고 끝내기', onclick: () => {
+        el('button', { class: 'btn line small grow', text: '계속 기록하기', onclick: () => bg.remove() }),
+        el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
           ls.set('trackName:' + id, iN.value.trim() || defName());
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
           stopGps(); wantWake = false; try { wake?.release(); } catch {}
