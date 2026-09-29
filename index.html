@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1E3B2F">
 <title>Map Diary</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Map Diary">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'22'%20fill%3D'%231E3B2F'%2F%3E%3Cpath%20d%3D'M24%2076C36%2054%2060%2072%2058%2050S68%2028%2076%2024'%20fill%3D'none'%20stroke%3D'%23F4A259'%20stroke-width%3D'8'%20stroke-linecap%3D'round'%20stroke-dasharray%3D'9%2010'%2F%3E%3Ccircle%20cx%3D'24'%20cy%3D'76'%20r%3D'8'%20fill%3D'%23FFFDF8'%2F%3E%3Ccircle%20cx%3D'76'%20cy%3D'24'%20r%3D'10'%20fill%3D'%23F4A259'%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -1410,6 +1415,36 @@ function route() {
   return viewLanding();
 }
 
+// ---------- 바탕화면에 설치 (홈 화면에 앱 아이콘) ----------
+const IS_APP = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+let installEv = null, installSlot = null;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; drawInstall(); });
+addEventListener('appinstalled', () => { installEv = null; ls.set('installed', true); drawInstall(); toast('바탕화면에 Map Diary를 설치했어요'); });
+function howToInstall() {
+  const steps = IS_IOS ? ['Safari 아래쪽 공유 버튼(네모에 위 화살표)을 눌러요', "'홈 화면에 추가'를 눌러요", "오른쪽 위 '추가'를 눌러요"]
+    : ['브라우저 메뉴(⋯ 또는 ⋮)를 눌러요', "'휴대폰에 추가', '홈 화면에 추가' 또는 '앱 설치'를 눌러요", "'설치' 또는 '추가'를 눌러요"];
+  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕화면에 설치' },
+    el('h2', { text: '바탕화면에 설치하기' }),
+    el('ol', { style: 'margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px' }, steps.map(s => el('li', { text: s }))),
+    el('p', { class: 'sub', style: 'margin:0', text: '설치하면 바탕화면의 Map Diary 아이콘을 눌러 바로 기록을 시작할 수 있어요. 기록은 지금 쓰는 브라우저의 기록과 그대로 이어져요.' }),
+    el('button', { class: 'btn primary full', text: '알겠어요', onclick: () => sb.remove() })));
+  document.body.append(sb);
+}
+function drawInstall() {
+  if (!installSlot) return;
+  if (IS_APP || ls.get('installHide', false) || (ls.get('installed', false) && !installEv)) return installSlot.replaceChildren();
+  const go = IN_KAKAO ? () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); }
+    : installEv ? async () => { const e = installEv; installEv = null; e.prompt(); const r = await e.userChoice.catch(() => null); if (r && r.outcome !== 'accepted') installEv = e; drawInstall(); }
+    : howToInstall;
+  installSlot.replaceChildren(el('div', { class: 'card row', style: 'gap:12px;align-items:center;padding:14px 16px' },
+    el('img', { src: 'icon-192.png', alt: '', width: 44, height: 44, style: 'border-radius:12px;flex:none' }),
+    el('div', { class: 'grow' }, el('b', { text: '바탕화면에 설치' }), el('div', { class: 'sub', style: 'font-size:14px', text: IN_KAKAO ? '먼저 기본 브라우저로 열어요' : '아이콘을 눌러 바로 기록해요' })),
+    el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: IN_KAKAO ? '브라우저로' : '설치', onclick: go }),
+    el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '설치 안내 닫기', text: '✕', onclick: () => { ls.set('installHide', true); drawInstall(); } })));
+}
 route();
 
 // =====================================================================
@@ -1449,6 +1484,7 @@ function openPastTrips() {
 }
 // 첫 화면: 기록 시작(모드 타일) / Map Diary 공유하기
 function viewLanding() {
+  installSlot = el('div'); drawInstall();
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
@@ -1463,7 +1499,8 @@ function viewLanding() {
     el('h2', { style: 'margin-top:4px', text: '기록 시작' }),
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Diary로 남아요.' }),
-    bigBtn('Map Diary 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips)));
+    bigBtn('Map Diary 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
+    installSlot));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Diary로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
