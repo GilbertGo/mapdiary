@@ -142,7 +142,17 @@ nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:
 .role .who{font-weight:700;display:flex;align-items:center;gap:6px}
 .who-ico .ico{display:inline-flex;animation:runbob .55s ease-in-out infinite alternate}
 @keyframes runbob{from{transform:translateY(1px) rotate(-4deg)}to{transform:translateY(-3px) rotate(3deg)}}
-@media (prefers-reduced-motion:reduce){.who-ico .ico{animation:none}}
+.who-ico .runner{animation:runbob2 .3s ease-in-out infinite alternate}
+@keyframes runbob2{from{transform:translateY(1px)}to{transform:translateY(-2px)}}
+.runner .rn-arm{transform-origin:12.6px 8.2px;animation:rnarm .6s ease-in-out infinite alternate}
+.runner .rn-leg{transform-origin:11.4px 13.4px;animation:rnleg .6s ease-in-out infinite alternate}
+.runner .rn-shin{transform-origin:11.2px 17.6px;animation:rnshin .6s ease-in-out infinite alternate}
+.runner .b{animation-delay:-.6s}.runner .b .rn-shin{animation-delay:-.6s}
+.runner .rn-arm.b,.runner .rn-leg.b{opacity:.55}
+@keyframes rnarm{from{transform:rotate(-55deg)}to{transform:rotate(45deg)}}
+@keyframes rnleg{from{transform:rotate(38deg)}to{transform:rotate(-40deg)}}
+@keyframes rnshin{from{transform:rotate(10deg)}to{transform:rotate(70deg)}}
+@media (prefers-reduced-motion:reduce){.who-ico .ico,.runner *{animation:none!important}}
 .role .home{color:inherit;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:6px;padding:6px 10px 6px 0;margin:-6px 0}
 .role .home .hi{width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11 12 4l9 7'/%3E%3Cpath d='M5 10v10h14V10'/%3E%3C/svg%3E") center/contain no-repeat}
 .role.leader{background:var(--ink);color:#fff}.role.leader .who{color:var(--accent)}
@@ -307,7 +317,20 @@ document.addEventListener('click', () => { try { actx = actx || new (window.Audi
 
 // 첫 화면으로 갈 때 물어볼 말 (참여자 위치 공유 중, 기록 중일 때 화면이 정해 둬요)
 let leaveWarn = null;
-// iconK를 주면 오른쪽 글자 대신 그 아이콘을 보여줘요 (예: 러닝 중 달리는 사람, 통통 튀어요)
+// 팔다리가 움직이는 달리는 사람 (24칸 기준 선 그림). 팔·허벅지·정강이를 관절에서 돌려요
+function runnerSvg(size) {
+  const s = el('span', { class: 'ico runner' });
+  s.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <g class="rn-arm b"><path d="M12.6 8.2 11.2 11.6 13.4 13"/></g>
+    <g class="rn-leg b"><path d="M11.4 13.4 11.2 17.6"/><g class="rn-shin"><path d="M11.2 17.6 10.2 21.4"/></g></g>
+    <circle cx="13.6" cy="4.3" r="1.9"/>
+    <path d="M12.9 7.6 11.4 13.4"/>
+    <g class="rn-leg a"><path d="M11.4 13.4 11.2 17.6"/><g class="rn-shin"><path d="M11.2 17.6 10.2 21.4"/></g></g>
+    <g class="rn-arm a"><path d="M12.6 8.2 11.2 11.6 13.4 13"/></g>
+  </svg>`;
+  return s;
+}
+// iconK를 주면 오른쪽 글자 대신 그 아이콘을 보여줘요 (러닝이면 팔다리가 움직이는 달리는 사람)
 function roleBar(role, who, iconK) {
   document.body.dataset.role = role;
   document.title = who ? `Map Diary · ${who}` : role === 'leader' ? 'Map Diary · 인솔자' : 'Map Diary · 참여자';
@@ -318,7 +341,7 @@ function roleBar(role, who, iconK) {
   } },
     el('span', { class: 'hi', 'aria-hidden': 'true' }), 'Map Diary');
   return el('div', { class: 'role ' + role, role: 'banner' }, home,
-    iconK ? el('span', { class: 'who who-ico', role: 'img', 'aria-label': who || '' }, ico(iconK, 30))
+    iconK ? el('span', { class: 'who who-ico', role: 'img', 'aria-label': who || '' }, iconK === 'run' ? runnerSvg(32) : ico(iconK, 30))
       : el('span', { class: 'who', text: who || (role === 'leader' ? '인솔자 화면' : '참여자 화면') }));
 }
 const ST = {
