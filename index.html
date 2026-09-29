@@ -232,6 +232,33 @@ h2{color:var(--pine)}
 body[data-role=member]{--ground:#F4F0E6}
 /* 맨 위 바탕 그림: 하늘, 해, 구름, 겹겹이 이어진 산 (아래로 갈수록 바탕색에 섞여요) */
 body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 320' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23CFE8EE'/%3E%3Cstop offset='.55' stop-color='%23E8F1EC'/%3E%3Cstop offset='.9' stop-color='%23F4F0E6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='320' fill='url(%23s)'/%3E%3Ccircle cx='400' cy='88' r='26' fill='%23FCE3B6'/%3E%3Ccircle cx='400' cy='88' r='40' fill='%23FCE3B6' fill-opacity='.35'/%3E%3Cg fill='%23ffffff' fill-opacity='.8'%3E%3Cellipse cx='190' cy='70' rx='34' ry='10'/%3E%3Cellipse cx='212' cy='62' rx='20' ry='10'/%3E%3Cellipse cx='330' cy='48' rx='26' ry='8'/%3E%3C/g%3E%3Cpath d='M0 200 60 168l50 16 60-44 60 36 50-22 62-34 58 42 52-22 70 30 78-26V320H0z' fill='%23D3E6DA'/%3E%3Cpath d='M0 228c60-26 110-16 160-30s100 18 160-8 110 20 170 4 90 8 110 2V320H0z' fill='%23BFDCC8'/%3E%3Cg fill='%23A7CDB3'%3E%3Cpath d='M92 226l10-26 10 26z'/%3E%3Cpath d='M108 228l8-20 8 20z'/%3E%3Cpath d='M388 222l11-28 11 28z'/%3E%3Cpath d='M406 224l8-20 8 20z'/%3E%3Cpath d='M520 220l9-24 9 24z'/%3E%3C/g%3E%3Cpath d='M0 262c80-22 150-6 230-16s150 18 220 4 110 6 150 0V320H0z' fill='%23E3ECDC'/%3E%3Cpath d='M0 292c150-14 300 8 450-6s120 6 150 2V320H0z' fill='%23F4F0E6'/%3E%3C/svg%3E") center top/max(100%,600px) 320px no-repeat,var(--ground)}
+/* 파크골프 점수 */
+.golf{gap:12px;padding:16px}
+.gf-hd{display:flex;align-items:center;gap:8px}
+.gf-hd .nav{width:44px;height:44px;border-radius:14px;border:none;background:#EFE9DC;color:var(--pine);font-size:24px;font-weight:700;flex:none}
+.gf-hd .nav:disabled{opacity:.35}
+.gf-t{flex:1;display:flex;align-items:baseline;justify-content:center;gap:10px}
+.gf-t b{font-size:26px;color:var(--pine);letter-spacing:-.02em}
+.gf-par{border:none;background:#E6F0EA;color:var(--pine);font-weight:700;font-size:15px;border-radius:999px;padding:5px 12px}
+.gf-row{display:flex;align-items:center;gap:8px;background:#F8F5EE;border-radius:16px;padding:6px 8px 6px 14px}
+.gf-nm{flex:1;min-width:0;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gf-pm{width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:var(--shadow);font-size:24px;font-weight:700;color:var(--pine);flex:none}
+.gf-v{width:40px;text-align:center;font-size:26px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.gf-v.empty{color:#B9B3A3}
+.gf-tot{width:66px;text-align:right;font-size:13px;color:#6B6F66;line-height:1.25;flex:none}
+.gf-tot b{display:block;font-size:16px;color:var(--pine)}
+.gf-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+.gf-tbl table{border-collapse:separate;border-spacing:3px;font-size:13px;font-variant-numeric:tabular-nums}
+.gf-tbl th,.gf-tbl td{min-width:26px;height:28px;text-align:center;border-radius:8px;padding:0 3px;white-space:nowrap}
+.gf-tbl th{color:#7A7F76;font-weight:600}
+.gf-tbl th.nm{text-align:left;color:var(--ink);font-weight:700;max-width:52px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--card)}
+.gf-tbl .hno{cursor:pointer}
+.gf-tbl .hno.on{background:var(--pine);color:#fff}
+.gf-tbl td{background:#F3EFE6;font-weight:700}
+.gf-tbl td.u{background:#2D6A4F;color:#fff}.gf-tbl td.a{background:#F4C542;color:#3B2F00}
+.gf-tbl td.e{background:#E6F0EA;color:var(--pine)}.gf-tbl td.b1{background:#FCD9B8}.gf-tbl td.b2{background:#F4A259}
+.gf-tbl td.sum{background:none;color:var(--pine);font-size:14px;line-height:1.05}.gf-tbl td.sum small{display:block;font-size:11px;color:#7A7F76}
+.hole-pin{background:none;border:none}.hole-pin b{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#2D6A4F;color:#fff;font-size:13px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 /* 받은 MD 화면 */
 .mdv{gap:14px}
 .mdv-hero{background:#FFFDF8;border-radius:24px;padding:18px 18px 16px;box-shadow:var(--shadow),inset 0 0 0 1px rgba(120,100,60,.06);display:flex;flex-direction:column;gap:10px}
@@ -787,6 +814,115 @@ const MODES = [
   { k: 'daily', label: '일상', car: 15, did: '걸은' },
   { k: 'pgolf', label: '파크골프', car: 15, did: '걸은' }
 ];
+// ---------- 파크골프: 점수표 ----------
+// walkGolf:{ID} = { c: 구장, n: 9|18, par: [홀마다 파], p: [이름 최대 4명], s: [[사람마다 홀별 타수, 0 = 아직]], h: [[lat,lng] | null 홀을 끝낸 자리], cur: 지금 홀 }
+// golfCourses = { 구장 이름: { n, par } } (같은 구장에 다시 가면 파를 그대로)
+const GOLF_PAR9 = [4, 3, 4, 3, 5, 4, 3, 4, 3];   // 9홀 파33 기본 (구장마다 다르면 고쳐요)
+const golfPars = n => Array.from({ length: n }, (_, i) => GOLF_PAR9[i % 9]);
+function golfClean(g) {   // 링크로 받은 점수표도 모양을 확인해요
+  if (!g || typeof g !== 'object') return null;
+  const n = g.n === 9 ? 9 : g.n === 18 ? 18 : 0; if (!n) return null;
+  const int = (v, lo, hi, d) => Number.isInteger(v) && v >= lo && v <= hi ? v : d;
+  const par = Array.from({ length: n }, (_, i) => int(Array.isArray(g.par) ? g.par[i] : 0, 2, 6, GOLF_PAR9[i % 9]));
+  const p = (Array.isArray(g.p) ? g.p : []).slice(0, 4).map(x => typeof x === 'string' ? x.slice(0, 10) : '').filter(Boolean);
+  if (!p.length) return null;
+  const s = p.map((_, k) => Array.from({ length: n }, (_, i) => int(Array.isArray(g.s) && Array.isArray(g.s[k]) ? g.s[k][i] : 0, 0, 15, 0)));
+  const h = Array.from({ length: n }, (_, i) => { const q = Array.isArray(g.h) ? g.h[i] : null; return Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1]) ? [+q[0].toFixed(6), +q[1].toFixed(6)] : null; });
+  return { c: typeof g.c === 'string' ? g.c.slice(0, 30) : '', n, par, p, s, h, cur: int(g.cur, 0, n - 1, 0) };
+}
+function golfTot(g, k) {   // 친 홀만 더해요
+  let st = 0, par = 0, played = 0;
+  g.s[k].forEach((v, i) => { if (v > 0) { st += v; par += g.par[i]; played++; } });
+  return { st, par, diff: st - par, played };
+}
+const fmtDiff = d => d === 0 ? '이븐' : (d > 0 ? '+' : '') + d;
+const golfCls = (v, par) => !v ? '' : v === 1 ? 'a' : v < par ? 'u' : v === par ? 'e' : v === par + 1 ? 'b1' : 'b2';
+const golfSummary = g => { const t = golfTot(g, 0); return t.played ? `${t.st}타 (${fmtDiff(t.diff)})` : ''; };
+// 점수표 (18홀도 옆으로 밀어서 봐요). onHole을 주면 홀 번호를 눌러 그 홀로 가요
+function golfTable(g, onHole) {
+  const row = (label, cells, cls) => el('tr', {}, el('th', { class: 'nm' + (cls || ''), text: label }), ...cells);
+  const tbl = el('table', {},
+    row('홀', [...g.par.map((_, i) => el('th', { class: 'hno' + (onHole && i === g.cur ? ' on' : ''), text: i + 1, onclick: onHole ? () => onHole(i) : null })), el('th', { text: '합계' })]),
+    row('파', [...g.par.map(v => el('th', { text: v })), el('th', { text: g.par.reduce((a, b) => a + b, 0) })]),
+    ...g.p.map((nm, k) => { const t = golfTot(g, k);
+      return row(nm, [...g.s[k].map((v, i) => el('td', { class: golfCls(v, g.par[i]), text: v || '' })), el('td', { class: 'sum' }, t.played ? [String(t.st), el('small', { text: fmtDiff(t.diff) })] : '-')]); }));
+  return el('div', { class: 'gf-tbl' }, tbl);
+}
+// 지도에 홀 번호 (홀을 끝낸 자리)
+function golfMarkers(layer, g) {
+  if (!g) return;
+  g.h.forEach((q, i) => { if (q) L.marker(q, { interactive: false, keyboard: false, icon: L.divIcon({ className: 'hole-pin', iconSize: [24, 24], iconAnchor: [12, 12], html: `<b>${i + 1}</b>` }) }).addTo(layer); });
+}
+// 점수 넣는 판: 홀마다 − 타수 + (안 누르면 파), '다음 홀'을 누르면 지금 자리를 그 홀 자리로 남겨요
+// here(): 지금 위치 [lat,lng] (나중에 고칠 때는 없음)
+function golfPanel(G, save, here) {
+  const box = el('div', { class: 'card stack golf' });
+  const saveCourse = () => { if (!G.c) return; const cs = ls.get('golfCourses', {}); cs[G.c] = { n: G.n, par: G.par }; ls.set('golfCourses', cs); };
+  function draw() {
+    const i = G.cur = Math.max(0, Math.min(G.n - 1, G.cur || 0)), par = G.par[i];
+    const go = k => { G.cur = k; save(G); draw(); };
+    box.replaceChildren(
+      el('div', { class: 'gf-hd' },
+        el('button', { class: 'nav', 'aria-label': '앞 홀', text: '‹', disabled: i === 0, onclick: () => go(i - 1) }),
+        el('div', { class: 'gf-t' }, el('b', { text: `${i + 1}번 홀` }),
+          el('button', { class: 'gf-par', 'aria-label': `파 ${par}, 누르면 바뀌어요`, text: `파 ${par} ▾`, onclick: () => { G.par[i] = par >= 5 ? 3 : par + 1; saveCourse(); save(G); draw(); } })),
+        el('button', { class: 'nav', 'aria-label': '다음 홀', text: '›', disabled: i === G.n - 1, onclick: () => go(i + 1) })),
+      ...G.p.map((nm, k) => {
+        const v = G.s[k][i], t = golfTot(G, k);
+        const set = nv => { G.s[k][i] = Math.max(1, Math.min(15, nv)); save(G); draw(); };
+        return el('div', { class: 'gf-row' },
+          el('span', { class: 'gf-nm', text: nm }),
+          el('button', { class: 'gf-pm', 'aria-label': `${nm} 한 타 빼기`, text: '−', onclick: () => set((v || par) - 1) }),
+          el('b', { class: 'gf-v' + (v ? '' : ' empty'), text: v || par, 'aria-label': v ? `${v}타` : `아직 안 적음 (파 ${par})` }),
+          el('button', { class: 'gf-pm', 'aria-label': `${nm} 한 타 더하기`, text: '+', onclick: () => set((v || par) + 1) }),
+          el('span', { class: 'gf-tot' }, el('b', { text: t.played ? `${t.st}타` : '-' }), t.played ? fmtDiff(t.diff) : ''));
+      }),
+      el('button', { class: 'btn primary full', text: i < G.n - 1 ? `${i + 1}번 홀 끝 · 다음 홀로` : '마지막 홀 끝', onclick: () => {
+        G.p.forEach((_, k) => { if (!G.s[k][i]) G.s[k][i] = par; });   // 안 누른 사람은 파로
+        const at = here && here(); if (at) G.h[i] = [+at[0].toFixed(6), +at[1].toFixed(6)];
+        if (i < G.n - 1) { G.cur = i + 1; toast(`${i + 1}번 홀 · ${G.p.map((nm, k) => `${nm} ${G.s[k][i]}타`).join(', ')}`); }
+        else toast(`${G.n}홀 끝! ${G.p.map((nm, k) => `${nm} ${golfTot(G, k).st}타 (${fmtDiff(golfTot(G, k).diff)})`).join(', ')}`);
+        saveCourse(); save(G); draw();
+      } }),
+      el('div', { class: 'sub', style: 'font-size:13px;margin-top:-4px', text: here ? '안 누른 사람은 파로 적혀요. 홀을 끝낸 자리가 지도에 홀 번호로 남아요.' : '안 누른 사람은 파로 적혀요.' }),
+      golfTable(G, go));
+  }
+  draw();
+  return box;
+}
+// 시작 화면: 구장 이름, 9홀·18홀, 같이 치는 사람 (golfSetup에 남겨 두고 다음에도 써요)
+function golfSetupCard() {
+  const S = Object.assign({ c: '', n: 18, p: ['나'] }, ls.get('golfSetup', {}));
+  const courses = ls.get('golfCourses', {}), keep = () => ls.set('golfSetup', S);
+  const box = el('div', { class: 'card stack', style: 'gap:12px' });
+  function draw() {
+    // 구장 이름을 적는 동안은 다시 그리지 않아요 (다른 버튼을 누를 때 눌림이 사라지지 않게). 아는 구장이면 안내만 바꿔요
+    const hint = el('div', { class: 'sub', style: 'font-size:13px;margin-top:-6px' });
+    const showHint = () => { const cs = courses[S.c]; hint.textContent = cs ? `지난번에 적은 이 구장의 파를 그대로 써요 (${cs.n}홀 · 파 ${cs.par.reduce((a, b) => a + b, 0)})` : ''; hint.style.display = cs ? '' : 'none'; };
+    const iC = el('input', { type: 'text', id: 'gc', maxlength: 30, value: S.c, placeholder: '예: 청라 파크골프장', list: 'gcl', oninput: () => { S.c = iC.value.trim(); if (courses[S.c]) { S.n = courses[S.c].n; t9.className = 'btn small ' + (S.n === 9 ? 'dark' : 'line'); t18.className = 'btn small ' + (S.n === 18 ? 'dark' : 'line'); } keep(); showHint(); } });
+    const tab = n => el('button', { class: 'btn small ' + (S.n === n ? 'dark' : 'line'), style: 'flex:1', text: `${n}홀`, onclick: () => { S.n = n; keep(); draw(); } });
+    const t9 = tab(9), t18 = tab(18); showHint();
+    box.replaceChildren(
+      el('label', { class: 'f', for: 'gc' }, '구장 이름 (선택)', iC),
+      el('datalist', { id: 'gcl' }, ...Object.keys(courses).map(k => el('option', { value: k }))),
+      hint,
+      el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' }, t9, t18),
+      el('b', { text: '같이 치는 사람' }),
+      el('div', { class: 'mapbar' },
+        ...S.p.map((nm, k) => el('button', { class: 'btn small line', 'aria-label': `${nm} 빼기`, onclick: () => { if (S.p.length < 2) return toast('한 사람은 있어야 해요'); S.p.splice(k, 1); keep(); draw(); } }, nm, S.p.length > 1 ? el('span', { style: 'color:#9A9585;margin-left:4px', text: '✕' }) : null)),
+        S.p.length < 4 ? el('button', { class: 'btn small dark', text: '+ 더하기', onclick: async () => {
+          const v = await askText('같이 치는 사람', '이름', '', '예: 아내, 유진', '최대 4명까지 점수를 같이 적어요.', 10); if (!v) return;
+          S.p.push(v.trim().slice(0, 10)); keep(); draw(); } }) : null),
+      el('div', { class: 'sub', style: 'font-size:13px', text: '홀마다 − + 로 타수를 적고, 다 친 홀에서 "다음 홀"을 누르세요. 그 자리가 지도에 홀 번호로 남고, 공유 카드에 점수표가 들어가요.' }));
+  }
+  draw();
+  return box;
+}
+function golfNew() {   // 시작할 때 만들어요
+  const S = Object.assign({ c: '', n: 18, p: ['나'] }, ls.get('golfSetup', {})), n = S.n === 9 ? 9 : 18;
+  const cs = ls.get('golfCourses', {})[S.c], par = cs && cs.n === n ? cs.par.slice() : golfPars(n);
+  return { c: S.c || '', n, par, p: S.p.slice(0, 4), s: S.p.slice(0, 4).map(() => Array(n).fill(0)), h: Array(n).fill(null), cur: 0 };
+}
 // ---------- 선 아이콘 (24칸 기준 선 그림. 화면은 SVG로, 자랑 카드는 canvas로 같은 모양을 그려요) ----------
 const ICONS = {
   hike: ['M2.5 19.5 9 8.5l3.5 5.5 2.5-3.5 6.5 9z', 'M15.5 4.5a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
@@ -1034,8 +1170,12 @@ async function drawBragCard(o) {
   }
   if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MD 메모 첫 줄
   // 경로 판
-  const PH = (o.photos || []).slice(0, 3);   // 사진이 있으면 지도를 줄이고 아래에 사진 3장
-  const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = (PH.length ? 870 : 1040) - py;
+  // 파크골프 점수표: 출발·도착 줄 바로 위에. 그만큼 지도(와 사진)를 위로 올려요 (3명 넘으면 카드에 사진은 빼요)
+  const GF = o.golf ? golfClean(o.golf) : null, gOn = GF && golfTot(GF, 0).played > 0;
+  const PH = (o.photos || []).slice(0, gOn && GF.p.length > 2 ? 0 : 3);   // 사진이 있으면 지도를 줄이고 아래에 사진 3장
+  const gh = gOn ? 70 + GF.p.length * 46 : 0, gy = 1062 - gh;
+  const sh = gOn ? 120 : 150, sy = gOn ? gy - 18 - sh : 890;
+  const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : 1040) - py);
   rr(px, py, pw, ph, 48); g.fillStyle = PINE; g.fill();
   g.save(); rr(px, py, pw, ph, 48); g.clip();
   if (contour) for (let cx = px - 60; cx < px + pw; cx += 260) for (let cy = py - 40; cy < py + ph; cy += 220) g.drawImage(contour, cx, cy, 260, 220);
@@ -1093,6 +1233,13 @@ async function drawBragCard(o) {
       g.beginPath(); g.arc(x, yy, 20, 0, Math.PI * 2); g.fillStyle = '#FFFDF8'; g.fill(); g.lineWidth = 4; g.strokeStyle = ACC; g.stroke();
       drawIco(g, 'star', x - 14, yy - 14, 28, '#E0892F', ACC);
     });
+    // 파크골프 홀 자리: 초록 동그라미에 홀 번호
+    if (GF) GF.h.forEach((q, i) => {
+      if (!q) return; const [x, yy] = proj(q);
+      if (x < px || x > px + pw || yy < py || yy > py + ph) return;
+      g.beginPath(); g.arc(x, yy, 19, 0, Math.PI * 2); g.fillStyle = '#2D6A4F'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#FFFFFF'; g.stroke();
+      font(800, 20); g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), x, yy + 1); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    });
     // 사진 찍은 곳: 번호 동그라미 (아래 사진과 번호가 같아요)
     const placed = [];
     PH.forEach((p, i) => {
@@ -1113,7 +1260,7 @@ async function drawBragCard(o) {
   g.restore();
   // 사진 3장 (가운데를 채워 잘라 넣어요)
   if (PH.length) {
-    const gap = 16, sw = (pw - gap * (PH.length - 1)) / PH.length, sh = 150, sy = 890;
+    const gap = 16, sw = (pw - gap * (PH.length - 1)) / PH.length;
     PH.forEach((p, i) => {
       const x = px + i * (sw + gap), im = p.img, s = Math.max(sw / im.width, sh / im.height);
       g.save(); rr(x, sy, sw, sh, 22); g.clip();
@@ -1123,6 +1270,26 @@ async function drawBragCard(o) {
       font(800, 22); g.fillStyle = '#E4572E'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), x + 26, sy + 27); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     });
   }
+  if (gOn) {
+    rr(px, gy, pw, gh, 32); g.fillStyle = '#FFFDF8'; g.fill();
+    const parAll = GF.par.reduce((a, b) => a + b, 0);
+    drawIco(g, 'pgolf', px + 26, gy + 16, 34, PINE);
+    font(700, 30); g.fillStyle = PINE; g.textBaseline = 'middle';
+    g.fillText(fit(`${GF.c ? GF.c + ' · ' : ''}${GF.n}홀 · 파 ${parAll}`, pw - 110), px + 72, gy + 34);
+    const sx = px + 392, cw = Math.min(42, (px + pw - 22 - sx) / GF.n), bs = cw - 5;
+    GF.p.forEach((nm, k) => {
+      const t = golfTot(GF, k), cy = gy + 90 + k * 46;
+      font(700, 28); g.fillStyle = INK; g.fillText(fit(nm, 150), px + 26, cy);
+      font(800, 32); g.fillStyle = PINE; g.fillText(`${t.st}타`, px + 190, cy);
+      font(700, 26); g.fillStyle = t.diff < 0 ? '#2D6A4F' : t.diff > 0 ? '#C2410C' : MUTED; g.fillText(fmtDiff(t.diff), px + 300, cy);
+      GF.s[k].forEach((v, i) => {   // 홀마다 작은 칸: 파보다 적으면 초록, 파는 연두, 보기는 살구, 그 위는 주황
+        const c = golfCls(v, GF.par[i]), x = sx + i * cw;
+        rr(x, cy - bs / 2, bs, bs, 7); g.fillStyle = { a: '#F4C542', u: '#2D6A4F', e: '#DDEBE1', b1: '#FCD9B8', b2: '#F4A259' }[c] || '#EFE9DC'; g.fill();
+        if (v && bs >= 22) { font(700, Math.min(20, bs * 0.62)); g.fillStyle = c === 'u' ? '#FFFFFF' : INK; g.textAlign = 'center'; g.fillText(String(v), x + bs / 2, cy + 1); g.textAlign = 'left'; }
+      });
+    });
+    g.textBaseline = 'alphabetic';
+  }
   // 출발 / 도착
   const col = (x, lbl, time, place) => {
     font(600, 28); g.fillStyle = MUTED; g.fillText(`${lbl} ${time}`, x, 1100);
@@ -1131,7 +1298,7 @@ async function drawBragCard(o) {
   col(72, '출발', o.startTime, o.startPlace); col(72 + pw / 2 + 12, '도착', o.endTime, o.endPlace);
   // 숫자 칩
   let cx = 72; font(700, 30);
-  o.stats.forEach(s => { const w = g.measureText(s).width + 44; rr(cx, 1196, w, 60, 30); g.fillStyle = s.startsWith('✓') ? '#E1EEE4' : '#EFE9DC'; g.fill(); g.fillStyle = s.startsWith('✓') ? '#1B4332' : INK; g.textBaseline = 'middle'; g.fillText(s, cx + 22, 1227); g.textBaseline = 'alphabetic'; cx += w + 12; });
+  o.stats.forEach(s => { const w = g.measureText(s).width + 44; if (cx + w > W - 60) return; rr(cx, 1196, w, 60, 30); g.fillStyle = s.startsWith('✓') ? '#E1EEE4' : '#EFE9DC'; g.fill(); g.fillStyle = s.startsWith('✓') ? '#1B4332' : INK; g.textBaseline = 'middle'; g.fillText(s, cx + 22, 1227); g.textBaseline = 'alphabetic'; cx += w + 12; });
   font(500, 26); g.fillStyle = '#9A9585'; g.textAlign = 'center'; g.fillText('Map Diary', W / 2, 1310); g.textAlign = 'left';
   return cv;
 }
@@ -1170,6 +1337,8 @@ function openBrag(info, t, count, allDone, room) {
     } else if (route) stats.push(`거리 ${fmtDist(pathLen(route))}`);
     if (route && which === 'mine' && ELEV_MODES.includes(M.k)) { const ev = elevStats(trackLoad(t)); if (ev && ev.gain >= 10) stats.push(`오른 높이 ${ev.gain}m`); }
     { const nStay = spotsOf(t).filter(s => s.k === 'stay').length; if (nStay) stats.push(`들른 곳 ${nStay}곳`); }
+    const golf = golfClean(ls.get('walkGolf:' + t, null));
+    if (golf && golfSummary(golf)) stats.unshift(`타수 ${golfSummary(golf)}`);
     if (info.live) stats.push('진행 중');   // 기록 중에 자랑할 때
     if (info.durText) stats.push(info.durText);
     else if (which === 'mine') { const st = trackStats(trackLoad(t), M.car); if (st.ms > 0) stats.push(dur(st.ms)); }
@@ -1182,6 +1351,7 @@ function openBrag(info, t, count, allDone, room) {
       modes: which === 'mine' ? trackModes(trackLoad(t), M.car) : null,
       spots: spotsOf(t).slice(0, 10).map(s => Object.assign({ n: s.n, lat: s.lat, lng: s.lng }, s.m ? { m: s.m } : {}, s.k ? { k: s.k } : {})),
       note: ls.get('walkNote:' + t, '') || undefined,
+      golf: golf && golfTot(golf, 0).played ? (({ cur, ...g }) => g)(golf) : undefined,
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
     if (phs.recs.length) { cardOpts.photoRecs = phs.recs; cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick; }
@@ -1508,7 +1678,7 @@ function viewBragLink(given, feed) {
     ...(o.endPlace === '지금 여기' ? { endPlace: '마지막 위치' } : {}),
     ph: Number.isFinite(o.ph) ? Math.max(0, Math.min(o.ph, 12)) : 0,
     spots: Array.isArray(o.spots) ? o.spots.slice(0, 10).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)).map(p => ({ n: s(p.n, 30) || '좋았던 곳', lat: p.lat, lng: p.lng, m: s(p.m, 60), k: p.k === 'stay' ? 'stay' : '' })) : [],
-    note: s(o.note, 1000) };
+    note: s(o.note, 1000), golf: golfClean(o.golf) };
   if (o.modes && (!o.route || o.modes.length !== o.route.length)) o.modes = null;
   const R = Array.isArray(o.route) ? o.route.filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])) : [];
   const img = el('img', { alt: 'Map Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
@@ -1582,14 +1752,16 @@ function viewBragLink(given, feed) {
   app.replaceChildren(el('div', { class: 'stack mdv' },
     roleBar('leader', o.modeLabel || '받은 MD', o.modeK || null),
     hero,
+    o.golf ? [el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pgolf', 20), '점수표'), el('span', { text: `${o.golf.c ? o.golf.c + ' · ' : ''}${o.golf.n}홀` })),
+      el('div', { class: 'card', style: 'padding:12px' }, golfTable(o.golf))] : null,
     // 사진 (잠가서 온 사진을 풀어서 보여줘요)
     phWrap,
     // 2) 지도 + 길찾기
     R.length > 1 ? [
       el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pin', 20), '다닌 길'), el('span', { text: '지도를 누르면 그곳으로 길찾기' })),
       mapEl, spotList(o.spots),
-      // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요
-      el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
+      // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
+      o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
       // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 카카오맵이 현위치에서 그곳까지 안내
       el('div', { class: 'card stack', style: 'gap:10px' },
         el('b', { text: '어디로 가 볼까요?' }), destBar, kakaoBtn,
@@ -1607,6 +1779,7 @@ function viewBragLink(given, feed) {
   refreshPh();
   if (R.length > 1) setTimeout(() => {
     const m = routeMap(mapEl, R, null, o.modes, o.spots); addFullBtn(m, mapEl); destMap = m;
+    if (o.golf) golfMarkers(L.layerGroup().addTo(m), o.golf);
     phLayer = L.layerGroup().addTo(m); if (feed) photoMarkers(m, phLayer, feed.recs);
     m.on('click', e => setDest({ n: '고른 곳', lat: +e.latlng.lat.toFixed(6), lng: +e.latlng.lng.toFixed(6), k: 'pick' }, true));
     setDest(dests[0]);
@@ -2140,7 +2313,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2351,7 +2524,27 @@ async function viewMyOne(t) {
       if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
   drawNote();
   const ev = elevStats(tr);
-  const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
+  const golf = golfClean(ls.get('walkGolf:' + t, null));
+  const golfBox = el('div', { class: 'stack', style: 'gap:8px' });
+  let golfLyr = null;
+  const drawGolf = () => {
+    const G = golfClean(ls.get('walkGolf:' + t, null));
+    if (golfLyr) { golfLyr.clearLayers(); golfMarkers(golfLyr, G); }
+    if (!G) { golfBox.replaceChildren(M.k === 'pgolf' ? el('button', { class: 'btn line full', text: '⛳ 점수표 만들기', onclick: () => { ls.set('walkGolf:' + t, golfNew()); drawGolf(); } }) : ''); return; }
+    golfBox.replaceChildren(
+      el('div', { class: 'row', style: 'justify-content:space-between;align-items:center;flex-wrap:nowrap' },
+        el('b', { class: 'with-ico', style: 'color:var(--pine);gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' }, ico('pgolf', 20), `점수표 · ${G.n}홀${G.c ? ' · ' + G.c : ''}`),
+        el('button', { class: 'btn line small', style: 'height:34px;white-space:nowrap;flex:none', text: '✎ 점수 고치기', onclick: () => {
+          const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) { sb.remove(); drawGolf(); } } });
+          sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '점수 고치기' }, el('h2', { text: '점수 고치기' }),
+            golfPanel(G, g => ls.set('walkGolf:' + t, g), null),
+            el('button', { class: 'btn primary full', text: '다 고쳤어요', onclick: () => { sb.remove(); drawGolf(); } })));
+          document.body.append(sb);
+        } })),
+      el('div', { class: 'card', style: 'padding:12px' }, golfTable(G)));
+  };
+  drawGolf();
+  const nums = [golf && golfSummary(golf) ? `타수 ${golfSummary(golf)}` : '', `${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
     M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '',
     M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
@@ -2384,7 +2577,7 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    mapEl, M.k === 'run' ? splitTable(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
+    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
@@ -2393,6 +2586,7 @@ async function viewMyOne(t) {
       el('button', { class: 'btn line', style: 'color:var(--alert-ink)', text: '지우기', onclick: del }))));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
+    golfLyr = L.layerGroup().addTo(m); drawGolf();
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
       const ps = await photoList(t);
@@ -2772,21 +2966,25 @@ function viewWalk() {
     spotMarkers(gLayer, guide.spots || []);
     if (line) { line.remove(); line = null; }   // 내 길이 따라가는 길 위에 보이게 다시 그려요
   }
+  let hLayer = null;
+  function drawHoles() { if (hLayer) { hLayer.clearLayers(); golfMarkers(hLayer, golfClean(ls.get('walkGolf:' + id, null))); } }
   function drawSpots() { if (spLayer) { spLayer.clearLayers(); spotMarkers(spLayer, ls.get('walkSpots:' + id, [])); } }
   function addSpot() {
     const tr = trackLoad(id), at = lastFix ? [lastFix.lat, lastFix.lng] : tr.length ? [tr[tr.length - 1][0], tr[tr.length - 1][1]] : null;
     if (!at) return toast('아직 위치를 찾는 중이에요. 잠시 뒤에 다시 눌러 주세요');
-    const iN = el('input', { type: 'text', id: 'sn', maxlength: 30, placeholder: '예: 서울숲 카페, 전망 좋은 곳' });
-    const iM = el('input', { type: 'text', id: 'sm', maxlength: 60, placeholder: '예: 여기서 김밥 먹음, 단풍이 제일 예뻤던 곳' });
+    // 파크골프는 '좋은 곳'이 아니라 '기억할 순간'(버디, 멋진 샷…)으로. 이름에 지금 홀 번호를 넣어 둬요
+    const golf = M().k === 'pgolf', G = golf && golfClean(ls.get('walkGolf:' + id, null)), hole = G ? `${G.cur + 1}번 홀` : '';
+    const iN = el('input', { type: 'text', id: 'sn', maxlength: 30, value: hole ? hole + ' ' : '', placeholder: golf ? '예: 3번 홀 버디, 홀인원' : '예: 서울숲 카페, 전망 좋은 곳' });
+    const iM = el('input', { type: 'text', id: 'sm', maxlength: 60, placeholder: golf ? '예: 긴 퍼팅이 한 번에 들어감' : '예: 여기서 김밥 먹음, 단풍이 제일 예뻤던 곳' });
     const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
     const save = () => {
       const list = ls.get('walkSpots:' + id, []);
-      list.push(Object.assign({ n: iN.value.trim() || `좋았던 곳 ${list.length + 1}`, lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
-      ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast('마음에 드는 곳으로 별표를 남겼어요');
+      list.push(Object.assign({ n: iN.value.trim() || (golf ? `기억할 순간 ${list.length + 1}` : `좋았던 곳 ${list.length + 1}`), lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
+      ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast(golf ? '이 순간을 별표로 남겼어요' : '마음에 드는 곳으로 별표를 남겼어요');
     };
-    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '좋은 곳 남기기' },
-      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), '좋은 곳 남기기'),
-      el('p', { class: 'sub', style: 'margin:0', text: '경치 좋은 곳, 쉬어 간 곳, 맛있던 곳처럼 기억하고 싶은 곳을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보이고, 지도 링크를 받은 사람이 이곳까지 길찾기를 할 수 있어요.' }),
+    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': golf ? '기억할 순간 남기기' : '좋은 곳 남기기' },
+      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), golf ? '기억할 순간 남기기' : '좋은 곳 남기기'),
+      el('p', { class: 'sub', style: 'margin:0', text: golf ? '버디, 홀인원, 멋진 샷처럼 기억하고 싶은 순간을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보여요.' : '경치 좋은 곳, 쉬어 간 곳, 맛있던 곳처럼 기억하고 싶은 곳을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보이고, 지도 링크를 받은 사람이 이곳까지 길찾기를 할 수 있어요.' }),
       el('label', { class: 'f', for: 'sn' }, '이름 (선택)', iN),
       el('label', { class: 'f', for: 'sm' }, '한 줄 메모 (선택)', iM),
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
@@ -2810,6 +3008,7 @@ function viewWalk() {
       map.on('click', () => { if (M().k === 'run' && fb && !mapEl.classList.contains('map-full')) toggleFull(map, mapEl, fb); });   // 러닝: 작은 지도를 누르면 크게
       phLayer = L.layerGroup().addTo(map); refreshPhotos();
       spLayer = L.layerGroup().addTo(map); drawSpots();
+      hLayer = L.layerGroup().addTo(map); drawHoles();
       drawGuide();
       const tr = trackLoad(id);
       if (tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16);
@@ -2841,6 +3040,7 @@ function viewWalk() {
       a.days.push(id); a.last = Date.now(); albumSave(a);
       ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`);
     }
+    if (pick === 'pgolf') { const G = golfNew(); ls.set('walkGolf:' + id, G); if (G.c) ls.set('trackName:' + id, /파크골프/.test(G.c) ? `${G.c} 라운드` : `${G.c} 파크골프`); }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
     if (pick === 'run' && goalOf(ls.get('runGoal', 0)).k !== 'free') ls.set('walkGoal:' + id, goalOf(ls.get('runGoal', 0)));
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
@@ -2937,6 +3137,7 @@ function viewWalk() {
         : el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
           el('div', { class: 'sub', text: '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' })),
+        pick === 'pgolf' ? golfSetupCard() : null,
         (() => { const iT = el('input', { type: 'text', id: 'wt', maxlength: 40, value: startTitle, placeholder: MULTI.includes(pick) && tripSel !== 'day' ? '비워 두면 "여행 이름 n일차"' : `비워 두면 "${dayName} ${modeByK(pick).label}"`, oninput: () => { startTitle = iT.value; } });
           return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
         el('button', { class: 'btn primary full big', onclick: pick === 'run' ? countdown : start }, ico(pick, 24), `${modeByK(pick).label} 시작하기`)].filter(Boolean));
@@ -3014,6 +3215,9 @@ function viewWalk() {
         el('div', { class: 'cnt' }, tDur, el('span', { text: '다닌 시간' })),
         el('div', { class: 'cnt' }, tDist, tDistLbl)),
       tAll,
+      (() => { const G = M().k === 'pgolf' && golfClean(ls.get('walkGolf:' + id, null)); if (M().k !== 'pgolf') return null;
+        if (!G) return el('button', { class: 'btn line full', text: '⛳ 점수표 만들기', onclick: () => { ls.set('walkGolf:' + id, golfNew()); draw(); } });
+        return golfPanel(G, g => { ls.set('walkGolf:' + id, g); drawHoles(); }, () => lastFix ? [lastFix.lat, lastFix.lng] : null); })(),
       M().k === 'run' ? tCad : null,
       M().k === 'run' ? el('div', { class: 'row', style: 'justify-content:center;gap:10px;align-items:center;flex-wrap:wrap' },
         (() => { const sp = ls.get('walkSplits:' + id, []); return sp.length ? el('span', { class: 'sub', text: `지난 1km ${fmtPace(1000, sp[sp.length - 1])}` }) : null; })(),
@@ -3030,7 +3234,7 @@ function viewWalk() {
         el('button', { class: 'btn line', text: '사진 찍기', onclick: () => camIn.click() }),
         el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() })),
       nPhotos ? el('div', { class: 'sub center', text: `이 기록에 사진 ${nPhotos}장이 붙어 있어요` }) : null,
-      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 남기기 (${n}곳)` : '좋은 곳 남기기 (지도에 별표)'; })()),
+      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; const w = M().k === 'pgolf' ? '기억할 순간 남기기' : '좋은 곳 남기기'; return n ? `${w} (${n}개)` : `${w} (지도에 별표)`; })()),
       // 기록을 끝내지 않고 지금까지 다닌 길로 자랑하기
       (() => {
         const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);
