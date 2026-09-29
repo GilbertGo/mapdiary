@@ -516,15 +516,41 @@ function showPhoto(p, list) {
   show(i);
   document.body.append(bg);
 }
-function trackAdd(t, lat, lng, acc, name) {
+// 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만)]
+function trackAdd(t, lat, lng, acc, name, alt) {
   if (acc > TRACK_MAX_ACC) return;
   const tr = trackLoad(t), lp = tr[tr.length - 1];
   if (lp && dist(lp[0], lp[1], lat, lng) < TRACK_MIN_M) return;
-  tr.push([+lat.toFixed(6), +lng.toFixed(6), Date.now()]);
+  tr.push(Number.isFinite(alt) ? [+lat.toFixed(6), +lng.toFixed(6), Date.now(), Math.round(alt)] : [+lat.toFixed(6), +lng.toFixed(6), Date.now()]);
   // 너무 길어지면 앞부분을 버리지 않고, 최근 500점을 뺀 나머지를 한 점 건너 하나씩 솎아요 (출발한 곳은 남겨요)
   if (tr.length > 20000) { const old = tr.slice(0, -500).filter((q, i) => i % 2 === 0); tr.splice(0, tr.length - 500, ...old); }
   if (!ls.set('track:' + t, tr) && Date.now() - (trackAdd.warned || 0) > 10 * 60000) { trackAdd.warned = Date.now(); toast('휴대폰 저장 공간이 모자라 기록을 저장하지 못했어요. 끝내고 공유해 두세요'); }
   if (name) ls.set('trackName:' + t, name);
+}
+// ---------- 높이: 오른 높이·최고 높이 ----------
+// GPS 높이는 10m쯤 흔들려서, 앞뒤 5점 평균으로 부드럽게 한 뒤 4m 넘게 오를 때만 더해요. 높이 값이 5점보다 적으면 null
+const ELEV_MODES = ['hike', 'trek', 'backpack', 'camp'];
+function elevStats(tr) {
+  const pts = (tr || []).filter(q => Number.isFinite(q[3]));
+  if (pts.length < 5) return null;
+  const h = pts.map((_, i) => { let a = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(pts.length - 1, i + 2); j++) { a += pts[j][3]; n++; } return a / n; });
+  let gain = 0, loss = 0, ref = h[0];
+  for (const v of h) { if (v - ref > 4) { gain += v - ref; ref = v; } else if (ref - v > 4) { loss += ref - v; ref = v; } }
+  // 그래프용: 걸어온 거리(m)와 높이
+  let d = 0; const prof = h.map((v, i) => { if (i) d += dist(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]); return [d, v]; });
+  return { gain: Math.round(gain), loss: Math.round(loss), max: Math.round(Math.max(...h)), min: Math.round(Math.min(...h)), prof };
+}
+// 높이 그래프 (산 모양 선). 가로는 거리, 세로는 높이
+function elevChart(e) {
+  if (!e || e.prof.length < 5 || e.max - e.min < 5) return null;
+  const W = 600, H = 150, pad = 6, P = e.prof, D = P[P.length - 1][0] || 1, lo = e.min - 5, hi = e.max + 5;
+  const xy = P.map(([d, v]) => [pad + (d / D) * (W - pad * 2), H - pad - ((v - lo) / (hi - lo)) * (H - pad * 2 - 20)]);
+  const line = xy.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+  const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
+  box.innerHTML = `<b style="color:var(--pine)">높이</b><svg viewBox="0 0 ${W} ${H}" width="100%" height="120" preserveAspectRatio="none" aria-label="높이 그래프 최고 ${e.max}m 최저 ${e.min}m">
+    <path d="${line} L ${W - pad} ${H - pad} L ${pad} ${H - pad} Z" fill="#CFE3D4"/><path d="${line}" fill="none" stroke="#2D6A4F" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>
+    <div class="sub" style="display:flex;justify-content:space-between;font-size:13px"><span>출발</span><span>최고 ${e.max}m · 최저 ${e.min}m</span><span>${fmtDist(D)}</span></div>`;
+  return box;
 }
 // ---------- 기록 모드 ----------
 // car: 이 속도(km/h)보다 빠르면 차(탈것)로 간 길로 봐요. did: 거리 앞에 붙는 말
@@ -630,7 +656,7 @@ function downloadTrack(t) {
   const name = ls.get('trackName:' + t, '나들이');
   const x = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
   const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Map Diary" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${x(name)}</name><trkseg>` +
-    tr.map(q => `<trkpt lat="${q[0]}" lon="${q[1]}"><time>${new Date(q[2]).toISOString()}</time></trkpt>`).join('') + '</trkseg></trk></gpx>';
+    tr.map(q => `<trkpt lat="${q[0]}" lon="${q[1]}">${Number.isFinite(q[3]) ? `<ele>${q[3]}</ele>` : ''}<time>${new Date(q[2]).toISOString()}</time></trkpt>`).join('') + '</trkseg></trk></gpx>';
   const d = new Date(tr[0][2]), pad = n => String(n).padStart(2, '0');
   const a = el('a', { href: URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' })), download: `MapDiary_${name.replace(/[\\/:*?"<>|]/g, '')}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.gpx` });
   document.body.append(a); a.click(); a.remove();
@@ -889,6 +915,7 @@ function openBrag(info, t, count, allDone, room) {
       if (M.k === 'run') stats.push(`페이스 ${fmtPace(st.walk, st.ms)}`);
       if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, st.ms)}`);
     } else if (route) stats.push(`거리 ${fmtDist(pathLen(route))}`);
+    if (route && which === 'mine' && ELEV_MODES.includes(M.k)) { const ev = elevStats(trackLoad(t)); if (ev && ev.gain >= 10) stats.push(`오른 높이 ${ev.gain}m`); }
     if (info.live) stats.push('진행 중');   // 기록 중에 자랑할 때
     if (info.durText) stats.push(info.durText);
     else if (which === 'mine') { const st = trackStats(trackLoad(t), M.car); if (st.ms > 0) stats.push(dur(st.ms)); }
@@ -1921,7 +1948,8 @@ async function viewMyOne(t) {
       const v = await askText('한 줄 일기', '오늘 한 줄', ls.get('walkNote:' + t, ''), '예: 단풍이 한창이라 사진을 잔뜩 찍었다', '공유 카드와 지도 링크에도 함께 보여요. 비우면 지워요.', 120, true);
       if (v == null) return; if (v) ls.set('walkNote:' + t, v.slice(0, 120)); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
   drawNote();
-  const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
+  const ev = elevStats(tr);
+  const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
     M.k === 'run' ? `페이스 ${fmtPace(st.walk, st.ms)} /km` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, st.ms)}` : '', spots.length ? `별표 ${spots.length}곳` : ''].filter(Boolean);
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
@@ -1942,7 +1970,7 @@ async function viewMyOne(t) {
     alert('지웠어요'); location.replace('./?my=1');
   };
   const gpx = () => { if (!x.album) return downloadTrack(t);
-    const a = el('a', { href: URL.createObjectURL(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Map Diary" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${info.name.replace(/[&<>"']/g, '')}</name><trkseg>` + tr.map(q => `<trkpt lat="${q[0]}" lon="${q[1]}"><time>${new Date(q[2]).toISOString()}</time></trkpt>`).join('') + '</trkseg></trk></gpx>'], { type: 'application/gpx+xml' })), download: `MapDiary_${info.name.replace(/[\\/:*?"<>|]/g, '')}.gpx` });
+    const a = el('a', { href: URL.createObjectURL(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Map Diary" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${info.name.replace(/[&<>"']/g, '')}</name><trkseg>` + tr.map(q => `<trkpt lat="${q[0]}" lon="${q[1]}">${Number.isFinite(q[3]) ? `<ele>${q[3]}</ele>` : ''}<time>${new Date(q[2]).toISOString()}</time></trkpt>`).join('') + '</trkseg></trk></gpx>'], { type: 'application/gpx+xml' })), download: `MapDiary_${info.name.replace(/[\\/:*?"<>|]/g, '')}.gpx` });
     document.body.append(a); a.click(); a.remove(); toast('GPX 파일을 받았어요'); };
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MD'),
     el('a', { class: 'link', href: './?my=1', style: 'align-self:flex-start;padding:0', text: '← 내 MD 목록' }),
@@ -1953,7 +1981,7 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    mapEl, spotList(spots), phBox,
+    mapEl, elevChart(ev), spotList(spots), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     el('div', { class: 'two' },
@@ -2023,7 +2051,8 @@ function viewWalk() {
   function stats() {
     const m = M(), tr = id ? trackLoad(id) : [], st = trackStats(tr, m.car), at = ls.get('walkAt', Date.now());
     tDur.textContent = fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
-    const extra = m.k === 'run' ? `평균 페이스 ${fmtPace(st.walk, st.ms)} /km` : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, st.ms)}` : '';
+    const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null;
+    const extra = m.k === 'run' ? `평균 페이스 ${fmtPace(st.walk, st.ms)} /km` : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, st.ms)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
     tAll.textContent = [extra, st.d - st.walk > 300 ? `차로 이동한 길까지 모두 ${fmtDist(st.d)}` : ''].filter(Boolean).join(' · ');
     if (guide) {
       const at = lastFix || (tr.length ? { lat: tr[tr.length - 1][0], lng: tr[tr.length - 1][1] } : null), w = at && guideWhere(guide.route, at.lat, at.lng, gIdx);
@@ -2044,7 +2073,7 @@ function viewWalk() {
     watch = navigator.geolocation.watchPosition(p => {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() };
-      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf());
+      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
         if (w.off > 80 && !gOff) { gOff = true; beep(); toast(`따라가는 길에서 ${fmtDist(w.off)} 벗어났어요`); }
