@@ -107,6 +107,10 @@ body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .lock-key span{position:relative;z-index:1}
 .lock-hint{font-size:15px;color:#8FA89A;transition:color .2s}
 .lock-hint.nudge{color:#F4A259}
+.sw-row{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer}
+.sw{flex:none;width:54px;height:32px;border-radius:999px;background:#CFC8B8;position:relative;transition:background .2s}
+.sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.sw.on{background:#2D6A4F}.sw.on i{left:25px}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .member{width:100%;text-align:left;background:var(--card);border:none;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
 .dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
@@ -2559,9 +2563,10 @@ function viewWalk() {
           (startGps(), drawGpsReady(), gpsReady),
           el('div', { class: 'stack', style: 'gap:8px' }, el('b', { text: '목표 거리' }),
             el('div', { class: 'mapbar' }, RUN_GOALS.map(g => el('button', { class: 'btn small ' + (ls.get('runGoal', 0) === g ? 'dark' : 'line'), text: g ? (g === 21.1 ? '하프' : `${g}km`) : '없음', onclick: () => { ls.set('runGoal', g); draw(); } })))),
-          el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' },
-            el('b', { text: '1km마다 목소리 안내' }),
-            el('button', { class: 'btn small ' + (ls.get('runVoice', true) ? 'dark' : 'line'), text: ls.get('runVoice', true) ? '켜짐' : '꺼짐', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } })),
+          // 켜고 끄는 스위치 (휴대폰 설정 화면처럼: 초록·오른쪽이면 켜진 상태)
+          el('button', { class: 'sw-row', role: 'switch', 'aria-checked': ls.get('runVoice', true) ? 'true' : 'false', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } },
+            el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: ls.get('runVoice', true) ? '켜져 있어요 · 누르면 꺼져요' : '꺼져 있어요 · 누르면 켜져요' })),
+            el('span', { class: 'sw' + (ls.get('runVoice', true) ? ' on' : '') }, el('i'))),
           lastRun() ? el('div', { class: 'sub', text: lastRun() }) : null,
           el('div', { class: 'sub', style: 'font-size:14px', text: '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }))
         : el('div', { class: 'card stack', style: 'gap:8px' },
