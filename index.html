@@ -592,6 +592,20 @@ function elevStats(tr) {
   return { gain: Math.round(gain), loss: Math.round(loss), max: Math.round(Math.max(...h)), min: Math.round(Math.min(...h)), prof };
 }
 // 높이 그래프 (산 모양 선). 가로는 거리, 세로는 높이
+// 러닝 1km 구간 표: 페이스(막대) + 그 구간 케이던스
+function splitTable(t) {
+  const sp = ls.get('walkSplits:' + t, []), ss = ls.get('walkSplitSteps:' + t, []);
+  if (!sp.length) return null;
+  const lo = Math.min(...sp), hi = Math.max(...sp);
+  return el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' },
+    el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '1km 구간' }), el('span', { class: 'sub', style: 'font-size:13px', text: ss.length ? '페이스 · 케이던스' : '페이스' })),
+    sp.map((ms, k) => { const cad = ss[k] != null ? Math.round((ss[k] - (k ? ss[k - 1] : 0)) / (ms / 60000)) : null, fast = ms === lo && sp.length > 1;
+      return el('div', { class: 'row', style: 'gap:10px;align-items:center;flex-wrap:nowrap;font-variant-numeric:tabular-nums' },
+        el('span', { style: 'width:36px;flex:none;font-size:14px;color:var(--muted)', text: `${k + 1}km` }),
+        el('div', { class: 'grow', style: 'height:10px;border-radius:6px;background:var(--forest-soft);overflow:hidden' }, el('i', { style: `display:block;height:100%;border-radius:6px;background:${fast ? '#E4572E' : '#F4A259'};width:${hi === lo ? 70 : Math.round(35 + 65 * (hi - ms) / (hi - lo))}%` })),
+        el('b', { style: 'width:52px;text-align:right;flex:none', text: fmtPace(1000, ms) }),
+        ss.length ? el('span', { style: 'width:62px;text-align:right;flex:none;font-size:14px;color:var(--muted)', text: cad && cad < 260 ? `${cad} spm` : '-' }) : null); }));
+}
 function elevChart(e) {
   if (!e || e.prof.length < 5 || e.max - e.min < 5) return null;
   const W = 600, H = 150, pad = 6, P = e.prof, D = P[P.length - 1][0] || 1, lo = e.min - 5, hi = e.max + 5;
@@ -1920,7 +1934,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2059,7 +2073,7 @@ async function viewMyOne(t) {
   const ev = elevStats(tr);
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
     M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '',
-    M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'run' && ls.get('walkSplits:' + t, []).length ? `구간 ${ls.get('walkSplits:' + t, []).map((ms, k) => `${k + 1}km ${fmtPace(1000, ms)}`).join(', ')}` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
+    M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
     info.name = v.slice(0, 40); title.textContent = info.name;
@@ -2090,7 +2104,7 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    mapEl, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
+    mapEl, M.k === 'run' ? splitTable(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     el('div', { class: 'two' },
@@ -2147,6 +2161,7 @@ function viewWalk() {
     const mv = movingMs(tr, M().car), n = km - sp.length, lap = Math.max(1000, (mv - sp.reduce((a, b) => a + b, 0)) / n);
     for (let k = 0; k < n; k++) sp.push(Math.round(lap));
     ls.set('walkSplits:' + id, sp);
+    if (motionSeen) { const ss = ls.get('walkSplitSteps:' + id, []); while (ss.length < sp.length) ss.push(stepN); ls.set('walkSplitSteps:' + id, ss); ls.set('walkSteps:' + id, { n: stepN }); }
     const sec = Math.round(lap / 1000);
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
     const g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
@@ -2178,6 +2193,11 @@ function viewWalk() {
     const now = Date.now(); stepTimes = stepTimes.filter(t => now - t < 20000);
     if (stepTimes.length < 8 || now - stepTimes[stepTimes.length - 1] > 3000) return null;
     return Math.round((stepTimes.length - 1) / ((stepTimes[stepTimes.length - 1] - stepTimes[0]) / 60000));
+  }
+  function cadAvg() { const mv = movingMs(trackLoad(id), M().car); return stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null; }
+  function cadSubText() {
+    if (!motionSeen) return Date.now() - ls.get('walkAt', Date.now()) > 15000 ? '흔들림 센서가 없어요' : '센서 기다리는 중';
+    return [cadAvg() ? `평균 ${cadAvg()}` : '', `${stepN.toLocaleString()}걸음`].filter(Boolean).join(' · ');
   }
   function drawCad() {
     if (!id || M().k !== 'run') return;
@@ -2214,7 +2234,7 @@ function viewWalk() {
     setTimeout(tick, 1000);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
-  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), pz: el('span', { class: 'pz', text: '멈춤', style: 'display:none' }),
+  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('div', { class: 'lbl', style: 'font-size:12px;margin-top:2px' }), pz: el('span', { class: 'pz', text: '멈춤', style: 'display:none' }),
     goal: el('div', { class: 'stack', style: 'gap:6px' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   function drawRun() {
     if (!id || M().k !== 'run') return;
@@ -2224,7 +2244,7 @@ function viewWalk() {
     rd.time.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
     rd.avg.textContent = fmtPace(st.walk, mv); rd.now.textContent = np || '-';
     const avgC = stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null;
-    rd.cad.textContent = c ?? (avgC || '-');
+    rd.cad.textContent = c ?? (avgC || '-'); rd.cadSub.textContent = cadSubText();
     rd.pz.style.display = tr.length > 1 && Date.now() - tr[tr.length - 1][2] > 20000 ? '' : 'none';   // 20초 넘게 안 움직이면 '멈춤'
     const g = goalKm();
     rd.goal.replaceChildren(...(g ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${g === 21.1 ? '하프' : g + 'km'}` }), el('span', { class: 'lbl', text: km >= g ? '달성!' : `${fmtDist(g * 1000 - st.walk)} 남음` })),
@@ -2243,18 +2263,20 @@ function viewWalk() {
   function lockScreen() {
     if (document.querySelector('.lock-ov')) return;
     if (!wake) { wantWake = true; lockWake(); }
-    const big = el('div', { class: 'big' }), t1 = el('b'), t2 = el('b'), t3 = el('b'), l2 = el('span'), l3 = el('span');
+    const big = el('div', { class: 'big' }), t1 = el('b'), t2 = el('b'), t3 = el('b'), t4 = el('b'), t5 = el('b'), t6 = el('b'), l2 = el('span'), l3 = el('span');
     const hint = el('div', { class: 'lock-hint', text: '자물쇠를 1초 동안 길게 누르면 풀려요' });
     const key = el('button', { class: 'lock-key', 'aria-label': '길게 눌러 잠금 풀기' }, el('span', { text: '🔒' }));
     const ov = el('div', { class: 'lock-ov', role: 'dialog', 'aria-label': '화면 잠금' },
       el('div', { style: 'font-size:14px;color:#8FA89A', text: `🔒 잠금 중 · ${M().label} 기록 중` }), big, el('div', { style: 'color:#8FA89A;font-size:14px', text: `${M().did} 거리` }),
       el('div', { class: 'row3' }, el('div', {}, t1, el('span', { text: '시간' })), el('div', {}, t2, l2), el('div', {}, t3, l3)),
+      M().k === 'run' ? el('div', { class: 'row3' }, el('div', {}, t4, el('span', { text: '케이던스 spm' })), el('div', {}, t5, el('span', { text: '평균 케이던스' })), el('div', {}, t6, el('span', { text: '걸음' }))) : null,
       key, hint);
     const upd = () => {
       const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), km = st.walk / 1000, mv = movingMs(tr, m.car);
       big.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
       t1.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
-      if (m.k === 'run') { t2.textContent = fmtPace(st.walk, mv); l2.textContent = '평균 페이스'; t3.textContent = cadNow() ?? (nowPace(tr) || '-'); l3.textContent = cadNow() != null ? '케이던스' : '지금 페이스'; }
+      if (m.k === 'run') { t2.textContent = fmtPace(st.walk, mv); l2.textContent = '평균 페이스'; t3.textContent = nowPace(tr) || '-'; l3.textContent = '지금 페이스';
+        t4.textContent = cadNow() ?? '-'; t5.textContent = cadAvg() ?? '-'; t6.textContent = motionSeen ? stepN.toLocaleString() : '-'; }
       else if (m.k === 'bike') { t2.textContent = fmtSpeed(st.walk, mv).replace('km/h', ''); l2.textContent = '평균 km/h'; t3.textContent = ls.get('walkSpots:' + id, []).length; l3.textContent = '별표'; }
       else { const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null; t2.textContent = ev ? `${ev.gain}m` : ls.get('walkSpots:' + id, []).length; l2.textContent = ev ? '오른 높이' : '별표'; t3.textContent = new Date().toTimeString().slice(0, 5); l3.textContent = '지금 시각'; }
     };
@@ -2583,7 +2605,7 @@ function viewWalk() {
             el('button', { class: 'rd-chip', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } })),
           el('div', {}, rd.hero, el('div', { class: 'lbl', style: 'margin-top:4px', text: '달린 거리' })),
           rd.goal,
-          el('div', { class: 'rd-grid' }, rdTile('시간', rd.time, rd.pz), rdTile('평균 페이스', rd.avg), rdTile('지금 페이스', rd.now), rdTile('케이던스 (spm)', rd.cad)),
+          el('div', { class: 'rd-grid' }, rdTile('시간', rd.time, rd.pz), rdTile('평균 페이스', rd.avg), rdTile('지금 페이스', rd.now), rdTile('케이던스 (spm)', rd.cad, rd.cadSub)),
           rd.spBox),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
