@@ -617,6 +617,21 @@ const modeOfT = t => modeByK(ls.get('walkMode:' + t, 'hike'));
 const fmtPace = (d, ms) => { if (d < 50 || ms <= 0) return '-'; const s = Math.round(ms / 1000 / (d / 1000)); return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`; };
 const mdOf = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} `; };
 const fmtSpeed = (d, ms) => ms > 0 ? `${(d / 1000 / (ms / 3600000)).toFixed(1)}km/h` : '-';
+// 러닝·자전거: 신호 대기처럼 멈춘 시간은 빼고 '움직인 시간'만 (한 구간이 1분 넘거나 초속 0.7m보다 느리면 멈춘 것으로 봐요)
+function movingMs(tr, kmh) {
+  const m = trackModes(tr, kmh); let ms = 0;
+  for (let i = 1; i < tr.length; i++) { const dt = tr[i][2] - tr[i - 1][2]; if (m[i] === 'w' && dt > 0 && dt <= 60000 && dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) / (dt / 1000) >= 0.7) ms += dt; }
+  return ms;
+}
+// 지금 페이스: 최근 1분 동안 움직인 거리로 (20초·50m보다 적으면 null)
+function nowPace(tr) {
+  const n = tr.length; if (n < 2) return null;
+  const t1 = tr[n - 1][2]; let d = 0, i = n - 1;
+  while (i > 0 && t1 - tr[i - 1][2] <= 60000) { d += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]); i--; }
+  const dt = t1 - tr[i][2]; if (Date.now() - t1 > 30000) return null;   // 30초 넘게 새 점이 없으면 멈춘 것
+  return dt >= 20000 && d >= 50 ? fmtPace(d, dt) : null;
+}
+const fmtRunTime = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, pad = n => String(n).padStart(2, '0'); return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${pad(m)}:${pad(s % 60)}`; };
 function trackStats(tr, kmh) {
   let d = 0; for (let i = 1; i < tr.length; i++) d += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
   const m = trackModes(tr, kmh);
@@ -929,8 +944,8 @@ function openBrag(info, t, count, allDone, room) {
       const st = trackStats(trackLoad(t), M.car);
       if (st.d - st.walk > 300) stats.push(`${M.did} 거리 ${fmtDist(st.walk)}`, `전체 이동 ${fmtDist(st.d)}`);   // 차로 간 길이 있으면 따로
       else stats.push(`${M.did} 거리 ${fmtDist(st.d)}`);
-      if (M.k === 'run') stats.push(`페이스 ${fmtPace(st.walk, st.ms)}`);
-      if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, st.ms)}`);
+      if (M.k === 'run') stats.push(`페이스 ${fmtPace(st.walk, movingMs(trackLoad(t), M.car))}`);
+      if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, movingMs(trackLoad(t), M.car))}`);
     } else if (route) stats.push(`거리 ${fmtDist(pathLen(route))}`);
     if (route && which === 'mine' && ELEV_MODES.includes(M.k)) { const ev = elevStats(trackLoad(t)); if (ev && ev.gain >= 10) stats.push(`오른 높이 ${ev.gain}m`); }
     { const nStay = spotsOf(t).filter(s => s.k === 'stay').length; if (nStay) stats.push(`들른 곳 ${nStay}곳`); }
@@ -1871,7 +1886,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2009,7 +2024,7 @@ async function viewMyOne(t) {
   drawNote();
   const ev = elevStats(tr);
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
-    M.k === 'run' ? `페이스 ${fmtPace(st.walk, st.ms)} /km` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, st.ms)}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
+    M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '', M.k === 'run' && ls.get('walkSplits:' + t, []).length ? `구간 ${ls.get('walkSplits:' + t, []).map((ms, k) => `${k + 1}km ${fmtPace(1000, ms)}`).join(', ')}` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
     info.name = v.slice(0, 40); title.textContent = info.name;
@@ -2022,7 +2037,7 @@ async function viewMyOne(t) {
     const ids = x.album ? (albumGet(t)?.days || []) : [t];
     for (const id of ids) {
       for (const p of await photoList(id)) await photoDel(p.id);
-      ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:'].forEach(k => { try { localStorage.removeItem(k + id); } catch {} });
+      MD_KEYS.forEach(k => { try { localStorage.removeItem(k + id); } catch {} });
     }
     if (x.album) { ls.set('albums', albumsLoad().filter(a => a.id !== t)); ['walkMode:', 'walkPlaces:'].forEach(k => { try { localStorage.removeItem(k + t); } catch {} }); }
     else { const aid = ls.get('walkAlbum:' + t, null), al = aid && albumGet(aid); if (al) { al.days = al.days.filter(z => z !== t); if (al.days.length) albumSave(al); else ls.set('albums', albumsLoad().filter(a => a.id !== aid)); } }
@@ -2088,6 +2103,20 @@ function viewWalk() {
   if (pending && !(Date.now() - pending.at < 864e5 && Array.isArray(pending.route) && pending.route.length > 1)) { pending = null; ls.set('guideNext', null); }
   const tGuide = el('div', { class: 'banner info', style: 'gap:4px;padding:12px 16px' });
   // 들른 곳: 60m 안에 10분 넘게 머물면 남길지 물어봐요 (러닝·자전거는 빼고, 이미 별표·들른 곳이 있는 자리도 빼요)
+  // 러닝: 1km마다 구간 시간을 남기고 소리·진동·목소리로 알려요 (walkSplits:{ID} = [1km마다 걸린 움직인 시간 ms])
+  const say = text => { if (!ls.get('runVoice', true)) return; try { const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; u.rate = 1; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch {} };
+  function splitCheck() {
+    if (M().k !== 'run') return;
+    const tr = trackLoad(id), km = Math.floor(trackStats(tr, M().car).walk / 1000), sp = ls.get('walkSplits:' + id, []);
+    if (km <= sp.length) return;
+    const mv = movingMs(tr, M().car), n = km - sp.length, lap = Math.max(1000, (mv - sp.reduce((a, b) => a + b, 0)) / n);
+    for (let k = 0; k < n; k++) sp.push(Math.round(lap));
+    ls.set('walkSplits:' + id, sp);
+    const sec = Math.round(lap / 1000);
+    beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
+    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.`);
+    draw();
+  }
   const STAY_M = 60, STAY_MS = 10 * 60000;
   let stayA = null, stayAsk = null;
   function stayCheck(lat, lng) {
@@ -2132,9 +2161,10 @@ function viewWalk() {
   });
   function stats() {
     const m = M(), tr = id ? trackLoad(id) : [], st = trackStats(tr, m.car), at = ls.get('walkAt', Date.now());
-    tDur.textContent = fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
+    tDur.textContent = ['run', 'bike'].includes(m.k) ? fmtRunTime(Math.max(0, Date.now() - at)) : fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
     const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null;
-    const extra = m.k === 'run' ? `평균 페이스 ${fmtPace(st.walk, st.ms)} /km` : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, st.ms)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
+    const mv = ['run', 'bike'].includes(m.k) ? movingMs(tr, m.car) : 0, np = m.k === 'run' ? nowPace(tr) : null;
+    const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`].filter(Boolean).join(' · ') : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, mv)} · 움직인 시간 ${fmtRunTime(mv)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
     tAll.textContent = [extra, st.d - st.walk > 300 ? `차로 이동한 길까지 모두 ${fmtDist(st.d)}` : ''].filter(Boolean).join(' · ');
     if (guide) {
       const at = lastFix || (tr.length ? { lat: tr[tr.length - 1][0], lng: tr[tr.length - 1][1] } : null), w = at && guideWhere(guide.route, at.lat, at.lng, gIdx);
@@ -2156,7 +2186,7 @@ function viewWalk() {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() };
       trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
-      if (p.coords.accuracy <= TRACK_MAX_ACC) stayCheck(ll[0], ll[1]);
+      if (p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); }
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
         if (w.off > 80 && !gOff) { gOff = true; beep(); toast(`따라가는 길에서 ${fmtDist(w.off)} 벗어났어요`); }
@@ -2381,6 +2411,9 @@ function viewWalk() {
         el('div', { class: 'cnt' }, tDur, el('span', { text: '다닌 시간' })),
         el('div', { class: 'cnt' }, tDist, tDistLbl)),
       tAll,
+      M().k === 'run' ? el('div', { class: 'row', style: 'justify-content:center;gap:10px;align-items:center;flex-wrap:wrap' },
+        (() => { const sp = ls.get('walkSplits:' + id, []); return sp.length ? el('span', { class: 'sub', text: `지난 1km ${fmtPace(1000, sp[sp.length - 1])}` }) : null; })(),
+        el('button', { class: 'btn line small', style: 'height:34px', text: ls.get('runVoice', true) ? '1km 음성 안내 켜짐' : '1km 음성 안내 꺼짐', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); if (ls.get('runVoice', true)) say('1킬로마다 알려 드릴게요'); draw(); } })) : null,
       guide ? tGuide : null,
       stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
@@ -2415,6 +2448,8 @@ function viewWalk() {
     stats();
   }
   setInterval(() => { if (id && !done) stats(); }, 15000);
+  // 러닝·자전거는 시계를 1초마다 (지도는 다시 그리지 않아요)
+  setInterval(() => { if (id && !done && !askResume && ['run', 'bike'].includes(M().k)) tDur.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now()))); }, 1000);
   if (id && !askResume) lockWake();
   draw();
 }
