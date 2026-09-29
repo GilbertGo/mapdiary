@@ -1,7 +1,7 @@
 {
   "name": "Map Diary",
   "short_name": "Map Diary",
-  "description": "다닌 길이 그대로 일기가 돼요",
+  "description": "다닌 길과 사진이 그대로 일기가 돼요",
   "lang": "ko",
   "id": "./",
   "start_url": "./",
