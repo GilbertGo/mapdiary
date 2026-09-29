@@ -2972,17 +2972,19 @@ function viewWalk() {
   function addSpot() {
     const tr = trackLoad(id), at = lastFix ? [lastFix.lat, lastFix.lng] : tr.length ? [tr[tr.length - 1][0], tr[tr.length - 1][1]] : null;
     if (!at) return toast('아직 위치를 찾는 중이에요. 잠시 뒤에 다시 눌러 주세요');
-    const iN = el('input', { type: 'text', id: 'sn', maxlength: 30, placeholder: '예: 서울숲 카페, 전망 좋은 곳' });
-    const iM = el('input', { type: 'text', id: 'sm', maxlength: 60, placeholder: '예: 여기서 김밥 먹음, 단풍이 제일 예뻤던 곳' });
+    // 파크골프는 '좋은 곳'이 아니라 '기억할 순간'(버디, 멋진 샷…)으로. 이름에 지금 홀 번호를 넣어 둬요
+    const golf = M().k === 'pgolf', G = golf && golfClean(ls.get('walkGolf:' + id, null)), hole = G ? `${G.cur + 1}번 홀` : '';
+    const iN = el('input', { type: 'text', id: 'sn', maxlength: 30, value: hole ? hole + ' ' : '', placeholder: golf ? '예: 3번 홀 버디, 홀인원' : '예: 서울숲 카페, 전망 좋은 곳' });
+    const iM = el('input', { type: 'text', id: 'sm', maxlength: 60, placeholder: golf ? '예: 긴 퍼팅이 한 번에 들어감' : '예: 여기서 김밥 먹음, 단풍이 제일 예뻤던 곳' });
     const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
     const save = () => {
       const list = ls.get('walkSpots:' + id, []);
-      list.push(Object.assign({ n: iN.value.trim() || `좋았던 곳 ${list.length + 1}`, lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
-      ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast('마음에 드는 곳으로 별표를 남겼어요');
+      list.push(Object.assign({ n: iN.value.trim() || (golf ? `기억할 순간 ${list.length + 1}` : `좋았던 곳 ${list.length + 1}`), lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
+      ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast(golf ? '이 순간을 별표로 남겼어요' : '마음에 드는 곳으로 별표를 남겼어요');
     };
-    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '좋은 곳 남기기' },
-      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), '좋은 곳 남기기'),
-      el('p', { class: 'sub', style: 'margin:0', text: '경치 좋은 곳, 쉬어 간 곳, 맛있던 곳처럼 기억하고 싶은 곳을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보이고, 지도 링크를 받은 사람이 이곳까지 길찾기를 할 수 있어요.' }),
+    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': golf ? '기억할 순간 남기기' : '좋은 곳 남기기' },
+      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), golf ? '기억할 순간 남기기' : '좋은 곳 남기기'),
+      el('p', { class: 'sub', style: 'margin:0', text: golf ? '버디, 홀인원, 멋진 샷처럼 기억하고 싶은 순간을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보여요.' : '경치 좋은 곳, 쉬어 간 곳, 맛있던 곳처럼 기억하고 싶은 곳을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보이고, 지도 링크를 받은 사람이 이곳까지 길찾기를 할 수 있어요.' }),
       el('label', { class: 'f', for: 'sn' }, '이름 (선택)', iN),
       el('label', { class: 'f', for: 'sm' }, '한 줄 메모 (선택)', iM),
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
@@ -3232,7 +3234,7 @@ function viewWalk() {
         el('button', { class: 'btn line', text: '사진 찍기', onclick: () => camIn.click() }),
         el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() })),
       nPhotos ? el('div', { class: 'sub center', text: `이 기록에 사진 ${nPhotos}장이 붙어 있어요` }) : null,
-      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 남기기 (${n}곳)` : '좋은 곳 남기기 (지도에 별표)'; })()),
+      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; const w = M().k === 'pgolf' ? '기억할 순간 남기기' : '좋은 곳 남기기'; return n ? `${w} (${n}개)` : `${w} (지도에 별표)`; })()),
       // 기록을 끝내지 않고 지금까지 다닌 길로 자랑하기
       (() => {
         const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);
