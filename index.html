@@ -201,7 +201,7 @@ const ALPH = 'abcdefghijkmnpqrstuvwxyz23456789';
 function rid(n) { const a = new Uint32Array(n); crypto.getRandomValues(a); return Array.from(a, x => ALPH[x % ALPH.length]).join(''); }
 const ls = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
 };
 let offset = 0;
 const now = () => Date.now() + offset;
@@ -426,8 +426,9 @@ function trackAdd(t, lat, lng, acc, name) {
   const tr = trackLoad(t), lp = tr[tr.length - 1];
   if (lp && dist(lp[0], lp[1], lat, lng) < TRACK_MIN_M) return;
   tr.push([+lat.toFixed(6), +lng.toFixed(6), Date.now()]);
-  if (tr.length > 5000) tr.splice(0, tr.length - 5000);
-  ls.set('track:' + t, tr);
+  // 너무 길어지면 앞부분을 버리지 않고, 최근 500점을 뺀 나머지를 한 점 건너 하나씩 솎아요 (출발한 곳은 남겨요)
+  if (tr.length > 20000) { const old = tr.slice(0, -500).filter((q, i) => i % 2 === 0); tr.splice(0, tr.length - 500, ...old); }
+  if (!ls.set('track:' + t, tr) && Date.now() - (trackAdd.warned || 0) > 10 * 60000) { trackAdd.warned = Date.now(); toast('휴대폰 저장 공간이 모자라 기록을 저장하지 못했어요. 끝내고 공유해 두세요'); }
   if (name) ls.set('trackName:' + t, name);
 }
 // ---------- 기록 모드 ----------
@@ -1482,7 +1483,13 @@ function viewWalk() {
   const root = el('div', { class: 'stack' });
   app.replaceChildren(root);
   const lockWake = async () => { try { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; draw(); }); } catch { wake = null; } draw(); };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && wantWake && !wake) lockWake(); });
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (id && !done && hiddenAt && Date.now() - hiddenAt > 2 * 60000) toast(`화면이 꺼져 있던 ${Math.round((Date.now() - hiddenAt) / 60000)}분 동안은 기록이 멈췄어요. 기록할 때는 화면을 켜 두세요`);
+    hiddenAt = 0;
+    if (id && wantWake && !wake) lockWake();
+  });
   function stats() {
     const m = M(), tr = id ? trackLoad(id) : [], st = trackStats(tr, m.car), at = ls.get('walkAt', Date.now());
     tDur.textContent = fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
@@ -1548,6 +1555,7 @@ function viewWalk() {
   }
   function ensureMap() {
     if (map) { setTimeout(() => map.invalidateSize(), 0); return; }
+    if (ensureMap.busy) return; ensureMap.busy = true;   // 지도가 만들어지기 전에 두 번 불려도 한 번만 만들어요
     setTimeout(() => {
       map = L.map(mapEl).setView([37.5665, 126.978], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -1636,6 +1644,10 @@ function viewWalk() {
         qs.get('mode') ? null : el('div', { class: 'sub', text: '무엇을 하러 가세요?' }),
         qs.get('mode') ? null : modeGrid(pick, k => { pick = k; draw(); }),
         MULTI.includes(pick) ? tripChoice() : null,
+        // 카톡 안 브라우저에서 기록하면 기록이 카톡 안에만 남고, 사진 저장·공유도 막혀요
+        IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }),
+          el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남고, 사진 보내기가 안 돼요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
+          el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
         el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
           el('div', { class: 'sub', text: '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' })),
