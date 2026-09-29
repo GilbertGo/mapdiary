@@ -1015,6 +1015,16 @@ function trackModes(tr, kmh) {
     }
   return m.join('');
 }
+// 집 가리기: 공유할 때 출발·도착 근처(HIDE_M)를 길에서 잘라 내요. 길이 짧으면 앞뒤 1/3씩만
+const HIDE_M = 500;
+function trimEnds(R, modes, m) {
+  let total = 0; for (let i = 1; i < R.length; i++) total += dist(R[i - 1][0], R[i - 1][1], R[i][0], R[i][1]);
+  const cut = Math.min(m, total / 3);
+  let a = 0, acc = 0; while (a < R.length - 1 && acc < cut) { acc += dist(R[a][0], R[a][1], R[a + 1][0], R[a + 1][1]); a++; }
+  let b = R.length - 1; acc = 0; while (b > a && acc < cut) { acc += dist(R[b][0], R[b][1], R[b - 1][0], R[b - 1][1]); b--; }
+  if (b - a < 1) return { R: null, modes: null };
+  return { R: R.slice(a, b + 1), modes: typeof modes === 'string' && modes.length === R.length ? modes.slice(a, b + 1) : null };
+}
 // 선 모양: 걸은 길 주황 실선 / 차로 간 길 회색 점선 / 끊긴 구간 회색 가는 점선
 const RUN_STYLE = {
   w: { color: '#E4572E', weight: 5 },
@@ -1315,6 +1325,10 @@ function openBrag(info, t, count, allDone, room) {
   const phIn = el('input', { type: 'checkbox', id: 'bg-p', checked: true, onchange: () => { usePh = phIn.checked; draw(); } });
   const phBox = el('div', { class: 'check', style: 'display:none' }, phIn, el('label', { for: 'bg-p', text: '찍은 사진 넣기' }));
   // 비밀코드: 켜면 링크를 받은 사람도 코드(6자리)를 알아야 볼 수 있어요
+  // 집 가리기: 켜 두면 출발·도착 근처 500m는 지도·카드·링크에 안 보여요 (별표·사진 위치도 빼요). 고른 것은 기억해요
+  let hideOn = ls.get('hideEnds', true);
+  const hideIn = el('input', { type: 'checkbox', id: 'bg-h', checked: hideOn, onchange: () => { hideOn = hideIn.checked; ls.set('hideEnds', hideOn); draw(); } });
+  const hideBox = el('div', { class: 'check' }, hideIn, el('label', { for: 'bg-h', text: `🏠 출발·도착 근처 ${HIDE_M}m 가리기 (집 위치가 드러나지 않게)` }));
   let secretOn = false;
   const secIn = el('input', { type: 'checkbox', id: 'bg-x', onchange: () => { secretOn = secIn.checked; if (cardOpts) cardOpts.secret = secretOn; } });
   const secBox = el('div', { class: 'check' }, secIn, el('label', { for: 'bg-x', text: '지도 링크에 비밀코드 걸기 (코드를 아는 사람만 볼 수 있어요)' }));
@@ -1324,7 +1338,11 @@ function openBrag(info, t, count, allDone, room) {
   async function draw() {
     opts.replaceChildren(...[['plan', '예정 경로', plan], ['mine', '내 이동 기록', mine], ['none', '경로 안 보이기', true]].filter(x => x[2])
       .map(([k, label]) => el('button', { class: 'btn small ' + (which === k ? 'dark' : 'line'), text: label, onclick: () => { which = k; draw(); } })));
-    const route = which === 'plan' ? plan : which === 'mine' ? mine : null;
+    let route = which === 'plan' ? plan : which === 'mine' ? mine : null;
+    let rModes = which === 'mine' ? trackModes(trackLoad(t), modeOfT(t).car) : null, zone = [];
+    if (hideOn && route && route.length > 1) { zone = [route[0], route[route.length - 1]]; const r = trimEnds(route, rModes, HIDE_M); route = r.R; rModes = r.modes; }
+    const inZone = q => q && q.lat != null && zone.some(z => dist(z[0], z[1], q.lat, q.lng) < HIDE_M);
+    const noLoc = q => inZone(q) ? Object.assign({}, q, { lat: null, lng: null }) : q;   // 집 근처 사진은 위치만 빼요
     const sd = new Date(info.startAt ?? info.meetAt);
     const stats = [];
     const M = modeOfT(t), dur = ms => fmtDur(ms).replace(/ 0분$/, '');
@@ -1348,13 +1366,15 @@ function openBrag(info, t, count, allDone, room) {
       name: info.name, dateText: info.dateText || `${sd.getFullYear()}년 ${sd.getMonth() + 1}월 ${sd.getDate()}일 (${'일월화수목금토'[sd.getDay()]})`,
       route, startPlace: info.startPlace || '출발 집결지', endPlace: info.meetPlace || '도착지',
       startTime: (info.durText ? mdOf(info.startAt) : '') + fmtClock(info.startAt ?? info.meetAt), endTime: (info.durText ? mdOf(info.meetAt) : '') + fmtClock(info.meetAt), stats,   // 여러 날이면 날짜도
-      modes: which === 'mine' ? trackModes(trackLoad(t), M.car) : null,
-      spots: spotsOf(t).slice(0, 10).map(s => Object.assign({ n: s.n, lat: s.lat, lng: s.lng }, s.m ? { m: s.m } : {}, s.k ? { k: s.k } : {})),
+      modes: rModes,
+      spots: spotsOf(t).filter(s => !inZone(s)).slice(0, 10).map(s => Object.assign({ n: s.n, lat: s.lat, lng: s.lng }, s.m ? { m: s.m } : {}, s.k ? { k: s.k } : {})),
       note: ls.get('walkNote:' + t, '') || undefined,
       golf: golf && golfTot(golf, 0).played ? (({ cur, ...g }) => g)(golf) : undefined,
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
-    if (phs.recs.length) { cardOpts.photoRecs = phs.recs; cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick; }
+    if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick.map(noLoc); }
+    cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
+    if (cardOpts.golf && zone.length) cardOpts.golf = Object.assign({}, cardOpts.golf, { h: cardOpts.golf.h.map(q => q && inZone({ lat: q[0], lng: q[1] }) ? null : q) });
     cardOpts.secret = secretOn;
     await card.draw(cardOpts);
   }
@@ -1406,7 +1426,7 @@ function openBrag(info, t, count, allDone, room) {
       document.body.append(pb);
     } }),
     count ? el('div', { class: 'check' }, cnt, el('label', { for: 'bg-c', text: '참여 인원 수 보이기' })) : null,
-    phBox, shBox, secBox,
+    hideBox, phBox, shBox, secBox,
     // 모임방 목록에서 '내 MD 올리기'로 왔으면 그 방에 올리는 버튼이 맨 위
     room ? el('button', { class: 'btn primary full big', onclick: async () => { if (await roomPost(room, cardOpts)) { bg.remove(); location.reload(); } } }, `'${room.name}'에 올리기`) : null,
     ...card.actions,
@@ -1678,7 +1698,7 @@ function viewBragLink(given, feed) {
     ...(o.endPlace === '지금 여기' ? { endPlace: '마지막 위치' } : {}),
     ph: Number.isFinite(o.ph) ? Math.max(0, Math.min(o.ph, 12)) : 0,
     spots: Array.isArray(o.spots) ? o.spots.slice(0, 10).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)).map(p => ({ n: s(p.n, 30) || '좋았던 곳', lat: p.lat, lng: p.lng, m: s(p.m, 60), k: p.k === 'stay' ? 'stay' : '' })) : [],
-    note: s(o.note, 1000), golf: golfClean(o.golf) };
+    note: s(o.note, 1000), golf: golfClean(o.golf), hid: o.hid === 1 };
   if (o.modes && (!o.route || o.modes.length !== o.route.length)) o.modes = null;
   const R = Array.isArray(o.route) ? o.route.filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])) : [];
   const img = el('img', { alt: 'Map Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
@@ -1713,9 +1733,10 @@ function viewBragLink(given, feed) {
   const dests = [];
   if (R.length > 1) {
     o.spots.forEach(p => dests.push({ n: p.n, lat: p.lat, lng: p.lng, k: 'spot', stay: p.k === 'stay' }));
-    dests.push({ n: o.startPlace || '출발', lat: R[0][0], lng: R[0][1], k: 'start' });
+    // 집 가리기로 보낸 MD는 길 끝이 진짜 출발·도착이 아니라서 길찾기에서 빼요
+    if (!o.hid) dests.push({ n: o.startPlace || '출발', lat: R[0][0], lng: R[0][1], k: 'start' });
     const B = R[R.length - 1];
-    if (dist(R[0][0], R[0][1], B[0], B[1]) > 80) dests.push({ n: o.endPlace || '도착', lat: B[0], lng: B[1], k: 'end' });
+    if (!o.hid && dist(R[0][0], R[0][1], B[0], B[1]) > 80) dests.push({ n: o.endPlace || '도착', lat: B[0], lng: B[1], k: 'end' });
   }
   let destMap = null, destMark = null, curDest = null;
   const destBar = el('div', { class: 'mapbar' });
@@ -1733,7 +1754,7 @@ function viewBragLink(given, feed) {
     }
     window.open(web, '_blank', 'noopener');
   };
-  const kakaoBtn = el('button', { class: 'btn primary full', text: '네이버지도 길찾기', onclick: () => { if (curDest) naverGo(curDest); } });
+  const kakaoBtn = el('button', { class: 'btn primary full', text: '네이버지도 길찾기', onclick: () => { if (curDest) naverGo(curDest); else toast('지도에서 가고 싶은 곳을 눌러 주세요'); } });
   function setDest(d, fromMap) {
     if (!d) return; curDest = d;
     kakaoBtn.textContent = `네이버지도로 '${d.n}' 길찾기`;
