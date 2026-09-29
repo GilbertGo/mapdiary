@@ -1800,6 +1800,74 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   const M = modeOfT(x.t), tr = trackLoad(x.t), st = trackStats(tr, M.car), d = new Date(x.info.startAt);
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
+// ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:'];
+const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
+const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+async function backupMake() {
+  const ids = new Set();
+  pastTrips().forEach(x => { ids.add(x.t); if (x.album) (albumGet(x.t)?.days || []).forEach(d => ids.add(d)); });
+  const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: {}, photos: [] };
+  for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) data.ls[k + id] = v; }
+  for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) data.ls[k] = v; }
+  for (const id of ids) for (const ph of await photoList(id)) data.photos.push({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+  return { data, n: pastTrips().filter(x => !x.album).length };
+}
+async function backupSave() {
+  toast('백업 파일을 만드는 중이에요…');
+  let r; try { r = await backupMake(); } catch { return toast('백업 파일을 만들지 못했어요'); }
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const file = new File([JSON.stringify(r.data)], `MapDiary_백업_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`, { type: 'application/json' });
+  const mb = (file.size / 1048576).toFixed(1);
+  const done = () => { ls.set('lastBackup', Date.now()); };
+  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '백업 파일' },
+    el('h2', { text: '백업 파일이 준비됐어요' }),
+    el('p', { class: 'sub', style: 'margin:0', text: `기록 ${r.n}개 · 사진 ${r.data.photos.length}장 · ${mb}MB. 휴대폰에 저장하거나, 카톡 "나와의 채팅"이나 드라이브로 보내 두세요. 새 휴대폰에서 '백업 불러오기'로 그대로 되살릴 수 있어요.` }),
+    el('button', { class: 'btn primary full', text: '휴대폰에 저장', onclick: () => {
+      const a = el('a', { href: URL.createObjectURL(file), download: file.name }); document.body.append(a); a.click(); a.remove();
+      done(); sb.remove(); toast(`"내 파일 > 다운로드"에 ${file.name}(으)로 저장했어요`);
+    } }),
+    navigator.canShare && navigator.canShare({ files: [file] }) ? el('button', { class: 'btn line full', text: '카톡·드라이브로 보내기', onclick: async () => {
+      try { await navigator.share({ files: [file] }); done(); sb.remove(); } catch (e) { if (!(e && e.name === 'AbortError')) toast('보내지 못했어요. 휴대폰에 저장을 눌러 주세요'); }
+    } }) : null,
+    el('button', { class: 'btn line small', text: '닫기', onclick: () => sb.remove() })));
+  document.body.append(sb);
+}
+// 불러오기: 있는 기록은 그대로 두고, 없는 것만 더해요 (같은 기록이면 더 긴 쪽을 남겨요)
+async function backupLoad(file) {
+  let data; try { data = JSON.parse(await file.text()); } catch { return toast('백업 파일을 읽지 못했어요'); }
+  if (!data || data.app !== 'mapdiary' || typeof data.ls !== 'object') return toast('Map Diary 백업 파일이 아니에요');
+  let nRec = 0, nPh = 0;
+  const parse = v => { try { return JSON.parse(v); } catch { return null; } };
+  for (const [k, v] of Object.entries(data.ls)) {
+    if (typeof v !== 'string') continue;
+    if (MD_KEYS.some(p => k.startsWith(p))) {
+      const cur = localStorage.getItem(k);
+      if (k.startsWith('track:')) { const a = parse(v), b = parse(cur); if (!Array.isArray(a)) continue; if (!Array.isArray(b) || a.length > b.length) { if (!Array.isArray(b)) nRec++; localStorage.setItem(k, v); } }
+      else if (cur == null) localStorage.setItem(k, v);
+    } else if (k === 'albums') { const a = parse(v); if (Array.isArray(a)) { const m = albumsLoad(); a.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); } }
+    else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
+    else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
+    else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
+  }
+  for (const ph of Array.isArray(data.photos) ? data.photos : []) {
+    try { if (!ph || typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
+      await photoPut({ id: String(ph.id), t: String(ph.t), ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() }); nPh++; } catch {}
+  }
+  alert(`백업을 불러왔어요. 새 기록 ${nRec}개, 사진 ${nPh}장`); location.reload();
+}
+function backupCard(n) {
+  const inp = el('input', { type: 'file', accept: 'application/json,.json', style: 'display:none', onchange: () => { const f = inp.files[0]; inp.value = ''; if (f) backupLoad(f); } });
+  const last = ls.get('lastBackup', 0), old = n && (!last || Date.now() - last > 7 * 864e5);
+  return el('div', { class: 'card stack', style: 'gap:10px;margin-top:8px' },
+    el('b', { text: '백업' }),
+    el('div', { class: 'sub', text: (last ? `마지막 백업 ${new Date(last).getMonth() + 1}월 ${new Date(last).getDate()}일. ` : '아직 백업한 적이 없어요. ') + '기록은 이 휴대폰의 이 브라우저에만 있어요. 휴대폰을 바꾸거나 브라우저 기록을 지우면 사라지니, 가끔 백업해 두세요.' }),
+    old ? el('div', { class: 'banner alert', style: 'padding:10px 14px', text: '백업한 지 오래됐어요. 지금 한 번 백업해 두세요.' }) : null,
+    el('div', { class: 'two' },
+      el('button', { class: 'btn primary', text: '백업 파일 만들기', onclick: backupSave, disabled: !n }),
+      el('button', { class: 'btn line', text: '백업 불러오기', onclick: () => inp.click() })), inp);
+}
 function viewMyList() {
   const list = pastTrips(), live = ls.get('walkNow', null);
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MD'),
@@ -1810,7 +1878,8 @@ function viewMyList() {
       el('span', { style: 'color:var(--pine);flex:none' }, ico(ls.get('walkMode:' + x.t, null) ? modeOfT(x.t).k : 'pin', 26)),
       el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }), el('div', { class: 'dt', text: mdLine(x) })),
       x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null))
-      : el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })));
+      : el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' }),
+    backupCard(list.filter(x => !x.album).length)));
 }
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
