@@ -1537,6 +1537,8 @@ function viewRoom() {
   const p = roomParse(h);
   return p ? viewRoomOne(p) : viewRoomList();
 }
+// 이 브라우저의 표시 (내가 만든 방인지 알아보려고 방 이름과 함께 올려요)
+const devId = () => { let d = ls.get('devId', ''); if (!d) { d = rid(12); ls.set('devId', d); } return d; };
 // 그 방에 방 이름(info)이 이미 올라와 있는지 잠깐 들어 봐요
 function roomTaken(r) {
   return new Promise(res => {
@@ -1555,8 +1557,8 @@ function viewRoomList() {
     toast('모임방을 만드는 중이에요…');
     let p, r;
     for (let n = 0; n < 6; n++) { p = roomNewCode(); r = await roomOf(p.code); if (!(await roomTaken(r))) break; }
-    try { await pub(r.topic + '/info', await roomSeal(r.key, { name: name.slice(0, 30), at: Date.now() })); } catch { return toast('만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
-    ls.set('rooms', [{ code: p.code, pretty: p.pretty, rid: r.rid, name: name.slice(0, 30) }, ...roomsLoad()]);
+    try { await pub(r.topic + '/info', await roomSeal(r.key, { name: name.slice(0, 30), at: Date.now(), owner: devId() })); } catch { return toast('만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
+    ls.set('rooms', [{ code: p.code, pretty: p.pretty, rid: r.rid, name: name.slice(0, 30), mine: true }, ...roomsLoad()]);
     location.href = roomLink(p);
   };
   const iC = el('input', { type: 'text', id: 'rc', maxlength: 40, autocomplete: 'off', placeholder: '예: 빠른나무', style: 'font-size:22px;font-weight:700;text-align:center' });
@@ -1585,7 +1587,27 @@ async function viewRoomOne(p) {
   let local = roomsLoad().find(x => x.code === code) || null, info = null;
   const pretty = local?.pretty || p.pretty;
   const posts = {};
+  // 방장: 내가 만든 방. 방장 표시가 없는 예전 방은 들어온 사람 누구나 관리할 수 있어요
+  const isOwner = () => !!(local && (local.mine || (info && (info.owner ? info.owner === devId() : true))));
+  const leaveLocal = () => ls.set('rooms', roomsLoad().filter(x => x.code !== code));
+  // 모임방 없애기: 모든 MD를 지우고, 방 이름 자리에 '없앤 방' 표시를 남겨요 (그래야 다른 사람이 열어도 다시 살아나지 않아요)
+  const delRoom = async () => {
+    const name = info?.name || local?.name || '모임방';
+    if (!confirm(`'${name}' 모임방을 없앨까요?\n올라온 MD ${Object.keys(posts).length}개도 모두 지워지고, 들어온 사람 모두 더는 볼 수 없어요. 되돌릴 수 없어요.`)) return;
+    if (!connected) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
+    try {
+      await Promise.all(Object.keys(posts).map(pid => pub(`${r.topic}/md/${pid}`, null)));
+      await pub(r.topic + '/info', await roomSeal(r.key, { deleted: true, at: Date.now() }));
+    } catch { return toast('없애지 못했어요. 잠시 뒤 다시 해 주세요'); }
+    leaveLocal(); alert(`'${name}' 모임방을 없앴어요`); location.href = './?room=1';
+  };
+  const leave = () => {
+    if (!confirm('이 휴대폰의 모임방 목록에서 뺄까요? 방과 MD는 그대로 남고, 코드나 초대 링크로 다시 들어올 수 있어요.')) return;
+    leaveLocal(); location.href = './?room=1';
+  };
+  let gone = false;   // 방장이 없앤 방
   const drawTop = () => {
+    if (gone) { top.replaceChildren(el('h1', { text: '없어진 모임방이에요' }), el('div', { class: 'sub', text: '방장이 이 모임방을 없앴어요. 내 목록에서도 뺐어요.' }), el('a', { class: 'btn line full', style: 'margin-top:10px', href: './?room=1', text: '모임방 목록으로' })); note.textContent = ''; list.replaceChildren(); return; }
     const name = info?.name || local?.name || '모임방';
     const invite = async () => {
       const url = roomLink({ pretty }), text = `[Map Diary] '${name}' 모임방에 초대해요\n코드: ${pretty}\n${url}`;
@@ -1597,7 +1619,13 @@ async function viewRoomOne(p) {
         el('span', { class: 'sub', text: '코드' }), el('b', { style: 'font-size:20px;color:var(--pine)', text: pretty }),
         el('button', { class: 'btn line small', style: 'height:36px', text: '초대하기', onclick: invite })),
       local ? el('button', { class: 'btn primary full', style: 'margin-top:10px', onclick: postMine }, ico('pin', 20), '내 MD 올리기') : '');
+    // 맨 아래: 방장은 '모임방 없애기', 다른 사람은 '내 목록에서 빼기'
+    manage.replaceChildren(...(local ? [isOwner()
+      ? el('button', { class: 'btn line full', style: 'color:var(--alert-ink)', text: '이 모임방 없애기', onclick: delRoom })
+      : el('button', { class: 'link', style: 'align-self:center;color:var(--muted)', text: '내 목록에서 이 모임방 빼기', onclick: leave })] : []));
   };
+  const manage = el('div', { class: 'stack', style: 'margin-top:18px' });
+  app.firstChild.append(manage);
   const postMine = () => {
     const mineList = pastTrips();
     const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
@@ -1621,9 +1649,9 @@ async function viewRoomOne(p) {
         el('div', { class: 'nm', text: p.name }),
         el('div', { class: 'dt', text: [p.by, p.dateText].filter(Boolean).join(' · ') }),
         p.stats.length ? el('div', { class: 'dt', text: p.stats.join(' · ') }) : null),
-      my.has(pid) ? el('button', { class: 'link', style: 'padding:2px 0;color:var(--muted);flex:none', text: '내리기', onclick: async () => {
-        if (!confirm(`'${p.name}'을(를) 모임방에서 내릴까요?`)) return;
-        try { await pub(`${r.topic}/md/${pid}`, null); delete posts[pid]; drawList(); toast('내렸어요'); } catch { toast('내리지 못했어요'); }
+      my.has(pid) || isOwner() ? el('button', { class: 'link', style: 'padding:2px 0;color:var(--muted);flex:none', text: '삭제', onclick: async () => {
+        if (!confirm(`'${p.name}'을(를) 모임방에서 지울까요?${my.has(pid) ? '' : ` (${p.by || '다른 사람'}님이 올린 MD예요)`}`)) return;
+        try { await pub(`${r.topic}/md/${pid}`, null); delete posts[pid]; drawList(); toast('모임방에서 지웠어요'); } catch { toast('지우지 못했어요'); }
       } }) : null)));
   };
   client.on('message', async (t, buf) => {
@@ -1633,17 +1661,19 @@ async function viewRoomOne(p) {
     let v; try { v = await roomOpen(r.key, JSON.parse(raw)); } catch { return; }   // 잠금이 안 풀리는 글은 버려요
     const s = (x, n) => typeof x === 'string' ? x.slice(0, n) : '';
     if (k === 'info') {
-      info = { name: s(v.name, 30) || '모임방' };
+      if (v.deleted) { gone = true; info = { deleted: true }; leaveLocal(); local = null; drawTop(); return; }
+      info = { name: s(v.name, 30) || '모임방', owner: s(v.owner, 20) };
       if (local && local.name !== info.name) { local.name = info.name; ls.set('rooms', roomsLoad().map(x => x.code === code ? local : x)); }
       joinIfNew(); drawTop(); return;
     }
     if (!k.startsWith('md/') || !okLink(v.link)) return;
+    if (gone) return;
     posts[k.slice(3)] = { link: v.link, name: s(v.name, 40) || 'MD', dateText: s(v.dateText, 40), by: s(v.by, 20), modeK: MODES.some(m => m.k === v.modeK) ? v.modeK : '', stats: Array.isArray(v.stats) ? v.stats.slice(0, 4).map(x => s(x, 30)).filter(Boolean) : [], at: num(v.at) || 0 };
     joinIfNew(); drawList();
   });
   // 초대 링크로 처음 온 사람: 방이 있는 걸 확인하면 내 목록에 넣어요
   function joinIfNew() {
-    if (local) return;
+    if (local || gone) return;
     local = { code, pretty, rid: r.rid, name: info?.name || '모임방' };
     ls.set('rooms', [local, ...roomsLoad().filter(x => x.code !== code)]);
     toast(`'${local.name}' 모임방에 들어왔어요`); drawTop();
@@ -1651,7 +1681,8 @@ async function viewRoomOne(p) {
   subTopic = r.topic + '/#'; if (connected) client.subscribe(subTopic, { qos: 1 });
   drawTop();
   setTimeout(async () => {
-    if (!info && local && connected) { try { await pub(r.topic + '/info', await roomSeal(r.key, { name: local.name, at: Date.now() })); } catch {} }   // 방 이름이 사라졌으면 다시 올려요
+    if (gone) return;
+    if (!info && local && connected) { try { await pub(r.topic + '/info', await roomSeal(r.key, Object.assign({ name: local.name, at: Date.now() }, local.mine ? { owner: devId() } : {}))); } catch {} }   // 방 이름이 사라졌으면 다시 올려요
     if (!local && !Object.keys(posts).length) note.textContent = '모임방을 찾지 못했어요. 코드를 다시 확인해 주세요.';
     else drawList();
   }, 8000);
