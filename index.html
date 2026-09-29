@@ -2168,9 +2168,10 @@ function viewWalk() {
     if (motionSeen) { const ss = ls.get('walkSplitSteps:' + id, []); while (ss.length < sp.length) ss.push(stepN); ls.set('walkSplitSteps:' + id, ss); ls.set('walkSteps:' + id, { n: stepN }); }
     const sec = Math.round(lap / 1000);
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
-    const g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
-    if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${g}km 달성!`); }
-    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${g}킬로미터 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : ''}`);
+    const G = runGoal(), g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
+    if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${goalLabel(G)} 달성!`); }
+    const remT = goalMin() ? goalMin() * 60000 - mv : 0;
+    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}`);
     draw();
   }
   // 케이던스(1분에 몇 걸음): 휴대폰 흔들림 센서로 발걸음을 세요. 화면이 켜져 있을 때만 셀 수 있어요.
@@ -2217,11 +2218,39 @@ function viewWalk() {
     gpsReady.replaceChildren(el('span', { class: 'pill ' + (ok ? 'on' : gps === 'denied' ? 'bad' : 'off') }, el('i'), ok ? 'GPS 준비됐어요' : meh ? 'GPS 거의 준비됐어요' : gps === 'denied' ? '위치 권한 필요' : 'GPS 잡는 중'),
       el('span', { class: 'sub', style: 'font-size:14px', text: gps === 'denied' ? '주소창 옆 자물쇠에서 위치를 허용해 주세요' : lastAcc != null ? `오차 ${Math.round(lastAcc)}m${ok ? '' : ' · 하늘이 트인 곳에서 조금 기다려 주세요'}` : '잠시만 기다려 주세요' }));
   }
-  const RUN_GOALS = [0, 3, 5, 10, 21.1];
-  const goalKm = () => id ? ls.get('walkGoal:' + id, 0) : ls.get('runGoal', 0);
+  // 목표: { k: 'free' } 자유 달리기 / { k: 'dist', v: km } / { k: 'time', v: 분 }. 예전 숫자(km)도 읽어요
+  const goalOf = r => typeof r === 'number' ? (r > 0 ? { k: 'dist', v: r } : { k: 'free' }) : r && (r.k === 'dist' || r.k === 'time') && r.v > 0 ? r : { k: 'free' };
+  const runGoal = () => goalOf(id ? ls.get('walkGoal:' + id, 0) : ls.get('runGoal', 0));
+  const goalKm = () => { const g = runGoal(); return g.k === 'dist' ? g.v : 0; };
+  const goalMin = () => { const g = runGoal(); return g.k === 'time' ? g.v : 0; };
+  const minLabel = v => v >= 60 ? `${Math.floor(v / 60)}시간${v % 60 ? ` ${v % 60}분` : ''}` : `${v}분`;
+  const goalLabel = g => g.k === 'dist' ? (g.v === 21.0975 ? '하프' : g.v === 42.195 ? '풀코스' : `${+g.v.toFixed(2)}km`) : g.k === 'time' ? minLabel(g.v) : '자유 달리기';
+  const goalSay = g => g.k === 'dist' ? (g.v === 21.0975 ? '하프 코스' : g.v === 42.195 ? '풀코스' : `${+g.v.toFixed(2)}킬로미터`) : minLabel(g.v);
+  const DIST_GOALS = [3, 5, 10, 21.0975, 42.195], TIME_GOALS = [20, 30, 45, 60, 90];
   function goalCheck() {
-    const g = goalKm(); if (!g || M().k !== 'run' || ls.get('walkGoalDone:' + id, false)) return;
-    if (trackStats(trackLoad(id), M().car).walk >= g * 1000) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${g}km 달성!`); say(`목표 ${g}킬로미터 달성! 수고했어요.`); draw(); }
+    const g = runGoal(); if (g.k === 'free' || M().k !== 'run' || ls.get('walkGoalDone:' + id, false)) return;
+    const tr = trackLoad(id), hit = g.k === 'dist' ? trackStats(tr, M().car).walk >= g.v * 1000 : movingMs(tr, M().car) >= g.v * 60000;
+    if (hit) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${goalLabel(g)} 달성!`); say(`목표 ${goalSay(g)} 달성! 수고했어요.`); draw(); }
+  }
+  // 목표 고르기 (시작 화면): 자유 달리기 / 거리 / 시간, 자주 쓰는 값 + 직접 입력
+  function goalPicker() {
+    const g = goalOf(ls.get('runGoal', 0)), setG = v => { ls.set('runGoal', v); draw(); };
+    const tab = (k, label, def) => el('button', { class: 'btn small ' + (g.k === k ? 'dark' : 'line'), style: 'flex:1;white-space:nowrap;padding:0 8px;min-width:0', text: label, onclick: () => { if (g.k !== k) setG(def); } });
+    const chip = (label, on, fn) => el('button', { class: 'btn small ' + (on ? 'dark' : 'line'), text: label, onclick: fn });
+    const custom = async () => {
+      const isD = g.k === 'dist';
+      const v = await askText(isD ? '목표 거리 직접 입력' : '목표 시간 직접 입력', isD ? '거리 (km)' : '시간 (분)', '', isD ? '예: 7.5' : '예: 40', isD ? '0.5km부터 100km까지 적을 수 있어요.' : '5분부터 600분까지 적을 수 있어요. 멈춘 시간은 빼고 세요.', 6);
+      if (v == null) return; const n = parseFloat(v.replace(',', '.'));
+      if (isD ? !(n >= 0.5 && n <= 100) : !(n >= 5 && n <= 600)) return toast(isD ? '0.5에서 100 사이 숫자로 적어 주세요' : '5에서 600 사이 숫자로 적어 주세요');
+      setG({ k: g.k, v: isD ? Math.round(n * 100) / 100 : Math.round(n) });
+    };
+    const presets = g.k === 'dist' ? DIST_GOALS : g.k === 'time' ? TIME_GOALS : [], isCustom = g.k !== 'free' && !presets.includes(g.v);
+    return el('div', { class: 'stack', style: 'gap:10px' }, el('b', { text: '목표' }),
+      el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' }, tab('free', '자유 달리기', { k: 'free' }), tab('dist', '거리 목표', { k: 'dist', v: 5 }), tab('time', '시간 목표', { k: 'time', v: 30 })),
+      g.k === 'free' ? null : el('div', { class: 'mapbar' },
+        presets.map(v => chip(goalLabel({ k: g.k, v }), g.v === v, () => setG({ k: g.k, v }))),
+        chip(isCustom ? `✎ ${goalLabel(g)}` : '✎ 직접 입력', isCustom, custom)),
+      el('div', { class: 'sub', style: 'font-size:14px', text: g.k === 'free' ? '목표 없이 자유롭게 달려요. 1km마다 목소리로 알려 드려요.' : g.k === 'dist' ? `${goalLabel(g)}를 목표로 달려요. 남은 거리를 알려 드려요.` : `${goalLabel(g)} 동안 달려요. 신호 대기처럼 멈춘 시간은 빼고 세요.` }));
   }
   function lastRun() {
     const x = pastTrips().find(y => !y.album && y.t !== id && ls.get('walkMode:' + y.t, null) === 'run'); if (!x) return null;
@@ -2250,9 +2279,10 @@ function viewWalk() {
     const avgC = stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null;
     rd.cad.textContent = c ?? (avgC || '-'); rd.cadSub.textContent = cadSubText();
     rd.pz.style.display = tr.length > 1 && Date.now() - tr[tr.length - 1][2] > 20000 ? '' : 'none';   // 20초 넘게 안 움직이면 '멈춤'
-    const g = goalKm();
-    rd.goal.replaceChildren(...(g ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${g === 21.1 ? '하프' : g + 'km'}` }), el('span', { class: 'lbl', text: km >= g ? '달성!' : `${fmtDist(g * 1000 - st.walk)} 남음` })),
-      el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.min(100, km / g * 100).toFixed(1)}%` }))] : []));
+    const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
+    const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
+    rd.goal.replaceChildren(...(G.k !== 'free' ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${goalLabel(G)}` }), el('span', { class: 'lbl', text: frac >= 1 ? '달성!' : `${left} 남음` })),
+      el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.min(100, frac * 100).toFixed(1)}%` }))] : []));
     const sp = ls.get('walkSplits:' + id, []);
     if (sp.length) {
       const lo = Math.min(...sp), hi = Math.max(...sp);
@@ -2345,7 +2375,7 @@ function viewWalk() {
     tDur.textContent = ['run', 'bike'].includes(m.k) ? fmtRunTime(Math.max(0, Date.now() - at)) : fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
     const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null;
     const mv = ['run', 'bike'].includes(m.k) ? movingMs(tr, m.car) : 0, np = m.k === 'run' ? nowPace(tr) : null;
-    const gk = m.k === 'run' ? goalKm() : 0, gLeft = gk ? gk * 1000 - st.walk : 0;
+    const gk = m.k === 'run' ? goalKm() : 0, gLeft = gk ? gk * 1000 - st.walk : 0;   // (러닝은 대시보드를 써서 여기는 거의 안 보여요)
     const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`, gk ? (gLeft > 0 ? `목표 ${gk}km까지 ${fmtDist(gLeft)}` : `목표 ${gk}km 달성`) : ''].filter(Boolean).join(' · ') : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, mv)} · 움직인 시간 ${fmtRunTime(mv)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
     tAll.textContent = [extra, st.d - st.walk > 300 ? `차로 이동한 길까지 모두 ${fmtDist(st.d)}` : ''].filter(Boolean).join(' · ');
     drawRun();
@@ -2478,7 +2508,7 @@ function viewWalk() {
       ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`);
     }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
-    if (pick === 'run' && ls.get('runGoal', 0)) ls.set('walkGoal:' + id, ls.get('runGoal', 0));
+    if (pick === 'run' && goalOf(ls.get('runGoal', 0)).k !== 'free') ls.set('walkGoal:' + id, goalOf(ls.get('runGoal', 0)));
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw();
   }
@@ -2561,8 +2591,7 @@ function viewWalk() {
           el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
         pick === 'run' ? el('div', { class: 'card stack', style: 'gap:14px' },
           (startGps(), drawGpsReady(), gpsReady),
-          el('div', { class: 'stack', style: 'gap:8px' }, el('b', { text: '목표 거리' }),
-            el('div', { class: 'mapbar' }, RUN_GOALS.map(g => el('button', { class: 'btn small ' + (ls.get('runGoal', 0) === g ? 'dark' : 'line'), text: g ? (g === 21.1 ? '하프' : `${g}km`) : '없음', onclick: () => { ls.set('runGoal', g); draw(); } })))),
+          goalPicker(),
           // 켜고 끄는 스위치 (휴대폰 설정 화면처럼: 초록·오른쪽이면 켜진 상태)
           el('button', { class: 'sw-row', role: 'switch', 'aria-checked': ls.get('runVoice', true) ? 'true' : 'false', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } },
             el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: ls.get('runVoice', true) ? '켜져 있어요 · 누르면 꺼져요' : '꺼져 있어요 · 누르면 켜져요' })),
