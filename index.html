@@ -1766,7 +1766,10 @@ function viewLanding() {
       el('h1', { style: 'font-size:34px', text: 'Map Diary' }),
       el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길이 그대로 일기가 돼요' })),
     // 기록 중이면 이어서 보기가 맨 위
-    ls.get('walkNow', null) ? bigBtn([ico(modeOfT(ls.get('walkNow')).k, 24), '기록 중 · 이어서 보기'], '다니던 길을 계속 기록해요', true, () => { location.href = '?walk=1'; }) : null,
+    // 기록 중이면 그 기록의 제목과 얼마나 됐는지도 보여줘요
+    (() => { const w = ls.get('walkNow', null); if (!w) return null;
+      const M = modeOfT(w), name = ls.get('trackName:' + w, `${M.label} 기록`), dur = fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
+      return bigBtn([ico(M.k, 24), `기록 중 · ${name}`], `${dur}째 · 누르면 이어서 기록해요`, true, () => { location.href = '?walk=1'; }); })(),
     // 기록 시작: 모드를 고르면 바로 그 모드의 시작 화면으로
     el('h2', { style: 'margin-top:4px', text: '기록 시작' }),
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
