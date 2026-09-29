@@ -149,9 +149,9 @@ nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:
 /* 케이던스 180: 1초에 3걸음 → 한쪽 다리가 앞뒤로 한 번 = 0.667초(편도 0.333초), 몸은 한 걸음마다 한 번 튀어요(편도 0.167초) */
 .who-ico .runner{animation:runbob2 .1667s ease-in-out infinite alternate}
 @keyframes runbob2{from{transform:translateY(1px)}to{transform:translateY(-2px)}}
-.runner .rn-arm{transform-origin:12.6px 8.2px;animation:rnarm .3333s ease-in-out infinite alternate}
-.runner .rn-leg{transform-origin:11.4px 13.4px;animation:rnleg .3333s ease-in-out infinite alternate}
-.runner .rn-shin{transform-origin:11.2px 17.6px;animation:rnshin .3333s ease-in-out infinite alternate}
+.runner .rn-arm{transform-origin:12.2px 8.4px;animation:rnarm .3333s ease-in-out infinite alternate}
+.runner .rn-leg{transform-origin:11.6px 13.4px;animation:rnleg .3333s ease-in-out infinite alternate}
+.runner .rn-shin{transform-origin:11.4px 17.6px;animation:rnshin .3333s ease-in-out infinite alternate}
 .runner .b{animation-delay:-.3333s}.runner .b .rn-shin{animation-delay:-.3333s}
 .runner .rn-arm.b,.runner .rn-leg.b{opacity:.55}
 @keyframes rnarm{from{transform:rotate(-55deg)}to{transform:rotate(45deg)}}
@@ -325,13 +325,14 @@ let leaveWarn = null;
 // 팔다리가 움직이는 달리는 사람 (24칸 기준 선 그림). 팔·허벅지·정강이를 관절에서 돌려요
 function runnerSvg(size) {
   const s = el('span', { class: 'ico runner' });
-  s.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <g class="rn-arm b"><path d="M12.6 8.2 11.2 11.6 13.4 13"/></g>
-    <g class="rn-leg b"><path d="M11.4 13.4 11.2 17.6"/><g class="rn-shin"><path d="M11.2 17.6 10.2 21.4"/></g></g>
-    <circle cx="13.6" cy="4.3" r="1.9"/>
-    <path d="M12.9 7.6 11.4 13.4"/>
-    <g class="rn-leg a"><path d="M11.4 13.4 11.2 17.6"/><g class="rn-shin"><path d="M11.2 17.6 10.2 21.4"/></g></g>
-    <g class="rn-arm a"><path d="M12.6 8.2 11.2 11.6 13.4 13"/></g>
+  s.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <g class="rn-arm b"><path d="M12.2 8.4 10.9 11.6 13 13"/></g>
+    <g class="rn-leg b"><path d="M11.6 13.4 11.4 17.6"/><g class="rn-shin"><path d="M11.4 17.6 10.4 21.4"/></g></g>
+    <circle cx="12.7" cy="4.9" r="1.55" fill="currentColor" stroke="none"/>
+    <path d="M14.1 4.78 14.75 5.05 14.1 5.32z" fill="currentColor" stroke="none"/>
+    <path d="M12.3 7.7 11.6 13.4"/>
+    <g class="rn-leg a"><path d="M11.6 13.4 11.4 17.6"/><g class="rn-shin"><path d="M11.4 17.6 10.4 21.4"/></g></g>
+    <g class="rn-arm a"><path d="M12.2 8.4 10.9 11.6 13 13"/></g>
   </svg>`;
   return s;
 }
@@ -2367,7 +2368,7 @@ function viewLanding() {
     roleBar('leader', '내 Map Diary'),
     el('div', { style: 'padding:28px 0 36px' },
       el('h1', { style: 'font-size:34px', text: 'Map Diary' }),
-      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길이 그대로 일기가 돼요' })),
+      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' })),
     // 기록 중이면 이어서 보기가 맨 위
     // 기록 중이면 그 기록의 제목과 얼마나 됐는지도 보여줘요
     (() => { const w = ls.get('walkNow', null); if (!w) return null;
