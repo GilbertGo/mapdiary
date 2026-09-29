@@ -1452,27 +1452,24 @@ function route() {
 }
 
 // ---------- 모임방: 코드를 아는 사람끼리 MD를 모아 봐요 ----------
-// 코드는 외우기 쉬운 우리말 단어 3개 + 숫자 2개(예: 노을 소나무 다람쥐 27). 띄어쓰기는 상관없어요.
-// 처음 만든 방은 영문 8자리(예: K7QM-3XPA)였어요. 그 방도 그대로 열려요.
+// 코드는 두 글자 꾸미는 말 + 두 글자 이름(예: 빠른 + 나무 = 빠른나무). 띄어쓰기는 상관없어요.
+// 그 전에 만든 방(영문 8자리 K7QM-3XPA, 단어 3개 + 숫자 노을 소나무 다람쥐 27)도 그대로 열려요.
 // 코드에서 방 번호와 열쇠를 만들어요. 서버에는 잠긴 글만 올라가서, 코드를 모르면 못 봐요.
 // allhere/v1/room/{방번호}/info = 방 이름, /md/{글번호} = MD 한 개(짧은 링크 + 요약). rooms = [{ code, pretty, rid, name }]
-const ROOM_WORDS = '노을 소나무 다람쥐 바다 하늘 구름 바람 햇살 달빛 별빛 이슬 새벽 아침 저녁 봄비 여름 가을 겨울 눈꽃 단풍 은행 벚꽃 매화 진달래 개나리 목련 장미 국화 해바라기 코스모스 민들레 제비꽃 들국화 갈대 억새 대나무 느티나무 참나무 버드나무 자작나무 잣나무 전나무 동백 무궁화 연꽃 수선화 튤립 백합 라일락 수국 산딸기 머루 다래 앵두 자두 복숭아 사과 배꽃 감나무 호두 밤송이 도토리 솔방울 조약돌 몽돌 바위 계곡 폭포 시냇물 호수 연못 샘물 섬마을 등대 항구 모래 파도 갯벌 물결 돌담 오솔길 둘레길 능선 봉우리 고개 언덕 들판 논두렁 밭둑 초원 숲길 정자 쉼터 다리 징검다리 나루 우물 장독 기와 초가 토끼 사슴 고라니 여우 너구리 수달 두루미 황새 백로 참새 제비 까치 부엉이 올빼미 딱새 동박새 꾀꼬리 뻐꾸기 비둘기 갈매기 고래 돌고래 거북 해마 불가사리 조개 소라 꽃게 문어 오징어 연어 송어 붕어 잉어 메기 반딧불 나비 잠자리 무당벌레 꿀벌 호랑이 곰돌이 판다 코알라 펭귄 기린 코끼리 얼룩말 캥거루 햄스터 고양이 강아지 망아지 송아지 병아리 오리 거위 백조 공작 앵무새 무지개 번개 안개 서리 소나기 함박눈 봄바람 산들바람 해돋이 해넘이 보름달 초승달 샛별 은하수 북극성 오로라 노랑 파랑 초록 보라 연두 분홍 하양 주황 빨강 하모니 가야금 거문고 피리 장구 북소리 종소리 풍경 연날리기 팽이 구슬 딱지 공기 윷놀이 그네 시소 미끄럼 소풍 도시락 김밥 주먹밥 떡볶이 호떡 붕어빵 군밤 군고구마 옥수수 감자 고구마 호박 수박 참외 딸기 포도 귤'.split(' ');
+const ROOM_A = '빠른 느린 푸른 맑은 밝은 붉은 하얀 노란 파란 빨간 착한 예쁜 고운 귀한 기쁜 신난 멋진 작은 높은 낮은 깊은 넓은 짧은 굵은 둥근 곧은 굳센 날쌘 젊은 어린 여린 강한 순한 선한 참한 바른 웃는 나는 뛰는 걷는 노는 자는 먹는 보는 부는 타는 뜨는 피는 크는 오는 가는 도는 사는 쉬는 흐린 더운 추운 초록 보라 분홍 황금 은빛 금빛 아기 꼬마 새싹 봄날 여름 가을 겨울 첫눈 달밤 하늘 바다 숲속 들꽃 꽃잎 반짝 방긋 살랑 소복 몽글 동글 말랑 폭신 보송 뽀송 꼬물 졸졸 솔솔 훨훨 둥실 반달 보름 새벽 아침 저녁 한낮 행복 용감 씩씩 느긋 든든 튼튼 싱싱 향긋 달콤 새콤 고소 짭짤 따끈 시원 포근 상냥 다정 산뜻 깜찍 늠름 성실 활발 명랑 조용 차분 심심 신비 까만 검은'.split(' ');
+const ROOM_B = '나무 바다 하늘 구름 바람 햇살 달빛 별빛 이슬 노을 단풍 은행 벚꽃 매화 장미 국화 백합 연꽃 동백 목련 수국 갈대 억새 솔잎 바위 계곡 폭포 호수 연못 샘물 등대 항구 모래 파도 갯벌 물결 돌담 언덕 들판 초원 숲길 정자 쉼터 다리 나루 우물 장독 기와 초가 토끼 사슴 여우 수달 황새 백로 참새 제비 까치 딱새 고래 거북 해마 조개 소라 꽃게 문어 연어 송어 붕어 잉어 메기 나비 꿀벌 판다 펭귄 기린 사자 표범 늑대 하마 낙타 오리 거위 백조 공작 번개 안개 서리 눈꽃 봄비 샛별 은하 피리 장구 풍경 팽이 구슬 딱지 공기 그네 시소 소풍 김밥 호떡 군밤 감자 호박 수박 참외 딸기 포도 사과 자두 앵두 머루 다래 호두 밤톨 대추 곶감 유자 레몬 망고 체리 키위 자몽 녹차 홍차 우유 쿠키 사탕 젤리 식빵 만두 국수 라면 떡국 약과 송편 가방 모자 신발 우산 연필 공책 편지 엽서 사진 지도 등불 촛불 텐트 배낭 기차 버스 돛배 요트 풍선 달님 해님 별님 방울 종이 거울 시계 열쇠 상자 화분 꽃밭 텃밭 산책 여행 모험 탐험 보물 왕관 날개 깃털 꼬리 노래 웃음 미소 꿈길 꽃길 산길 물길 들길 하루 한밤 오늘 내일 소원 행운 희망 사랑 우정 친구 가족 이웃 마을 동네 골목 시장 광장 공원 정원 온천 고개 능선 산장 약수 계단 벤치 그늘 햇빛 거미 개미 매미 여치 반디 버들 자작 알밤'.split(' ');
 // 적은 코드 → { code: 열쇠를 만드는 글자(띄어쓰기 없이), pretty: 보여 줄 모양 }. 코드 모양이 아니면 null
 function roomParse(v) {
   const t = String(v || '');
   if (!/[가-힣]/.test(t)) { const c = t.toUpperCase().replace(/[^A-Z0-9]/g, ''); return c.length === 8 ? { code: c, pretty: c.slice(0, 4) + '-' + c.slice(4) } : null; }
-  const parts = t.replace(/(\d+)/g, ' $1 ').replace(/[^가-힣0-9]+/g, ' ').trim().split(' ').filter(Boolean), code = parts.join('');
-  if (!/^[가-힣]{3,15}\d{2}$/.test(code)) return null;
-  // 붙여 쓴 코드도 단어 목록으로 나눠서 보여줘요 (나눌 수 없으면 적은 그대로)
-  const split = w => { if (!w) return []; for (const x of ROOM_WORDS) if (w.startsWith(x)) { const r = split(w.slice(x.length)); if (r) return [x, ...r]; } return null; };
-  const sp = split(code.slice(0, -2));
-  return { code, pretty: sp ? [...sp, code.slice(-2)].join(' ') : parts.join(' ') };
+  const code = t.replace(/[^가-힣0-9]/g, '');
+  if (/^[가-힣]{4}$/.test(code)) return { code, pretty: code };
+  if (/^[가-힣]{3,15}\d{2}$/.test(code)) return { code, pretty: t.replace(/(\d+)/g, ' $1').replace(/[^가-힣0-9]+/g, ' ').trim() };
+  return null;
 }
 function roomNewCode() {
-  const a = new Uint32Array(4); crypto.getRandomValues(a);
-  const w = [];
-  for (let i = 0; w.length < 3; i++) { const x = ROOM_WORDS[(i < 3 ? a[i] : crypto.getRandomValues(new Uint32Array(1))[0]) % ROOM_WORDS.length]; if (!w.includes(x)) w.push(x); }
-  return roomParse(`${w.join(' ')} ${10 + a[3] % 90}`);
+  const a = crypto.getRandomValues(new Uint32Array(2));
+  return roomParse(ROOM_A[a[0] % ROOM_A.length] + ROOM_B[a[1] % ROOM_B.length]);
 }
 const roomLink = p => `${location.origin}${location.pathname}?room=1#r=${encodeURIComponent(p.pretty.replace(/ /g, '-'))}`;
 const roomsLoad = () => ls.get('rooms', []).filter(r => r && roomParse(r.code)?.code === r.code).map(r => Object.assign({ pretty: roomParse(r.code).pretty }, r));
@@ -1540,18 +1537,30 @@ function viewRoom() {
   const p = roomParse(h);
   return p ? viewRoomOne(p) : viewRoomList();
 }
+// 그 방에 방 이름(info)이 이미 올라와 있는지 잠깐 들어 봐요
+function roomTaken(r) {
+  return new Promise(res => {
+    const t = r.topic + '/info';
+    let hit = false; const on = tt => { if (tt === t) hit = true; };
+    client.on('message', on); client.subscribe(t, { qos: 1 });
+    setTimeout(() => { client.unsubscribe(t); client.removeListener?.('message', on); res(hit); }, 2500);
+  });
+}
 function viewRoomList() {
   const rooms = roomsLoad();
   const create = async () => {
-    const name = await askText('모임방 만들기', '모임방 이름', '', '예: 우리 가족, 토요 산악회', '만들면 "노을 소나무 다람쥐 27"처럼 외우기 쉬운 코드가 생겨요. 코드를 알려 준 사람만 들어올 수 있어요.'); if (!name) return;
+    const name = await askText('모임방 만들기', '모임방 이름', '', '예: 우리 가족, 토요 산악회', '만들면 "빠른나무"처럼 외우기 쉬운 코드가 생겨요. 코드를 알려 준 사람만 들어올 수 있어요.'); if (!name) return;
     if (!connected) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
-    const p = roomNewCode(), r = await roomOf(p.code);
+    // 조합이 많지 않아서, 누가 이미 쓰는 코드면 다른 코드로 다시 뽑아요
+    toast('모임방을 만드는 중이에요…');
+    let p, r;
+    for (let n = 0; n < 6; n++) { p = roomNewCode(); r = await roomOf(p.code); if (!(await roomTaken(r))) break; }
     try { await pub(r.topic + '/info', await roomSeal(r.key, { name: name.slice(0, 30), at: Date.now() })); } catch { return toast('만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
     ls.set('rooms', [{ code: p.code, pretty: p.pretty, rid: r.rid, name: name.slice(0, 30) }, ...roomsLoad()]);
     location.href = roomLink(p);
   };
-  const iC = el('input', { type: 'text', id: 'rc', maxlength: 40, autocomplete: 'off', placeholder: '예: 노을 소나무 다람쥐 27', style: 'font-size:20px;font-weight:700;text-align:center' });
-  const join = () => { const p = roomParse(iC.value); if (!p) return toast('받은 코드를 그대로 넣어 주세요 (단어 3개와 숫자 2개)'); location.href = roomLink(p); };
+  const iC = el('input', { type: 'text', id: 'rc', maxlength: 40, autocomplete: 'off', placeholder: '예: 빠른나무', style: 'font-size:22px;font-weight:700;text-align:center' });
+  const join = () => { const p = roomParse(iC.value); if (!p) return toast('받은 코드를 그대로 넣어 주세요 (예: 빠른나무)'); location.href = roomLink(p); };
   iC.addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '모임방'),
     el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
