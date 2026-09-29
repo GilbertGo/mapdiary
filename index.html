@@ -944,7 +944,7 @@ function openBrag(info, t, count, allDone, room) {
       const st = trackStats(trackLoad(t), M.car);
       if (st.d - st.walk > 300) stats.push(`${M.did} 거리 ${fmtDist(st.walk)}`, `전체 이동 ${fmtDist(st.d)}`);   // 차로 간 길이 있으면 따로
       else stats.push(`${M.did} 거리 ${fmtDist(st.d)}`);
-      if (M.k === 'run') stats.push(`페이스 ${fmtPace(st.walk, movingMs(trackLoad(t), M.car))}`);
+      if (M.k === 'run') { const mv = movingMs(trackLoad(t), M.car), sn = ls.get('walkSteps:' + t, {}).n; stats.push(`페이스 ${fmtPace(st.walk, mv)}`); if (sn > 20 && mv > 60000) stats.push(`케이던스 ${Math.round(sn / (mv / 60000))}`); }
       if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, movingMs(trackLoad(t), M.car))}`);
     } else if (route) stats.push(`거리 ${fmtDist(pathLen(route))}`);
     if (route && which === 'mine' && ELEV_MODES.includes(M.k)) { const ev = elevStats(trackLoad(t)); if (ev && ev.gain >= 10) stats.push(`오른 높이 ${ev.gain}m`); }
@@ -1886,7 +1886,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2024,7 +2024,8 @@ async function viewMyOne(t) {
   drawNote();
   const ev = elevStats(tr);
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
-    M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '', M.k === 'run' && ls.get('walkSplits:' + t, []).length ? `구간 ${ls.get('walkSplits:' + t, []).map((ms, k) => `${k + 1}km ${fmtPace(1000, ms)}`).join(', ')}` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
+    M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '',
+    M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'run' && ls.get('walkSplits:' + t, []).length ? `구간 ${ls.get('walkSplits:' + t, []).map((ms, k) => `${k + 1}km ${fmtPace(1000, ms)}`).join(', ')}` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
     info.name = v.slice(0, 40); title.textContent = info.name;
@@ -2116,6 +2117,37 @@ function viewWalk() {
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
     say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.`);
     draw();
+  }
+  // 케이던스(1분에 몇 걸음): 휴대폰 흔들림 센서로 발걸음을 세요. 화면이 켜져 있을 때만 셀 수 있어요.
+  // 흔들림 크기를 부드럽게 한 값이 평소보다 1.5 m/s² 넘게 튀어 오를 때 한 걸음 (0.25초 안에 또 오면 무시 = 최대 240걸음/분)
+  // walkSteps:{ID} = { n: 걸음 수, ms: 센 시간 }
+  const tCad = el('div', { class: 'sub center', style: 'margin-top:-6px' });
+  let stepTimes = [], stepN = id ? (ls.get('walkSteps:' + id, {}).n || 0) : 0, motionOn = false, motionSeen = 0, sm = 0, base = 9.8, armed = true, lastStep = 0;
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+    motionSeen = Date.now();
+    const mag = Math.hypot(a.x, a.y, a.z); sm = sm ? sm * 0.75 + mag * 0.25 : mag; base = base * 0.98 + sm * 0.02;
+    if (armed && sm > base + 1.5 && Date.now() - lastStep > 250) {
+      armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++;
+      if (stepN % 10 === 0) ls.set('walkSteps:' + id, { n: stepN });
+    } else if (sm < base) armed = true;
+  }
+  function motionStart() {
+    if (motionOn || !id || M().k !== 'run' || !('DeviceMotionEvent' in window)) return;
+    motionOn = true;
+    const go = () => addEventListener('devicemotion', onMotion);
+    if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') go(); }).catch(() => {}); else go();   // 아이폰은 허락을 받아야 해요
+  }
+  function cadNow() {   // 최근 20초 걸음으로
+    const now = Date.now(); stepTimes = stepTimes.filter(t => now - t < 20000);
+    if (stepTimes.length < 8 || now - stepTimes[stepTimes.length - 1] > 3000) return null;
+    return Math.round((stepTimes.length - 1) / ((stepTimes[stepTimes.length - 1] - stepTimes[0]) / 60000));
+  }
+  function drawCad() {
+    if (!id || M().k !== 'run') return;
+    const c = cadNow(), mv = movingMs(trackLoad(id), M().car), avg = stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null;
+    tCad.textContent = motionSeen ? [`케이던스 ${c ?? '-'} spm`, avg ? `평균 ${avg}` : '', `${stepN.toLocaleString()}걸음`].filter(Boolean).join(' · ')
+      : '케이던스: 휴대폰 흔들림 센서를 기다리는 중이에요';
   }
   const STAY_M = 60, STAY_MS = 10 * 60000;
   let stayA = null, stayAsk = null;
@@ -2339,6 +2371,7 @@ function viewWalk() {
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
           if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 120)); else localStorage.removeItem('walkNote:' + id);
           stopGps(); wantWake = false; try { wake?.release(); } catch {}
+          if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
           ls.set('walkNow', null); bg.remove(); done = id; draw();
         } }))));
     document.body.append(bg);
@@ -2396,7 +2429,7 @@ function viewWalk() {
         } }, ico(pick, 20), `이 기록은 끝내고 새 ${modeByK(pick).label} 시작`));
       return;
     }
-    startGps(); ensureMap();
+    startGps(); ensureMap(); motionStart(); drawCad();
     root.replaceChildren(...[roleBar('leader', '내 기록'),
       el('div', { class: 'row', style: 'justify-content:space-between;align-items:flex-start' },
         el('div', { class: 'grow' }, el('div', { class: 'sub with-ico' }, '기록 중 · ', ico(M().k, 16), M().label),
@@ -2411,6 +2444,7 @@ function viewWalk() {
         el('div', { class: 'cnt' }, tDur, el('span', { text: '다닌 시간' })),
         el('div', { class: 'cnt' }, tDist, tDistLbl)),
       tAll,
+      M().k === 'run' ? tCad : null,
       M().k === 'run' ? el('div', { class: 'row', style: 'justify-content:center;gap:10px;align-items:center;flex-wrap:wrap' },
         (() => { const sp = ls.get('walkSplits:' + id, []); return sp.length ? el('span', { class: 'sub', text: `지난 1km ${fmtPace(1000, sp[sp.length - 1])}` }) : null; })(),
         el('button', { class: 'btn line small', style: 'height:34px', text: ls.get('runVoice', true) ? '1km 음성 안내 켜짐' : '1km 음성 안내 꺼짐', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); if (ls.get('runVoice', true)) say('1킬로마다 알려 드릴게요'); draw(); } })) : null,
@@ -2449,7 +2483,7 @@ function viewWalk() {
   }
   setInterval(() => { if (id && !done) stats(); }, 15000);
   // 러닝·자전거는 시계를 1초마다 (지도는 다시 그리지 않아요)
-  setInterval(() => { if (id && !done && !askResume && ['run', 'bike'].includes(M().k)) tDur.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now()))); }, 1000);
+  setInterval(() => { if (id && !done && !askResume && ['run', 'bike'].includes(M().k)) { tDur.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now()))); drawCad(); } }, 1000);
   if (id && !askResume) lockWake();
   draw();
 }
