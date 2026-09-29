@@ -231,6 +231,31 @@ h2{color:var(--pine)}
 body[data-role=member]{--ground:#F4F0E6}
 /* 맨 위 바탕 그림: 하늘, 해, 구름, 겹겹이 이어진 산 (아래로 갈수록 바탕색에 섞여요) */
 body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 320' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23CFE8EE'/%3E%3Cstop offset='.55' stop-color='%23E8F1EC'/%3E%3Cstop offset='.9' stop-color='%23F4F0E6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='320' fill='url(%23s)'/%3E%3Ccircle cx='400' cy='88' r='26' fill='%23FCE3B6'/%3E%3Ccircle cx='400' cy='88' r='40' fill='%23FCE3B6' fill-opacity='.35'/%3E%3Cg fill='%23ffffff' fill-opacity='.8'%3E%3Cellipse cx='190' cy='70' rx='34' ry='10'/%3E%3Cellipse cx='212' cy='62' rx='20' ry='10'/%3E%3Cellipse cx='330' cy='48' rx='26' ry='8'/%3E%3C/g%3E%3Cpath d='M0 200 60 168l50 16 60-44 60 36 50-22 62-34 58 42 52-22 70 30 78-26V320H0z' fill='%23D3E6DA'/%3E%3Cpath d='M0 228c60-26 110-16 160-30s100 18 160-8 110 20 170 4 90 8 110 2V320H0z' fill='%23BFDCC8'/%3E%3Cg fill='%23A7CDB3'%3E%3Cpath d='M92 226l10-26 10 26z'/%3E%3Cpath d='M108 228l8-20 8 20z'/%3E%3Cpath d='M388 222l11-28 11 28z'/%3E%3Cpath d='M406 224l8-20 8 20z'/%3E%3Cpath d='M520 220l9-24 9 24z'/%3E%3C/g%3E%3Cpath d='M0 262c80-22 150-6 230-16s150 18 220 4 110 6 150 0V320H0z' fill='%23E3ECDC'/%3E%3Cpath d='M0 292c150-14 300 8 450-6s120 6 150 2V320H0z' fill='%23F4F0E6'/%3E%3C/svg%3E") center top/max(100%,600px) 320px no-repeat,var(--ground)}
+/* 받은 MD 화면 */
+.mdv{gap:14px}
+.mdv-hero{background:#FFFDF8;border-radius:24px;padding:18px 18px 16px;box-shadow:var(--shadow),inset 0 0 0 1px rgba(120,100,60,.06);display:flex;flex-direction:column;gap:10px}
+.mdv-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:#6B6F66}
+.mdv-chip{display:inline-flex;align-items:center;gap:5px;background:#E6F0EA;color:var(--pine);font-weight:700;font-size:13px;padding:4px 10px 4px 8px;border-radius:999px}
+.mdv-chip .ico{width:16px;height:16px}
+.mdv h1{margin:0;font-size:26px;line-height:1.25;letter-spacing:-.02em;word-break:keep-all}
+.mdv-note{white-space:pre-wrap;font-size:15.5px;line-height:1.6;color:#33443A;border-left:3px solid var(--accent);padding:2px 0 2px 12px}
+.mdv-path{display:flex;align-items:center;gap:8px;font-size:14px;color:#4A5249}
+.mdv-path .pt{display:flex;flex-direction:column;min-width:0}
+.mdv-path .pt b{font-size:15px;color:#1F2A24;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdv-path .pt span{font-size:12.5px;color:#7A7F76}
+.mdv-path .ln{flex:1;min-width:18px;height:0;border-top:2px dashed #E4572E;opacity:.55;position:relative}
+.mdv-path .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid var(--pine);background:#fff}
+.mdv-path .dot.end{background:var(--accent)}
+.mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
+.mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
+.mdv-stats>div{background:#F8F5EE;padding:10px 6px;text-align:center;min-width:0}
+.mdv-stats b{display:block;font-size:19px;color:var(--pine);letter-spacing:-.02em;white-space:nowrap}
+.mdv-stats span{display:block;font-size:12px;color:#7A7F76;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdv-sec{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:4px 2px -4px}
+.mdv-sec h2{margin:0;font-size:18px;display:inline-flex;align-items:center;gap:6px}
+.mdv-sec span{font-size:13px;color:#7A7F76}
+.mdv .gallery img{width:112px;height:112px;border-radius:16px}
+.mdv .mapbox{border-radius:22px}
 .leaflet-tooltip.nm{font-family:inherit;font-weight:700;font-size:12px;padding:2px 6px;border-radius:8px}
 .leaflet-bar{border:none!important;box-shadow:0 2px 8px rgba(60,45,20,.18)!important;border-radius:12px!important;overflow:hidden}
 @media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translateY(8px);opacity:0}}}
@@ -1489,13 +1514,16 @@ function viewBragLink(given, feed) {
   let phLayer = null;
   if (feed) o.photoRecs = feed.recs;   // 큰 지도에서도 사진이 보이게
   const gal = el('div', { class: 'gallery' }), phCount = el('div', { class: 'sub' });
-  const phWrap = feed && o.ph ? el('div', { class: 'stack', style: 'gap:6px' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phCount) : null;
+  const phN = el('span');
+  const phWrap = feed && o.ph ? el('div', { class: 'stack', style: 'gap:10px' }, el('div', { class: 'mdv-sec' }, el('h2', {}, ico('camera', 20), '사진'), phN), gal, phCount) : null;
   const hasKey = /[#&][kx]=/.test(location.hash);
   const refreshPh = () => {
     if (!phWrap) return;
     gal.replaceChildren(...feed.recs.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, feed.recs) })));
     phCount.textContent = !hasKey ? '사진을 보려면 받은 링크를 끝까지 그대로 열어야 해요.'
-      : feed.recs.length < o.ph ? `사진을 불러오는 중이에요… (${feed.recs.length}/${o.ph})` : `${feed.recs.length}장 · 누르면 크게 보여요`;
+      : feed.recs.length < o.ph ? `사진을 불러오는 중이에요… (${feed.recs.length}/${o.ph})` : '';
+    phCount.style.display = phCount.textContent ? '' : 'none';
+    phN.textContent = hasKey && feed.recs.length >= o.ph ? `${feed.recs.length}장 · 누르면 크게` : '';
     if (phLayer) { phLayer.clearLayers(); photoMarkers(null, phLayer, feed.recs); }
   };
   if (feed) feed.on.push(refreshPh);
@@ -1533,19 +1561,29 @@ function viewBragLink(given, feed) {
       if (!fromMap) destMap.panTo([d.lat, d.lng]);
     }
   }
-  app.replaceChildren(el('div', { class: 'stack' },
-    roleBar('leader', '나들이 경로'),
-    // 1) 이름, 날짜, 한 줄 요약
-    el('div', { class: 'stack', style: 'gap:4px' },
-      el('div', { class: 'sub with-ico' }, o.dateText || '', o.modeLabel ? [' · ', o.modeK ? ico(o.modeK, 16) : null, o.modeLabel] : null),
-      el('h1', { text: o.name }),
-      o.note ? el('div', { class: 'note', style: 'white-space:pre-wrap;background:rgba(45,106,79,.07);border-radius:14px;padding:10px 14px', text: o.note }) : null,
-      el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${o.startPlace} ${o.startTime} → ${o.endPlace} ${o.endTime}` }),
-      o.stats.length ? el('div', { class: 'sub', text: o.stats.join(' · ') }) : null),
+  // 숫자: '달린 거리 5.4km' → 이름 '달린 거리', 값 '5.4km' 로 나눠 칸에 담아요
+  const live = o.stats.includes('진행 중');
+  const tiles = o.stats.filter(x => x && x !== '진행 중').map(x => { const m = x.match(/^(\D*?)\s*(\d.*)$/); return m ? { k: m[1] || '걸린 시간', v: m[2] } : { k: '', v: x }; });
+  const hero = el('div', { class: 'mdv-hero' },
+    el('div', { class: 'mdv-top' },
+      o.modeLabel ? el('span', { class: 'mdv-chip' }, o.modeK ? ico(o.modeK, 16) : null, o.modeLabel) : null,
+      el('span', { text: o.dateText || '' }),
+      live ? el('span', { class: 'mdv-chip', style: 'background:#FDE7D4;color:#8A310B', text: '진행 중' }) : null),
+    el('h1', { text: o.name }),
+    o.note ? el('div', { class: 'mdv-note', text: o.note }) : null,
+    (o.startPlace || o.endPlace) ? el('div', { class: 'mdv-path' },
+      el('i', { class: 'dot' }), el('div', { class: 'pt' }, el('b', { text: o.startTime || '출발' }), el('span', { text: o.startPlace && o.startPlace !== '출발 지점' ? o.startPlace : '출발' })),
+      el('i', { class: 'ln' }),
+      el('div', { class: 'pt', style: 'text-align:right' }, el('b', { text: o.endTime || '도착' }), el('span', { text: o.endPlace && o.endPlace !== '도착 지점' ? o.endPlace : '도착' })), el('i', { class: 'dot end' })) : null,
+    tiles.length ? el('div', { class: 'mdv-stats' + (tiles.length === 4 || tiles.length === 2 ? ' n2' : tiles.length === 1 ? ' n1' : '') }, ...tiles.map(t => el('div', {}, el('b', { text: t.v }), t.k ? el('span', { text: t.k }) : null))) : null);
+  app.replaceChildren(el('div', { class: 'stack mdv' },
+    roleBar('leader', o.modeLabel || '받은 MD', o.modeK || null),
+    hero,
     // 사진 (잠가서 온 사진을 풀어서 보여줘요)
     phWrap,
     // 2) 지도 + 길찾기
     R.length > 1 ? [
+      el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pin', 20), '다닌 길'), el('span', { text: '지도를 누르면 그곳으로 길찾기' })),
       mapEl, spotList(o.spots),
       // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요
       el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
@@ -1579,7 +1617,7 @@ function routeMap(mapEl, R, photos, modes, spots) {
   const runs = modeRuns(R, modes);
   runs.filter(r => r.k !== 'g').forEach(r => L.polyline(r.pts, { color: '#FFFFFF', weight: 9, opacity: 0.9 }).addTo(m));
   runs.forEach(r => L.polyline(r.pts, RUN_STYLE[r.k]).addTo(m));
-  setRouteArrows(m, R);
+  setRouteArrows(m, R, true);
   const A = R[0], B = R[R.length - 1], same = dist(A[0], A[1], B[0], B[1]) < 80;
   const pin = (p, label, fill) => L.circleMarker(p, { radius: 9, color: '#1E3B2F', weight: 3, fillColor: fill, fillOpacity: 1 })
     .bindTooltip(label, { permanent: true, direction: 'top', className: 'nm', offset: [0, -8] }).addTo(m);
@@ -1670,16 +1708,21 @@ function routeArrowPts(route, step) {
   }
   return out;
 }
-function setRouteArrows(map, route) {
+// soft: 기록 지도용. 선 위에 작은 흰 꺾쇠(›)만 드문드문 (눈에 덜 띄게)
+function setRouteArrows(map, route, soft) {
   if (!map || !L.marker || !L.divIcon) return;
+  if (soft != null) map.__soft = soft; soft = map.__soft;
   if (!map.__arrows) { map.__arrows = L.layerGroup().addTo(map); map.on('zoomend', () => setRouteArrows(map, map.__route)); }
   map.__route = route;
   map.__arrows.clearLayers();
   if (!route || route.length < 2) return;
   // 멀리서 볼 때 화살표가 겹치지 않게: 가까이(15단계 이상)는 100m마다, 멀어질수록 간격을 넓혀요
-  const z = map.getZoom(), step = z >= 15 ? 100 : z === 14 ? 200 : z === 13 ? 500 : z === 12 ? 1000 : 0;
+  const z = map.getZoom(), step = soft ? (z >= 17 ? 150 : z === 16 ? 250 : z === 15 ? 450 : z === 14 ? 900 : 0)
+    : z >= 15 ? 100 : z === 14 ? 200 : z === 13 ? 500 : z === 12 ? 1000 : 0;
   if (!step) return;
   for (const [lat, lng, deg] of routeArrowPts(route, step)) {
+    if (soft) { L.marker([lat, lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: 'rt-arrow', iconSize: [12, 12], iconAnchor: [6, 6],
+      html: `<svg width="12" height="12" viewBox="0 0 12 12" style="transform:rotate(${deg.toFixed(0)}deg);display:block"><path d="M3 8 6 4.5 9 8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/></svg>` }) }).addTo(map.__arrows); continue; }
     L.marker([lat, lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: 'rt-arrow', iconSize: [18, 18], iconAnchor: [9, 9],
       html: `<svg width="18" height="18" viewBox="0 0 24 24" style="transform:rotate(${deg.toFixed(0)}deg)"><path d="M12 3 L20 19 L12 15 L4 19 Z" fill="#fff" stroke="#2F5D46" stroke-width="2.4" stroke-linejoin="round"/></svg>` }) }).addTo(map.__arrows);
   }
