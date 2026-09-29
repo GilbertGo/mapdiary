@@ -220,6 +220,23 @@ function toast(msg) {
   const t = el('div', { class: 'toast', role: 'status', text: msg });
   document.body.append(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000);
 }
+// 휴대폰 뒤로가기: 사진 크게 보기, 아래에서 올라오는 창, 크게 본 지도가 떠 있으면 그것만 닫아요 (페이지를 빠져나가지 않게)
+// 창이 뜨면 방문 기록에 '창' 칸을 하나 쌓고, 뒤로가기로 그 칸이 빠지면 맨 위 창을 닫아요.
+function ovOpen() { return document.querySelectorAll('.sheet-bg').length + (typeof fsActive !== 'undefined' && fsActive ? 1 : 0); }
+function ovGuard() { if (ovOpen() && !(history.state && history.state.ov)) history.pushState({ ov: 1 }, ''); }
+function ovCloseTop() {
+  const bgs = document.querySelectorAll('.sheet-bg'), top = bgs[bgs.length - 1];
+  if (top) { top.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (top.isConnected) top.remove(); return; }   // 바깥 누르기와 같게 닫아요
+  if (typeof fsActive !== 'undefined' && fsActive) toggleFull(fsActive.map, fsActive.box, fsActive.b);
+}
+let ovHash = location.hash;
+addEventListener('popstate', () => {
+  if (location.hash !== ovHash) { ovHash = location.hash; return; }   // 주소의 # 뒤만 바뀐 것(모임방 이동 등)은 뒤로가기가 아니에요
+  if (history.state && history.state.ov) return;
+  if (ovOpen()) { ovCloseTop(); setTimeout(ovGuard, 0); }   // 아직 떠 있는 창이 있으면 칸을 다시 쌓아요
+  else history.back();   // 창은 이미 닫혔는데 칸만 남아 있었으면, 원래 뒤로가기를 해요
+});
+new MutationObserver(ms => { if (ms.some(m => [...m.addedNodes].some(n => n.classList && n.classList.contains('sheet-bg')))) ovGuard(); }).observe(document.body, { childList: true });
 let actx;
 function beep() {
   try {
@@ -1311,6 +1328,7 @@ function toggleFull(map, box, b) {
   b.textContent = on ? '✕ 작게 보기' : '⤢ 크게 보기';
   b.setAttribute('aria-label', on ? '지도 작게 보기' : '지도 전체화면으로 보기');
   fsActive = on ? { map, box, b } : null;
+  if (on) ovGuard();
   setTimeout(() => map.invalidateSize(), 60);
 }
 function addFullBtn(map, box) {
