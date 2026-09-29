@@ -99,7 +99,7 @@ input::placeholder{color:#B3AC9C}
 .rd-sp span{width:100%;background:linear-gradient(180deg,#F7B267,#F4A259);border-radius:6px 6px 2px 2px;min-height:6px}
 .rd-sp div.last span{background:linear-gradient(180deg,#FF8A5B,#E4572E)}
 .rd-act{position:sticky;bottom:0;z-index:1100;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;row-gap:4px;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));margin:0 -16px;background:linear-gradient(to top,#F4F0E6 72%,rgba(244,240,230,0))}
-.rd-btn span{white-space:pre;text-align:center}
+.rd-btn span{white-space:pre;text-align:center;font-size:9.5px;letter-spacing:-.02em}
 .rd-note{flex-basis:100%;text-align:center;font-size:11.5px;color:var(--muted);margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
 .rd-btn{width:50px;height:50px;border-radius:50%;border:none;background:#FFFDF8;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--pine);font:inherit;font-size:11px;font-weight:700}
 .rd-stop{width:70px;height:70px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
@@ -2937,7 +2937,7 @@ function viewWalk() {
         follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
         // 아래 고정 버튼: 사진 · 끝내기 · 좋은 곳 (지금 있는 곳에 별표)
         el('div', { class: 'rd-act' },
-          el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 20), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
+          el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 18), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
           el('button', { class: 'rd-btn', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 22), nPhotos ? `사진 ${nPhotos}` : '사진'),
           el('button', { class: 'rd-stop', onclick: finish }, el('i'), '끝내기'),
           el('button', { class: 'rd-btn', 'aria-label': '지금 있는 곳을 좋은 곳으로 남기기', onclick: addSpot }, ico('star', 22, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 ${n}` : '좋은 곳'; })()),
@@ -2945,9 +2945,8 @@ function viewWalk() {
           // 설명은 화면 잠그기를 세 번 써 볼 때까지만 (알고 나면 지도를 넓게)
           ls.get('lockUsed', 0) < 3 ? el('div', { class: 'rd-note', text: '🔒 화면 잠그기: 켠 채로 잘못 눌림을 막아요 · 풀 때 3초 꾹' }) : null),
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
-        el('div', { class: 'two' },
-          el('button', { class: 'btn line', text: '사진 넣기', onclick: () => galIn.click() }),
-          el('button', { class: 'btn line', text: '공유하기', onclick: () => shareNow() })),
+        // 공유는 아래 고정 버튼에 있어서, 여기는 사진첩에서 넣기만
+        el('button', { class: 'btn line full', onclick: () => galIn.click() }, ico('camera', 18), '사진첩에서 사진 넣기'),
         guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
         camIn, galIn,
         el('a', { class: 'link', href: './', style: 'align-self:center;color:var(--muted)', text: '처음으로 (다시 들어오면 이어서 기록해요)' })].filter(Boolean));
