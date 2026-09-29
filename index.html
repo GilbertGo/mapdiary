@@ -1886,7 +1886,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2115,7 +2115,9 @@ function viewWalk() {
     ls.set('walkSplits:' + id, sp);
     const sec = Math.round(lap / 1000);
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
-    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.`);
+    const g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
+    if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${g}km 달성!`); }
+    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${g}킬로미터 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : ''}`);
     draw();
   }
   // 케이던스(1분에 몇 걸음): 휴대폰 흔들림 센서로 발걸음을 세요. 화면이 켜져 있을 때만 셀 수 있어요.
@@ -2148,6 +2150,34 @@ function viewWalk() {
     const c = cadNow(), mv = movingMs(trackLoad(id), M().car), avg = stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null;
     tCad.textContent = motionSeen ? [`케이던스 ${c ?? '-'} spm`, avg ? `평균 ${avg}` : '', `${stepN.toLocaleString()}걸음`].filter(Boolean).join(' · ')
       : '케이던스: 휴대폰 흔들림 센서를 기다리는 중이에요';
+  }
+  // 러닝 시작 화면: GPS 준비, 목표 거리, 음성 안내, 지난 러닝, 3·2·1
+  let lastAcc = null;
+  const gpsReady = el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' });
+  function drawGpsReady() {
+    const ok = gps === 'on' && lastAcc != null && lastAcc <= 20, meh = gps === 'on' && lastAcc != null && lastAcc <= TRACK_MAX_ACC;
+    gpsReady.replaceChildren(el('span', { class: 'pill ' + (ok ? 'on' : gps === 'denied' ? 'bad' : 'off') }, el('i'), ok ? 'GPS 준비됐어요' : meh ? 'GPS 거의 준비됐어요' : gps === 'denied' ? '위치 권한 필요' : 'GPS 잡는 중'),
+      el('span', { class: 'sub', style: 'font-size:14px', text: gps === 'denied' ? '주소창 옆 자물쇠에서 위치를 허용해 주세요' : lastAcc != null ? `오차 ${Math.round(lastAcc)}m${ok ? '' : ' · 하늘이 트인 곳에서 조금 기다려 주세요'}` : '잠시만 기다려 주세요' }));
+  }
+  const RUN_GOALS = [0, 3, 5, 10, 21.1];
+  const goalKm = () => id ? ls.get('walkGoal:' + id, 0) : ls.get('runGoal', 0);
+  function goalCheck() {
+    const g = goalKm(); if (!g || M().k !== 'run' || ls.get('walkGoalDone:' + id, false)) return;
+    if (trackStats(trackLoad(id), M().car).walk >= g * 1000) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${g}km 달성!`); say(`목표 ${g}킬로미터 달성! 수고했어요.`); draw(); }
+  }
+  function lastRun() {
+    const x = pastTrips().find(y => !y.album && y.t !== id && ls.get('walkMode:' + y.t, null) === 'run'); if (!x) return null;
+    const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt);
+    return `지난 러닝 · ${d.getMonth() + 1}월 ${d.getDate()}일 ${fmtDist(st.walk)} · 페이스 ${fmtPace(st.walk, movingMs(tr, 25))}/km`;
+  }
+  function countdown() {
+    let n = 3, dead = false;
+    const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums', text: '3' });
+    const ov = el('div', { class: 'sheet-bg', style: 'z-index:4200;align-items:center;justify-content:center;flex-direction:column;background:rgba(30,59,47,.94)', onclick: () => { if (!dead) { dead = true; ov.remove(); start(); } } },
+      num, el('div', { style: 'color:#D5DED7;font-size:16px;margin-top:12px', text: '누르면 바로 시작해요' }));
+    document.body.append(ov); beep(); say('3');
+    const tick = () => { if (dead) return; n--; if (n > 0) { num.textContent = n; beep(); say(String(n)); setTimeout(tick, 1000); } else { dead = true; ov.remove(); say('시작!'); start(); } };
+    setTimeout(tick, 1000);
   }
   const STAY_M = 60, STAY_MS = 10 * 60000;
   let stayA = null, stayAsk = null;
@@ -2196,7 +2226,8 @@ function viewWalk() {
     tDur.textContent = ['run', 'bike'].includes(m.k) ? fmtRunTime(Math.max(0, Date.now() - at)) : fmtDur(Math.max(0, Date.now() - at)); tDist.textContent = fmtDist(st.walk); tDistLbl.textContent = `${m.did} 거리`; if (id) tTitle.textContent = nameOf();
     const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null;
     const mv = ['run', 'bike'].includes(m.k) ? movingMs(tr, m.car) : 0, np = m.k === 'run' ? nowPace(tr) : null;
-    const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`].filter(Boolean).join(' · ') : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, mv)} · 움직인 시간 ${fmtRunTime(mv)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
+    const gk = m.k === 'run' ? goalKm() : 0, gLeft = gk ? gk * 1000 - st.walk : 0;
+    const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`, gk ? (gLeft > 0 ? `목표 ${gk}km까지 ${fmtDist(gLeft)}` : `목표 ${gk}km 달성`) : ''].filter(Boolean).join(' · ') : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, mv)} · 움직인 시간 ${fmtRunTime(mv)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
     tAll.textContent = [extra, st.d - st.walk > 300 ? `차로 이동한 길까지 모두 ${fmtDist(st.d)}` : ''].filter(Boolean).join(' · ');
     if (guide) {
       const at = lastFix || (tr.length ? { lat: tr[tr.length - 1][0], lng: tr[tr.length - 1][1] } : null), w = at && guideWhere(guide.route, at.lat, at.lng, gIdx);
@@ -2216,9 +2247,10 @@ function viewWalk() {
     if (watch != null || !navigator.geolocation) return;
     watch = navigator.geolocation.watchPosition(p => {
       const was = gps; gps = 'on';
-      const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() };
+      const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() }; lastAcc = p.coords.accuracy;
+      if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
       trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
-      if (p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); }
+      if (p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); goalCheck(); }
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
         if (w.off > 80 && !gOff) { gOff = true; beep(); toast(`따라가는 길에서 ${fmtDist(w.off)} 벗어났어요`); }
@@ -2230,7 +2262,7 @@ function viewWalk() {
         if (follow) map.setView(ll, Math.max(map.getZoom(), 16));
       }
       stats(); if (was !== 'on') draw();
-    }, e => { gps = e.code === 1 ? 'denied' : 'wait'; draw(); }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+    }, e => { gps = e.code === 1 ? 'denied' : 'wait'; if (id) draw(); else drawGpsReady(); }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
   }
   function stopGps() { if (watch != null) navigator.geolocation.clearWatch(watch); watch = null; }
   // 사진: 카메라나 사진첩에서 골라서, 찍은 곳에 붙여요
@@ -2326,6 +2358,7 @@ function viewWalk() {
       ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`);
     }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
+    if (pick === 'run' && ls.get('runGoal', 0)) ls.set('walkGoal:' + id, ls.get('runGoal', 0));
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw();
   }
@@ -2405,12 +2438,21 @@ function viewWalk() {
         IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }),
           el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남고, 사진 보내기가 안 돼요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
           el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
-        el('div', { class: 'card stack', style: 'gap:8px' },
+        pick === 'run' ? el('div', { class: 'card stack', style: 'gap:14px' },
+          (startGps(), drawGpsReady(), gpsReady),
+          el('div', { class: 'stack', style: 'gap:8px' }, el('b', { text: '목표 거리' }),
+            el('div', { class: 'mapbar' }, RUN_GOALS.map(g => el('button', { class: 'btn small ' + (ls.get('runGoal', 0) === g ? 'dark' : 'line'), text: g ? (g === 21.1 ? '하프' : `${g}km`) : '없음', onclick: () => { ls.set('runGoal', g); draw(); } })))),
+          el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' },
+            el('b', { text: '1km마다 목소리 안내' }),
+            el('button', { class: 'btn small ' + (ls.get('runVoice', true) ? 'dark' : 'line'), text: ls.get('runVoice', true) ? '켜짐' : '꺼짐', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } })),
+          lastRun() ? el('div', { class: 'sub', text: lastRun() }) : null,
+          el('div', { class: 'sub', style: 'font-size:14px', text: '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }))
+        : el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
           el('div', { class: 'sub', text: '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' })),
         (() => { const iT = el('input', { type: 'text', id: 'wt', maxlength: 40, value: startTitle, placeholder: MULTI.includes(pick) && tripSel !== 'day' ? '비워 두면 "여행 이름 n일차"' : `비워 두면 "${dayName} ${modeByK(pick).label}"`, oninput: () => { startTitle = iT.value; } });
           return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
-        el('button', { class: 'btn primary full big', onclick: start }, ico(pick, 24), `${modeByK(pick).label} 시작하기`)].filter(Boolean));
+        el('button', { class: 'btn primary full big', onclick: pick === 'run' ? countdown : start }, ico(pick, 24), `${modeByK(pick).label} 시작하기`)].filter(Boolean));
       return;
     }
     // 끝내지 않은 기록이 있는데 첫 화면에서 모드를 골라 왔으면, 바로 이어 가지 말고 먼저 물어봐요
