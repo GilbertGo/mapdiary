@@ -65,6 +65,15 @@ input::placeholder{color:#B3AC9C}
 .cnt span{font-size:13px;color:var(--muted)}
 .cnt.warn{background:var(--alert-soft);box-shadow:none} .cnt.warn b{color:var(--alert-ink)} .cnt.warn span{color:var(--alert-ink)}
 .note{font-size:16px;font-weight:600;color:#2D6A4F;line-height:1.5}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-w{text-align:center;font-size:12px;color:var(--muted);padding:2px 0}
+.cal-d{min-width:0;width:100%;min-height:0;position:relative;aspect-ratio:1/1.1;border:none;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0;gap:1px;font:inherit;color:var(--muted)}
+.cal-d .n{font-size:13px}
+.cal-d.has{background:var(--forest-soft);color:var(--forest-ink);font-weight:700;cursor:pointer}
+.cal-d.has .i{color:var(--pine)}
+.cal-d.on{outline:3px solid var(--accent)}
+.cal-d.today .n{text-decoration:underline}
+.cal-d .c{position:absolute;top:2px;right:4px;font-size:10px;background:var(--accent);color:#1E3B2F;border-radius:8px;padding:0 4px}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .member{width:100%;text-align:left;background:var(--card);border:none;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
 .dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
@@ -1920,27 +1929,68 @@ async function backupLoad(file) {
 }
 function backupCard(n) {
   const inp = el('input', { type: 'file', accept: 'application/json,.json', style: 'display:none', onchange: () => { const f = inp.files[0]; inp.value = ''; if (f) backupLoad(f); } });
-  const last = ls.get('lastBackup', 0), old = n && (!last || Date.now() - last > 7 * 864e5);
+  const last = ls.get('lastBackup', 0), old = n && last && Date.now() - last > 7 * 864e5;
   return el('div', { class: 'card stack', style: 'gap:10px;margin-top:8px' },
     el('b', { text: '백업' }),
     el('div', { class: 'sub', text: (last ? `마지막 백업 ${new Date(last).getMonth() + 1}월 ${new Date(last).getDate()}일. ` : '아직 백업한 적이 없어요. ') + '기록은 이 휴대폰의 이 브라우저에만 있어요. 휴대폰을 바꾸거나 브라우저 기록을 지우면 사라지니, 가끔 백업해 두세요.' }),
     old ? el('div', { class: 'banner alert', style: 'padding:10px 14px', text: '백업한 지 오래됐어요. 지금 한 번 백업해 두세요.' }) : null,
     el('div', { class: 'two' },
-      el('button', { class: 'btn primary', text: '백업 파일 만들기', onclick: backupSave, disabled: !n }),
+      el('button', { class: 'btn primary', text: '백업하기', onclick: backupSave, disabled: !n }),
       el('button', { class: 'btn line', text: '백업 불러오기', onclick: () => inp.click() })), inp);
 }
 function viewMyList() {
   const list = pastTrips(), live = ls.get('walkNow', null);
+  const row = x => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(x.t)}`, style: 'text-decoration:none;color:inherit' },
+    el('span', { style: 'color:var(--pine);flex:none' }, ico(ls.get('walkMode:' + x.t, null) ? modeOfT(x.t).k : 'pin', 26)),
+    el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }), el('div', { class: 'dt', text: mdLine(x) })),
+    x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null);
+  // 목록 / 달력 (고른 것을 기억해요)
+  let mode = ls.get('myView', 'list');
+  const days = list.filter(x => !x.album), last = days.length ? new Date(days[0].info.startAt) : new Date();
+  let ym = [last.getFullYear(), last.getMonth()], sel = null;
+  const body = el('div', { class: 'stack' });
+  const tab = (k, label) => el('button', { class: 'btn small ' + (mode === k ? 'dark' : 'line'), text: label, onclick: () => { mode = k; ls.set('myView', k); draw(); } });
+  const tabs = el('div', { class: 'mapbar' });
+  const keyOf = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+  function calendar() {
+    const [Y, Mo] = ym, first = new Date(Y, Mo, 1), nDays = new Date(Y, Mo + 1, 0).getDate();
+    const byDay = {}; days.forEach(x => { const k = keyOf(x.info.startAt); (byDay[k] = byDay[k] || []).push(x); });
+    const inMonth = days.filter(x => { const d = new Date(x.info.startAt); return d.getFullYear() === Y && d.getMonth() === Mo; });
+    // 이달 합계
+    let walk = 0, gain = 0, hikes = 0;
+    inMonth.forEach(x => { const M = modeOfT(x.t), tr = trackLoad(x.t); walk += trackStats(tr, M.car).walk; if (['hike', 'trek'].includes(M.k)) hikes++; const ev = ELEV_MODES.includes(M.k) && elevStats(tr); if (ev) gain += ev.gain; });
+    const move = n => { const d = new Date(Y, Mo + n, 1); ym = [d.getFullYear(), d.getMonth()]; sel = null; draw(); };
+    const today = keyOf(Date.now());
+    const cells = [];
+    for (let k = 0; k < first.getDay(); k++) cells.push(el('div'));
+    for (let dd = 1; dd <= nDays; dd++) {
+      const k = `${Y}-${Mo}-${dd}`, rs = byDay[k] || [];
+      cells.push(el('button', { class: 'cal-d' + (rs.length ? ' has' : '') + (sel === k ? ' on' : '') + (today === k ? ' today' : ''), disabled: !rs.length, 'aria-label': `${Mo + 1}월 ${dd}일${rs.length ? ` 기록 ${rs.length}개` : ''}`, onclick: () => { sel = sel === k ? null : k; draw(); } },
+        el('span', { class: 'n', text: dd }), rs.length ? el('span', { class: 'i' }, ico(modeOfT(rs[0].t).k, 20)) : null, rs.length > 1 ? el('span', { class: 'c', text: rs.length }) : null));
+    }
+    const shown = sel ? byDay[sel] || [] : inMonth;
+    return [
+      el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' },
+        el('button', { class: 'btn line small', style: 'height:38px', 'aria-label': '지난달', text: '‹', onclick: () => move(-1) }),
+        el('b', { style: 'font-size:19px', text: `${Y}년 ${Mo + 1}월` }),
+        el('button', { class: 'btn line small', style: 'height:38px', 'aria-label': '다음 달', text: '›', onclick: () => move(1) })),
+      el('div', { class: 'card', style: 'padding:12px' },
+        el('div', { class: 'cal' }, '일월화수목금토'.split('').map(w => el('div', { class: 'cal-w', text: w })), cells)),
+      el('div', { class: 'sub center', text: inMonth.length ? [`이달 기록 ${inMonth.length}번`, `걸은 거리 ${fmtDist(walk)}`, hikes ? `산행 ${hikes}번` : '', gain >= 10 ? `오른 높이 ${gain.toLocaleString()}m` : ''].filter(Boolean).join(' · ') : '이달에는 기록이 없어요' }),
+      sel ? el('b', { text: `${Mo + 1}월 ${sel.split('-')[2]}일` }) : null,
+      shown.map(row)];
+  }
+  function draw() {
+    tabs.replaceChildren(tab('list', '목록'), tab('cal', '달력'));
+    body.replaceChildren(...(mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
+  }
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MD'),
     el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
     el('h1', { text: '내 MD' }),
     el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
-    list.length ? list.map(x => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(x.t)}`, style: 'text-decoration:none;color:inherit' },
-      el('span', { style: 'color:var(--pine);flex:none' }, ico(ls.get('walkMode:' + x.t, null) ? modeOfT(x.t).k : 'pin', 26)),
-      el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }), el('div', { class: 'dt', text: mdLine(x) })),
-      x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null))
-      : el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' }),
+    tabs, body,
     backupCard(list.filter(x => !x.album).length)));
+  draw();
 }
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
