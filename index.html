@@ -1589,7 +1589,7 @@ function bragView(img, getOpts) {
   };
 }
 // ?brag=... 링크로 열면 그 카드만 보여줘요 (카톡에서 다른 브라우저로 넘어왔을 때)
-// 받은 사람이 보는 화면: 움직이는 지도에 경로, 카카오맵 길찾기, GPX 받기, 자랑 카드
+// 받은 사람이 보는 화면: 움직이는 지도에 경로, 네이버지도 길찾기, GPX 받기, 자랑 카드
 // ?s=번호 짧은 링크: 서버에서 카드 내용을 받아 와서 보여줘요
 function viewShareLink() {
   const id = qs.get('s');
@@ -1719,11 +1719,24 @@ function viewBragLink(given, feed) {
   }
   let destMap = null, destMark = null, curDest = null;
   const destBar = el('div', { class: 'mapbar' });
-  const kakaoBtn = el('a', { class: 'btn primary full', target: '_blank', rel: 'noopener', text: '카카오맵 길찾기' });
+  // 네이버지도 길찾기: 휴대폰은 네이버지도 앱을 열어 지금 있는 곳 → 그곳 (대중교통, 앱에서 자동차·도보로 바꿀 수 있어요)
+  // 앱이 없으면 네이버지도 웹에서 그곳을 보여줘요 (거기서 '길찾기')
+  const naverGo = d => {
+    const web = `https://map.naver.com/p?title=${encodeURIComponent(d.n)}&lat=${d.lat}&lng=${d.lng}`;
+    const q = `?dlat=${d.lat}&dlng=${d.lng}&dname=${encodeURIComponent(d.n)}&appname=${encodeURIComponent(location.hostname || 'mapdiary')}`;
+    if (/Android/i.test(navigator.userAgent)) { location.href = `intent://route/public${q}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(web)};end`; return; }
+    if (IS_IOS) {
+      let gone = false; const hid = () => { gone = true; }; document.addEventListener('visibilitychange', hid, { once: true });
+      location.href = `nmap://route/public${q}`;
+      setTimeout(() => { document.removeEventListener('visibilitychange', hid); if (!gone && document.visibilityState === 'visible') location.href = web; }, 1600);
+      return;
+    }
+    window.open(web, '_blank', 'noopener');
+  };
+  const kakaoBtn = el('button', { class: 'btn primary full', text: '네이버지도 길찾기', onclick: () => { if (curDest) naverGo(curDest); } });
   function setDest(d, fromMap) {
     if (!d) return; curDest = d;
-    kakaoBtn.href = `https://map.kakao.com/link/to/${encodeURIComponent(d.n)},${d.lat},${d.lng}`;
-    kakaoBtn.textContent = `카카오맵으로 '${d.n}' 길찾기`;
+    kakaoBtn.textContent = `네이버지도로 '${d.n}' 길찾기`;
     destBar.replaceChildren(...[...dests.map(x => el('button', { class: 'btn small ' + (x === curDest ? 'dark' : 'line'), onclick: () => setDest(x) },
       x.k === 'spot' ? ico(x.stay ? 'pin' : 'star', 16, '#F4A259') : null,
       x.k === 'spot' ? x.n : x.k === 'start' ? (x.n === '출발 지점' ? x.n : '출발 · ' + x.n) : (x.n === '도착 지점' || x.n === '마지막 위치' ? '마지막 위치' : '도착 · ' + x.n))),
@@ -1762,10 +1775,10 @@ function viewBragLink(given, feed) {
       mapEl, spotList(o.spots),
       // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
       o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
-      // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 카카오맵이 현위치에서 그곳까지 안내
+      // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 네이버지도가 현위치에서 그곳까지 안내
       el('div', { class: 'card stack', style: 'gap:10px' },
         el('b', { text: '어디로 가 볼까요?' }), destBar, kakaoBtn,
-        el('div', { class: 'sub', text: '별표(좋았던 곳)를 고르거나 지도에서 원하는 곳을 누르면, 카카오맵이 지금 있는 곳에서 그곳까지 안내해요.' })),
+        el('div', { class: 'sub', text: '별표(좋았던 곳)를 고르거나 지도에서 원하는 곳을 누르면, 네이버지도가 지금 있는 곳에서 그곳까지 안내해요.' })),
       el('button', { class: 'btn line small', text: 'GPX 받기 (트랭글·램블러 같은 등산앱용)', onclick: toGpx })
     ] : null,
     // 3) 자랑 카드 사진은 인솔자가 사진을 저장하러 넘어왔을 때만 (?c=1)
