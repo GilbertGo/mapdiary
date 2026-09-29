@@ -74,26 +74,28 @@ input::placeholder{color:#B3AC9C}
 .cal-d.on{outline:3px solid var(--accent)}
 .cal-d.today .n{text-decoration:underline}
 .cal-d .c{position:absolute;top:2px;right:4px;font-size:10px;background:var(--accent);color:#1E3B2F;border-radius:8px;padding:0 4px}
-.rd{background:linear-gradient(160deg,#1E3B2F,#12261D);color:#fff;border-radius:28px;padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.rd{background:linear-gradient(160deg,#1E3B2F,#12261D);color:#fff;border-radius:24px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);min-width:0;max-width:100%;overflow:hidden}
 .rd .lbl{font-size:13px;color:#A9C2B3}
 .rd-top{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .rd-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:none;background:rgba(255,255,255,.1);color:#fff;font:inherit;font-size:13px;font-weight:700;white-space:nowrap}
 .rd-chip i{width:8px;height:8px;border-radius:50%;background:#7BD389}
 .rd-chip.warn{background:#F4A259;color:#1E3B2F}
-.rd-hero{font-size:92px;font-weight:800;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.rd-hero{font-size:clamp(48px,19vw,84px);font-weight:800;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
 .rd-hero small{font-size:22px;font-weight:700;letter-spacing:0;color:#A9C2B3;margin-left:6px}
-.rd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rd-t{background:rgba(255,255,255,.07);border-radius:18px;padding:12px 14px;position:relative}
-.rd-t b{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.rd-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rd-t .sm{display:block;font-size:11px;color:#A9C2B3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-t{background:rgba(255,255,255,.07);border-radius:14px;padding:8px 12px;position:relative;min-width:0}
+.rd-t b{display:block;font-size:clamp(18px,6.2vw,26px);font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-map{position:relative}.rd-map .hint{position:absolute;left:10px;bottom:10px;z-index:500;background:rgba(30,59,47,.85);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;pointer-events:none}
 .rd-t .pz{position:absolute;top:10px;right:10px;font-size:11px;font-weight:800;background:#F4A259;color:#1E3B2F;border-radius:6px;padding:2px 6px}
 .rd-bar{height:8px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden}.rd-bar i{display:block;height:100%;background:#F4A259;border-radius:8px}
 .rd-sp{display:flex;gap:6px;align-items:flex-end;height:96px;overflow-x:auto}
 .rd-sp div{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;font-size:10px;color:#A9C2B3;height:100%}
 .rd-sp span{width:100%;background:#F4A259;border-radius:6px 6px 2px 2px;min-height:6px}
 .rd-sp div.last span{background:#FFD08A}
-.rd-act{position:sticky;bottom:0;z-index:1100;display:flex;justify-content:center;align-items:center;gap:28px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));margin:0 -16px;background:linear-gradient(to top,#F4F0E6 72%,rgba(244,240,230,0))}
-.rd-btn{width:62px;height:62px;border-radius:50%;border:none;background:#FFFDF8;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--pine);font:inherit;font-size:11px;font-weight:700}
-.rd-stop{width:86px;height:86px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
+.rd-act{position:sticky;bottom:0;z-index:1100;display:flex;justify-content:center;align-items:center;gap:28px;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));margin:0 -16px;background:linear-gradient(to top,#F4F0E6 72%,rgba(244,240,230,0))}
+.rd-btn{width:54px;height:54px;border-radius:50%;border:none;background:#FFFDF8;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--pine);font:inherit;font-size:11px;font-weight:700}
+.rd-stop{width:74px;height:74px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
 body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .rd-stop i{width:22px;height:22px;background:#fff;border-radius:5px}
 .lock-ov{position:fixed;inset:0;z-index:5000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;padding:24px}
@@ -111,6 +113,8 @@ body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .sw{flex:none;width:54px;height:32px;border-radius:999px;background:#CFC8B8;position:relative;transition:background .2s}
 .sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
 .sw.on{background:#2D6A4F}.sw.on i{left:25px}
+html{overflow-x:hidden}   /* 글자를 크게 쓰는 휴대폰에서도 화면이 좌우로 밀리지 않게 */
+body{max-width:100vw;overscroll-behavior-x:none}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .member{width:100%;text-align:left;background:var(--card);border:none;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
 .dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
@@ -1491,15 +1495,17 @@ function toggleFull(map, box, b) {
   setTimeout(() => map.invalidateSize(), 60);
 }
 function addFullBtn(map, box) {
-  if (!L.Control || !L.DomUtil) return;
+  if (!L.Control || !L.DomUtil) return null;
+  let btn = null;
   const C = L.Control.extend({ options: { position: 'topright' }, onAdd() {
-    const b = L.DomUtil.create('button', 'fs-btn');
+    const b = btn = L.DomUtil.create('button', 'fs-btn');
     b.type = 'button'; b.textContent = '⤢ 크게 보기'; b.setAttribute('aria-label', '지도 전체화면으로 보기');
     L.DomEvent.disableClickPropagation(b);
     b.addEventListener('click', () => toggleFull(map, box, b));
     return b;
   } });
   map.addControl(new C());
+  return btn;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && fsActive) toggleFull(fsActive.map, fsActive.box, fsActive.b); });
 // ---------- 지난 계획 (인솔자 휴대폰에 저장) ----------
@@ -2201,8 +2207,8 @@ function viewWalk() {
   }
   function cadAvg() { const mv = movingMs(trackLoad(id), M().car); return stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null; }
   function cadSubText() {
-    if (!motionSeen) return Date.now() - ls.get('walkAt', Date.now()) > 15000 ? '흔들림 센서가 없어요' : '센서 기다리는 중';
-    return [cadAvg() ? `평균 ${cadAvg()}` : '', `${stepN.toLocaleString()}걸음`].filter(Boolean).join(' · ');
+    if (!motionSeen) return Date.now() - ls.get('walkAt', Date.now()) > 15000 ? '센서 없음' : '센서 기다림';
+    return cadAvg() ? `평균 ${cadAvg()}` : `${stepN.toLocaleString()}걸음`;
   }
   function drawCad() {
     if (!id || M().k !== 'run') return;
@@ -2290,7 +2296,7 @@ function viewWalk() {
     } else setTimeout(once, 700);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
-  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('div', { class: 'lbl', style: 'font-size:12px;margin-top:2px' }), pz: el('span', { class: 'pz', text: '멈춤', style: 'display:none' }),
+  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), pz: el('span', { class: 'pz', text: '멈춤', style: 'display:none' }),
     goal: el('div', { class: 'stack', style: 'gap:6px' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   function drawRun() {
     if (!id || M().k !== 'run') return;
@@ -2298,7 +2304,7 @@ function viewWalk() {
     const km = st.walk / 1000;
     rd.hero.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
     rd.time.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
-    rd.avg.textContent = fmtPace(st.walk, mv); rd.now.textContent = np || '-';
+    rd.avg.textContent = fmtPace(st.walk, mv); rd.now.textContent = np || '-'; rd.nowSub.textContent = `지금 ${np || '-'}`;
     const avgC = stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : null;
     rd.cad.textContent = c ?? (avgC || '-'); rd.cadSub.textContent = cadSubText();
     rd.pz.style.display = tr.length > 1 && Date.now() - tr[tr.length - 1][2] > 20000 ? '' : 'none';   // 20초 넘게 안 움직이면 '멈춤'
@@ -2314,7 +2320,19 @@ function viewWalk() {
         el('em', { style: 'font-style:normal;color:#fff;font-weight:700', text: fmtPace(1000, ms) }),
         el('span', { style: `height:${hi === lo ? 60 : Math.round(20 + 60 * (hi - ms) / (hi - lo))}%` }), `${k + 1}km`)));
     } else rd.spBox.replaceChildren();
+    if (rd.spBox.parentElement) rd.spBox.parentElement.style.display = sp.length ? '' : 'none';   // 구간이 없으면 빈 판을 숨겨요
+    fitRunMap();
   }
+  // 러닝: 지도가 판과 아래 버튼 사이 남는 화면을 채워요 (맨 위에 있을 때만)
+  function fitRunMap() {
+    requestAnimationFrame(() => {
+      if (!id || done || M().k !== 'run' || mapEl.classList.contains('map-full') || scrollY > 4) return;
+      const act = document.querySelector('.rd-act'), top = mapEl.getBoundingClientRect().top, bar = act ? act.offsetHeight : 90;
+      const h = Math.max(150, Math.floor(innerHeight - top - bar - 6));
+      if (Math.abs(parseInt(mapEl.style.height) - h) > 4 || !mapEl.style.height.endsWith('px')) { mapEl.style.height = h + 'px'; if (map) map.invalidateSize(); }
+    });
+  }
+  addEventListener('resize', () => fitRunMap());
   const rdTile = (label, v, extra) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: label }), v, extra || null);
   // ---------- 화면 잠금: 화면은 켠 채로, 잘못 눌리지 않게 막아요. 자물쇠를 1초 길게 누르면 풀려요 ----------
   function lockScreen() {
@@ -2476,9 +2494,9 @@ function viewWalk() {
       list.push(Object.assign({ n: iN.value.trim() || `좋았던 곳 ${list.length + 1}`, lat: +at[0].toFixed(6), lng: +at[1].toFixed(6), ts: Date.now() }, iM.value.trim() ? { m: iM.value.trim() } : {}));
       ls.set('walkSpots:' + id, list); sb.remove(); drawSpots(); draw(); toast('마음에 드는 곳으로 별표를 남겼어요');
     };
-    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '여기 좋아요' },
-      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), '여기 좋아요'),
-      el('p', { class: 'sub', style: 'margin:0', text: '지금 있는 곳에 별표를 남겨요. 지도 링크를 받은 사람이 이곳으로 길찾기를 할 수 있어요.' }),
+    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '좋은 곳 남기기' },
+      el('h2', { class: 'with-ico' }, ico('star', 22, '#F4A259'), '좋은 곳 남기기'),
+      el('p', { class: 'sub', style: 'margin:0', text: '경치 좋은 곳, 쉬어 간 곳, 맛있던 곳처럼 기억하고 싶은 곳을 지금 서 있는 자리에 ★로 남겨요. 내 지도와 공유 카드에 별표로 보이고, 지도 링크를 받은 사람이 이곳까지 길찾기를 할 수 있어요.' }),
       el('label', { class: 'f', for: 'sn' }, '이름 (선택)', iN),
       el('label', { class: 'f', for: 'sm' }, '한 줄 메모 (선택)', iM),
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
@@ -2497,6 +2515,8 @@ function viewWalk() {
       map = L.map(mapEl).setView([37.5665, 126.978], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
       map.on('dragstart', () => { follow = false; draw(); });
+      const fb = addFullBtn(map, mapEl);
+      map.on('click', () => { if (M().k === 'run' && fb && !mapEl.classList.contains('map-full')) toggleFull(map, mapEl, fb); });   // 러닝: 작은 지도를 누르면 크게
       phLayer = L.layerGroup().addTo(map); refreshPhotos();
       spLayer = L.layerGroup().addTo(map); drawSpots();
       drawGuide();
@@ -2533,7 +2553,7 @@ function viewWalk() {
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
     if (pick === 'run' && goalOf(ls.get('runGoal', 0)).k !== 'free') ls.set('walkGoal:' + id, goalOf(ls.get('runGoal', 0)));
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
-    wantWake = true; lockWake(); startGps(); draw();
+    wantWake = true; lockWake(); startGps(); draw(); scrollTo(0, 0);   // 시작 화면에서 내려 둔 채로 남지 않게
   }
   // 끝내기: 먼저 '정말 끝낼까요?'를 물어보고(실수로 누를 때를 생각해 '계속 기록하기'를 크게), 그다음 이름·장소를 적어 저장해요
   function askEnd(title, text, yes) {
@@ -2647,7 +2667,7 @@ function viewWalk() {
     }
     startGps(); ensureMap(); motionStart(); drawCad();
     if (M().k === 'run') {
-      mapEl.style.height = '34vh'; mapEl.style.minHeight = '220px'; document.body.classList.add('has-act');
+      if (!mapEl.style.height.endsWith('px')) mapEl.style.height = '25vh'; mapEl.style.minHeight = '150px'; document.body.classList.add('has-act');
       const voice = ls.get('runVoice', true);
       root.replaceChildren(...[roleBar('leader', '러닝'),
         el('div', { class: 'rd' },
@@ -2657,26 +2677,27 @@ function viewWalk() {
               el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊' : '🔇', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
               el('button', { class: 'rd-chip' + (wake ? '' : ' warn'), 'aria-label': wake ? '화면 켜져 있음' : '화면 켜두기', text: wake ? '☀' : '☀ 켜두기', onclick: () => { if (!wake) { wantWake = true; lockWake(); } } }),
               el('button', { class: 'rd-chip', 'aria-label': '화면 잠금', text: '🔒 잠금', onclick: lockScreen }))),
-          el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
-            el('div', { class: 'grow', style: 'font-size:17px;font-weight:700;color:#DDE8E1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap', text: nameOf() }),
-            el('button', { class: 'rd-chip', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } })),
-          el('div', {}, rd.hero, el('div', { class: 'lbl', style: 'margin-top:4px', text: '달린 거리' })),
+          el('div', {}, rd.hero,
+            el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;margin-top:2px' },
+              el('span', { class: 'lbl', style: 'flex:none', text: '달린 거리' }),
+              el('span', { class: 'grow lbl', style: 'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#DDE8E1;font-weight:700', text: nameOf() }),
+              el('button', { class: 'rd-chip', style: 'height:26px;padding:0 9px', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } }))),
           rd.goal,
-          el('div', { class: 'rd-grid' }, rdTile('시간', rd.time, rd.pz), rdTile('평균 페이스', rd.avg), rdTile('지금 페이스', rd.now), rdTile('케이던스 (spm)', rd.cad, rd.cadSub)),
-          rd.spBox),
+          el('div', { class: 'rd-grid' }, rdTile('시간', rd.time, rd.pz), rdTile('페이스', rd.avg, rd.nowSub), rdTile('케이던스', rd.cad, rd.cadSub))),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
-        mapEl,
+        el('div', { class: 'rd-map' }, mapEl, el('span', { class: 'hint', text: '⤢ 누르면 크게' })),
         follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
-        // 아래 고정 버튼: 사진 · 끝내기 · 여기 좋아요
+        // 아래 고정 버튼: 사진 · 끝내기 · 좋은 곳 (지금 있는 곳에 별표)
         el('div', { class: 'rd-act' },
           el('button', { class: 'rd-btn', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 24), nPhotos ? `사진 ${nPhotos}` : '사진'),
           el('button', { class: 'rd-stop', onclick: finish }, el('i'), '끝내기'),
-          el('button', { class: 'rd-btn', 'aria-label': '여기 좋아요', onclick: addSpot }, ico('star', 24, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋아요 ${n}` : '좋아요'; })())),
+          el('button', { class: 'rd-btn', 'aria-label': '지금 있는 곳을 좋은 곳으로 남기기', onclick: addSpot }, ico('star', 24, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 ${n}` : '좋은 곳'; })())),
+        el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
         el('div', { class: 'two' },
-          el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() }),
-          el('button', { class: 'btn line', text: '지금까지 공유', onclick: () => {
+          el('button', { class: 'btn line', text: '사진 넣기', onclick: () => galIn.click() }),
+          el('button', { class: 'btn line', text: '공유하기', onclick: () => {
             const tr = trackLoad(id); if (tr.length < 2) return toast('아직 기록된 길이 거의 없어요. 조금 더 달린 뒤에 공유해요');
             const wp = ls.get('walkPlaces:' + id, {});
             openBrag({ name: nameOf(), startPlace: wp.start || '출발 지점', meetPlace: wp.end || '지금 여기', startAt: tr[0][2], meetAt: tr[tr.length - 1][2], route: null, phase: 'go', live: true }, id, 0, false);
@@ -2684,7 +2705,7 @@ function viewWalk() {
         guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
         camIn, galIn,
         el('a', { class: 'link', href: './', style: 'align-self:center;color:var(--muted)', text: '처음으로 (다시 들어오면 이어서 기록해요)' })].filter(Boolean));
-      stats(); drawRun();
+      stats(); drawRun(); fitRunMap();
       return;
     }
     root.replaceChildren(...[roleBar('leader', '내 기록'),
@@ -2717,7 +2738,7 @@ function viewWalk() {
         el('button', { class: 'btn line', text: '사진 찍기', onclick: () => camIn.click() }),
         el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() })),
       nPhotos ? el('div', { class: 'sub center', text: `이 기록에 사진 ${nPhotos}장이 붙어 있어요` }) : null,
-      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `여기 좋아요 (${n}곳)` : '여기 좋아요'; })()),
+      el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 남기기 (${n}곳)` : '좋은 곳 남기기 (지도에 별표)'; })()),
       // 기록을 끝내지 않고 지금까지 다닌 길로 자랑하기
       (() => {
         const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);
