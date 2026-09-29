@@ -167,8 +167,9 @@ body[data-role=member]{--ground:#EEF4FB}
 body.noscroll{overflow:hidden}
 .fs-btn{background:#fff;border:none;border-radius:12px;padding:8px 12px;font:700 14px 'Pretendard Variable',Pretendard,-apple-system,sans-serif;color:var(--ink);cursor:pointer;min-height:40px;box-shadow:0 2px 8px rgba(60,45,20,.18)}
 .rt-arrow{background:none;border:none}
-.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.mode{border:none;border-radius:18px;background:var(--card);box-shadow:var(--shadow);padding:14px 6px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--pine)}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.mode{border:none;border-radius:16px;background:var(--card);box-shadow:var(--shadow);padding:12px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--pine);white-space:nowrap;letter-spacing:-.03em;min-width:0}
+@media (max-width:350px){.modes{gap:4px}.mode{font-size:11.5px;letter-spacing:-.05em}}
 .mode .ic{height:32px;display:flex;align-items:center;justify-content:center}
 .ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-3px;flex-shrink:0}
 .ico svg{display:block}
@@ -783,7 +784,8 @@ const MODES = [
   { k: 'backpack', label: '백패킹', car: 15, did: '걸은' },
   { k: 'date', label: '데이트', car: 15, did: '걸은' },
   { k: 'travel', label: '여행', car: 15, did: '걸은' },
-  { k: 'daily', label: '일상', car: 15, did: '걸은' }
+  { k: 'daily', label: '일상', car: 15, did: '걸은' },
+  { k: 'pgolf', label: '파크골프', car: 15, did: '걸은' }
 ];
 // ---------- 선 아이콘 (24칸 기준 선 그림. 화면은 SVG로, 자랑 카드는 canvas로 같은 모양을 그려요) ----------
 const ICONS = {
@@ -796,6 +798,7 @@ const ICONS = {
   travel: ['M12 2.5c1 0 1.5 1 1.5 2.5v4.5l8 4.5v2l-8-2.5v4.5l2.5 2v1.5L12 20l-4 1.5V20l2.5-2v-4.5L2.5 16v-2l8-4.5V5c0-1.5.5-2.5 1.5-2.5z'],
   date: ['M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z'],
   daily: ['M5 10h11v5.5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 15.5z', 'M16 11.5h1.5a2.5 2.5 0 0 1 0 5H16', 'M8.5 3.5c-.8 1 .8 2 0 3', 'M12 3.5c-.8 1 .8 2 0 3', 'M3.5 21h14'],
+  pgolf: ['M8 21V3.5', 'M8 3.5l8.5 3.2L8 10', 'M14.5 18.5a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M3.5 21h9'],
   group: ['M5.5 3.5h13A1.5 1.5 0 0 1 20 5v12H4V5a1.5 1.5 0 0 1 1.5-1.5z', 'M4 11h16', 'M7 17v2.5', 'M17 17v2.5', 'M7.5 14h.01', 'M16.5 14h.01'],
   star: ['M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z'],
   pin: ['M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z', 'M9.8 10a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
@@ -817,7 +820,7 @@ const modeByK = k => MODES.find(m => m.k === k) || MODES[0];
 function modeGrid(sel, on) {
   return el('div', { class: 'modes', role: 'group', 'aria-label': '기록 모드' },
     MODES.map(m => el('button', { class: 'mode' + (m.k === sel ? ' on' : ''), 'aria-pressed': m.k === sel ? 'true' : 'false', onclick: () => on(m.k) },
-      el('span', { class: 'ic' }, ico(m.k, 30)), el('span', { text: m.label }))));
+      el('span', { class: 'ic' }, ico(m.k, 28)), el('span', { text: m.label }))));
 }
 const modeOfT = t => modeByK(ls.get('walkMode:' + t, 'hike'));
 const fmtPace = (d, ms) => { if (d < 50 || ms <= 0) return '-'; const s = Math.round(ms / 1000 / (d / 1000)); return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`; };
