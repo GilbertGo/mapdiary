@@ -76,7 +76,7 @@ input::placeholder{color:#B3AC9C}
 .cal-d .c{position:absolute;top:2px;right:4px;font-size:10px;background:var(--accent);color:#1E3B2F;border-radius:8px;padding:0 4px}
 .rd{background:linear-gradient(160deg,#1E3B2F,#12261D);color:#fff;border-radius:28px;padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
 .rd .lbl{font-size:13px;color:#A9C2B3}
-.rd-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rd-top{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .rd-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:none;background:rgba(255,255,255,.1);color:#fff;font:inherit;font-size:13px;font-weight:700;white-space:nowrap}
 .rd-chip i{width:8px;height:8px;border-radius:50%;background:#7BD389}
 .rd-chip.warn{background:#F4A259;color:#1E3B2F}
@@ -96,6 +96,17 @@ input::placeholder{color:#B3AC9C}
 .rd-stop{width:86px;height:86px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
 body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .rd-stop i{width:22px;height:22px;background:#fff;border-radius:5px}
+.lock-ov{position:fixed;inset:0;z-index:5000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;padding:24px}
+.lock-ov .big{font-size:96px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.lock-ov .big small{font-size:24px;color:#8FA89A;margin-left:6px;letter-spacing:0}
+.lock-ov .row3{display:flex;gap:28px;margin-top:10px;text-align:center}
+.lock-ov .row3 b{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.lock-ov .row3 span{font-size:13px;color:#8FA89A}
+.lock-key{margin-top:48px;width:96px;height:96px;border-radius:50%;border:none;color:#fff;font-size:34px;background:conic-gradient(#F4A259 var(--p,0%),#26332C 0);display:flex;align-items:center;justify-content:center;position:relative}
+.lock-key::after{content:'';position:absolute;inset:6px;border-radius:50%;background:#111}
+.lock-key span{position:relative;z-index:1}
+.lock-hint{font-size:15px;color:#8FA89A;transition:color .2s}
+.lock-hint.nudge{color:#F4A259}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .member{width:100%;text-align:left;background:var(--card);border:none;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
 .dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
@@ -254,9 +265,10 @@ function toast(msg) {
 }
 // 휴대폰 뒤로가기: 사진 크게 보기, 아래에서 올라오는 창, 크게 본 지도가 떠 있으면 그것만 닫아요 (페이지를 빠져나가지 않게)
 // 창이 뜨면 방문 기록에 '창' 칸을 하나 쌓고, 뒤로가기로 그 칸이 빠지면 맨 위 창을 닫아요.
-function ovOpen() { return document.querySelectorAll('.sheet-bg').length + (typeof fsActive !== 'undefined' && fsActive ? 1 : 0); }
+function ovOpen() { return document.querySelectorAll('.sheet-bg, .lock-ov').length + (typeof fsActive !== 'undefined' && fsActive ? 1 : 0); }
 function ovGuard() { if (ovOpen() && !(history.state && history.state.ov)) history.pushState({ ov: 1 }, ''); }
 function ovCloseTop() {
+  const lk = document.querySelector('.lock-ov'); if (lk) { lk.dispatchEvent(new Event('nudge')); return; }   // 잠금 화면은 뒤로가기로 안 풀려요
   const bgs = document.querySelectorAll('.sheet-bg'), top = bgs[bgs.length - 1];
   if (top) { top.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (top.isConnected) top.remove(); return; }   // 바깥 누르기와 같게 닫아요
   if (typeof fsActive !== 'undefined' && fsActive) toggleFull(fsActive.map, fsActive.box, fsActive.b);
@@ -2227,6 +2239,39 @@ function viewWalk() {
     } else rd.spBox.replaceChildren();
   }
   const rdTile = (label, v, extra) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: label }), v, extra || null);
+  // ---------- 화면 잠금: 화면은 켠 채로, 잘못 눌리지 않게 막아요. 자물쇠를 1초 길게 누르면 풀려요 ----------
+  function lockScreen() {
+    if (document.querySelector('.lock-ov')) return;
+    if (!wake) { wantWake = true; lockWake(); }
+    const big = el('div', { class: 'big' }), t1 = el('b'), t2 = el('b'), t3 = el('b'), l2 = el('span'), l3 = el('span');
+    const hint = el('div', { class: 'lock-hint', text: '자물쇠를 1초 동안 길게 누르면 풀려요' });
+    const key = el('button', { class: 'lock-key', 'aria-label': '길게 눌러 잠금 풀기' }, el('span', { text: '🔒' }));
+    const ov = el('div', { class: 'lock-ov', role: 'dialog', 'aria-label': '화면 잠금' },
+      el('div', { style: 'font-size:14px;color:#8FA89A', text: `🔒 잠금 중 · ${M().label} 기록 중` }), big, el('div', { style: 'color:#8FA89A;font-size:14px', text: `${M().did} 거리` }),
+      el('div', { class: 'row3' }, el('div', {}, t1, el('span', { text: '시간' })), el('div', {}, t2, l2), el('div', {}, t3, l3)),
+      key, hint);
+    const upd = () => {
+      const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), km = st.walk / 1000, mv = movingMs(tr, m.car);
+      big.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
+      t1.textContent = fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
+      if (m.k === 'run') { t2.textContent = fmtPace(st.walk, mv); l2.textContent = '평균 페이스'; t3.textContent = cadNow() ?? (nowPace(tr) || '-'); l3.textContent = cadNow() != null ? '케이던스' : '지금 페이스'; }
+      else if (m.k === 'bike') { t2.textContent = fmtSpeed(st.walk, mv).replace('km/h', ''); l2.textContent = '평균 km/h'; t3.textContent = ls.get('walkSpots:' + id, []).length; l3.textContent = '별표'; }
+      else { const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null; t2.textContent = ev ? `${ev.gain}m` : ls.get('walkSpots:' + id, []).length; l2.textContent = ev ? '오른 높이' : '별표'; t3.textContent = new Date().toTimeString().slice(0, 5); l3.textContent = '지금 시각'; }
+    };
+    upd(); const iv = setInterval(upd, 1000);
+    // 길게 누르기: 1초 동안 누르고 있으면 둥근 막대가 다 차고 풀려요
+    let t0 = 0, raf = 0;
+    const tick = () => { const p = Math.min(1, (performance.now() - t0) / 1000); key.style.setProperty('--p', (p * 100).toFixed(0) + '%'); if (p >= 1) { unlock(); return; } raf = requestAnimationFrame(tick); };
+    const down = e => { e.preventDefault(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
+    const up = () => { cancelAnimationFrame(raf); key.style.setProperty('--p', '0%'); };
+    key.addEventListener('pointerdown', down); ['pointerup', 'pointercancel', 'pointerleave'].forEach(k => key.addEventListener(k, up));
+    const nudge = () => { hint.classList.add('nudge'); hint.textContent = '잠겨 있어요. 자물쇠를 길게 눌러 푸세요'; setTimeout(() => { hint.classList.remove('nudge'); hint.textContent = '자물쇠를 1초 동안 길게 누르면 풀려요'; }, 1600); };
+    ov.addEventListener('nudge', nudge);
+    ov.addEventListener('pointerdown', e => { if (!key.contains(e.target)) { e.preventDefault(); nudge(); } });
+    ov.addEventListener('contextmenu', e => e.preventDefault());
+    function unlock() { clearInterval(iv); cancelAnimationFrame(raf); ov.remove(); try { navigator.vibrate && navigator.vibrate(40); } catch {} toast('잠금을 풀었어요'); }
+    document.body.append(ov); ovGuard();
+  }
   const STAY_M = 60, STAY_MS = 10 * 60000;
   let stayA = null, stayAsk = null;
   function stayCheck(lat, lng) {
@@ -2530,8 +2575,9 @@ function viewWalk() {
           el('div', { class: 'rd-top' },
             el('span', { class: 'rd-chip' + (gps === 'on' ? '' : ' warn') }, gps === 'on' ? el('i') : null, gps === 'on' ? '기록 중' : gps === 'denied' ? '위치 권한 필요' : 'GPS 찾는 중'),
             el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' },
-              el('button', { class: 'rd-chip', 'aria-label': '1km 목소리 안내', text: voice ? '🔊 안내' : '🔇 안내', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
-              el('button', { class: 'rd-chip' + (wake ? '' : ' warn'), text: wake ? '☀ 화면 켜짐' : '화면 켜두기', onclick: () => { if (!wake) { wantWake = true; lockWake(); } } }))),
+              el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊' : '🔇', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
+              el('button', { class: 'rd-chip' + (wake ? '' : ' warn'), 'aria-label': wake ? '화면 켜져 있음' : '화면 켜두기', text: wake ? '☀' : '☀ 켜두기', onclick: () => { if (!wake) { wantWake = true; lockWake(); } } }),
+              el('button', { class: 'rd-chip', 'aria-label': '화면 잠금', text: '🔒 잠금', onclick: lockScreen }))),
           el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
             el('div', { class: 'grow', style: 'font-size:17px;font-weight:700;color:#DDE8E1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap', text: nameOf() }),
             el('button', { class: 'rd-chip', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } })),
@@ -2584,7 +2630,7 @@ function viewWalk() {
       stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
         el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
-        wake ? null : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
+        wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠금', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
       mapEl,
       guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
       follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
