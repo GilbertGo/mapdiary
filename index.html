@@ -1452,17 +1452,37 @@ function route() {
 }
 
 // ---------- 모임방: 코드를 아는 사람끼리 MD를 모아 봐요 ----------
-// 코드 8자리(예: K7QM-3XPA)에서 방 번호와 열쇠를 만들어요. 서버에는 잠긴 글만 올라가서, 코드를 모르면 못 봐요.
-// allhere/v1/room/{방번호}/info = 방 이름, /md/{글번호} = MD 한 개(짧은 링크 + 요약). rooms = [{ code, rid, name }]
-const ROOM_ALPH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const roomCodeClean = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-const roomPretty = c => c.slice(0, 4) + '-' + c.slice(4);
-const roomsLoad = () => ls.get('rooms', []).filter(r => r && /^[A-Z0-9]{8}$/.test(r.code));
+// 코드는 외우기 쉬운 우리말 단어 3개 + 숫자 2개(예: 노을 소나무 다람쥐 27). 띄어쓰기는 상관없어요.
+// 처음 만든 방은 영문 8자리(예: K7QM-3XPA)였어요. 그 방도 그대로 열려요.
+// 코드에서 방 번호와 열쇠를 만들어요. 서버에는 잠긴 글만 올라가서, 코드를 모르면 못 봐요.
+// allhere/v1/room/{방번호}/info = 방 이름, /md/{글번호} = MD 한 개(짧은 링크 + 요약). rooms = [{ code, pretty, rid, name }]
+const ROOM_WORDS = '노을 소나무 다람쥐 바다 하늘 구름 바람 햇살 달빛 별빛 이슬 새벽 아침 저녁 봄비 여름 가을 겨울 눈꽃 단풍 은행 벚꽃 매화 진달래 개나리 목련 장미 국화 해바라기 코스모스 민들레 제비꽃 들국화 갈대 억새 대나무 느티나무 참나무 버드나무 자작나무 잣나무 전나무 동백 무궁화 연꽃 수선화 튤립 백합 라일락 수국 산딸기 머루 다래 앵두 자두 복숭아 사과 배꽃 감나무 호두 밤송이 도토리 솔방울 조약돌 몽돌 바위 계곡 폭포 시냇물 호수 연못 샘물 섬마을 등대 항구 모래 파도 갯벌 물결 돌담 오솔길 둘레길 능선 봉우리 고개 언덕 들판 논두렁 밭둑 초원 숲길 정자 쉼터 다리 징검다리 나루 우물 장독 기와 초가 토끼 사슴 고라니 여우 너구리 수달 두루미 황새 백로 참새 제비 까치 부엉이 올빼미 딱새 동박새 꾀꼬리 뻐꾸기 비둘기 갈매기 고래 돌고래 거북 해마 불가사리 조개 소라 꽃게 문어 오징어 연어 송어 붕어 잉어 메기 반딧불 나비 잠자리 무당벌레 꿀벌 호랑이 곰돌이 판다 코알라 펭귄 기린 코끼리 얼룩말 캥거루 햄스터 고양이 강아지 망아지 송아지 병아리 오리 거위 백조 공작 앵무새 무지개 번개 안개 서리 소나기 함박눈 봄바람 산들바람 해돋이 해넘이 보름달 초승달 샛별 은하수 북극성 오로라 노랑 파랑 초록 보라 연두 분홍 하양 주황 빨강 하모니 가야금 거문고 피리 장구 북소리 종소리 풍경 연날리기 팽이 구슬 딱지 공기 윷놀이 그네 시소 미끄럼 소풍 도시락 김밥 주먹밥 떡볶이 호떡 붕어빵 군밤 군고구마 옥수수 감자 고구마 호박 수박 참외 딸기 포도 귤'.split(' ');
+// 적은 코드 → { code: 열쇠를 만드는 글자(띄어쓰기 없이), pretty: 보여 줄 모양 }. 코드 모양이 아니면 null
+function roomParse(v) {
+  const t = String(v || '');
+  if (!/[가-힣]/.test(t)) { const c = t.toUpperCase().replace(/[^A-Z0-9]/g, ''); return c.length === 8 ? { code: c, pretty: c.slice(0, 4) + '-' + c.slice(4) } : null; }
+  const parts = t.replace(/(\d+)/g, ' $1 ').replace(/[^가-힣0-9]+/g, ' ').trim().split(' ').filter(Boolean), code = parts.join('');
+  if (!/^[가-힣]{3,15}\d{2}$/.test(code)) return null;
+  // 붙여 쓴 코드도 단어 목록으로 나눠서 보여줘요 (나눌 수 없으면 적은 그대로)
+  const split = w => { if (!w) return []; for (const x of ROOM_WORDS) if (w.startsWith(x)) { const r = split(w.slice(x.length)); if (r) return [x, ...r]; } return null; };
+  const sp = split(code.slice(0, -2));
+  return { code, pretty: sp ? [...sp, code.slice(-2)].join(' ') : parts.join(' ') };
+}
+function roomNewCode() {
+  const a = new Uint32Array(4); crypto.getRandomValues(a);
+  const w = [];
+  for (let i = 0; w.length < 3; i++) { const x = ROOM_WORDS[(i < 3 ? a[i] : crypto.getRandomValues(new Uint32Array(1))[0]) % ROOM_WORDS.length]; if (!w.includes(x)) w.push(x); }
+  return roomParse(`${w.join(' ')} ${10 + a[3] % 90}`);
+}
+const roomLink = p => `${location.origin}${location.pathname}?room=1#r=${encodeURIComponent(p.pretty.replace(/ /g, '-'))}`;
+const roomsLoad = () => ls.get('rooms', []).filter(r => r && roomParse(r.code)?.code === r.code).map(r => Object.assign({ pretty: roomParse(r.code).pretty }, r));
+const u8hex = u => Array.from(u, b => b.toString(16).padStart(2, '0')).join('');
 async function roomOf(code) {
-  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('mapdiary-room:' + code)));
-  const rid = Array.from(h.subarray(0, 8), b => b.toString(16).padStart(2, '0')).join('');
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
-  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode('mapdiary-room-v1:' + rid), iterations: 150000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 128 }, false, ['encrypt', 'decrypt']);
+  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveKey', 'deriveBits']);
+  let rid;
+  if (/^[A-Z0-9]{8}$/.test(code)) rid = u8hex(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode('mapdiary-room:' + code))).subarray(0, 8));   // 예전 영문 코드
+  else rid = u8hex(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode('mapdiary-room-id-v2'), iterations: 150000, hash: 'SHA-256' }, base, 64)));   // 단어 코드: 방 번호도 천천히 만들어 코드를 거꾸로 알아내기 어렵게
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: enc.encode('mapdiary-room-v1:' + rid), iterations: 150000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 128 }, false, ['encrypt', 'decrypt']);
   return { code, rid, key, topic: `allhere/v1/room/${rid}` };
 }
 const roomSeal = async (key, obj) => ({ enc: await sealBytes(new TextEncoder().encode(JSON.stringify(obj)), key) });
@@ -1516,53 +1536,56 @@ function roomPostBtn(getOpts) {
 // ?room=1 모임방 목록 / ?room=1#r=코드 그 모임방 (코드는 # 뒤라 서버로 안 가요)
 function viewRoom() {
   addEventListener('hashchange', () => location.reload());
-  const code = roomCodeClean((/[#&]r=([A-Za-z0-9-]+)/.exec(location.hash) || [])[1]);
-  return code.length === 8 ? viewRoomOne(code) : viewRoomList();
+  let h = (/[#&]r=([^&]+)/.exec(location.hash) || [])[1] || ''; try { h = decodeURIComponent(h); } catch {}
+  const p = roomParse(h);
+  return p ? viewRoomOne(p) : viewRoomList();
 }
 function viewRoomList() {
   const rooms = roomsLoad();
   const create = async () => {
-    const name = await askText('모임방 만들기', '모임방 이름', '', '예: 우리 가족, 토요 산악회', '만들면 8자리 코드가 생겨요. 코드를 알려 준 사람만 들어올 수 있어요.'); if (!name) return;
+    const name = await askText('모임방 만들기', '모임방 이름', '', '예: 우리 가족, 토요 산악회', '만들면 "노을 소나무 다람쥐 27"처럼 외우기 쉬운 코드가 생겨요. 코드를 알려 준 사람만 들어올 수 있어요.'); if (!name) return;
     if (!connected) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
-    const a = new Uint32Array(8); crypto.getRandomValues(a);
-    const code = Array.from(a, x => ROOM_ALPH[x % 32]).join(''), r = await roomOf(code);
+    const p = roomNewCode(), r = await roomOf(p.code);
     try { await pub(r.topic + '/info', await roomSeal(r.key, { name: name.slice(0, 30), at: Date.now() })); } catch { return toast('만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
-    ls.set('rooms', [{ code, rid: r.rid, name: name.slice(0, 30) }, ...roomsLoad()]);
-    location.href = './?room=1#r=' + code;
+    ls.set('rooms', [{ code: p.code, pretty: p.pretty, rid: r.rid, name: name.slice(0, 30) }, ...roomsLoad()]);
+    location.href = roomLink(p);
   };
-  const iC = el('input', { type: 'text', id: 'rc', maxlength: 9, autocomplete: 'off', placeholder: 'K7QM-3XPA', style: 'letter-spacing:3px;font-size:22px;font-weight:800;text-align:center;text-transform:uppercase' });
-  const join = () => { const c = roomCodeClean(iC.value); if (c.length !== 8) return toast('코드 8자리를 넣어 주세요'); location.href = './?room=1#r=' + c; };
+  const iC = el('input', { type: 'text', id: 'rc', maxlength: 40, autocomplete: 'off', placeholder: '예: 노을 소나무 다람쥐 27', style: 'font-size:20px;font-weight:700;text-align:center' });
+  const join = () => { const p = roomParse(iC.value); if (!p) return toast('받은 코드를 그대로 넣어 주세요 (단어 3개와 숫자 2개)'); location.href = roomLink(p); };
   iC.addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '모임방'),
     el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
     el('h1', { text: '모임방' }),
     el('div', { class: 'sub', text: '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요.' }),
-    rooms.length ? rooms.map(r => el('a', { class: 'member', href: './?room=1#r=' + r.code, style: 'text-decoration:none;color:inherit' },
-      el('div', { class: 'grow' }, el('div', { class: 'nm', text: r.name }), el('div', { class: 'dt', text: '코드 ' + roomPretty(r.code) })),
+    rooms.length ? rooms.map(r => el('a', { class: 'member', href: roomLink(r), style: 'text-decoration:none;color:inherit' },
+      el('div', { class: 'grow' }, el('div', { class: 'nm', text: r.name }), el('div', { class: 'dt', text: '코드 ' + r.pretty })),
       el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: '들어가기' })))
       : el('div', { class: 'card sub center', text: '아직 들어간 모임방이 없어요.' }),
-    el('div', { class: 'card stack', style: 'gap:10px' }, el('b', { text: '코드로 들어가기' }), iC, el('button', { class: 'btn primary full', text: '들어가기', onclick: join })),
+    el('div', { class: 'card stack', style: 'gap:10px' }, el('b', { text: '코드로 들어가기' }), iC,
+      el('div', { class: 'sub', text: '한 번 들어간 방은 이 목록에 남아서, 같은 휴대폰·브라우저에서는 코드를 다시 넣지 않아도 돼요.' }), el('button', { class: 'btn primary full', text: '들어가기', onclick: join })),
     el('button', { class: 'btn line full', text: '새 모임방 만들기', onclick: create }),
     el('div', { class: 'sub', text: '시험용 공개 서버를 써서, 올린 MD가 언젠가 사라질 수 있어요. 목록은 잠가서 올리지만, 목록 속 지도 링크는 보통 지도 링크와 같아요.' })));
 }
-async function viewRoomOne(code) {
+async function viewRoomOne(p) {
+  const code = p.code;
   const top = el('div', { class: 'stack', style: 'gap:4px' }), list = el('div', { class: 'stack', style: 'gap:10px' });
   const note = el('div', { class: 'sub center', text: '모임방을 불러오는 중이에요…' });
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '모임방'),
     el('a', { class: 'link', href: './?room=1', style: 'align-self:flex-start;padding:0', text: '← 모임방 목록' }), top, note, list));
   const r = await roomOf(code), mine = () => new Set(ls.get('myPosts', []));
   let local = roomsLoad().find(x => x.code === code) || null, info = null;
+  const pretty = local?.pretty || p.pretty;
   const posts = {};
   const drawTop = () => {
     const name = info?.name || local?.name || '모임방';
     const invite = async () => {
-      const url = `${location.origin}${location.pathname}?room=1#r=${code}`, text = `[Map Diary] '${name}' 모임방에 초대해요\n코드 ${roomPretty(code)}\n${url}`;
+      const url = roomLink({ pretty }), text = `[Map Diary] '${name}' 모임방에 초대해요\n코드: ${pretty}\n${url}`;
       if (navigator.share && !IN_KAKAO) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
       navigator.clipboard.writeText(text).then(() => toast('초대 글을 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 글을 복사하세요', text));
     };
     top.replaceChildren(el('h1', { text: name }),
       el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:wrap' },
-        el('span', { class: 'sub', text: '코드' }), el('b', { style: 'font-size:20px;letter-spacing:2px;color:var(--pine)', text: roomPretty(code) }),
+        el('span', { class: 'sub', text: '코드' }), el('b', { style: 'font-size:20px;color:var(--pine)', text: pretty }),
         el('button', { class: 'btn line small', style: 'height:36px', text: '초대하기', onclick: invite })),
       local ? el('button', { class: 'btn primary full', style: 'margin-top:10px', onclick: postMine }, ico('pin', 20), '내 MD 올리기') : '');
   };
@@ -1612,7 +1635,7 @@ async function viewRoomOne(code) {
   // 초대 링크로 처음 온 사람: 방이 있는 걸 확인하면 내 목록에 넣어요
   function joinIfNew() {
     if (local) return;
-    local = { code, rid: r.rid, name: info?.name || '모임방' };
+    local = { code, pretty, rid: r.rid, name: info?.name || '모임방' };
     ls.set('rooms', [local, ...roomsLoad().filter(x => x.code !== code)]);
     toast(`'${local.name}' 모임방에 들어왔어요`); drawTop();
   }
