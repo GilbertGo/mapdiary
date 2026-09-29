@@ -2257,14 +2257,37 @@ function viewWalk() {
     const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt);
     return `지난 러닝 · ${d.getMonth() + 1}월 ${d.getDate()}일 ${fmtDist(st.walk)} · 페이스 ${fmtPace(st.walk, movingMs(tr, 25))}/km`;
   }
+  // 출발: "달리기를 시작합니다." → 뚜 · 뚜 · 뚜 (3·2·1) → 뚜~ (높고 길게) 하고 출발. 화면을 누르면 바로 시작해요
+  function tone(freq, sec) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume();
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+      o.type = 'sine'; o.frequency.value = freq; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+      g.gain.setValueAtTime(0.35, t + sec - 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+      o.start(t); o.stop(t + sec + 0.02);
+    } catch {}
+    try { navigator.vibrate && navigator.vibrate(Math.round(sec * 1000)); } catch {}
+  }
   function countdown() {
-    let n = 3, dead = false;
-    const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums', text: '3' });
-    const ov = el('div', { class: 'sheet-bg', style: 'z-index:4200;align-items:center;justify-content:center;flex-direction:column;background:rgba(30,59,47,.94)', onclick: () => { if (!dead) { dead = true; ov.remove(); start(); } } },
-      num, el('div', { style: 'color:#D5DED7;font-size:16px;margin-top:12px', text: '누르면 바로 시작해요' }));
-    document.body.append(ov); beep(); say('3');
-    const tick = () => { if (dead) return; n--; if (n > 0) { num.textContent = n; beep(); say(String(n)); setTimeout(tick, 1000); } else { dead = true; ov.remove(); say('시작!'); start(); } };
-    setTimeout(tick, 1000);
+    let dead = false;
+    const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;min-height:170px', text: '' });
+    const cap = el('div', { style: 'color:#fff;font-size:22px;font-weight:700', text: '달리기를 시작합니다' });
+    const go = () => { if (dead) return; dead = true; ov.remove(); start(); };
+    const ov = el('div', { class: 'sheet-bg', style: 'z-index:4200;align-items:center;justify-content:center;flex-direction:column;background:rgba(30,59,47,.94)', onclick: go },
+      cap, num, el('div', { style: 'color:#D5DED7;font-size:16px;margin-top:12px', text: '누르면 바로 시작해요' }));
+    document.body.append(ov);
+    const beeps = () => {
+      if (dead) return;
+      [3, 2, 1].forEach((n, k) => setTimeout(() => { if (dead) return; num.textContent = n; tone(880, 0.18); }, k * 1000));
+      setTimeout(() => { if (dead) return; num.textContent = 'GO'; tone(1320, 0.9); setTimeout(go, 700); }, 3000);
+    };
+    // 목소리가 끝나면 신호음 (목소리 안내가 꺼져 있거나 목소리가 안 나오면 1초 뒤에)
+    let started = false; const once = () => { if (!started) { started = true; setTimeout(beeps, 300); } };
+    if (ls.get('runVoice', true) && 'speechSynthesis' in window) {
+      try { const u = new SpeechSynthesisUtterance('달리기를 시작합니다.'); u.lang = 'ko-KR'; u.onend = once; u.onerror = once; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch { once(); }
+      setTimeout(once, 3000);
+    } else setTimeout(once, 700);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('div', { class: 'lbl', style: 'font-size:12px;margin-top:2px' }), pz: el('span', { class: 'pz', text: '멈춤', style: 'display:none' }),
