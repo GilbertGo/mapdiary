@@ -140,6 +140,9 @@ nav.tabs button{width:100%;height:50px;border:none;border-radius:14px;background
 nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:700}
 .role{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-20px 0 6px -20px;width:calc(100% + 40px);box-sizing:border-box;align-self:flex-start;padding:12px 20px;font-size:14px;font-weight:600}
 .role .who{font-weight:700;display:flex;align-items:center;gap:6px}
+.who-ico .ico{display:inline-flex;animation:runbob .55s ease-in-out infinite alternate}
+@keyframes runbob{from{transform:translateY(1px) rotate(-4deg)}to{transform:translateY(-3px) rotate(3deg)}}
+@media (prefers-reduced-motion:reduce){.who-ico .ico{animation:none}}
 .role .home{color:inherit;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:6px;padding:6px 10px 6px 0;margin:-6px 0}
 .role .home .hi{width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11 12 4l9 7'/%3E%3Cpath d='M5 10v10h14V10'/%3E%3C/svg%3E") center/contain no-repeat}
 .role.leader{background:var(--ink);color:#fff}.role.leader .who{color:var(--accent)}
@@ -304,7 +307,8 @@ document.addEventListener('click', () => { try { actx = actx || new (window.Audi
 
 // 첫 화면으로 갈 때 물어볼 말 (참여자 위치 공유 중, 기록 중일 때 화면이 정해 둬요)
 let leaveWarn = null;
-function roleBar(role, who) {
+// iconK를 주면 오른쪽 글자 대신 그 아이콘을 보여줘요 (예: 러닝 중 달리는 사람, 통통 튀어요)
+function roleBar(role, who, iconK) {
   document.body.dataset.role = role;
   document.title = who ? `Map Diary · ${who}` : role === 'leader' ? 'Map Diary · 인솔자' : 'Map Diary · 참여자';
   // 맨 위 'Map Diary'를 누르면 어디서든 첫 화면으로
@@ -314,7 +318,8 @@ function roleBar(role, who) {
   } },
     el('span', { class: 'hi', 'aria-hidden': 'true' }), 'Map Diary');
   return el('div', { class: 'role ' + role, role: 'banner' }, home,
-    el('span', { class: 'who', text: who || (role === 'leader' ? '인솔자 화면' : '참여자 화면') }));
+    iconK ? el('span', { class: 'who who-ico', role: 'img', 'aria-label': who || '' }, ico(iconK, 30))
+      : el('span', { class: 'who', text: who || (role === 'leader' ? '인솔자 화면' : '참여자 화면') }));
 }
 const ST = {
   help:   { label: '도움 요청',      color: '#B91C1C', bg: '#FDE2E2', fg: '#7F1D1D', rank: 0 },
@@ -574,6 +579,20 @@ function pickPhotoPlace(rec) {
     }, 30);
   });
 }
+// 사진을 찍은 바로 뒤: 방금 찍은 사진을 보여 주고 한 줄 메모를 받아요 (건너뛰어도 돼요)
+function photoMemoPrompt(rec) {
+  const url = URL.createObjectURL(rec.blob);
+  const iM = el('input', { type: 'text', id: 'pm', maxlength: 80, placeholder: '예: 정상에서 다 같이, 여기 경치 최고' });
+  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) done(); } });
+  const done = () => { sb.remove(); URL.revokeObjectURL(url); };
+  const save = async () => { const m = iM.value.trim(); if (m) { rec.m = m; try { await photoPut(rec); } catch {} dispatchEvent(new Event('photo-changed')); toast('사진에 메모를 남겼어요'); } done(); };
+  iM.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진 메모' },
+    el('img', { src: url, alt: '방금 찍은 사진', style: 'width:100%;max-height:38vh;object-fit:contain;border-radius:14px;background:#EFE9DC' }),
+    el('label', { class: 'f', for: 'pm' }, '📝 이 사진에 한 줄 메모 (선택)', iM),
+    el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '건너뛰기', onclick: done }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
+  document.body.append(sb); setTimeout(() => iM.focus(), 80);
+}
 // 방금 넣은 사진들: 위치를 확인하고 바꿀 수 있게 목록으로 보여줘요
 function reviewPhotos(recs) {
   if (!recs.length) return;
@@ -582,12 +601,13 @@ function reviewPhotos(recs) {
   const draw = () => list.replaceChildren(...recs.map(r => el('div', { class: 'row', style: 'gap:10px;align-items:center;flex-wrap:nowrap' },
     el('img', { src: r.thumb, alt: '', style: 'width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none' }),
     el('div', { class: 'grow', style: 'min-width:0' }, el('b', { text: `${new Date(r.ts).getMonth() + 1}/${new Date(r.ts).getDate()} ${fmtClock(r.ts)}` }),
-      el('div', { class: 'sub', style: 'font-size:13px', text: r.lat != null ? '위치 있음' : '위치 없음 · 지도에 안 보여요' })),
+      el('div', { class: 'sub', style: 'font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap', text: (r.m ? `“${r.m}” · ` : '') + (r.lat != null ? '위치 있음' : '위치 없음 · 지도에 안 보여요') })),
+    el('button', { class: 'btn line small', style: 'height:36px;white-space:nowrap;padding:0 10px', text: r.m ? '✎' : '📝', 'aria-label': '사진 메모', onclick: async () => { const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true); if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} dispatchEvent(new Event('photo-changed')); draw(); } }),
     el('button', { class: 'btn line small', style: 'height:36px;white-space:nowrap', onclick: async () => { await pickPhotoPlace(r); draw(); } }, ico('pin', 16), '위치'))));
   draw();
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '불러온 사진' },
     el('h2', { text: `사진 ${recs.length}장을 넣었어요` }),
-    el('p', { class: 'sub', style: 'margin:0', text: '사진 찍은 시각에 맞춰 위치를 정했어요. 다른 곳에서 찍었으면 "위치"를 눌러 바꿔 주세요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '사진 찍은 시각에 맞춰 위치를 정했어요. 📝로 메모를 남기고, 다른 곳에서 찍었으면 "위치"를 눌러 바꿔 주세요.' }),
     list, el('button', { class: 'btn primary full', text: '확인', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
@@ -943,7 +963,7 @@ async function drawBragCard(o) {
     if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, '#2D6A4F'); mx += 46; }
     g.fillText(o.modeLabel, mx, y);
   }
-  if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note}”`, W - 144), 72, y); }   // 한 줄 일기
+  if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MD 메모 첫 줄
   // 경로 판
   const PH = (o.photos || []).slice(0, 3);   // 사진이 있으면 지도를 줄이고 아래에 사진 3장
   const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = (PH.length ? 870 : 1040) - py;
@@ -1419,7 +1439,7 @@ function viewBragLink(given, feed) {
     ...(o.endPlace === '지금 여기' ? { endPlace: '마지막 위치' } : {}),
     ph: Number.isFinite(o.ph) ? Math.max(0, Math.min(o.ph, 12)) : 0,
     spots: Array.isArray(o.spots) ? o.spots.slice(0, 10).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng)).map(p => ({ n: s(p.n, 30) || '좋았던 곳', lat: p.lat, lng: p.lng, m: s(p.m, 60), k: p.k === 'stay' ? 'stay' : '' })) : [],
-    note: s(o.note, 120) };
+    note: s(o.note, 1000) };
   if (o.modes && (!o.route || o.modes.length !== o.route.length)) o.modes = null;
   const R = Array.isArray(o.route) ? o.route.filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])) : [];
   const img = el('img', { alt: 'Map Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
@@ -1478,7 +1498,7 @@ function viewBragLink(given, feed) {
     el('div', { class: 'stack', style: 'gap:4px' },
       el('div', { class: 'sub with-ico' }, o.dateText || '', o.modeLabel ? [' · ', o.modeK ? ico(o.modeK, 16) : null, o.modeLabel] : null),
       el('h1', { text: o.name }),
-      o.note ? el('div', { class: 'note', text: `“${o.note}”` }) : null,
+      o.note ? el('div', { class: 'note', style: 'white-space:pre-wrap;background:rgba(45,106,79,.07);border-radius:14px;padding:10px 14px', text: o.note }) : null,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${o.startPlace} ${o.startTime} → ${o.endPlace} ${o.endTime}` }),
       o.stats.length ? el('div', { class: 'sub', text: o.stats.join(' · ') }) : null),
     // 사진 (잠가서 온 사진을 풀어서 보여줘요)
@@ -1756,6 +1776,19 @@ function askText(title, label, value, placeholder, sub, max = 40, allowEmpty = f
       el('label', { class: 'f', for: 'at' }, label, iN),
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => { sb.remove(); res(null); } }), el('button', { class: 'btn primary small grow', text: '확인', onclick: ok }))));
     document.body.append(sb); setTimeout(() => iN.focus(), 50);
+  });
+}
+// 여러 줄 메모 창 (MD 전체 메모). 비우면 '' (지우기), 닫으면 null
+function askLong(title, value, placeholder, sub, max = 1000) {
+  return new Promise(res => {
+    const ta = el('textarea', { id: 'al', maxlength: max, rows: 6, placeholder: placeholder || '', style: 'width:100%;resize:vertical;font:inherit;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line,#E4DCC8);background:#FFFDF8;box-sizing:border-box' });
+    ta.value = value || '';
+    const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) { sb.remove(); res(null); } } });
+    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': title },
+      el('h2', { text: title }), sub ? el('p', { class: 'sub', style: 'margin:0', text: sub }) : null, ta,
+      el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => { sb.remove(); res(null); } }),
+        el('button', { class: 'btn primary small grow', text: '저장', onclick: () => { sb.remove(); res(ta.value.trim().slice(0, max)); } }))));
+    document.body.append(sb); setTimeout(() => ta.focus(), 50);
   });
 }
 async function myNick() {
@@ -2225,10 +2258,10 @@ async function viewMyOne(t) {
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
-  const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? `“${n}” ` : '',
-    el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 고치기' : '✎ 한 줄 일기 쓰기', onclick: async () => {
-      const v = await askText('한 줄 일기', '오늘 한 줄', ls.get('walkNote:' + t, ''), '예: 단풍이 한창이라 사진을 잔뜩 찍었다', '공유 카드와 지도 링크에도 함께 보여요. 비우면 지워요.', 120, true);
-      if (v == null) return; if (v) ls.set('walkNote:' + t, v.slice(0, 120)); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
+  const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
+    el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 메모 고치기' : '📝 이번 MD 메모 쓰기', onclick: async () => {
+      const v = await askLong('📝 이번 MD 메모', ls.get('walkNote:' + t, ''), '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것…', '첫 줄은 공유 카드에, 전체는 지도 링크에도 보여요. 비우면 지워요.');
+      if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
   drawNote();
   const ev = elevStats(tr);
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
@@ -2627,6 +2660,7 @@ function viewWalk() {
     const recs = await addPhotos(id, files, lastFix), n = recs.length;
     toast(n ? `사진 ${n}장을 기록에 붙였어요` : '사진을 넣지 못했어요');
     if (inp === galIn) reviewPhotos(recs);   // 사진첩에서 불러온 사진은 위치를 확인·바꿀 수 있게
+    else if (recs.length) photoMemoPrompt(recs[0]);   // 방금 찍은 사진은 바로 한 줄 메모
     if (wantWake && !wake) lockWake();
     refreshPhotos();
   };
@@ -2745,22 +2779,24 @@ function viewWalk() {
     const iN = el('input', { type: 'text', id: 'wn', maxlength: 40, value: nameOf() });
     const wp0 = ls.get('walkPlaces:' + id, {});   // 기록 중에 '장소 이름 적기'로 적어 둔 게 있으면 채워요
     const iS = el('input', { type: 'text', id: 'ws', maxlength: 30, value: wp0.start || '', placeholder: '예: 동네 공원' }), iE = el('input', { type: 'text', id: 'we', maxlength: 30, value: wp0.end || '', placeholder: '예: 뒷산 정상' });
-    const iD = el('input', { type: 'text', id: 'wd', maxlength: 120, value: ls.get('walkNote:' + id, ''), placeholder: '예: 단풍이 한창이라 사진을 잔뜩 찍었다' });
+    const iD = el('textarea', { id: 'wd', maxlength: 1000, rows: 4, placeholder: '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것을 적어 두세요.\n예: 단풍이 한창이라 사진을 잔뜩 찍었다. 정상에서 먹은 김밥이 최고!', style: 'width:100%;resize:vertical;font:inherit;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:14px;border:1.5px solid #E4DCC8;background:#FFFDF8;box-sizing:border-box' });
+    iD.value = ls.get('walkNote:' + id, '');
     const bg = el('div', { class: 'sheet-bg' });
     bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '기록 저장' },
       el('h2', { text: '기록 저장하기' }),
       el('p', { class: 'sub', style: 'margin:0', text: `${M().did} 거리 ${fmtDist(st0.walk)} · ${fmtDur(trackStats(tr).ms)}. 이름과 장소를 적고 저장하세요.` }),
       el('label', { class: 'f', for: 'wn' }, '이름', iN),
+      el('label', { class: 'f', for: 'wd' }, el('span', { class: 'with-ico', style: 'gap:6px' }, '📝 이번 MD 메모 (선택)'), iD),
+      el('div', { class: 'sub', style: 'font-size:13px;margin-top:-6px', text: '첫 줄은 공유 카드에 들어가고, 전체는 내 MD와 지도 링크에서 보여요.' }),
       el('div', { class: 'two' },
         el('label', { class: 'f', for: 'ws' }, '출발한 곳 (선택)', iS),
         el('label', { class: 'f', for: 'we' }, '도착한 곳 (선택)', iE)),
-      el('label', { class: 'f', for: 'wd' }, '오늘 한 줄 (선택)', iD),
       el('div', { class: 'row' },
         el('button', { class: 'btn line small grow', text: '계속 기록하기', onclick: () => bg.remove() }),
         el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
           ls.set('trackName:' + id, iN.value.trim() || defName());
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
-          if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 120)); else localStorage.removeItem('walkNote:' + id);
+          if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 1000)); else localStorage.removeItem('walkNote:' + id);
           stopGps(); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
           ls.set('walkNow', null); bg.remove(); done = id; draw();
@@ -2834,7 +2870,7 @@ function viewWalk() {
     if (M().k === 'run') {
       if (!mapEl.style.height.endsWith('px')) mapEl.style.height = '25vh'; mapEl.style.minHeight = '150px'; document.body.classList.add('has-act');
       const voice = ls.get('runVoice', true);
-      root.replaceChildren(...[roleBar('leader', '러닝'),
+      root.replaceChildren(...[roleBar('leader', '러닝', 'run'),
         el('div', { class: 'rd' },
           el('div', { class: 'rd-top' },
             el('span', { class: 'rd-chip' + (gps === 'on' ? '' : ' warn') }, gps === 'on' ? el('i') : null, gps === 'on' ? '기록 중' : gps === 'denied' ? '위치 권한 필요' : 'GPS 찾는 중'),
