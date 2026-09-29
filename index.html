@@ -1760,8 +1760,8 @@ function viewBragLink(given, feed) {
     R.length > 1 ? [
       el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pin', 20), '다닌 길'), el('span', { text: '지도를 누르면 그곳으로 길찾기' })),
       mapEl, spotList(o.spots),
-      // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요
-      el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
+      // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
+      o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
       // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 카카오맵이 현위치에서 그곳까지 안내
       el('div', { class: 'card stack', style: 'gap:10px' },
         el('b', { text: '어디로 가 볼까요?' }), destBar, kakaoBtn,
