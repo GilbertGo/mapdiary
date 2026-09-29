@@ -355,13 +355,21 @@ function spotMarkers(layer, spots) {
   });
 }
 // 별표·들른 곳 목록 (메모가 있으면 같이)
-function spotList(spots) {
+// ids를 주면(내 기록) 메모를 적거나 고칠 수 있어요
+function spotList(spots, ids) {
   const ss = (spots || []).filter(s => s && s.n);
   if (!ss.length) return null;
-  return el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' },
-    ss.map(s => el('div', { class: 'row', style: 'gap:8px;align-items:flex-start;flex-wrap:nowrap' },
-      el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
-      el('div', { class: 'grow' }, el('b', { text: s.n }), s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null))));
+  const box = el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' });
+  const edit = async s => {
+    const v = await askText(s.n, '한 줄 메모', s.m || '', '예: 여기서 김밥 먹음', '비우면 지워요.', 60, true); if (v == null) return;
+    for (const id of ids) { const list = ls.get('walkSpots:' + id, []), x = list.find(y => y.ts === s.ts && y.lat === s.lat && y.lng === s.lng); if (x) { if (v) x.m = v; else delete x.m; ls.set('walkSpots:' + id, list); } }
+    if (v) s.m = v; else delete s.m; draw();
+  };
+  const draw = () => box.replaceChildren(...ss.map(s => el('div', { class: 'row', style: 'gap:8px;align-items:flex-start;flex-wrap:nowrap' },
+    el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
+    el('div', { class: 'grow' }, el('b', { text: s.n }), s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null),
+    ids ? el('button', { class: 'link', style: 'padding:0;font-size:14px;flex:none', text: s.m ? '✎ 고치기' : '✎ 메모', onclick: () => edit(s) }) : null)));
+  draw(); return box;
 }
 // ---------- 따라가기: 남의 MD 길을 내 지도에 깔고 걸어요 ----------
 // guideNext: 기록을 시작하면 붙일 길 / walkGuide:{기록ID} = { name, route: [[lat,lng]…], spots, modeK }
@@ -916,6 +924,7 @@ function openBrag(info, t, count, allDone, room) {
       if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, st.ms)}`);
     } else if (route) stats.push(`거리 ${fmtDist(pathLen(route))}`);
     if (route && which === 'mine' && ELEV_MODES.includes(M.k)) { const ev = elevStats(trackLoad(t)); if (ev && ev.gain >= 10) stats.push(`오른 높이 ${ev.gain}m`); }
+    { const nStay = spotsOf(t).filter(s => s.k === 'stay').length; if (nStay) stats.push(`들른 곳 ${nStay}곳`); }
     if (info.live) stats.push('진행 중');   // 기록 중에 자랑할 때
     if (info.durText) stats.push(info.durText);
     else if (which === 'mine') { const st = trackStats(trackLoad(t), M.car); if (st.ms > 0) stats.push(dur(st.ms)); }
@@ -1285,7 +1294,7 @@ function viewBragLink(given, feed) {
   // 길찾기 목적지: ⭐ 좋았던 곳들, 출발, 도착 (지도를 누르면 '고른 곳')
   const dests = [];
   if (R.length > 1) {
-    o.spots.forEach(p => dests.push({ n: p.n, lat: p.lat, lng: p.lng, k: 'spot' }));
+    o.spots.forEach(p => dests.push({ n: p.n, lat: p.lat, lng: p.lng, k: 'spot', stay: p.k === 'stay' }));
     dests.push({ n: o.startPlace || '출발', lat: R[0][0], lng: R[0][1], k: 'start' });
     const B = R[R.length - 1];
     if (dist(R[0][0], R[0][1], B[0], B[1]) > 80) dests.push({ n: o.endPlace || '도착', lat: B[0], lng: B[1], k: 'end' });
@@ -1298,7 +1307,7 @@ function viewBragLink(given, feed) {
     kakaoBtn.href = `https://map.kakao.com/link/to/${encodeURIComponent(d.n)},${d.lat},${d.lng}`;
     kakaoBtn.textContent = `카카오맵으로 '${d.n}' 길찾기`;
     destBar.replaceChildren(...[...dests.map(x => el('button', { class: 'btn small ' + (x === curDest ? 'dark' : 'line'), onclick: () => setDest(x) },
-      x.k === 'spot' ? ico('star', 16, '#F4A259') : null,
+      x.k === 'spot' ? ico(x.stay ? 'pin' : 'star', 16, '#F4A259') : null,
       x.k === 'spot' ? x.n : x.k === 'start' ? (x.n === '출발 지점' ? x.n : '출발 · ' + x.n) : (x.n === '도착 지점' || x.n === '마지막 위치' ? '마지막 위치' : '도착 · ' + x.n))),
       d.k === 'pick' ? el('button', { class: 'btn small dark' }, ico('pin', 16), '지도에서 고른 곳') : null].filter(Boolean));
     if (destMap) {
@@ -1950,7 +1959,7 @@ async function viewMyOne(t) {
   drawNote();
   const ev = elevStats(tr);
   const nums = [`${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
-    M.k === 'run' ? `페이스 ${fmtPace(st.walk, st.ms)} /km` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, st.ms)}` : '', spots.length ? `별표 ${spots.length}곳` : ''].filter(Boolean);
+    M.k === 'run' ? `페이스 ${fmtPace(st.walk, st.ms)} /km` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, st.ms)}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
     info.name = v.slice(0, 40); title.textContent = info.name;
@@ -1981,7 +1990,7 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    mapEl, elevChart(ev), spotList(spots), phBox,
+    mapEl, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     el('div', { class: 'two' },
@@ -2028,6 +2037,29 @@ function viewWalk() {
   let pending = id ? null : ls.get('guideNext', null);
   if (pending && !(Date.now() - pending.at < 864e5 && Array.isArray(pending.route) && pending.route.length > 1)) { pending = null; ls.set('guideNext', null); }
   const tGuide = el('div', { class: 'banner info', style: 'gap:4px;padding:12px 16px' });
+  // 들른 곳: 60m 안에 10분 넘게 머물면 남길지 물어봐요 (러닝·자전거는 빼고, 이미 별표·들른 곳이 있는 자리도 빼요)
+  const STAY_M = 60, STAY_MS = 10 * 60000;
+  let stayA = null, stayAsk = null;
+  function stayCheck(lat, lng) {
+    const now = Date.now();
+    if (!stayA || dist(stayA.lat, stayA.lng, lat, lng) > STAY_M) { stayA = { lat, lng, since: now, asked: false }; if (stayAsk) { stayAsk = null; draw(); } return; }
+    if (stayA.asked || now - stayA.since < STAY_MS || ['run', 'bike'].includes(M().k)) return;
+    stayA.asked = true;
+    if (ls.get('walkSpots:' + id, []).some(s => dist(s.lat, s.lng, stayA.lat, stayA.lng) < 80)) return;
+    stayAsk = { lat: stayA.lat, lng: stayA.lng, since: stayA.since }; draw();
+  }
+  const stayBanner = () => stayAsk ? el('div', { class: 'banner info', style: 'gap:8px' },
+    el('b', { class: 'with-ico', style: 'gap:6px' }, ico('pin', 18), `여기서 ${Math.round((Date.now() - stayAsk.since) / 60000)}분째 머물고 있어요`),
+    el('div', { text: '카페나 식당 같은 들른 곳이면 이름을 남겨 두세요. 지도에 핀으로 남아요.' }),
+    el('div', { class: 'row', style: 'gap:8px' },
+      el('button', { class: 'btn line small grow', text: '아니요', onclick: () => { stayAsk = null; draw(); } }),
+      el('button', { class: 'btn primary small grow', text: '남기기', onclick: async () => {
+        const at = stayAsk; if (!at) return;
+        const n = await askText('들른 곳', '이름', '', '예: 카페 이름, 식당 이름', '한 줄 메모는 내 MD에서 더할 수 있어요.', 30); if (!n) return;
+        const list = ls.get('walkSpots:' + id, []);
+        list.push({ n, lat: +at.lat.toFixed(6), lng: +at.lng.toFixed(6), ts: at.since, k: 'stay' });
+        ls.set('walkSpots:' + id, list); stayAsk = null; drawSpots(); draw(); toast(`'${n}'을(를) 들른 곳으로 남겼어요`);
+      } }))) : null;
   const M = () => id ? modeOfT(id) : modeByK(pick);
   const today = new Date(), dayName = `${today.getMonth() + 1}월 ${today.getDate()}일`;
   const defName = () => `${dayName} ${M().label}`;
@@ -2074,6 +2106,7 @@ function viewWalk() {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() };
       trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
+      if (p.coords.accuracy <= TRACK_MAX_ACC) stayCheck(ll[0], ll[1]);
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
         if (w.off > 80 && !gOff) { gOff = true; beep(); toast(`따라가는 길에서 ${fmtDist(w.off)} 벗어났어요`); }
@@ -2299,6 +2332,7 @@ function viewWalk() {
         el('div', { class: 'cnt' }, tDist, tDistLbl)),
       tAll,
       guide ? tGuide : null,
+      stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
         el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
         wake ? null : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
