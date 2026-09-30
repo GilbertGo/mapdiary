@@ -1077,15 +1077,19 @@ function movingMs(tr, kmh) {
   for (let i = 1; i < tr.length; i++) { const dt = tr[i][2] - tr[i - 1][2]; if (m[i] === 'w' && dt > 0 && dt <= 60000 && dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) / (dt / 1000) >= 0.7) ms += dt; }
   return ms;
 }
-// 현재 페이스: 최근 30초 동안 달린 거리로. GPS는 5~10m씩 흔들려서 20초보다 짧으면 값이 많이 튀어요
-// (15초·30m보다 적게 모였거나, 15초 넘게 새 점이 없으면 멈춘 것으로 보고 null)
+// 현재 페이스: 최근에 움직인 30초 동안 달린 거리로. GPS는 5~10m씩 흔들려서 20초보다 짧으면 값이 많이 튀어요
+// 신호 대기처럼 멈췄던 구간(초속 0.7m 미만)은 건너뛰고 그 앞의 달린 구간까지 봐요(최대 2분 전까지). 예전엔 멈췄다 다시 뛰면 한동안 '-'였어요
+// (움직인 시간이 15초·50m보다 적게 모였거나, 15초 넘게 새 점이 없으면 멈춘 것으로 보고 null)
 const NOW_PACE_MS = 30000;
 function nowPace(tr) {
   const n = tr.length; if (n < 2) return null;
-  const t1 = tr[n - 1][2]; let d = 0, i = n - 1;
-  while (i > 0 && t1 - tr[i - 1][2] <= NOW_PACE_MS) { d += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]); i--; }
-  const dt = t1 - tr[i][2]; if (Date.now() - t1 > 15000) return null;
-  return dt >= 15000 && d >= 30 ? fmtPace(d, dt) : null;
+  const t1 = tr[n - 1][2]; if (Date.now() - t1 > 15000) return null;
+  let d = 0, t = 0;
+  for (let i = n - 1; i > 0 && t < NOW_PACE_MS && t1 - tr[i - 1][2] <= 120000; i--) {
+    const dt = tr[i][2] - tr[i - 1][2], dd = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
+    if (dt > 0 && dd / (dt / 1000) >= 0.7) { d += dd; t += dt; }
+  }
+  return t >= 15000 && d >= 50 ? fmtPace(d, t) : null;   // fmtPace는 50m 밑이면 "-"라서 50m부터
 }
 // 달린 시간을 1초마다 흐르게: 지난 점까지의 움직인 시간 + 마지막 점 뒤로 흐른 시간(12초까지만. 15m마다 새 점이라 달리면 보통 3~8초마다 와요)
 // 화면에서는 뒤로 줄지 않게 붙잡아 둬요(liveHold)
