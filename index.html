@@ -149,9 +149,9 @@ nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:
 /* 케이던스 180: 1초에 3걸음 → 한쪽 다리가 앞뒤로 한 번 = 0.667초(편도 0.333초), 몸은 한 걸음마다 한 번 튀어요(편도 0.167초) */
 .who-ico .runner{animation:runbob2 .1667s ease-in-out infinite alternate}
 @keyframes runbob2{from{transform:translateY(1px)}to{transform:translateY(-2px)}}
-.runner .rn-arm{transform-origin:13.4px 7.8px;animation:rnarm .3333s ease-in-out infinite alternate}
-.runner .rn-leg{transform-origin:11.8px 12.6px;animation:rnleg .3333s ease-in-out infinite alternate}
-.runner .rn-shin{transform-origin:12px 17px;animation:rnshin .3333s ease-in-out infinite alternate}
+.runner .rn-arm{transform-origin:13.4px 7.8px;animation:rnarm .3333s cubic-bezier(.37,0,.63,1) infinite alternate}
+.runner .rn-leg{transform-origin:11.8px 12.6px;animation:rnleg .3333s cubic-bezier(.37,0,.63,1) infinite alternate}
+.runner .rn-shin{transform-origin:12px 17px;animation:rnshin .3333s cubic-bezier(.37,0,.63,1) infinite alternate}
 .runner .b{animation-delay:-.3333s}.runner .b .rn-shin{animation-delay:-.3333s}
 .runner .rn-arm.b,.runner .rn-leg.b{opacity:.55}
 @keyframes rnarm{from{transform:rotate(-50deg)}to{transform:rotate(45deg)}}
