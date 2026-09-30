@@ -3465,7 +3465,6 @@ function viewWalk() {
             (rd.state = el('span', { class: 'rd-chip' + (gps === 'on' ? '' : ' warn') }, gps === 'on' ? el('i') : null, gps === 'on' ? '기록 중' : gps === 'denied' ? '위치 권한 필요' : 'GPS 찾는 중')),
             el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' },
               el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊' : '🔇', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
-              el('button', { class: 'rd-chip' + (wake ? '' : ' warn'), 'aria-label': wake ? '화면 켜져 있음' : '화면 켜두기', text: wake ? '☀' : '☀ 켜두기', onclick: () => { if (!wake) { wantWake = true; lockWake(); } } }),
               )),
           el('div', {}, rd.hero,
             el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;margin-top:2px' },
