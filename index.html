@@ -121,6 +121,11 @@ body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .sw{flex:none;width:54px;height:32px;border-radius:999px;background:#CFC8B8;position:relative;transition:background .2s}
 .sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
 .sw.on{background:#2D6A4F}.sw.on i{left:25px}
+.rd-cg{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);border-radius:14px;padding:6px 10px;box-shadow:0 2px 8px rgba(30,59,47,.07);min-width:0}
+.rd-cg .n{font-size:18px;flex:none}.rd-cg .t{flex:1;min-width:0}.rd-cg .t b{display:block;font-size:14px;color:#173A2C;white-space:nowrap}.rd-cg .t span{display:block;font-size:11px;color:#6B8479;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-cg .v{font-size:20px;font-weight:800;color:#E4572E;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
+.rd-cg .rd-chip{height:30px;padding:0 11px;font-size:16px;flex:none}
+.rd-cg .sw-row{width:auto;flex:none}.rd-cg .sw{width:44px;height:26px}.rd-cg .sw i{width:20px;height:20px}.rd-cg .sw.on i{left:21px}
 html{overflow-x:hidden}   /* 글자를 크게 쓰는 휴대폰에서도 화면이 좌우로 밀리지 않게 */
 body{max-width:100vw;overscroll-behavior-x:none}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
@@ -2867,6 +2872,41 @@ function viewWalk() {
     } catch {}
     try { navigator.vibrate && navigator.vibrate(Math.round(sec * 1000)); } catch {}
   }
+  // 케이던스 가이드: 고른 빠르기(1분에 n번)로 짧은 '뚝' 소리. 소리 시각을 조금 앞서 예약해서 박자가 흔들리지 않게 해요
+  // 빠르기는 cadGuideSpm에 남기고, 켜짐은 이번 달리기에만 (끝내면 꺼져요)
+  let cgTimer = null, cgNext = 0;
+  const cgSpm = () => Math.min(200, Math.max(140, ls.get('cadGuideSpm', 180)));
+  function cgTick(at) {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square'; o.frequency.value = 1500; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.25, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.045);
+    o.start(at); o.stop(at + 0.06);
+  }
+  function cgStart() {
+    if (cgTimer) return;
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch { return; }
+    cgNext = actx.currentTime + 0.1;
+    cgTimer = setInterval(() => {
+      const iv = 60 / cgSpm();
+      if (cgNext < actx.currentTime) cgNext = actx.currentTime + 0.02;
+      while (cgNext < actx.currentTime + 0.2) { cgTick(cgNext); cgNext += iv; }
+    }, 40);
+  }
+  function cgStop() { clearInterval(cgTimer); cgTimer = null; }
+  function cgRow() {
+    const v = el('b', { class: 'v', text: cgSpm() }), sub = el('span', { text: cgTimer ? '소리에 발 맞추기' : '1분에 이만큼 뚝 소리' });
+    const sw = el('span', { class: 'sw' + (cgTimer ? ' on' : '') }, el('i'));
+    const step = d => { ls.set('cadGuideSpm', Math.min(200, Math.max(140, cgSpm() + d))); v.textContent = cgSpm(); };
+    return el('div', { class: 'rd-cg' }, el('span', { class: 'n', text: '♩' }),
+      el('span', { class: 't' }, el('b', { text: '케이던스 가이드' }), sub),
+      el('button', { class: 'rd-chip', 'aria-label': '느리게', text: '−', onclick: () => step(-5) }), v,
+      el('button', { class: 'rd-chip', 'aria-label': '빠르게', text: '+', onclick: () => step(5) }),
+      el('button', { class: 'sw-row', role: 'switch', 'aria-label': '케이던스 가이드 소리', 'aria-checked': cgTimer ? 'true' : 'false', onclick: e => {
+        if (cgTimer) cgStop(); else cgStart();
+        sw.classList.toggle('on', !!cgTimer); e.currentTarget.setAttribute('aria-checked', cgTimer ? 'true' : 'false');
+        sub.textContent = cgTimer ? '소리에 발 맞추기' : '1분에 이만큼 뚝 소리';
+      } }, sw));
+  }
   function countdown() {
     let dead = false;
     const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;min-height:170px', text: '' });
@@ -3218,7 +3258,7 @@ function viewWalk() {
           ls.set('trackName:' + id, iN.value.trim() || defName());
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
           if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 1000)); else localStorage.removeItem('walkNote:' + id);
-          stopGps(); wantWake = false; try { wake?.release(); } catch {}
+          stopGps(); cgStop(); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
           ls.set('walkNow', null); bg.remove(); done = id; draw();
         } }))));
@@ -3306,7 +3346,7 @@ function viewWalk() {
               el('span', { class: 'grow lbl', style: 'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#1E3B2F;font-weight:700', text: nameOf() }),
               el('button', { class: 'rd-chip', style: 'height:26px;padding:0 9px', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } }))),
           rd.goal, rd.pz,
-          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub))),
+          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub)), cgRow()),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
