@@ -3010,6 +3010,9 @@ function viewWalk() {
   // 찍기: 바로 카메라(capture), 불러오기: 사진첩에서 여러 장
   const onPick = async inp => {
     const files = [...inp.files]; inp.value = ''; if (!files.length) return;
+    // 이 앱의 카메라로 찍은 사진은 원본 그대로 휴대폰(다운로드 폴더·갤러리)에도 남겨요 (카메라에 따라 사진첩에 안 남는 경우가 있어서)
+    if (inp === camIn && ls.get('camSave', true) && !IN_KAKAO) files.forEach((f, k) => { const d = new Date(), pad = n => String(n).padStart(2, '0');
+      savePhotoBlob(f, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}${k ? '_' + k : ''}.${photoExt(f)}`); });
     toast('사진을 넣는 중이에요…');
     const recs = await addPhotos(id, files, lastFix), n = recs.length;
     toast(n ? `사진 ${n}장을 기록에 붙였어요` : '사진을 넣지 못했어요');
@@ -3263,6 +3266,7 @@ function viewWalk() {
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
         // 공유는 아래 고정 버튼에 있어서, 여기는 사진첩에서 넣기만
         el('button', { class: 'btn line full', onclick: () => galIn.click() }, ico('camera', 18), '사진첩에서 사진 넣기'),
+        el('button', { class: 'link', style: 'align-self:center;padding:2px 0;font-size:14px;color:var(--muted)', onclick: () => { ls.set('camSave', !ls.get('camSave', true)); toast(ls.get('camSave', true) ? '찍은 사진을 휴대폰에도 저장해요' : '찍은 사진은 이 앱에만 남겨요'); draw(); } }, ls.get('camSave', true) ? '📥 찍은 사진 휴대폰에도 저장: 켜짐' : '📥 찍은 사진 휴대폰에도 저장: 꺼짐'),
         guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
         camIn, galIn,
         el('a', { class: 'link', href: './', style: 'align-self:center;color:var(--muted)', text: '처음으로 (다시 들어오면 이어서 기록해요)' })].filter(Boolean));
@@ -3302,6 +3306,7 @@ function viewWalk() {
         el('button', { class: 'btn line', text: '사진 찍기', onclick: () => camIn.click() }),
         el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() })),
       nPhotos ? el('div', { class: 'sub center', text: `이 기록에 사진 ${nPhotos}장이 붙어 있어요` }) : null,
+      el('button', { class: 'link', style: 'align-self:center;padding:2px 0;font-size:14px;color:var(--muted)', onclick: () => { ls.set('camSave', !ls.get('camSave', true)); toast(ls.get('camSave', true) ? '찍은 사진을 휴대폰에도 저장해요' : '찍은 사진은 이 앱에만 남겨요'); draw(); } }, ls.get('camSave', true) ? '📥 찍은 사진 휴대폰에도 저장: 켜짐' : '📥 찍은 사진 휴대폰에도 저장: 꺼짐'),
       el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; const w = M().k === 'pgolf' ? '기억할 순간 남기기' : '좋은 곳 남기기'; return n ? `${w} (${n}개)` : `${w} (지도에 별표)`; })()),
       // 기록을 끝내지 않고 지금까지 다닌 길로 자랑하기
       (() => {
