@@ -158,6 +158,8 @@ nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:
 @keyframes rnarm{from{transform:rotate(-50deg)}to{transform:rotate(45deg)}}
 @keyframes rnleg{from{transform:rotate(34deg)}to{transform:rotate(-28deg)}}
 @keyframes rnshin{from{transform:rotate(80deg)}to{transform:rotate(18deg)}}
+/* 러닝 '멈춤'이면 달리는 사람도 그 자세로 멈춰요 */
+.runner.stop,.runner.stop *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.who-ico .ico,.runner *{animation:none!important}}
 .role .home{color:inherit;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:6px;padding:6px 10px 6px 0;margin:-6px 0}
 .role .home .hi{width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11 12 4l9 7'/%3E%3Cpath d='M5 10v10h14V10'/%3E%3C/svg%3E") center/contain no-repeat}
@@ -2900,6 +2902,7 @@ function viewWalk() {
     // 멈춤: 칸 밖, 판 위쪽에 설명과 함께. 윗줄 '기록 중'도 '멈춤'으로
     const pz = runPaused(tr);
     rd.pz.style.display = pz ? '' : 'none';
+    document.querySelectorAll('.runner').forEach(r => r.classList.toggle('stop', !!pz));
     if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz ? ' warn' : ''); rd.state.replaceChildren(pz ? '⏸ 멈춤' : el('i'), pz ? '' : '기록 중'); }
     const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
     const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
