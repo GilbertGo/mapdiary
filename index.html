@@ -91,6 +91,10 @@ input::placeholder{color:#B3AC9C}
 .rd-t b{color:#173A2C}
 .rd-t > .lbl{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-t b{display:block;font-size:clamp(18px,6.2vw,26px);font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-tabs{display:flex;gap:4px;background:rgba(255,255,255,.7);border-radius:999px;padding:4px;box-shadow:0 1px 3px rgba(30,59,47,.08)}
+.rd-tabs button{flex:1;min-width:0;height:36px;border:none;border-radius:999px;background:none;color:#1E3B2F;font:inherit;font-size:14px;font-weight:700;white-space:nowrap}
+.rd-tabs button.on{background:#1E3B2F;color:#fff}
+.rd-pane{padding:10px}
 .rd-map{position:relative}.rd-map .hint{position:absolute;left:10px;bottom:10px;z-index:500;background:rgba(30,59,47,.85);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;pointer-events:none}
 .rd-pz{display:flex;flex-direction:column;gap:1px;background:#FFF1DF;border:1px solid #F7C98D;color:#7A4A12;border-radius:14px;padding:8px 12px;font-size:13px}
 .rd-pz b{font-size:14px;color:#B4531A}
@@ -3066,6 +3070,7 @@ function viewWalk() {
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '멈춘 동안은 달린 시간과 페이스에 넣지 않아요. 다시 달리면 이어서 세요.' })), state: null,
     goal: el('div', { class: 'rd-bar' }), gtxt: el('span', { class: 'lbl', style: 'text-align:right;min-width:0' }), fin: el('b'), finL: el('span', { class: 'lbl' }), finSub: el('span', { class: 'sm' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
+  let runTab = ['map', 'form', 'guide'].includes(ls.get('runTab', 'map')) ? ls.get('runTab', 'map') : 'map';
   function drawRun() {
     if (!id || M().k !== 'run') return;
     const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), mv = movingMs(tr, m.car), np = nowPace(tr), c = cadNow();
@@ -3115,7 +3120,7 @@ function viewWalk() {
   // 러닝: 지도가 판과 아래 버튼 사이 남는 화면을 채워요 (맨 위에 있을 때만)
   function fitRunMap() {
     requestAnimationFrame(() => {
-      if (!id || done || M().k !== 'run' || mapEl.classList.contains('map-full') || scrollY > 4) return;
+      if (!id || done || M().k !== 'run' || !mapEl.isConnected || mapEl.classList.contains('map-full') || scrollY > 4) return;
       const act = document.querySelector('.rd-act'), top = mapEl.getBoundingClientRect().top, bar = act ? act.offsetHeight : 90;
       const h = Math.max(150, Math.floor(innerHeight - top - bar - 6));
       if (Math.abs(parseInt(mapEl.style.height) - h) > 4 || !mapEl.style.height.endsWith('px')) { mapEl.style.height = h + 'px'; if (map) map.invalidateSize(); }
@@ -3491,12 +3496,15 @@ function viewWalk() {
             el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;justify-content:space-between;margin-top:2px' },
               el('span', { class: 'lbl', style: 'flex:none', text: '달린 거리' }), rd.gtxt)),
           rd.goal, rd.pz,
-          el('div', { class: 'rd-grid n2' }, rdTile('달린 시간', rd.time, rd.timeSub), el('div', { class: 'rd-t' }, rd.finL, rd.fin, rd.finSub), rdTile('페이스', rd.now, rd.nowSub), rdTile('케이던스', rd.cad, rd.cadSub)), cgRow(), rd.form),
+          el('div', { class: 'rd-grid n2' }, rdTile('달린 시간', rd.time, rd.timeSub), el('div', { class: 'rd-t' }, rd.finL, rd.fin, rd.finSub), rdTile('페이스', rd.now, rd.nowSub), rdTile('케이던스', rd.cad, rd.cadSub)),
+            // 아래 자리를 지도 · 자세 · 가이드가 번갈아 써요 (시안 C안, 2026-10-01). 고른 탭은 runTab에 남겨요
+            el('div', { class: 'rd-tabs', role: 'tablist' }, ...[['map', '🗺 지도'], ['form', '🏃 자세'], ['guide', cgTimer ? `♩ 가이드 ${cgSpm()}` : '♩ 가이드']].map(([k, t]) =>
+              el('button', { role: 'tab', 'aria-selected': runTab === k ? 'true' : 'false', class: runTab === k ? 'on' : '', text: t, onclick: () => { if (runTab === k) return; runTab = k; ls.set('runTab', k); draw(); if (k === 'map') setTimeout(() => map && map.invalidateSize(), 60); } })))),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
-        el('div', { class: 'rd-map' }, mapEl, el('span', { class: 'hint', text: '⤢ 누르면 크게' })),
-        follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
+        runTab === 'map' ? el('div', { class: 'rd-map' }, mapEl, el('span', { class: 'hint', text: '⤢ 누르면 크게' })) : el('div', { class: 'rd rd-pane' }, runTab === 'form' ? rd.form : cgRow()),
+        follow || runTab !== 'map' ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
         // 아래 고정 버튼: 사진 · 끝내기 · 좋은 곳 (지금 있는 곳에 별표)
         el('div', { class: 'rd-act' },
           el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 18), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
