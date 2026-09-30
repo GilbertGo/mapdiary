@@ -3268,7 +3268,7 @@ function viewWalk() {
       stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
         el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
-        wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠금', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
+        wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠그기', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
       mapEl,
       guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
       follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
