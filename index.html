@@ -740,6 +740,7 @@ function photoMarkers(map, layer, photos) {
 const photoExt = b => /png/.test(b && b.type || '') ? 'png' : 'jpg';
 // 파일 이름은 영어·숫자로만 (한글 이름은 일부 브라우저에서 'download'로 바뀌어 찾기 어려워요)
 function savePhotoBlob(blob, name) {
+  if (window.mdNativeSave) return window.mdNativeSave(blob, name);   // 안드로이드 앱: 갤러리(사진)·Documents(그 밖) 에 바로
   const u = URL.createObjectURL(blob), a = el('a', { href: u, download: name });
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 }
@@ -1590,6 +1591,10 @@ function openBrag(info, t, count, allDone, room) {
 }
 // 카톡 안의 브라우저는 사진 저장·공유를 막아요. 그때는 카드 내용을 링크에 담아 기본 브라우저로 넘겨요.
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
+// 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
+const IN_NATIVE = !!window.MD_NATIVE;
+const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
+addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
 function kakaoOK() {
   try {
@@ -1661,7 +1666,7 @@ async function shortLink(o) {
     await pub(`allhere/v1/share/${id}`, o.secret
       ? { v: 2, salt: u8b64(salt), enc: await sealBytes(new TextEncoder().encode(JSON.stringify(payload)), k) }
       : payload);
-    const url = `${location.origin}${location.pathname}?s=${id}${hash}`;
+    const url = `${APP_BASE}?s=${id}${hash}`;
     if (code) shortCodes[url] = code;
     return (shortCache[key] = url);
   } catch (e) { if (o.secret) throw e; return long; }
@@ -1685,7 +1690,7 @@ function bragLink(o) {
   const th = o.route ? thinRoute(o.route, typeof o.modes === 'string' && o.modes.length === o.route.length ? o.modes : null, 150) : { R: null, modes: null };
   const r = th.R;
   const small = Object.assign({}, o, { route: r ? r.map(q => [+q[0].toFixed(4), +q[1].toFixed(4)]) : null, modes: th.modes && /[cg]/.test(th.modes) ? th.modes : undefined, photos: undefined, photoRecs: undefined });   // 사진은 링크에 넣지 않아요
-  return `${location.origin}${location.pathname}?brag=${b64u(JSON.stringify(small))}`;
+  return `${APP_BASE}?brag=${b64u(JSON.stringify(small))}`;
 }
 // 미리보기 그림 + 저장/공유 버튼 묶음. draw(opts)로 카드를 다시 그려요.
 function bragView(img, getOpts) {
@@ -2198,7 +2203,7 @@ function roomNewCode() {
   const a = crypto.getRandomValues(new Uint32Array(2));
   return roomParse(ROOM_A[a[0] % ROOM_A.length] + ROOM_B[a[1] % ROOM_B.length]);
 }
-const roomLink = p => `${location.origin}${location.pathname}?room=1#r=${encodeURIComponent(p.pretty.replace(/ /g, '-'))}`;
+const roomLink = p => `${APP_BASE}?room=1#r=${encodeURIComponent(p.pretty.replace(/ /g, '-'))}`;
 const roomsLoad = () => ls.get('rooms', []).filter(r => r && roomParse(r.code)?.code === r.code).map(r => Object.assign({ pretty: roomParse(r.code).pretty }, r));
 const u8hex = u => Array.from(u, b => b.toString(16).padStart(2, '0')).join('');
 async function roomOf(code) {
@@ -2379,7 +2384,7 @@ async function viewRoomOne(p) {
       el('button', { class: 'btn line small', text: '닫기', onclick: () => sb.remove() })));
     document.body.append(sb);
   };
-  const okLink = u => typeof u === 'string' && u.startsWith(location.origin + location.pathname + '?');
+  const okLink = u => typeof u === 'string' && u.startsWith(APP_BASE + '?');
   const drawList = () => {
     const ps = Object.entries(posts).sort((a, b) => b[1].at - a[1].at), my = mine();
     note.textContent = ps.length ? `MD ${ps.length}개 · 누르면 지도로 보고 따라갈 수 있어요` : local ? "아직 올라온 MD가 없어요. '내 MD 올리기'로 첫 MD를 올려 보세요." : note.textContent;
@@ -2428,10 +2433,10 @@ async function viewRoomOne(p) {
   }, 8000);
 }
 // ---------- 바탕화면에 추가 (홈 화면에 앱 아이콘) ----------
-const IS_APP = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IS_APP = IN_NATIVE || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 let installEv = null, installSlot = null;
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && !IN_NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; drawInstall(); });
 addEventListener('appinstalled', () => { installEv = null; ls.set('installed', true); drawInstall(); toast('바탕화면에 Map Diary를 추가했어요'); });
 function howToInstall() {
@@ -2528,6 +2533,7 @@ async function backupSave() {
     el('h2', { text: '백업 파일이 준비됐어요' }),
     el('p', { class: 'sub', style: 'margin:0', text: `기록 ${r.n}개 · 사진 ${r.data.photos.length}장 · ${mb}MB. 휴대폰에 저장하거나, 카톡 "나와의 채팅"이나 드라이브로 보내 두세요. 새 휴대폰에서 '백업 불러오기'로 그대로 되살릴 수 있어요.` }),
     el('button', { class: 'btn primary full', text: '휴대폰에 저장', onclick: () => {
+      if (window.mdNativeSave) { window.mdNativeSave(file, file.name); done(); sb.remove(); return; }
       const a = el('a', { href: URL.createObjectURL(file), download: file.name }); document.body.append(a); a.click(); a.remove();
       done(); sb.remove(); toast(`"내 파일 > 다운로드"에 ${file.name}(으)로 저장했어요`);
     } }),
