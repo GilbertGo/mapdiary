@@ -121,6 +121,19 @@ body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .sw{flex:none;width:54px;height:32px;border-radius:999px;background:#CFC8B8;position:relative;transition:background .2s}
 .sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
 .sw.on{background:#2D6A4F}.sw.on i{left:25px}
+.fm-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fm-t{background:#fff;border:1px solid var(--line,#E6DFCF);border-radius:14px;padding:10px 12px;min-width:0}
+.fm-t .l{display:block;font-size:12px;color:var(--muted)}.fm-t b{display:block;font-size:22px;font-weight:800;color:var(--pine);font-variant-numeric:tabular-nums}.fm-t b small{font-size:13px;margin-left:2px}
+.fm-t .tag{display:inline-block;margin-top:2px;font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;color:#1E3B2F}.fm-t .h{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.rd-fm{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rd-fm > div{background:rgba(255,255,255,.85);border-radius:14px;padding:6px 12px;box-shadow:0 2px 8px rgba(30,59,47,.07);min-width:0}
+.rd-fm .l{display:block;font-size:12px;color:#5B7468;white-space:nowrap}.rd-fm b{font-size:20px;font-weight:800;color:#173A2C;font-variant-numeric:tabular-nums}.rd-fm b small{font-size:12px;margin-left:1px}
+.rd-fm .tag{display:inline-block;margin-left:4px;vertical-align:3px;font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;color:#1E3B2F;white-space:nowrap}
+.rd-cg{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);border-radius:14px;padding:6px 10px;box-shadow:0 2px 8px rgba(30,59,47,.07);min-width:0}
+.rd-cg .n{font-size:18px;flex:none}.rd-cg .t{flex:1;min-width:0}.rd-cg .t b{display:block;font-size:14px;color:#173A2C;white-space:nowrap}.rd-cg .t span{display:block;font-size:11px;color:#6B8479;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-cg .v{font-size:20px;font-weight:800;color:#E4572E;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
+.rd-cg .rd-chip{height:30px;padding:0 11px;font-size:16px;flex:none}
+.rd-cg .sw-row{width:auto;flex:none}.rd-cg .sw{width:44px;height:26px}.rd-cg .sw i{width:20px;height:20px}.rd-cg .sw.on i{left:21px}
 html{overflow-x:hidden}   /* 글자를 크게 쓰는 휴대폰에서도 화면이 좌우로 밀리지 않게 */
 body{max-width:100vw;overscroll-behavior-x:none}
 .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
@@ -158,6 +171,8 @@ nav.tabs button[aria-current=page]{background:var(--ink);color:#fff;font-weight:
 @keyframes rnarm{from{transform:rotate(-50deg)}to{transform:rotate(45deg)}}
 @keyframes rnleg{from{transform:rotate(34deg)}to{transform:rotate(-28deg)}}
 @keyframes rnshin{from{transform:rotate(80deg)}to{transform:rotate(18deg)}}
+/* 러닝 '멈춤'이면 달리는 사람도 그 자세로 멈춰요 */
+.runner.stop,.runner.stop *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.who-ico .ico,.runner *{animation:none!important}}
 .role .home{color:inherit;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:6px;padding:6px 10px 6px 0;margin:-6px 0}
 .role .home .hi{width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11 12 4l9 7'/%3E%3Cpath d='M5 10v10h14V10'/%3E%3C/svg%3E") center/contain no-repeat}
@@ -773,12 +788,16 @@ function showPhoto(p, list) {
   show(i);
   document.body.append(bg);
 }
-// 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만)]
-function trackAdd(t, lat, lng, acc, name, alt) {
+// 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만), 흔들림]
+// 5번째 값(있을 때만): 휴대폰 흔들림 1 = 걷거나 뛰는 중, 0 = 흔들림 없음(차 안). 높이가 없으면 4번째는 null
+function trackAdd(t, lat, lng, acc, name, alt, shake) {
   if (acc > TRACK_MAX_ACC) return;
   const tr = trackLoad(t), lp = tr[tr.length - 1];
   if (lp && dist(lp[0], lp[1], lat, lng) < TRACK_MIN_M) return;
-  tr.push(Number.isFinite(alt) ? [+lat.toFixed(6), +lng.toFixed(6), Date.now(), Math.round(alt)] : [+lat.toFixed(6), +lng.toFixed(6), Date.now()]);
+  const q = [+lat.toFixed(6), +lng.toFixed(6), Date.now()];
+  if (Number.isFinite(alt)) q.push(Math.round(alt)); else if (shake != null) q.push(null);
+  if (shake != null) q.push(shake);
+  tr.push(q);
   // 너무 길어지면 앞부분을 버리지 않고, 최근 500점을 뺀 나머지를 한 점 건너 하나씩 솎아요 (출발한 곳은 남겨요)
   if (tr.length > 20000) { const old = tr.slice(0, -500).filter((q, i) => i % 2 === 0); tr.splice(0, tr.length - 500, ...old); }
   if (!ls.set('track:' + t, tr) && Date.now() - (trackAdd.warned || 0) > 10 * 60000) { trackAdd.warned = Date.now(); toast('휴대폰 저장 공간이 모자라 기록을 저장하지 못했어요. 끝내고 공유해 두세요'); }
@@ -811,6 +830,64 @@ function splitTable(t) {
         el('div', { class: 'grow', style: 'height:10px;border-radius:6px;background:var(--forest-soft);overflow:hidden' }, el('i', { style: `display:block;height:100%;border-radius:6px;background:${fast ? '#E4572E' : '#F4A259'};width:${hi === lo ? 70 : Math.round(35 + 65 * (hi - ms) / (hi - lo))}%` })),
         el('b', { style: 'width:52px;text-align:right;flex:none', text: fmtPace(1000, ms) }),
         ss.length ? el('span', { style: 'width:62px;text-align:right;flex:none;font-size:14px;color:var(--muted)', text: cad && cad < 260 ? `${cad} spm` : '-' }) : null); }));
+}
+// ---------- 달리기 자세 (내 MD, 시안 A안) ----------
+// 휴대폰으로 짐작한 walkForm을 걸음 수로 평균. 딱지: 초록 = 괜찮아요, 살구 = 살펴봐요
+const FORM_OK = '#CDEBD6', FORM_WARN = '#F9D9B5';
+function formAvg(list) {
+  const L = (list || []).filter(e => e && e.n), N = L.reduce((a, e) => a + e.n, 0);
+  if (!N) return null;
+  const av = k => { const q = L.filter(e => e[k] != null), n = q.reduce((a, e) => a + e.n, 0); return n ? q.reduce((a, e) => a + e[k] * e.n, 0) / n : null; };
+  return { o: av('o'), g: av('g'), s: av('s'), r: av('r'), n: N };
+}
+function formTags(f) {
+  return [
+    { l: '상하 진폭', v: f.o, u: 'cm', d: 1, t: f.o > 12 ? ['커요', 0] : f.o > 10 ? ['조금 커요', 0] : ['좋아요', 1], h: '보통 6~10cm' },
+    { l: '착지 충격', v: f.g, u: 'G', d: 1, t: f.g > 3.5 ? ['세요', 0] : f.g > 2.5 ? ['보통', 1] : ['부드러워요', 1], h: f.g != null ? `몸무게의 ${f.g.toFixed(1)}배` : '' },
+    { l: '좌우 균형', v: f.s, u: '%', d: 0, t: f.s > 10 ? ['치우침', 0] : f.s > 4 ? ['조금 치우침', 0] : ['고름', 1], h: f.s != null ? `한쪽이 ${Math.round(f.s)}% 더 셈` : '' },
+    { l: '걸음 고르기', v: f.r, u: '%', d: 1, t: f.r > 10 ? ['들쭉날쭉', 0] : f.r > 5 ? ['보통', 1] : ['고름', 1], h: '작을수록 일정' }];
+}
+function formTile(x) {
+  return el('div', { class: 'fm-t' }, el('span', { class: 'l', text: x.l }),
+    el('b', {}, x.v == null ? '-' : x.v.toFixed(x.d), x.v == null ? '' : el('small', { text: x.u })),
+    x.v == null ? null : el('span', { class: 'tag', style: `background:${x.t[1] ? FORM_OK : FORM_WARN}`, text: x.t[0] }),
+    x.v == null || !x.h ? null : el('span', { class: 'h', text: x.h }));
+}
+// 워치(삼성헬스) 값: 웹앱이 삼성헬스를 읽을 수 없어서 보고 적어 넣어요. walkWatch:{ID} = {hr, vo, gct, ft, asym, reg}
+const WATCH_F = [['hr', '평균 심박', 'bpm'], ['vo', '수직 진폭', 'cm'], ['gct', '접지 시간', 'ms'], ['ft', '체공 시간', 'ms'], ['asym', '비대칭(왼쪽)', '%'], ['reg', '규칙성', '']];
+function watchText(w) { return WATCH_F.filter(([k]) => w[k]).map(([k, l, u]) => `${l.replace('(왼쪽)', '')} ${w[k]}${u === 'bpm' ? '' : u}`).join(' · '); }
+function watchEdit(t, done) {
+  const w = ls.get('walkWatch:' + t, {}), ins = {};
+  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '워치 값 적기' },
+    el('h2', { text: '⌚ 워치(삼성헬스) 값 적기' }),
+    el('p', { class: 'sub', style: 'margin:0', text: "삼성헬스 → 이 운동 → '러닝 자세'에 나온 숫자를 적어 주세요. 모르는 칸은 비워 두세요" }),
+    ...WATCH_F.map(([k, l, u]) => el('label', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' }, el('span', { style: 'width:104px;flex:none', text: l }),
+      (ins[k] = el('input', { type: 'text', inputmode: k === 'reg' ? 'text' : 'decimal', maxlength: 12, value: w[k] || '', style: 'flex:1;min-width:0' })), el('span', { class: 'sub', style: 'width:34px;flex:none', text: u }))),
+    el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
+      el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
+        const v = {}; for (const [k] of WATCH_F) { const x = ins[k].value.trim(); if (x) v[k] = x.slice(0, 12); }
+        if (Object.keys(v).length) ls.set('walkWatch:' + t, v); else localStorage.removeItem('walkWatch:' + t);
+        sb.remove(); done && done(); } }))));
+  document.body.append(sb);
+}
+function formCard(t) {
+  const list = ls.get('walkForm:' + t, []), f = formAvg(list), box = el('div', { class: 'card stack', style: 'gap:10px;padding:14px 16px' });
+  const draw = () => {
+    const wv = ls.get('walkWatch:' + t, null), full = list.filter(e => !e.p && e.n);
+    let trend = null;
+    if (full.length >= 3) {
+      const a = full[0], z = full[full.length - 1], dO = (z.o - a.o) / a.o * 100, dG = (z.g - a.g) / a.g * 100;
+      trend = dO >= 15 || dG >= 15 ? `📉 후반 ${z.k || full.length}km째 진폭 ${dO >= 0 ? '+' : ''}${Math.round(dO)}%, 충격 ${dG >= 0 ? '+' : ''}${Math.round(dG)}% → 지쳤을 때 자세가 무너져요` : '👍 끝까지 자세가 고르게 유지됐어요';
+    }
+    box.replaceChildren(
+      el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '달리기 자세' }), el('span', { class: 'sub', style: 'font-size:12px', text: f ? '휴대폰으로 짐작한 대략값' : '휴대폰 흔들림 기록이 없어요' })),
+      f ? el('div', { class: 'fm-g' }, ...formTags(f).map(formTile)) : null,
+      trend ? el('div', { class: 'sub', style: 'font-size:13px', text: trend }) : null,
+      wv ? el('div', { class: 'sub', style: 'font-size:14px;color:var(--pine)', text: '⌚ 워치: ' + watchText(wv) }) : null,
+      el('button', { class: 'btn line full', text: wv ? '⌚ 워치 값 고치기' : '⌚ 워치(삼성헬스) 값 적기', onclick: () => watchEdit(t, draw) }));
+  };
+  draw(); return box;
 }
 function elevChart(e) {
   if (!e || e.prof.length < 5 || e.max - e.min < 5) return null;
@@ -1026,19 +1103,53 @@ function trackStats(tr, kmh) {
 const CAR_MS = 15 / 3.6;   // 기본값 (모드마다 다르게 줄 수 있어요)
 function trackModes(tr, kmh) {
   const lim = kmh ? kmh / 3.6 : CAR_MS;
+  const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
+  const segV = k => { const dt = (tr[k][2] - tr[k - 1][2]) / 1000; return dt > 0 ? segD(k) / dt : 0; };
   const m = ['w'];
   for (let i = 1; i < tr.length; i++) {
-    const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
+    const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = segD(i);
     // 'g': 화면이 꺼지는 등으로 5분 넘게 위치가 안 들어왔다가 150m 넘게 떨어진 곳에서 다시 이어진 구간 (가는 점선)
     m.push(dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
   }
   // 신호 대기처럼 잠깐 느려지거나, GPS가 튀어 잠깐 빨라진 곳은 앞뒤에 맞춰요 (끊긴 구간 'g'는 그대로 둬요)
-  for (let pass = 0; pass < 2; pass++)
+  const smooth = () => { for (let pass = 0; pass < 2; pass++)
     for (let i = 1; i < m.length - 1; i++) {
       let j = i; while (j < m.length - 1 && m[j + 1] === m[i]) j++;
       if (j - i < 2 && m[i - 1] === m[j + 1] && m[i] !== m[i - 1] && m[i] !== 'g' && m[i - 1] !== 'g') for (let k = i; k <= j; k++) m[k] = m[i - 1];
       i = j;
+    } };
+  smooth();
+  // 30초 평균 빠르기 (m/s)
+  const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+    for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+    return t > 0 ? d / (t / 1000) : 0; };
+  // 휴대폰 흔들림(점의 5번째 값): 1 = 걷거나 뛰며 흔들림, 0 = 흔들림 없이 매끈함(차 안), 없음 = 모름(화면 꺼짐·센서 없음·예전 기록)
+  // 자전거는 페달을 밟아도 휴대폰이 잘 안 흔들려서 안 써요
+  const useShake = !kmh || kmh <= 25, sh = k => useShake ? tr[k][4] : undefined;
+  // ⓪ 흔들림 없이 움직이면(30초 평균 초속 1.2m 넘게) 느려도 차
+  for (let i = 1; i < m.length; i++) if (m[i] === 'w' && sh(i) === 0 && win(i) > 1.2) m[i] = 'c';
+  // 흔들림을 모를 때는 빠르기로 짐작해요: 빨라서 차로 본 구간 바로 앞뒤에서 차로 이어 봐요
+  // ① 차와 차 사이에 5분이 안 되게 느려진 곳은 차 안에서 멈췄다 간 걸로 (신호 대기·막힌 길)
+  for (let i = 1; i < m.length; i++) {
+    if (m[i] !== 'w') continue;
+    let j = i; while (j + 1 < m.length && m[j + 1] === 'w') j++;
+    if (m[i - 1] === 'c' && j + 1 < m.length && m[j + 1] === 'c' && tr[j][2] - tr[i - 1][2] < 5 * 60000) for (let k = i; k <= j; k++) m[k] = 'c';
+    i = j;
+  }
+  // ② 차 구간에 붙은 곳이 사람이 내기 힘든 빠르기(30초 평균: 걷는 모드 시속 8km, 러닝 18km 넘게)면 차로 이어 봐요. 흔들린 곳에서는 멈춰요
+  const capK = !kmh || kmh <= 15 ? 8 : kmh <= 25 ? 18 : 0;
+  if (capK) {
+    const cap = capK / 3.6;
+    const grow = (i, step) => { const sp = []; for (let k = i; k >= 1 && k < m.length && m[k] === 'w' && sh(k) !== 1; k += step) sp.push(win(k));
+      for (let n = 0, k = i; n < sp.length && sp[n] > cap; n++, k += step) m[k] = 'c'; };
+    for (let i = 1; i < m.length; i++) {
+      if (m[i] === 'c' && i + 1 < m.length && m[i + 1] === 'w') grow(i + 1, 1);
+      if (m[i] === 'c' && m[i - 1] === 'w' && i - 1 >= 1) grow(i - 1, -1);
     }
+  }
+  // ③ 흔들리며 간 곳은 모드 기준보다 느리면 걸은(달린) 길
+  for (let i = 1; i < m.length; i++) if (m[i] === 'c' && sh(i) === 1 && segV(i) <= lim) m[i] = 'w';
+  smooth();
   return m.join('');
 }
 // 집 가리기: 공유할 때 출발·도착 근처(HIDE_M)를 길에서 잘라 내요. 길이 짧으면 앞뒤 1/3씩만
@@ -2371,7 +2482,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 async function backupMake() {
@@ -2560,7 +2671,7 @@ function trimTrack(t) {
       el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
         if (!ls.get('trackOrig:' + t, null)) ls.set('trackOrig:' + t, full);
         ls.set('track:' + t, full.slice(a, b + 1)); if (a === 0 && b === n - 1) localStorage.removeItem('trackOrig:' + t);
-        localStorage.removeItem('walkSplits:' + t); localStorage.removeItem('walkSplitSteps:' + t);   // 구간은 다시 셀 수 없어서 지워요
+        localStorage.removeItem('walkSplits:' + t); localStorage.removeItem('walkSplitSteps:' + t); localStorage.removeItem('walkForm:' + t);   // 구간은 다시 셀 수 없어서 지워요
         sb.remove(); toast('경로를 잘랐어요'); setTimeout(() => location.reload(), 400);
       } }))));
   document.body.append(sb); draw();
@@ -2637,7 +2748,7 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
+    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'MD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
@@ -2713,12 +2824,12 @@ function viewWalk() {
     for (let k = 0; k < n; k++) sp.push(Math.round(lap));
     ls.set('walkSplits:' + id, sp);
     if (motionSeen) { const ss = ls.get('walkSplitSteps:' + id, []); while (ss.length < sp.length) ss.push(stepN); ls.set('walkSplitSteps:' + id, ss); ls.set('walkSteps:' + id, { n: stepN }); }
-    const sec = Math.round(lap / 1000);
+    const sec = Math.round(lap / 1000), fe = motionSeen ? formFlush(100, km) : null;
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
     const G = runGoal(), g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
     if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${goalLabel(G)} 달성!`); }
     const remT = goalMin() ? goalMin() * 60000 - mv : 0;
-    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}`);
+    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}${formTip(fe, km)}`);
     draw();
   }
   // 케이던스(1분에 몇 걸음): 휴대폰 흔들림 센서로 발걸음을 세요. 화면이 켜져 있을 때만 셀 수 있어요.
@@ -2730,13 +2841,80 @@ function viewWalk() {
     const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
     motionSeen = Date.now();
     const mag = Math.hypot(a.x, a.y, a.z); sm = sm ? sm * 0.75 + mag * 0.25 : mag; base = base * 0.98 + sm * 0.02;
+    if (M().k === 'run') formSample(a, mag);
+    const sec = Math.floor(Date.now() / 1000), lb = shakeB[shakeB.length - 1];
+    if (!lb || lb.s !== sec) { shakeB.push({ s: sec, n: 1, ss: (mag - base) ** 2, st: 0 }); if (shakeB.length > 25) shakeB.shift(); } else { lb.n++; lb.ss += (mag - base) ** 2; }
     if (armed && sm > base + 1.5 && Date.now() - lastStep > 250) {
-      armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++;
+      const iv = Date.now() - lastStep;
+      armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++; shakeB[shakeB.length - 1].st++;
+      if (M().k === 'run') formStep(iv);
       if (stepN % 10 === 0) ls.set('walkSteps:' + id, { n: stepN });
     } else if (sm < base) armed = true;
   }
+  // ---------- 달리기 자세 (러닝만, 휴대폰 흔들림으로 짐작한 값) ----------
+  // 한 걸음(걸음 ~ 다음 걸음) 동안의 흔들림으로: 상하 진폭(윗방향 흔들림을 두 번 더해 cm), 착지 충격(가장 센 흔들림 ÷ 중력 = G),
+  // 좌우 균형(번갈아 오는 두 발의 충격 차이 %), 걸음 고르기(걸음 간격이 들쭉날쭉한 정도 %). 1km마다 walkForm:{ID}에 [{o,g,s,r,n,k(몇 km째),p(끝 조각)}]
+  // 워치처럼 실험실 자료로 보정한 값이 아니라서 숫자는 대략이에요. 같은 자리(허리·팔)에 두고 달린 날끼리 비교하면 믿을 만해요
+  let gv = null, fBuf = [], fLastT = 0, fKm = null, fRecent = [];
+  const fNew = () => ({ n: 0, o: 0, g: 0, side: [[0, 0], [0, 0]], iv: [] });
+  function formSample(a, mag) {
+    const now = performance.now(), dt = fLastT ? Math.min(0.1, (now - fLastT) / 1000) : 0.016; fLastT = now;
+    const v = [a.x, a.y, a.z]; gv = gv ? gv.map((g, i) => g * 0.99 + v[i] * 0.01) : v;   // 중력 방향: 1~2초 평균
+    const gm = Math.hypot(...gv) || 9.8;
+    fBuf.push([(v[0] * gv[0] + v[1] * gv[1] + v[2] * gv[2]) / gm - gm, mag, dt]);
+    if (fBuf.length > 120) fBuf.shift();
+  }
+  function formStep(ivMs) {
+    const b = fBuf; fBuf = [];
+    if (b.length < 8 || ivMs < 240 || ivMs > 600) return;   // 달리는 걸음(1분에 100~250번)만
+    let v = 0; const vs = b.map(q => (v += q[0] * q[2]));
+    const vm = vs.reduce((x, y) => x + y, 0) / vs.length;
+    let z = 0; const zs = b.map((q, i) => (z += (vs[i] - vm) * q[2]));
+    const zd = zs.map((q, i) => q - zs[zs.length - 1] * (i + 1) / zs.length);   // 한 걸음 뒤엔 제자리 높이로
+    const osc = (Math.max(...zd) - Math.min(...zd)) * 100, pk = Math.max(...b.map(q => q[1])) / 9.81;
+    if (!(osc > 1 && osc < 25 && pk > 1 && pk < 8)) return;
+    fKm = fKm || fNew(); fKm.n++; fKm.o += osc; fKm.g += pk; const sd = fKm.side[stepN % 2]; sd[0] += pk; sd[1]++; fKm.iv.push(ivMs);
+    fRecent.push({ o: osc, g: pk, sd: stepN % 2, iv: ivMs, t: Date.now() }); if (fRecent.length > 40) fRecent.shift();
+  }
+  function formFlush(minN, km, part) {
+    const f = fKm; if (!f || f.n < minN) return null; fKm = fNew();
+    const [A, B] = f.side.map(x => x[1] ? x[0] / x[1] : 0), ivm = f.iv.reduce((x, y) => x + y, 0) / f.iv.length;
+    const e = { o: +(f.o / f.n).toFixed(1), g: +(f.g / f.n).toFixed(2), s: A && B ? +(Math.abs(A - B) / ((A + B) / 2) * 100).toFixed(1) : null,
+      r: +(Math.sqrt(f.iv.reduce((x, y) => x + (y - ivm) ** 2, 0) / f.iv.length) / ivm * 100).toFixed(1), n: f.n, k: km };
+    if (part) e.p = 1;   // 끝낼 때 남은 1km 안 되는 구간
+    const all = ls.get('walkForm:' + id, []); all.push(e); ls.set('walkForm:' + id, all);
+    return e;
+  }
+  // 실시간: 최근 40걸음 (10초 넘게 걸음이 없으면 없음)
+  function formLive() {
+    const R = fRecent.filter(x => Date.now() - x.t < 10000); if (R.length < 16) return null;
+    const avg = a => a.reduce((x, y) => x + y, 0) / a.length, A = R.filter(x => !x.sd).map(x => x.g), B = R.filter(x => x.sd).map(x => x.g), ivm = avg(R.map(x => x.iv));
+    return { o: avg(R.map(x => x.o)), g: avg(R.map(x => x.g)), s: A.length && B.length ? Math.abs(avg(A) - avg(B)) / ((avg(A) + avg(B)) / 2) * 100 : null,
+      r: Math.sqrt(avg(R.map(x => (x.iv - ivm) ** 2))) / ivm * 100 };
+  }
+  // 1km 목소리에 덧붙이는 한마디 (같은 말은 3km 안에 다시 안 해요)
+  const fSaid = {};
+  function formTip(e, km) {
+    if (!e) return '';
+    const first = ls.get('walkForm:' + id, [])[0], tips = [];
+    if (first && first !== e && km >= 3 && e.g > first.g * 1.2) tips.push(['g2', '착지 충격이 처음보다 커졌어요. 지치면 보폭을 조금 줄여 보세요.']);
+    if (e.o > 11) tips.push(['o', '몸이 위아래로 많이 튀어요. 앞으로 나아가는 느낌으로 달려 보세요.']);
+    if (e.g > 3.5) tips.push(['g', '착지가 세요. 발을 몸 가까이 부드럽게 디뎌 보세요.']);
+    if (e.s != null && e.s > 10) tips.push(['s', '한쪽 발을 더 세게 디디고 있어요.']);
+    const t = tips.find(([k]) => !(fSaid[k] > km - 3)); if (!t) return '';
+    fSaid[t[0]] = km; return ' ' + t[1];
+  }
+  // 차와 걷기 구분: 최근 20초 흔들림. 걸음이 1분에 30번 넘거나 크게 흔들리면 1(걷거나 뛰는 중), 걸음이 거의 없고 매끈하면 0(차 안), 센서 값이 모자라면 모름
+  const shakeB = [];
+  function shakeNow() {
+    const now = Math.floor(Date.now() / 1000), b = shakeB.filter(x => now - x.s < 20);
+    if (b.length < 12) return undefined;
+    const n = b.reduce((a, x) => a + x.n, 0), st = b.reduce((a, x) => a + x.st, 0), rms = Math.sqrt(b.reduce((a, x) => a + x.ss, 0) / n), spm = st / (b.length / 60);
+    return spm >= 30 || rms >= 1.3 ? 1 : spm < 15 && rms < 0.9 ? 0 : undefined;
+  }
+  // 흔들림 센서는 모든 모드에서 켜요 (케이던스는 러닝에만 보여요)
   function motionStart() {
-    if (motionOn || !id || M().k !== 'run' || !('DeviceMotionEvent' in window)) return;
+    if (motionOn || !id || !('DeviceMotionEvent' in window)) return;
     motionOn = true;
     const go = () => addEventListener('devicemotion', onMotion);
     if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') go(); }).catch(() => {}); else go();   // 아이폰은 허락을 받아야 해요
@@ -2816,6 +2994,41 @@ function viewWalk() {
     } catch {}
     try { navigator.vibrate && navigator.vibrate(Math.round(sec * 1000)); } catch {}
   }
+  // 케이던스 가이드: 고른 빠르기(1분에 n번)로 짧은 '뚝' 소리. 소리 시각을 조금 앞서 예약해서 박자가 흔들리지 않게 해요
+  // 빠르기는 cadGuideSpm에 남기고, 켜짐은 이번 달리기에만 (끝내면 꺼져요)
+  let cgTimer = null, cgNext = 0;
+  const cgSpm = () => Math.min(200, Math.max(140, ls.get('cadGuideSpm', 180)));
+  function cgTick(at) {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square'; o.frequency.value = 1500; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.25, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.045);
+    o.start(at); o.stop(at + 0.06);
+  }
+  function cgStart() {
+    if (cgTimer) return;
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch { return; }
+    cgNext = actx.currentTime + 0.1;
+    cgTimer = setInterval(() => {
+      const iv = 60 / cgSpm();
+      if (cgNext < actx.currentTime) cgNext = actx.currentTime + 0.02;
+      while (cgNext < actx.currentTime + 0.2) { cgTick(cgNext); cgNext += iv; }
+    }, 40);
+  }
+  function cgStop() { clearInterval(cgTimer); cgTimer = null; }
+  function cgRow() {
+    const v = el('b', { class: 'v', text: cgSpm() }), sub = el('span', { text: cgTimer ? '소리에 발 맞추기' : '1분에 이만큼 뚝 소리' });
+    const sw = el('span', { class: 'sw' + (cgTimer ? ' on' : '') }, el('i'));
+    const step = d => { ls.set('cadGuideSpm', Math.min(200, Math.max(140, cgSpm() + d))); v.textContent = cgSpm(); };
+    return el('div', { class: 'rd-cg' }, el('span', { class: 'n', text: '♩' }),
+      el('span', { class: 't' }, el('b', { text: '케이던스 가이드' }), sub),
+      el('button', { class: 'rd-chip', 'aria-label': '느리게', text: '−', onclick: () => step(-5) }), v,
+      el('button', { class: 'rd-chip', 'aria-label': '빠르게', text: '+', onclick: () => step(5) }),
+      el('button', { class: 'sw-row', role: 'switch', 'aria-label': '케이던스 가이드 소리', 'aria-checked': cgTimer ? 'true' : 'false', onclick: e => {
+        if (cgTimer) cgStop(); else cgStart();
+        sw.classList.toggle('on', !!cgTimer); e.currentTarget.setAttribute('aria-checked', cgTimer ? 'true' : 'false');
+        sub.textContent = cgTimer ? '소리에 발 맞추기' : '1분에 이만큼 뚝 소리';
+      } }, sw));
+  }
   function countdown() {
     let dead = false;
     const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;min-height:170px', text: '' });
@@ -2838,7 +3051,7 @@ function viewWalk() {
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '멈춘 동안은 달린 시간과 페이스에 넣지 않아요. 다시 달리면 이어서 세요.' })), state: null,
-    goal: el('div', { class: 'stack', style: 'gap:6px' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
+    goal: el('div', { class: 'stack', style: 'gap:6px' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   function drawRun() {
     if (!id || M().k !== 'run') return;
     const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), mv = movingMs(tr, m.car), np = nowPace(tr), c = cadNow();
@@ -2851,6 +3064,12 @@ function viewWalk() {
     // 멈춤: 칸 밖, 판 위쪽에 설명과 함께. 윗줄 '기록 중'도 '멈춤'으로
     const pz = runPaused(tr);
     rd.pz.style.display = pz ? '' : 'none';
+    document.querySelectorAll('.runner').forEach(r => r.classList.toggle('stop', !!pz));
+    // 실시간 달리기 자세 (최근 40걸음, 시안 B안)
+    const fl = formLive();
+    rd.form.replaceChildren(...formTags(fl || {}).map(x => el('div', {}, el('span', { class: 'l', text: x.l }),
+      el('b', {}, x.v == null ? '-' : x.v.toFixed(x.d), x.v == null ? '' : el('small', { text: x.u })),
+      x.v == null ? null : el('span', { class: 'tag', style: `background:${x.t[1] ? FORM_OK : FORM_WARN}`, text: x.t[0] }))));
     if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz ? ' warn' : ''); rd.state.replaceChildren(pz ? '⏸ 멈춤' : el('i'), pz ? '' : '기록 중'); }
     const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
     const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
@@ -2996,7 +3215,7 @@ function viewWalk() {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() }; lastAcc = p.coords.accuracy;
       if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
-      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
+      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow());
       if (p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); goalCheck(); }
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
@@ -3166,7 +3385,7 @@ function viewWalk() {
           ls.set('trackName:' + id, iN.value.trim() || defName());
           ls.set('walkPlaces:' + id, { start: iS.value.trim(), end: iE.value.trim() });
           if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 1000)); else localStorage.removeItem('walkNote:' + id);
-          stopGps(); wantWake = false; try { wake?.release(); } catch {}
+          stopGps(); cgStop(); if (M().k === 'run') formFlush(100, null, true); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
           ls.set('walkNow', null); bg.remove(); done = id; draw();
         } }))));
@@ -3254,7 +3473,7 @@ function viewWalk() {
               el('span', { class: 'grow lbl', style: 'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#1E3B2F;font-weight:700', text: nameOf() }),
               el('button', { class: 'rd-chip', style: 'height:26px;padding:0 9px', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } }))),
           rd.goal, rd.pz,
-          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub))),
+          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub)), cgRow(), rd.form),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
