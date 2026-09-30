@@ -12,7 +12,7 @@
 - GitHub 저장소: `GilbertGo/mapdiary` (2026-09-29 `jidoilgi`에서 이름 바꿈. 이 PC 폴더는 아직 `Documents\GitHub\jidoilgi`), GitHub Pages로 배포
 - 주소: https://gilbertgo.github.io/mapdiary/
 - 예전 주소 `/jidoilgi/`는 별도 저장소 `GilbertGo/jidoilgi`(index.html 하나)가 `?`·`#` 뒤를 그대로 붙여 `/mapdiary/`로 넘긴다. 이미 보낸 짧은 링크가 이걸로 열리니 지우지 말 것.
-- 배포 = `index.html` 수정 → commit → push. 1~2분 뒤 반영. push 전에는 사용자에게 한 번 확인받을 것.
+- 배포 = `index.html` 수정 → commit → push → PR → **merge까지 Claude가 바로 함**(2026-10-01 사용자 요청 "이제 머지까지 자동으로 해줘"). 1~2분 뒤 반영. 단, 디자인은 여전히 시안을 먼저 보여 주고 고른 것만 적용(작업 방식 참고). PR이 합쳐진 뒤 새 작업은 브랜치를 main에서 다시 시작
 
 ## 다왔나와 기술적으로 겹치는 것 (중요)
 - 두 앱 모두 `gilbertgo.github.io` 아래라서 **localStorage와 IndexedDB를 같이 쓴다**(막을 수 없음). 그래서 목록(`pastTrips`)에서 다왔나 나들이(`myTrips`, `joined`, `plans`에 있는 ID)는 뺀다. 키 이름(`track:`, `walkNow` 등)을 바꾸면 예전 기록을 못 찾으니 바꾸지 말 것.
