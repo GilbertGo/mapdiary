@@ -2649,8 +2649,9 @@ function viewLanding() {
     el('div', { style: 'padding:28px 0 36px' },
       // 'MD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MD, 받은 MD…)
       el('h1', { style: 'font-size:34px;display:flex;align-items:center;gap:10px' }, 'Map Diary',
-        el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2', 'aria-label': '줄여서 MD', text: 'MD', onclick: () => {   // 5번 빨리 누르면 개발자 보기 켜기/끄기
+        el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer', 'aria-label': '줄여서 MD', text: 'MD', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 켜기/끄기 (빠른 두 번 누름도 한 번씩 세게 pointerdown으로)
           const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
+          if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
           if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } })),
       el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' }),
       el('p', { class: 'sub', style: 'margin:4px 0 0;font-size:13.5px;color:#7A7F76', text: '기록 한 편 한 편을 줄여서 MD라고 불러요' })),
