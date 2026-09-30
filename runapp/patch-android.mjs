@@ -15,6 +15,6 @@ writeFileSync(g, readFileSync(g, 'utf8').replace(/versionCode \d+/, `versionCode
 const s = `${res}/values/strings.xml`;
 let x = readFileSync(s, 'utf8');
 if (!x.includes('capacitor_background_geolocation_notification_channel_name'))
-  x = x.replace('</resources>', '    <string name="capacitor_background_geolocation_notification_channel_name">러닝 기록</string>\n</resources>');
+  x = x.replace('</resources>', `    <string name="capacitor_background_geolocation_notification_channel_name">${process.env.MD_APP === 'pgolf' ? '파크골프 기록' : '러닝 기록'}</string>\n</resources>`);
 writeFileSync(s, x);
 console.log('android 손질 끝 · 판 번호', n);

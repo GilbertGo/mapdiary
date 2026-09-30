@@ -1,0 +1,4 @@
+{
+  "run":   { "appId": "io.github.gilbertgo.mdrun",  "appName": "MD Run",     "mode": "run",   "noti": "달린 길", "apk": "MDRun.apk" },
+  "pgolf": { "appId": "io.github.gilbertgo.mdgolf", "appName": "MD 파크골프", "mode": "pgolf", "noti": "친 길",   "apk": "MDGolf.apk" }
+}

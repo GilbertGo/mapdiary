@@ -1,6 +1,7 @@
-# MD Run 안드로이드 앱(APK)을 만들어 Releases에 올려요.
-# 휴대폰에서 받는 주소: https://github.com/GilbertGo/mapdiary/releases/latest/download/MDRun.apk
-name: MD Run APK
+# MD Run·MD 파크골프 안드로이드 앱(APK)을 만들어 Releases에 올려요.
+# 휴대폰에서 받는 주소: https://github.com/GilbertGo/mapdiary/releases/latest/download/MDRun.apk (러닝)
+#                       https://github.com/GilbertGo/mapdiary/releases/latest/download/MDGolf.apk (파크골프)
+name: MD 앱 APK (러닝·파크골프)
 on:
   push:
     branches: [main]
@@ -18,24 +19,28 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
       # 안드로이드 SDK는 GitHub 러너(ubuntu-latest)에 이미 깔려 있어요(ANDROID_HOME)
-      - name: 웹 화면 묶고 안드로이드 프로젝트 만들기
+      - name: 앱 두 개 만들기 (MD Run, MD 파크골프). 늘 같은 서명이라 지우지 않고 덮어 설치돼요
         working-directory: runapp
         env: { RUN_NUMBER: '${{ github.run_number }}' }
         run: |
           npm ci
-          node build.mjs
-          npx cap add android
-          node patch-android.mjs
-          npx cap sync android
-      - name: APK 만들기 (늘 같은 서명이라 지우지 않고 덮어 설치돼요)
-        run: |
-          mkdir -p ~/.android && cp runapp/debug.keystore ~/.android/debug.keystore
-          cd runapp/android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk ../../MDRun.apk
+          mkdir -p ~/.android && cp debug.keystore ~/.android/debug.keystore
+          for app in run pgolf; do
+            apk=$(node -e "console.log(require('./apps.json')['$app'].apk)")
+            rm -rf android www
+            MD_APP=$app node build.mjs
+            npx cap add android
+            MD_APP=$app node patch-android.mjs
+            npx cap sync android
+            (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
+            cp android/app/build/outputs/apk/debug/app-debug.apk ../$apk
+          done
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: mdrun-${{ github.run_number }}
-          name: MD Run 0.1.${{ github.run_number }}
-          body: 휴대폰에서 MDRun.apk를 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
-          files: MDRun.apk
+          name: MD 앱 0.1.${{ github.run_number }} (러닝·파크골프)
+          body: 러닝은 MDRun.apk, 파크골프는 MDGolf.apk를 휴대폰에서 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
+          files: |
+            MDRun.apk
+            MDGolf.apk
           make_latest: true
