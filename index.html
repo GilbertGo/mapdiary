@@ -243,8 +243,11 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .gf-row{display:flex;align-items:center;gap:8px;background:#F8F5EE;border-radius:16px;padding:6px 8px 6px 14px}
 .gf-nm{flex:1;min-width:0;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gf-pm{width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:var(--shadow);font-size:24px;font-weight:700;color:var(--pine);flex:none}
-.gf-v{width:40px;text-align:center;font-size:26px;font-variant-numeric:tabular-nums;color:var(--ink)}
-.gf-v.empty{color:#B9B3A3}
+.gf-v{width:58px;height:52px;border:none;background:none;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;color:var(--ink);flex:none}
+.gf-v b{font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.gf-v small{font-size:11px;font-weight:700;color:#8A8F86;height:13px;margin-top:3px;white-space:nowrap}
+.gf-v.empty{color:#B9B3A3;background:#fff;box-shadow:inset 0 0 0 1.5px #E4DCC8}.gf-v.empty small{color:var(--pine)}
+.gf-v.par small{color:var(--pine)}
 .gf-tot{width:66px;text-align:right;font-size:13px;color:#6B6F66;line-height:1.25;flex:none}
 .gf-tot b{display:block;font-size:16px;color:var(--pine)}
 .gf-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
@@ -873,7 +876,9 @@ function golfPanel(G, save, here) {
         return el('div', { class: 'gf-row' },
           el('span', { class: 'gf-nm', text: nm }),
           el('button', { class: 'gf-pm', 'aria-label': `${nm} 한 타 빼기`, text: '−', onclick: () => set((v || par) - 1) }),
-          el('b', { class: 'gf-v' + (v ? '' : ' empty'), text: v || par, 'aria-label': v ? `${v}타` : `아직 안 적음 (파 ${par})` }),
+          // 숫자를 누르면 바로 파 (− + 를 번갈아 누르지 않아도 돼요)
+          el('button', { class: 'gf-v' + (v ? '' : ' empty') + (v === par ? ' par' : ''), 'aria-label': v ? `${v}타, 누르면 파로` : `누르면 파 ${par}타로 적어요`, onclick: () => set(par) },
+            el('b', { text: v || par }), el('small', { text: v === par ? '파' : v ? '' : '눌러서 파' })),
           el('button', { class: 'gf-pm', 'aria-label': `${nm} 한 타 더하기`, text: '+', onclick: () => set((v || par) + 1) }),
           el('span', { class: 'gf-tot' }, el('b', { text: t.played ? `${t.st}타` : '-' }), t.played ? fmtDiff(t.diff) : ''));
       }),
@@ -884,7 +889,7 @@ function golfPanel(G, save, here) {
         else toast(`${G.n}홀 끝! ${G.p.map((nm, k) => `${nm} ${golfTot(G, k).st}타 (${fmtDiff(golfTot(G, k).diff)})`).join(', ')}`);
         saveCourse(); save(G); draw();
       } }),
-      el('div', { class: 'sub', style: 'font-size:13px;margin-top:-4px', text: here ? '안 누른 사람은 파로 적혀요. 홀을 끝낸 자리가 지도에 홀 번호로 남아요.' : '안 누른 사람은 파로 적혀요.' }),
+      el('div', { class: 'sub', style: 'font-size:13px;margin-top:-4px', text: here ? '가운데 숫자를 누르면 파로 적혀요. 안 적고 다음 홀로 가도 파로 적혀요. 홀을 끝낸 자리가 지도에 홀 번호로 남아요.' : '가운데 숫자를 누르면 파로 적혀요. 안 적은 사람은 파로 적혀요.' }),
       golfTable(G, go));
   }
   draw();
