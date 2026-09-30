@@ -1,0 +1,41 @@
+# MD Run 안드로이드 앱(APK)을 만들어 Releases에 올려요.
+# 휴대폰에서 받는 주소: https://github.com/GilbertGo/mapdiary/releases/latest/download/MDRun.apk
+name: MD Run APK
+on:
+  push:
+    branches: [main]
+    paths: ['runapp/**', 'index.html', 'icon-512.png', '.github/workflows/mdrun-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - name: 웹 화면 묶고 안드로이드 프로젝트 만들기
+        working-directory: runapp
+        env: { RUN_NUMBER: '${{ github.run_number }}' }
+        run: |
+          npm ci
+          node build.mjs
+          npx cap add android
+          node patch-android.mjs
+          npx cap sync android
+      - name: APK 만들기 (늘 같은 서명이라 지우지 않고 덮어 설치돼요)
+        run: |
+          mkdir -p ~/.android && cp runapp/debug.keystore ~/.android/debug.keystore
+          cd runapp/android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../../MDRun.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mdrun-${{ github.run_number }}
+          name: MD Run 0.1.${{ github.run_number }}
+          body: 휴대폰에서 MDRun.apk를 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
+          files: MDRun.apk
+          make_latest: true
