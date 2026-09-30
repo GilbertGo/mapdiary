@@ -1386,8 +1386,8 @@ function openBrag(info, t, count, allDone, room) {
   let cardOpts = null;
   const card = bragView(img, () => cardOpts);
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
-  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'Map Diary 공유하기' },
-    el('h2', { text: 'Map Diary 공유하기' }),
+  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MD 공유하기' },
+    el('h2', { text: 'MD 공유하기' }),
     el('p', { class: 'sub', style: 'margin:0', text: '사진 한 장이나 지도 링크로 보내요. 그림을 누르면 지도로 크게 볼 수 있어요.' + (count ? ' 참여자 이름과 위치는 들어가지 않아요.' : '') }),
     img, opts,
     // 제목 바꾸기: 내 기록·여행은 저장된 이름도 바꾸고, 단체 나들이는 카드 제목만 바꿔요
@@ -2335,8 +2335,8 @@ function pastTrips() {
 function openPastTrips() {
   const list = pastTrips();
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
-  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'Map Diary 공유하기' },
-    el('h2', { text: '어떤 Map Diary를 공유할까요?' }),
+  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MD 공유하기' },
+    el('h2', { text: '어떤 MD를 공유할까요?' }),
     el('p', { class: 'sub', style: 'margin:0', text: '이 휴대폰에 남은 기록이에요. 고르면 공유할 카드를 만들어요.' }),
     list.length ? list.map(x => { const d = new Date(x.info.startAt), tr = trackLoad(x.t);
       return el('button', { class: 'member', onclick: () => { bg.remove(); openBrag(x.info, x.t, 0, false); } },
@@ -2620,7 +2620,7 @@ async function viewMyOne(t) {
       el('div', { class: 'sub', text: nums.join(' · ') })),
     golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
-    el('button', { class: 'btn primary full', text: 'Map Diary 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
+    el('button', { class: 'btn primary full', text: 'MD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
     el('div', { class: 'two' },
       el('button', { class: 'btn line', text: 'GPX 받기', onclick: gpx }),
@@ -2639,7 +2639,7 @@ async function viewMyOne(t) {
     addEventListener('spots-changed', () => setTimeout(() => location.reload(), 300));   // 지도 위 별표도 새로
   }, 0);
 }
-// 첫 화면: 기록 시작(모드 타일) / Map Diary 공유하기
+// 첫 화면: 기록 시작(모드 타일) / MD 공유하기
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
@@ -2666,7 +2666,7 @@ function viewLanding() {
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Diary로 남아요.' }),
     bigBtn('내 MD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
-    bigBtn('Map Diary 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
+    bigBtn('MD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
     installSlot));
 }
@@ -3150,8 +3150,8 @@ function viewWalk() {
       const wp = ls.get('walkPlaces:' + done, {});
       const info = { name: ls.get('trackName:' + done, defName()), startPlace: wp.start || '출발 지점', meetPlace: wp.end || '도착 지점', startAt: tr[0][2], meetAt: tr[tr.length - 1][2], route: null, phase: 'go' };
       root.replaceChildren(...[roleBar('leader', '내 기록'),
-        el('div', { class: 'banner ok', style: 'margin-top:12px' }, el('b', { text: `"${info.name}" Map Diary에 남겼어요!` }), el('div', { text: `${M().did} 거리 ${fmtDist(st.walk)} · ${fmtDur(st.ms)}. 첫 화면 'Map Diary 공유하기'에도 남아 있어요.` })),
-        el('button', { class: 'btn primary full big', text: 'Map Diary 공유하기', onclick: () => openBrag(info, done, 0, false) }),
+        el('div', { class: 'banner ok', style: 'margin-top:12px' }, el('b', { text: `"${info.name}" Map Diary에 남겼어요!` }), el('div', { text: `${M().did} 거리 ${fmtDist(st.walk)} · ${fmtDur(st.ms)}. 첫 화면 'MD 공유하기'에도 남아 있어요.` })),
+        el('button', { class: 'btn primary full big', text: 'MD 공유하기', onclick: () => openBrag(info, done, 0, false) }),
         (() => { const aid = ls.get('walkAlbum:' + done, null), ai = aid && albumInfo(aid);
           return ai && ai.days > 1 ? el('button', { class: 'btn line full', text: `'${ai.name}' 여행 전체 공유하기`, onclick: () => openBrag(ai, aid, 0, false) }) : null; })(),
         el('a', { class: 'btn line full', href: './', text: '처음으로' })].filter(Boolean));
