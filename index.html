@@ -94,6 +94,7 @@ input::placeholder{color:#B3AC9C}
 .rd-pz b{font-size:14px;color:#B4531A}
 .rd-bar{height:10px;border-radius:10px;background:rgba(30,59,47,.1);position:relative}.rd-bar i{display:block;height:100%;background:linear-gradient(90deg,#F7B267,#E4572E);border-radius:10px;position:relative;min-width:10px}
 .rd-bar i::after{content:'';position:absolute;right:-4px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:#fff;border:3px solid #E4572E;box-sizing:border-box}
+.rd-gt{display:grid;grid-template-columns:1fr 1fr;gap:6px}.rd-gt > div{background:#fff;border-radius:12px;padding:6px 10px;min-width:0}.rd-gt .lbl{display:block;font-size:11px}.rd-gt b{font-size:18px;color:#1E3B2F}.rd-gt b.hot{color:#E4572E}
 .rd-sp{display:flex;gap:6px;align-items:flex-end;height:96px;overflow-x:auto}
 .rd-sp div{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;font-size:10px;color:#5B7468;height:100%}
 .rd-sp span{width:100%;background:linear-gradient(180deg,#F7B267,#F4A259);border-radius:6px 6px 2px 2px;min-height:6px}
@@ -2853,8 +2854,13 @@ function viewWalk() {
     if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz ? ' warn' : ''); rd.state.replaceChildren(pz ? '⏸ 멈춤' : el('i'), pz ? '' : '기록 중'); }
     const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
     const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
-    rd.goal.replaceChildren(...(G.k !== 'free' ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${goalLabel(G)}` }), el('span', { class: 'lbl', text: frac >= 1 ? '달성!' : `${left} 남음` })),
-      el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.min(100, frac * 100).toFixed(1)}%` }))] : []));
+    // 지금까지의 평균 페이스로: 거리 목표면 예상 완주 시간(목표 거리 전체를 달리는 데 걸릴 시간), 시간 목표면 예상 달린 거리 (막 출발했으면 '-')
+    const enough = st.walk >= 100 && mv >= 30000;
+    const guess = !enough ? '-' : G.k === 'dist' ? fmtRunTime(G.v * 1000 * mv / st.walk) : G.k === 'time' ? fmtDist(st.walk / mv * G.v * 60000) : '';
+    const tile = (l, v, hot) => el('div', {}, el('span', { class: 'lbl', text: l }), el('b', { class: hot ? 'hot' : '', text: v }));
+    rd.goal.replaceChildren(...(G.k !== 'free' ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${goalLabel(G)}` }), el('span', { class: 'lbl', text: frac >= 1 ? '달성!' : `${Math.floor(frac * 100)}%` })),
+      el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.min(100, frac * 100).toFixed(1)}%` })),
+      ...(frac < 1 ? [el('div', { class: 'rd-gt' }, tile(G.k === 'dist' ? '남은 거리' : '남은 시간', left), tile(G.k === 'dist' ? '예상 완주 시간' : '예상 달린 거리', guess, true))] : [])] : []));
     const sp = ls.get('walkSplits:' + id, []);
     if (sp.length) {
       const lo = Math.min(...sp), hi = Math.max(...sp);
