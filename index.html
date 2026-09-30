@@ -773,12 +773,16 @@ function showPhoto(p, list) {
   show(i);
   document.body.append(bg);
 }
-// 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만)]
-function trackAdd(t, lat, lng, acc, name, alt) {
+// 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만), 흔들림]
+// 5번째 값(있을 때만): 휴대폰 흔들림 1 = 걷거나 뛰는 중, 0 = 흔들림 없음(차 안). 높이가 없으면 4번째는 null
+function trackAdd(t, lat, lng, acc, name, alt, shake) {
   if (acc > TRACK_MAX_ACC) return;
   const tr = trackLoad(t), lp = tr[tr.length - 1];
   if (lp && dist(lp[0], lp[1], lat, lng) < TRACK_MIN_M) return;
-  tr.push(Number.isFinite(alt) ? [+lat.toFixed(6), +lng.toFixed(6), Date.now(), Math.round(alt)] : [+lat.toFixed(6), +lng.toFixed(6), Date.now()]);
+  const q = [+lat.toFixed(6), +lng.toFixed(6), Date.now()];
+  if (Number.isFinite(alt)) q.push(Math.round(alt)); else if (shake != null) q.push(null);
+  if (shake != null) q.push(shake);
+  tr.push(q);
   // 너무 길어지면 앞부분을 버리지 않고, 최근 500점을 뺀 나머지를 한 점 건너 하나씩 솎아요 (출발한 곳은 남겨요)
   if (tr.length > 20000) { const old = tr.slice(0, -500).filter((q, i) => i % 2 === 0); tr.splice(0, tr.length - 500, ...old); }
   if (!ls.set('track:' + t, tr) && Date.now() - (trackAdd.warned || 0) > 10 * 60000) { trackAdd.warned = Date.now(); toast('휴대폰 저장 공간이 모자라 기록을 저장하지 못했어요. 끝내고 공유해 두세요'); }
@@ -1026,42 +1030,53 @@ function trackStats(tr, kmh) {
 const CAR_MS = 15 / 3.6;   // 기본값 (모드마다 다르게 줄 수 있어요)
 function trackModes(tr, kmh) {
   const lim = kmh ? kmh / 3.6 : CAR_MS;
+  const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
+  const segV = k => { const dt = (tr[k][2] - tr[k - 1][2]) / 1000; return dt > 0 ? segD(k) / dt : 0; };
   const m = ['w'];
   for (let i = 1; i < tr.length; i++) {
-    const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
+    const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = segD(i);
     // 'g': 화면이 꺼지는 등으로 5분 넘게 위치가 안 들어왔다가 150m 넘게 떨어진 곳에서 다시 이어진 구간 (가는 점선)
     m.push(dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
   }
   // 신호 대기처럼 잠깐 느려지거나, GPS가 튀어 잠깐 빨라진 곳은 앞뒤에 맞춰요 (끊긴 구간 'g'는 그대로 둬요)
-  for (let pass = 0; pass < 2; pass++)
+  const smooth = () => { for (let pass = 0; pass < 2; pass++)
     for (let i = 1; i < m.length - 1; i++) {
       let j = i; while (j < m.length - 1 && m[j + 1] === m[i]) j++;
       if (j - i < 2 && m[i - 1] === m[j + 1] && m[i] !== m[i - 1] && m[i] !== 'g' && m[i - 1] !== 'g') for (let k = i; k <= j; k++) m[k] = m[i - 1];
       i = j;
-    }
-  // 느리게 가는 차 (신호 대기·막힌 길·주차장): 빨라서 차로 본 구간 바로 앞뒤에서 차로 이어 봐요
-  const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
-  // ① 차와 차 사이에 5분이 안 되게 느려진 곳은 차 안에서 멈췄다 간 걸로
+    } };
+  smooth();
+  // 30초 평균 빠르기 (m/s)
+  const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+    for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+    return t > 0 ? d / (t / 1000) : 0; };
+  // 휴대폰 흔들림(점의 5번째 값): 1 = 걷거나 뛰며 흔들림, 0 = 흔들림 없이 매끈함(차 안), 없음 = 모름(화면 꺼짐·센서 없음·예전 기록)
+  // 자전거는 페달을 밟아도 휴대폰이 잘 안 흔들려서 안 써요
+  const useShake = !kmh || kmh <= 25, sh = k => useShake ? tr[k][4] : undefined;
+  // ⓪ 흔들림 없이 움직이면(30초 평균 초속 1.2m 넘게) 느려도 차
+  for (let i = 1; i < m.length; i++) if (m[i] === 'w' && sh(i) === 0 && win(i) > 1.2) m[i] = 'c';
+  // 흔들림을 모를 때는 빠르기로 짐작해요: 빨라서 차로 본 구간 바로 앞뒤에서 차로 이어 봐요
+  // ① 차와 차 사이에 5분이 안 되게 느려진 곳은 차 안에서 멈췄다 간 걸로 (신호 대기·막힌 길)
   for (let i = 1; i < m.length; i++) {
     if (m[i] !== 'w') continue;
     let j = i; while (j + 1 < m.length && m[j + 1] === 'w') j++;
     if (m[i - 1] === 'c' && j + 1 < m.length && m[j + 1] === 'c' && tr[j][2] - tr[i - 1][2] < 5 * 60000) for (let k = i; k <= j; k++) m[k] = 'c';
     i = j;
   }
-  // ② 차 구간에 붙은 곳이 사람이 내기 힘든 빠르기(30초 평균: 걷는 모드 시속 8km, 러닝 18km 넘게)면 차로 이어 봐요. 자전거는 사람이 원래 빨라서 안 해요
+  // ② 차 구간에 붙은 곳이 사람이 내기 힘든 빠르기(30초 평균: 걷는 모드 시속 8km, 러닝 18km 넘게)면 차로 이어 봐요. 흔들린 곳에서는 멈춰요
   const capK = !kmh || kmh <= 15 ? 8 : kmh <= 25 ? 18 : 0;
   if (capK) {
     const cap = capK / 3.6;
-    const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
-      for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
-      return t > 0 ? d / (t / 1000) : 0; };
-    const grow = (i, step) => { const sp = []; for (let k = i; k >= 1 && k < m.length && m[k] === 'w'; k += step) sp.push(win(k));
+    const grow = (i, step) => { const sp = []; for (let k = i; k >= 1 && k < m.length && m[k] === 'w' && sh(k) !== 1; k += step) sp.push(win(k));
       for (let n = 0, k = i; n < sp.length && sp[n] > cap; n++, k += step) m[k] = 'c'; };
     for (let i = 1; i < m.length; i++) {
       if (m[i] === 'c' && i + 1 < m.length && m[i + 1] === 'w') grow(i + 1, 1);
       if (m[i] === 'c' && m[i - 1] === 'w' && i - 1 >= 1) grow(i - 1, -1);
     }
   }
+  // ③ 흔들리며 간 곳은 모드 기준보다 느리면 걸은(달린) 길
+  for (let i = 1; i < m.length; i++) if (m[i] === 'c' && sh(i) === 1 && segV(i) <= lim) m[i] = 'w';
+  smooth();
   return m.join('');
 }
 // 집 가리기: 공유할 때 출발·도착 근처(HIDE_M)를 길에서 잘라 내요. 길이 짧으면 앞뒤 1/3씩만
@@ -2753,13 +2768,24 @@ function viewWalk() {
     const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
     motionSeen = Date.now();
     const mag = Math.hypot(a.x, a.y, a.z); sm = sm ? sm * 0.75 + mag * 0.25 : mag; base = base * 0.98 + sm * 0.02;
+    const sec = Math.floor(Date.now() / 1000), lb = shakeB[shakeB.length - 1];
+    if (!lb || lb.s !== sec) { shakeB.push({ s: sec, n: 1, ss: (mag - base) ** 2, st: 0 }); if (shakeB.length > 25) shakeB.shift(); } else { lb.n++; lb.ss += (mag - base) ** 2; }
     if (armed && sm > base + 1.5 && Date.now() - lastStep > 250) {
-      armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++;
+      armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++; shakeB[shakeB.length - 1].st++;
       if (stepN % 10 === 0) ls.set('walkSteps:' + id, { n: stepN });
     } else if (sm < base) armed = true;
   }
+  // 차와 걷기 구분: 최근 20초 흔들림. 걸음이 1분에 30번 넘거나 크게 흔들리면 1(걷거나 뛰는 중), 걸음이 거의 없고 매끈하면 0(차 안), 센서 값이 모자라면 모름
+  const shakeB = [];
+  function shakeNow() {
+    const now = Math.floor(Date.now() / 1000), b = shakeB.filter(x => now - x.s < 20);
+    if (b.length < 12) return undefined;
+    const n = b.reduce((a, x) => a + x.n, 0), st = b.reduce((a, x) => a + x.st, 0), rms = Math.sqrt(b.reduce((a, x) => a + x.ss, 0) / n), spm = st / (b.length / 60);
+    return spm >= 30 || rms >= 1.3 ? 1 : spm < 15 && rms < 0.9 ? 0 : undefined;
+  }
+  // 흔들림 센서는 모든 모드에서 켜요 (케이던스는 러닝에만 보여요)
   function motionStart() {
-    if (motionOn || !id || M().k !== 'run' || !('DeviceMotionEvent' in window)) return;
+    if (motionOn || !id || !('DeviceMotionEvent' in window)) return;
     motionOn = true;
     const go = () => addEventListener('devicemotion', onMotion);
     if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') go(); }).catch(() => {}); else go();   // 아이폰은 허락을 받아야 해요
@@ -3019,7 +3045,7 @@ function viewWalk() {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() }; lastAcc = p.coords.accuracy;
       if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
-      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude);
+      trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow());
       if (p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); goalCheck(); }
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
