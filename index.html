@@ -83,7 +83,9 @@ input::placeholder{color:#B3AC9C}
 .rd-chip.warn{background:#F4A259;color:#1E3B2F}
 .rd-hero{font-size:clamp(48px,19vw,84px);font-weight:800;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.04em;background:linear-gradient(90deg,#17493A,#1F8A70);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rd-hero small{font-size:22px;font-weight:800;letter-spacing:0;color:#E4572E;-webkit-text-fill-color:#E4572E;margin-left:6px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rd-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.rd-grid.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rd-t b.wait{font-size:14px;font-weight:700;color:#8AA197;padding:6px 0 4px}
+.rd-t > .lbl{display:block}
 .rd-t .sm{display:block;font-size:11px;color:#6B8479;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-t{background:rgba(255,255,255,.85);border-radius:14px;padding:8px 12px;position:relative;min-width:0;box-shadow:0 2px 8px rgba(30,59,47,.07)}
 .rd-t b{color:#173A2C}
@@ -1101,7 +1103,17 @@ function trackStats(tr, kmh) {
 // ---------- 걸은 구간 / 차로 간 구간 나누기 ----------
 // 점마다 한 글자: 'w' 걸어서 온 길, 'c' 차(탈것)로 온 길. 시속 15km보다 빠르면 차로 봐요.
 const CAR_MS = 15 / 3.6;   // 기본값 (모드마다 다르게 줄 수 있어요)
+// 같은 기록을 1초에 여러 번 셈해서(거리·움직인 시간·지도), 점 개수·처음·끝 시각·끝 흔들림이 같으면 지난 결과를 다시 써요 (배터리 아끼기)
+const tmCache = new Map();
 function trackModes(tr, kmh) {
+  const n = tr.length, last = tr[n - 1] || [];
+  const key = `${kmh}|${n}|${tr[0] ? tr[0][2] : 0}|${last[2]}|${last[0]}|${last[4]}`;
+  if (tmCache.has(key)) return tmCache.get(key);
+  const r = trackModesCalc(tr, kmh);
+  tmCache.set(key, r); if (tmCache.size > 12) tmCache.delete(tmCache.keys().next().value);
+  return r;
+}
+function trackModesCalc(tr, kmh) {
   const lim = kmh ? kmh / 3.6 : CAR_MS;
   const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
   const segV = k => { const dt = (tr[k][2] - tr[k - 1][2]) / 1000; return dt > 0 ? segD(k) / dt : 0; };
@@ -3010,6 +3022,8 @@ function viewWalk() {
     cgNext = actx.currentTime + 0.1;
     cgTimer = setInterval(() => {
       const iv = 60 / cgSpm();
+      // 목소리 안내가 나오는 동안은 뚝 소리를 쉬어요 (겹치면 잘 안 들려요)
+      try { if (window.speechSynthesis && speechSynthesis.speaking) { cgNext = actx.currentTime + 0.3; return; } } catch {}
       if (cgNext < actx.currentTime) cgNext = actx.currentTime + 0.02;
       while (cgNext < actx.currentTime + 0.2) { cgTick(cgNext); cgNext += iv; }
     }, 40);
@@ -3051,35 +3065,42 @@ function viewWalk() {
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '멈춘 동안은 달린 시간과 페이스에 넣지 않아요. 다시 달리면 이어서 세요.' })), state: null,
-    goal: el('div', { class: 'stack', style: 'gap:6px' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
+    goal: el('div', { class: 'rd-bar' }), gtxt: el('span', { class: 'lbl', style: 'text-align:right;min-width:0' }), fin: el('b'), finL: el('span', { class: 'lbl' }), finSub: el('span', { class: 'sm' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   function drawRun() {
     if (!id || M().k !== 'run') return;
     const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), mv = movingMs(tr, m.car), np = nowPace(tr), c = cadNow();
     const km = st.walk / 1000;
     rd.hero.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
-    // 달린 시간(멈춘 시간 뺌) · 현재 페이스(최근 30초) · 현재 케이던스(최근 20초)
-    rd.time.textContent = fmtRunTime(liveMoving(tr, m.car, id)); rd.timeSub.textContent = `전체 ${fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))}`;
-    rd.now.textContent = np || '-'; rd.nowSub.textContent = '최근 30초 평균';
-    rd.cad.textContent = c ?? '-'; rd.cadSub.textContent = motionSeen ? '최근 20초 평균' : cadSubText();
+    // 네 칸(시안 B안, 2026-10-01 페이스와 완주 예상 자리 바꿈): 달린 시간(멈춘 시간 뺌) · 완주 예상 / 페이스(최근 30초) · 케이던스(최근 20초)
+    // 아직 셀 수 없으면 '-' 대신 '달리면 나와요'
+    const put = (b, v, wait) => { b.className = v == null && wait ? 'wait' : ''; b.textContent = v ?? (wait ? '달리면 나와요' : '-'); };
+    const early = st.walk < 100;
+    rd.time.textContent = fmtRunTime(liveMoving(tr, m.car, id)); rd.timeSub.textContent = '멈춘 시간 빼고';
+    put(rd.now, np, early); rd.nowSub.textContent = '최근 30초';
+    put(rd.cad, c, motionSeen && stepN < 20); rd.cadSub.textContent = motionSeen ? '최근 20초' : cadSubText();
     // 멈춤: 칸 밖, 판 위쪽에 설명과 함께. 윗줄 '기록 중'도 '멈춤'으로
     const pz = runPaused(tr);
-    rd.pz.style.display = pz ? '' : 'none';
+    // GPS가 약하면(오차가 TRACK_MAX_ACC보다 커서 위치를 버리는 중) '멈춤' 대신 그걸 알려요
+    const weak = gps === 'on' && lastAcc > TRACK_MAX_ACC;
+    rd.pz.style.display = pz && !weak ? '' : 'none';
     document.querySelectorAll('.runner').forEach(r => r.classList.toggle('stop', !!pz));
     // 실시간 달리기 자세 (최근 40걸음, 시안 B안)
     const fl = formLive();
     rd.form.replaceChildren(...formTags(fl || {}).map(x => el('div', {}, el('span', { class: 'l', text: x.l }),
       el('b', {}, x.v == null ? '-' : x.v.toFixed(x.d), x.v == null ? '' : el('small', { text: x.u })),
       x.v == null ? null : el('span', { class: 'tag', style: `background:${x.t[1] ? FORM_OK : FORM_WARN}`, text: x.t[0] }))));
-    if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz ? ' warn' : ''); rd.state.replaceChildren(pz ? '⏸ 멈춤' : el('i'), pz ? '' : '기록 중'); }
+    if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz || weak ? ' warn' : ''); rd.state.replaceChildren(weak ? `📡 GPS 약함 · 오차 ${Math.round(lastAcc)}m` : pz ? '⏸ 멈춤' : el('i'), weak || pz ? '' : '기록 중'); }
     const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
     const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
-    // 지금까지의 평균 페이스로: 거리 목표면 예상 완주 시간(목표 거리 전체를 달리는 데 걸릴 시간), 시간 목표면 예상 달린 거리 (막 출발했으면 '-')
-    const enough = st.walk >= 100 && mv >= 30000;
-    const guess = !enough ? '-' : G.k === 'dist' ? fmtRunTime(G.v * 1000 * mv / st.walk) : G.k === 'time' ? fmtDist(st.walk / mv * G.v * 60000) : '';
-    const tile = (l, v, hot) => el('div', {}, el('span', { class: 'lbl', text: l }), el('b', { class: hot ? 'hot' : '', text: v }));
-    rd.goal.replaceChildren(...(G.k !== 'free' ? [el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'lbl', text: `목표 ${goalLabel(G)}` }), el('span', { class: 'lbl', text: frac >= 1 ? '달성!' : `${Math.floor(frac * 100)}%` })),
-      el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.min(100, frac * 100).toFixed(1)}%` })),
-      ...(frac < 1 ? [el('div', { class: 'rd-gt' }, tile(G.k === 'dist' ? '남은 거리' : '남은 시간', left), tile(G.k === 'dist' ? '예상 완주 시간' : '예상 달린 거리', guess, true))] : [])] : []));
+    // 목표: '달린 거리' 줄 오른쪽 글자 + 막대 (남은 거리·시간은 주황 글자로)
+    rd.gtxt.replaceChildren(...(G.k === 'free' ? [] : [`목표 ${goalLabel(G)} · `, el('b', { style: 'color:#E4572E', text: frac >= 1 ? '달성!' : `${left} 남음` })]));
+    rd.goal.style.display = G.k === 'free' ? 'none' : '';
+    rd.goal.replaceChildren(el('i', { style: `width:${Math.min(100, frac * 100).toFixed(1)}%` }));
+    // 완주 예상: 지금까지의 평균 페이스로 거리 목표 전체를 달리는 시간 / 시간 목표면 예상 거리 / 목표 없으면(또는 달성하면) 평균 페이스
+    const enough = st.walk >= 100 && mv >= 30000, fk = frac >= 1 || G.k === 'free' ? 'avg' : G.k;
+    rd.finL.textContent = fk === 'dist' ? '완주 예상' : fk === 'time' ? '예상 거리' : '평균 페이스';
+    put(rd.fin, !enough ? null : fk === 'dist' ? fmtRunTime(G.v * 1000 * mv / st.walk) : fk === 'time' ? fmtDist(st.walk / mv * G.v * 60000) : fmtPace(st.walk, mv), true);
+    rd.finSub.textContent = fk === 'avg' ? '처음부터' : `지금 페이스로 ${goalLabel(G)}`;
     const sp = ls.get('walkSplits:' + id, []);
     if (sp.length) {
       const lo = Math.min(...sp), hi = Math.max(...sp);
@@ -3464,15 +3485,13 @@ function viewWalk() {
           el('div', { class: 'rd-top' },
             (rd.state = el('span', { class: 'rd-chip' + (gps === 'on' ? '' : ' warn') }, gps === 'on' ? el('i') : null, gps === 'on' ? '기록 중' : gps === 'denied' ? '위치 권한 필요' : 'GPS 찾는 중')),
             el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' },
-              el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊' : '🔇', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
+              el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊 안내 켬' : '🔇 안내 끔', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
               )),
           el('div', {}, rd.hero,
-            el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;margin-top:2px' },
-              el('span', { class: 'lbl', style: 'flex:none', text: '달린 거리' }),
-              el('span', { class: 'grow lbl', style: 'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#1E3B2F;font-weight:700', text: nameOf() }),
-              el('button', { class: 'rd-chip', style: 'height:26px;padding:0 9px', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } }))),
+            el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;justify-content:space-between;margin-top:2px' },
+              el('span', { class: 'lbl', style: 'flex:none', text: '달린 거리' }), rd.gtxt)),
           rd.goal, rd.pz,
-          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub)), cgRow(), rd.form),
+          el('div', { class: 'rd-grid n2' }, rdTile('달린 시간', rd.time, rd.timeSub), el('div', { class: 'rd-t' }, rd.finL, rd.fin, rd.finSub), rdTile('페이스', rd.now, rd.nowSub), rdTile('케이던스', rd.cad, rd.cadSub)), cgRow(), rd.form),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
