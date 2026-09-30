@@ -125,6 +125,10 @@ body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .fm-t{background:#fff;border:1px solid var(--line,#E6DFCF);border-radius:14px;padding:10px 12px;min-width:0}
 .fm-t .l{display:block;font-size:12px;color:var(--muted)}.fm-t b{display:block;font-size:22px;font-weight:800;color:var(--pine);font-variant-numeric:tabular-nums}.fm-t b small{font-size:13px;margin-left:2px}
 .fm-t .tag{display:inline-block;margin-top:2px;font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;color:#1E3B2F}.fm-t .h{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.rd-fm{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rd-fm > div{background:rgba(255,255,255,.85);border-radius:14px;padding:6px 12px;box-shadow:0 2px 8px rgba(30,59,47,.07);min-width:0}
+.rd-fm .l{display:block;font-size:12px;color:#5B7468;white-space:nowrap}.rd-fm b{font-size:20px;font-weight:800;color:#173A2C;font-variant-numeric:tabular-nums}.rd-fm b small{font-size:12px;margin-left:1px}
+.rd-fm .tag{display:inline-block;margin-left:4px;vertical-align:3px;font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;color:#1E3B2F;white-space:nowrap}
 .rd-cg{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);border-radius:14px;padding:6px 10px;box-shadow:0 2px 8px rgba(30,59,47,.07);min-width:0}
 .rd-cg .n{font-size:18px;flex:none}.rd-cg .t{flex:1;min-width:0}.rd-cg .t b{display:block;font-size:14px;color:#173A2C;white-space:nowrap}.rd-cg .t span{display:block;font-size:11px;color:#6B8479;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-cg .v{font-size:20px;font-weight:800;color:#E4572E;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
@@ -3047,7 +3051,7 @@ function viewWalk() {
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '멈춘 동안은 달린 시간과 페이스에 넣지 않아요. 다시 달리면 이어서 세요.' })), state: null,
-    goal: el('div', { class: 'stack', style: 'gap:6px' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
+    goal: el('div', { class: 'stack', style: 'gap:6px' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   function drawRun() {
     if (!id || M().k !== 'run') return;
     const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), mv = movingMs(tr, m.car), np = nowPace(tr), c = cadNow();
@@ -3061,6 +3065,11 @@ function viewWalk() {
     const pz = runPaused(tr);
     rd.pz.style.display = pz ? '' : 'none';
     document.querySelectorAll('.runner').forEach(r => r.classList.toggle('stop', !!pz));
+    // 실시간 달리기 자세 (최근 40걸음, 시안 B안)
+    const fl = formLive();
+    rd.form.replaceChildren(...formTags(fl || {}).map(x => el('div', {}, el('span', { class: 'l', text: x.l }),
+      el('b', {}, x.v == null ? '-' : x.v.toFixed(x.d), x.v == null ? '' : el('small', { text: x.u })),
+      x.v == null ? null : el('span', { class: 'tag', style: `background:${x.t[1] ? FORM_OK : FORM_WARN}`, text: x.t[0] }))));
     if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz ? ' warn' : ''); rd.state.replaceChildren(pz ? '⏸ 멈춤' : el('i'), pz ? '' : '기록 중'); }
     const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
     const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
@@ -3464,7 +3473,7 @@ function viewWalk() {
               el('span', { class: 'grow lbl', style: 'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#1E3B2F;font-weight:700', text: nameOf() }),
               el('button', { class: 'rd-chip', style: 'height:26px;padding:0 9px', 'aria-label': '제목 바꾸기', text: '✎', onclick: async () => { const v = await askText('제목 바꾸기', '제목', nameOf(), defName()); if (!v) return; ls.set('trackName:' + id, v.slice(0, 40)); draw(); } }))),
           rd.goal, rd.pz,
-          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub)), cgRow()),
+          el('div', { class: 'rd-grid' }, rdTile('달린 시간', rd.time, rd.timeSub), rdTile('현재 페이스', rd.now, rd.nowSub), rdTile('현재 케이던스', rd.cad, rd.cadSub)), cgRow(), rd.form),
         gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
         guide ? tGuide : null,
         stayBanner(),
