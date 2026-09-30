@@ -2293,7 +2293,7 @@ function howToInstall() {
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕화면에 추가' },
     el('h2', { text: '바탕화면에 추가하기' }),
     el('ol', { style: 'margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px' }, steps.map(s => el('li', { text: s }))),
-    el('p', { class: 'sub', style: 'margin:0', text: '추가하면 바탕화면의 Map Diary 아이콘을 눌러 바로 기록을 시작할 수 있어요. 기록은 지금 쓰는 브라우저의 기록과 그대로 이어져요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '메뉴에 \'앱 설치\'라고 적혀 있어도 내려받는 건 없고 아이콘만 생겨요. 추가하면 바탕화면의 Map Diary 아이콘을 눌러 바로 기록을 시작할 수 있어요. 기록은 지금 쓰는 브라우저의 기록과 그대로 이어져요.' }),
     el('button', { class: 'btn primary full', text: '알겠어요', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
@@ -2307,7 +2307,7 @@ function drawInstall() {
     : howToInstall;
   installSlot.replaceChildren(el('div', { class: 'card row', style: 'gap:12px;align-items:center;padding:14px 16px' },
     el('img', { src: 'icon-192.png', alt: '', width: 44, height: 44, style: 'border-radius:12px;flex:none' }),
-    el('div', { class: 'grow' }, el('b', { text: '바탕화면에 추가' }), el('div', { class: 'sub', style: 'font-size:14px', text: IN_KAKAO ? '먼저 기본 브라우저로 열어요' : '아이콘을 눌러 바로 기록해요' })),
+    el('div', { class: 'grow' }, el('b', { text: '바탕화면에 추가' }), el('div', { class: 'sub', style: 'font-size:14px', text: IN_KAKAO ? '먼저 기본 브라우저로 열어요' : installEv ? "'앱 설치' 창이 떠도 아이콘만 생겨요" : '아이콘을 눌러 바로 기록해요' })),
     el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: IN_KAKAO ? '브라우저로' : '추가', onclick: go }),
     el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '바탕화면 추가 안내 닫기', text: '✕', onclick: () => { ls.set('installHide', true); drawInstall(); } })));
 }
