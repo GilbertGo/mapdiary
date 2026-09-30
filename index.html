@@ -109,6 +109,8 @@ input::placeholder{color:#B3AC9C}
 .rd-btn span{white-space:pre;text-align:center;font-size:9.5px;letter-spacing:-.02em}
 .rd-note{flex-basis:100%;text-align:center;font-size:11.5px;color:var(--muted);margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
 .rd-btn{width:50px;height:50px;border-radius:50%;border:none;background:#FFFDF8;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--pine);font:inherit;font-size:11px;font-weight:700}
+.rd-cam{width:80px;height:80px;border-radius:50%;border:none;background:#F4A259;color:#1E3B2F;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;font-weight:800;font-size:13px;box-shadow:0 0 0 6px rgba(244,162,89,.25),0 10px 24px rgba(228,120,46,.35)}
+.rd-sq{display:block;width:15px;height:15px;border-radius:3px;background:var(--pine);margin-bottom:2px}
 .rd-stop{width:70px;height:70px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
 body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .rd-stop i{width:22px;height:22px;background:#fff;border-radius:5px}
@@ -3512,10 +3514,11 @@ function viewWalk() {
         // 아래 고정 버튼: 사진 · 끝내기 · 좋은 곳 (지금 있는 곳에 별표)
         el('div', { class: 'rd-act' },
           el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 18), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
-          el('button', { class: 'rd-btn', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 22), nPhotos ? `사진 ${nPhotos}` : '사진'),
-          el('button', { class: 'rd-stop', onclick: finish }, el('i'), '끝내기'),
+          // 사진이 가운데 큰 주황 단추(시안 B안, 2026-10-01). 끝내기는 다른 단추와 같은 색으로 맨 오른쪽
           el('button', { class: 'rd-btn', 'aria-label': '지금 있는 곳을 좋은 곳으로 남기기', onclick: addSpot }, ico('star', 22, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 ${n}` : '좋은 곳'; })()),
+          el('button', { class: 'rd-cam', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 32), nPhotos ? `사진 ${nPhotos}` : '사진 찍기'),
           el('button', { class: 'rd-btn', 'aria-label': '지금까지 공유하기', onclick: () => shareNow() }, ico('share', 22), '공유'),
+          el('button', { class: 'rd-btn', 'aria-label': '기록 끝내기', onclick: finish }, el('i', { class: 'rd-sq' }), '끝내기'),
           // 설명은 화면 잠그기를 세 번 써 볼 때까지만 (알고 나면 지도를 넓게)
           ls.get('lockUsed', 0) < 3 ? el('div', { class: 'rd-note', text: '🔒 화면 잠그기: 켠 채로 잘못 눌림을 막아요 · 풀 때 3초 꾹' }) : null),
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
