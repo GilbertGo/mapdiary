@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Map Diary">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'22'%20fill%3D'%231E3B2F'%2F%3E%3Cpath%20d%3D'M24%2076C36%2054%2060%2072%2058%2050S68%2028%2076%2024'%20fill%3D'none'%20stroke%3D'%23F4A259'%20stroke-width%3D'8'%20stroke-linecap%3D'round'%20stroke-dasharray%3D'9%2010'%2F%3E%3Ccircle%20cx%3D'24'%20cy%3D'76'%20r%3D'8'%20fill%3D'%23FFFDF8'%2F%3E%3Ccircle%20cx%3D'76'%20cy%3D'24'%20r%3D'10'%20fill%3D'%23F4A259'%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%232A5A45%22/%3E%3Cstop offset=%221%22 stop-color=%22%2317322A%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22url%28%23g%29%22/%3E%3Cg fill=%22none%22 stroke=%22%23F4F0E6%22 stroke-width=%2246%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M84 330 L84 150 L166 250 L248 150 L248 330%22/%3E%3Cpath d=%22M300 150 L300 330 L336 330 C404 330 436 290 436 240 C436 190 404 150 336 150 Z%22/%3E%3C/g%3E%3Cpath d=%22M70 420 C 150 385 220 440 300 405 S 420 380 446 392%22 fill=%22none%22 stroke=%22%23F4A259%22 stroke-width=%2214%22 stroke-linecap=%22round%22 stroke-dasharray=%221 26%22/%3E%3Ccircle cx=%2270%22 cy=%22420%22 r=%2212%22 fill=%22%23FFFDF8%22/%3E%3Cg transform=%22translate%28446 356%29%22%3E%3Cpath d=%22M0 40 C -18 22 -22 13 -22 6 A22 22 0 0 1 22 6 C22 13 18 22 0 40Z%22 fill=%22%23F4A259%22/%3E%3Ccircle cx=%220%22 cy=%225%22 r=%228%22 fill=%22%23FFFDF8%22/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -1161,14 +1161,16 @@ async function drawBragCard(o) {
   // 바탕 + 맨 위 풍경
   g.fillStyle = '#F4F0E6'; g.fillRect(0, 0, W, H);
   if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
-  // 로고
-  rr(72, 64, 72, 72, 18); g.fillStyle = PINE; g.fill();
-  // 로고: 바늘땀처럼 이어진 길 (탭 아이콘과 같은 모양, 100칸 기준을 72px로)
-  g.save(); g.translate(72, 64); g.scale(.72, .72);
-  g.beginPath(); g.moveTo(24, 76); g.bezierCurveTo(36, 54, 60, 72, 58, 50); g.bezierCurveTo(56, 28, 68, 28, 76, 24);
-  g.setLineDash([9, 10]); g.lineWidth = 8; g.lineCap = 'round'; g.strokeStyle = ACC; g.stroke(); g.setLineDash([]);
-  g.beginPath(); g.arc(24, 76, 8, 0, Math.PI * 2); g.fillStyle = '#FFFDF8'; g.fill();
-  g.beginPath(); g.arc(76, 24, 10, 0, Math.PI * 2); g.fillStyle = ACC; g.fill();
+  // 로고: 앱 아이콘과 같은 MD 글자 + 주황 발자국 길 (512칸 기준을 72px로)
+  { const lg = g.createLinearGradient(72, 64, 144, 136); lg.addColorStop(0, '#2A5A45'); lg.addColorStop(1, '#17322A');
+    rr(72, 64, 72, 72, 18); g.fillStyle = lg; g.fill(); }
+  g.save(); g.translate(72, 64); g.scale(72 / 512, 72 / 512); g.lineCap = 'round'; g.lineJoin = 'round';
+  g.strokeStyle = '#F4F0E6'; g.lineWidth = 46;
+  g.stroke(new Path2D('M84 330 L84 150 L166 250 L248 150 L248 330')); g.stroke(new Path2D('M300 150 L300 330 L336 330 C404 330 436 290 436 240 C436 190 404 150 336 150 Z'));
+  g.setLineDash([1, 26]); g.lineWidth = 14; g.strokeStyle = ACC; g.stroke(new Path2D('M70 420 C 150 385 220 440 300 405 S 420 380 446 392')); g.setLineDash([]);
+  g.beginPath(); g.arc(70, 420, 12, 0, Math.PI * 2); g.fillStyle = '#FFFDF8'; g.fill();
+  g.translate(446, 356); g.fillStyle = ACC; g.fill(new Path2D('M0 40 C -18 22 -22 13 -22 6 A22 22 0 0 1 22 6 C22 13 18 22 0 40Z'));
+  g.beginPath(); g.arc(0, 5, 8, 0, Math.PI * 2); g.fillStyle = '#FFFDF8'; g.fill();
   g.restore();
   font(700, 38); g.fillStyle = PINE; g.textBaseline = 'middle'; g.fillText('Map Diary', 162, 101);
   // 제목, 날짜
