@@ -17,7 +17,7 @@ jobs:
         with: { node-version: 22 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
-      - uses: android-actions/setup-android@v3
+      # 안드로이드 SDK는 GitHub 러너(ubuntu-latest)에 이미 깔려 있어요(ANDROID_HOME)
       - name: 웹 화면 묶고 안드로이드 프로젝트 만들기
         working-directory: runapp
         env: { RUN_NUMBER: '${{ github.run_number }}' }
