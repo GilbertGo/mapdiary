@@ -712,6 +712,24 @@ function photoMarkers(map, layer, photos) {
   });
 }
 // 사진 크게 보기. list를 주면 좌우로 밀거나 ‹ › 를 눌러 앞뒤 사진으로 넘겨요. 사진을 톡 누르면 닫혀요.
+// 사진을 휴대폰에 내려받아요 (다운로드 폴더에 저장되고 갤러리에도 보여요). 여러 장이면 조금씩 띄워서
+const photoExt = b => /png/.test(b && b.type || '') ? 'png' : 'jpg';
+// 파일 이름은 영어·숫자로만 (한글 이름은 일부 브라우저에서 'download'로 바뀌어 찾기 어려워요)
+function savePhotoBlob(blob, name) {
+  const u = URL.createObjectURL(blob), a = el('a', { href: u, download: name });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+async function savePhotos(list, base) {
+  if (IN_KAKAO) return toast('카카오톡 안에서는 저장이 안 돼요. 다른 브라우저로 열어 주세요');
+  const ps = list.filter(r => r && r.blob);
+  if (!ps.length) return toast('저장할 사진이 없어요');
+  for (let k = 0; k < ps.length; k++) {
+    const d = new Date(ps[k].ts || Date.now()), pad = n => String(n).padStart(2, '0');
+    savePhotoBlob(ps[k].blob, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${String(k + 1).padStart(2, '0')}.${photoExt(ps[k].blob)}`);
+    if (k < ps.length - 1) await new Promise(r => setTimeout(r, 450));
+  }
+  toast(ps.length > 1 ? `사진 ${ps.length}장을 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요` : "사진을 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요");
+}
 function showPhoto(p, list) {
   const all = Array.isArray(list) && list.length ? list : [p];
   let i = Math.max(0, all.indexOf(p)), url = null;
@@ -724,6 +742,7 @@ function showPhoto(p, list) {
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: r.m ? '✎ 고치기' : '✎ 한 줄 적기', onclick: async e => {
       e.stopPropagation(); const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true);
       if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} drawMemo(); } }) : '',
+    el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '⬇ 저장', 'aria-label': '이 사진을 휴대폰에 저장', onclick: e => { e.stopPropagation(); savePhotos([r], 'MapDiary사진'); } }),
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '📍 위치', onclick: async e => { e.stopPropagation(); await pickPhotoPlace(r); } }) : '',
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '🗑', 'aria-label': '이 사진 지우기', onclick: async e => {
       e.stopPropagation(); if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
@@ -2367,7 +2386,7 @@ async function backupSave() {
   toast('백업 파일을 만드는 중이에요…');
   let r; try { r = await backupMake(); } catch { return toast('백업 파일을 만들지 못했어요'); }
   const d = new Date(), pad = n => String(n).padStart(2, '0');
-  const file = new File([JSON.stringify(r.data)], `MapDiary_백업_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`, { type: 'application/json' });
+  const file = new File([JSON.stringify(r.data)], `MapDiary_backup_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`, { type: 'application/json' });
   const mb = (file.size / 1048576).toFixed(1);
   const done = () => { ls.set('lastBackup', Date.now()); };
   const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
@@ -2553,7 +2572,9 @@ async function viewMyOne(t) {
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
   const mapEl = el('div', { class: 'mapbox', style: 'height:50vh;min-height:300px' });
-  const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal);
+  let phAll = [];
+  const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
+  const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
   const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
@@ -2627,8 +2648,8 @@ async function viewMyOne(t) {
     golfLyr = L.layerGroup().addTo(m); drawGolf();
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
-      const ps = await photoList(t);
-      phBox.style.display = ps.length ? '' : 'none';
+      const ps = await photoList(t); phAll = ps;
+      phBox.style.display = ps.length ? '' : 'none'; phSave.textContent = `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) })));
       phLyr.clearLayers(); photoMarkers(m, phLyr, ps);
     };
