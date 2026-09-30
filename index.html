@@ -2279,46 +2279,26 @@ async function viewRoomOne(p) {
     else drawList();
   }, 8000);
 }
-// ---------- 바탕화면에 설치 (홈 화면에 앱 아이콘) ----------
+// ---------- 바탕화면에 추가 (홈 화면에 앱 아이콘) ----------
 const IS_APP = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 let installEv = null, installSlot = null;
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; drawInstall(); });
-addEventListener('appinstalled', () => { installEv = null; ls.set('installed', true); drawInstall(); toast('바탕화면에 Map Diary를 설치했어요'); });
+addEventListener('appinstalled', () => { installEv = null; ls.set('installed', true); drawInstall(); toast('바탕화면에 Map Diary를 추가했어요'); });
 function howToInstall() {
   const steps = IS_IOS ? ['Safari 아래쪽 공유 버튼(네모에 위 화살표)을 눌러요', "'홈 화면에 추가'를 눌러요", "오른쪽 위 '추가'를 눌러요"]
     : ['브라우저 메뉴(⋯ 또는 ⋮)를 눌러요', "'휴대폰에 추가', '홈 화면에 추가' 또는 '앱 설치'를 눌러요", "'설치' 또는 '추가'를 눌러요"];
   const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
-  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕화면에 설치' },
-    el('h2', { text: '바탕화면에 설치하기' }),
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕화면에 추가' },
+    el('h2', { text: '바탕화면에 추가하기' }),
     el('ol', { style: 'margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px' }, steps.map(s => el('li', { text: s }))),
-    el('p', { class: 'sub', style: 'margin:0', text: '설치하면 바탕화면의 Map Diary 아이콘을 눌러 바로 기록을 시작할 수 있어요. 기록은 지금 쓰는 브라우저의 기록과 그대로 이어져요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '추가하면 바탕화면의 Map Diary 아이콘을 눌러 바로 기록을 시작할 수 있어요. 기록은 지금 쓰는 브라우저의 기록과 그대로 이어져요.' }),
     el('button', { class: 'btn primary full', text: '알겠어요', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
-// 카톡에서 첫 화면을 열면 바로 기본 브라우저로 넘기고(?install=1), 브라우저에서는 곧바로 설치 창을 띄워요
+// 카톡에서 첫 화면을 열면 바로 기본 브라우저로 넘겨요 (추가는 첫 화면 맨 아래 '바탕화면에 추가' 카드에서)
 const kakaoOut = () => { const u = new URL(location.href); u.searchParams.set('install', '1'); location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(u.href); };
-function installNow() {
-  try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {}
-  if (IS_APP) return;
-  const body = el('div', { class: 'stack', style: 'gap:12px' });
-  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
-  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕화면에 설치' },
-    el('div', { class: 'row', style: 'gap:12px;align-items:center' }, el('img', { src: 'icon-192.png', alt: '', width: 56, height: 56, style: 'border-radius:14px;flex:none' }),
-      el('div', {}, el('h2', { style: 'margin:0', text: '바탕화면에 설치할까요?' }), el('div', { class: 'sub', style: 'font-size:14px', text: '아이콘을 눌러 바로 기록할 수 있어요' }))),
-    body, el('button', { class: 'link', style: 'align-self:center;color:var(--muted)', text: '나중에', onclick: () => sb.remove() })));
-  const draw = wait => {
-    if (installEv) body.replaceChildren(el('button', { class: 'btn primary full big', text: '바탕화면에 설치', onclick: async () => {
-      const e = installEv; installEv = null; e.prompt(); const r = await e.userChoice.catch(() => null); sb.remove(); if (r && r.outcome !== 'accepted') installEv = e; drawInstall(); } }));
-    else if (wait) body.replaceChildren(el('div', { class: 'sub center', text: '설치 준비 중이에요…' }));
-    else { body.replaceChildren(el('button', { class: 'btn primary full big', text: '설치 방법 보기', onclick: () => { sb.remove(); howToInstall(); } })); }
-  };
-  draw(!IS_IOS);
-  addEventListener('beforeinstallprompt', () => setTimeout(() => draw(false), 0), { once: true });
-  if (!IS_IOS) setTimeout(() => { if (!installEv) draw(false); }, 2500);   // 설치 창을 못 받는 브라우저는 메뉴로 설치하는 방법을 알려 줘요
-  document.body.append(sb);
-}
 function drawInstall() {
   if (!installSlot) return;
   if (IS_APP || ls.get('installHide', false) || (ls.get('installed', false) && !installEv)) return installSlot.replaceChildren();
@@ -2327,9 +2307,9 @@ function drawInstall() {
     : howToInstall;
   installSlot.replaceChildren(el('div', { class: 'card row', style: 'gap:12px;align-items:center;padding:14px 16px' },
     el('img', { src: 'icon-192.png', alt: '', width: 44, height: 44, style: 'border-radius:12px;flex:none' }),
-    el('div', { class: 'grow' }, el('b', { text: '바탕화면에 설치' }), el('div', { class: 'sub', style: 'font-size:14px', text: IN_KAKAO ? '먼저 기본 브라우저로 열어요' : '아이콘을 눌러 바로 기록해요' })),
-    el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: IN_KAKAO ? '브라우저로' : '설치', onclick: go }),
-    el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '설치 안내 닫기', text: '✕', onclick: () => { ls.set('installHide', true); drawInstall(); } })));
+    el('div', { class: 'grow' }, el('b', { text: '바탕화면에 추가' }), el('div', { class: 'sub', style: 'font-size:14px', text: IN_KAKAO ? '먼저 기본 브라우저로 열어요' : '아이콘을 눌러 바로 기록해요' })),
+    el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: IN_KAKAO ? '브라우저로' : '추가', onclick: go }),
+    el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '바탕화면 추가 안내 닫기', text: '✕', onclick: () => { ls.set('installHide', true); drawInstall(); } })));
 }
 route();
 
@@ -2663,7 +2643,7 @@ async function viewMyOne(t) {
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
-  else if (qs.get('install') === '1') setTimeout(installNow, 400);
+  else if (qs.get('install') === '1') { try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} }
   installSlot = el('div'); drawInstall();
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
