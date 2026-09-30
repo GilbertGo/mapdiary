@@ -1039,6 +1039,29 @@ function trackModes(tr, kmh) {
       if (j - i < 2 && m[i - 1] === m[j + 1] && m[i] !== m[i - 1] && m[i] !== 'g' && m[i - 1] !== 'g') for (let k = i; k <= j; k++) m[k] = m[i - 1];
       i = j;
     }
+  // 느리게 가는 차 (신호 대기·막힌 길·주차장): 빨라서 차로 본 구간 바로 앞뒤에서 차로 이어 봐요
+  const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
+  // ① 차와 차 사이에 5분이 안 되게 느려진 곳은 차 안에서 멈췄다 간 걸로
+  for (let i = 1; i < m.length; i++) {
+    if (m[i] !== 'w') continue;
+    let j = i; while (j + 1 < m.length && m[j + 1] === 'w') j++;
+    if (m[i - 1] === 'c' && j + 1 < m.length && m[j + 1] === 'c' && tr[j][2] - tr[i - 1][2] < 5 * 60000) for (let k = i; k <= j; k++) m[k] = 'c';
+    i = j;
+  }
+  // ② 차 구간에 붙은 곳이 사람이 내기 힘든 빠르기(30초 평균: 걷는 모드 시속 8km, 러닝 18km 넘게)면 차로 이어 봐요. 자전거는 사람이 원래 빨라서 안 해요
+  const capK = !kmh || kmh <= 15 ? 8 : kmh <= 25 ? 18 : 0;
+  if (capK) {
+    const cap = capK / 3.6;
+    const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+      for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+      return t > 0 ? d / (t / 1000) : 0; };
+    const grow = (i, step) => { const sp = []; for (let k = i; k >= 1 && k < m.length && m[k] === 'w'; k += step) sp.push(win(k));
+      for (let n = 0, k = i; n < sp.length && sp[n] > cap; n++, k += step) m[k] = 'c'; };
+    for (let i = 1; i < m.length; i++) {
+      if (m[i] === 'c' && i + 1 < m.length && m[i + 1] === 'w') grow(i + 1, 1);
+      if (m[i] === 'c' && m[i - 1] === 'w' && i - 1 >= 1) grow(i - 1, -1);
+    }
+  }
   return m.join('');
 }
 // 집 가리기: 공유할 때 출발·도착 근처(HIDE_M)를 길에서 잘라 내요. 길이 짧으면 앞뒤 1/3씩만
