@@ -13,9 +13,9 @@ if (Capacitor.isNativePlatform()) {
   // 남에게 보내는 링크(짧은 지도 링크·모임방)는 앱 안 주소(https://localhost)가 아니라 웹 주소로
   window.MD_WEB_BASE = 'https://gilbertgo.github.io/mapdiary/';
 
-  // 처음 열면 바로 그 앱의 시작 화면 (MD Run = 러닝, MD 파크골프 = 파크골프). build.mjs가 window.MD_APP을 넣어요
+  // 처음 열면 바로 그 앱의 시작 화면 (MD Run = 러닝, MD 파크골프 = 파크골프, Map Diary = 첫 화면). build.mjs가 window.MD_APP을 넣어요
   const APP = window.MD_APP || { mode: 'run', name: 'MD Run', noti: '달린 길' };
-  if (!location.search) location.replace(location.pathname + '?walk=1&mode=' + APP.mode);
+  if (!location.search && APP.mode) location.replace(location.pathname + '?walk=1&mode=' + APP.mode);   // Map Diary(전체) 앱은 mode가 비어 첫 화면
 
   // ---------- 위치: 화면을 꺼도(주머니에 넣어도) 계속 받기 ----------
   // 알림 창에 "기록 중"을 띄워 두는 동안 안드로이드가 앱을 멈추지 않아요

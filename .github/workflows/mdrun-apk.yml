@@ -1,7 +1,7 @@
 # MD Run·MD 파크골프 안드로이드 앱(APK)을 만들어 Releases에 올려요.
 # 휴대폰에서 받는 주소: https://github.com/GilbertGo/mapdiary/releases/latest/download/MDRun.apk (러닝)
 #                       https://github.com/GilbertGo/mapdiary/releases/latest/download/MDGolf.apk (파크골프)
-name: MD 앱 APK (러닝·파크골프)
+name: MD 앱 APK (러닝·파크골프·Map Diary)
 on:
   push:
     branches: [main]
@@ -25,7 +25,7 @@ jobs:
         run: |
           npm ci
           mkdir -p ~/.android && cp debug.keystore ~/.android/debug.keystore
-          for app in run pgolf; do
+          for app in $(node -e "console.log(Object.keys(require('./apps.json')).join(' '))"); do
             apk=$(node -e "console.log(require('./apps.json')['$app'].apk)")
             rm -rf android www
             MD_APP=$app node build.mjs
@@ -39,8 +39,9 @@ jobs:
         with:
           tag_name: mdrun-${{ github.run_number }}
           name: MD 앱 0.1.${{ github.run_number }} (러닝·파크골프)
-          body: 러닝은 MDRun.apk, 파크골프는 MDGolf.apk를 휴대폰에서 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
+          body: 러닝은 MDRun.apk, 파크골프는 MDGolf.apk, 전체 Map Diary는 MapDiary.apk를 휴대폰에서 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
           files: |
             MDRun.apk
             MDGolf.apk
+            MapDiary.apk
           make_latest: true
