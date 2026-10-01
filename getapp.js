@@ -1,10 +1,10 @@
 // 앱 받는 쪽(golf.html / run.html). 안드로이드: 카톡에서 열면 바로 크롬으로 넘기고, 크롬에서는 APK를 바로 내려받아요
 // 아이폰: 웹앱으로. 카톡이면 Safari로 넘기고, Safari에서는 '홈 화면에 추가' 안내, 홈 화면 아이콘으로 열면 바로 그 모드 기록 화면
 (function () {
-  const A = { golf: { name: 'MD 파크골프', emoji: '⛳', apk: 'MDGolf.apk', what: '친 길', mode: 'pgolf' }, run: { name: 'MD Run', emoji: '🏃', apk: 'MDRun.apk', what: '달린 길', mode: 'run' } }[document.documentElement.dataset.app];
+  const A = { golf: { name: 'MD 파크골프', emoji: '⛳', apk: 'MDGolf.apk', what: '친 길', mode: 'pgolf' }, run: { name: 'MD Run', emoji: '🏃', apk: 'MDRun.apk', what: '달린 길', mode: 'run' }, md: { name: 'Map Diary', emoji: '🗺', apk: 'MapDiary.apk', what: '다닌 길', mode: '' } }[document.documentElement.dataset.app];
   const APK = 'https://github.com/GilbertGo/mapdiary/releases/latest/download/' + A.apk;
   const ua = navigator.userAgent, android = /Android/i.test(ua), kakao = /KAKAOTALK/i.test(ua);
-  const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), WEB = './?walk=1&mode=' + A.mode;
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), WEB = A.mode ? './?walk=1&mode=' + A.mode : './';
   const page = location.href.split('#')[0];
   const $ = id => document.getElementById(id);
   document.title = A.name + ' 받기';

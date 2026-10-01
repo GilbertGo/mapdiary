@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, copyFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 
 const res = 'android/app/src/main/res', app = process.env.MD_APP || 'run';
+// md(전체 Map Diary)는 icons/에 그림이 없어서 저장소 맨 위 icon-512.png·splash.png를 써요
 // 앱 아이콘(시안 A안, 2026-10-01): Map Diary 아이콘 + 모서리 배지. icons/{run,pgolf}.png (원본 svg도 같은 곳)
 const ICON = existsSync(`icons/${app}.png`) ? `icons/${app}.png` : '../icon-512.png', SPLASH = existsSync(`icons/${app}-splash.png`) ? `icons/${app}-splash.png` : 'splash.png';
 for (const d of readdirSync(res).filter(d => d.startsWith('mipmap-'))) {
@@ -21,6 +22,6 @@ if (!readFileSync(g, 'utf8').includes("storeFile file('../../debug.keystore')"))
 const s = `${res}/values/strings.xml`;
 let x = readFileSync(s, 'utf8');
 if (!x.includes('capacitor_background_geolocation_notification_channel_name'))
-  x = x.replace('</resources>', `    <string name="capacitor_background_geolocation_notification_channel_name">${app === 'pgolf' ? '파크골프 기록' : '러닝 기록'}</string>\n</resources>`);
+  x = x.replace('</resources>', `    <string name="capacitor_background_geolocation_notification_channel_name">${JSON.parse(readFileSync('apps.json', 'utf8'))[app].channel || '길 기록'}</string>\n</resources>`);
 writeFileSync(s, x);
 console.log('android 손질 끝 · 판 번호', n);

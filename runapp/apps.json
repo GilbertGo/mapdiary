@@ -1,4 +1,5 @@
 {
-  "run":   { "appId": "io.github.gilbertgo.mdrun",  "appName": "MD Run",     "mode": "run",   "noti": "달린 길", "apk": "MDRun.apk" },
-  "pgolf": { "appId": "io.github.gilbertgo.mdgolf", "appName": "MD 파크골프", "mode": "pgolf", "noti": "친 길",   "apk": "MDGolf.apk" }
+  "run": {"appId": "io.github.gilbertgo.mdrun", "appName": "MD Run", "mode": "run", "noti": "달린 길", "apk": "MDRun.apk", "channel": "러닝 기록"},
+  "pgolf": {"appId": "io.github.gilbertgo.mdgolf", "appName": "MD 파크골프", "mode": "pgolf", "noti": "친 길", "apk": "MDGolf.apk", "channel": "파크골프 기록"},
+  "md": {"appId": "io.github.gilbertgo.mapdiary", "appName": "Map Diary", "mode": "", "noti": "다닌 길", "apk": "MapDiary.apk", "channel": "길 기록"}
 }
