@@ -3150,6 +3150,8 @@ function viewWalk() {
   function lockScreen() {
     if (document.querySelector('.lock-ov')) return;
     ls.set('lockUsed', ls.get('lockUsed', 0) + 1);
+    // 안드로이드 앱이면 '앱 고정'으로 홈·최근 앱·뒤로 버튼도 막아요 (웹은 막을 수 없어요)
+    if (window.mdNativePin) window.mdNativePin(true);
     if (!wake) { wantWake = true; lockWake(); }
     const big = el('div', { class: 'big' }), t1 = el('b'), t2 = el('b'), t3 = el('b'), t4 = el('b'), t5 = el('b'), t6 = el('b'), l2 = el('span'), l3 = el('span');
     const hint = el('div', { class: 'lock-hint', text: '자물쇠를 3초 동안 꾹 누르면 풀려요' });
@@ -3179,7 +3181,7 @@ function viewWalk() {
     ov.addEventListener('nudge', nudge);
     ov.addEventListener('pointerdown', e => { if (!key.contains(e.target)) { e.preventDefault(); nudge(); } });
     ov.addEventListener('contextmenu', e => e.preventDefault());
-    function unlock() { clearInterval(iv); cancelAnimationFrame(raf); ov.remove(); try { navigator.vibrate && navigator.vibrate(40); } catch {} toast('잠금을 풀었어요'); }
+    function unlock() { if (window.mdNativePin) window.mdNativePin(false); clearInterval(iv); cancelAnimationFrame(raf); ov.remove(); try { navigator.vibrate && navigator.vibrate(40); } catch {} toast('잠금을 풀었어요'); }
     document.body.append(ov); ovGuard();
   }
   const STAY_M = 60, STAY_MS = 10 * 60000;
