@@ -12,8 +12,12 @@ for (const d of readdirSync(res).filter(d => d.startsWith('mipmap-'))) {
 for (const d of readdirSync(res).filter(d => d.startsWith('drawable')))
   if (existsSync(`${res}/${d}/splash.png`)) copyFileSync(SPLASH, `${res}/${d}/splash.png`);
 const n = Number(process.env.RUN_NUMBER || 1);
+// 서명: 저장소의 runapp/debug.keystore로 꼭 서명해요. (예전엔 ~/.android에 두었는데 GitHub에선 쓰이지 않아 판마다 열쇠가 달라져
+// '앱이 설치되지 않음'이 났어요, 2026-10-01) 늘 같은 열쇠라야 새 판을 덮어 설치할 수 있어요
+const SIGN = `\n    signingConfigs {\n        debug {\n            storeFile file('../../debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }\n    buildTypes {\n        debug {\n            signingConfig signingConfigs.debug\n        }\n    }\n`;
 const g = 'android/app/build.gradle';
-writeFileSync(g, readFileSync(g, 'utf8').replace(/versionCode \d+/, `versionCode ${n}`).replace(/versionName "[^"]*"/, `versionName "0.1.${n}"`));
+writeFileSync(g, readFileSync(g, 'utf8').replace(/versionCode \d+/, `versionCode ${n}`).replace(/versionName "[^"]*"/, `versionName "0.1.${n}"`).replace(/\nandroid \{\n/, m => m + SIGN));
+if (!readFileSync(g, 'utf8').includes("storeFile file('../../debug.keystore')")) throw new Error('서명 설정을 못 넣었어요');
 const s = `${res}/values/strings.xml`;
 let x = readFileSync(s, 'utf8');
 if (!x.includes('capacitor_background_geolocation_notification_channel_name'))
