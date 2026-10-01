@@ -25,3 +25,45 @@ if (!x.includes('capacitor_background_geolocation_notification_channel_name'))
   x = x.replace('</resources>', `    <string name="capacitor_background_geolocation_notification_channel_name">${JSON.parse(readFileSync('apps.json', 'utf8'))[app].channel || '길 기록'}</string>\n</resources>`);
 writeFileSync(s, x);
 console.log('android 손질 끝 · 판 번호', n);
+
+// 앱 고정(MdPin): 화면 잠금 중 홈·최근 앱 버튼을 막는 작은 자바 플러그인을 넣고 MainActivity에 등록해요
+const appId = JSON.parse(readFileSync('capacitor.config.json', 'utf8')).appId, jdir = 'android/app/src/main/java/' + appId.replace(/\./g, '/');
+writeFileSync(`${jdir}/MdPinPlugin.java`, `package ${appId};
+
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+@CapacitorPlugin(name = "MdPin")
+public class MdPinPlugin extends Plugin {
+    @PluginMethod
+    public void start(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try { getActivity().startLockTask(); call.resolve(); } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+        });
+    }
+
+    @PluginMethod
+    public void stop(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try { getActivity().stopLockTask(); } catch (Exception e) { }
+            call.resolve();
+        });
+    }
+}
+`);
+writeFileSync(`${jdir}/MainActivity.java`, `package ${appId};
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(MdPinPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+`);
+console.log('앱 고정 플러그인 넣음 ·', jdir);

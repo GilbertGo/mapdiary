@@ -7,6 +7,7 @@ import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { App } from '@capacitor/app';
 
 if (Capacitor.isNativePlatform()) {
   window.MD_NATIVE = true;
@@ -99,4 +100,13 @@ if (Capacitor.isNativePlatform()) {
     }
     await Share.share({ title: d.title, text: d.text, url: d.url, files, dialogTitle: d.title || '공유하기' });
   };
+
+  // ---------- 화면 잠금: 안드로이드 '앱 고정'으로 홈·최근 앱 버튼까지 막기 (patch-android.mjs가 넣는 MdPin) ----------
+  const Pin = registerPlugin('MdPin');
+  window.mdNativePin = on => { (on ? Pin.start() : Pin.stop()).catch(() => {}); };
+  // 휴대폰 뒤로 버튼: 화면 잠금 중엔 아무것도 안 해요. 아니면 웹처럼 한 칸 뒤로(맨 처음이면 앱 닫기)
+  App.addListener('backButton', ({ canGoBack }) => {
+    if (document.querySelector('.lock-ov')) return;
+    if (canGoBack) history.back(); else App.exitApp();
+  });
 }
