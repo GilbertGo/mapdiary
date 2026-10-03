@@ -3393,17 +3393,38 @@ function viewWalk() {
       document.body.append(sb);
     });
   }
-  async function finish() {
+  async function finish(asked) {
     const tr = trackLoad(id);
     if (tr.length < 2) {
-      if (!(await askEnd('기록을 끝낼까요?', '아직 기록된 길이 거의 없어서, 끝내면 이 기록은 남지 않아요.', '기록 지우고 끝내기'))) return;
+      // 길(위치 점 2개)이 아직 없어도, 아는 위치(지금 GPS·첫 점·사진 위치)가 하나라도 있으면 그 자리에 '거리 0'으로 남길 수 있어요
+      const ph = (await photoList(id)).find(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      const at = lastFix ? [lastFix.lat, lastFix.lng] : tr.length ? [tr[0][0], tr[0][1]] : ph ? [ph.lat, ph.lng] : null;
+      const ans = await new Promise(res => {
+        const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) { sb.remove(); res(0); } } });
+        const b = (cls, text, v, style) => el('button', { class: cls, style, text, onclick: () => { sb.remove(); res(v); } });
+        sb.append(el('div', { class: 'sheet', role: 'alertdialog', 'aria-label': '기록을 끝낼까요?' },
+          el('h2', { text: '기록을 끝낼까요?' }),
+          el('p', { class: 'sub', style: 'margin:0', text: at
+            ? '아직 GPS로 그려진 길이 거의 없어요(실내이거나 GPS가 아직 안 잡혔을 수 있어요). 저장하면 지금 있는 곳에 거리 0으로 남고, 사진·메모·시간은 그대로 남아요.'
+            : '아직 GPS 위치를 한 번도 못 잡아서 저장할 곳이 없어요. 밖으로 나가 GPS가 잡히면 저장할 수 있어요. 지금 끝내면 이 기록은 지워져요.' }),
+          b('btn primary full big', '계속 기록하기', 0),
+          at ? b('btn line full', '그래도 저장하기', 2) : null,
+          b('btn line full', '기록 지우고 끝내기', 1, 'color:var(--alert-ink)')));
+        document.body.append(sb);
+      });
+      if (!ans) return;
+      if (ans === 2) {
+        const t0 = Math.min(ls.get('walkAt', Date.now()), tr[0] ? tr[0][2] : Infinity), q = [...(tr[0] || [+at[0].toFixed(6), +at[1].toFixed(6)]).slice(0, 2), t0];   // 시간은 시작한 때부터
+        ls.set('track:' + id, [q, [q[0], q[1], Math.max(Date.now(), q[2] + 1000)]]);
+        return finish(true);
+      }
       stopGps(); try { wake?.release(); } catch {} ls.set('track:' + id, []); ls.set('walkNow', null);
       const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);   // 여행에서도 빼요 (빈 여행이면 여행도 지워요)
       if (al) { al.days = al.days.filter(d => d !== id); if (al.days.length) albumSave(al); else ls.set('albums', albumsLoad().filter(x => x.id !== aid)); }
       photoList(id).then(ps => Promise.all(ps.map(p => photoDel(p.id)))).finally(() => { location.href = './'; }); return;
     }
     const st0 = trackStats(tr, M().car);
-    if (!(await askEnd('기록을 끝낼까요?', `${nameOf()} · 다닌 시간 ${fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))} · ${M().did} 거리 ${fmtDist(st0.walk)}. 끝내면 더는 길이 그려지지 않아요.`, '끝내기'))) return;
+    if (asked !== true && !(await askEnd('기록을 끝낼까요?', `${nameOf()} · 다닌 시간 ${fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))} · ${M().did} 거리 ${fmtDist(st0.walk)}. 끝내면 더는 길이 그려지지 않아요.`, '끝내기'))) return;
     const iN = el('input', { type: 'text', id: 'wn', maxlength: 40, value: nameOf() });
     const wp0 = ls.get('walkPlaces:' + id, {});   // 기록 중에 '장소 이름 적기'로 적어 둔 게 있으면 채워요
     const iS = el('input', { type: 'text', id: 'ws', maxlength: 30, value: wp0.start || '', placeholder: '예: 동네 공원' }), iE = el('input', { type: 'text', id: 'we', maxlength: 30, value: wp0.end || '', placeholder: '예: 뒷산 정상' });
