@@ -2566,6 +2566,64 @@ async function backupLoad(file) {
   }
   alert(`백업을 불러왔어요. 새 기록 ${nRec}개, 사진 ${nPh}장`); location.reload();
 }
+// ---------- 앱끼리 기록 넘기기 (안드로이드 앱만): MD Run·MD 파크골프에서 끝낸 기록이 같은 휴대폰의 Map Diary 앱에 저절로 들어가요 ----------
+// 내놓는 쪽(MD Run·파크골프): 기록마다 파일 하나(백업 파일과 같은 모양). 바뀐 것만 다시 써요(syncSent = 기록별 지문)
+const SYNC_APPS = { 'io.github.gilbertgo.mdrun': 'MD Run', 'io.github.gilbertgo.mdgolf': 'MD 파크골프' };
+let syncBusy = false;
+async function syncPush() {
+  const S = window.mdNativeSync; if (!S || !window.MD_APP || !window.MD_APP.mode || syncBusy) return;
+  syncBusy = true;
+  try {
+    const live = ls.get('walkNow', null), sent = ls.get('syncSent', {}), keep = {};
+    for (const x of pastTrips()) {
+      if (x.album || x.t === live) continue;
+      const lsPart = {}; for (const k of MD_KEYS) { const v = localStorage.getItem(k + x.t); if (v != null) lsPart[k + x.t] = v; }
+      const phs = await photoList(x.t);
+      const sig = JSON.stringify(lsPart).length + ':' + hash32(JSON.stringify(lsPart) + phs.map(p => [p.id, p.m || '', p.lat, p.lng].join(',')).join(';'));
+      keep[x.t] = sig; if (sent[x.t] === sig) continue;
+      const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: lsPart, photos: [] };
+      for (const ph of phs) data.photos.push({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+      try { await S.put(x.t, JSON.stringify(data)); } catch { delete keep[x.t]; }
+    }
+    for (const t of Object.keys(sent)) if (!(t in keep)) await S.del(t).catch(() => {});   // 지운 기록은 내놓지 않아요
+    ls.set('syncSent', keep);
+  } catch {} finally { syncBusy = false; }
+}
+function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+// 읽어 가는 쪽(Map Diary 앱): 새 기록은 더하고, 그쪽에서 고친 기록은 고친 대로. 여기서 지운 기록은 다시 가져오지 않아요(syncGot)
+async function syncPull() {
+  const S = window.mdNativeSync; if (!S || !window.MD_APP || window.MD_APP.mode || syncBusy) return;
+  syncBusy = true; let n = 0, u = 0; const from = new Set();
+  try {
+    const got = ls.get('syncGot', {});
+    for (const it of await S.list()) {
+      const key = it.app + '/' + it.id; if (got[key] === it.mtime) continue;
+      const exists = localStorage.getItem('track:' + it.id) != null;
+      if (key in got && !exists) { got[key] = it.mtime; continue; }
+      let d; try { d = JSON.parse(await S.read(it.app, it.id)); } catch { continue; }
+      if (!d || d.app !== 'mapdiary' || !d.ls || typeof d.ls !== 'object') { got[key] = it.mtime; continue; }
+      for (const [k, v] of Object.entries(d.ls)) if (typeof v === 'string' && MD_KEYS.some(p => k === p + it.id)) localStorage.setItem(k, v);
+      for (const ph of Array.isArray(d.photos) ? d.photos : []) {
+        try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
+          await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() }); } catch {}
+      }
+      got[key] = it.mtime; if (!exists) { n++; from.add(SYNC_APPS[it.app] || '다른 앱'); } else u++;
+      ls.set('syncGot', got);
+    }
+    ls.set('syncGot', got);
+  } catch {} finally { syncBusy = false; }
+  if (!n && !u) return;
+  const msg = n ? `${[...from].join('·')}에서 기록 ${n}개를 가져왔어요` : '';
+  const qs0 = new URLSearchParams(location.search);
+  if (!location.search || qs0.get('my')) { try { if (msg) sessionStorage.setItem('mdToast', msg); } catch {} location.reload(); } else if (msg) toast(msg);   // 첫 화면·내 MD면 다시 그려요
+}
+if (window.mdNativeSync) {
+  setTimeout(() => { syncPush(); syncPull(); }, 1500);
+  let lastSync = Date.now();
+  document.addEventListener('visibilitychange', () => {   // 다른 앱으로 넘어갈 때 내놓고, 돌아올 때 읽어 가요
+    if (document.hidden) syncPush(); else if (Date.now() - lastSync > 5000) { lastSync = Date.now(); syncPull(); }
+  });
+}
 function backupCard(n) {
   const inp = el('input', { type: 'file', accept: 'application/json,.json', style: 'display:none', onchange: () => { const f = inp.files[0]; inp.value = ''; if (f) backupLoad(f); } });
   const last = ls.get('lastBackup', 0), old = n && last && Date.now() - last > 7 * 864e5;
@@ -3448,7 +3506,7 @@ function viewWalk() {
           if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 1000)); else localStorage.removeItem('walkNote:' + id);
           stopGps(); cgStop(); if (M().k === 'run') formFlush(100, null, true); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
-          ls.set('walkNow', null); bg.remove(); done = id; draw();
+          ls.set('walkNow', null); bg.remove(); done = id; draw(); setTimeout(syncPush, 500);   // 앱: Map Diary 앱으로 넘겨요
         } }))));
     document.body.append(bg);
   }

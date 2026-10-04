@@ -53,6 +53,121 @@ public class MdPinPlugin extends Plugin {
     }
 }
 `);
+// MdApp: ① 새 화면(웹에서 받은 index.html)으로 바꾸기 setWeb ② 앱끼리 기록 넘기기 syncPut/syncDel(내 기록 내놓기)·syncList/syncRead(다른 앱 기록 읽기)
+writeFileSync(`${jdir}/MdAppPlugin.java`, `package ${appId};
+
+import android.app.Activity;
+import android.database.Cursor;
+import android.net.Uri;
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+@CapacitorPlugin(name = "MdApp")
+public class MdAppPlugin extends Plugin {
+    static boolean okId(String id) { return id != null && id.matches("[A-Za-z0-9_]{1,40}"); }
+
+    File dir() { File d = new File(getContext().getFilesDir(), "mdsync"); d.mkdirs(); return d; }
+
+    // 화면 파일 자리를 바꾸고(다음에 켤 때도 그대로) 바로 다시 열어요. 새 판(APK)을 깔면 Capacitor가 알아서 앱 속 화면으로 되돌려요
+    @PluginMethod
+    public void setWeb(PluginCall call) {
+        String p = call.getString("path");
+        if (p == null) { call.reject("no path"); return; }
+        getContext().getSharedPreferences("CapWebViewSettings", Activity.MODE_PRIVATE).edit().putString("serverBasePath", p).commit();
+        call.resolve();
+        getActivity().runOnUiThread(() -> bridge.setServerBasePath(p));
+    }
+
+    @PluginMethod
+    public void syncPut(PluginCall call) {
+        String id = call.getString("id"), data = call.getString("data");
+        if (!okId(id) || data == null) { call.reject("bad"); return; }
+        try {
+            File tmp = new File(dir(), id + ".tmp");
+            try (OutputStream o = new FileOutputStream(tmp)) { o.write(data.getBytes(StandardCharsets.UTF_8)); }
+            if (!tmp.renameTo(new File(dir(), id + ".json"))) throw new IOException("rename");
+            call.resolve();
+        } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+    }
+
+    @PluginMethod
+    public void syncDel(PluginCall call) {
+        String id = call.getString("id");
+        if (okId(id)) new File(dir(), id + ".json").delete();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void syncList(PluginCall call) {
+        JSArray items = new JSArray();
+        try {
+            JSArray apps = call.getArray("apps");
+            for (int i = 0; apps != null && i < apps.length(); i++) {
+                String app = apps.getString(i);
+                try (Cursor c = getContext().getContentResolver().query(Uri.parse("content://" + app + ".mdsync/list"), null, null, null, null)) {
+                    if (c == null) continue;
+                    while (c.moveToNext()) { JSObject o = new JSObject(); o.put("app", app); o.put("id", c.getString(0)); o.put("mtime", c.getLong(1)); items.put(o); }
+                } catch (Exception e) { }   // 그 앱이 없거나 옛 판이면 건너뛰어요
+            }
+        } catch (Exception e) { }
+        JSObject r = new JSObject(); r.put("items", items); call.resolve(r);
+    }
+
+    @PluginMethod
+    public void syncRead(PluginCall call) {
+        String app = call.getString("app"), id = call.getString("id");
+        if (!okId(id) || app == null || !app.matches("[a-z0-9.]+")) { call.reject("bad"); return; }
+        try (InputStream in = getContext().getContentResolver().openInputStream(Uri.parse("content://" + app + ".mdsync/" + id))) {
+            ByteArrayOutputStream b = new ByteArrayOutputStream(); byte[] buf = new byte[65536]; int n;
+            while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+            JSObject r = new JSObject(); r.put("data", new String(b.toByteArray(), StandardCharsets.UTF_8)); call.resolve(r);
+        } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+    }
+}
+`);
+// 내 기록을 같은 열쇠로 서명한 앱(Map Diary)에게만 내놓는 창구 (signature 권한)
+writeFileSync(`${jdir}/MdSyncProvider.java`, `package ${appId};
+
+import android.content.ContentProvider;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.MatrixCursor;
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
+import java.io.File;
+import java.io.FileNotFoundException;
+
+public class MdSyncProvider extends ContentProvider {
+    File dir() { return new File(getContext().getFilesDir(), "mdsync"); }
+    @Override public boolean onCreate() { return true; }
+    @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) {
+        MatrixCursor c = new MatrixCursor(new String[] { "id", "mtime", "size" });
+        File[] fs = dir().listFiles();
+        if (fs != null) for (File f : fs) { String n = f.getName(); if (n.endsWith(".json")) c.addRow(new Object[] { n.substring(0, n.length() - 5), f.lastModified(), f.length() }); }
+        return c;
+    }
+    @Override public ParcelFileDescriptor openFile(Uri u, String mode) throws FileNotFoundException {
+        String id = u.getLastPathSegment();
+        if (id == null || !id.matches("[A-Za-z0-9_]{1,40}") || !"r".equals(mode)) throw new FileNotFoundException();
+        return ParcelFileDescriptor.open(new File(dir(), id + ".json"), ParcelFileDescriptor.MODE_READ_ONLY);
+    }
+    @Override public String getType(Uri u) { return "application/json"; }
+    @Override public Uri insert(Uri u, ContentValues v) { return null; }
+    @Override public int delete(Uri u, String s, String[] a) { return 0; }
+    @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
+}
+`);
 writeFileSync(`${jdir}/MainActivity.java`, `package ${appId};
 
 import android.os.Bundle;
@@ -62,8 +177,16 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(MdPinPlugin.class);
+        registerPlugin(MdAppPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
 `);
-console.log('앱 고정 플러그인 넣음 ·', jdir);
+// AndroidManifest: 같은 열쇠 앱끼리만 쓰는 권한 + 기록 창구(provider) + 다른 MD 앱을 볼 수 있게(queries)
+const mf = 'android/app/src/main/AndroidManifest.xml', PERM = 'io.github.gilbertgo.mapdiary.SYNC';
+let m = readFileSync(mf, 'utf8');
+if (!m.includes('</application>') || !m.includes('</manifest>')) throw new Error('AndroidManifest 모양이 달라요');
+m = m.replace('</application>', `    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
+  .replace('</manifest>', `    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
+writeFileSync(mf, m);
+console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);

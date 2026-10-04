@@ -2,6 +2,7 @@
 // MD_APP=run(기본) → MD Run, MD_APP=pgolf → MD 파크골프. 앱마다 이름·아이디·시작 모드가 달라요 (apps.json)
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const APPS = JSON.parse(readFileSync('apps.json', 'utf8')), key = process.env.MD_APP || 'run', A = APPS[key];
 if (!A) throw new Error('모르는 앱: ' + key);
@@ -12,7 +13,9 @@ await build({ entryPoints: ['native.js'], bundle: true, format: 'iife', target: 
 let html = readFileSync('../index.html', 'utf8');
 const at = html.indexOf('<script');
 if (at < 0) throw new Error('index.html에 <script>가 없어요');
-html = html.slice(0, at) + `<script>window.MD_APP=${JSON.stringify({ mode: A.mode, name: A.appName, noti: A.noti })}</script>\n<script src="native.js"></script>\n` + html.slice(at);
+// h = 이 화면(index.html)의 지문. 앱이 웹의 index.html과 견줘서 다르면 새 화면을 받아요 (native.js liveUpdate)
+const h = createHash('sha256').update(html, 'utf8').digest('hex');
+html = html.slice(0, at) + `<script>window.MD_APP=${JSON.stringify({ mode: A.mode, name: A.appName, noti: A.noti, h })}</script>\n<script src="native.js"></script>\n` + html.slice(at);
 writeFileSync('www/index.html', html);
 for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) copyFileSync('../' + f, 'www/' + f);
 console.log('www 준비됨 ·', A.appName);
