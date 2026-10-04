@@ -3008,7 +3008,7 @@ function viewWalk() {
   function lastRun() {
     const x = pastTrips().find(y => !y.album && y.t !== id && ls.get('walkMode:' + y.t, null) === 'run'); if (!x) return null;
     const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt);
-    return `지난 러닝 · ${d.getMonth() + 1}월 ${d.getDate()}일 ${fmtDist(st.walk)} · 페이스 ${fmtPace(st.walk, movingMs(tr, 25))}/km`;
+    return { t: x.t, text: `지난 러닝 · ${d.getMonth() + 1}월 ${d.getDate()}일 ${fmtDist(st.walk)} · 페이스 ${fmtPace(st.walk, movingMs(tr, 25))}/km` };
   }
   // 출발: "달리기를 시작합니다." → 뚜 · 뚜 · 뚜 (3·2·1) → 뚜~ (높고 길게) 하고 출발. 화면을 누르면 바로 시작해요
   function tone(freq, sec) {
@@ -3489,7 +3489,8 @@ function viewWalk() {
           el('button', { class: 'sw-row', role: 'switch', 'aria-checked': ls.get('runVoice', true) ? 'true' : 'false', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } },
             el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: ls.get('runVoice', true) ? '켜져 있어요 · 누르면 꺼져요' : '꺼져 있어요 · 누르면 켜져요' })),
             el('span', { class: 'sw' + (ls.get('runVoice', true) ? ' on' : '') }, el('i'))),
-          lastRun() ? el('div', { class: 'sub', text: lastRun() }) : null,
+          (() => { const lr = lastRun(); return lr ? el('a', { class: 'sub', href: `./?my=1&t=${encodeURIComponent(lr.t)}`, style: 'color:inherit', text: lr.text + ' ›' }) : null; })(),
+          el('a', { class: 'btn line full', href: './?my=1', text: '📒 지난 기록 보기 (내 MD)' }),
           el('div', { class: 'sub', style: 'font-size:14px', text: '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }))
         : el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
