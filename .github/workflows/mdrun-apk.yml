@@ -5,7 +5,8 @@ name: MD 앱 APK (러닝·파크골프·Map Diary)
 on:
   push:
     branches: [main]
-    paths: ['runapp/**', 'index.html', 'icon-512.png', '.github/workflows/mdrun-apk.yml']
+    # index.html(화면)만 바뀌면 새 판을 만들지 않아요: 앱이 웹에서 새 화면을 저절로 받아요 (native.js liveUpdate)
+    paths: ['runapp/**', 'icon-512.png', '.github/workflows/mdrun-apk.yml']
   workflow_dispatch:
 permissions:
   contents: write

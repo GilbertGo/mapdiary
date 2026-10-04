@@ -4,7 +4,7 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { Media } from '@capacitor-community/media';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { App } from '@capacitor/app';
@@ -16,6 +16,8 @@ if (Capacitor.isNativePlatform()) {
 
   // 처음 열면 바로 그 앱의 시작 화면 (MD Run = 러닝, MD 파크골프 = 파크골프, Map Diary = 첫 화면). build.mjs가 window.MD_APP을 넣어요
   const APP = window.MD_APP || { mode: 'run', name: 'MD Run', noti: '달린 길' };
+  // 새 화면으로 바꾸며 다시 열렸으면, 보던 곳(주소 ? 뒤)으로 돌아가요
+  try { const back = sessionStorage.getItem('mdBack'); if (back != null) { sessionStorage.removeItem('mdBack'); if (back && !location.search) location.replace(location.pathname + back); } } catch {}
   // 앱을 처음 켤 때 한 번만 넘겨요 (그 뒤 '처음으로'를 누르면 첫 화면에서 내 MD 등을 볼 수 있게)
   let first = true; try { first = !sessionStorage.getItem('mdStarted'); sessionStorage.setItem('mdStarted', '1'); } catch {}
   if (first && !location.search && APP.mode) location.replace(location.pathname + '?walk=1&mode=' + APP.mode);   // Map Diary(전체) 앱은 mode가 비어 첫 화면
@@ -101,6 +103,60 @@ if (Capacitor.isNativePlatform()) {
       }
     }
     await Share.share({ title: d.title, text: d.text, url: d.url, files, dialogTitle: d.title || '공유하기' });
+  };
+
+  // ---------- 화면 저절로 새로: 웹(gilbertgo.github.io/mapdiary)의 index.html이 앱 속 화면과 다르면 받아서 바꿔 끼워요 ----------
+  // 앱 주소(https://localhost)는 그대로라 기록(localStorage·사진)은 그대로예요. 위치·잠금 같은 휴대폰 기능을 바꿀 때만 새 판(APK)이 필요해요
+  const WEB = window.MD_WEB_BASE, MdApp = registerPlugin('MdApp');
+  const recording = () => { try { return !!JSON.parse(localStorage.getItem('walkNow') || 'null'); } catch { return false; } };
+  const hex = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function liveUpdate() {
+    if (recording()) return;   // 기록 중엔 다시 열지 않아요 (다음에 켤 때)
+    const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const txt = await r.text(), at = txt.indexOf('<script');
+    if (txt.length < 100000 || at < 0 || !txt.includes('Map Diary')) return;   // 와이파이 로그인 화면 같은 엉뚱한 쪽이면 안 써요
+    const h = await hex(txt);
+    if (h === APP.h || recording()) return;
+    const dir = 'web/' + h.slice(0, 16);
+    const html = txt.slice(0, at) + `<script>window.MD_APP=${JSON.stringify({ ...APP, h })}</script>\n<script src="native.js"></script>\n` + txt.slice(at);
+    await Filesystem.writeFile({ path: dir + '/index.html', data: html, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+    await Filesystem.writeFile({ path: dir + '/native.js', data: await (await fetch('/native.js')).text(), directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+    for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) {
+      try { const b = await (await fetch('/' + f)).blob(); await Filesystem.writeFile({ path: dir + '/' + f, data: (await toB64(b)).split(',')[1], directory: Directory.Data, recursive: true }); } catch {}
+    }
+    if (recording()) return;
+    const { uri } = await Filesystem.getUri({ path: dir, directory: Directory.Data });
+    try { sessionStorage.setItem('mdBack', location.search + location.hash); sessionStorage.setItem('mdToast', '새 화면으로 바꿨어요'); } catch {}
+    await MdApp.setWeb({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')) });
+  }
+  // 지난 화면 폴더는 지워요 (지금 쓰는 것만 남기고)
+  async function cleanWeb() {
+    try { const { files } = await Filesystem.readdir({ path: 'web', directory: Directory.Data });
+      for (const f of files) if (APP.h && !APP.h.startsWith(f.name)) await Filesystem.rmdir({ path: 'web/' + f.name, directory: Directory.Data, recursive: true }).catch(() => {}); } catch {}
+  }
+  // 새 판(APK) 알림: 휴대폰 기능이 바뀌어 다시 설치해야 할 때만 GitHub에 새 판이 올라와요(mdrun-번호 = 판 번호)
+  const PAGE = { run: 'run.html', pgolf: 'golf.html' }[APP.mode] || 'md.html';
+  async function checkBinary() {
+    if (recording()) return;
+    const cur = Number((await App.getInfo()).build) || 0;
+    const j = await (await fetch('https://api.github.com/repos/GilbertGo/mapdiary/releases/latest', { cache: 'no-store' })).json();
+    const n = Number((String(j.tag_name || '').match(/^mdrun-(\d+)$/) || [])[1]) || 0;
+    if (!n || n <= cur || localStorage.getItem('mdUpdAsk') === String(n) || recording()) return;
+    localStorage.setItem('mdUpdAsk', String(n));
+    if (confirm(`${APP.name} 새 판이 나왔어요.\n(위치·잠금 같은 휴대폰 기능이 바뀌었어요)\n\n지금 받을까요? 지우지 말고 덮어 설치하면 기록은 그대로 남아요.`)) location.href = WEB + PAGE;
+  }
+  addEventListener('load', () => {
+    try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => say(t), 800); } } catch {}
+    setTimeout(() => { cleanWeb(); liveUpdate().catch(() => {}).finally(() => checkBinary().catch(() => {})); }, 2500);
+  });
+
+  // ---------- 앱끼리 기록 넘기기: MD Run·MD 파크골프가 끝낸 기록을 내놓고, Map Diary 앱이 읽어 가요 (같은 열쇠로 서명한 앱끼리만) ----------
+  window.mdNativeSync = {
+    put: (id, data) => MdApp.syncPut({ id, data }),
+    del: id => MdApp.syncDel({ id }),
+    list: async () => (await MdApp.syncList({ apps: ['io.github.gilbertgo.mdrun', 'io.github.gilbertgo.mdgolf'] })).items || [],
+    read: async (app, id) => (await MdApp.syncRead({ app, id })).data,
   };
 
   // ---------- 화면 잠금: 안드로이드 '앱 고정'으로 홈·최근 앱 버튼까지 막기 (patch-android.mjs가 넣는 MdPin) ----------
