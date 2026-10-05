@@ -300,16 +300,18 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .gb-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:#6B6F66}.gb-foot .link{font-weight:700;color:var(--pine);font-size:15px;padding:8px 0}
 @media (prefers-reduced-motion:reduce){.gb-big button:active{transform:none}}
 .gf-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
-.gf-tbl table{border-collapse:separate;border-spacing:3px;font-size:13px;font-variant-numeric:tabular-nums}
-.gf-tbl th,.gf-tbl td{min-width:26px;height:28px;text-align:center;border-radius:8px;padding:0 3px;white-space:nowrap}
+/* 9홀은 한 화면에 다 들어가게, 18홀처럼 넘치면 옆으로 밀어도 합계 칸은 오른쪽에 붙어 있어요 */
+.gf-tbl table{border-collapse:separate;border-spacing:2px;font-size:13px;font-variant-numeric:tabular-nums;width:100%}
+.gf-tbl th,.gf-tbl td{min-width:22px;height:28px;text-align:center;border-radius:7px;padding:0 1px;white-space:nowrap}
+.gf-tbl .sum{position:sticky;right:0;background:var(--card);min-width:34px;padding-left:3px;box-shadow:6px 0 0 var(--card),-3px 0 0 var(--card)}
 .gf-tbl th{color:#7A7F76;font-weight:600}
-.gf-tbl th.nm{text-align:left;color:var(--ink);font-weight:700;max-width:52px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--card)}
+.gf-tbl th.nm{text-align:left;color:var(--ink);font-weight:700;max-width:50px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--card)}
 .gf-tbl .hno{cursor:pointer}
 .gf-tbl .hno.on{background:var(--pine);color:#fff}
 .gf-tbl td{background:#F3EFE6;font-weight:700}
 .gf-tbl td.u{background:#2D6A4F;color:#fff}.gf-tbl td.a{background:#F4C542;color:#3B2F00}
 .gf-tbl td.e{background:#E6F0EA;color:var(--pine)}.gf-tbl td.b1{background:#FCD9B8}.gf-tbl td.b2{background:#F4A259}
-.gf-tbl td.sum{background:none;color:var(--pine);font-size:14px;line-height:1.05}.gf-tbl td.sum small{display:block;font-size:11px;color:#7A7F76}
+.gf-tbl td.sum{background:var(--card);color:var(--pine);font-size:14px;line-height:1.05}.gf-tbl td.sum small{display:block;font-size:11px;color:#7A7F76}
 .hole-pin{background:none;border:none}.hole-pin b{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#2D6A4F;color:#fff;font-size:13px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 /* 받은 MD 화면 */
 .mdv{gap:14px}
@@ -978,8 +980,8 @@ const golfSummary = g => { const t = golfTot(g, 0); return t.played ? `${t.st}�
 function golfTable(g, onHole) {
   const row = (label, cells, cls) => el('tr', {}, el('th', { class: 'nm' + (cls || ''), text: label }), ...cells);
   const tbl = el('table', {},
-    row('홀', [...g.par.map((_, i) => el('th', { class: 'hno' + (onHole && i === g.cur ? ' on' : ''), text: i + 1, onclick: onHole ? () => onHole(i) : null })), el('th', { text: '합계' })]),
-    row('파', [...g.par.map(v => el('th', { text: v })), el('th', { text: g.par.reduce((a, b) => a + b, 0) })]),
+    row('홀', [...g.par.map((_, i) => el('th', { class: 'hno' + (onHole && i === g.cur ? ' on' : ''), text: i + 1, onclick: onHole ? () => onHole(i) : null })), el('th', { class: 'sum', text: '합계' })]),
+    row('파', [...g.par.map(v => el('th', { text: v })), el('th', { class: 'sum', text: g.par.reduce((a, b) => a + b, 0) })]),
     ...g.p.map((nm, k) => { const t = golfTot(g, k);
       return el('tr', {}, el('th', { class: 'nm' }, el('i', { class: 'gf-dot', style: `background:${GOLF_COLORS[k % 4]}` }), nm), ...[...g.s[k].map((v, i) => el('td', { class: golfCls(v, g.par[i]), text: v || '' })), el('td', { class: 'sum' }, t.played ? [String(t.st), el('small', { text: fmtDiff(t.diff) })] : '-')]); }));
   return el('div', { class: 'gf-tbl' }, tbl);
