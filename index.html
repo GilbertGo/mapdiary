@@ -575,7 +575,9 @@ function spotList(spots, ids) {
   };
   const draw = () => box.replaceChildren(...ss.map(s => el('div', { class: 'row', style: 'gap:8px;align-items:flex-start;flex-wrap:nowrap' },
     el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
-    el('div', { class: 'grow' }, el('b', { text: s.n }), s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null),
+    el('div', { class: 'grow' }, el('b', { text: s.n }),
+      s.k === 'stay' && s.te ? el('div', { class: 'sub', style: 'font-size:14px', text: `${fmtClock(s.ts)} ~ ${fmtClock(s.te)} · ${fmtDur(s.te - s.ts)} 머묾` }) : null,
+      s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null),
     ids ? el('button', { class: 'link', style: 'padding:0;font-size:14px;flex:none', text: '✎ 고치기', onclick: () => edit(s) }) : null)));
   draw(); return box;
 }
@@ -3459,10 +3461,30 @@ function viewWalk() {
   function stayCheck(lat, lng) {
     const now = Date.now();
     if (!stayA || dist(stayA.lat, stayA.lng, lat, lng) > STAY_M) { stayA = { lat, lng, since: now, asked: false }; if (stayAsk) { stayAsk = null; draw(); } return; }
+    if (M().k === 'daily') return stayAuto(now);
     if (stayA.asked || now - stayA.since < STAY_MS || ['run', 'bike'].includes(M().k)) return;
     stayA.asked = true;
     if (ls.get('walkSpots:' + id, []).some(s => dist(s.lat, s.lng, stayA.lat, stayA.lng) < 80)) return;
     stayAsk = { lat: stayA.lat, lng: stayA.lng, since: stayA.since }; draw();
+  }
+  // 일상 모드: 묻지 않고 들른 곳으로 저절로 남겨요. 머무는 동안 떠난 시각(te)을 1분마다 늘려요.
+  // 잠깐 벗어났다(GPS 흔들림 등) 15분 안에 같은 곳(80m)으로 돌아오면 새로 만들지 않고 그 들른 곳을 이어요.
+  function stayAuto(now) {
+    if (now - stayA.since < STAY_MS) return;
+    const list = ls.get('walkSpots:' + id, []);
+    if (stayA.ts == null) {
+      const old = list.filter(s => s.k === 'stay' && s.te && stayA.since - s.te < 15 * 60000 && dist(s.lat, s.lng, stayA.lat, stayA.lng) < 80).pop();
+      if (old) stayA.ts = old.ts;
+      else {
+        const n = `${fmtClock(stayA.since)} 들른 곳`;
+        list.push({ n, lat: +stayA.lat.toFixed(6), lng: +stayA.lng.toFixed(6), ts: stayA.since, te: now, k: 'stay' });
+        ls.set('walkSpots:' + id, list); stayA.ts = stayA.since; stayA.wrote = now;
+        drawSpots(); toast(`'${n}'을(를) 남겼어요 · 이름은 내 MD에서 바꿀 수 있어요`); return;
+      }
+    }
+    if (now - (stayA.wrote || 0) < 60000) return;
+    const s = list.find(x => x.k === 'stay' && x.ts === stayA.ts); if (!s) return;   // 그사이 지웠으면 그대로 둬요
+    s.te = now; ls.set('walkSpots:' + id, list); stayA.wrote = now;
   }
   const stayBanner = () => stayAsk ? el('div', { class: 'banner info', style: 'gap:8px' },
     el('b', { class: 'with-ico', style: 'gap:6px' }, ico('pin', 18), `여기서 ${Math.round((Date.now() - stayAsk.since) / 60000)}분째 머물고 있어요`),
