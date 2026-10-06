@@ -57,14 +57,20 @@ public class MdPinPlugin extends Plugin {
 writeFileSync(`${jdir}/MdAppPlugin.java`, `package ${appId};
 
 import android.app.Activity;
+import android.content.ContentUris;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.MediaStore;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -73,8 +79,45 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-@CapacitorPlugin(name = "MdApp")
+@CapacitorPlugin(name = "MdApp", permissions = {
+    @Permission(strings = { "android.permission.READ_MEDIA_IMAGES" }, alias = "photos"),
+    @Permission(strings = { "android.permission.READ_EXTERNAL_STORAGE" }, alias = "photosOld")
+})
 public class MdAppPlugin extends Plugin {
+    // 갤러리 사진 찾기: 기록한 시간(from~to, ms)에 찍은 사진. 이 앱이 넣은 'MapDiary' 앨범과 스크린샷은 빼요
+    String photoAlias() { return Build.VERSION.SDK_INT >= 33 ? "photos" : "photosOld"; }
+
+    @PluginMethod
+    public void photosBetween(PluginCall call) {
+        if (getPermissionState(photoAlias()) != PermissionState.GRANTED) { requestPermissionForAlias(photoAlias(), call, "photosPerm"); return; }
+        queryPhotos(call);
+    }
+
+    @PermissionCallback
+    private void photosPerm(PluginCall call) {
+        if (getPermissionState(photoAlias()) != PermissionState.GRANTED) { call.reject("denied"); return; }
+        queryPhotos(call);
+    }
+
+    void queryPhotos(PluginCall call) {
+        long from = call.getLong("from", 0L), to = call.getLong("to", 0L);
+        JSArray items = new JSArray();
+        Uri base = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        String[] proj = { MediaStore.Images.Media._ID, MediaStore.Images.Media.DATE_TAKEN, MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.BUCKET_DISPLAY_NAME, MediaStore.Images.Media.MIME_TYPE };
+        String sel = MediaStore.Images.Media.DATE_TAKEN + " >= ? AND " + MediaStore.Images.Media.DATE_TAKEN + " <= ?";
+        try (Cursor c = getContext().getContentResolver().query(base, proj, sel, new String[] { String.valueOf(from), String.valueOf(to) }, MediaStore.Images.Media.DATE_TAKEN + " ASC")) {
+            while (c != null && c.moveToNext() && items.length() < 200) {
+                String bucket = c.getString(3), b = bucket == null ? "" : bucket.toLowerCase();
+                if (b.equals("mapdiary") || b.contains("screenshot") || b.contains("스크린샷")) continue;
+                JSObject o = new JSObject();
+                o.put("uri", ContentUris.withAppendedId(base, c.getLong(0)).toString());
+                o.put("ts", c.getLong(1)); o.put("name", c.getString(2)); o.put("type", c.getString(4));
+                items.put(o);
+            }
+        } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); return; }
+        JSObject r = new JSObject(); r.put("items", items); call.resolve(r);
+    }
+
     static boolean okId(String id) { return id != null && id.matches("[A-Za-z0-9_]{1,40}"); }
 
     File dir() { File d = new File(getContext().getFilesDir(), "mdsync"); d.mkdirs(); return d; }
@@ -187,6 +230,6 @@ const mf = 'android/app/src/main/AndroidManifest.xml', PERM = 'io.github.gilbert
 let m = readFileSync(mf, 'utf8');
 if (!m.includes('</application>') || !m.includes('</manifest>')) throw new Error('AndroidManifest 모양이 달라요');
 m = m.replace('</application>', `    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
-  .replace('</manifest>', `    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
+  .replace('</manifest>', `    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
 writeFileSync(mf, m);
 console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);
