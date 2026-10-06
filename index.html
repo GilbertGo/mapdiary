@@ -3457,17 +3457,18 @@ function viewWalk() {
     document.body.append(ov); ovGuard();
   }
   const STAY_M = 60, STAY_MS = 10 * 60000;
+  const STAY_AUTO = ['daily', 'date', 'travel'];   // 이 모드들은 묻지 않고 들른 곳으로 저절로 남겨요
   let stayA = null, stayAsk = null;
   function stayCheck(lat, lng) {
     const now = Date.now();
     if (!stayA || dist(stayA.lat, stayA.lng, lat, lng) > STAY_M) { stayA = { lat, lng, since: now, asked: false }; if (stayAsk) { stayAsk = null; draw(); } return; }
-    if (M().k === 'daily') return stayAuto(now);
+    if (STAY_AUTO.includes(M().k)) return stayAuto(now);
     if (stayA.asked || now - stayA.since < STAY_MS || ['run', 'bike'].includes(M().k)) return;
     stayA.asked = true;
     if (ls.get('walkSpots:' + id, []).some(s => dist(s.lat, s.lng, stayA.lat, stayA.lng) < 80)) return;
     stayAsk = { lat: stayA.lat, lng: stayA.lng, since: stayA.since }; draw();
   }
-  // 일상 모드: 묻지 않고 들른 곳으로 저절로 남겨요. 머무는 동안 떠난 시각(te)을 1분마다 늘려요.
+  // 일상·데이트·여행: 묻지 않고 들른 곳으로 저절로 남겨요. 머무는 동안 떠난 시각(te)을 1분마다 늘려요.
   // 잠깐 벗어났다(GPS 흔들림 등) 15분 안에 같은 곳(80m)으로 돌아오면 새로 만들지 않고 그 들른 곳을 이어요.
   function stayAuto(now) {
     if (now - stayA.since < STAY_MS) return;
