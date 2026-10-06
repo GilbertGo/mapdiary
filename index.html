@@ -113,7 +113,6 @@ input::placeholder{color:#B3AC9C}
 .rd-sq{display:block;width:15px;height:15px;border-radius:3px;background:var(--pine);margin-bottom:2px}
 .rd-stop{width:70px;height:70px;border-radius:50%;border:none;background:#E4572E;color:#fff;font:inherit;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 10px 26px rgba(228,87,46,.38)}
 body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
-.toast.top,body.has-act .toast.top{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}
 .rd-stop i{width:22px;height:22px;background:#fff;border-radius:5px}
 .lock-ov{position:fixed;inset:0;z-index:5000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;padding:24px}
 .lock-ov .big{font-size:96px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
@@ -289,24 +288,11 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .gf-v.par small{color:var(--pine)}
 .gf-tot{width:66px;text-align:right;font-size:13px;color:#6B6F66;line-height:1.25;flex:none}
 .gf-tot b{display:block;font-size:16px;color:var(--pine)}
-.gb-chips{display:grid;gap:6px}
-.gb-chips{padding:3px}
-.gb-chips button{height:44px;min-width:0;border:none;border-radius:12px;background:color-mix(in srgb,var(--pc) 20%,#fff);color:color-mix(in srgb,var(--pc) 75%,#000);font-weight:800;font-size:15px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;touch-action:manipulation}
-.gb-chips button.done{box-shadow:inset 0 0 0 2px var(--pc)}
-.gb-chips button.on{background:var(--pc);color:var(--pk);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--pc)}
-.gb-band{border-radius:14px;text-align:center;padding:8px 8px 9px;display:flex;align-items:baseline;justify-content:center;gap:8px;flex-wrap:wrap}
-.gb-band b{font-size:26px;line-height:1.15;letter-spacing:-.02em;overflow-wrap:anywhere}.gb-band span{font-size:16px;font-weight:700}
-.gb-lbl{display:flex;align-items:center;gap:6px;font-weight:800;font-size:17px;color:var(--pine)}.gb-lbl small{margin-left:auto;font-weight:600;font-size:13px;color:#8A8F86;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gb-hd .nav{background:var(--pine);color:#fff;width:52px;height:48px}.gb-hd .nav:disabled{opacity:.25}
-.gb-hno{flex:1;text-align:center;font-size:26px;color:var(--pine);letter-spacing:-.02em}
-.gb-par{display:grid;grid-template-columns:auto repeat(3,1fr);gap:6px;align-items:center}.gb-par em{font-style:normal;font-weight:800;font-size:16px;color:var(--pine);padding:0 4px}
-.gb-par button{height:44px;border:none;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 2px #E4DCC8;color:#6B6F66;font-weight:800;font-size:19px;touch-action:manipulation}
-.gb-par button.on{background:var(--accent);color:#3B2200;box-shadow:none}
-.gf-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:2px}
+.gb-dots{display:flex;justify-content:center;gap:7px;margin-top:-2px}.gb-dots i{width:10px;height:10px;border-radius:50%;background:#E4DCC8}.gb-dots i.on{background:var(--accent)}.gb-dots i.done{background:var(--pine)}
 .gb-who{text-align:center;display:flex;flex-direction:column;gap:2px}.gb-who b{font-size:30px;color:var(--pine);letter-spacing:-.02em;line-height:1.15;overflow-wrap:anywhere}.gb-who span{font-size:14px;color:#6B6F66}
-.gb-big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.gb-big button{height:68px;border:none;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 2px #E4DCC8;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;touch-action:manipulation}
-.gb-big button b{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}.gb-big button small{font-size:12px;font-weight:700;color:#8A8F86}
+.gb-big{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gb-big button{height:88px;border:none;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 2px #E4DCC8;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;touch-action:manipulation}
+.gb-big button b{font-size:40px;line-height:1;font-variant-numeric:tabular-nums}.gb-big button small{font-size:13px;font-weight:700;color:#8A8F86}
 .gb-big button.par{background:var(--pine);color:#fff;box-shadow:none}.gb-big button.par small{color:#CFE3D6}
 .gb-big button.cur{box-shadow:inset 0 0 0 3px var(--accent)}
 .gb-big button:active{transform:scale(.97)}
@@ -408,9 +394,9 @@ function fmtAgo(ts) { const s = Math.max(0, Math.round((now() - ts) / 1000)); if
 function dist(a, b, c, d) { const R = 6371000, r = x => x * Math.PI / 180; const x = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
 function fmtDist(m) { return m < 1000 ? `${Math.round(m / 10) * 10}m` : `${(m / 1000).toFixed(1)}km`; }
 let toastT;
-function toast(msg, top) {   // top: 위쪽에 (아래 큰 단추를 가리지 않게)
+function toast(msg) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = el('div', { class: 'toast' + (top ? ' top' : ''), role: 'status', text: msg });
+  const t = el('div', { class: 'toast', role: 'status', text: msg });
   document.body.append(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000);
 }
 // 휴대폰 뒤로가기: 사진 크게 보기, 아래에서 올라오는 창, 크게 본 지도가 떠 있으면 그것만 닫아요 (페이지를 빠져나가지 않게)
@@ -1012,8 +998,6 @@ function golfTot(g, k) {   // 친 홀만 더해요
   return { st, par, diff: st - par, played };
 }
 const fmtDiff = d => d === 0 ? '이븐' : (d > 0 ? '+' : '') + d;
-const GOLF_COLORS = ['#E03131', '#1971C2', '#F5B700', '#8E3FD6'];   // 사람마다 자기 색: 빨강 · 파랑 · 노랑 · 보라 (초록은 파 단추라 뺐어요, 2026-10-05)
-const golfInk = j => j % 4 === 2 ? '#3D2E00' : '#fff';   // 노랑 위 글자는 진하게
 const golfCls = (v, par) => !v ? '' : v === 1 ? 'a' : v < par ? 'u' : v === par ? 'e' : v === par + 1 ? 'b1' : 'b2';
 const golfSummary = g => { const t = golfTot(g, 0); return t.played ? `${t.st}타 (${fmtDiff(t.diff)})` : ''; };
 // 점수표 (18홀도 옆으로 밀어서 봐요). onHole을 주면 홀 번호를 눌러 그 홀로 가요
@@ -1023,7 +1007,7 @@ function golfTable(g, onHole) {
     row('홀', [...g.par.map((_, i) => el('th', { class: 'hno' + (onHole && i === g.cur ? ' on' : ''), text: i + 1, onclick: onHole ? () => onHole(i) : null })), el('th', { class: 'sum', text: '합계' })]),
     row('파', [...g.par.map(v => el('th', { text: v })), el('th', { class: 'sum', text: g.par.reduce((a, b) => a + b, 0) })]),
     ...g.p.map((nm, k) => { const t = golfTot(g, k);
-      return el('tr', {}, el('th', { class: 'nm' }, el('i', { class: 'gf-dot', style: `background:${GOLF_COLORS[k % 4]}` }), nm), ...[...g.s[k].map((v, i) => el('td', { class: golfCls(v, g.par[i]), text: v || '' })), el('td', { class: 'sum' }, t.played ? [String(t.st), el('small', { text: fmtDiff(t.diff) })] : '-')]); }));
+      return row(nm, [...g.s[k].map((v, i) => el('td', { class: golfCls(v, g.par[i]), text: v || '' })), el('td', { class: 'sum' }, t.played ? [String(t.st), el('small', { text: fmtDiff(t.diff) })] : '-')]); }));
   return el('div', { class: 'gf-tbl' }, tbl);
 }
 // 지도에 홀 번호 (홀을 끝낸 자리)
@@ -1058,8 +1042,8 @@ function golfPanelBig(G, save, here) {
         sel = null; golfUndo.d = true;
         const at = here(); if (at) G.h[i] = [+at[0].toFixed(6), +at[1].toFixed(6)];
         buzz([40, 60, 40]);
-        if (i < G.n - 1) { G.cur = i + 1; toast(`${i + 1}번 홀 · ${G.p.map((nm, j) => `${nm} ${G.s[j][i]}타`).join(', ')}`, true); }
-        else toast(`${G.n}홀 끝! ${G.p.map((nm, j) => `${nm} ${golfTot(G, j).st}타 (${fmtDiff(golfTot(G, j).diff)})`).join(', ')}`, true);
+        if (i < G.n - 1) { G.cur = i + 1; toast(`${i + 1}번 홀 · ${G.p.map((nm, j) => `${nm} ${G.s[j][i]}타`).join(', ')}`); }
+        else toast(`${G.n}홀 끝! ${G.p.map((nm, j) => `${nm} ${golfTot(G, j).st}타 (${fmtDiff(golfTot(G, j).diff)})`).join(', ')}`);
         saveCourse();
       }
       save(G); draw();
@@ -1079,22 +1063,15 @@ function golfPanelBig(G, save, here) {
       document.body.append(sb);
     };
     box.replaceChildren(
-      el('div', { class: 'gb-lbl' }, ico('pgolf', 20), '스코어 카드', el('small', { text: `${G.c ? G.c + ' · ' : ''}${G.n}홀` })),
-      el('div', { class: 'gf-hd gb-hd' },
+      el('div', { class: 'gf-hd' },
         el('button', { class: 'nav', 'aria-label': '앞 홀', text: '‹', disabled: i === 0, onclick: () => go(i - 1) }),
-        el('b', { class: 'gb-hno', text: `${i + 1}번 홀` }),
+        el('div', { class: 'gf-t' }, el('b', { text: `${i + 1}번 홀` }),
+          el('button', { class: 'gf-par', 'aria-label': `파 ${par}, 누르면 바뀌어요`, text: `파 ${par} ▾`, onclick: () => { G.par[i] = par >= 5 ? 3 : par + 1; saveCourse(); save(G); draw(); } })),
         el('button', { class: 'nav', 'aria-label': '다음 홀', text: '›', disabled: i === G.n - 1, onclick: () => go(i + 1) })),
-      // 파는 3 · 4 · 5 중에 바로 골라요 (시안 A안)
-      el('div', { class: 'gb-par' }, el('em', { text: '파' }), ...[3, 4, 5].map(v =>
-        el('button', { class: v === par ? 'on' : '', 'aria-label': `파 ${v}${v === par ? ', 지금' : ''}`, 'aria-pressed': v === par ? 'true' : 'false', text: v, onclick: () => { if (v === par) return; G.par[i] = v; saveCourse(); save(G); draw(); } }))),
-      // 이름 칸: 지금 차례는 그 사람 색으로 채우고, 적은 사람은 ✓ 타수 (누르면 그 사람으로)
-      G.p.length > 1 ? el('div', { class: 'gb-chips', style: `grid-template-columns:repeat(${G.p.length},1fr)` }, ...G.p.map((nm, j) => {
-        const c = GOLF_COLORS[j % 4], v = G.s[j][i];
-        return el('button', { class: j === k ? 'on' : v ? 'done' : '', style: `--pc:${c};--pk:${golfInk(j)}`, 'aria-label': `${nm}${v ? ` ${v}타` : ''}, 누르면 ${nm} 타수 적기`, onclick: () => { sel = j; draw(); } }, v && j !== k ? `✓ ${nm} ${v}` : nm);
-      })) : null,
+      G.p.length > 1 ? el('div', { class: 'gb-dots', 'aria-hidden': 'true' }, ...G.p.map((_, j) => el('i', { class: j === k ? 'on' : G.s[j][i] ? 'done' : '' }))) : null,
       k == null
         ? el('div', { class: 'gb-who' }, el('b', { text: `${i + 1}번 홀 다 적었어요` }), el('span', { text: G.p.map((nm, j) => `${nm} ${G.s[j][i]}`).join(' · ') }))
-        : el('div', { class: 'gb-band', style: `background:${GOLF_COLORS[k % 4]};color:${golfInk(k)}` }, el('b', { text: G.p[k] }), el('span', { text: G.s[k][i] ? `지금 ${G.s[k][i]}타 · 바꾸려면 누르세요` : G.p.length > 1 ? '차례 · 몇 타 쳤어요?' : '몇 타 쳤어요?' })),
+        : el('div', { class: 'gb-who' }, el('b', { text: G.p[k] }), el('span', { text: G.s[k][i] ? `지금 ${G.s[k][i]}타 · 바꾸려면 누르세요` : '몇 타 쳤어요?' })),
       k == null
         ? el('div', { class: 'gb-done' },
             el('button', { class: 'btn line', text: '다시 적기', onclick: () => { sel = 0; draw(); } }),
@@ -4021,9 +3998,6 @@ function viewWalk() {
       stats(); drawRun(); fitRunMap();
       return;
     }
-    const timeDist = () => el('div', { style: 'display:contents' }, el('div', { class: 'two' },
-        el('div', { class: 'cnt' }, tDur, el('span', { text: '다닌 시간' })),
-        el('div', { class: 'cnt' }, tDist, tDistLbl)), tAll);
     root.replaceChildren(...[roleBar('leader', '내 기록'),
       el('div', { class: 'row', style: 'justify-content:space-between;align-items:flex-start' },
         el('div', { class: 'grow' }, el('div', { class: 'sub with-ico' }, '기록 중 · ', ico(M().k, 16), M().label),
@@ -4034,8 +4008,10 @@ function viewWalk() {
             } }))),
         gps === 'on' ? el('span', { class: 'pill on' }, el('i'), '기록 중') : gps === 'denied' ? el('span', { class: 'pill bad' }, el('i'), '위치 권한 필요') : el('span', { class: 'pill off' }, el('i'), '위치 찾는 중')),
       gps === 'denied' ? el('div', { class: 'banner alert' }, el('b', { text: '위치 권한을 허용해 주세요' }), el('div', { text: '주소창 옆 자물쇠(또는 설정) 아이콘을 눌러 위치를 허용한 뒤 새로고침하세요.' })) : null,
-      // 파크골프는 스코어 카드를 위에, 다닌 시간·거리는 지도 바로 위로 (2026-10-05)
-      M().k === 'pgolf' ? null : timeDist(),
+      el('div', { class: 'two' },
+        el('div', { class: 'cnt' }, tDur, el('span', { text: '다닌 시간' })),
+        el('div', { class: 'cnt' }, tDist, tDistLbl)),
+      tAll,
       (() => { const G = M().k === 'pgolf' && golfClean(ls.get('walkGolf:' + id, null)); if (M().k !== 'pgolf') return null;
         if (!G) return el('button', { class: 'btn line full', text: '⛳ 점수표 만들기', onclick: () => { ls.set('walkGolf:' + id, golfNew()); draw(); } });
         return golfPanel(G, g => { ls.set('walkGolf:' + id, g); drawHoles(); }, () => lastFix ? [lastFix.lat, lastFix.lng] : null); })(),
@@ -4048,7 +4024,6 @@ function viewWalk() {
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
         el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
         wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠그기', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
-      M().k === 'pgolf' ? timeDist() : null,
       mapEl,
       guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
       follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
