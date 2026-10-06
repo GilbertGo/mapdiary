@@ -276,6 +276,10 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .gf-hd{display:flex;align-items:center;gap:8px}
 .gf-hd .nav{width:44px;height:44px;border-radius:14px;border:none;background:#EFE9DC;color:var(--pine);font-size:24px;font-weight:700;flex:none}
 .gf-hd .nav:disabled{opacity:.35}
+/* 기록 중 큰 단추 화면: 홀 번호와 파를 크게 (2026-10-06 사용자 요청) */
+.gb-hd{gap:6px}.gb-hd .nav{width:48px;height:52px;font-size:28px}
+.gb-hd .gf-t{flex-direction:column;align-items:center;gap:4px;min-width:0}.gb-hd .gf-t b{font-size:34px;white-space:nowrap}
+.gb-hd .gf-par{font-size:22px;padding:7px 14px;white-space:nowrap}
 .gf-t{flex:1;display:flex;align-items:baseline;justify-content:center;gap:10px}
 .gf-t b{font-size:26px;color:var(--pine);letter-spacing:-.02em}
 .gf-par{border:none;background:#E6F0EA;color:var(--pine);font-weight:700;font-size:15px;border-radius:999px;padding:5px 12px}
@@ -1071,7 +1075,7 @@ function golfPanelBig(G, save, here) {
       document.body.append(sb);
     };
     box.replaceChildren(
-      el('div', { class: 'gf-hd' },
+      el('div', { class: 'gf-hd gb-hd' },
         el('button', { class: 'nav', 'aria-label': '앞 홀', text: '‹', disabled: i === 0, onclick: () => go(i - 1) }),
         el('div', { class: 'gf-t' }, el('b', { text: `${i + 1}번 홀` }),
           el('button', { class: 'gf-par', 'aria-label': `파 ${par}, 누르면 바뀌어요`, text: `파 ${par} ▾`, onclick: () => { G.par[i] = par >= 5 ? 3 : par + 1; saveCourse(); save(G); draw(); } })),
