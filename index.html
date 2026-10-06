@@ -217,6 +217,20 @@ body.noscroll{overflow:hidden}
 .mapbox{height:260px;border-radius:20px;overflow:hidden;z-index:0;box-shadow:var(--shadow)}
 #map{height:58vh;min-height:320px;border-radius:20px;overflow:hidden;z-index:0;box-shadow:var(--shadow)}
 .mapbar{display:flex;gap:8px;flex-wrap:wrap}
+/* 내 맛집 (사진 카드 모음) */
+.fd-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.fd-chip{flex:none;height:36px;border-radius:999px;border:none;padding:0 13px;font-size:14px;font-weight:600;background:#fff;box-shadow:inset 0 0 0 1px var(--line);color:#2F3A33}
+.fd-chip.on{background:var(--forest);color:#fff;box-shadow:none}
+.fd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fd-card{background:var(--card);border:none;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);padding:0;text-align:left;color:inherit;font:inherit;display:flex;flex-direction:column;min-width:0}
+.fd-ph{height:112px;background:linear-gradient(135deg,#F3D9B8,#E2A774) center/cover no-repeat;position:relative;display:flex;align-items:center;justify-content:center;font-size:34px}
+.fd-bd{position:absolute;top:7px;left:7px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px}
+.fd-t{padding:8px 10px 10px;min-width:0}
+.fd-t b{font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-t .sub{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-st{color:var(--accent);letter-spacing:-1px}.fd-st i{color:#D8D0BE;font-style:normal}
+.fd-pin{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.fd-pin.meh{background:#B9B3A3}
 .mapbar .btn.line{background:#fff;box-shadow:var(--shadow)}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));max-width:488px;margin:0 auto;background:rgba(30,59,47,.96);color:#fff;border-radius:16px;padding:14px 18px;font-size:15px;z-index:2000;box-shadow:0 8px 24px rgba(60,45,20,.2)}
 .sheet-bg{position:fixed;inset:0;background:rgba(20,30,24,.5);z-index:3000;display:flex;align-items:flex-end;justify-content:center}
@@ -2034,18 +2048,7 @@ function viewBragLink(given, feed) {
   const destBar = el('div', { class: 'mapbar' });
   // 네이버지도 길찾기: 휴대폰은 네이버지도 앱을 열어 지금 있는 곳 → 그곳 (대중교통, 앱에서 자동차·도보로 바꿀 수 있어요)
   // 앱이 없으면 네이버지도 웹에서 그곳을 보여줘요 (거기서 '길찾기')
-  const naverGo = d => {
-    const web = `https://map.naver.com/p?title=${encodeURIComponent(d.n)}&lat=${d.lat}&lng=${d.lng}`;
-    const q = `?dlat=${d.lat}&dlng=${d.lng}&dname=${encodeURIComponent(d.n)}&appname=${encodeURIComponent(location.hostname || 'mapdiary')}`;
-    if (/Android/i.test(navigator.userAgent)) { location.href = `intent://route/public${q}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(web)};end`; return; }
-    if (IS_IOS) {
-      let gone = false; const hid = () => { gone = true; }; document.addEventListener('visibilitychange', hid, { once: true });
-      location.href = `nmap://route/public${q}`;
-      setTimeout(() => { document.removeEventListener('visibilitychange', hid); if (!gone && document.visibilityState === 'visible') location.href = web; }, 1600);
-      return;
-    }
-    window.open(web, '_blank', 'noopener');
-  };
+  const naverGo = naverOpen;
   const kakaoBtn = el('button', { class: 'btn primary full', text: '네이버지도 길찾기', onclick: () => { if (curDest) naverGo(curDest); else toast('지도에서 가고 싶은 곳을 눌러 주세요'); } });
   function setDest(d, fromMap) {
     if (!d) return; curDest = d;
@@ -2314,6 +2317,7 @@ function route() {
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
   if (qs.get('s')) return viewShareLink();
   if (qs.get('brag')) return viewBragLink();
+  if (qs.get('fm')) return viewFoodLink();
   return viewLanding();
 }
 
@@ -2569,6 +2573,20 @@ async function viewRoomOne(p) {
 // ---------- 바탕화면에 추가 (홈 화면에 앱 아이콘) ----------
 const IS_APP = IN_NATIVE || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+// 네이버지도 길찾기: 휴대폰은 네이버지도 앱을 열어 지금 있는 곳 → 그곳 (대중교통, 앱에서 자동차·도보로 바꿀 수 있어요)
+// 앱이 없으면 네이버지도 웹에서 그곳을 보여줘요 (거기서 '길찾기')
+function naverOpen(d) {
+  const web = `https://map.naver.com/p?title=${encodeURIComponent(d.n)}&lat=${d.lat}&lng=${d.lng}`;
+  const q = `?dlat=${d.lat}&dlng=${d.lng}&dname=${encodeURIComponent(d.n)}&appname=${encodeURIComponent(location.hostname || 'mapdiary')}`;
+  if (/Android/i.test(navigator.userAgent)) { location.href = `intent://route/public${q}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(web)};end`; return; }
+  if (IS_IOS) {
+    let gone = false; const hid = () => { gone = true; }; document.addEventListener('visibilitychange', hid, { once: true });
+    location.href = `nmap://route/public${q}`;
+    setTimeout(() => { document.removeEventListener('visibilitychange', hid); if (!gone && document.visibilityState === 'visible') location.href = web; }, 1600);
+    return;
+  }
+  window.open(web, '_blank', 'noopener');
+}
 let installEv = null, installSlot = null;
 if ('serviceWorker' in navigator && !IN_NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; drawInstall(); });
@@ -2769,6 +2787,130 @@ function backupCard(n) {
       el('button', { class: 'btn primary', text: '백업하기', onclick: backupSave, disabled: !n }),
       el('button', { class: 'btn line', text: '백업 불러오기', onclick: () => inp.click() })), inp);
 }
+// ---------- 내 맛집: 모든 기록에서 맛집으로 표시한 곳(spot.food)을 사진 카드로 모아 봐요 ----------
+// 같은 이름 + 200m 안이면 한 집으로 묶어요(몇 번 갔는지). 별점·메뉴는 가장 최근에 간 것
+function foodPlaces() {
+  const out = [];
+  for (const x of pastTrips()) {
+    if (x.album) continue;   // 여행 전체 줄은 하루치 기록과 겹쳐요
+    for (const s of ls.get('walkSpots:' + x.t, [])) {
+      if (!s || !s.food || !Number.isFinite(s.lat) || !Number.isFinite(s.lng)) continue;
+      const v = { t: x.t, s, ts: s.ts || x.info.startAt, mode: modeOfT(x.t).label };
+      const same = out.find(p => p.n === s.n && dist(p.lat, p.lng, s.lat, s.lng) < 200);
+      if (same) same.visits.push(v); else out.push({ n: s.n, lat: s.lat, lng: s.lng, visits: [v] });
+    }
+  }
+  out.forEach(p => { p.visits.sort((a, b) => b.ts - a.ts); p.food = p.visits[0].s.food; p.last = p.visits[0].ts; });
+  return out.sort((a, b) => b.last - a.last);
+}
+// 그 집 사진: 머문 동안(앞뒤 15분) 그 근처(150m)에서 찍은 사진, 없으면 그 근처 60m 안 사진
+async function foodPhotos(p) {
+  const got = [];
+  for (const v of p.visits) {
+    const s = v.s, a = (s.ts || 0) - 15 * 60000, b = (s.te || s.ts || 0) + 15 * 60000;
+    const near = (r, m) => Number.isFinite(r.lat) && dist(r.lat, r.lng, s.lat, s.lng) < m;
+    const list = await photoList(v.t);
+    got.push(...list.filter(r => (r.ts >= a && r.ts <= b && (!Number.isFinite(r.lat) || near(r, 150))) || near(r, 60)));
+  }
+  return got;
+}
+function foodStars(r, size) { return r ? el('span', { class: 'fd-st', style: size ? `font-size:${size}px` : '' }, '★'.repeat(r), el('i', { text: '★'.repeat(5 - r) })) : el('span', { class: 'sub', text: '별점 없음' }); }
+function mdOfTs(ts) { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; }
+// 맛집 지도 링크: 사진 없이 이름·위치·별점·메뉴만 링크 안에 넣어요 (서버에 안 올림)
+function foodLink(list) {
+  const f = list.slice(0, 50).map(p => [p.n, +p.lat.toFixed(5), +p.lng.toFixed(5), p.food.r || 0, p.food.menu || '', p.food.price || '', p.food.again ?? -1, p.visits ? p.visits.length : 1]);
+  return `${APP_BASE}?fm=${b64u(JSON.stringify({ v: 1, by: ls.get('nick', ''), f }))}`;
+}
+async function foodSend(list) {
+  if (!list.length) return toast('보낼 맛집이 없어요');
+  const by = ls.get('nick', ''), url = foodLink(list), text = `[Map Diary] ${by ? by + '의 ' : ''}맛집 지도 (${list.length}곳)\n${url}`;
+  if (navigator.share && !IN_KAKAO) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  navigator.clipboard.writeText(text).then(() => toast('링크를 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 링크를 복사하세요', url));
+}
+// 한 집 자세히: 사진, 별점, 메뉴, 간 날들(그날 MD 보기), 네이버지도 길찾기
+function foodSheet(p, photos) {
+  const f = p.food || {};
+  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
+  const ph = photos && photos.length ? photos : [];
+  const strip = ph.length ? el('div', { style: 'display:flex;gap:6px;overflow-x:auto' }, ph.slice(0, 12).map(r => {
+    const u = URL.createObjectURL(r.thumb || r.blob);
+    return el('button', { style: `flex:none;width:84px;height:84px;border:none;border-radius:12px;background:url(${u}) center/cover;padding:0`, 'aria-label': '사진 크게 보기', onclick: () => showPhoto(r, ph) });
+  })) : null;
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': p.n },
+    el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:wrap' }, el('h2', { style: 'margin:0', text: p.n }),
+      f.again === 1 ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: '😋 다시 갈래요' }) : f.again === 0 ? el('span', { class: 'chip', style: 'background:var(--soft);color:var(--muted)', text: '🙂 한 번이면 됐어요' }) : null),
+    foodStars(f.r, 24),
+    f.menu || f.price ? el('div', { style: 'color:#9A5A1C;font-weight:600', text: [f.menu, f.price].filter(Boolean).join(' · ') }) : null,
+    strip,
+    p.visits ? el('div', { class: 'stack', style: 'gap:6px' }, el('b', { text: p.visits.length > 1 ? `${p.visits.length}번 갔어요` : '간 날' }),
+      p.visits.map(v => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(v.t)}`, style: 'text-decoration:none;color:inherit' },
+        el('div', { class: 'grow' }, el('div', { class: 'nm', text: `${new Date(v.ts).getMonth() + 1}월 ${new Date(v.ts).getDate()}일 · ${v.mode}` }),
+          (nm => nm && nm !== `${new Date(v.ts).getMonth() + 1}월 ${new Date(v.ts).getDate()}일 ${v.mode}` ? el('div', { class: 'dt', text: nm }) : null)(ls.get('trackName:' + v.t, ''))),
+        el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: '그날 MD 보기' })))) : null,
+    p.visits ? el('div', { class: 'sub', text: '별점·메뉴는 그날 MD의 들른 곳·별표 ✎ 고치기에서 바꿔요.' }) : null,
+    el('button', { class: 'btn primary full', text: '네이버지도 길찾기', onclick: () => naverOpen({ n: p.n, lat: p.lat, lng: p.lng }) }),
+    el('button', { class: 'btn line small', text: '닫기', onclick: () => sb.remove() })));
+  document.body.append(sb);
+}
+// 맛집 지도 (Leaflet): 동그라미 안 숫자 = 별점, 한 번이면 된 집은 회색. 누르면 그 집
+function foodMap(box, list, onPick) {
+  setTimeout(() => {
+    const m = L.map(box); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+    list.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="fd-pin${p.food.again === 0 ? ' meh' : ''}">${p.food.r || '🍽'}</div>` }) })
+      .bindTooltip(el('span', { text: p.n }), { direction: 'top', className: 'nm', offset: [0, -14] }).on('click', () => onPick(p)).addTo(m));
+    if (list.length === 1) m.setView([list[0].lat, list[0].lng], 16); else m.fitBounds(list.map(p => [p.lat, p.lng]), { padding: [30, 30], maxZoom: 16 });
+  }, 30);
+}
+var foodFilter = 'all', foodOnMap = false;   // var: 첫 화면을 그리는 route()가 이 줄보다 먼저 돌아요
+function foodView() {
+  const all = foodPlaces();
+  if (!all.length) return [el('div', { class: 'card stack', style: 'gap:8px' },
+    el('b', { text: '🍽 아직 맛집이 없어요' }),
+    el('div', { class: 'sub', text: '기록 하나를 열고, 들른 곳이나 별표 옆 ✎ 고치기에서 "맛집으로 표시하기"를 누르면 여기에 사진 카드로 모여요.' }))];
+  const list = all.filter(p => foodFilter === 'again' ? p.food.again === 1 : foodFilter === 'r4' ? (p.food.r || 0) >= 4 : true);
+  const box = el('div', { class: 'stack' });
+  const chip = (k, label) => el('button', { class: 'fd-chip' + (foodFilter === k ? ' on' : ''), text: label, onclick: () => { foodFilter = k; redraw(); } });
+  const redraw = () => box.replaceChildren(...foodView());
+  const open = async p => foodSheet(p, await foodPhotos(p));
+  const chips = el('div', { class: 'fd-chips' }, chip('all', `전체 ${all.length}`), chip('again', '😋 다시 갈래요'), chip('r4', '★4 이상'),
+    el('button', { class: 'fd-chip' + (foodOnMap ? ' on' : ''), text: foodOnMap ? '▦ 사진으로 보기' : '🗺 지도로 보기', onclick: () => { foodOnMap = !foodOnMap; redraw(); } }));
+  let main;
+  if (!list.length) main = el('div', { class: 'card sub center', text: '이 조건에 맞는 맛집이 없어요' });
+  else if (foodOnMap) { main = el('div', { class: 'mapbox', style: 'height:58vh;min-height:300px' }); foodMap(main, list, open); }
+  else main = el('div', { class: 'fd-grid' }, list.map(p => {
+    const ph = el('div', { class: 'fd-ph' }, '🍽');
+    const n = p.visits.length, f = p.food;
+    if (f.again === 1 || n > 1) ph.append(el('span', { class: 'fd-bd', text: (f.again === 1 ? '😋' : '') + (n > 1 ? ` ${n}번` : '') }));
+    foodPhotos(p).then(rs => { const r = rs.find(x => x.blob) || rs[0]; if (r) { ph.style.backgroundImage = `url(${URL.createObjectURL(r.blob || r.thumb)})`; ph.firstChild.textContent = ''; } });
+    return el('button', { class: 'fd-card', onclick: () => open(p) }, ph,
+      el('div', { class: 'fd-t' }, el('b', { text: p.n }), foodStars(f.r, 13),
+        el('div', { class: 'sub', text: [(f.menu || '').split(/[,·]/)[0].trim(), mdOfTs(p.last)].filter(Boolean).join(' · ') })));
+  }));
+  box.replaceChildren(chips, main, el('button', { class: 'btn primary full', text: '🗺 맛집 지도 보내기', onclick: () => foodSend(list) }),
+    el('div', { class: 'sub center', text: '받는 사람은 지도와 목록으로 보고 네이버지도로 길을 찾을 수 있어요. 사진은 보내지 않아요.' }));
+  return [box];
+}
+// ?fm=... 받은 맛집 지도
+function viewFoodLink() {
+  let o = null; try { o = JSON.parse(unb64u(qs.get('fm'))); } catch {}
+  if (!o || !Array.isArray(o.f)) { location.replace('./'); return; }
+  const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+  const list = o.f.slice(0, 50).filter(a => Array.isArray(a) && Number.isFinite(a[1]) && Number.isFinite(a[2]) && Math.abs(a[1]) <= 90 && Math.abs(a[2]) <= 180)
+    .map(a => ({ n: str(a[0], 30) || '맛집', lat: a[1], lng: a[2], food: { r: Math.max(0, Math.min(5, a[3] | 0)), menu: str(a[4], 40), price: str(a[5], 20), again: a[6] === 1 ? 1 : a[6] === 0 ? 0 : undefined }, cnt: Math.max(1, Math.min(99, a[7] | 0)) }));
+  const by = str(o.by, 20);
+  const mapEl = el('div', { class: 'mapbox', style: 'height:46vh;min-height:280px' });
+  const rows = list.map(p => el('button', { class: 'member', style: 'text-align:left', onclick: () => foodSheet(p) },
+    el('div', { class: 'grow' }, el('div', { class: 'nm', text: p.n }), foodStars(p.food.r, 14),
+      p.food.menu || p.food.price ? el('div', { class: 'dt', style: 'color:#9A5A1C', text: [p.food.menu, p.food.price].filter(Boolean).join(' · ') }) : null,
+      el('div', { class: 'dt', text: [p.food.again === 1 ? '😋 다시 갈래요' : p.food.again === 0 ? '🙂 한 번이면 됐어요' : '', p.cnt > 1 ? `${p.cnt}번 감` : ''].filter(Boolean).join(' · ') })),
+    el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: '길찾기' })));
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '맛집 지도'),
+    el('h1', { text: `${by ? by + '의 ' : ''}맛집 지도` }),
+    el('div', { class: 'sub', text: `${list.length}곳 · 동그라미 숫자는 별점이에요. 누르면 네이버지도로 길을 찾아요.` }),
+    list.length ? mapEl : null, ...rows,
+    el('a', { class: 'btn line full', href: './', text: 'Map Diary로 나도 기록하기' })));
+  if (list.length) foodMap(mapEl, list, p => foodSheet(p));
+}
 function viewMyList() {
   const list = pastTrips(), live = ls.get('walkNow', null);
   const row = x => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(x.t)}`, style: 'text-decoration:none;color:inherit' },
@@ -2812,8 +2954,9 @@ function viewMyList() {
       shown.map(row)];
   }
   function draw() {
-    tabs.replaceChildren(tab('list', '목록'), tab('cal', '달력'));
-    body.replaceChildren(...(mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
+    const nFood = foodPlaces().length;
+    tabs.replaceChildren(tab('list', '목록'), tab('cal', '달력'), tab('food', `🍽 맛집${nFood ? ' ' + nFood : ''}`));
+    body.replaceChildren(...(mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
   }
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MD'),
     el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
