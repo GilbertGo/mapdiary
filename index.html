@@ -544,11 +544,13 @@ function spotsOf(t) {
 function spotMarkers(layer, spots) {
   spots.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng)).forEach(s => {
     const mk = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'spot-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: s.k === 'stay' ? icoSvg('pin', 18, '#F4A259') : icoSvg('star', 18, '#F4A259') }) })
-      .bindTooltip(el('span', { text: s.n || (s.k === 'stay' ? '들른 곳' : '좋았던 곳') }), { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] });
+      .bindTooltip(el('span', { text: (s.food ? '🍽 ' : '') + (s.n || (s.k === 'stay' ? '들른 곳' : '좋았던 곳')) }), { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] });
     if (s.m) mk.bindPopup(el('span', { text: s.m }));
     mk.addTo(layer);
   });
 }
+// 맛집 한 줄: 🍽 ★★★★☆ · 김치찌개 · 2인 3만 원 · 다시 갈래요
+const foodLine = f => ['🍽 ' + (f.r ? '★'.repeat(f.r) + '☆'.repeat(5 - f.r) : '맛집'), f.menu, f.price, f.again === 1 ? '다시 갈래요' : f.again === 0 ? '한 번이면 됐어요' : ''].filter(Boolean).join(' · ');
 // 별표·들른 곳 목록 (메모가 있으면 같이)
 // ids를 주면(내 기록) 메모를 적거나 고칠 수 있어요
 function spotList(spots, ids) {
@@ -559,17 +561,38 @@ function spotList(spots, ids) {
   const save = (s, fn) => { s0 = s; for (const id of ids) { const list = ls.get('walkSpots:' + id, []), i = list.findIndex(same); if (i >= 0) { fn(list, i); ls.set('walkSpots:' + id, list); } } };
   const edit = s => {
     const iN = el('input', { type: 'text', id: 'es-n', maxlength: 30, value: s.n || '' }), iM = el('input', { type: 'text', id: 'es-m', maxlength: 60, value: s.m || '', placeholder: '예: 여기서 김밥 먹음' });
+    // 맛집: food = { r: 별점 1~5, menu, price, again: 1 다시 갈래요 / 0 한 번이면 됐어요 }
+    const fd = Object.assign({}, s.food || {});
+    let isFood = !!s.food;
+    const iMenu = el('input', { type: 'text', id: 'es-menu', maxlength: 40, value: fd.menu || '', placeholder: '예: 김치찌개, 계란말이' });
+    const iPrice = el('input', { type: 'text', id: 'es-price', maxlength: 20, value: fd.price || '', placeholder: '예: 2인 3만 원' });
+    const foodBox = el('div', { class: 'stack', style: 'gap:12px' });
+    const pick = (on, text, fn) => el('button', { class: 'btn small grow ' + (on ? 'primary' : 'line'), style: 'padding:0 8px', text, onclick: fn });
+    const drawFood = () => foodBox.replaceChildren(
+      el('button', { class: 'btn small full ' + (isFood ? 'primary' : 'line'), text: isFood ? '🍽 맛집으로 표시했어요' : '🍽 맛집으로 표시하기', onclick: () => { isFood = !isFood; drawFood(); } }),
+      ...(isFood ? [
+        el('div', { class: 'f', style: 'display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px;color:#5A5A4E' }, '별점',
+          el('div', { class: 'row', style: 'gap:4px;flex-wrap:nowrap' }, ...[1, 2, 3, 4, 5].map(k => el('button', { class: 'link', 'aria-label': `별 ${k}개`, style: `font-size:32px;line-height:1;padding:0 2px;color:${k <= (fd.r || 0) ? '#F4A259' : '#D8D0BE'}`, text: '★', onclick: () => { fd.r = fd.r === k ? 0 : k; drawFood(); } })))),
+        el('label', { class: 'f', for: 'es-menu' }, '먹은 메뉴', iMenu),
+        el('label', { class: 'f', for: 'es-price' }, '가격 (선택)', iPrice),
+        el('div', { class: 'row', style: 'gap:8px;flex-wrap:nowrap' },
+          pick(fd.again === 1, '😋 다시 갈래요', () => { fd.again = fd.again === 1 ? undefined : 1; drawFood(); }),
+          pick(fd.again === 0, '🙂 한 번이면 됐어요', () => { fd.again = fd.again === 0 ? undefined : 0; drawFood(); }))] : []));
+    drawFood();
     const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) sb.remove(); } });
     sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '별표 고치기' },
       el('h2', { class: 'with-ico' }, ico(s.k === 'stay' ? 'pin' : 'star', 22, '#F4A259'), s.k === 'stay' ? '들른 곳 고치기' : '좋은 곳 고치기'),
-      el('label', { class: 'f', for: 'es-n' }, '이름', iN), el('label', { class: 'f', for: 'es-m' }, '한 줄 메모 (선택)', iM),
+      el('label', { class: 'f', for: 'es-n' }, '이름', iN), el('label', { class: 'f', for: 'es-m' }, '한 줄 메모 (선택)', iM), foodBox,
       el('div', { class: 'row' },
         el('button', { class: 'btn line small grow', style: 'color:var(--alert-ink)', text: '지우기', onclick: () => {
           if (!confirm(`'${s.n}'을(를) 지울까요?`)) return;
           save(s, (list, i) => list.splice(i, 1)); ss.splice(ss.indexOf(s), 1); sb.remove(); draw(); dispatchEvent(new Event('spots-changed')); } }),
         el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
           const n = iN.value.trim() || s.n, m = iM.value.trim();
-          save(s, (list, i) => { list[i].n = n; if (m) list[i].m = m; else delete list[i].m; }); s.n = n; if (m) s.m = m; else delete s.m;
+          let food = null;
+          if (isFood) { food = {}; if (fd.r) food.r = fd.r; const mn = iMenu.value.trim(), pr = iPrice.value.trim(); if (mn) food.menu = mn; if (pr) food.price = pr; if (fd.again === 0 || fd.again === 1) food.again = fd.again; }
+          const put = o => { o.n = n; if (m) o.m = m; else delete o.m; if (food) o.food = food; else delete o.food; };
+          save(s, (list, i) => put(list[i])); put(s);
           sb.remove(); draw(); dispatchEvent(new Event('spots-changed')); } }))));
     document.body.append(sb);
   };
@@ -577,6 +600,7 @@ function spotList(spots, ids) {
     el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
     el('div', { class: 'grow' }, el('b', { text: s.n }),
       s.k === 'stay' && s.te ? el('div', { class: 'sub', style: 'font-size:14px', text: `${fmtClock(s.ts)} ~ ${fmtClock(s.te)} · ${fmtDur(s.te - s.ts)} 머묾` }) : null,
+      s.food ? el('div', { style: 'font-size:14px;color:#9A5A1C;font-weight:600', text: foodLine(s.food) }) : null,
       s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null),
     ids ? el('button', { class: 'link', style: 'padding:0;font-size:14px;flex:none', text: '✎ 고치기', onclick: () => edit(s) }) : null)));
   draw(); return box;
