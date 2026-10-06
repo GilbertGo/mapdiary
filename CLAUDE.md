@@ -17,7 +17,7 @@
 ## 다왔나와 기술적으로 겹치는 것 (중요)
 - 두 앱 모두 `gilbertgo.github.io` 아래라서 **localStorage와 IndexedDB를 같이 쓴다**(막을 수 없음). 그래서 목록(`pastTrips`)에서 다왔나 나들이(`myTrips`, `joined`, `plans`에 있는 ID)는 뺀다. 키 이름(`track:`, `walkNow` 등)을 바꾸면 예전 기록을 못 찾으니 바꾸지 말 것.
 - MQTT 토픽은 예전 이름 그대로 `allhere/v1/...`(짧은 링크 `allhere/v1/share/{번호}`). 이미 보낸 짧은 링크가 이 이름으로 저장돼 있어서 바꾸지 않았다(이름만 같을 뿐 다왔나와 이어진 것은 아님).
-- `index.html`은 다왔나 파일을 복사해서 시작해서, **단체 나들이 코드(viewHome/viewLeader/viewMember 등)가 아직 들어 있다.** 어떤 주소로도 열리지 않는다(`?t=`, `?new=1`도 첫 화면). 나중에 정리해서 빼도 됨.
+- `index.html`은 다왔나 파일을 복사해서 시작했다. **단체 나들이 화면(viewHome/viewLeader/viewMember)과 그것만 쓰던 도우미(watchTrip·statusOf·drawPlaces 등)는 2026-10-06에 지웠다**(약 1,060줄). 남은 공용 도우미(`isGo`·`hasRoute`·`base`·`pub` 등)는 다른 화면이 씀. `?t=`, `?new=1`은 첫 화면.
 
 ## 파일
 - `index.html` — 한 파일에 HTML/CSS/JS가 다 들어 있음. 실시간 통신은 공개 MQTT 브로커 `wss://broker.hivemq.com:8884/mqtt`(retained 메시지). **공개 서버라 보안이 약하고, 짧은 링크·사진은 언제든 사라질 수 있음.** 시험용.
@@ -97,7 +97,7 @@
 
 ## 남은 할 일
 1. 현장 시험 (산행, 가족여행, 데이트)
-2. 이 파일에 남은 단체 나들이 코드 정리
+2. ~~단체 나들이 코드 정리~~ (2026-10-06 끝)
 3. 카카오 JavaScript 키
 4. 앱 포장(Capacitor)으로 백그라운드 기록
 5. 공개 서버 대신 정식 서버(Firebase 등)로 짧은 링크·사진을 오래 가게
