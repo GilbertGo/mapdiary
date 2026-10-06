@@ -745,7 +745,7 @@ function pickPhotoPlace(rec) {
     document.body.append(sb);
     info.textContent = at ? '지도를 누르면 그곳으로 옮겨져요.' : '사진을 찍은 곳을 지도에서 눌러 주세요.';
     setTimeout(() => {
-      m = L.map(mapBox); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+      m = L.map(mapBox); mdTileLayer().addTo(m);
       if (R.length > 1) { L.polyline(R, { color: '#FFFFFF', weight: 8, opacity: .9 }).addTo(m); L.polyline(R, { color: '#E4572E', weight: 4 }).addTo(m); }
       if (at) { m.setView(at, 16); put(at); } else if (R.length) m.fitBounds(R, { padding: [20, 20] }); else m.setView([37.5665, 126.978], 12);
       m.on('click', e => put([e.latlng.lat, e.latlng.lng]));
@@ -1400,12 +1400,43 @@ function cssImg(v) {   // CSS의 url("data:...")에서 그림을 꺼내요
 function pathLen(pts) { let d = 0; for (let i = 1; i < pts.length; i++) d += dist(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]); return d; }
 // 카드용 지도 조각 (OpenStreetMap). 경로가 판 안에 꽉 차게 확대 단계를 골라요.
 const mercPx = (lat, lng, z) => { const n = 256 * 2 ** z, s = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * n, (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n]; };
+// ---------- 지도 조각 저장: 한 번 본 지도는 휴대폰에 남겨 두어, 산에서 인터넷이 끊겨도 보여요 ----------
+// OpenStreetMap 규칙상 넓은 곳을 미리 몽땅 받지는 않고, 화면에 본 조각만 남겨요(최대 4000장, 오래된 것부터 지움, 30일 지나면 새로 받음)
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', TILE_MAX = 4000, TILE_OLD = 30 * 864e5;
+let tileCacheP = null, tilePuts = 0;
+const tileCache = () => tileCacheP || (tileCacheP = (window.caches ? caches.open('md-tiles-v1') : Promise.resolve(null)).catch(() => null));
+async function tileBlob(url) {
+  const c = await tileCache();
+  const hit = c && await c.match(url).catch(() => null);
+  if (hit && (Date.now() - (+hit.headers.get('x-at') || 0) < TILE_OLD || !navigator.onLine)) return hit.blob();
+  try {
+    const r = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    if (!r.ok) throw 0;
+    const b = await r.blob();
+    if (c) { await c.put(url, new Response(b, { headers: { 'content-type': b.type || 'image/png', 'x-at': String(Date.now()) } })).catch(() => {});
+      if (++tilePuts % 200 === 0) c.keys().then(ks => { if (ks.length > TILE_MAX) ks.slice(0, ks.length - TILE_MAX + 500).forEach(k => c.delete(k)); }).catch(() => {}); }
+    return b;
+  } catch { return hit ? hit.blob() : null; }   // 인터넷이 없으면 오래된 조각이라도
+}
+function mdTileLayer() {
+  const T = L.TileLayer.extend({
+    createTile(coords, done) {
+      const img = document.createElement('img'), url = this.getTileUrl(coords);
+      img.alt = ''; img.setAttribute('role', 'presentation');
+      img.onload = () => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); done(null, img); };
+      img.onerror = e => done(e, img);
+      tileBlob(url).then(b => { img.src = b ? URL.createObjectURL(b) : url; });
+      return img;
+    }
+  });
+  return new T(TILE_URL, { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+}
 function loadTile(src) {
   return new Promise(res => {
     const im = new Image(), to = setTimeout(() => res(null), 8000);
     im.crossOrigin = 'anonymous';
     im.onload = () => { clearTimeout(to); res(im); }; im.onerror = () => { clearTimeout(to); res(null); };
-    im.src = src;
+    tileBlob(src).then(b => { im.src = b ? URL.createObjectURL(b) : src; });   // 저장된 조각이 있으면 그것으로 (인터넷이 없어도 카드를 그려요)
   });
 }
 async function mapTiles(g, R, px, py, pw, ph) {
@@ -2111,7 +2142,7 @@ function viewBragLink(given, feed) {
 // 움직이는 지도에 경로와 출발·도착을 그려요
 function routeMap(mapEl, R, photos, modes, spots) {
   const m = L.map(mapEl);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+  mdTileLayer().addTo(m);
   // 걸은 길은 주황 실선, 차로 간 길은 회색 점선, 끊긴 구간은 가는 점선 (끊긴 구간은 흰 테두리 없이)
   const runs = modeRuns(R, modes);
   runs.filter(r => r.k !== 'g').forEach(r => L.polyline(r.pts, { color: '#FFFFFF', weight: 9, opacity: 0.9 }).addTo(m));
@@ -2908,7 +2939,7 @@ function foodSheet(p, photos) {
 // 맛집 지도 (Leaflet): 동그라미 안 숫자 = 별점, 한 번이면 된 집은 회색. 누르면 그 집
 function foodMap(box, list, onPick) {
   setTimeout(() => {
-    const m = L.map(box); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+    const m = L.map(box); mdTileLayer().addTo(m);
     list.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="fd-pin${p.food.again === 0 ? ' meh' : ''}">${p.food.r || '🍽'}</div>` }) })
       .bindTooltip(el('span', { text: p.n }), { direction: 'top', className: 'nm', offset: [0, -14] }).on('click', () => onPick(p)).addTo(m));
     if (list.length === 1) m.setView([list[0].lat, list[0].lng], 16); else m.fitBounds(list.map(p => [p.lat, p.lng]), { padding: [30, 30], maxZoom: 16 });
@@ -3092,7 +3123,7 @@ function trimTrack(t) {
         sb.remove(); toast('경로를 잘랐어요'); setTimeout(() => location.reload(), 400);
       } }))));
   document.body.append(sb); draw();
-  setTimeout(() => { m = L.map(mapBox); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m); lyr = L.layerGroup().addTo(m); m.fitBounds(full.map(q => [q[0], q[1]]), { padding: [24, 24] }); draw(); }, 30);
+  setTimeout(() => { m = L.map(mapBox); mdTileLayer().addTo(m); lyr = L.layerGroup().addTo(m); m.fitBounds(full.map(q => [q[0], q[1]]), { padding: [24, 24] }); draw(); }, 30);
 }
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
@@ -3852,7 +3883,7 @@ function viewWalk() {
     if (ensureMap.busy) return; ensureMap.busy = true;   // 지도가 만들어지기 전에 두 번 불려도 한 번만 만들어요
     setTimeout(() => {
       map = L.map(mapEl).setView([37.5665, 126.978], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+      mdTileLayer().addTo(map);
       map.on('dragstart', () => { follow = false; draw(); });
       const fb = addFullBtn(map, mapEl);
       map.on('click', () => { if (M().k === 'run' && fb && !mapEl.classList.contains('map-full')) toggleFull(map, mapEl, fb); });   // 러닝: 작은 지도를 누르면 크게
@@ -4009,7 +4040,8 @@ function viewWalk() {
           el('div', { class: 'sub', style: 'font-size:14px', text: '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }))
         : el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { text: `시작을 누르고 다니면, 지나간 길이 지도에 그려지고 Map Diary로 남아요.` }),
-          el('div', { class: 'sub', text: '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' })),
+          el('div', { class: 'sub', text: IN_NATIVE ? '기록은 이 휴대폰에만 저장돼요. 앱은 화면을 꺼도 계속 기록해요.' : '기록은 이 휴대폰에만 저장돼요. 웹앱이라 화면이 꺼지면 기록이 멈춰서, 기록하는 동안 화면을 켜 둘게요.' }),
+          ['hike', 'trek', 'backpack', 'camp', 'travel'].includes(pick) ? el('div', { class: 'sub', text: '🗺 산이나 먼 곳은 인터넷이 끊길 수 있어요. 한 번 본 지도는 휴대폰에 남아서 인터넷이 없어도 보여요. 인터넷이 될 때 기록을 시작하고, 지도를 가 볼 곳까지 한 번 움직여 두세요.' }) : null),
         pick === 'pgolf' ? golfSetupCard() : null,
         (() => { const iT = el('input', { type: 'text', id: 'wt', maxlength: 40, value: startTitle, placeholder: MULTI.includes(pick) && tripSel !== 'day' ? '비워 두면 "여행 이름 n일차"' : `비워 두면 "${dayName} ${modeByK(pick).label}"`, oninput: () => { startTitle = iT.value; } });
           return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
@@ -4197,7 +4229,7 @@ function viewHome() {
     openMapBtn.textContent = open ? '지도 접기' : '지도에서 위치와 경로 정하기 (선택)';
     if (open && !hm && window.L) {
       hm = L.map(mapEl, { zoomControl: true }).setView([37.5665, 126.978], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(hm);
+      mdTileLayer().addTo(hm);
       hl = L.layerGroup().addTo(hm);
       addFullBtn(hm, mapEl);
       hm.on('click', e => {
@@ -4651,7 +4683,7 @@ async function viewLeader(key) {
   function ensureMap() {
     if (map) { setTimeout(() => map.invalidateSize(), 0); return; }
     map = L.map(mapBox, { zoomControl: true }).setView([info.meetLat ?? 37.5665, info.meetLng ?? 126.978], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    mdTileLayer().addTo(map);
     layer = L.layerGroup().addTo(map);
     addFullBtn(map, mapBox);
     map.on('click', e => {
@@ -4770,7 +4802,7 @@ function viewMember() {
     if (!window.L || !mBox.isConnected) return;
     if (!mmap) {
       mmap = L.map(mBox, { zoomControl: true }).setView([info.meetLat ?? 37.5665, info.meetLng ?? 126.978], 14);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mmap);
+      mdTileLayer().addTo(mmap);
       mlayer = L.layerGroup().addTo(mmap);
       addFullBtn(mmap, mBox);
     }
