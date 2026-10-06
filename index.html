@@ -2658,14 +2658,73 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
 const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
-async function backupMake() {
+function backupIds() {
   const ids = new Set();
   pastTrips().forEach(x => { ids.add(x.t); if (x.album) (albumGet(x.t)?.days || []).forEach(d => ids.add(d)); });
-  const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: {}, photos: [] };
-  for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) data.ls[k + id] = v; }
-  for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) data.ls[k] = v; }
-  for (const id of ids) for (const ph of await photoList(id)) data.photos.push({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+  return ids;
+}
+function backupLs(ids) {
+  const out = {};
+  for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) out[k + id] = v; }
+  for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
+  return out;
+}
+const backupPh = async ph => ({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+async function backupMake() {
+  const ids = backupIds();
+  const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: backupLs(ids), photos: [] };
+  for (const id of ids) for (const ph of await photoList(id)) data.photos.push(await backupPh(ph));
   return { data, n: pastTrips().filter(x => !x.album).length };
+}
+// 저절로 백업 (안드로이드 앱만): 7일마다 '내 파일 > Documents > MapDiary'에 백업 파일을 만들어요. 사진이 많아도 되게 한 장씩 이어 써요
+async function autoBackup() {
+  const B = window.mdNativeBackup; if (!B || ls.get('walkNow', null)) return;
+  if (Date.now() - Math.max(ls.get('lastBackup', 0), ls.get('lastAutoBackup', 0)) < 7 * 864e5) return;
+  const n = pastTrips().filter(x => !x.album).length; if (!n) return;
+  try {
+    const ids = backupIds();
+    await B.start(JSON.stringify({ app: 'mapdiary', v: 1, at: Date.now(), auto: 1, ls: backupLs(ids) }).slice(0, -1) + ',"photos":[');
+    let first = true;
+    for (const id of ids) for (const ph of await photoList(id)) { await B.add((first ? '' : ',') + JSON.stringify(await backupPh(ph))); first = false; }
+    const where = await B.end(']}');
+    if (!where) return;
+    ls.set('lastAutoBackup', Date.now()); ls.set('lastBackup', Date.now());
+    toast(`기록 ${n}개를 저절로 백업했어요 · 내 파일 > ${where.replace(/\/[^/]+$/, '').split('/').join(' > ')}`);
+  } catch {}
+}
+if (window.mdNativeBackup) setTimeout(autoBackup, 20000);
+// 갤러리 사진 넣기 (안드로이드 앱만): 기록한 시간에 휴대폰 카메라로 찍은 사진을 찾아, 찍은 시각에 있던 곳에 붙여요
+// days: 기록 ID들(여러 날 여행이면 날마다), manual: 수정하기에서 직접 눌렀을 때(없으면 알려 줘요)
+async function galleryOffer(days, manual) {
+  const G = window.mdNativePhotos; if (!G) return;
+  const found = [];
+  for (const d of days) {
+    const tr = trackLoad(d); if (tr.length < 2) continue;
+    let items; try { items = await G.between(tr[0][2] - 5 * 60000, tr[tr.length - 1][2] + 5 * 60000); }
+    catch { if (manual) toast('사진을 볼 수 있게 허락해 주세요 (설정 → 애플리케이션 → 권한 → 사진)'); return; }
+    const have = (await photoList(d)).map(p => p.ts);
+    for (const x of items) if (x && x.uri && !have.some(h => Math.abs(h - x.ts) < 3000)) found.push({ ...x, day: d });
+  }
+  if (!found.length) { if (manual) toast('그 시간에 휴대폰으로 찍은 사진이 없어요'); return; }
+  const yes = await new Promise(res => {
+    const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) { sb.remove(); res(false); } } });
+    sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진 넣기' },
+      el('h2', { text: `이 시간에 찍은 사진이 ${found.length}장 있어요` }),
+      el('p', { class: 'sub', style: 'margin:0', text: '휴대폰 카메라로 찍은 사진을 이 기록에 넣을까요? 찍은 시각에 있던 곳에 붙여요. 사진첩의 원본은 그대로 있어요.' }),
+      el('button', { class: 'btn primary full big', text: `${found.length}장 모두 넣기`, onclick: () => { sb.remove(); res(true); } }),
+      el('button', { class: 'btn line full', text: '넣지 않기', onclick: () => { sb.remove(); res(false); } })));
+    document.body.append(sb);
+  });
+  if (!yes) return;
+  toast('사진을 넣는 중이에요…');
+  const recs = [];
+  for (const x of found) {
+    try { const b = await G.blob(x.uri);
+      recs.push(...await addPhotos(x.day, [new File([b], x.name || 'photo.jpg', { type: b.type || x.type || 'image/jpeg', lastModified: x.ts })], null, true)); } catch {}
+  }
+  dispatchEvent(new Event('photo-changed'));
+  toast(recs.length ? `사진 ${recs.length}장을 넣었어요` : '사진을 넣지 못했어요');
+  return recs;
 }
 async function backupSave() {
   toast('백업 파일을 만드는 중이에요…');
@@ -2775,7 +2834,7 @@ function backupCard(n) {
   const last = ls.get('lastBackup', 0), old = n && last && Date.now() - last > 7 * 864e5;
   return el('div', { class: 'card stack', style: 'gap:10px;margin-top:8px' },
     el('b', { text: '백업' }),
-    el('div', { class: 'sub', text: (last ? `마지막 백업 ${new Date(last).getMonth() + 1}월 ${new Date(last).getDate()}일. ` : '아직 백업한 적이 없어요. ') + '기록은 이 휴대폰의 이 브라우저에만 있어요. 휴대폰을 바꾸거나 브라우저 기록을 지우면 사라지니, 가끔 백업해 두세요.' }),
+    el('div', { class: 'sub', text: (last ? `마지막 백업 ${new Date(last).getMonth() + 1}월 ${new Date(last).getDate()}일. ` : '아직 백업한 적이 없어요. ') + (window.mdNativeBackup ? '앱이 7일마다 \'내 파일 > Documents > MapDiary\'에 저절로 백업해요. 휴대폰을 잃어버릴 때를 생각해 가끔 \'백업하기 → 카톡·드라이브로 보내기\'도 해 두세요.' : '기록은 이 휴대폰의 이 브라우저에만 있어요. 휴대폰을 바꾸거나 브라우저 기록을 지우면 사라지니, 가끔 백업해 두세요.') }),
     old ? el('div', { class: 'banner alert', style: 'padding:10px 14px', text: '백업한 지 오래됐어요. 지금 한 번 백업해 두세요.' }) : null,
     el('div', { class: 'two' },
       el('button', { class: 'btn primary', text: '백업하기', onclick: backupSave, disabled: !n }),
@@ -2988,6 +3047,7 @@ function editMD(x) {
     el('div', { class: 'two' },
       el('button', { class: 'btn line', onclick: () => inp.click() }, ico('camera', 18), '사진 더하기'),
       x.album ? el('button', { class: 'btn line', disabled: true, text: '경로 자르기(하루치에서)' }) : el('button', { class: 'btn line', text: '✂ 경로 앞뒤 자르기', onclick: () => { sb.remove(); trimTrack(t); } })),
+    window.mdNativePhotos ? el('button', { class: 'btn line full', text: '📱 그 시간에 휴대폰으로 찍은 사진 찾기', onclick: async () => { sb.remove(); const recs = await galleryOffer(days, true); if (recs && recs.length) reviewPhotos(recs); } }) : null,
     el('div', { class: 'sub', style: 'font-size:13px', text: '제목과 오늘 한 줄은 화면 위 ✎, 별표는 목록의 ✎ 고치기, 사진 메모·위치·지우기는 사진을 크게 볼 때 할 수 있어요.' }),
     inp,
     el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
@@ -3902,7 +3962,8 @@ function viewWalk() {
           if (iD.value.trim()) ls.set('walkNote:' + id, iD.value.trim().slice(0, 1000)); else localStorage.removeItem('walkNote:' + id);
           stopGps(); cgStop(); if (M().k === 'run') formFlush(100, null, true); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
-          ls.set('walkNow', null); bg.remove(); done = id; draw(); setTimeout(syncPush, 500);   // 앱: Map Diary 앱으로 넘겨요
+          ls.set('walkNow', null); bg.remove(); done = id; draw();
+          const fin = id; setTimeout(async () => { await galleryOffer([fin]); syncPush(); }, 500);   // 앱: 그 시간 사진 넣기 → Map Diary 앱으로 넘기기
         } }))));
     document.body.append(bg);
   }

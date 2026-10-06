@@ -151,6 +151,36 @@ if (Capacitor.isNativePlatform()) {
     setTimeout(() => { cleanWeb(); liveUpdate().catch(() => {}).finally(() => checkBinary().catch(() => {})); }, 2500);
   });
 
+  // ---------- 갤러리 사진: 기록한 시간에 휴대폰 카메라로 찍은 사진 찾기 ----------
+  window.mdNativePhotos = {
+    between: async (from, to) => (await MdApp.photosBetween({ from: Math.round(from), to: Math.round(to) })).items || [],
+    blob: async uri => (await fetch(Capacitor.convertFileSrc(uri))).blob(),
+  };
+
+  // ---------- 저절로 백업: 내 파일 > Documents > MapDiary 에 조금씩 이어 써요(사진이 많아도 되게). 최근 3개만 남겨요 ----------
+  const BK = { run: 'MDRun', pgolf: 'MDGolf' }[APP.mode] || 'MapDiary';
+  let bkName = '';
+  const bkOpt = path => ({ path: 'MapDiary/' + path, directory: Directory.Documents });
+  window.mdNativeBackup = {
+    start: async head => {
+      const d = new Date(), pad = n => String(n).padStart(2, '0');
+      bkName = `${BK}_autobackup_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+      await Filesystem.writeFile({ ...bkOpt(bkName + '.part'), data: head, encoding: Encoding.UTF8, recursive: true });
+    },
+    add: chunk => Filesystem.appendFile({ ...bkOpt(bkName + '.part'), data: chunk, encoding: Encoding.UTF8 }),
+    end: async tail => {
+      try {
+        await Filesystem.appendFile({ ...bkOpt(bkName + '.part'), data: tail, encoding: Encoding.UTF8 });
+        await Filesystem.deleteFile(bkOpt(bkName)).catch(() => {});
+        await Filesystem.rename({ from: 'MapDiary/' + bkName + '.part', to: 'MapDiary/' + bkName, directory: Directory.Documents, toDirectory: Directory.Documents });
+        try { const { files } = await Filesystem.readdir({ path: 'MapDiary', directory: Directory.Documents });
+          const mine = files.map(f => f.name).filter(n => n.startsWith(BK + '_autobackup_') && n.endsWith('.json')).sort();
+          for (const n of mine.slice(0, -3)) await Filesystem.deleteFile(bkOpt(n)).catch(() => {}); } catch {}
+        return 'Documents/MapDiary/' + bkName;
+      } catch { return ''; }
+    },
+  };
+
   // ---------- 앱끼리 기록 넘기기: MD Run·MD 파크골프가 끝낸 기록을 내놓고, Map Diary 앱이 읽어 가요 (같은 열쇠로 서명한 앱끼리만) ----------
   window.mdNativeSync = {
     put: (id, data) => MdApp.syncPut({ id, data }),
