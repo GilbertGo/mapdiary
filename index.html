@@ -889,12 +889,12 @@ function formCard(t) {
       const a = full[0], z = full[full.length - 1], dO = (z.o - a.o) / a.o * 100, dG = (z.g - a.g) / a.g * 100;
       trend = dO >= 15 || dG >= 15 ? `📉 후반 ${z.k || full.length}km째 진폭 ${dO >= 0 ? '+' : ''}${Math.round(dO)}%, 충격 ${dG >= 0 ? '+' : ''}${Math.round(dG)}% → 지쳤을 때 자세가 무너져요` : '👍 끝까지 자세가 고르게 유지됐어요';
     }
-    box.replaceChildren(
+    box.replaceChildren(...[
       el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '달리기 자세' }), el('span', { class: 'sub', style: 'font-size:12px', text: f ? '휴대폰으로 짐작한 대략값' : '휴대폰 흔들림 기록이 없어요' })),
       f ? el('div', { class: 'fm-g' }, ...formTags(f).map(formTile)) : null,
       trend ? el('div', { class: 'sub', style: 'font-size:13px', text: trend }) : null,
       wv ? el('div', { class: 'sub', style: 'font-size:14px;color:var(--pine)', text: '⌚ 워치: ' + watchText(wv) }) : null,
-      el('button', { class: 'btn line full', text: wv ? '⌚ 워치 값 고치기' : '⌚ 워치(삼성헬스) 값 적기', onclick: () => watchEdit(t, draw) }));
+      el('button', { class: 'btn line full', text: wv ? '⌚ 워치 값 고치기' : '⌚ 워치(삼성헬스) 값 적기', onclick: () => watchEdit(t, draw) })].filter(Boolean));
   };
   draw(); return box;
 }
