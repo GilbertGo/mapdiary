@@ -3276,7 +3276,8 @@ function viewWalk() {
     // 그림: 사용자가 고른 그림(2026-10-17, Gemini로 만든 동해 해변 러닝). 앱에서도 웹 주소로 받아요. 못 받으면 바다 그림
     // (예전엔 가장 최근 러닝 사진을 썼는데, 숲 사진이 화면 색과 안 어울려 사용자가 바꿈)
     const tag = el('span', { class: 'rh-tag', style: 'display:none' });
-    hero.style.backgroundImage = `url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-1.jpg"), var(--rh-art)`;
+    // 태안 마라톤 같이 갈 친구 셋이 다 나오게: 가로 그림을 화면 폭의 180%로 줄여 위에 붙이고, 아래는 그림 밑 모래색으로 이어요
+    hero.style.background = `url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-1.jpg") 64% 0/165% auto no-repeat, linear-gradient(180deg, #A88468 0%, #6E5546 100%)`;
     startGps(); drawGpsReady();
     const goalTxt = g.k === 'free' ? '자유 달리기' : goalLabel(g) + (tgtLabel(g) ? ' · ' + tgtLabel(g) : '');
     const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); draw(); };
