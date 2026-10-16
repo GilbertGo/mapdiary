@@ -357,9 +357,10 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .rh{position:relative;margin:-12px -20px 0;height:min(60vh,470px);min-height:380px;background:#5DB4F0 center/cover no-repeat;color:#fff;overflow:hidden}
 :root{--rh-art:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%235DB4F0'/%3E%3Cstop offset='.5' stop-color='%23BFE4FB'/%3E%3Cstop offset='.62' stop-color='%23FFF1E4'/%3E%3C/linearGradient%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%233A9FD8'/%3E%3Cstop offset='1' stop-color='%231E6FA8'/%3E%3C/linearGradient%3E%3CradialGradient id='sun'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.3' stop-color='%23FFF6EC'/%3E%3Cstop offset='1' stop-color='%23FFF6EC' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='400' height='500' fill='url(%23s)'/%3E%3Ccircle cx='290' cy='300' r='120' fill='url(%23sun)'/%3E%3Cg fill='%23fff' opacity='.85'%3E%3Cellipse cx='90' cy='90' rx='50' ry='12'/%3E%3Cellipse cx='118' cy='80' rx='28' ry='14'/%3E%3Cellipse cx='300' cy='60' rx='40' ry='9'/%3E%3C/g%3E%3Crect y='300' width='400' height='200' fill='url(%23w)'/%3E%3Cpath d='M0 318 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.6' stroke-width='2' fill='none'/%3E%3Cpath d='M0 352 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.4' stroke-width='2' fill='none'/%3E%3C/svg%3E")}
 .rh{background-image:var(--rh-art);background-position:45% center}
-.rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.25) 0%,rgba(6,30,55,0) 25%,rgba(6,30,55,0) 45%,rgba(6,30,55,.72) 100%)}
+.rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.38) 0%,rgba(6,30,55,0) 32%,rgba(6,30,55,0) 45%,rgba(6,30,55,.72) 100%)}
 .rh-tag{position:absolute;left:18px;top:14px;background:rgba(255,255,255,.9);color:var(--pine);font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px}
 .rh-bot{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}
+.rh-top{position:absolute;left:18px;right:18px;top:20px;display:flex;flex-direction:column;gap:6px}
 .rh-h.big{font-size:clamp(38px,12vw,52px);letter-spacing:-.01em;text-shadow:0 3px 16px rgba(0,0,0,.35)}
 .rh-k{font-size:13px;opacity:.95;letter-spacing:.02em;text-shadow:0 1px 6px rgba(0,0,0,.25)}
 .rh-h{font-size:clamp(24px,7.4vw,30px);font-weight:900;line-height:1.2;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.25)}
@@ -3277,15 +3278,17 @@ function viewWalk() {
     // 그림: 사용자가 고른 그림(2026-10-17, Gemini로 만든 동해 해변 러닝). 앱에서도 웹 주소로 받아요. 못 받으면 바다 그림
     // (예전엔 가장 최근 러닝 사진을 썼는데, 숲 사진이 화면 색과 안 어울려 사용자가 바꿈)
     const tag = el('span', { class: 'rh-tag', style: 'display:none' });
-    // 태안 마라톤 같이 갈 친구 셋이 다 나오게: 가로 그림을 화면 폭의 180%로 줄여 위에 붙이고, 아래는 그림 밑 모래색으로 이어요
-    hero.style.background = `url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-1.jpg") 64% 0/165% auto no-repeat, linear-gradient(180deg, #A88468 0%, #6E5546 100%)`;
+    // 그림: 사용자가 Gemini로 만들어 보내 준 것(2026-10-17 두 번째, 파란 하늘·햇빛 아래 달리는 세 사람, 세로 4:5라 그대로 꽉 채움)
+    hero.style.background = `url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-2.jpg") 50% 100%/cover no-repeat, var(--rh-art) center/cover`;
     startGps(); drawGpsReady();
     const goalTxt = g.k === 'free' ? '자유 달리기' : goalLabel(g) + (tgtLabel(g) ? ' · ' + tgtLabel(g) : '');
     const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); draw(); };
     const settings = el('div', { class: 'card stack', style: 'gap:14px' });
-    hero.append(tag, el('div', { class: 'rh-bot' },
+    // 그림 속 세 사람이 아래쪽에 있어서, 날짜·한마디는 위쪽 하늘에 (2026-10-17)
+    hero.append(tag, el('div', { class: 'rh-top' },
       el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
-      el('div', { class: 'rh-h big' }, '뚱 꼬 떡 달려!!!'),   // 2026-10-17 사용자: 태안 마라톤 같이 갈 세 친구(그림 속 세 사람)에게, 크게
+      el('div', { class: 'rh-h big' }, '뚱 꼬 떡 달려!!!')),   // 2026-10-17 사용자: 태안 마라톤 같이 갈 세 친구(그림 속 세 사람)에게, 크게
+      el('div', { class: 'rh-bot' },
       el('div', { class: 'rh-pills' }, gpsReady, el('button', { class: 'rh-pill', onclick: () => settings.scrollIntoView({ behavior: 'smooth' }) }, `🎯 ${goalTxt}`)),
       el('button', { class: 'rh-go', onclick: countdown }, '▶ 러닝 시작하기')));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
