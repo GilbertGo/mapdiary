@@ -3098,7 +3098,7 @@ function viewWalk() {
     const G = runGoal(), g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
     if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${goalLabel(G)} 달성!`); }
     const remT = goalMin() ? goalMin() * 60000 - mv : 0, co = coachLine(km);   // 코치 한마디가 길면 자세 한마디는 다음 1km로
-    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}${co}${co.length > 45 ? '' : formTip(fe, km)}`);
+    say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요. 기록을 끝내려면 화면의 끝내기를 눌러 주세요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}${co}${co.length > 45 ? '' : formTip(fe, km)}`);
     draw();
   }
   // 케이던스(1분에 몇 걸음): 휴대폰 흔들림 센서로 발걸음을 세요. 화면이 켜져 있을 때만 셀 수 있어요.
@@ -3224,7 +3224,7 @@ function viewWalk() {
   function goalCheck() {
     const g = runGoal(); if (g.k === 'free' || M().k !== 'run' || ls.get('walkGoalDone:' + id, false)) return;
     const tr = trackLoad(id), hit = g.k === 'dist' ? trackStats(tr, M().car).walk >= g.v * 1000 : movingMs(tr, M().car) >= g.v * 60000;
-    if (hit) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${goalLabel(g)} 달성!`); say(`목표 ${goalSay(g)} 달성! 수고했어요.`); draw(); }
+    if (hit) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${goalLabel(g)} 달성!`); say(`목표 ${goalSay(g)} 달성! 수고했어요. 기록을 끝내려면 화면의 끝내기를 눌러 주세요.`); draw(); }
   }
   // ---------- 러닝 코치 (2026-10-05) ----------
   // 1km마다 '이대로 가면 목표를 이룰지' 판단해 말하고, 절반·마지막 1km·남은 500m·남은 5분/1분에도 한마디 해요
@@ -3237,8 +3237,9 @@ function viewWalk() {
   const tgtLabel = g => g.k === 'dist' && g.t ? (g.t >= 3600 && g.t % 60 ? fmtRunTime(g.t * 1000) : sayDur(g.t * 1000)) : g.k === 'time' && g.d ? `${+g.d.toFixed(2)}km` : '';
   const tgtPace = g => g.k === 'dist' && g.t ? g.t * 1000 / g.v : g.k === 'time' && g.d ? g.v * 60000 / g.d : 0;   // 1km에 몇 ms
   function coachPace(st, mv) {   // 1m에 몇 ms
-    const sp = ls.get('walkSplits:' + id, []), avg = mv / st.walk;
-    return sp.length ? avg * 0.5 + sp[sp.length - 1] / 1000 * 0.5 : avg;
+    // 평균 60% + 최근 3km 평균 40%: 마라톤처럼 길면 급수대·오르막 1km 하나로 예상이 크게 흔들리지 않게 (2026-10-16)
+    const sp = ls.get('walkSplits:' + id, []), avg = mv / st.walk, r = sp.slice(-3);
+    return r.length ? avg * 0.6 + r.reduce((a, b) => a + b, 0) / r.length / 1000 * 0.4 : avg;
   }
   // 지금 예상: 거리 목표 → 완주 예상 시간(pred ms), 시간 목표 → 예상 거리(pred m). 목표치가 있으면 차이(diff: +면 목표보다 좋음)
   function coachJudge(G, st, mv) {
@@ -3276,7 +3277,7 @@ function viewWalk() {
       else out.push(`이대로면 목표보다 ${sayKm(-J.diff)} 모자라요. 1킬로 ${sayDur(J.need)} 페이스로 달리면 목표에 닿아요.`);
     }
     // 페이스가 처음 두 구간보다 8% 넘게 느려지면 (3km 안에 한 번, 목표가 어렵다고 한 때는 빼요)
-    if (sp.length >= 3 && !coachSaid.hard && sp[sp.length - 1] > (sp[0] + sp[1]) / 2 * 1.08 && !(coachSaid.fade > km - 3)) {
+    if (sp.length >= 4 && !coachSaid.hard && (sp[sp.length - 1] + sp[sp.length - 2]) / 2 > (sp[0] + sp[1]) / 2 * 1.08 && !(coachSaid.fade > km - 3)) {   // 최근 2km 평균으로 (한 구간만 느린 건 넘어가요)
       coachSaid.fade = km; out.push('페이스가 처음보다 떨어졌어요. 호흡을 고르고 팔을 조금 더 힘차게 흔들어 보세요.');
     }
     // 케이던스가 낮으면 (3km 안에 한 번)
