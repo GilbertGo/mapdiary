@@ -360,6 +360,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.25) 0%,rgba(6,30,55,0) 25%,rgba(6,30,55,0) 45%,rgba(6,30,55,.72) 100%)}
 .rh-tag{position:absolute;left:18px;top:14px;background:rgba(255,255,255,.9);color:var(--pine);font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px}
 .rh-bot{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}
+.rh-h.big{font-size:clamp(38px,12vw,52px);letter-spacing:-.01em;text-shadow:0 3px 16px rgba(0,0,0,.35)}
 .rh-k{font-size:13px;opacity:.95;letter-spacing:.02em;text-shadow:0 1px 6px rgba(0,0,0,.25)}
 .rh-h{font-size:clamp(24px,7.4vw,30px);font-weight:900;line-height:1.2;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.25)}
 .rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -3284,7 +3285,7 @@ function viewWalk() {
     const settings = el('div', { class: 'card stack', style: 'gap:14px' });
     hero.append(tag, el('div', { class: 'rh-bot' },
       el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
-      el('div', { class: 'rh-h' }, '바람 좋은 날,', el('br'), '가볍게 달려 볼까요?'),
+      el('div', { class: 'rh-h big' }, '뚱 꼬 떡 달려!!!'),   // 2026-10-17 사용자: 태안 마라톤 같이 갈 세 친구(그림 속 세 사람)에게, 크게
       el('div', { class: 'rh-pills' }, gpsReady, el('button', { class: 'rh-pill', onclick: () => settings.scrollIntoView({ behavior: 'smooth' }) }, `🎯 ${goalTxt}`)),
       el('button', { class: 'rh-go', onclick: countdown }, '▶ 러닝 시작하기')));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
