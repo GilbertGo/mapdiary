@@ -1166,6 +1166,8 @@ function nowPace(tr) {
 // 달린 시간을 1초마다 흐르게: 지난 점까지의 움직인 시간 + 마지막 점 뒤로 흐른 시간(12초까지만. 15m마다 새 점이라 달리면 보통 3~8초마다 와요)
 // 화면에서는 뒤로 줄지 않게 붙잡아 둬요(liveHold)
 const liveHold = {};
+// 러닝 '달린 시간' = 시작부터 지금까지 전체 시간(멈춘 시간 포함). 마라톤 공식 기록과 같아요 (2026-10-16)
+const runElapsed = () => Math.max(0, Date.now() - ls.get('walkAt', Date.now()));
 function liveMoving(tr, kmh, key) {
   const mv = movingMs(tr, kmh); let v = mv;
   if (tr.length > 1) { const gap = Date.now() - tr[tr.length - 1][2]; if (gap < 12000) v += gap; }
@@ -3097,7 +3099,7 @@ function viewWalk() {
     beep(); toast(`${km}km · 이번 1km ${fmtPace(1000, lap)} · 움직인 시간 ${fmtRunTime(mv)}`);
     const G = runGoal(), g = goalKm(), left = g ? g - km : 0, hit = g && left <= 0 && !ls.get('walkGoalDone:' + id, false);   // 목표에 닿은 1km면 한 번에 이어서 말해요
     if (hit) { ls.set('walkGoalDone:' + id, true); toast(`목표 ${goalLabel(G)} 달성!`); }
-    const remT = goalMin() ? goalMin() * 60000 - mv : 0, co = coachLine(km);   // 코치 한마디가 길면 자세 한마디는 다음 1km로
+    const remT = goalMin() ? goalMin() * 60000 - runElapsed() : 0, co = coachLine(km);   // 코치 한마디가 길면 자세 한마디는 다음 1km로
     say(`${km}킬로미터. 이번 1킬로 ${Math.floor(sec / 60)}분 ${sec % 60}초.${hit ? ` 목표 ${goalSay(G)} 달성! 수고했어요. 기록을 끝내려면 화면의 끝내기를 눌러 주세요.` : left >= 1 ? ` 목표까지 ${Math.round(left * 10) / 10}킬로 남았어요.` : remT >= 60000 && !ls.get('walkGoalDone:' + id, false) ? ` 목표 시간까지 ${Math.round(remT / 60000)}분 남았어요.` : ''}${co}${co.length > 45 ? '' : formTip(fe, km)}`);
     draw();
   }
@@ -3223,7 +3225,7 @@ function viewWalk() {
   const DIST_GOALS = [3, 5, 10, 21.0975, 42.195], TIME_GOALS = [20, 30, 45, 60, 90];
   function goalCheck() {
     const g = runGoal(); if (g.k === 'free' || M().k !== 'run' || ls.get('walkGoalDone:' + id, false)) return;
-    const tr = trackLoad(id), hit = g.k === 'dist' ? trackStats(tr, M().car).walk >= g.v * 1000 : movingMs(tr, M().car) >= g.v * 60000;
+    const tr = trackLoad(id), hit = g.k === 'dist' ? trackStats(tr, M().car).walk >= g.v * 1000 : runElapsed() >= g.v * 60000;
     if (hit) { ls.set('walkGoalDone:' + id, true); beep(); toast(`목표 ${goalLabel(g)} 달성!`); say(`목표 ${goalSay(g)} 달성! 수고했어요. 기록을 끝내려면 화면의 끝내기를 눌러 주세요.`); draw(); }
   }
   // ---------- 러닝 코치 (2026-10-05) ----------
@@ -3242,14 +3244,15 @@ function viewWalk() {
     return r.length ? avg * 0.6 + r.reduce((a, b) => a + b, 0) / r.length / 1000 * 0.4 : avg;
   }
   // 지금 예상: 거리 목표 → 완주 예상 시간(pred ms), 시간 목표 → 예상 거리(pred m). 목표치가 있으면 차이(diff: +면 목표보다 좋음)
-  function coachJudge(G, st, mv) {
+  // 시간(완주 예상·남은 시간)은 멈춘 시간까지 넣은 전체 시간 el로, 페이스는 움직인 시간 mv로 (마라톤 기록은 급수대에서 멈춘 시간도 들어가요, 2026-10-16)
+  function coachJudge(G, st, mv, el = runElapsed()) {
     if (G.k === 'free' || st.walk < 100 || mv < 30000) return null;
     const p = coachPace(st, mv);
     if (G.k === 'dist') {
-      const rem = G.v * 1000 - st.walk, pred = mv + Math.max(0, rem) * p, T = G.t ? G.t * 1000 : 0;
-      return { pred, rem, T, diff: T ? T - pred : null, near: T ? Math.max(10000, T * 0.02) : 0, need: T && rem > 0 ? (T - mv) / rem * 1000 : 0, cur: p * 1000 };
+      const rem = G.v * 1000 - st.walk, pred = el + Math.max(0, rem) * p, T = G.t ? G.t * 1000 : 0;
+      return { pred, rem, T, el, diff: T ? T - pred : null, near: T ? Math.max(10000, T * 0.02) : 0, need: T && rem > 0 ? (T - el) / rem * 1000 : 0, cur: p * 1000 };
     }
-    const tLeft = G.v * 60000 - mv, pred = st.walk + Math.max(0, tLeft) / p, D = G.d ? G.d * 1000 : 0, remD = D - st.walk;
+    const tLeft = G.v * 60000 - el, pred = st.walk + Math.max(0, tLeft) / p, D = G.d ? G.d * 1000 : 0, remD = D - st.walk;
     return { pred, tLeft, D, diff: D ? pred - D : null, near: D ? Math.max(50, D * 0.02) : 0, need: D && remD > 0 && tLeft > 0 ? tLeft / remD * 1000 : 0, cur: p * 1000, remD };
   }
   // 1km 목소리에 붙이는 코치 말
@@ -3262,7 +3265,7 @@ function viewWalk() {
       if (G.v >= 3 && km >= G.v / 2 && km - 1 < G.v / 2) out.push('절반을 넘었어요.');
       if (J.rem <= 1000) out.push('마지막 1킬로예요. 힘내세요!');
       if (!J.T) out.push(`이 페이스면 ${sayDur(J.pred)}쯤 완주해요.`);
-      else if (J.T <= mv) out.push(`목표 시간 ${sayDur(J.T)}은 지났어요. 끝까지 완주해 봐요.`);
+      else if (J.T <= J.el) out.push(`목표 시간 ${sayDur(J.T)}은 지났어요. 끝까지 완주해 봐요.`);
       else if (Math.abs(J.diff) <= J.near) out.push('이대로면 목표 시간에 딱 맞춰 들어와요. 지금 페이스를 지켜요.');
       else if (J.diff > 0) out.push(`이대로면 목표보다 ${sayDur(J.diff)} 빨리 들어와요.${st.walk < G.v * 1000 / 3 && J.diff > J.T * 0.05 ? ' 초반이 빨라요. 조금 늦춰서 힘을 아껴 두세요.' : ' 좋아요, 이대로 가요.'}`);
       // 남은 길을 지금보다 8% 넘게(마지막 1km는 15% 넘게) 빨리 달려야 하면 어렵다고 솔직하게. 한 번 말한 뒤로는 짧게
@@ -3292,7 +3295,7 @@ function viewWalk() {
     const tr = trackLoad(id), st = trackStats(tr, M().car), mv = movingMs(tr, M().car), J = coachJudge(G, st, mv); if (!J) return;
     if (G.k === 'dist' && G.v >= 1.5 && J.rem > 0 && J.rem <= 500 && !coachSaid.m500) {
       coachSaid.m500 = 1;
-      say(`500미터 남았어요.${!J.T || J.T <= mv ? ' 조금만 더 힘내세요!' : J.diff >= 0 ? ' 이대로면 목표 시간 안에 들어와요. 조금만 더!' : ` 목표까지 ${sayDur(-J.diff)} 모자라요. 마지막 힘을 내 봐요!`}`);
+      say(`500미터 남았어요.${!J.T || J.T <= J.el ? ' 조금만 더 힘내세요!' : J.diff >= 0 ? ' 이대로면 목표 시간 안에 들어와요. 조금만 더!' : ` 목표까지 ${sayDur(-J.diff)} 모자라요. 마지막 힘을 내 봐요!`}`);
     } else if (G.k === 'time' && G.v >= 15 && J.tLeft <= 5 * 60000 && J.tLeft > 4 * 60000 && !coachSaid.m5) {
       coachSaid.m5 = 1; say(`5분 남았어요.${J.D && J.remD > 0 ? ` 목표 거리까지 ${sayKm(J.remD)} 남았어요.` : ''}`);
     } else if (G.k === 'time' && J.tLeft <= 60000 && J.tLeft > 20000 && !coachSaid.m1) {
@@ -3422,7 +3425,7 @@ function viewWalk() {
     } else setTimeout(once, 700);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
-  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '멈춘 동안은 달린 시간과 페이스에 넣지 않아요. 다시 달리면 이어서 세요.' })), state: null,
+  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '달린 시간은 멈춘 시간까지 계속 흘러요(마라톤 기록처럼). 페이스에는 멈춘 동안을 넣지 않아요.' })), state: null,
     goal: el('div', { class: 'rd-bar' }), gtxt: el('span', { class: 'lbl', style: 'text-align:right;min-width:0' }), fin: el('b'), finL: el('span', { class: 'lbl' }), finSub: el('span', { class: 'sm' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   let runTab = ['map', 'form', 'guide'].includes(ls.get('runTab', 'map')) ? ls.get('runTab', 'map') : 'map';
   function drawRun() {
@@ -3434,7 +3437,7 @@ function viewWalk() {
     // 아직 셀 수 없으면 '-' 대신 '달리면 나와요'
     const put = (b, v, wait) => { b.className = v == null && wait ? 'wait' : ''; b.textContent = v ?? (wait ? '달리면 나와요' : '-'); };
     const early = st.walk < 100;
-    rd.time.textContent = fmtRunTime(liveMoving(tr, m.car, id)); rd.timeSub.textContent = '멈춘 시간 빼고';
+    rd.time.textContent = fmtRunTime(runElapsed()); rd.timeSub.textContent = `멈춤 포함 · 움직인 ${fmtRunTime(liveMoving(tr, m.car, id))}`;
     put(rd.now, np, early); rd.nowSub.textContent = '최근 30초';
     put(rd.cad, c, motionSeen && stepN < 20); rd.cadSub.textContent = motionSeen ? '최근 20초' : cadSubText();
     // 멈춤: 칸 밖, 판 위쪽에 설명과 함께. 윗줄 '기록 중'도 '멈춤'으로
@@ -3449,8 +3452,8 @@ function viewWalk() {
       el('b', {}, x.v == null ? '-' : x.v.toFixed(x.d), x.v == null ? '' : el('small', { text: x.u })),
       x.v == null ? null : el('span', { class: 'tag', style: `background:${x.t[1] ? FORM_OK : FORM_WARN}`, text: x.t[0] }))));
     if (rd.state && gps === 'on') { rd.state.className = 'rd-chip' + (pz || weak ? ' warn' : ''); rd.state.replaceChildren(weak ? `📡 GPS 약함 · 오차 ${Math.round(lastAcc)}m` : pz ? '⏸ 멈춤' : el('i'), weak || pz ? '' : '기록 중'); }
-    const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? mv / (G.v * 60000) : 0;
-    const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - mv) : '';
+    const G = runGoal(), frac = G.k === 'dist' ? km / G.v : G.k === 'time' ? runElapsed() / (G.v * 60000) : 0;
+    const left = G.k === 'dist' ? fmtDist(G.v * 1000 - st.walk) : G.k === 'time' ? fmtRunTime(G.v * 60000 - runElapsed()) : '';
     // 목표: '달린 거리' 줄 오른쪽 글자 + 막대 (남은 거리·시간은 주황 글자로)
     rd.gtxt.replaceChildren(...(G.k === 'free' ? [] : [`목표 ${goalLabel(G)} · `, el('b', { style: 'color:#E4572E', text: frac >= 1 ? '달성!' : `${left} 남음` })]));
     rd.goal.style.display = G.k === 'free' ? 'none' : '';
@@ -3509,7 +3512,7 @@ function viewWalk() {
     const upd = () => {
       const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), km = st.walk / 1000, mv = movingMs(tr, m.car);
       big.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
-      t1.textContent = m.k === 'run' ? fmtRunTime(liveMoving(tr, m.car, id)) : fmtRunTime(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
+      t1.textContent = fmtRunTime(runElapsed());
       if (m.k === 'run') { t2.textContent = fmtPace(st.walk, mv); l2.textContent = '평균 페이스'; t3.textContent = nowPace(tr) || '-'; l3.textContent = '현재 페이스';
         t4.textContent = cadNow() ?? '-'; t5.textContent = cadAvg() ?? '-'; t6.textContent = motionSeen ? stepN.toLocaleString() : '-'; }
       else if (m.k === 'bike') { t2.textContent = fmtSpeed(st.walk, mv).replace('km/h', ''); l2.textContent = '평균 km/h'; t3.textContent = ls.get('walkSpots:' + id, []).length; l3.textContent = '별표'; }
