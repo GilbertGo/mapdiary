@@ -352,6 +352,22 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .leaflet-tooltip.nm{font-family:inherit;font-weight:700;font-size:12px;padding:2px 6px;border-radius:8px}
 .leaflet-bar{border:none!important;box-shadow:0 2px 8px rgba(60,45,20,.18)!important;border-radius:12px!important;overflow:hidden}
 @media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translateY(8px);opacity:0}}}
+
+/* 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게) */
+.rh{position:relative;margin:-12px -20px 0;height:min(60vh,470px);min-height:380px;background:#5DB4F0 center/cover no-repeat;color:#fff;overflow:hidden}
+.rh{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%235DB4F0'/%3E%3Cstop offset='.5' stop-color='%23BFE4FB'/%3E%3Cstop offset='.62' stop-color='%23FFF1E4'/%3E%3C/linearGradient%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%233A9FD8'/%3E%3Cstop offset='1' stop-color='%231E6FA8'/%3E%3C/linearGradient%3E%3CradialGradient id='sun'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.3' stop-color='%23FFF6EC'/%3E%3Cstop offset='1' stop-color='%23FFF6EC' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='400' height='500' fill='url(%23s)'/%3E%3Ccircle cx='290' cy='300' r='120' fill='url(%23sun)'/%3E%3Cg fill='%23fff' opacity='.85'%3E%3Cellipse cx='90' cy='90' rx='50' ry='12'/%3E%3Cellipse cx='118' cy='80' rx='28' ry='14'/%3E%3Cellipse cx='300' cy='60' rx='40' ry='9'/%3E%3C/g%3E%3Crect y='300' width='400' height='200' fill='url(%23w)'/%3E%3Cpath d='M0 318 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.6' stroke-width='2' fill='none'/%3E%3Cpath d='M0 352 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.4' stroke-width='2' fill='none'/%3E%3C/svg%3E")}
+.rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.25) 0%,rgba(6,30,55,0) 25%,rgba(6,30,55,0) 45%,rgba(6,30,55,.72) 100%)}
+.rh-tag{position:absolute;left:18px;top:14px;background:rgba(255,255,255,.9);color:var(--pine);font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px}
+.rh-bot{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}
+.rh-k{font-size:13px;opacity:.95;letter-spacing:.02em;text-shadow:0 1px 6px rgba(0,0,0,.25)}
+.rh-h{font-size:clamp(24px,7.4vw,30px);font-weight:900;line-height:1.2;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.25)}
+.rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rh-pills .row{gap:6px!important;flex-wrap:nowrap}.rh-pills .row .sub{display:none}
+.rh-pills .pill,.rh-pill{background:rgba(255,255,255,.92)!important;color:#102A43!important;border:none;font:inherit;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.rh-go{height:58px;border:none;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-size:19px;font-weight:900;box-shadow:0 8px 20px rgba(255,138,76,.35);margin-top:4px}
+.rh-wk{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}.rh-wk b{font-size:17px}
+.rh-rr{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:8px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
+.rh-th{width:54px;height:54px;border-radius:10px;flex:none;background:var(--soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--pine)}
 /* ---------- 분위기: 바닷가 (2026-10-16 사용자 '바닷가 해변 분위기로 밝고 화사하게' + '구름도 흘러가게' → A안 적용 뒤 '색감이 별로, 녹색 기운·누리끼리한 느낌 빼고 바탕까지' → 2안 하늘빛 바탕 + 밝은 파랑) ---------- */
 .sky-clouds{display:none}
 @keyframes mdcloud{to{transform:translateX(-900px)}}@keyframes mdcloud2{to{transform:translateX(-700px)}}
@@ -3244,6 +3260,57 @@ function viewWalk() {
   // 러닝 시작 화면: GPS 준비, 목표 거리, 음성 안내, 지난 러닝, 3·2·1
   let lastAcc = null;
   const gpsReady = el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' });
+  // ---------- 러닝 시작 화면 (2026-10-17, 사용자가 PACE 앱 화면을 보여 주며 '이런 화면 넣을 곳?' → '사진 크게' → 시안 A안) ----------
+  // 위쪽 가득 지난 러닝 사진(없으면 바닷가 그림) + 한마디·GPS·목표·▶ 시작 / 이번 주(주간 목표 막대·거리·횟수·평균 페이스) / 최근 러닝 / 설정(목표·목소리·제목)
+  function runWeek() {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // 이번 주 월요일 0시
+    const runs = pastTrips().filter(x => !x.album && ls.get('walkMode:' + x.t, null) === 'run');
+    let dist = 0, mv = 0, n = 0;
+    for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist += trackStats(tr, 25).walk; mv += movingMs(tr, 25); n++; }
+    return { dist, mv, n, runs };
+  }
+  function runHome() {
+    const g = goalOf(ls.get('runGoal', 0)), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
+    const hero = el('div', { class: 'rh' }, el('div', { class: 'rh-ov' }));
+    // 사진: 가장 최근 러닝의 사진 (첫 장)
+    const tag = el('span', { class: 'rh-tag', style: 'display:none' });
+    (async () => { for (const x of W.runs.slice(0, 8)) { const ps = await photoList(x.t); if (ps.length && ps[0].blob) {
+      hero.style.backgroundImage = `url("${URL.createObjectURL(ps[0].blob)}")`; const d = new Date(x.info.startAt);
+      tag.textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 · 지난 러닝 사진`; tag.style.display = ''; return; } } })().catch(() => {});
+    startGps(); drawGpsReady();
+    const goalTxt = g.k === 'free' ? '자유 달리기' : goalLabel(g) + (tgtLabel(g) ? ' · ' + tgtLabel(g) : '');
+    const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); draw(); };
+    const settings = el('div', { class: 'card stack', style: 'gap:14px' });
+    hero.append(tag, el('div', { class: 'rh-bot' },
+      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
+      el('div', { class: 'rh-h' }, '바람 좋은 날,', el('br'), '가볍게 달려 볼까요?'),
+      el('div', { class: 'rh-pills' }, gpsReady, el('button', { class: 'rh-pill', onclick: () => settings.scrollIntoView({ behavior: 'smooth' }) }, `🎯 ${goalTxt}`)),
+      el('button', { class: 'rh-go', onclick: countdown }, '▶ 러닝 시작하기')));
+    const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
+    const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
+    const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
+      photoList(x.t).then(ps => { if (ps[0] && ps[0].thumb) { th.replaceChildren(); th.style.backgroundImage = `url("${ps[0].thumb}")`; } }).catch(() => {});
+      return el('a', { class: 'rh-rr', href: `./?my=1&t=${encodeURIComponent(x.t)}` }, th,
+        el('div', { class: 'grow' }, el('b', { text: x.info.name }), el('div', { class: 'sub', style: 'font-size:13px', text: `${d.getMonth() + 1}월 ${d.getDate()}일 · ${fmtDist(st.walk)} · ${fmtRunTime(st.ms)} · ${fmtPace(st.walk, movingMs(tr, 25))}/km` })), el('span', { text: '›', style: 'color:var(--muted);font-size:20px' })); });
+    settings.append(el('b', { text: '러닝 설정' }), goalPicker(),
+      el('button', { class: 'sw-row', role: 'switch', 'aria-checked': ls.get('runVoice', true) ? 'true' : 'false', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } },
+        el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: ls.get('runVoice', true) ? '켜져 있어요 · 누르면 꺼져요' : '꺼져 있어요 · 누르면 켜져요' })),
+        el('span', { class: 'sw' + (ls.get('runVoice', true) ? ' on' : '') }, el('i'))),
+      (() => { const iT = el('input', { type: 'text', id: 'wt', maxlength: 40, value: startTitle, placeholder: `비워 두면 "${dayName} 러닝"`, oninput: () => { startTitle = iT.value; } });
+        return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
+      el('div', { class: 'sub', style: 'font-size:14px', text: IN_NATIVE ? '앱은 화면을 꺼도 계속 기록해요. 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요(화면이 켜져 있을 때).' : '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }),
+      el('button', { class: 'btn primary full big', onclick: countdown }, ico('run', 24), '러닝 시작하기'));
+    return [roleBar('leader', '내 기록'), hero,
+      pending ? el('div', { class: 'banner info' }, el('b', { text: `'${pending.name}' 길을 따라가요` }), el('div', { text: `전체 ${fmtDist(pathLen(pending.route))}. 시작하면 이 길이 지도에 파란 선으로 깔려요.` }),
+        el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가지 않기', onclick: () => { pending = null; ls.set('guideNext', null); draw(); } })) : null,
+      IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }), el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남아요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
+        el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
+      el('div', { class: 'rh-wk' }, el('b', { text: '이번 주' }), el('button', { class: 'link', style: 'padding:0;font-size:13px', onclick: setWeekGoal, text: wg ? `목표 ${wg}km · ${kmW >= wg ? '달성!' : fmtDist(wg * 1000 - W.dist) + ' 남음'} ✎` : '주간 목표 정하기 ✎' })),
+      wg ? el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.max(3, pct)}%` })) : null,
+      el('div', { class: 'rd-grid' }, tile('거리', kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0), 'km'), tile('러닝', String(W.n), '번'), tile('평균 페이스', W.dist >= 100 ? fmtPace(W.dist, W.mv) : '-')),
+      W.runs.length ? el('div', { class: 'rh-wk' }, el('b', { text: '최근 러닝' }), el('a', { class: 'link', style: 'padding:0;font-size:13px', href: './?my=1', text: '전체 기록 →' })) : null,
+      ...recent, settings].filter(Boolean);
+  }
   function drawGpsReady() {
     const ok = gps === 'on' && lastAcc != null && lastAcc <= 20, meh = gps === 'on' && lastAcc != null && lastAcc <= TRACK_MAX_ACC;
     gpsReady.replaceChildren(el('span', { class: 'pill ' + (ok ? 'on' : gps === 'denied' ? 'bad' : 'off') }, el('i'), ok ? 'GPS 준비됐어요' : meh ? 'GPS 거의 준비됐어요' : gps === 'denied' ? '위치 권한 필요' : 'GPS 잡는 중'),
@@ -3872,6 +3939,7 @@ function viewWalk() {
         el('a', { class: 'btn line full', href: './', text: '처음으로' })].filter(Boolean));
       return;
     }
+    if (!id && pick === 'run' && qs.get('mode')) { root.replaceChildren(...runHome()); return; }   // 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게)
     if (!id) {
       root.replaceChildren(...[roleBar('leader', '내 기록'),
         el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
