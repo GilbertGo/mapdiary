@@ -352,6 +352,30 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .leaflet-tooltip.nm{font-family:inherit;font-weight:700;font-size:12px;padding:2px 6px;border-radius:8px}
 .leaflet-bar{border:none!important;box-shadow:0 2px 8px rgba(60,45,20,.18)!important;border-radius:12px!important;overflow:hidden}
 @media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translateY(8px);opacity:0}}}
+/* ---------- 분위기: 바닷가 (2026-10-16 사용자 '바닷가 해변 분위기로 밝고 화사하게' → 시안 A안 청량 바다 + '구름도 흘러가게') ---------- */
+html[data-theme=sea]{--pine:#0B5C78;--accent:#FF8A5B;--ground:#FBF3E2}
+html[data-theme=sea] body{background:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20600%20360'%20preserveAspectRatio%3D'xMidYMax%20slice'%3E%3Cdefs%3E%3ClinearGradient%20id%3D's'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23BFE9FF'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%23E9F8FF'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'w'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%235BC8E8'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%232AA7C9'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'600'%20height%3D'360'%20fill%3D'url(%23s)'%2F%3E%3Ccircle%20cx%3D'470'%20cy%3D'92'%20r%3D'30'%20fill%3D'%23FFE08A'%2F%3E%3Ccircle%20cx%3D'470'%20cy%3D'92'%20r%3D'50'%20fill%3D'%23FFE08A'%20fill-opacity%3D'.3'%2F%3E%3Cpath%20d%3D'M0%20170%20H600%20V250%20H0z'%20fill%3D'url(%23w)'%2F%3E%3Cpath%20d%3D'M0%20192%20q25%20-8%2050%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200'%20fill%3D'none'%20stroke%3D'%23fff'%20stroke-opacity%3D'.55'%20stroke-width%3D'3'%2F%3E%3Cpath%20d%3D'M-25%20216%20q25%20-8%2050%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200'%20fill%3D'none'%20stroke%3D'%23fff'%20stroke-opacity%3D'.45'%20stroke-width%3D'3'%2F%3E%3Cpath%20d%3D'M0%20250%20q30%20-14%2060%20-4%20t60%20-2%20t60%202%20t60%20-4%20t60%202%20t60%20-2%20t60%204%20t60%20-4%20t60%202%20t60%200%20V360%20H0z'%20fill%3D'%23FFFFFF'%2F%3E%3Cpath%20d%3D'M0%20262%20q30%20-10%2060%20-2%20t60%20-2%20t60%202%20t60%20-4%20t60%202%20t60%20-2%20t60%204%20t60%20-4%20t60%202%20t60%200%20V360%20H0z'%20fill%3D'%23FBF3E2'%2F%3E%3C%2Fsvg%3E") center top/max(100%,600px) 360px no-repeat,#FBF3E2}
+.sky-clouds{display:none}
+html[data-theme=sea] .sky-clouds{display:block;position:absolute;left:0;top:52px;width:100%;height:170px;overflow:hidden;pointer-events:none;z-index:-1}
+html[data-theme=sea] .sky-clouds::before,html[data-theme=sea] .sky-clouds::after{content:'';position:absolute;top:0;left:0;height:160px;width:1800px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'900'%20height%3D'160'%20viewBox%3D'0%200%20900%20160'%3E%3Cg%20fill%3D'none'%20stroke%3D'%23fff'%20stroke-linecap%3D'round'%20stroke-opacity%3D'.8'%3E%3Cpath%20d%3D'M40%2030%20q60%20-14%20140%20-6%20t120%20-8'%20stroke-width%3D'5'%2F%3E%3Cpath%20d%3D'M70%2044%20q50%20-8%20110%20-2'%20stroke-width%3D'3'%20stroke-opacity%3D'.5'%2F%3E%3Cpath%20d%3D'M480%2022%20q70%20-12%20160%20-2%20t110%20-10'%20stroke-width%3D'4'%2F%3E%3Cpath%20d%3D'M520%2036%20q60%20-6%20120%200'%20stroke-width%3D'2.5'%20stroke-opacity%3D'.5'%2F%3E%3C%2Fg%3E%3Cg%20fill%3D'%23fff'%3E%3Cg%20opacity%3D'.95'%3E%3Cellipse%20cx%3D'300'%20cy%3D'96'%20rx%3D'46'%20ry%3D'16'%2F%3E%3Cellipse%20cx%3D'330'%20cy%3D'84'%20rx%3D'28'%20ry%3D'18'%2F%3E%3Cellipse%20cx%3D'280'%20cy%3D'88'%20rx%3D'22'%20ry%3D'13'%2F%3E%3C%2Fg%3E%3Cg%20opacity%3D'.85'%3E%3Cellipse%20cx%3D'740'%20cy%3D'118'%20rx%3D'38'%20ry%3D'12'%2F%3E%3Cellipse%20cx%3D'762'%20cy%3D'108'%20rx%3D'22'%20ry%3D'14'%2F%3E%3C%2Fg%3E%3Cg%20opacity%3D'.7'%3E%3Cellipse%20cx%3D'120'%20cy%3D'136'%20rx%3D'30'%20ry%3D'9'%2F%3E%3Cellipse%20cx%3D'138'%20cy%3D'129'%20rx%3D'16'%20ry%3D'10'%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0/900px 160px repeat-x;animation:mdcloud 70s linear infinite;will-change:transform}
+html[data-theme=sea] .sky-clouds::after{top:26px;height:124px;width:1400px;opacity:.6;background-size:700px 124px;animation:mdcloud2 120s linear infinite}
+@keyframes mdcloud{to{transform:translateX(-900px)}}@keyframes mdcloud2{to{transform:translateX(-700px)}}
+@media (prefers-reduced-motion:reduce){html[data-theme=sea] .sky-clouds::before,html[data-theme=sea] .sky-clouds::after{animation:none}}
+html[data-theme=sea] .role.leader{background:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20400%2036'%20preserveAspectRatio%3D'none'%3E%3Cpath%20d%3D'M0%2036V22%20q25%20-10%2050%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20t50%200%20V36z'%20fill%3D'%23BFE9FF'%2F%3E%3C%2Fsvg%3E"),linear-gradient(90deg,#0B6E8F,#16A3B8);background-size:100% 30px,100% 100% !important;background-position:left bottom,0 0 !important;background-repeat:no-repeat !important}
+html[data-theme=sea] .rd{background:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'240'%20height%3D'90'%20viewBox%3D'0%200%20240%2090'%3E%3Cg%20fill%3D'none'%20stroke%3D'%230B5C78'%20stroke-opacity%3D'.18'%20stroke-width%3D'2'%3E%3Cpath%20d%3D'M0%2020%20q15%20-8%2030%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200'%2F%3E%3Cpath%20d%3D'M0%2050%20q15%20-8%2030%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200'%2F%3E%3Cpath%20d%3D'M0%2080%20q15%20-8%2030%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200%20t30%200'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0/240px 90px repeat,linear-gradient(160deg,#E3F7FF 0%,#F2FCFF 55%,#FFF6E6 100%);box-shadow:0 10px 30px rgba(11,92,120,.14)}
+html[data-theme=sea] .rd-hero{background:linear-gradient(90deg,#0B6E99,#13B6C6);-webkit-background-clip:text;background-clip:text}
+html[data-theme=sea] .rd-hero small{color:#FF7A45;-webkit-text-fill-color:#FF7A45}
+html[data-theme=sea] .rd .lbl,html[data-theme=sea] .rd-t .sm{color:#4F7F8F}
+html[data-theme=sea] .rd-t b{color:#0B5C78}
+html[data-theme=sea] .rd-t{background:rgba(255,255,255,.88);box-shadow:0 2px 10px rgba(11,92,120,.14)}
+html[data-theme=sea] .rd-bar{background:rgba(255,255,255,.7)}
+html[data-theme=sea] .rd-bar i{background:linear-gradient(90deg,#FFB36B,#FF6F61)}html[data-theme=sea] .rd-bar i::after{border-color:#FF6F61}
+html[data-theme=sea] .rd-tabs button,html[data-theme=sea] .rd-chip,html[data-theme=sea] .rd-btn,html[data-theme=sea] .mode:not(.on){color:#0B5C78}
+html[data-theme=sea] .rd-tabs button.on{background:#0B5C78;color:#fff}
+html[data-theme=sea] .rd-act{background:linear-gradient(to top,#FBF3E2 72%,rgba(251,243,226,0))}
+html[data-theme=sea] .rd-sq{background:#0B5C78}
+html[data-theme=sea] .rd-cam{background:#FF8A5B;color:#fff;box-shadow:0 0 0 6px rgba(255,138,91,.25),0 10px 24px rgba(11,92,120,.14)}
+
 </style>
 </head>
 <body>
@@ -392,6 +416,9 @@ const ls = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
 };
+// 분위기(테마): 'sea' 바닷가(기본, 2026-10-16) / 'mt' 예전 산 분위기. 첫 화면 맨 아래에서 바꿔요
+document.documentElement.dataset.theme = ls.get('theme', 'sea');
+{ const d = document.createElement('div'); d.className = 'sky-clouds'; d.setAttribute('aria-hidden', 'true'); document.body.prepend(d); }   // 바닷가일 때 하늘에 흘러가는 구름
 let offset = 0;
 const now = () => Date.now() + offset;
 function fmtClock(ts) { const d = new Date(ts); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
@@ -3071,7 +3098,10 @@ function viewLanding() {
     bigBtn('내 MD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
     bigBtn('MD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
-    installSlot));
+    installSlot,
+    (() => { const sea = ls.get('theme', 'sea') === 'sea';
+      return el('button', { class: 'link', style: 'align-self:center;color:var(--muted);padding:10px', text: `🎨 화면 분위기: ${sea ? '바닷가' : '산'} · ${sea ? '산으로' : '바닷가로'} 바꾸기`,
+        onclick: () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; viewLanding(); } }); })()));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Diary로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
