@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         if (Run.id != null) { RunService.warm(this); showRun() } else showStart()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (Run.id == null && gpsText != null) startGpsPreview()
     }
