@@ -1,0 +1,38 @@
+# MD Run 갤럭시워치 앱(APK)을 만들어요.
+# main에 올라가면 Releases의 'watch'에 MDRunWatch.apk로 올려요 (받는 주소가 늘 같아요):
+#   https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
+# 휴대폰 앱의 'latest' 주소(MDRun.apk 등)는 건드리지 않아요 (make_latest: false)
+name: MD Run 워치 앱 (갤럭시워치)
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['watchapp/**', '.github/workflows/watch-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11.1' }
+      # 안드로이드 SDK는 GitHub 러너에 이미 깔려 있어요(ANDROID_HOME). 서명은 runapp/debug.keystore (휴대폰 MD Run과 같은 열쇠)
+      - name: 시계 앱 만들기
+        working-directory: watchapp
+        env: { RUN_NUMBER: '${{ github.run_number }}' }
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../MDRunWatch.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: MDRunWatch, path: MDRunWatch.apk }
+      - if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: watch
+          name: MD Run 워치 앱 (갤럭시워치)
+          body: 갤럭시워치에 까는 MD Run 시계 앱이에요. 설치 방법은 저장소 watchapp/README.md를 보세요. 판 0.1.${{ github.run_number }}
+          files: MDRunWatch.apk
+          make_latest: false
