@@ -65,6 +65,10 @@ input::placeholder{color:#B3AC9C}
 .cnt span{font-size:13px;color:var(--muted)}
 .cnt.warn{background:var(--alert-soft);box-shadow:none} .cnt.warn b{color:var(--alert-ink)} .cnt.warn span{color:var(--alert-ink)}
 .note{font-size:16px;font-weight:600;color:#2D6A4F;line-height:1.5}
+.mem{display:flex;align-items:center;gap:14px;background:var(--card,#FFFDF8);border:1.5px solid #FFD2B8;border-radius:18px;padding:12px 14px;text-decoration:none;color:inherit;box-shadow:var(--shadow)}
+.mem-th{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;background:var(--soft,#EEE)}.mem-ic{display:flex;align-items:center;justify-content:center;color:var(--pine)}
+.mem .grow{display:flex;flex-direction:column;gap:3px;min-width:0}.mem b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mem .sm{font-size:13px;color:var(--muted)}
+.mem-tag{align-self:flex-start;background:#FFE9DC;color:#D9622B;font-size:12.5px;font-weight:800;padding:3px 9px;border-radius:999px}.mem-go{font-size:26px;color:var(--muted);flex:none}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-w{text-align:center;font-size:12px;color:var(--muted);padding:2px 0}
 .cal-d{min-width:0;width:100%;min-height:0;position:relative;aspect-ratio:1/1.1;border:none;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0;gap:1px;font:inherit;color:var(--muted)}
@@ -2930,6 +2934,7 @@ function viewMyList() {
       el('div', { class: 'card', style: 'padding:12px' },
         el('div', { class: 'cal' }, '일월화수목금토'.split('').map(w => el('div', { class: 'cal-w', text: w })), cells)),
       el('div', { class: 'sub center', text: inMonth.length ? [`이달 기록 ${inMonth.length}번`, `걸은 거리 ${fmtDist(walk)}`, hikes ? `산행 ${hikes}번` : '', gain >= 10 ? `오른 높이 ${gain.toLocaleString()}m` : ''].filter(Boolean).join(' · ') : '이달에는 기록이 없어요' }),
+      inMonth.length ? el('button', { class: 'btn line full', onclick: () => openRecap(Y, Mo, inMonth) }, `📊 ${Mo + 1}월 결산 카드 만들기`) : null,
       sel ? el('b', { text: `${Mo + 1}월 ${sel.split('-')[2]}일` }) : null,
       shown.map(row)];
   }
@@ -3114,11 +3119,109 @@ async function viewMyOne(t) {
   }, 0);
 }
 // 첫 화면: 기록 시작(모드 타일) / MD 공유하기
+// ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
+// 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
+function memoryPick() {
+  const now = new Date(), Y = now.getFullYear(), doy = d => (Date.UTC(Y, d.getMonth(), d.getDate()) - Date.UTC(Y, 0, 1)) / 864e5, td = doy(now);
+  let best = null;
+  for (const x of pastTrips()) {
+    if (x.album) continue;
+    const d = new Date(x.info.startAt), yr = Y - d.getFullYear(), off = Math.abs(doy(d) - td);
+    if (yr < 1 || off > 3) continue;
+    const sc = off * 10 + yr; if (!best || sc < best.sc) best = { x, yr, off, sc };
+  }
+  return best;
+}
+async function drawMemory(slot) {
+  const m = memoryPick(); if (!m) return;
+  const { x, yr, off } = m, M = modeOfT(x.t), st = trackStats(trackLoad(x.t), M.car), ph = await photoList(x.t), d = new Date(x.info.startAt);
+  slot.replaceChildren(el('a', { class: 'mem', href: `./?my=1&t=${encodeURIComponent(x.t)}` },
+    ph[0] ? el('img', { class: 'mem-th', src: ph[0].thumb, alt: '' }) : el('span', { class: 'mem-th mem-ic' }, ico(M.k, 30)),
+    el('div', { class: 'grow' }, el('span', { class: 'mem-tag', text: `📅 ${yr}년 전 ${off ? '이맘때' : '오늘'}` }), el('b', { text: x.info.name }),
+      el('span', { class: 'sm', text: [`${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`, M.label, fmtDist(st.walk), ph.length ? `사진 ${ph.length}장` : ''].filter(Boolean).join(' · ') })),
+    el('span', { class: 'mem-go', text: '›' })));
+}
+// ---------- 한 달 결산 카드 (2026-10-17 시안 A안: 숫자 중심) ----------
+// 내 MD 달력의 그달 기록으로 1080×1350 그림을 만들어 보내거나 저장해요
+async function recapCard(Y, Mo, recs) {
+  const W = 1080, H = 1350, F = "'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif";
+  try { await Promise.all([document.fonts.load(`800 90px ${F}`), document.fonts.load(`500 30px ${F}`)]); } catch {}
+  const sea = ls.get('theme', 'sea') === 'sea';
+  const C = sea ? { bg1: '#DDEFFC', bg2: '#F7FBFF', card: '#FFFFFF', ink: '#102A43', muted: '#5F7A92', main: '#0277BD', tagBg: '#FFE6D8', tag: '#D9622B' }
+    : { bg1: '#F4F0E6', bg2: '#FBF8F1', card: '#FFFDF8', ink: '#1F2B24', muted: '#6B6A5E', main: '#1E3B2F', tagBg: '#FDE7D2', tag: '#C0661E' };
+  let walk = 0, gain = 0, far = null; const modes = {}, photos = [];
+  for (const x of recs) {
+    const M = modeOfT(x.t), tr = trackLoad(x.t), w = trackStats(tr, M.car).walk; walk += w;
+    const ev = ELEV_MODES.includes(M.k) && elevStats(tr); if (ev) gain += ev.gain;
+    modes[M.k] = (modes[M.k] || 0) + 1;
+    if (!far || w > far.w) far = { w, name: x.info.name };
+    photos.push(await photoList(x.t));
+  }
+  const nPh = photos.reduce((a, p) => a + p.length, 0);
+  // 사진 4장: 기록마다 첫 사진부터 고르게
+  const pick = []; for (let k = 0; pick.length < 4 && photos.some(p => p.length > k); k++) for (const p of photos) if (p[k] && pick.length < 4) pick.push(p[k]);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const font = (w, s) => { g.font = `${w} ${s}px ${F}`; };
+  const fit = (t, mw) => { if (g.measureText(t).width <= mw) return t; let s = t; while (s.length > 1 && g.measureText(s + '…').width > mw) s = s.slice(0, -1); return s + '…'; };
+  const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, C.bg1); bg.addColorStop(1, C.bg2); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.textBaseline = 'alphabetic';
+  font(800, 34); const tag = `MD ${Mo + 1}월 결산`, tw = g.measureText(tag).width;
+  g.fillStyle = C.tagBg; rr(80, 80, tw + 48, 64, 32); g.fill(); g.fillStyle = C.tag; g.fillText(tag, 104, 124);
+  font(600, 30); g.fillStyle = C.muted; g.textAlign = 'right'; g.fillText(`Map Diary · ${Y}`, W - 80, 124); g.textAlign = 'left';
+  g.fillStyle = C.ink; font(800, 96); g.fillText('이번 달', 80, 290); g.fillText(`${recs.length}번 떠났어요`, 80, 405);
+  const tiles = [['걸은 거리', walk >= 1000 ? (walk / 1000).toFixed(1) : String(Math.round(walk)), walk >= 1000 ? 'km' : 'm'],
+    gain >= 10 ? ['오른 높이', gain.toLocaleString(), 'm'] : ['기록한 날', String(new Set(recs.map(x => new Date(x.info.startAt).getDate())).size), '일'],
+    ['사진', nPh.toLocaleString(), '장'], ['가장 멀리', far ? far.name : '-', far ? fmtDist(far.w) : '']];
+  tiles.forEach(([l, v, u], i) => {
+    const x = 80 + (i % 2) * 470, y = 470 + Math.floor(i / 2) * 230;
+    g.fillStyle = C.card; g.shadowColor = 'rgba(16,42,67,.08)'; g.shadowBlur = 24; g.shadowOffsetY = 6; rr(x, y, 450, 205, 36); g.fill(); g.shadowColor = 'transparent';
+    font(600, 32); g.fillStyle = C.muted; g.fillText(l, x + 36, y + 62);
+    g.fillStyle = C.ink;
+    if (i === 3) { font(800, 46); g.fillText(fit(v, 380), x + 36, y + 128); font(700, 34); g.fillStyle = C.main; g.fillText(u, x + 36, y + 176); }
+    else { font(800, 78); g.fillText(v, x + 36, y + 160); const vw = g.measureText(v).width; font(700, 38); g.fillText(u, x + 36 + vw + 8, y + 160); }
+  });
+  // 모드별 횟수
+  let mx = 80; const my = 990;
+  for (const [k, n] of Object.entries(modes).sort((a, b) => b[1] - a[1])) {
+    font(700, 34); const label = `${modeByK(k).label} ${n}`, lw = g.measureText(label).width;
+    if (mx + 44 + lw > W - 80) break;
+    drawIco(g, k, mx, my - 32, 38, C.main); g.fillStyle = C.ink; g.fillText(label, mx + 46, my); mx += 46 + lw + 34;
+  }
+  // 사진 줄
+  for (let i = 0; i < pick.length; i++) {
+    try {
+      const im = await createImageBitmap(pick[i].blob), x = 80 + i * 237, y = 1025, s = 222, k = Math.max(s / im.width, s / im.height);
+      g.save(); rr(x, y, s, s, 28); g.clip(); g.drawImage(im, x + (s - im.width * k) / 2, y + (s - im.height * k) / 2, im.width * k, im.height * k); g.restore();
+    } catch {}
+  }
+  font(500, 28); g.fillStyle = C.muted; g.fillText('다닌 길과 사진이 그대로 일기가 돼요 · gilbertgo.github.io/mapdiary', 80, H - 40);
+  return new Promise(r => cv.toBlob(r, 'image/png'));
+}
+async function openRecap(Y, Mo, recs) {
+  toast('결산 카드를 만드는 중이에요…');
+  const blob = await recapCard(Y, Mo, recs), name = `MapDiary_${Y}${String(Mo + 1).padStart(2, '0')}_recap.png`;
+  const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const send = async () => {
+    const f = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [f] }) && !IN_KAKAO) { try { await navigator.share({ files: [f] }); } catch {} }
+    else { savePhotoBlob(blob, name); toast('결산 카드를 사진으로 저장했어요'); }
+  };
+  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': `${Mo + 1}월 결산` },
+    el('h2', { text: `${Y}년 ${Mo + 1}월 결산` }),
+    el('img', { src: URL.createObjectURL(blob), alt: `${Mo + 1}월 결산 카드`, style: 'width:100%;border-radius:16px;box-shadow:var(--shadow)' }),
+    el('div', { class: 'two' },
+      el('button', { class: 'btn line', text: '저장', onclick: () => { savePhotoBlob(blob, name); toast('결산 카드를 저장했어요'); } }),
+      el('button', { class: 'btn primary', text: '보내기', onclick: send })),
+    el('button', { class: 'btn line small', text: '닫기', onclick: () => bg.remove() })));
+  document.body.append(bg); ovGuard();
+}
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
   else if (qs.get('install') === '1') { try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} }
   installSlot = el('div'); drawInstall();
+  const memSlot = el('div', { style: 'display:contents' }); drawMemory(memSlot);
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
@@ -3142,6 +3245,7 @@ function viewLanding() {
     el('h2', { style: 'margin-top:4px', text: '기록 시작' }),
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Diary로 남아요.' }),
+    memSlot,
     bigBtn('내 MD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
     bigBtn('MD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
