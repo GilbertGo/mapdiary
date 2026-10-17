@@ -112,8 +112,6 @@ input::placeholder{color:#B3AC9C}
 .rd-cam{width:80px;height:80px;border-radius:50%;border:none;background:#F4A259;color:#1E3B2F;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;font-weight:800;font-size:13px;box-shadow:0 0 0 6px rgba(244,162,89,.25),0 10px 24px rgba(228,120,46,.35)}
 .rd-pzm{display:flex;align-items:center;gap:10px;background:#FFF1DF;border:1.5px solid #F7C98D;color:#7A4A12;border-radius:14px;padding:10px 12px;font-size:13px}
 .rd-pzm b{font-size:16px;color:#B4531A;display:block}.rd-pzm .grow{flex:1;min-width:0}
-.rd-res{border:none;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-weight:900;font-size:15px;height:44px;padding:0 16px;white-space:nowrap;box-shadow:0 6px 16px rgba(255,138,76,.35)}
-.rd-pzbar{width:100%;height:46px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--pine);font:inherit;font-weight:800;font-size:15px}
 .rd-big2{flex-basis:100%;display:flex;gap:10px;padding:0 16px}.rd-big2 button{flex:1;height:60px;border-radius:18px;border:none;font:inherit;font-weight:900;font-size:17px}
 .rd-big2 .go{background:var(--accent);color:#fff;box-shadow:0 8px 20px rgba(255,138,76,.35);flex:1.4}.rd-big2 .end{background:#fff;color:var(--pine);box-shadow:var(--shadow)}
 .rd-sq{display:block;width:15px;height:15px;border-radius:3px;background:var(--pine);margin-bottom:2px}
@@ -3558,7 +3556,7 @@ function viewWalk() {
     } else setTimeout(once, 700);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
-  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '달린 시간은 멈춘 시간까지 계속 흘러요(마라톤 기록처럼). 페이스에는 멈춘 동안을 넣지 않아요.' })), pzT: el('b', { style: 'display:inline;font-size:13px;color:inherit' }), state: null,
+  const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '달린 시간은 멈춘 시간까지 계속 흘러요(마라톤 기록처럼). 시간도 세지 않으려면 아래 ⏸ 멈춤을 누르세요.' })), pzT: el('b', { style: 'display:inline;font-size:13px;color:inherit' }), state: null,
     goal: el('div', { class: 'rd-bar' }), gtxt: el('span', { class: 'lbl', style: 'text-align:right;min-width:0' }), fin: el('b'), finL: el('span', { class: 'lbl' }), finSub: el('span', { class: 'sm' }), form: el('div', { class: 'rd-fm', 'aria-label': '실시간 달리기 자세 (최근 40걸음)' }), sp: el('div', { class: 'rd-sp' }), spBox: el('div', { class: 'stack', style: 'gap:6px' }) };
   let runTab = ['map', 'form', 'guide'].includes(ls.get('runTab', 'map')) ? ls.get('runTab', 'map') : 'map';
   function drawRun() {
@@ -4039,23 +4037,21 @@ function viewWalk() {
     startGps(); ensureMap(); motionStart(); drawCad();
     if (M().k === 'run') {
       if (!mapEl.style.height.endsWith('px')) mapEl.style.height = '25vh'; mapEl.style.minHeight = '150px'; document.body.classList.add('has-act');
-      const voice = ls.get('runVoice', true), PZV = window.__pzv || '';   // 잠시 멈춤 단추 자리: 시안 A·B·C 고르는 중 (고르기 전엔 안 보여요)
-      const resBtn = el('button', { class: 'rd-res', onclick: () => pauseRun(false) }, '▶ 다시 시작');
-      const pzCard = pausedNow ? el('div', { class: 'rd-pzm' }, el('div', { class: 'grow' }, el('b', { text: '⏸ 잠시 멈춤 중' }), el('span', {}, '멈춘 지 ', rd.pzT, ' · 시간·거리를 세지 않아요')), PZV === 'B' ? null : resBtn) : null;
+      const voice = ls.get('runVoice', true);
+      // 잠시 멈춤(2026-10-17 시안 B안): 아래 줄 '끝내기' 자리에 '⏸ 멈춤', 멈추면 큰 '■ 끝내기 · ▶ 다시 시작'. 움직임과 상관없이 누른 대로
+      const pzCard = pausedNow ? el('div', { class: 'rd-pzm' }, el('div', { class: 'grow' }, el('b', { text: '⏸ 잠시 멈춤 중' }), el('span', {}, '멈춘 지 ', rd.pzT, ' · 시간·거리를 세지 않아요'))) : null;
       root.replaceChildren(...[roleBar('leader', '러닝', 'run'),
         el('div', { class: 'rd' },
           el('div', { class: 'rd-top' },
             (rd.state = el('span', { class: 'rd-chip' + (gps === 'on' ? '' : ' warn') }, gps === 'on' ? el('i') : null, gps === 'on' ? '기록 중' : gps === 'denied' ? '위치 권한 필요' : 'GPS 찾는 중')),
             el('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' },
               el('button', { class: 'rd-chip', 'aria-label': voice ? '1km 목소리 안내 켜짐' : '1km 목소리 안내 꺼짐', text: voice ? '🔊 안내 켬' : '🔇 안내 끔', onclick: () => { ls.set('runVoice', !voice); if (!voice) say('1킬로마다 알려 드릴게요'); draw(); } }),
-              PZV === 'A' ? el('button', { class: 'rd-chip' + (pausedNow ? ' warn' : ''), text: pausedNow ? '▶ 다시 시작' : '⏸ 멈춤', onclick: () => pauseRun(!pausedNow) }) : null,
               )),
           el('div', {}, rd.hero,
             el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap;justify-content:space-between;margin-top:2px' },
               el('span', { class: 'lbl', style: 'flex:none', text: '달린 거리' }), rd.gtxt)),
           rd.goal, rd.pz, pzCard,
           el('div', { class: 'rd-grid n2' }, rdTile('달린 시간', rd.time, rd.timeSub), el('div', { class: 'rd-t' }, rd.finL, rd.fin, rd.finSub), rdTile('페이스', rd.now, rd.nowSub), rdTile('케이던스', rd.cad, rd.cadSub)),
-          PZV === 'C' && !pausedNow ? el('button', { class: 'rd-pzbar', onclick: () => pauseRun(true) }, '⏸ 잠시 멈춤') : null,
             // 아래 자리를 지도 · 자세 · 가이드가 번갈아 써요 (시안 C안, 2026-10-01). 고른 탭은 runTab에 남겨요
             el('div', { class: 'rd-tabs', role: 'tablist' }, ...[['map', '🗺 지도'], ['form', '🏃 자세'], ['guide', cgTimer ? `♩ 가이드 ${cgSpm()}` : '♩ 가이드']].map(([k, t]) =>
               el('button', { role: 'tab', 'aria-selected': runTab === k ? 'true' : 'false', class: runTab === k ? 'on' : '', text: t, onclick: () => { if (runTab === k) return; runTab = k; ls.set('runTab', k); draw(); if (k === 'map') setTimeout(() => map && map.invalidateSize(), 60); } })))),
@@ -4065,7 +4061,7 @@ function viewWalk() {
         runTab === 'map' ? el('div', { class: 'rd-map' }, mapEl, el('span', { class: 'hint', text: '⤢ 누르면 크게' })) : el('div', { class: 'rd rd-pane' }, runTab === 'form' ? rd.form : cgRow()),
         follow || runTab !== 'map' ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
         // 아래 고정 버튼: 사진 · 끝내기 · 좋은 곳 (지금 있는 곳에 별표)
-        PZV === 'B' && pausedNow ? el('div', { class: 'rd-act' }, el('div', { class: 'rd-big2' },
+        pausedNow ? el('div', { class: 'rd-act' }, el('div', { class: 'rd-big2' },
           el('button', { class: 'end', onclick: finish }, '■ 끝내기'), el('button', { class: 'go', onclick: () => pauseRun(false) }, '▶ 다시 시작'))) :
         el('div', { class: 'rd-act' },
           el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 18), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
@@ -4073,8 +4069,7 @@ function viewWalk() {
           el('button', { class: 'rd-btn', 'aria-label': '지금 있는 곳을 좋은 곳으로 남기기', onclick: addSpot }, ico('star', 22, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 ${n}` : '좋은 곳'; })()),
           el('button', { class: 'rd-cam', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 32), nPhotos ? `사진 ${nPhotos}` : '사진 찍기'),
           el('button', { class: 'rd-btn', 'aria-label': '지금까지 공유하기', onclick: () => shareNow() }, ico('share', 22), '공유'),
-          PZV === 'B' ? el('button', { class: 'rd-btn', 'aria-label': '잠시 멈춤', onclick: () => pauseRun(true) }, el('span', { style: 'font-size:17px;line-height:1', text: '⏸' }), '멈춤')
-            : el('button', { class: 'rd-btn', 'aria-label': '기록 끝내기', onclick: finish }, el('i', { class: 'rd-sq' }), '끝내기'),
+          el('button', { class: 'rd-btn', 'aria-label': '잠시 멈춤', onclick: () => pauseRun(true) }, el('span', { style: 'font-size:17px;line-height:1', text: '⏸' }), '멈춤'),
           // 설명은 화면 잠그기를 세 번 써 볼 때까지만 (알고 나면 지도를 넓게)
           ls.get('lockUsed', 0) < 3 ? el('div', { class: 'rd-note', text: '🔒 화면 잠그기: 켠 채로 잘못 눌림을 막아요 · 풀 때 3초 꾹' }) : null),
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
