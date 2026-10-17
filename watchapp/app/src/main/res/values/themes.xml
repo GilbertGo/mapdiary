@@ -1,0 +1,7 @@
+<resources>
+    <!-- 시계에서 옆으로 밀면 앱이 닫히는 동작을 꺼요(화면을 옆으로 밀어 넘기려고). 앱은 뒤로 버튼(아래 버튼)으로 나가요 -->
+    <style name="Run" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowSwipeToDismiss">false</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>
