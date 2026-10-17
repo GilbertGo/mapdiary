@@ -40,6 +40,15 @@
 - **저절로 백업**(2026-10-06, 앱만): 켜고 20초 뒤 `autoBackup` — 마지막 백업(`lastBackup`·`lastAutoBackup`)이 7일 넘으면 '내 파일 > Documents > MapDiary'에 `{MapDiary|MDRun|MDGolf}_autobackup_날짜.json`(백업 파일과 같은 모양, `auto:1`). 사진이 많아도 되게 `mdNativeBackup.start/add/end`로 한 장씩 이어 쓰고(.part → 이름 바꾸기) 최근 3개만 남김
 - 다음 할 일: 현장 시험(화면 끄고 달리기), 삼성헬스(헬스 커넥트)에서 심박·자세 읽기, 이름·아이콘 시안, 화면 꺼져도 케이던스 가이드 소리
 
+## 갤럭시워치 앱 MD Run 워치 (`watchapp/`, 2026-10-17 시작)
+- 사용자 "이 앱 스마트워치 앱으로" → 고른 것: MD Run(개인용) · 갤럭시워치(사용자 시계는 **갤럭시워치9**) · **시계 혼자 기록**(휴대폰 없이). 웹을 감쌀 수 없어 **Kotlin Wear OS 앱을 새로** 짬(androidx는 `activity`·`wear`(앰비언트)만, 화면은 Canvas/기본 View). 자세한 건 `watchapp/README.md`
+- 달리는 중 화면: 시안 A(목표 링)·B(네 칸 숫자)·C(코치 신호등)를 보여 주자 사용자가 'b,c안' → '화면을 세 가지로 a,b,c' → **옆으로 밀어 A → B → C → 1km 구간 → 멈춤·끝내기(1.5초 꾹)** (`RunView`, 마지막 본 A·B·C는 `page` 기억). 시안 그림은 scratchpad `watch/drafts.html`
+- 계산·코치는 휴대폰 index.html 러닝 코드를 `Run.kt`로 옮김(같은 말). 심박(`TYPE_HEART_RATE`, BODY_SENSORS)·걸음(`TYPE_STEP_COUNTER`)은 시계 센서. 기록 도우미 `RunService`(포그라운드 location|health, 화면 꺼져도 기록, TTS·진동), 앰비언트에서도 앱 화면 유지(`Ambient.kt`)
+- 저장: 시계 안 `files/runs/{ID}.json`(Map Diary 백업과 같은 키 `track:`·`walkSplits:`… + `walkHr:`), 달리는 중 `current.json`(앱이 정리돼도 이어서). **아직 휴대폰으로 안 넘김**(다음 단계: 같은 appId `io.github.gilbertgo.mdrun`·같은 서명이라 Wearable Data Layer로 휴대폰 MD Run에 넘길 수 있게 맞춰 둠)
+- 만들기: `.github/workflows/watch-apk.yml`(watchapp/ 바뀌면, claude/** 가지에서도 시험으로 만듦). main이면 Releases 태그 `watch`에 `MDRunWatch.apk`(**make_latest: false** — 휴대폰 앱 latest 주소를 안 건드리게). 받는 주소 https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
+- 설치: 플레이스토어가 아니라 시계 개발자 모드 → 무선 디버깅 → 휴대폰 'Wear Installer 2'로 넣음(README에 순서)
+- 여기(클라우드) 확인 방법: dl.google.com이 막혀 안드로이드 SDK·androidx가 없음 → Kotlin 컴파일러(GitHub 릴리스) + robolectric `android-all` jar(Maven Central)로 androidx만 흉내(stub) 내서 컴파일해 보고, `Run`에 가짜 위치를 넣어 코치 말을 확인. 실제 APK는 GitHub Actions에서
+
 ## URL 규칙
 - `/mapdiary/` — 첫 화면(`viewLanding`): 기록 중이면 "기록 중 · 제목"(몇 분째, 누르면 이어서), **기록 시작**(모드 타일 8개. 누르면 `?walk=1&mode=` 그 모드의 시작 화면으로 바로, 다시 묻지 않음), MD 공유하기(2026-09-30 "Map Diary 공유하기"에서 바꿈, 공유 창 제목·기록 끝 화면·내 MD 버튼도 같이). 제목 'Map Diary' 옆에 주황 'MD' 딱지와 아래 작은 글씨 "기록 한 편 한 편을 줄여서 MD라고 불러요"(2026-09-30). (2026-09-29 그림 같은 파스텔 첫 화면을 시도했다가 사용자가 원래 그래픽이 낫다고 해서 되돌림)
 - `/mapdiary/?walk=1&mode=모드` — 기록 화면 (hike, trek, run, bike, backpack, camp, travel, date, daily=일상, pgolf=파크골프)
