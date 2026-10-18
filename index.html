@@ -587,7 +587,9 @@ function bearing(lat1, lng1, lat2, lng2) {
 }
 // ---------- 나의 이동 기록 (내 휴대폰에만 저장돼요) ----------
 const TRACK_MIN_M = 15, TRACK_MAX_ACC = 60;
-const trackLoad = t => String(t).startsWith('album_') ? albumTrack(t) : ls.get('track:' + t, []);
+// 하루 기록은 배열에 ID를 달아 둬요(_t): 대회 공식 기록(walkOfficial:{ID})이 있으면 trackStats·movingMs가 그 거리·시간을 써요. 잘라 쓴 조각(slice)엔 안 붙어요
+const trackLoad = t => { if (String(t).startsWith('album_')) return albumTrack(t); const a = ls.get('track:' + t, []); try { Object.defineProperty(a, '_t', { value: t }); } catch {} return a; };
+const officialOf = tr => { const o = tr && tr._t ? ls.get('walkOfficial:' + tr._t, null) : null; return o && o.km > 0 ? o : null; };
 // ---------- 마음에 드는 곳 (⭐) ----------
 // walkSpots:{기록ID} = [{ n: 이름, lat, lng, ts }]. 여러 날 여행이면 모든 날을 모아요.
 function spotsOf(t) {
@@ -1263,6 +1265,7 @@ const mdOf = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.get
 const fmtSpeed = (d, ms) => ms > 0 ? `${(d / 1000 / (ms / 3600000)).toFixed(1)}km/h` : '-';
 // 러닝·자전거: 신호 대기처럼 멈춘 시간은 빼고 '움직인 시간'만 (한 구간이 1분 넘거나 초속 0.7m보다 느리면 멈춘 것으로 봐요)
 function movingMs(tr, kmh) {
+  const o = officialOf(tr); if (o && o.ms > 0) return o.ms;
   const m = trackModes(tr, kmh); let ms = 0;
   for (let i = 1; i < tr.length; i++) { const dt = tr[i][2] - tr[i - 1][2]; if (m[i] === 'w' && dt > 0 && dt <= 60000 && dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) / (dt / 1000) >= 0.7) ms += dt; }
   return ms;
@@ -1301,7 +1304,9 @@ function trackStats(tr, kmh) {
   let d = 0; for (let i = 1; i < tr.length; i++) d += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
   const m = trackModes(tr, kmh);
   let walk = 0; for (let i = 1; i < tr.length; i++) if (m[i] === 'w') walk += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
-  return { d, walk, ms: tr.length > 1 ? tr[tr.length - 1][2] - tr[0][2] : 0 };
+  const o = officialOf(tr), ms = tr.length > 1 ? tr[tr.length - 1][2] - tr[0][2] : 0;
+  if (o) return { d: d + o.km * 1000 - walk, walk: o.km * 1000, ms: o.ms > 0 ? o.ms : ms, gps: walk };
+  return { d, walk, ms };
 }
 // ---------- 걸은 구간 / 차로 간 구간 나누기 ----------
 // 점마다 한 글자: 'w' 걸어서 온 길, 'c' 차(탈것)로 온 길. 시속 15km보다 빠르면 차로 봐요.
@@ -1790,7 +1795,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2830,7 +2835,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
@@ -3300,6 +3305,35 @@ function trimTrack(t, pre) {
   document.body.append(sb); draw();
   setTimeout(() => { m = L.map(mapBox); mdTileLayer().addTo(m); lyr = L.layerGroup().addTo(m); m.fitBounds(full.map(q => [q[0], q[1]]), { padding: [24, 24] }); draw(); }, 30);
 }
+// 🏁 대회 공식 기록으로 맞추기: GPS는 10.1km처럼 조금 다르게 나와서, 공식 거리·완주 시간을 적으면 거리·시간·페이스를 그 숫자로 보여 줘요(지도·길은 그대로)
+function officialEdit(t, guessMs) {
+  const cur = ls.get('walkOfficial:' + t, null) || {}, gps = trackStats(ls.get('track:' + t, []), modeOfT(t).car).walk / 1000;
+  const near = [5, 10, 21.0975, 42.195].reduce((a, b) => Math.abs(b - gps) < Math.abs(a - gps) ? b : a);
+  let km = cur.km || (Math.abs(near - gps) / near < 0.08 ? near : Math.round(gps * 10) / 10);
+  const hms = ms => { const x = Math.round(ms / 1000); return `${Math.floor(x / 3600)}:${String(Math.floor(x / 60) % 60).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+  const iT = el('input', { type: 'text', id: 'of-t', inputmode: 'numeric', value: cur.ms ? hms(cur.ms) : guessMs ? hms(guessMs) : '', placeholder: '예: 1:30:00' });
+  const iK = el('input', { type: 'text', id: 'of-k', inputmode: 'decimal', value: String(km) });
+  const chips = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });
+  const drawChips = () => chips.replaceChildren(...[[5, '5km'], [10, '10km'], [21.0975, '하프'], [42.195, '풀코스']].map(([v, l]) =>
+    el('button', { class: 'btn small ' + (+iK.value === v ? 'primary' : 'line'), text: l, onclick: () => { iK.value = String(v); drawChips(); } })));
+  iK.oninput = drawChips; drawChips();
+  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '대회 기록으로 맞추기' },
+    el('h2', { text: '🏁 대회 기록으로 맞추기' }),
+    el('div', { class: 'sub', style: 'font-size:14px', text: `GPS로 잰 거리는 ${fmtDist(gps * 1000)}예요. 대회 공식 거리와 완주 시간을 적으면 이 MD의 거리·시간·페이스를 그 숫자로 보여 줘요. 지도와 길은 그대로예요.` }),
+    el('b', { text: '공식 거리' }), chips, el('label', { class: 'f', for: 'of-k' }, '거리 (km)', iK),
+    el('label', { class: 'f', for: 'of-t' }, '완주 시간 (시:분:초, 비워 두면 기록된 시간)', iT),
+    cur.km ? el('button', { class: 'link', style: 'align-self:flex-start;padding:0', text: 'GPS 기록대로 되돌리기', onclick: () => { localStorage.removeItem('walkOfficial:' + t); sb.remove(); toast('GPS 기록대로 되돌렸어요'); setTimeout(() => location.reload(), 400); } }) : null,
+    el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
+      el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
+        const k = parseFloat(iK.value); if (!(k > 0 && k < 300)) return toast('거리를 숫자로 적어 주세요');
+        let ms = 0; const v = iT.value.trim();
+        if (v) { const p = v.split(':').map(x => parseFloat(x)); const sec = p.some(isNaN) ? NaN : p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : p[0] * 60;
+          if (!(sec > 60)) return toast('시간은 1:30:00처럼 적어 주세요'); ms = sec * 1000; }
+        ls.set('walkOfficial:' + t, { km: k, ms }); sb.remove(); toast('대회 기록으로 맞췄어요'); setTimeout(() => location.reload(), 400);
+      } }))));
+  document.body.append(sb);
+}
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
   if (!x) { location.replace('./?my=1'); return; }
@@ -3338,7 +3372,8 @@ async function viewMyOne(t) {
       el('div', { class: 'card', style: 'padding:12px' }, golfTable(G)));
   };
   drawGolf();
-  const nums = [golf && golfSummary(golf) ? `타수 ${golfSummary(golf)}` : '', `${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : `다닌 시간 ${fmtDur(st.ms)}`,
+  const off = officialOf(tr);
+  const nums = [golf && golfSummary(golf) ? `타수 ${golfSummary(golf)}` : '', off ? `🏁 공식 ${fmtDist(st.walk)}${off.ms ? ' · ' + fmtRunTime(off.ms) : ''} (GPS ${fmtDist(st.gps)})` : `${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : off && off.ms ? '' : `다닌 시간 ${fmtDur(st.ms)}`,
     M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '',
     M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
   const rename = async () => {
@@ -3372,13 +3407,14 @@ async function viewMyOne(t) {
       noteEl,
       el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
       el('div', { class: 'sub', text: nums.join(' · ') })),
-    (() => { const sp = M.k === 'run' && !live && !x.album ? runSpan(tr) : null; if (!sp) return null;
+    (() => { const sp = M.k === 'run' && !live && !x.album && !off ? runSpan(tr) : null; if (!sp) return null;
       const run = tr[sp.b][2] - tr[sp.a][2];
       return el('div', { class: 'card', style: 'padding:14px;border:2px solid var(--accent);display:flex;flex-direction:column;gap:8px' },
         el('b', { text: `⏱ 달린 시간은 ${fmtDur(run)}쯤이에요` }),
         el('div', { class: 'sub', style: 'font-size:14px', text: `${fmtClock(tr[sp.a][2])}에 달리기 시작해 ${fmtClock(tr[sp.b][2])}에 멈췄어요. 그 앞뒤 ${fmtDur(sp.cut)} 동안은 걷거나 쉬던 때라 '다닌 시간'이 길게 나왔어요(끝내기를 늦게 누르면 이래요).` }),
         el('button', { class: 'btn primary full', text: '✂ 달린 부분만 남기기', onclick: () => trimTrack(t, sp) }),
         el('div', { class: 'sub', style: 'font-size:12px', text: '지도에서 보고 저장을 누르면 돼요. 원래 기록은 남아서 언제든 되돌릴 수 있어요.' })); })(),
+    M.k === 'run' && !live && !x.album ? el('button', { class: 'btn line full', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기 (예: 10km · 1:30:00)', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null,
     golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'MD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
