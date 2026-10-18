@@ -115,7 +115,7 @@ if (Capacitor.isNativePlatform()) {
     const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     const txt = await r.text(), at = txt.indexOf('<script');
-    if (txt.length < 100000 || at < 0 || !txt.includes('Map Diary')) return;   // 와이파이 로그인 화면 같은 엉뚱한 쪽이면 안 써요
+    if (txt.length < 100000 || at < 0 || !/Map (Photo )?Diary/.test(txt)) return;   // 와이파이 로그인 화면 같은 엉뚱한 쪽이면 안 써요
     const h = await hex(txt);
     if (h === APP.h || recording()) return;
     const dir = 'web/' + h.slice(0, 16);
