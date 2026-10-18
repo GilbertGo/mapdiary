@@ -4,6 +4,7 @@
 
 ## 무엇인가
 **여행 기록 공유 웹앱.** 등산·트래킹·자전거·러닝·캠핑·백패킹·데이트·여행를 기록하고, 다녀온 길을 **공유 카드**(지도 위 경로 그림)와 **짧은 지도 링크**로 보낸다. 문구 "다닌 길과 사진이 그대로 일기가 돼요"(2026-09-30 바꿈). **2026-10-18 유진 님 의견대로 이름을 'Map Photo Diary'로 바꿈**(사용자 '유진 의견 받아들여'): 화면에 보이는 'Map Diary'를 모두 'Map Photo Diary'로(첫 화면 제목은 좁은 폰에서 `clamp(28px,8.4vw,34px)`, 맨 위 띠 오른쪽 '내 Map Diary'는 길어서 '내 기록'), manifest·md.html·안드로이드 앱 이름(`apps.json` appName)도. **바꾸지 않은 것**: 주소 `/mapdiary/`, 저장 키, 백업 파일 이름(`MapDiary_…`)·폴더(Documents/MapDiary)·APK 이름(MapDiary.apk)·appId, 'MD'라는 줄임말(내 MD·MD 공유하기). **index.html에 'Map Diary' 글자를 주석으로 남겨 둠**: 이미 깐 앱의 `native.js` liveUpdate가 받은 화면에 이 글자가 있어야 새 화면으로 바꿔서(새 native.js는 `/Map (Photo )?Diary/`로 확인).
+- **2026-10-18 줄임말을 MD → MPD로**(사용자 '이 앱 이름 MPD로 바꾸자. 화면에 나오는 MD도 모두 MPD로'): index.html 화면 글자의 'MD'를 모두 'MPD'로(내 MPD·MPD 공유하기·받은 MPD·첫 화면 딱지 'MPD'·결산 카드 'MPD n월 결산'). 바탕화면·홈 화면 아이콘 이름도 MPD(manifest `short_name`, `apple-mobile-web-app-title`(index·md.html), 안드로이드 `apps.json` md appName). 제목 'Map Photo Diary'는 그대로. **바꾸지 않은 것**: 코드 이름(`MD_KEYS`·`MD_APP`·`mdToast` 등), 다른 앱 이름 'MD Run'·'MD 파크골프'(APK 이름·appId도 그대로). 아래 글의 'MD'는 지금 화면에선 'MPD'로 보임
 - 2026-09-28에 **다왔나(단체 나들이 인솔, `GilbertGo/allhere`)에서 갈라져 나왔다.** 이름 변천: 다왔나 → 발도장 → 누비 → 지도일기 → **Map Diary**(2026-09-29).
 - **2026-09-29부터 다왔나와 관계를 끊었다.** 이 앱은 단체 나들이를 하지 않고 다왔나로 넘기지도 않는다(`DAWATNA` 없앰). 다왔나도 이 앱으로 넘기지 않는다. 서로 링크·코드로 이어 두지 말 것.
 - 사용자가 주로 쓰려는 곳: **산행, 가족여행, 데이트**.
