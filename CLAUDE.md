@@ -56,6 +56,7 @@
 - 계산·코치는 휴대폰 index.html 러닝 코드를 `Run.kt`로 옮김(같은 말). 심박(`TYPE_HEART_RATE`, BODY_SENSORS)·걸음(`TYPE_STEP_COUNTER`)은 시계 센서. 기록 도우미 `RunService`(포그라운드 location|health, 화면 꺼져도 기록, TTS·진동), 앰비언트에서도 앱 화면 유지(`Ambient.kt`)
 - 저장: 시계 안 `files/runs/{ID}.json`(Map Diary 백업과 같은 키 `track:`·`walkSplits:`… + `walkHr:`), 달리는 중 `current.json`(앱이 정리돼도 이어서). **아직 휴대폰으로 안 넘김**(다음 단계: 같은 appId `io.github.gilbertgo.mdrun`·같은 서명이라 Wearable Data Layer로 휴대폰 MD Run에 넘길 수 있게 맞춰 둠)
 - 만들기: `.github/workflows/watch-apk.yml`(watchapp/ 바뀌면, claude/** 가지에서도 시험으로 만듦). main이면 Releases 태그 `watch`에 `MDRunWatch.apk`(**make_latest: false** — 휴대폰 앱 latest 주소를 안 건드리게). 받는 주소 https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
+- **다음 시계 새 판 때 같이 할 일**(2026-10-18 사용자 '시계 새 판 나오면'): 시계 앱 이름을 'MPD Run'으로 바꾸기. 시계는 저절로 업데이트되지 않아서 새 판을 내면 사용자에게 '시계 새 판 나왔어요' + 까는 순서(Wear Installer 2)를 그 자리에서 다시 알려 줄 것
 - 설치: 플레이스토어가 아니라 시계 개발자 모드 → 무선 디버깅 → 휴대폰 'Wear Installer 2'로 넣음(README에 순서)
 - 여기(클라우드) 확인 방법: dl.google.com이 막혀 안드로이드 SDK·androidx가 없음 → Kotlin 컴파일러(GitHub 릴리스) + robolectric `android-all` jar(Maven Central)로 androidx만 흉내(stub) 내서 컴파일해 보고, `Run`에 가짜 위치를 넣어 코치 말을 확인. 실제 APK는 GitHub Actions에서
 
