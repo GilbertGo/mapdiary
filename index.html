@@ -87,6 +87,11 @@ input::placeholder{color:#B3AC9C}
 .om-c{border:none;padding:0;background:linear-gradient(#8A6A32,#8A6A32) center/100% 1px no-repeat,linear-gradient(#8A6A32,#8A6A32) center/1px 100% no-repeat;position:relative;aspect-ratio:1}
 .om-c.bk::after,.om-c.wh::after{content:'';position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#555,#111);box-shadow:0 1px 2px rgba(0,0,0,.4)}
 .om-c.wh::after{background:radial-gradient(circle at 35% 30%,#fff,#D8D8D8)}.om-c.last::before{content:'';position:absolute;inset:38%;border-radius:50%;background:#FF5A3C;z-index:1}
+.tk-card{display:flex;flex-direction:column;gap:10px;padding:14px}.tk-card.on{box-shadow:0 0 0 3px #FF8A4C,var(--shadow)}
+.tk-live{max-height:42vh;min-height:120px;overflow-y:auto;font-size:16px;line-height:1.6}.tk-time{font-size:12px;font-weight:800;color:var(--muted);margin-top:8px}.tk-int{color:var(--muted)}
+.tk-note{display:flex;flex-direction:column;gap:10px;padding:16px}.tk-tag{font-size:12.5px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted)}.tk-tag.ai{background:#FFE6D8;color:#D9622B}
+.tk-topic{border-left:3px solid var(--pine);padding-left:10px}.tk-th{display:flex;gap:8px;align-items:baseline}.tk-th span{width:22px;height:22px;border-radius:50%;background:var(--pine);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none}.tk-th small{color:var(--muted)}
+.tk-note ul{margin:4px 0 0;padding-left:20px}.tk-note li{margin:2px 0}.tk-sec{background:var(--ground);border-radius:12px;padding:10px 12px}
 .gm-h{margin:10px 0 0;font-size:17px}
 .bp{display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow)}.bp-l{font-size:13px;color:var(--muted);font-weight:700}
 .bp-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.bp-c{display:inline-flex;align-items:center;gap:2px;height:34px;padding:0 4px 0 12px;border-radius:999px;background:var(--c);color:#fff;font-weight:800;font-size:15px}
@@ -2288,6 +2293,7 @@ const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
 function route() {
   if (qs.get('walk') === '1') return viewWalk();
   if (qs.get('game')) return viewGames();
+  if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
   if (qs.get('room')) return viewRoom();
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
   if (qs.get('s')) return viewShareLink();
@@ -3501,6 +3507,153 @@ function gameTen(area, info) {
   const start = () => { ps = betPeople(); turn = 0; rec = []; t0 = 0; cancelAnimationFrame(raf); clock.textContent = '0.00'; out.replaceChildren(); draw(); };
   area.replaceChildren(betPeopleRow(start), who, clock, btn, table, out);
   info.replaceChildren(el('span', { text: '속으로 10초를 세고 멈춰요. 3초 뒤부터 숫자가 안 보여요' })); start();
+}
+// ---------- 대화 정리 (2026-10-18, 사용자 '대화를 듣고, 앞뒤 맥락 구분하고, 정리해서 공유할 수준') ----------
+// ?talk=1. 휴대폰 음성 인식(크롬·엣지·사파리의 SpeechRecognition, ko-KR)으로 받아 적고,
+// 정리는 ① AI 정리: 이 휴대폰에 넣은 Anthropic API 열쇠(ls claudeKey, 이 휴대폰에만)로 Claude가 화제별로 나누고 결정·할 일·남은 질문을 뽑음
+//        ② 기본 정리: 열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눔
+// 받아 적는 중인 것은 ls talkDraft(앱이 꺼져도 남음), 정리한 것은 ls talkNotes(최근 30개)
+const TALK_SDK = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm';
+const TALK_SCHEMA = { type: 'object', additionalProperties: false, required: ['title', 'summary', 'topics', 'decisions', 'todos', 'questions'], properties: {
+  title: { type: 'string' }, summary: { type: 'string' },
+  topics: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'time', 'points'], properties: { title: { type: 'string' }, time: { type: 'string' }, points: { type: 'array', items: { type: 'string' } } } } },
+  decisions: { type: 'array', items: { type: 'string' } },
+  todos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['what', 'who', 'when'], properties: { what: { type: 'string' }, who: { type: 'string' }, when: { type: 'string' } } } },
+  questions: { type: 'array', items: { type: 'string' } } } };
+const TALK_SYSTEM = `당신은 대화 기록을 정리해 주는 비서입니다.
+입력은 휴대폰 음성 인식으로 받아 적은 한국어 대화입니다. 누가 말했는지는 구분되어 있지 않고, 잘못 알아들은 낱말과 끊긴 문장이 섞여 있습니다. 줄 앞의 [시:분]은 그 말이 나온 시각입니다.
+- 앞뒤 맥락을 보고 화제가 바뀌는 곳마다 나눠 topics에 순서대로 담으세요. time은 그 화제가 시작된 [시:분], points는 그 화제의 핵심을 짧은 문장 몇 개로.
+- 잘못 알아들은 말은 맥락으로 바로잡아 이해하되, 대화에 없는 내용을 지어내지 마세요. 확실하지 않으면 빼세요.
+- decisions에는 정해진 것만, todos에는 해야 할 일(who·when은 대화에 나왔을 때만, 없으면 빈 문자열), questions에는 아직 정하지 못했거나 다시 이야기해야 할 것.
+- title은 대화 전체를 나타내는 짧은 제목, summary는 두세 문장 요약.
+- 쉬운 한국어 존댓말로, 카톡방에 그대로 올려도 될 만큼 짧고 깔끔하게 쓰세요.`;
+const talkHM = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const talkText = segs => segs.map(s => `[${talkHM(s.t)}] ${s.x}`).join('\n');
+async function talkAI(segs) {
+  const key = ls.get('claudeKey', '');
+  const { default: Anthropic } = await import(TALK_SDK);
+  const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });   // 열쇠는 이 휴대폰에만 있고, Anthropic으로만 보내요
+  const res = await client.beta.messages.create({
+    model: 'claude-opus-5-5', max_tokens: 16000,
+    betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',   // 안전 검사로 거절되면 서버가 다른 모델로 다시 해 봐요
+    output_config: { effort: 'medium', format: { type: 'json_schema', schema: TALK_SCHEMA } },
+    system: TALK_SYSTEM,
+    messages: [{ role: 'user', content: `다음 대화를 정리해 주세요.\n\n${talkText(segs)}` }],
+  });
+  if (res.stop_reason === 'refusal') throw new Error('refusal');
+  if (res.stop_reason === 'max_tokens') throw new Error('too-long');
+  const tb = res.content.find(b => b.type === 'text'); if (!tb) throw new Error('empty');
+  return Object.assign(JSON.parse(tb.text), { ai: 1 });
+}
+// 열쇠 없이: 30초 넘게 말이 없으면 화제가 바뀐 것으로 보고, 낱말로 결정·할 일·질문을 골라요
+function talkBasic(segs) {
+  const topics = []; let cur = null;
+  segs.forEach((s, i) => { if (!cur || s.t - segs[i - 1].t > 30000) { cur = { title: `이야기 ${topics.length + 1}`, time: talkHM(s.t), points: [] }; topics.push(cur); } cur.points.push(s.x); });
+  topics.forEach(tp => { if (tp.points.length > 6) tp.points = [...tp.points.slice(0, 3), '…', ...tp.points.slice(-2)]; });
+  const all = segs.map(s => s.x), pick = re => [...new Set(all.filter(x => re.test(x)))].slice(0, 8);
+  return { title: `${new Date(segs[0].t).getMonth() + 1}월 ${new Date(segs[0].t).getDate()}일 대화`, summary: `${talkHM(segs[0].t)}부터 ${talkHM(segs[segs.length - 1].t)}까지 나눈 이야기예요. (기본 정리: 말 사이 쉰 시간과 낱말로 대충 나눴어요)`, topics,
+    decisions: pick(/하기로|정했|결정|그걸로 하|확정|그렇게 하자/),
+    todos: pick(/해야|하자|할게|해 줘|해줘|부탁|챙겨|예약|가져|사 ?와|까지/).map(x => ({ what: x, who: '', when: '' })),
+    questions: pick(/\?|할까|까요|나요|어떡|어떻게 하/), ai: 0 };
+}
+function talkShareText(n) {
+  const L = [`📝 ${n.title}`, n.summary, ''];
+  n.topics.forEach((tp, i) => { L.push(`${i + 1}. ${tp.title}${tp.time ? ` (${tp.time})` : ''}`); tp.points.forEach(p => L.push(` · ${p}`)); });
+  if (n.decisions.length) L.push('', '✅ 정한 것', ...n.decisions.map(d => ` · ${d}`));
+  if (n.todos.length) L.push('', '📌 할 일', ...n.todos.map(t => ` · ${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`));
+  if (n.questions.length) L.push('', '❓ 아직 정할 것', ...n.questions.map(q => ` · ${q}`));
+  L.push('', '— Map Diary 대화 정리');
+  return L.join('\n');
+}
+function talkNoteView(n) {
+  const sec = (h, items) => items.length ? el('div', { class: 'tk-sec' }, el('b', { text: h }), el('ul', {}, ...items.map(x => el('li', { text: x })))) : null;
+  return el('div', { class: 'card tk-note' },
+    el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('span', { class: 'tk-tag' + (n.ai ? ' ai' : ''), text: n.ai ? '✨ AI 정리' : '기본 정리' }), el('span', { class: 'sub', text: n.at ? new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '' })),
+    el('h2', { text: n.title }), el('p', { class: 'sub', style: 'margin:0;color:var(--ink)', text: n.summary }),
+    ...n.topics.map((tp, i) => el('div', { class: 'tk-topic' }, el('div', { class: 'tk-th' }, el('span', { text: i + 1 }), el('b', { text: tp.title }), tp.time ? el('small', { text: tp.time }) : null),
+      el('ul', {}, ...tp.points.map(p => el('li', { text: p }))))),
+    sec('✅ 정한 것', n.decisions), sec('📌 할 일', n.todos.map(t => `${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`)), sec('❓ 아직 정할 것', n.questions));
+}
+async function talkShare(n) {
+  const text = talkShareText(n);
+  if (navigator.share && !IN_KAKAO) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  navigator.clipboard.writeText(text).then(() => toast('정리한 글을 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 글을 복사하세요', text));
+}
+async function talkKeySheet() {
+  const v = await askText('AI 정리 열쇠 넣기', 'Anthropic API 열쇠 (sk-ant-로 시작)', ls.get('claudeKey', ''), 'sk-ant-…',
+    '열쇠는 이 휴대폰에만 저장되고, 정리할 때 Anthropic(Claude)으로만 보내요. console.anthropic.com에서 만들 수 있어요. 30분 대화 한 번 정리에 100원 안팎이 들어요. 남에게 보내지 마세요.', 200, true);
+  if (v == null) return false;
+  ls.set('claudeKey', v); toast(v ? 'AI 정리 열쇠를 넣었어요' : 'AI 정리 열쇠를 지웠어요'); return true;
+}
+function viewTalk() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let segs = ls.get('talkDraft', []), rec = null, on = false, interim = '', wake = null, note = null, busy = false;
+  const box = el('div', { class: 'stack' }), live = el('div', { class: 'tk-live' });
+  const save = () => ls.set('talkDraft', segs);
+  const drawLive = () => {
+    const parts = []; segs.forEach((s, i) => { if (!i || s.t - segs[i - 1].t > 8000) parts.push(el('div', { class: 'tk-time', text: talkHM(s.t) })); parts.push(el('span', { text: s.x + ' ' })); });
+    if (interim) parts.push(el('span', { class: 'tk-int', text: interim }));
+    live.replaceChildren(...(parts.length ? parts : [el('div', { class: 'sub center', text: on ? '듣고 있어요. 말하면 여기에 적혀요' : '아직 받아 적은 말이 없어요' })]));
+    if (on) live.scrollTop = live.scrollHeight;
+  };
+  const start = async () => {
+    if (!SR) return toast('이 브라우저는 음성 듣기가 안 돼요. 크롬·엣지·사파리에서 열어 주세요');
+    rec = new SR(); rec.lang = 'ko-KR'; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i], x = r[0].transcript.trim(); if (!x) continue; if (r.isFinal) { segs.push({ t: Date.now(), x }); save(); } else interim += x + ' '; } drawLive(); };
+    // 크롬은 조용하면 저절로 멈춰서, 듣는 중이면 다시 켜요
+    rec.onend = () => { if (on) setTimeout(() => { try { rec.start(); } catch {} }, 250); };
+    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { on = false; toast('마이크를 허용해 주세요 (주소창 옆 자물쇠 → 마이크)'); draw(); } };
+    try { rec.start(); } catch {} on = true;
+    try { wake = await navigator.wakeLock.request('screen'); } catch {}
+    draw();
+  };
+  const stop = () => { on = false; interim = ''; try { rec && rec.stop(); } catch {} try { wake && wake.release(); } catch {} wake = null; draw(); };
+  const organize = async () => {
+    if (!segs.length) return toast('받아 적은 말이 없어요');
+    if (!ls.get('claudeKey', '')) { note = Object.assign(talkBasic(segs), { at: Date.now() }); return keep(); }
+    busy = true; draw();
+    try { note = Object.assign(await talkAI(segs), { at: Date.now() }); }
+    catch (e) {
+      const m = String(e && (e.status || e.message));
+      toast(m === '401' ? 'AI 열쇠가 맞지 않아요. 열쇠를 다시 넣어 주세요' : m === 'refusal' ? 'AI가 이 대화를 정리하지 않았어요. 기본 정리로 보여 드려요' : m === 'too-long' ? '대화가 너무 길어요. 나눠서 정리해 주세요' : 'AI 정리를 못 했어요(인터넷 확인). 기본 정리로 보여 드려요');
+      note = Object.assign(talkBasic(segs), { at: Date.now() });
+    }
+    busy = false; keep();
+  };
+  const keep = () => { const list = ls.get('talkNotes', []); list.unshift(Object.assign({ raw: talkText(segs) }, note)); ls.set('talkNotes', list.slice(0, 30)); draw(); scrollTo(0, 0); };
+  const toMD = n => { const w = ls.get('walkNow', null); if (!w) return; const old = ls.get('walkNote:' + w, '');
+    ls.set('walkNote:' + w, `${old ? old + '\n\n' : ''}${talkShareText(n).replace(/\n— Map Diary 대화 정리$/, '')}`.slice(0, 1000)); toast('지금 기록 중인 MD 메모에 붙였어요'); };
+  function draw() {
+    const hasKey = !!ls.get('claudeKey', ''), past = ls.get('talkNotes', []), w = ls.get('walkNow', null);
+    box.replaceChildren(...[
+      note ? talkNoteView(note) : null,
+      note ? el('div', { class: 'two' }, el('button', { class: 'btn primary', text: '📤 공유하기', onclick: () => talkShare(note) }), el('button', { class: 'btn line', text: '새 대화', onclick: () => { if (!confirm('받아 적은 말을 비우고 새로 시작할까요? (정리한 것은 아래 목록에 남아요)')) return; segs = []; save(); note = null; draw(); } })) : null,
+      note && w ? el('button', { class: 'btn line full', text: '📒 지금 기록 중인 MD 메모에 붙이기', onclick: () => toMD(note) }) : null,
+      note ? el('h2', { style: 'margin-top:8px', text: '받아 적은 말' }) : null,
+      el('div', { class: 'card tk-card' + (on ? ' on' : '') }, live,
+        el('div', { class: 'row', style: 'gap:8px' },
+          el('button', { class: 'btn big grow ' + (on ? 'line' : 'primary'), text: on ? '■ 그만 듣기' : segs.length ? '🎙 이어서 듣기' : '🎙 듣기 시작', onclick: () => on ? stop() : start() }),
+          segs.length && !on ? el('button', { class: 'btn line', 'aria-label': '받아 적은 말 고치기', text: '✎', onclick: async () => { const v = await askLong('받아 적은 말 고치기', segs.map(s => s.x).join('\n'), '', '한 줄이 한 마디예요. 잘못 알아들은 말을 고쳐요', 20000); if (v == null) return; const lines = v.split('\n').map(x => x.trim()).filter(Boolean), t0 = segs[0].t, t1 = segs[segs.length - 1].t;
+            segs = lines.map((x, i) => ({ t: segs[i] ? segs[i].t : t1 + i, x })); if (!segs.length) segs = []; else segs[0].t = t0; save(); drawLive(); } }) : null)),
+      on ? el('div', { class: 'sub center', text: '🔴 듣는 중 · 화면을 켜 두세요(꺼지면 멈춰요) · 같이 있는 사람에게 알리고 써 주세요' }) : null,
+      !on && segs.length ? el('button', { class: 'btn primary full big', disabled: busy, text: busy ? '✨ 정리하는 중… (30초쯤)' : hasKey ? '✨ AI로 정리하기' : '📝 정리하기 (기본)', onclick: organize }) : null,
+      el('div', { class: 'banner info', style: 'gap:6px' },
+        el('b', { text: hasKey ? '✨ AI 정리가 켜져 있어요' : 'AI 정리는 열쇠가 있어야 해요' }),
+        el('div', { text: hasKey ? 'Claude가 앞뒤 맥락을 보고 화제를 나누고, 정한 것·할 일·아직 정할 것을 뽑아요. 받아 적은 글만 Anthropic으로 보내요.' : '열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눠요. 맥락까지 보려면 Anthropic API 열쇠를 넣어 주세요.' }),
+        el('button', { class: 'btn line small', style: 'align-self:flex-start', text: hasKey ? '열쇠 바꾸기·지우기' : '🔑 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) draw(); } })),
+      !SR ? el('div', { class: 'banner alert' }, el('b', { text: '이 화면에서는 음성 듣기가 안 돼요' }), el('div', { text: IN_NATIVE ? '앱 안에서는 아직 안 돼요. 크롬에서 열어 주세요.' : '크롬·엣지·사파리에서 열어 주세요. 카톡 안에서는 안 돼요.' }),
+        IN_NATIVE ? el('a', { class: 'btn line small', style: 'align-self:flex-start', href: APP_BASE + '?talk=1', target: '_blank', text: '크롬에서 열기' }) : null) : null,
+      past.length ? el('h2', { style: 'margin-top:8px', text: `정리한 대화 ${past.length}개` }) : null,
+      ...past.map((n, i) => el('div', { class: 'member', style: 'cursor:pointer', onclick: () => { note = n; draw(); scrollTo(0, 0); } },
+        el('div', { class: 'grow' }, el('div', { class: 'nm', text: n.title }), el('div', { class: 'dt', text: `${new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${n.ai ? 'AI 정리' : '기본 정리'} · 화제 ${n.topics.length}개` })),
+        el('button', { class: 'btn line small', text: '지우기', onclick: e => { e.stopPropagation(); if (!confirm('이 정리를 지울까요?')) return; const l = ls.get('talkNotes', []); l.splice(i, 1); ls.set('talkNotes', l); if (note === n) note = null; draw(); } })))
+    ].filter(Boolean));
+    drawLive();
+  }
+  leaveWarn = () => on ? '듣는 중이에요. 나가면 듣기가 멈춰요(받아 적은 말은 남아요). 갈까요?' : null;
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '대화 정리'), el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
+    el('h1', { text: '🎙 대화 정리' }), el('div', { class: 'sub', text: '대화를 듣고 받아 적은 뒤, 화제별로 나눠 정한 것·할 일을 정리해 공유해요. 받아 적은 말은 이 휴대폰에만 남아요.' }), box));
+  draw();
 }
 // ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
 // 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
