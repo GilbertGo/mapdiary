@@ -73,6 +73,18 @@ class MainActivity : ComponentActivity() {
         setPadding((4 * u).toInt(), (3.2f * u).toInt(), (4 * u).toInt(), (3.2f * u).toInt())
         setOnClickListener { onClick() }
     }
+    // 두 줄 단추: 위에 작은 회색 이름, 아래 흰 굵은 값, 오른쪽 ›
+    private fun row(label: String, value: String, onClick: () -> Unit) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        background = GradientDrawable().apply { cornerRadius = 40 * u; setColor(RunView.SURF) }
+        setPadding((6 * u).toInt(), (2.4f * u).toInt(), (4 * u).toInt(), (2.4f * u).toInt())
+        val col = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.VERTICAL
+            addView(tv(label, 10f, RunView.MUTED).apply { gravity = Gravity.START })
+            addView(tv(value, 14f, Color.WHITE, true).apply { gravity = Gravity.START; maxLines = 1 }) }
+        addView(col, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        addView(tv("›", 18f, RunView.MUTED))
+        setOnClickListener { onClick() }
+    }
     private fun lp(top: Float = 2f) = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = (top * u).toInt() }
     // 둥근 화면이라 위아래·옆에 여백을 두고, 용두(돌리는 버튼)로도 내려가게 해요
     private fun page(vararg views: View): ScrollView {
@@ -87,16 +99,16 @@ class MainActivity : ComponentActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val g = Store.goal(this)
         gpsText = tv("GPS 찾는 중…", 12f, RunView.MUTED)
-        val tgt = when (g.k) { "dist" -> btn("완주 목표 · ${if (g.t > 0) g.tgtLabel() else "없음"}", Color.parseColor("#24302A")) { showTarget() }
-            "time" -> btn("목표 거리 · ${if (g.d > 0) g.tgtLabel() else "없음"}", Color.parseColor("#24302A")) { showTarget() }
+        val tgt = when (g.k) { "dist" -> row("완주 목표 시간", if (g.t > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
+            "time" -> row("목표 거리", if (g.d > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             else -> null }
         val views = listOfNotNull(
-            tv("MD Run", 13f, RunView.ORANGE, true), gpsText,
-            btn("목표 · ${g.label()}", Color.parseColor("#24302A")) { showGoal() }, tgt,
-            if (g.tgtPace() > 0) tv("1km ${fmtPace(g.tgtPace())} 페이스", 11f, RunView.GREEN) else null,
-            btn(if (Run.voice) "🔊 목소리 코치 켬" else "🔇 목소리 코치 끔", Color.parseColor("#24302A")) { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
-            btn("시작", RunView.ORANGE, Color.BLACK) { countdown() }.apply { textSize = 20f },
-            btn("지난 기록", Color.parseColor("#1A1F1C"), RunView.MUTED) { showHistory() })
+            tv("MPD Run", 15f, RunView.CORAL, true), gpsText,
+            row("목표", g.label()) { showGoal() }, tgt,
+            if (g.tgtPace() > 0) tv("1km ${fmtPace(g.tgtPace())} 페이스", 11f, RunView.BLUE, true) else null,
+            row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
+            btn("시작", RunView.CORAL, RunView.INK) { countdown() }.apply { textSize = 22f; setPadding(0, (4.6f * u).toInt(), 0, (4.6f * u).toInt()) },
+            tv("지난 기록 ›", 13f, RunView.MUTED, true).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { showHistory() } })
         show(page(*views.toTypedArray()))
         startGpsPreview()
     }
@@ -109,8 +121,8 @@ class MainActivity : ComponentActivity() {
     private fun stopGpsPreview() { try { lm?.removeUpdates(gpsL) } catch (e: Exception) {} }
     private fun drawGps() {
         val a = Run.lastAcc
-        gpsText?.text = if (a < 0) "GPS 찾는 중… 하늘이 트인 곳에서" else if (a <= 20) "● GPS 준비됐어요 · 오차 ${a.toInt()}m" else "GPS 잡는 중 · 오차 ${a.toInt()}m"
-        gpsText?.setTextColor(if (a in 0f..20f) RunView.GREEN else RunView.MUTED)
+        gpsText?.text = if (a < 0) "GPS 찾는 중 · 하늘이 트인 곳에서" else if (a <= 20) "● GPS 준비됐어요 · ${a.toInt()}m" else "● GPS 잡는 중 · ${a.toInt()}m"
+        gpsText?.setTextColor(if (a in 0f..20f) RunView.BLUE else RunView.MUTED)
     }
 
     // 목표 고르기
@@ -118,8 +130,9 @@ class MainActivity : ComponentActivity() {
         val opts = listOf(Goal(), Goal("dist", 3.0), Goal("dist", 5.0), Goal("dist", 10.0), Goal("dist", 21.0975), Goal("dist", 42.195),
             Goal("time", 20.0), Goal("time", 30.0), Goal("time", 45.0), Goal("time", 60.0), Goal("time", 90.0))
         val cur = Store.goal(this)
-        show(page(tv("목표", 13f, RunView.ORANGE, true), *opts.map { g ->
-            btn(g.label(), if (g.k == cur.k && g.v == cur.v) RunView.PINE else Color.parseColor("#24302A")) { Store.setGoal(this, g); showStart() } }.toTypedArray()))
+        show(page(tv("목표", 15f, RunView.CORAL, true), *opts.map { g ->
+            val on = g.k == cur.k && g.v == cur.v
+            btn(g.label(), if (on) RunView.CORAL else RunView.SURF, if (on) RunView.INK else Color.WHITE) { Store.setGoal(this, g); showStart() } }.toTypedArray()))
     }
     // 완주 목표 시간(거리 목표) / 목표 거리(시간 목표): − + 로 정해요
     private fun showTarget() {
@@ -137,12 +150,12 @@ class MainActivity : ComponentActivity() {
         val step = if (g.v >= 21) 300 else 60
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
             val w = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins((1.5f * u).toInt(), 0, (1.5f * u).toInt(), 0) }
-            addView(btn("−", Color.parseColor("#24302A")) { if (isD) vt = maxOf(60, vt - step) else vd = maxOf(0.5, vd - 0.5); draw() }, w)
-            addView(btn("+", Color.parseColor("#24302A")) { if (isD) vt += step else vd += 0.5; draw() }, w) }
+            addView(btn("−", RunView.SURF) { if (isD) vt = maxOf(60, vt - step) else vd = maxOf(0.5, vd - 0.5); draw() }, w)
+            addView(btn("+", RunView.SURF) { if (isD) vt += step else vd += 0.5; draw() }, w) }
         show(page(tv(if (isD) "${g.label()} 완주 목표" else "${g.label()} 목표 거리", 12f, RunView.ORANGE, true), big, sub, row,
-            btn("이걸로 정하기", RunView.ORANGE, Color.BLACK) {
+            btn("이걸로 정하기", RunView.CORAL, RunView.INK) {
                 Store.setGoal(this, if (isD) g.copy(t = vt) else g.copy(d = vd)); showStart() },
-            btn("정하지 않음", Color.parseColor("#1A1F1C"), RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
+            btn("정하지 않음", RunView.SURF, RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
     }
 
     // ---------- 3 · 2 · 1 ----------
@@ -182,7 +195,7 @@ class MainActivity : ComponentActivity() {
         val id = Store.finish(this)
         RunService.stop(this)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        if (id == null) { show(page(tv("거리가 거의 없어서 저장하지 않았어요", 13f), btn("처음으로", RunView.ORANGE, Color.BLACK) { showStart() })); return }
+        if (id == null) { show(page(tv("거리가 거의 없어서 저장하지 않았어요", 13f), btn("처음으로", RunView.CORAL, RunView.INK) { showStart() })); return }
         showDetail(id, true)
     }
 
@@ -197,14 +210,14 @@ class MainActivity : ComponentActivity() {
         val items = list.map { o ->
             val c = Calendar.getInstance().apply { timeInMillis = o.optLong("at") }
             LinearLayout(this).apply { orientation = LinearLayout.VERTICAL
-                background = GradientDrawable().apply { cornerRadius = 6 * u; setColor(Color.parseColor("#1A1F1C")) }
+                background = GradientDrawable().apply { cornerRadius = 6 * u; setColor(RunView.SURF) }
                 setPadding((4 * u).toInt(), (2.5f * u).toInt(), (4 * u).toInt(), (2.5f * u).toInt())
-                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optBoolean("goalDone")) "🎯" else ""), 11f, RunView.MUTED))
+                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 11f, RunView.MUTED))
                 addView(tv(summaryLine(o), 13f, Color.WHITE, true))
                 setOnClickListener { showDetail(o.optString("id"), false) } }
         }
         show(page(tv("지난 기록", 13f, RunView.ORANGE, true), *(if (items.isEmpty()) listOf(tv("아직 기록이 없어요", 12f, RunView.MUTED)) else items).toTypedArray(),
-            btn("처음으로", Color.parseColor("#24302A")) { showStart() }))
+            btn("처음으로", RunView.SURF) { showStart() }))
     }
     private fun showDetail(id: String, justDone: Boolean) {
         val o = Store.get(this, id) ?: return showHistory()
@@ -218,11 +231,11 @@ class MainActivity : ComponentActivity() {
         lines.add(tv("${fmtTime(mv)} · 평균 ${fmtPace(if (walk > 50) mv / (walk / 1000) else null)}", 13f, Color.WHITE, true))
         if (s.optInt("hrAvg") > 0) lines.add(tv("♥ 평균 ${s.optInt("hrAvg")} · 최고 ${s.optInt("hrMax")}", 12f, RunView.RED))
         if (s.optInt("cad") > 0) lines.add(tv("케이던스 ${s.optInt("cad")} · ${s.optInt("steps")}걸음", 11f, RunView.MUTED))
-        if (g.k != "free") lines.add(tv("🎯 목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 11f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
+        if (g.k != "free") lines.add(tv("목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 11f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
         for (k in 0 until sp.length()) lines.add(tv("${k + 1}km  ${fmtPace(sp.getLong(k).toDouble())}", 12f, Color.WHITE))
         var armed = false
-        lines.add(btn(if (justDone) "처음으로" else "목록으로", RunView.ORANGE, Color.BLACK) { if (justDone) showStart() else showHistory() })
-        lines.add(btn("이 기록 지우기", Color.parseColor("#1A1F1C"), RunView.MUTED) {}.apply {
+        lines.add(btn(if (justDone) "처음으로" else "목록으로", RunView.CORAL, RunView.INK) { if (justDone) showStart() else showHistory() })
+        lines.add(btn("이 기록 지우기", RunView.SURF, RunView.MUTED) {}.apply {
             setOnClickListener { if (!armed) { armed = true; text = "한 번 더 누르면 지워요" } else { Store.delete(this@MainActivity, id); showHistory() } } })
         show(page(*lines.toTypedArray()))
     }
