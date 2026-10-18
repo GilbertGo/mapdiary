@@ -19,6 +19,14 @@
 - MQTT 토픽은 예전 이름 그대로 `allhere/v1/...`(짧은 링크 `allhere/v1/share/{번호}`). 이미 보낸 짧은 링크가 이 이름으로 저장돼 있어서 바꾸지 않았다(이름만 같을 뿐 다왔나와 이어진 것은 아님).
 - `index.html`은 다왔나 파일을 복사해서 시작했다. **단체 나들이 화면(viewHome/viewLeader/viewMember)과 그것만 쓰던 도우미(watchTrip·statusOf·drawPlaces 등)는 2026-10-06에 지웠다**(약 1,060줄). 남은 공용 도우미(`isGo`·`hasRoute`·`base`·`pub` 등)는 다른 화면이 씀. `?t=`, `?new=1`은 첫 화면.
 
+## 정식 저장소 Firebase (2026-10-18)
+- 사용자가 만든 **새 프로젝트 `map-photo-diary`**(HERE `here-native`와 별개, Spark 무료, Firestore 위치 asia-northeast3 서울, Analytics는 켜졌지만 안 씀). 웹 앱 설정(apiKey `AIzaSyAnozbPVYILJa4mjC6xYjiYl3RF9S1ohLc`, 공개값)은 index.html `FS_KEY`·`FS_URL`. SDK 없이 Firestore REST(fetch)로 씀
+- 문서: `shares/{번호}`={d: 링크 본문 JSON 문자열, t}, `shares/{번호}/p/{n}`=사진(잠금), `rooms/{방번호}/x/info`=방 이름, `rooms/{방번호}/md/{글번호}`=모임방 글. `fsPath(topic)`가 예전 MQTT 주제를 이 자리로 바꿈
+- `pub(topic, obj)`: Firestore(`fsPut` PATCH / null이면 `fsDel`)와 예전 MQTT(`mqttPub`, 8초) 양쪽에 올리고 `Promise.any`(하나만 돼도 성공). 읽기: `viewShareLink`는 `fsGet('shares/번호')` → 사진 p/0부터 없을 때까지(최대 12, 목록 훑기는 규칙상 막혀서). MQTT로 같은 사진이 와도 `rec.id`로 겹치지 않게. 모임방은 `fsGet(x/info)` + `fsList(md)`를 같은 처리 함수(`onRoom`)에 넣음. `fsGet`은 3번까지 다시 해 봄. `shortLink`는 MQTT 연결을 1.5초만 기다림
+- 규칙(사용자가 콘솔 Rules에 붙여 넣고 Publish, 2026-10-18 REST로 확인): shares·p는 get만·list 막음·create만(키 d,t / d 문자열 90만 자 미만 / 번호 6~20자)·update·delete 막음, rooms/{rid}/{col}/{doc}는 읽기·쓰기(d,t, 20만 자 미만)·지우기 허용. 시험 문서 `shares/zzcheck01`이 하나 남아 있음(지울 수 없는 규칙이라 그대로)
+- 클라우드에서 시험할 땐 크롬이 프록시를 통해 Firestore에 붙다가 자주 끊김(ERR_TOO_MANY_RETRIES) → Playwright `route`로 Firestore 요청을 curl로 넘겨 시험(scratchpad `fs/t.js`)
+- 다음 단계(아직): 구글 로그인(Authentication)으로 휴대폰·컴퓨터·앱 기록 합치기, 사진 Storage(카드 필요)
+
 ## 파일
 - `index.html` — 한 파일에 HTML/CSS/JS가 다 들어 있음. 실시간 통신은 공개 MQTT 브로커 `wss://broker.hivemq.com:8884/mqtt`(retained 메시지). **공개 서버라 보안이 약하고, 짧은 링크·사진은 언제든 사라질 수 있음.** 시험용.
 

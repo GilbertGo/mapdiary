@@ -1790,7 +1790,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -1829,8 +1829,7 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
   const long = bragLink(o), key = long + '|' + recs.map(r => r.id).join(',') + (o.secret ? '|secret' : '');
   if (shortCache[key]) return shortCache[key];
   try {
-    for (let i = 0; i < 50 && !connected; i++) await new Promise(r => setTimeout(r, 100));
-    if (!connected) return o.secret ? Promise.reject(new Error('offline')) : long;
+    for (let i = 0; i < 15 && !connected; i++) await new Promise(r => setTimeout(r, 100));   // MQTT는 잠깐만 기다려요(Firestore가 주 저장소)
     const id = rid(8), payload = JSON.parse(unb64u(new URL(long).searchParams.get('brag')));
     let hash = '', k = null, code = null, salt = null;
     if (o.secret) {
@@ -1991,8 +1990,9 @@ function viewShareLink() {
   let resolveKey; const keyP = new Promise(r => { resolveKey = r; });
   const km = /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash), xm = /[#&]x=([A-Za-z0-9_-]+)/.exec(location.hash);
   if (km) crypto.subtle.importKey('raw', urlb64(km[1]), 'AES-GCM', false, ['decrypt']).then(resolveKey, () => {});
-  client.on('message', async (t, buf) => {
+  const onMsg = async (t, buf) => {
     if (t.startsWith(topic + '/p/')) {
+      if (feed.recs.some(r => r.id === t)) return;   // Firestore와 MQTT 양쪽에서 같은 사진이 와요
       const key = await keyP;
       try {
         const v = JSON.parse(buf.toString());
@@ -2008,7 +2008,15 @@ function viewShareLink() {
     if (v && v.v === 2 && typeof v.enc === 'string') { done = true; askCode(v); return; }   // 비밀코드 링크
     if (!v || typeof v.name !== 'string') return;
     done = true; viewBragLink(v, feed);
-  });
+  };
+  client.on('message', onMsg);
+  // Firestore에서 먼저 읽어요: 링크 본문, 그다음 사진 0번부터 없을 때까지(최대 12장)
+  (async () => {
+    const d = await fsGet(`shares/${id}`);
+    if (typeof d !== 'string') return;
+    try { await onMsg(topic, { toString: () => d }); } catch (e) { console.error('fsShare', e); }
+    for (let n = 0; n < 12; n++) { const p = await fsGet(`shares/${id}/p/${n}`); if (typeof p !== 'string') break; if (!feed.recs.some(r => r.id === `${topic}/p/${n}`)) onMsg(`${topic}/p/${n}`, { toString: () => p }); }
+  })();
   // 비밀코드 넣는 화면
   function askCode(v) {
     const bar = roleBar('leader', '나들이 경로');
@@ -2285,8 +2293,45 @@ function setConn(on) { connected = on; if (on) connBar.remove(); else if (!connB
 setConn(false);
 client.on('connect', () => { setConn(true); if (subTopic) client.subscribe(subTopic, { qos: 1 }); });
 client.on('close', () => setConn(false));
+// ---------- 정식 저장소 Firebase Firestore (2026-10-18, 프로젝트 map-photo-diary, 서울) ----------
+// 짧은 링크·사진·모임방을 Firestore에 오래 남겨요(규칙: 링크는 만들기만, 고치기·지우기 불가, 목록 훑기 불가).
+// 예전 공개 MQTT에도 같이 올리고(아직 새 화면을 안 받은 휴대폰을 위해), 읽을 땐 Firestore를 먼저 보고 없으면 MQTT로.
+// 내용은 지금처럼 휴대폰에서 잠가서 올려요. 아래 열쇠는 원래 공개되는 웹 앱 설정값이에요
+const FS_KEY = 'AIzaSyAnozbPVYILJa4mjC6xYjiYl3RF9S1ohLc';
+const FS_URL = 'https://firestore.googleapis.com/v1/projects/map-photo-diary/databases/(default)/documents/';
+// MQTT 주제 → Firestore 문서 자리. share/{번호}(/p/{n}) → shares/…, room/{방}/info → rooms/{방}/x/info, room/{방}/md/{글} → rooms/{방}/md/{글}
+function fsPath(topic) {
+  let m = /^allhere\/v1\/share\/([a-z0-9]{6,20})(?:\/p\/(\d{1,2}))?$/.exec(topic);
+  if (m) return `shares/${m[1]}` + (m[2] != null ? `/p/${m[2]}` : '');
+  m = /^allhere\/v1\/room\/([a-z0-9]{6,40})\/(info|md\/[a-z0-9]{4,20})$/.exec(topic);
+  if (m) return `rooms/${m[1]}/` + (m[2] === 'info' ? 'x/info' : m[2]);
+  return null;
+}
+async function fsPut(path, str) {
+  const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'PATCH', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fields: { d: { stringValue: str }, t: { integerValue: String(Date.now()) } } }) });
+  if (!r.ok) throw new Error('fs ' + r.status);
+}
+async function fsDel(path) { const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'DELETE' }); if (!r.ok && r.status !== 404) throw new Error('fs ' + r.status); }
+async function fsGet(path, tries = 3) {   // 없으면 null, 안 되면(인터넷·차단) undefined. 끊기면 잠깐 쉬고 다시
+  for (let i = 0; i < tries; i++) {
+    try { const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`); if (r.status === 404) return null; if (r.ok) return (await r.json()).fields?.d?.stringValue ?? null; } catch {}
+    await new Promise(r => setTimeout(r, 600 * (i + 1)));
+  }
+  return undefined;
+}
+async function fsList(path) {   // [{ id, d }]
+  try { const r = await fetch(`${FS_URL}${path}?pageSize=300&key=${FS_KEY}`); if (!r.ok) return []; const j = await r.json();
+    return (j.documents || []).map(x => ({ id: x.name.split('/').pop(), d: x.fields?.d?.stringValue || '' })); } catch { return []; }
+}
+const mqttPub = (topic, obj) => new Promise((res, rej) => { if (!connected) return rej(new Error('offline'));
+  const tm = setTimeout(() => rej(new Error('timeout')), 8000);
+  client.publish(topic, obj == null ? '' : JSON.stringify(obj), { qos: 1, retain: true }, e => { clearTimeout(tm); e ? rej(e) : res(); }); });
+// 둘 중 하나라도 되면 성공. Firestore 자리가 없는 주제는 MQTT로만
 function pub(topic, obj) {
-  return new Promise((res, rej) => client.publish(topic, obj == null ? '' : JSON.stringify(obj), { qos: 1, retain: true }, e => e ? rej(e) : res()));
+  const path = fsPath(topic), jobs = [mqttPub(topic, obj)];
+  if (path) jobs.unshift(obj == null ? fsDel(path) : fsPut(path, JSON.stringify(obj)));
+  return Promise.any(jobs);
 }
 const base = t => `allhere/v1/${t}`;
 const num = v => (typeof v === 'number' && Number.isFinite(v)) ? v : null;
@@ -2412,6 +2457,7 @@ function roomTaken(r) {
     const t = r.topic + '/info';
     let hit = false; const on = tt => { if (tt === t) hit = true; };
     client.on('message', on); client.subscribe(t, { qos: 1 });
+    fsGet(`rooms/${r.rid}/x/info`).then(d => { if (typeof d === 'string') hit = true; });
     setTimeout(() => { client.unsubscribe(t); client.removeListener?.('message', on); res(hit); }, 2500);
   });
 }
@@ -2521,7 +2567,7 @@ async function viewRoomOne(p) {
         try { await pub(`${r.topic}/md/${pid}`, null); delete posts[pid]; drawList(); toast('모임방에서 지웠어요'); } catch { toast('지우지 못했어요'); }
       } }) : null)));
   };
-  client.on('message', async (t, buf) => {
+  const onRoom = async (t, buf) => {
     if (!t.startsWith(r.topic + '/')) return;
     const k = t.slice(r.topic.length + 1), raw = buf.toString();
     if (k.startsWith('md/') && !raw) { delete posts[k.slice(3)]; return drawList(); }
@@ -2537,7 +2583,14 @@ async function viewRoomOne(p) {
     if (gone) return;
     posts[k.slice(3)] = { link: v.link, name: s(v.name, 40) || 'MD', dateText: s(v.dateText, 40), by: s(v.by, 20), modeK: MODES.some(m => m.k === v.modeK) ? v.modeK : '', stats: Array.isArray(v.stats) ? v.stats.slice(0, 4).map(x => s(x, 30)).filter(Boolean) : [], at: num(v.at) || 0 };
     joinIfNew(); drawList();
-  });
+  };
+  client.on('message', onRoom);
+  // Firestore에 남은 방 이름·글을 먼저 읽어요 (MQTT에서 사라진 것도)
+  (async () => {
+    const inf = await fsGet(`rooms/${r.rid}/x/info`);
+    if (typeof inf === 'string') await onRoom(r.topic + '/info', { toString: () => inf });
+    for (const x of await fsList(`rooms/${r.rid}/md`)) await onRoom(`${r.topic}/md/${x.id}`, { toString: () => x.d });
+  })();
   // 초대 링크로 처음 온 사람: 방이 있는 걸 확인하면 내 목록에 넣어요
   function joinIfNew() {
     if (local || gone) return;
