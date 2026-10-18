@@ -25,7 +25,8 @@
 - `pub(topic, obj)`: Firestore(`fsPut` PATCH / null이면 `fsDel`)와 예전 MQTT(`mqttPub`, 8초) 양쪽에 올리고 `Promise.any`(하나만 돼도 성공). 읽기: `viewShareLink`는 `fsGet('shares/번호')` → 사진 p/0부터 없을 때까지(최대 12, 목록 훑기는 규칙상 막혀서). MQTT로 같은 사진이 와도 `rec.id`로 겹치지 않게. 모임방은 `fsGet(x/info)` + `fsList(md)`를 같은 처리 함수(`onRoom`)에 넣음. `fsGet`은 3번까지 다시 해 봄. `shortLink`는 MQTT 연결을 1.5초만 기다림
 - 규칙(사용자가 콘솔 Rules에 붙여 넣고 Publish, 2026-10-18 REST로 확인): shares·p는 get만·list 막음·create만(키 d,t / d 문자열 90만 자 미만 / 번호 6~20자)·update·delete 막음, rooms/{rid}/{col}/{doc}는 읽기·쓰기(d,t, 20만 자 미만)·지우기 허용. 시험 문서 `shares/zzcheck01`이 하나 남아 있음(지울 수 없는 규칙이라 그대로)
 - 클라우드에서 시험할 땐 크롬이 프록시를 통해 Firestore에 붙다가 자주 끊김(ERR_TOO_MANY_RETRIES) → Playwright `route`로 Firestore 요청을 curl로 넘겨 시험(scratchpad `fs/t.js`)
-- 다음 단계(아직): 구글 로그인(Authentication)으로 휴대폰·컴퓨터·앱 기록 합치기, 사진 Storage(카드 필요)
+- **구글 로그인·클라우드 맞추기**(2026-10-18, 사용자 '구글 로그인도 바로 해줘'): Firebase Auth JS SDK `FB_VER` 12.19.0을 gstatic에서 동적 import(`fbAuth()`), 구글 팝업 로그인. 내 MD 목록 백업 카드 위 `cloudCard()`. 로그인하면 `cloudSync`: `users/{uid}/recs/{기록ID}`={ls: MD_KEYS 값 묶음, ph: 사진 id, sig}, 사진 `users/{uid}/ph/{사진id}`(dataURL), `users/{uid}/x/one`(albums·rooms·myPosts·nick 합치기). 이 기기에서 안 바뀐(`cloudSig`가 같은) 기록만 클라우드 것으로 덮음, 내 MD에서 지운 건 `cloudGone`으로 클라우드에서도 지움. 켤 때(`ls cloudOn`)·5분 넘게 있다 돌아올 때·기록 끝낼 때 맞춤. 받은 게 있으면 `mdToast`로 알리고 다시 그림. **앱(웹뷰)·카톡 안에서는 아직 로그인 안 됨**(크롬에서 열라고 알림, 앱은 나중에 네이티브 플러그인 + Firebase 안드로이드 앱 SHA-1). 콘솔: Authentication Google 켬, 승인된 도메인 `gilbertgo.github.io`, 규칙에 `match /users/{uid}/{col}/{doc} { allow read, write: if request.auth != null && request.auth.uid == uid; }`. 시험은 scratchpad `fs/cloud_t.js`(가짜 Firestore + `window.__mdAuthStub`)
+- 다음 단계(아직): 앱 안 구글 로그인, 사진 Storage(카드 필요)
 
 ## 파일
 - `index.html` — 한 파일에 HTML/CSS/JS가 다 들어 있음. 실시간 통신은 공개 MQTT 브로커 `wss://broker.hivemq.com:8884/mqtt`(retained 메시지). **공개 서버라 보안이 약하고, 짧은 링크·사진은 언제든 사라질 수 있음.** 시험용.
