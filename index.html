@@ -116,9 +116,7 @@ input::placeholder{color:#B3AC9C}
 .bb-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bb-k{height:56px;border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-size:22px;font-weight:800}.bb-k.ok{background:var(--accent);color:#fff}
 .tn-clock{text-align:center;font-size:72px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .tn-tab{display:flex;flex-direction:column;gap:4px}.tn-tab div{display:flex;gap:10px;align-items:baseline;background:var(--card);border-radius:12px;padding:8px 14px}.tn-tab div span{flex:1;font-weight:700}.tn-tab div small{color:var(--muted);width:60px;text-align:right}.tn-tab div.w{background:#FFE6D8}
-.gm-pill{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);color:var(--pine);font-weight:800;font-size:15px;text-decoration:none}
-.gm-ban{display:flex;align-items:center;gap:14px;border-radius:20px;padding:16px 18px;text-decoration:none;color:#fff;background:linear-gradient(120deg,#FF8A4C,#FFB36B);box-shadow:0 8px 20px rgba(255,138,76,.3)}
-.gm-ban b{font-size:19px;display:block}.gm-ban span{font-size:13.5px;opacity:.92}.gm-ban .e{font-size:34px}
+.gm-pills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.gm-pill{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);color:var(--pine);font-weight:800;font-size:15px;text-decoration:none}
 .mem{display:flex;align-items:center;gap:14px;background:var(--card,#FFFDF8);border:1.5px solid #FFD2B8;border-radius:18px;padding:12px 14px;text-decoration:none;color:inherit;box-shadow:var(--shadow)}
 .mem-th{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;background:var(--soft,#EEE)}.mem-ic{display:flex;align-items:center;justify-content:center;color:var(--pine)}
 .mem .grow{display:flex;flex-direction:column;gap:3px;min-width:0}.mem b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mem .sm{font-size:13px;color:var(--muted)}
@@ -3758,7 +3756,6 @@ function viewLanding() {
   else if (qs.get('install') === '1') { try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} }
   installSlot = el('div'); drawInstall();
   const memSlot = el('div', { style: 'display:contents' }); drawMemory(memSlot);
-  const GMV = window.__gmv || '';   // 게임 단추 자리: 시안 고르는 중
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
@@ -3767,13 +3764,14 @@ function viewLanding() {
     el('div', { style: 'padding:28px 0 36px' },
       // 'MD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MD, 받은 MD…)
       el('h1', { style: 'font-size:34px;display:flex;align-items:center;gap:10px' }, 'Map Diary',
-        GMV === 'B' ? el('a', { class: 'gm-pill', href: './?game=1', style: 'order:3' }, '🎮 게임') : null,
         el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer', 'aria-label': '줄여서 MD', text: 'MD', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 켜기/끄기 (빠른 두 번 누름도 한 번씩 세게 pointerdown으로)
           const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
           if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
           if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } })),
       el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' }),
-      el('p', { class: 'sub', style: 'margin:4px 0 0;font-size:13.5px;color:#7A7F76', text: '기록 한 편 한 편을 줄여서 MD라고 불러요' })),
+      el('p', { class: 'sub', style: 'margin:4px 0 0;font-size:13.5px;color:#7A7F76', text: '기록 한 편 한 편을 줄여서 MD라고 불러요' }),
+      // 게임 · 대화 정리 (2026-10-18 시안 B안 '작은 알약 단추', 사용자 '추천대로'. 둘이라 제목 옆 대신 바로 아래 줄에)
+      el('div', { class: 'gm-pills' }, el('a', { class: 'gm-pill', href: './?game=1' }, '🎮 게임'), el('a', { class: 'gm-pill', href: './?talk=1' }, '🎙 대화 정리'))),
     // 기록 중이면 이어서 보기가 맨 위
     // 기록 중이면 그 기록의 제목과 얼마나 됐는지도 보여줘요
     (() => { const w = ls.get('walkNow', null); if (!w) return null;
@@ -3784,11 +3782,9 @@ function viewLanding() {
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Diary로 남아요.' }),
     memSlot,
-    GMV === 'C' ? el('a', { class: 'gm-ban', href: './?game=1' }, el('span', { class: 'e', text: '🎮' }), el('div', { class: 'grow' }, el('b', { text: '게임 한 판' }), el('span', { text: '2048 · 짝 맞추기 · 1부터 25 · 뱀 · 오목' })), el('span', { style: 'font-size:26px', text: '›' })) : null,
     bigBtn('내 MD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
     bigBtn('MD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
-    GMV === 'A' ? bigBtn('🎮 게임', '2048 · 짝 맞추기 · 1부터 25 · 뱀 · 오목. 쉬는 시간에 한 판', false, () => { location.href = './?game=1'; }) : null,
     installSlot,
     (() => { const sea = ls.get('theme', 'sea') === 'sea';
       return el('button', { class: 'link', style: 'align-self:center;color:var(--muted);padding:10px', text: `🎨 화면 분위기: ${sea ? '바닷가' : '산'} · ${sea ? '산으로' : '바닷가로'} 바꾸기`,
