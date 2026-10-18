@@ -1795,7 +1795,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3305,6 +3305,18 @@ function trimTrack(t, pre) {
   document.body.append(sb); draw();
   setTimeout(() => { m = L.map(mapBox); mdTileLayer().addTo(m); lyr = L.layerGroup().addTo(m); m.fitBounds(full.map(q => [q[0], q[1]]), { padding: [24, 24] }); draw(); }, 30);
 }
+// 이 앱이 잰 거리별 기록: 달린 길(w)을 따라 5km·10km·하프·풀코스에 닿은 시각 − 달리기 시작한 시각(runSpan, 없으면 첫 점). 멈춘 시간 포함
+function distMarks(tr, car) {
+  const n = tr.length; if (n < 3) return null;
+  const m = trackModes(tr, car), sp = runSpan(tr), a = sp ? sp.a : 0, t0 = tr[a][2], want = [5000, 10000, 21097.5, 42195], out = [];
+  let d = 0, k = 0;
+  for (let i = a + 1; i < n && k < want.length; i++) {
+    const seg = m[i] === 'w' ? dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) : 0;
+    while (k < want.length && seg > 0 && d + seg >= want[k]) { const f = (want[k] - d) / seg; out.push({ m: want[k], ms: tr[i - 1][2] + f * (tr[i][2] - tr[i - 1][2]) - t0 }); k++; }
+    d += seg;
+  }
+  return out.length ? { t0, out } : null;
+}
 // 🏁 대회 공식 기록으로 맞추기: GPS는 10.1km처럼 조금 다르게 나와서, 공식 거리·완주 시간을 적으면 거리·시간·페이스를 그 숫자로 보여 줘요(지도·길은 그대로)
 function officialEdit(t, guessMs) {
   const cur = ls.get('walkOfficial:' + t, null) || {}, gps = trackStats(ls.get('track:' + t, []), modeOfT(t).car).walk / 1000;
@@ -3414,6 +3426,14 @@ async function viewMyOne(t) {
         el('div', { class: 'sub', style: 'font-size:14px', text: `${fmtClock(tr[sp.a][2])}에 달리기 시작해 ${fmtClock(tr[sp.b][2])}에 멈췄어요. 그 앞뒤 ${fmtDur(sp.cut)} 동안은 걷거나 쉬던 때라 '다닌 시간'이 길게 나왔어요(끝내기를 늦게 누르면 이래요).` }),
         el('button', { class: 'btn primary full', text: '✂ 달린 부분만 남기기', onclick: () => trimTrack(t, sp) }),
         el('div', { class: 'sub', style: 'font-size:12px', text: '지도에서 보고 저장을 누르면 돼요. 원래 기록은 남아서 언제든 되돌릴 수 있어요.' })); })(),
+    (() => { if (M.k !== 'run' || x.album) return null; const dm = distMarks(ls.get('track:' + t, []), M.car); if (!dm) return null;
+      const sp = ls.get('walkSplits:' + t, []), lbl = v => ({ 5000: '5km', 10000: '10km', 21097.5: '하프', 42195: '풀코스' })[v];
+      return el('div', { class: 'card', style: 'padding:14px;display:flex;flex-direction:column;gap:6px' },
+        el('b', { text: '⏱ 이 앱이 잰 기록' }),
+        ...dm.out.map(o => el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;font-size:17px' },
+          el('span', { text: lbl(o.m) }), el('b', { style: 'font-size:22px;color:var(--pine)', text: fmtRunTime(o.ms) }),
+          el('span', { class: 'sub', style: 'font-size:13px', text: sp.length >= o.m / 1000 ? `움직인 시간만 ${fmtRunTime(sp.slice(0, Math.floor(o.m / 1000)).reduce((a, b) => a + b, 0))}` : '' }))),
+        el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
     M.k === 'run' && !live && !x.album ? el('button', { class: 'btn line full', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기 (예: 10km · 1:30:00)', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null,
     golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
