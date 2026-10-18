@@ -1787,6 +1787,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
+const UI_VER = '2026.10.18-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3789,7 +3790,9 @@ function viewLanding() {
     installSlot,
     (() => { const sea = ls.get('theme', 'sea') === 'sea';
       return el('button', { class: 'link', style: 'align-self:center;color:var(--muted);padding:10px', text: `🎨 화면 분위기: ${sea ? '바닷가' : '산'} · ${sea ? '산으로' : '바닷가로'} 바꾸기`,
-        onclick: () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; viewLanding(); } }); })()));
+        onclick: () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; viewLanding(); } }); })(),
+    // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
+    el('div', { class: 'sub center', style: 'font-size:12px;opacity:.7;margin-top:-6px', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` })));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Photo Diary로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
