@@ -87,6 +87,30 @@ input::placeholder{color:#B3AC9C}
 .om-c{border:none;padding:0;background:linear-gradient(#8A6A32,#8A6A32) center/100% 1px no-repeat,linear-gradient(#8A6A32,#8A6A32) center/1px 100% no-repeat;position:relative;aspect-ratio:1}
 .om-c.bk::after,.om-c.wh::after{content:'';position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#555,#111);box-shadow:0 1px 2px rgba(0,0,0,.4)}
 .om-c.wh::after{background:radial-gradient(circle at 35% 30%,#fff,#D8D8D8)}.om-c.last::before{content:'';position:absolute;inset:38%;border-radius:50%;background:#FF5A3C;z-index:1}
+.gm-h{margin:10px 0 0;font-size:17px}
+.bp{display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow)}.bp-l{font-size:13px;color:var(--muted);font-weight:700}
+.bp-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.bp-c{display:inline-flex;align-items:center;gap:2px;height:34px;padding:0 4px 0 12px;border-radius:999px;background:var(--c);color:#fff;font-weight:800;font-size:15px}
+.bp-c button{border:none;background:none;color:#fff;opacity:.8;width:26px;height:30px;font-size:13px;padding:0}
+.bp-add{display:inline-flex;gap:4px}.bp-in{width:110px;height:34px;border:1.5px solid var(--line);border-radius:999px;padding:0 12px;background:var(--ground);font-size:15px}
+.bp-add button{width:34px;height:34px;border-radius:50%;border:none;background:var(--pine);color:#fff;font-size:18px;padding:0}
+.bet-res{display:flex;flex-direction:column;align-items:center;gap:4px;background:linear-gradient(120deg,#FF8A4C,#FFB36B);color:#fff;border-radius:20px;padding:18px;text-align:center;box-shadow:0 8px 20px rgba(255,138,76,.35);animation:betpop .5s cubic-bezier(.2,1.6,.4,1)}
+.bet-res span{font-size:44px;line-height:1}.bet-res b{font-size:26px}.bet-res small{font-size:14px;opacity:.95}
+@keyframes betpop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.ld-cv,.wh-cv{width:100%;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}.wh-cv{aspect-ratio:1;max-width:420px;align-self:center;background:transparent;box-shadow:none;cursor:pointer}
+.ld-names{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.fg-pad{position:relative;height:58vh;min-height:320px;border-radius:20px;background:#102A43;touch-action:none;overflow:hidden;user-select:none;-webkit-user-select:none}
+.fg-msg{position:absolute;left:0;right:0;top:16px;text-align:center;color:#fff;font-weight:800;font-size:17px;padding:0 16px;pointer-events:none}
+.fg-dot{position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:var(--c);box-shadow:0 0 0 10px color-mix(in srgb,var(--c) 35%,transparent);animation:fgp 1s ease-in-out infinite alternate;pointer-events:none;transition:opacity .3s,transform .3s}
+.fg-dot.lose{opacity:.15}.fg-dot.win{transform:scale(1.5);animation:none;box-shadow:0 0 0 18px rgba(255,255,255,.35)}
+@keyframes fgp{to{transform:scale(1.12)}}
+.lt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.lt-c{height:100px;border:none;border-radius:16px;background:var(--pine);color:#fff;font-size:30px;font-weight:900;box-shadow:var(--shadow);white-space:pre-line;line-height:1.3}
+.lt-c.open{font-size:15px}.lt-c.ok{background:var(--soft);color:var(--muted)}.lt-c.bad{background:#FF8A4C}
+.bb-who{text-align:center;font-size:20px;font-weight:900}.bb-range{text-align:center;font-size:52px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bb-disp{text-align:center;font-size:22px;font-weight:700;color:var(--muted);height:30px}
+.bb-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bb-k{height:56px;border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-size:22px;font-weight:800}.bb-k.ok{background:var(--accent);color:#fff}
+.tn-clock{text-align:center;font-size:72px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.tn-tab{display:flex;flex-direction:column;gap:4px}.tn-tab div{display:flex;gap:10px;align-items:baseline;background:var(--card);border-radius:12px;padding:8px 14px}.tn-tab div span{flex:1;font-weight:700}.tn-tab div small{color:var(--muted);width:60px;text-align:right}.tn-tab div.w{background:#FFE6D8}
 .gm-pill{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);color:var(--pine);font-weight:800;font-size:15px;text-decoration:none}
 .gm-ban{display:flex;align-items:center;gap:14px;border-radius:20px;padding:16px 18px;text-decoration:none;color:#fff;background:linear-gradient(120deg,#FF8A4C,#FFB36B);box-shadow:0 8px 20px rgba(255,138,76,.3)}
 .gm-ban b{font-size:19px;display:block}.gm-ban span{font-size:13.5px;opacity:.92}.gm-ban .e{font-size:34px}
@@ -3155,6 +3179,12 @@ function gameBest(k, v, low) {   // v를 주면 더 좋은 기록일 때 바꾸�
 }
 // 첫 화면 라우팅이 이 줄보다 먼저 돌아서 const 대신 함수로 (함수는 미리 올라가요)
 function gamesAll() { return [
+  { k: 'ladder', t: '사다리 타기', d: '이름 누르면 사다리를 타요. 쏘는 사람 수도 정해요', e: '🪜', bet: 1 },
+  { k: 'wheel', t: '돌림판', d: '이름을 넣고 돌리면 화살표가 고른 사람이 쏘기', e: '🎯', bet: 1 },
+  { k: 'finger', t: '손가락 고르기', d: '모두 화면에 손가락을 올리면 3초 뒤 한 명', e: '☝️', bet: 1 },
+  { k: 'lots', t: '제비뽑기', d: '차례대로 카드 한 장씩. 🍚 나오면 쏘기', e: '🎟', bet: 1 },
+  { k: 'bomb', t: '업다운 숫자 폭탄', d: '1~100 숨은 숫자를 말하면 펑! 범위가 줄어요', e: '💣', bet: 1 },
+  { k: 'ten', t: '10초 맞추기', d: '속으로 10초 세고 멈추기. 가장 먼 사람이 쏘기', e: '⏲', bet: 1 },
   { k: '2048', t: '2048', d: '밀어서 같은 숫자를 합쳐 2048 만들기', e: '🔢', best: v => `최고 ${v.toLocaleString()}점` },
   { k: 'pair', t: '짝 맞추기', d: '뒤집힌 카드에서 같은 그림 둘씩 찾기', e: '🃏', best: v => `최고 ${v}번 만에` },
   { k: 'n25', t: '1부터 25까지', d: '숫자를 1부터 차례로 빨리 누르기', e: '⏱', best: v => `최고 ${(v / 1000).toFixed(2)}초` },
@@ -3167,15 +3197,16 @@ function viewGames() {
   if (!g) {
     app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: '🎮 게임' }),
       el('div', { class: 'sub', text: '쉬는 시간에 가볍게 한 판. 최고 기록은 이 휴대폰에 남아요.' }),
-      ...GAMES.map(x => { const b = gameBest(x.k);
-        return el('a', { class: 'gm-item', href: `./?game=1&g=${x.k}` }, el('span', { class: 'gm-e', text: x.e }),
+      ...GAMES.flatMap((x, i) => { const b = gameBest(x.k), head = i === 0 ? el('h2', { class: 'gm-h', text: '🍚 밥값 내기 · 휴대폰 하나로 같이' }) : !x.bet && GAMES[i - 1].bet ? el('h2', { class: 'gm-h', text: '🎮 혼자 · 둘이서' }) : null;
+        return [head, el('a', { class: 'gm-item', href: `./?game=1&g=${x.k}` }, el('span', { class: 'gm-e', text: x.e }),
           el('div', { class: 'grow' }, el('b', { text: x.t }), el('span', { class: 'sub', text: x.d }), b != null ? el('span', { class: 'gm-best', text: x.best(b) }) : null),
-          el('span', { class: 'mem-go', text: '›' })); })));
+          el('span', { class: 'mem-go', text: '›' }))]; }).filter(Boolean)));
     return;
   }
   const area = el('div', { class: 'gm-area' }), info = el('div', { class: 'gm-info' });
   app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: `${g.e} ${g.t}` }), info, area));
-  ({ '2048': game2048, pair: gamePair, n25: gameN25, snake: gameSnake, omok: gameOmok })[g.k](area, info, g);
+  // 라우팅이 스크립트 중간에 돌아서, 아래쪽 const(BET_COLORS 등)가 준비된 뒤에 시작해요
+  setTimeout(() => ({ '2048': game2048, pair: gamePair, n25: gameN25, snake: gameSnake, omok: gameOmok, ladder: gameLadder, wheel: gameWheel, finger: gameFinger, lots: gameLots, bomb: gameBomb, ten: gameTen })[g.k](area, info, g));
 }
 // 화면을 손가락으로 밀면 방향(0 위, 1 오른쪽, 2 아래, 3 왼쪽)을 알려 줘요. 키보드 화살표도
 function gameSwipe(target, on) {
@@ -3324,6 +3355,152 @@ function gameOmok(area, info, g) {
       el('button', { class: 'btn small ' + (vsAI ? 'line' : 'dark'), text: '👥 둘이서', onclick: () => { vsAI = false; ls.set('omokAI', false); start(); } })),
       grid, gameAgain('새 판', start)); draw(); };
   start();
+}
+// ---------- 밥값 내기 게임 (2026-10-18, 사용자 '밥값내기 게임할거야') ----------
+// 같이 하는 사람 이름은 ls gamePeople에 남겨 다음에도 그대로 (2~10명)
+const BET_COLORS = ['#FF8A4C', '#0277BD', '#8E5BD6', '#E0528C', '#16A3A3', '#E8A400', '#5C7CFA', '#C2410C', '#0E7490', '#9333EA'];
+function betPeople() { const p = ls.get('gamePeople', null); return Array.isArray(p) && p.length >= 2 ? p.slice(0, 10) : ['1번', '2번', '3번', '4번']; }
+// 이름 고치는 줄: 칩 ✕로 빼고, 칸에 적어 더하기. 바뀌면 onChange
+function betPeopleRow(onChange) {
+  const box = el('div', { class: 'bp' });
+  const draw = () => { const ps = betPeople();
+    const inp = el('input', { class: 'bp-in', placeholder: '이름 더하기', maxlength: 8, enterkeyhint: 'done' });
+    const add = () => { const v = inp.value.trim(); if (!v) return; if (ps.length >= 10) return toast('10명까지 돼요'); ls.set('gamePeople', [...ps, v]); draw(); onChange(); };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+    box.replaceChildren(el('div', { class: 'bp-l', text: `같이 하는 사람 ${ps.length}명` }), el('div', { class: 'bp-chips' },
+      ...ps.map((n, i) => el('span', { class: 'bp-c', style: `--c:${BET_COLORS[i % 10]}` }, n,
+        el('button', { 'aria-label': `${n} 빼기`, text: '✕', onclick: () => { if (ps.length <= 2) return toast('2명은 있어야 해요'); ls.set('gamePeople', ps.filter((_, k) => k !== i)); draw(); onChange(); } }))),
+      el('span', { class: 'bp-add' }, inp, el('button', { text: '＋', 'aria-label': '더하기', onclick: add }))));
+  };
+  draw(); return box;
+}
+const betLoser = (name, sub) => { try { navigator.vibrate && navigator.vibrate([80, 60, 200]); } catch {} return el('div', { class: 'bet-res' }, el('span', { text: '🍚' }), el('b', { text: `${name} 님이 쏩니다!` }), sub ? el('small', { text: sub }) : null); };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// ----- 사다리 타기 -----
+function gameLadder(area, info) {
+  let ps, n, rungs, res, shown, nPay = ls.get('ladderPay', 1);
+  const ROWS = 12, W = 600, H = 640, top = 70, bot = 560;
+  const cv = el('canvas', { class: 'ld-cv', width: W, height: H }), g = cv.getContext('2d');
+  const X = i => (W / n) * (i + 0.5), Y = r => top + (bot - top) * (r + 0.5) / ROWS;
+  const path = s => { let c = s; const pts = [[X(c), top]]; for (let r = 0; r < ROWS; r++) { const y = Y(r); if (rungs[r][c]) { pts.push([X(c), y], [X(c + 1), y]); c++; } else if (c > 0 && rungs[r][c - 1]) { pts.push([X(c), y], [X(c - 1), y]); c--; } } pts.push([X(c), bot]); return { pts, end: c }; };
+  const base = () => {
+    g.clearRect(0, 0, W, H); g.lineCap = 'round'; g.strokeStyle = '#B9CCDD'; g.lineWidth = 6;
+    for (let i = 0; i < n; i++) { g.beginPath(); g.moveTo(X(i), top); g.lineTo(X(i), bot); g.stroke(); }
+    for (let r = 0; r < ROWS; r++) for (let i = 0; i < n - 1; i++) if (rungs[r][i]) { g.beginPath(); g.moveTo(X(i), Y(r)); g.lineTo(X(i + 1), Y(r)); g.stroke(); }
+    g.textAlign = 'center'; g.font = `800 ${n > 6 ? 22 : 28}px Pretendard, sans-serif`;
+    ps.forEach((p, i) => { g.fillStyle = BET_COLORS[i % 10]; g.fillText(p.slice(0, 5), X(i), 45); });
+    res.forEach((r, i) => { const open = shown.has(i); g.fillStyle = open ? (r ? '#E4572E' : '#5F7A92') : '#102A43'; g.fillText(open ? (r ? '🍚 쏘기' : '통과') : '?', X(i), 605); });
+  };
+  const drawPaths = (list, prog) => { base(); for (const [s, f] of list) { const { pts } = path(s); let len = 0; const L = []; for (let k = 1; k < pts.length; k++) { const d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); L.push(d); len += d; }
+    let left = len * f; g.strokeStyle = BET_COLORS[s % 10]; g.lineWidth = 10; g.beginPath(); g.moveTo(...pts[0]);
+    for (let k = 1; k < pts.length && left > 0; k++) { const t = Math.min(1, left / L[k - 1]); g.lineTo(pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t); left -= L[k - 1]; } g.stroke(); } };
+  const done = [];
+  const go = s => { if (done.some(d => d[0] === s)) return; const t0 = performance.now(), D = 1800;
+    const tick = () => { const f = Math.min(1, (performance.now() - t0) / D); drawPaths([...done, [s, f]]); if (f < 1) return requestAnimationFrame(tick);
+      done.push([s, 1]); const e = path(s).end; shown.add(e); drawPaths(done); if (res[e]) out.replaceChildren(betLoser(ps[s])); else toast(`${ps[s]} 통과!`); };
+    tick(); };
+  const out = el('div');
+  const names = el('div', { class: 'ld-names' });
+  const start = () => {
+    ps = betPeople(); n = ps.length; nPay = Math.min(nPay, n - 1); shown = new Set(); done.length = 0; out.replaceChildren();
+    rungs = Array.from({ length: ROWS }, () => { const row = Array(n).fill(false); for (let i = 0; i < n - 1; i++) if (!row[i - 1] && Math.random() < 0.45) row[i] = true; return row; });
+    res = shuffle(Array.from({ length: n }, (_, i) => i < nPay)); base();
+    names.replaceChildren(...ps.map((p, i) => el('button', { class: 'btn small', style: `background:${BET_COLORS[i % 10]};color:#fff`, text: p, onclick: () => go(i) })),
+      el('button', { class: 'btn small line', text: '모두 보기', onclick: () => ps.forEach((_, i) => setTimeout(() => go(i), i * 300)) }));
+    info.replaceChildren(el('span', {}, '쏘는 사람 ', el('b', { text: `${nPay}명` }), ' ',
+      el('button', { class: 'btn line small', style: 'height:30px;padding:0 10px', text: '−', onclick: () => { nPay = Math.max(1, nPay - 1); ls.set('ladderPay', nPay); start(); } }),
+      el('button', { class: 'btn line small', style: 'height:30px;padding:0 10px', text: '＋', onclick: () => { nPay = Math.min(n - 1, nPay + 1); ls.set('ladderPay', nPay); start(); } })));
+  };
+  area.replaceChildren(betPeopleRow(start), cv, el('div', { class: 'sub center', text: '이름을 누르면 사다리를 타요' }), names, out, gameAgain('사다리 새로 그리기', start));
+  start();
+}
+// ----- 돌림판 -----
+function gameWheel(area, info) {
+  const S = 600, cv = el('canvas', { class: 'wh-cv', width: S, height: S }), g = cv.getContext('2d');
+  let ps, ang = 0, spinning = false; const out = el('div');
+  const draw = () => { const n = ps.length, R = S / 2 - 14; g.clearRect(0, 0, S, S);
+    for (let i = 0; i < n; i++) { const a0 = ang + i * 2 * Math.PI / n, a1 = a0 + 2 * Math.PI / n;
+      g.beginPath(); g.moveTo(S / 2, S / 2); g.arc(S / 2, S / 2, R, a0, a1); g.closePath(); g.fillStyle = BET_COLORS[i % 10]; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 4; g.stroke();
+      g.save(); g.translate(S / 2, S / 2); g.rotate((a0 + a1) / 2); g.fillStyle = '#fff'; g.font = '800 30px Pretendard, sans-serif'; g.textAlign = 'right'; g.fillText(ps[i].slice(0, 6), R - 24, 10); g.restore(); }
+    g.beginPath(); g.arc(S / 2, S / 2, 40, 0, 7); g.fillStyle = '#fff'; g.fill(); g.font = '30px sans-serif'; g.textAlign = 'center'; g.fillText('🍚', S / 2, S / 2 + 11);
+    g.beginPath(); g.moveTo(S / 2 - 22, 2); g.lineTo(S / 2 + 22, 2); g.lineTo(S / 2, 44); g.closePath(); g.fillStyle = '#102A43'; g.fill(); };
+  const spin = () => { if (spinning) return; spinning = true; out.replaceChildren(); const from = ang, add = 2 * Math.PI * (5 + Math.random() * 3), t0 = performance.now(), D = 4500;
+    const tick = () => { const f = Math.min(1, (performance.now() - t0) / D), e = 1 - Math.pow(1 - f, 4); ang = from + add * e; draw();
+      if (f < 1) return requestAnimationFrame(tick); spinning = false;
+      const n = ps.length, a = ((-Math.PI / 2 - ang) % (2 * Math.PI) + 4 * Math.PI) % (2 * Math.PI); out.replaceChildren(betLoser(ps[Math.floor(a / (2 * Math.PI / n))])); };
+    tick(); };
+  const start = () => { ps = betPeople(); out.replaceChildren(); draw(); };
+  cv.onclick = spin;
+  area.replaceChildren(betPeopleRow(start), cv, el('button', { class: 'btn primary full big', text: '🎯 돌리기', onclick: spin }), out);
+  info.replaceChildren(el('span', { text: '화살표가 가리키는 사람이 쏩니다' })); start();
+}
+// ----- 손가락 고르기: 모두 화면에 손가락을 올리면 3초 뒤 한 명 -----
+function gameFinger(area, info) {
+  const pad = el('div', { class: 'fg-pad' }), msg = el('div', { class: 'fg-msg', text: '모두 손가락을 화면에 올려 주세요' });
+  const pts = new Map(); let timer = 0, picked = false, ci = 0;
+  pad.append(msg);
+  const reset = () => { clearTimeout(timer); timer = 0; };
+  const arm = () => { reset(); if (picked || pts.size < 2) { if (!picked) msg.textContent = pts.size ? '한 명 더 올려 주세요' : '모두 손가락을 화면에 올려 주세요'; return; }
+    msg.textContent = `${pts.size}명 · 3초 뒤에 골라요…`;
+    timer = setTimeout(() => { const ids = [...pts.keys()], win = ids[Math.floor(Math.random() * ids.length)]; picked = true;
+      pts.forEach((d, id) => d.classList.toggle(id === win ? 'win' : 'lose', true)); msg.textContent = '🍚 이 손가락이 쏩니다! 손을 모두 떼면 다시'; try { navigator.vibrate && navigator.vibrate([80, 60, 250]); } catch {} }, 3000); };
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); if (picked) return; const d = el('div', { class: 'fg-dot', style: `left:${e.offsetX}px;top:${e.offsetY}px;--c:${BET_COLORS[ci++ % 10]}` }); pad.append(d); pts.set(e.pointerId, d); try { pad.setPointerCapture(e.pointerId); } catch {} arm(); });
+  pad.addEventListener('pointermove', e => { const d = pts.get(e.pointerId); if (d) { const r = pad.getBoundingClientRect(); d.style.left = (e.clientX - r.left) + 'px'; d.style.top = (e.clientY - r.top) + 'px'; } });
+  const up = e => { const d = pts.get(e.pointerId); if (!d) return; if (!picked) { d.remove(); pts.delete(e.pointerId); arm(); } else { pts.delete(e.pointerId); if (!pts.size) { pad.querySelectorAll('.fg-dot').forEach(x => x.remove()); picked = false; ci = 0; msg.textContent = '모두 손가락을 화면에 올려 주세요'; } } };
+  ['pointerup', 'pointercancel'].forEach(k => pad.addEventListener(k, up));
+  pad.addEventListener('contextmenu', e => e.preventDefault());
+  area.replaceChildren(pad, el('div', { class: 'sub center', text: '한 사람이 손가락 하나씩. 휴대폰을 탁자에 두고 해요' }));
+  info.replaceChildren(el('span', { text: '이름 없이 바로. 손가락을 떼면 빠져요' }));
+}
+// ----- 제비뽑기: 차례대로 카드 한 장씩 -----
+function gameLots(area, info) {
+  let ps, cards, turn, over; const grid = el('div', { class: 'lt-grid' }), out = el('div'), who = el('b');
+  const start = () => { ps = betPeople(); turn = 0; over = false; out.replaceChildren(); cards = shuffle(ps.map((_, i) => i === 0));
+    grid.replaceChildren(...cards.map((bad, i) => { const c = el('button', { class: 'lt-c', text: '?' }); c.onclick = () => pick(c, bad); return c; })); draw(); };
+  const draw = () => { who.textContent = over ? '끝' : `${ps[turn]} 차례`; who.style.color = over ? '' : BET_COLORS[turn % 10];
+    info.replaceChildren(el('span', {}, who), el('span', { text: `남은 카드 ${grid.querySelectorAll('.lt-c:not(.open)').length}장` })); };
+  const pick = (c, bad) => { if (over || c.classList.contains('open')) return;
+    c.classList.add('open', bad ? 'bad' : 'ok'); c.textContent = `${ps[turn]}\n${bad ? '🍚 쏘기' : '통과'}`;
+    if (bad) { over = true; out.replaceChildren(betLoser(ps[turn], `${turn + 1}번째로 뽑았어요`)); } else turn++;
+    if (!over && turn === ps.length - 1) { const last = [...grid.querySelectorAll('.lt-c:not(.open)')][0]; if (last) setTimeout(() => last.click(), 600); }
+    draw(); };
+  area.replaceChildren(betPeopleRow(start), grid, out, gameAgain('다시 섞기', start)); start();
+}
+// ----- 업다운 숫자 폭탄: 1~100 사이 폭탄 숫자를 말하면 쏘기 -----
+function gameBomb(area, info) {
+  let ps, lo, hi, bomb, turn, over, typed = '';
+  const big = el('div', { class: 'bb-range' }), disp = el('div', { class: 'bb-disp' }), out = el('div'), who = el('div', { class: 'bb-who' });
+  const keys = el('div', { class: 'bb-keys' }, ...['1', '2', '3', '4', '5', '6', '7', '8', '9', '지움', '0', '확인'].map(k =>
+    el('button', { class: 'bb-k' + (k === '확인' ? ' ok' : ''), text: k, onclick: () => key(k) })));
+  const draw = () => { big.textContent = `${lo} ~ ${hi}`; disp.textContent = typed || '숫자를 골라요'; who.textContent = over ? '' : `${ps[turn]} 차례`; who.style.color = BET_COLORS[turn % 10]; };
+  const key = k => { if (over) return; if (k === '지움') typed = typed.slice(0, -1); else if (k === '확인') return say();
+    else if (typed.length < 3) typed += k; draw(); };
+  const say = () => { const v = +typed; typed = '';
+    if (!v || v < lo || v > hi) { toast(`${lo}부터 ${hi} 사이에서 골라요`); return draw(); }
+    if (v === bomb) { over = true; big.textContent = `💥 ${bomb}`; out.replaceChildren(betLoser(ps[turn], `폭탄 숫자는 ${bomb}였어요`)); draw(); return; }
+    if (v < bomb) lo = v + 1; else hi = v - 1; toast(v < bomb ? `${v}보다 커요 ⬆` : `${v}보다 작아요 ⬇`);
+    turn = (turn + 1) % ps.length; draw(); };
+  const start = () => { ps = betPeople(); lo = 1; hi = 100; bomb = 1 + Math.floor(Math.random() * 100); turn = 0; over = false; typed = ''; out.replaceChildren(); draw(); };
+  area.replaceChildren(betPeopleRow(start), who, big, disp, keys, out, gameAgain('새 폭탄', start));
+  info.replaceChildren(el('span', { text: '1~100 사이 폭탄 숫자를 말한 사람이 쏩니다' })); start();
+}
+// ----- 10초 맞추기: 3초 뒤부터 숫자가 안 보여요. 10초에서 가장 먼 사람이 쏘기 -----
+function gameTen(area, info) {
+  let ps, turn, rec, t0 = 0, raf = 0;
+  const clock = el('div', { class: 'tn-clock', text: '0.00' }), who = el('div', { class: 'bb-who' }), btn = el('button', { class: 'btn primary full big' }), table = el('div', { class: 'tn-tab' }), out = el('div');
+  const draw = () => { who.textContent = turn < ps.length ? `${ps[turn]} 차례` : '결과'; who.style.color = turn < ps.length ? BET_COLORS[turn % 10] : '';
+    btn.textContent = t0 ? '■ 멈춰!' : turn < ps.length ? '▶ 시작' : '다시 하기';
+    table.replaceChildren(...rec.map((r, i) => el('div', { class: r.worst ? 'w' : '' }, el('span', { text: ps[i] }), el('b', { text: `${(r.ms / 1000).toFixed(2)}초` }), el('small', { text: `${r.ms >= 10000 ? '+' : '−'}${(Math.abs(r.ms - 10000) / 1000).toFixed(2)}` })))); };
+  btn.onclick = () => {
+    if (turn >= ps.length) return start();
+    if (!t0) { t0 = performance.now(); const tick = () => { const s = (performance.now() - t0) / 1000; clock.textContent = s < 3 ? s.toFixed(2) : '?.??'; raf = requestAnimationFrame(tick); }; tick(); draw(); return; }
+    cancelAnimationFrame(raf); const ms = Math.round(performance.now() - t0); t0 = 0; clock.textContent = (ms / 1000).toFixed(2); rec.push({ ms }); turn++;
+    if (turn >= ps.length) { const far = rec.reduce((a, r, i) => Math.abs(r.ms - 10000) > Math.abs(rec[a].ms - 10000) ? i : a, 0); rec[far].worst = true;
+      out.replaceChildren(betLoser(ps[far], `10초에서 ${(Math.abs(rec[far].ms - 10000) / 1000).toFixed(2)}초 벗어났어요`)); }
+    draw(); };
+  const start = () => { ps = betPeople(); turn = 0; rec = []; t0 = 0; cancelAnimationFrame(raf); clock.textContent = '0.00'; out.replaceChildren(); draw(); };
+  area.replaceChildren(betPeopleRow(start), who, clock, btn, table, out);
+  info.replaceChildren(el('span', { text: '속으로 10초를 세고 멈춰요. 3초 뒤부터 숫자가 안 보여요' })); start();
 }
 // ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
 // 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
