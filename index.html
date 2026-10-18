@@ -1790,7 +1790,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2655,7 +2655,139 @@ function drawInstall() {
     el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: IN_KAKAO ? '브라우저로' : '추가', onclick: go }),
     el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '바탕화면 추가 안내 닫기', text: '✕', onclick: () => { ls.set('installHide', true); drawInstall(); } })));
 }
+// ---------- 구글 로그인 + 기록 클라우드 맞추기 (2026-10-18) ----------
+// 로그인은 Firebase Auth(구글, 팝업). 기록은 Firestore users/{uid}/recs/{기록ID}={d: 그 기록의 저장 키들 JSON, t}, 사진은 users/{uid}/ph/{사진ID},
+// 여행 묶음·모임방 목록 등은 users/{uid}/x/one. 규칙상 로그인한 본인만 읽고 써요. 휴대폰·컴퓨터·브라우저마다 같은 계정으로 로그인하면 내 MD가 하나로 모여요
+// ls cloudSig = {기록ID: 마지막으로 맞춘 지문}, cloudPh = {사진ID: 1}(올린 사진), cloudGone = [지운 기록ID](다른 기기에서 다시 안 가져오게 클라우드에서도 지움)
+const FB_VER = '12.19.0', FB_CFG = { apiKey: FS_KEY, authDomain: 'map-photo-diary.firebaseapp.com', projectId: 'map-photo-diary', appId: '1:549211708851:web:d2c6671fa5ac5190b2bfc6' };
+let fbAuthP = null, fbReady = null, cloudUser = null, cloudBusy = false, cloudWatching = false;
+function fbAuth() {
+  if (window.__mdAuthStub) return Promise.resolve(window.__mdAuthStub);   // 시험용
+  return fbAuthP || (fbAuthP = (async () => {
+    const [{ initializeApp }, A] = await Promise.all([import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app.js`), import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth.js`)]);
+    const auth = A.getAuth(initializeApp(FB_CFG)); auth.languageCode = 'ko';
+    return (fbReady = { auth, onChange: f => A.onAuthStateChanged(auth, f), signIn: () => A.signInWithPopup(auth, new A.GoogleAuthProvider()), signOut: () => A.signOut(auth) });
+  })());
+}
+// 로그인한 사람 이름으로 Firestore 읽고 쓰기 (열쇠 = 로그인 표 ID token)
+async function cfetch(path, opt = {}) {
+  const tok = await cloudUser.getIdToken();
+  const r = await fetch(`${FS_URL}users/${cloudUser.uid}/${path}`, Object.assign({}, opt, { headers: Object.assign({ authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, opt.headers || {}) }));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('cloud ' + r.status);
+  return opt.method === 'DELETE' ? true : r.json();
+}
+const cPut = (path, str) => cfetch(path, { method: 'PATCH', body: JSON.stringify({ fields: { d: { stringValue: str }, t: { integerValue: String(Date.now()) } } }) });
+const cGet = async path => (await cfetch(path))?.fields?.d?.stringValue ?? null;
+async function cList(col) {   // [{ id, d, t }] 다 모아요
+  const out = []; let tok = '';
+  do { const j = await cfetch(`${col}?pageSize=300${tok ? '&pageToken=' + encodeURIComponent(tok) : ''}`); if (!j) break;
+    for (const x of j.documents || []) out.push({ id: x.name.split('/').pop(), d: x.fields?.d?.stringValue || '', t: +(x.fields?.t?.integerValue || 0) });
+    tok = j.nextPageToken || ''; } while (tok);
+  return out;
+}
+// 기록 하나의 저장 키들 + 사진 ID 목록 → 지문
+function recPack(id) { const o = {}; for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) o[k] = v; } return o; }
+const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join(','));
+// 맞추기: 클라우드에만 있는 기록은 가져오고, 여기서 고친(지문이 바뀐) 기록은 올리고, 다른 기기에서 고친 기록은 받아요
+async function cloudSync(quiet) {
+  if (!cloudUser || cloudBusy) return;
+  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0;
+  const live = ls.get('walkNow', null), sig = ls.get('cloudSig', {}), phSent = ls.get('cloudPh', {});
+  try {
+    // 지운 기록은 클라우드에서도 지워요
+    const gone = ls.get('cloudGone', []);
+    for (const id of gone) { await cfetch(`recs/${id}`, { method: 'DELETE' }).catch(() => {}); delete sig[id]; }
+    if (gone.length) ls.set('cloudGone', []);
+    const remote = new Map((await cList('recs')).map(x => [x.id, x]));
+    const local = new Set(); pastTrips().forEach(x => { if (!x.album) local.add(x.t); else (albumGet(x.t)?.days || []).forEach(d => local.add(d)); });
+    // 1) 가져오기: 클라우드에만 있거나, 여기선 안 고쳤는데 클라우드가 바뀐 것
+    for (const [id, r] of remote) {
+      if (id === live) continue;
+      let d; try { d = JSON.parse(r.d); } catch { continue; }
+      if (!d || typeof d.ls !== 'object') continue;
+      const has = local.has(id), mine = has ? recSig(recPack(id), (await photoList(id)).map(p => p.id).sort()) : null;
+      if (has && (mine === d.sig || sig[id] !== mine)) continue;   // 같거나, 여기서 고친 게 있으면 올리기 쪽에서
+      for (const k of MD_KEYS) { const v = d.ls[k]; if (typeof v === 'string') localStorage.setItem(k + id, v); else localStorage.removeItem(k + id); }
+      const havePh = new Set((await photoList(id)).map(p => p.id));
+      for (const pid of Array.isArray(d.ph) ? d.ph : []) {
+        if (havePh.has(pid)) continue;
+        try { const s = await cGet(`ph/${pid}`); if (!s) continue; const ph = JSON.parse(s); if (typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
+          await photoPut({ id: pid, t: id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() });
+          phSent[pid] = 1; phDown++; } catch {}
+      }
+      sig[id] = d.sig; local.add(id); down++;
+    }
+    // 2) 올리기: 여기에만 있거나 여기서 고친 것 (기록 중인 건 끝난 뒤에)
+    for (const id of local) {
+      if (id === live) continue;
+      const phs = await photoList(id), phIds = phs.map(p => p.id).sort(), pack = recPack(id), s = recSig(pack, phIds);
+      if (sig[id] === s && remote.has(id)) continue;
+      if (!pack['track:']) continue;
+      for (const ph of phs) { if (phSent[ph.id]) continue;
+        try { await cPut(`ph/${ph.id}`, JSON.stringify({ t: id, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) })); phSent[ph.id] = 1; phUp++; } catch {} }
+      await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s })); sig[id] = s; up++;
+    }
+    // 3) 여행 묶음·모임방 목록·이름 등 (합치기)
+    const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}'); } catch {}
+    if (Array.isArray(one.albums)) { const m = albumsLoad(); one.albums.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); }
+    if (Array.isArray(one.rooms)) ls.set('rooms', [...roomsLoad(), ...one.rooms.filter(x => x && !roomsLoad().some(y => y.code === x.code))]);
+    if (Array.isArray(one.myPosts)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...one.myPosts])].slice(-300));
+    if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', '') });
+    if (mine1 !== oneR) await cPut('x/one', mine1);
+    ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
+  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); if (!quiet) toast('클라우드와 맞추지 못했어요. 인터넷을 확인해 주세요'); cloudBusy = false; return; }
+  cloudBusy = false;
+  const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : ''].filter(Boolean).join(' · ');
+  if (down && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); } catch {} location.reload(); return; }
+  if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
+  document.dispatchEvent(new Event('md-cloud'));
+}
+// 지운 기록: 로그인한 적이 있으면 다음 맞추기 때 클라우드에서도 지워요
+function cloudForget(ids) { if (!ls.get('cloudSig', null)) return; ls.set('cloudGone', [...new Set([...ls.get('cloudGone', []), ...ids])]); }
+async function cloudLogin() {
+  if (IN_KAKAO) return toast('카카오톡 안에서는 구글 로그인이 안 돼요. 크롬에서 열어 주세요');
+  if (IN_NATIVE) return toast('앱 안에서는 아직 구글 로그인이 안 돼요. 크롬에서 열어 주세요 (곧 앱도 돼요)');
+  // 팝업은 누른 바로 그때 열어야 막히지 않아서, 미리 불러 둔 fbReady가 있으면 기다리지 않고 바로 열어요
+  try { const F = fbReady || await fbAuth(); await F.signIn(); }
+  catch (e) {
+    const c = String(e && e.code || '');
+    if (/popup-closed|cancelled-popup/.test(c)) return;
+    toast(c.includes('operation-not-allowed') ? 'Firebase에서 구글 로그인이 아직 꺼져 있어요' : c.includes('unauthorized-domain') ? 'Firebase 승인된 도메인에 gilbertgo.github.io를 넣어 주세요' : c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요');
+  }
+}
+async function cloudLogout() { if (!confirm('로그아웃할까요? 이 휴대폰의 기록은 그대로 남아요.')) return; try { await (await fbAuth()).signOut(); } catch {} ls.set('cloudSig', null); ls.set('cloudPh', {}); toast('로그아웃했어요'); document.dispatchEvent(new Event('md-cloud')); }
+// 로그인 상태 지켜보기: 로그인돼 있으면 켤 때·돌아올 때(5분마다까지)·기록을 끝낸 뒤 맞춰요
+function cloudWatch() {
+  if (cloudWatching || IN_KAKAO || IN_NATIVE || !ls.get('cloudOn', false) && !window.__mdAuthStub) return;   // 한 번이라도 로그인한 브라우저만 SDK를 불러요
+  cloudWatching = true;
+  fbAuth().then(F => F.onChange(u => { cloudUser = u || null; document.dispatchEvent(new Event('md-cloud')); if (u) { ls.set('cloudOn', true); ls.set('cloudName', u.email || u.displayName || ''); setTimeout(() => cloudSync(true), 800); } else ls.set('cloudOn', false); })).catch(() => {});
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudUser && Date.now() - ls.get('cloudAt', 0) > 5 * 60000) cloudSync(true); });
+}
+// 내 MD에 붙는 카드: 로그인 안 했으면 '구글로 로그인', 했으면 누구·마지막으로 맞춘 때·지금 맞추기·로그아웃
+function cloudCard() {
+  const box = el('div', { class: 'card stack cl-card', style: 'gap:8px' });
+  const draw = () => {
+    if (IN_NATIVE) { box.replaceChildren(el('b', { text: '☁ 클라우드 (구글 로그인)' }), el('div', { class: 'sub', text: '앱 안에서는 아직 구글 로그인이 안 돼요. 크롬에서 Map Photo Diary를 열어 로그인하면 휴대폰·컴퓨터 기록이 하나로 모여요. 앱도 곧 돼요.' })); return; }
+    if (!cloudUser) {
+      fbAuth().catch(() => {});   // 로그인 단추를 누르기 전에 미리 불러 둬요(팝업이 막히지 않게)
+      box.replaceChildren(el('b', { text: '☁ 구글로 로그인하고 기록 모으기' }),
+        el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 휴대폰·컴퓨터·다른 브라우저의 내 MD와 사진이 하나로 모이고, 휴대폰을 바꿔도 그대로예요. 기록은 로그인한 본인만 볼 수 있어요.' }),
+        el('button', { class: 'btn primary full', onclick: () => { ls.set('cloudOn', true); cloudWatch(); cloudLogin(); } }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:18px' }), ' 구글로 로그인'));
+      return;
+    }
+    const at = ls.get('cloudAt', 0);
+    box.replaceChildren(el('b', { text: '☁ 클라우드에 모으는 중' }),
+      el('div', { class: 'sub', text: `${cloudUser.email || cloudUser.displayName || ''} · ${at ? `마지막으로 맞춤 ${new Date(at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '아직 맞추지 않음'}` }),
+      el('div', { class: 'two' }, el('button', { class: 'btn line', text: cloudBusy ? '맞추는 중…' : '↻ 지금 맞추기', onclick: () => cloudSync(false).then(draw) }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
+  };
+  document.addEventListener('md-cloud', draw); draw();
+  return box;
+}
 route();
+cloudWatch();
+if (!IN_NATIVE) { try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => toast(t), 600); } } catch {} }   // 다시 그린 뒤 알림 (앱은 native.js가 해요)
 
 // =====================================================================
 // 1) 산행 만들기
@@ -3060,7 +3192,7 @@ function viewMyList() {
     el('h1', { text: '내 MD' }),
     el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
     tabs, body,
-    backupCard(list.filter(x => !x.album).length)));
+    cloudCard(), backupCard(list.filter(x => !x.album).length)));
   draw();
 }
 // ---------- MD 수정하기: 모드, 출발·도착 이름, 사진 더하기, 경로 앞뒤 자르기 ----------
@@ -3189,6 +3321,7 @@ async function viewMyOne(t) {
     if (live) return toast('기록 중인 MD는 먼저 끝내야 지울 수 있어요');
     if (!confirm(`'${info.name}'${x.album ? ` 여행(${info.days}일치 기록)` : ''}을(를) 이 휴대폰에서 지울까요? 사진과 별표도 함께 지워지고, 되돌릴 수 없어요.\n(이미 보낸 지도 링크나 모임방에 올린 MD는 그대로 남아요)`)) return;
     const ids = x.album ? (albumGet(t)?.days || []) : [t];
+    cloudForget(ids);
     for (const id of ids) {
       for (const p of await photoList(id)) await photoDel(p.id);
       MD_KEYS.forEach(k => { try { localStorage.removeItem(k + id); } catch {} });
@@ -4703,7 +4836,7 @@ function viewWalk() {
           stopGps(); cgStop(); if (M().k === 'run') formFlush(100, null, true); wantWake = false; try { wake?.release(); } catch {}
           if (motionOn) { removeEventListener('devicemotion', onMotion); if (stepN) ls.set('walkSteps:' + id, { n: stepN }); }
           ls.set('walkNow', null); bg.remove(); done = id; draw();
-          const fin = id; setTimeout(async () => { await galleryOffer([fin]); syncPush(); }, 500);   // 앱: 그 시간 사진 넣기 → Map Photo Diary 앱으로 넘기기
+          const fin = id; setTimeout(async () => { await galleryOffer([fin]); syncPush(); if (cloudUser) cloudSync(true); }, 500);   // 앱: 그 시간 사진 넣기 → Map Photo Diary 앱으로 넘기기
         } }))));
     document.body.append(bg);
   }
