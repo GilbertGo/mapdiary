@@ -1787,7 +1787,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3585,6 +3585,28 @@ async function talkKeySheet() {
   if (v == null) return false;
   ls.set('claudeKey', v); toast(v ? 'AI 정리 열쇠를 넣었어요' : 'AI 정리 열쇠를 지웠어요'); return true;
 }
+// 마이크가 막혔을 때: 어디서 열었는지에 맞춰 허용하는 길을 한 장으로 보여 줘요
+function talkMicHelp(retry) {
+  const pwa = IS_APP && !IN_NATIVE;
+  const steps = IN_NATIVE ? ['휴대폰 설정 → 애플리케이션', `${(window.MD_APP && window.MD_APP.name) || 'Map Photo Diary'} → 권한 → 마이크`, "'앱 사용 중에만 허용' 고르기"]
+    : pwa ? ['휴대폰 설정 → 애플리케이션 → Chrome → 권한 → 마이크 → 허용', 'Chrome 열기 → ⋮ → 설정 → 사이트 설정 → 마이크', "'gilbertgo.github.io'를 눌러 '허용'"]
+    : ['주소창 왼쪽 자물쇠(또는 ⚙) 누르기', "권한 → 마이크 → '허용'", '안 되면: 휴대폰 설정 → 애플리케이션 → 이 브라우저 → 권한 → 마이크 → 허용'];
+  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '마이크 켜기' },
+    el('h2', { text: '🎙 마이크를 켜 주세요' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '마이크가 꺼져 있어서 들을 수 없어요. 한 번만 켜 두면 다음부터는 바로 돼요.' }),
+    el('ol', { style: 'margin:0;padding-left:22px;line-height:1.8' }, ...steps.map(t => el('li', { text: t }))),
+    el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
+      el('button', { class: 'btn primary small grow', text: '켰어요, 다시 듣기', onclick: () => { sb.remove(); retry(); } }))));
+  document.body.append(sb);
+}
+// 웹: 듣기 전에 마이크를 한 번 열어 보면 브라우저가 '허용' 창을 띄워요. 막혀 있으면 false
+async function talkMicAsk() {
+  if (IN_NATIVE || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  try { const st = await navigator.permissions.query({ name: 'microphone' }); if (st.state === 'granted') return true; } catch {}
+  try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); return true; }
+  catch (e) { return !(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')); }
+}
 function viewTalk() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let segs = ls.get('talkDraft', []), rec = null, on = false, interim = '', wake = null, note = null, busy = false;
@@ -3597,12 +3619,20 @@ function viewTalk() {
     if (on) live.scrollTop = live.scrollHeight;
   };
   const start = async () => {
+    if (IN_NATIVE && !window.mdNativeSpeech) {   // 예전 판 앱: 휴대폰 음성 인식이 아직 안 들어 있어요
+      if (confirm('앱을 새 판으로 바꿔야 들을 수 있어요.\n지금 받을까요? 지우지 말고 덮어 설치하면 기록은 그대로 남아요.')) location.href = APP_BASE + ({ run: 'run.html', pgolf: 'golf.html' }[(window.MD_APP || {}).mode] || 'md.html');
+      return;
+    }
     if (!SR) return toast('이 브라우저는 음성 듣기가 안 돼요. 크롬·엣지·사파리에서 열어 주세요');
+    if (!(await talkMicAsk())) return talkMicHelp(start);
     rec = new SR(); rec.lang = 'ko-KR'; rec.continuous = true; rec.interimResults = true;
     rec.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i], x = r[0].transcript.trim(); if (!x) continue; if (r.isFinal) { segs.push({ t: Date.now(), x }); save(); } else interim += x + ' '; } drawLive(); };
     // 크롬은 조용하면 저절로 멈춰서, 듣는 중이면 다시 켜요
     rec.onend = () => { if (on) setTimeout(() => { try { rec.start(); } catch {} }, 250); };
-    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { on = false; toast('마이크를 허용해 주세요 (주소창 옆 자물쇠 → 마이크)'); draw(); } };
+    rec.onerror = e => {
+      if (e.error === 'not-allowed') { on = false; draw(); talkMicHelp(start); }
+      else if (e.error === 'service-not-allowed') { on = false; draw(); toast(IN_NATIVE ? "휴대폰에 음성 인식이 없어요. 플레이스토어에서 'Google' 앱을 설치·업데이트해 주세요" : '이 브라우저는 음성 듣기가 막혀 있어요. 크롬에서 열어 주세요'); }
+    };
     try { rec.start(); } catch {} on = true;
     try { wake = await navigator.wakeLock.request('screen'); } catch {}
     draw();
@@ -3641,8 +3671,7 @@ function viewTalk() {
         el('b', { text: hasKey ? '✨ AI 정리가 켜져 있어요' : 'AI 정리는 열쇠가 있어야 해요' }),
         el('div', { text: hasKey ? 'Claude가 앞뒤 맥락을 보고 화제를 나누고, 정한 것·할 일·아직 정할 것을 뽑아요. 받아 적은 글만 Anthropic으로 보내요.' : '열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눠요. 맥락까지 보려면 Anthropic API 열쇠를 넣어 주세요.' }),
         el('button', { class: 'btn line small', style: 'align-self:flex-start', text: hasKey ? '열쇠 바꾸기·지우기' : '🔑 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) draw(); } })),
-      !SR ? el('div', { class: 'banner alert' }, el('b', { text: '이 화면에서는 음성 듣기가 안 돼요' }), el('div', { text: IN_NATIVE ? '앱 안에서는 아직 안 돼요. 크롬에서 열어 주세요.' : '크롬·엣지·사파리에서 열어 주세요. 카톡 안에서는 안 돼요.' }),
-        IN_NATIVE ? el('a', { class: 'btn line small', style: 'align-self:flex-start', href: APP_BASE + '?talk=1', target: '_blank', text: '크롬에서 열기' }) : null) : null,
+      !SR ? el('div', { class: 'banner alert' }, el('b', { text: '이 화면에서는 음성 듣기가 안 돼요' }), el('div', { text: '크롬·엣지·사파리에서 열어 주세요. 카톡 안에서는 안 돼요.' })) : null,
       past.length ? el('h2', { style: 'margin-top:8px', text: `정리한 대화 ${past.length}개` }) : null,
       ...past.map((n, i) => el('div', { class: 'member', style: 'cursor:pointer', onclick: () => { note = n; draw(); scrollTo(0, 0); } },
         el('div', { class: 'grow' }, el('div', { class: 'nm', text: n.title }), el('div', { class: 'dt', text: `${new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${n.ai ? 'AI 정리' : '기본 정리'} · 화제 ${n.topics.length}개` })),
