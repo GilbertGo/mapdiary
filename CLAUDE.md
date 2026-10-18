@@ -50,13 +50,13 @@
 - **저절로 백업**(2026-10-06, 앱만): 켜고 20초 뒤 `autoBackup` — 마지막 백업(`lastBackup`·`lastAutoBackup`)이 7일 넘으면 '내 파일 > Documents > MapDiary'에 `{MapDiary|MDRun|MDGolf}_autobackup_날짜.json`(백업 파일과 같은 모양, `auto:1`). 사진이 많아도 되게 `mdNativeBackup.start/add/end`로 한 장씩 이어 쓰고(.part → 이름 바꾸기) 최근 3개만 남김
 - 다음 할 일: 현장 시험(화면 끄고 달리기), 삼성헬스(헬스 커넥트)에서 심박·자세 읽기, 이름·아이콘 시안, 화면 꺼져도 케이던스 가이드 소리
 
-## 갤럭시워치 앱 MD Run 워치 (`watchapp/`, 2026-10-17 시작)
+## 갤럭시워치 앱 MPD Run 워치 (`watchapp/`, 2026-10-17 시작, 예전 이름 MD Run)
 - 사용자 "이 앱 스마트워치 앱으로" → 고른 것: MD Run(개인용) · 갤럭시워치(사용자 시계는 **갤럭시워치9**) · **시계 혼자 기록**(휴대폰 없이). 웹을 감쌀 수 없어 **Kotlin Wear OS 앱을 새로** 짬(androidx는 `activity`·`wear`(앰비언트)만, 화면은 Canvas/기본 View). 자세한 건 `watchapp/README.md`
 - 달리는 중 화면: 시안 A(목표 링)·B(네 칸 숫자)·C(코치 신호등)를 보여 주자 사용자가 'b,c안' → '화면을 세 가지로 a,b,c' → **옆으로 밀어 A → B → C → 1km 구간 → 멈춤·끝내기(1.5초 꾹)** (`RunView`, 마지막 본 A·B·C는 `page` 기억). 시안 그림은 scratchpad `watch/drafts.html`
 - 계산·코치는 휴대폰 index.html 러닝 코드를 `Run.kt`로 옮김(같은 말). 심박(`TYPE_HEART_RATE`, BODY_SENSORS)·걸음(`TYPE_STEP_COUNTER`)은 시계 센서. 기록 도우미 `RunService`(포그라운드 location|health, 화면 꺼져도 기록, TTS·진동), 앰비언트에서도 앱 화면 유지(`Ambient.kt`)
 - 저장: 시계 안 `files/runs/{ID}.json`(Map Diary 백업과 같은 키 `track:`·`walkSplits:`… + `walkHr:`), 달리는 중 `current.json`(앱이 정리돼도 이어서). **아직 휴대폰으로 안 넘김**(다음 단계: 같은 appId `io.github.gilbertgo.mdrun`·같은 서명이라 Wearable Data Layer로 휴대폰 MD Run에 넘길 수 있게 맞춰 둠)
 - 만들기: `.github/workflows/watch-apk.yml`(watchapp/ 바뀌면, claude/** 가지에서도 시험으로 만듦). main이면 Releases 태그 `watch`에 `MDRunWatch.apk`(**make_latest: false** — 휴대폰 앱 latest 주소를 안 건드리게). 받는 주소 https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
-- **다음 시계 새 판 때 같이 할 일**(2026-10-18 사용자 '시계 새 판 나오면'): 시계 앱 이름을 'MPD Run'으로 바꾸기. 시계는 저절로 업데이트되지 않아서 새 판을 내면 사용자에게 '시계 새 판 나왔어요' + 까는 순서(Wear Installer 2)를 그 자리에서 다시 알려 줄 것
+- **새 디자인 + 이름 MPD Run**(2026-10-18, 사용자 '시계판 화면 이쁘게, 시인성 좋게, 지금은 초보티 나'): `RunView` 전부 다시 그림 — 검은 바탕·흰 큰 숫자(`sans-serif-condensed` 굵게, `tnum`), 산호 #FF8A4C·하늘 #4FC3F7·금색·하트 빨강, 테두리 링(`ring`, SweepGradient·끝 흰 점, 자유 달리기는 이번 1km), 알약 딱지(`pill`), 맨 위 시각+하트 심박, 멈춤·다시·끝내기는 그린 아이콘, 앰비언트는 `pageAmbient`(선·글자만). 시작 화면은 두 줄 단추(`row`: 회색 이름 + 흰 값 + ›)와 큰 산호 '시작'. 이모지 뺌. 시안 그림 scratchpad `watch2/preview.html`. 시계는 저절로 업데이트 안 되니 새 판마다 까는 순서를 그 자리에서 알려 줄 것. 컴파일 확인은 워크플로를 main-jethsj에 `workflow_dispatch`로 돌림(릴리스는 main만)
 - 설치: 플레이스토어가 아니라 시계 개발자 모드 → 무선 디버깅 → 휴대폰 'Wear Installer 2'로 넣음(README에 순서)
 - 여기(클라우드) 확인 방법: dl.google.com이 막혀 안드로이드 SDK·androidx가 없음 → Kotlin 컴파일러(GitHub 릴리스) + robolectric `android-all` jar(Maven Central)로 androidx만 흉내(stub) 내서 컴파일해 보고, `Run`에 가짜 위치를 넣어 코치 말을 확인. 실제 APK는 GitHub Actions에서
 
