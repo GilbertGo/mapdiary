@@ -8,6 +8,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { App } from '@capacitor/app';
+import { SpeechRecognition as NSR } from '@capacitor-community/speech-recognition';
 
 if (Capacitor.isNativePlatform()) {
   window.MD_NATIVE = true;
@@ -66,6 +67,42 @@ if (Capacitor.isNativePlatform()) {
     getVoices: () => [],
   };
   try { Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true }); } catch { window.speechSynthesis = synth; }
+
+  // ---------- 음성 듣기(대화 정리): 웹뷰의 webkitSpeechRecognition은 마이크를 못 써서 휴대폰 음성 인식으로 ----------
+  // 웹과 같은 모양(lang·continuous·interimResults·onresult·onend·onerror, start/stop)으로 흉내 내요.
+  // 휴대폰 인식은 한 마디가 끝나면 멈춰서, 멈추면 마지막 글을 확정(isFinal)하고 onend → 화면이 다시 켜요
+  function MdSR() { this.lang = 'ko-KR'; this.continuous = false; this.interimResults = false; this.onresult = this.onend = this.onerror = this.onstart = null; this._on = false; this._stop = null; }
+  const srFire = (r, k, e) => { if (typeof r['on' + k] === 'function') { try { r['on' + k](e || {}); } catch {} } };
+  MdSR.prototype.start = function () {
+    if (this._on) return; this._on = true;
+    const r = this, handles = []; let text = '', timer = null, endT = null, done = false;
+    const result = (x, fin) => srFire(r, 'result', { resultIndex: 0, results: [Object.assign([{ transcript: x, confidence: 1 }], { isFinal: fin })] });
+    const finish = err => {
+      if (done) return; done = true; clearInterval(timer); clearTimeout(endT);
+      handles.forEach(h => { try { h.remove(); } catch {} });
+      if (text) result(text, true);
+      if (err) srFire(r, 'error', { error: err });
+      r._on = false; r._stop = null; srFire(r, 'end');
+    };
+    r._stop = () => { NSR.stop().catch(() => {}); clearTimeout(endT); endT = setTimeout(() => finish(), 900); };
+    (async () => {
+      try {
+        if (!(await NSR.available()).available) return finish('service-not-allowed');
+        let p = (await NSR.checkPermissions()).speechRecognition;
+        if (p !== 'granted') p = (await NSR.requestPermissions()).speechRecognition;   // 휴대폰이 '마이크 허용?' 창을 띄워요
+        if (p !== 'granted') return finish('not-allowed');
+        if (done) return;
+        handles.push(await NSR.addListener('partialResults', d => { const x = ((d && d.matches) || [])[0]; if (x && !done) { text = x; if (r.interimResults) result(x, false); } }));
+        await NSR.start({ language: r.lang || 'ko-KR', partialResults: true, popup: false, maxResults: 1 });
+        srFire(r, 'start');
+        // 말이 끝나거나 조용하거나 오류면 듣기가 꺼져요 → 마지막 글이 올 때까지 잠깐 기다렸다 끝
+        timer = setInterval(async () => { if (done || endT) return; try { if (!(await NSR.isListening()).listening) endT = setTimeout(() => finish(), 700); } catch {} }, 600);
+      } catch (e) { finish(/permission/i.test(String(e && e.message)) ? 'not-allowed' : 'network'); }
+    })();
+  };
+  MdSR.prototype.stop = MdSR.prototype.abort = function () { if (this._stop) this._stop(); };
+  for (const k of ['SpeechRecognition', 'webkitSpeechRecognition']) { try { Object.defineProperty(window, k, { value: MdSR, configurable: true, writable: true }); } catch { window[k] = MdSR; } }
+  window.mdNativeSpeech = true;
 
   // ---------- 저장: 사진은 갤러리 'MapDiary' 앨범, 그 밖(백업 등)은 Documents/MapDiary ----------
   const toB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsDataURL(blob); });
