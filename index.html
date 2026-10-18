@@ -92,6 +92,9 @@ input::placeholder{color:#B3AC9C}
 .tk-live{max-height:42vh;min-height:120px;overflow-y:auto;font-size:16px;line-height:1.6}.tk-time{font-size:12px;font-weight:800;color:var(--muted);margin-top:8px}.tk-int{color:var(--muted)}
 .tk-note{display:flex;flex-direction:column;gap:10px;padding:16px}.tk-tag{font-size:12.5px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted)}.tk-tag.ai{background:#FFE6D8;color:#D9622B}
 .tk-topic{border-left:3px solid var(--pine);padding-left:10px}.tk-th{display:flex;gap:8px;align-items:baseline}.tk-th span{width:22px;height:22px;border-radius:50%;background:var(--pine);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none}.tk-th small{color:var(--muted)}
+.tk-final{background:linear-gradient(135deg,#E6F4FF,#FFF1E8);border:1.5px solid #BFE0F7;border-radius:16px;padding:14px 16px}.tk-final b.h{display:block;font-size:13px;font-weight:800;color:#0277BD;letter-spacing:.02em;margin-bottom:6px}
+.tk-final ol{margin:0;padding-left:22px;font-size:17px;line-height:1.55;font-weight:600;color:var(--ink)}.tk-final ol li{margin:4px 0}.tk-final p{margin:0;font-size:16.5px;line-height:1.6;font-weight:600}
+.tk-sec.todo{background:#FFF1E8}.tk-sec.todo li{list-style:'☐  '}.tk-more{border-top:1px dashed var(--line);padding-top:8px}.tk-more summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:14px;padding:4px 0}.tk-more[open] summary{margin-bottom:8px}
 .tk-note ul{margin:4px 0 0;padding-left:20px}.tk-note li{margin:2px 0}.tk-sec{background:var(--ground);border-radius:12px;padding:10px 12px}
 .gm-h{margin:10px 0 0;font-size:17px}
 .bp{display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow)}.bp-l{font-size:13px;color:var(--muted);font-weight:700}
@@ -1787,7 +1790,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.18-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.18-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3514,8 +3517,8 @@ function gameTen(area, info) {
 //        ② 기본 정리: 열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눔
 // 받아 적는 중인 것은 ls talkDraft(앱이 꺼져도 남음), 정리한 것은 ls talkNotes(최근 30개)
 const TALK_SDK = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm';
-const TALK_SCHEMA = { type: 'object', additionalProperties: false, required: ['title', 'summary', 'topics', 'decisions', 'todos', 'questions'], properties: {
-  title: { type: 'string' }, summary: { type: 'string' },
+const TALK_SCHEMA = { type: 'object', additionalProperties: false, required: ['title', 'final', 'summary', 'topics', 'decisions', 'todos', 'questions'], properties: {
+  title: { type: 'string' }, final: { type: 'array', items: { type: 'string' } }, summary: { type: 'string' },
   topics: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'time', 'points'], properties: { title: { type: 'string' }, time: { type: 'string' }, points: { type: 'array', items: { type: 'string' } } } } },
   decisions: { type: 'array', items: { type: 'string' } },
   todos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['what', 'who', 'when'], properties: { what: { type: 'string' }, who: { type: 'string' }, when: { type: 'string' } } } },
@@ -3525,7 +3528,8 @@ const TALK_SYSTEM = `당신은 대화 기록을 정리해 주는 비서입니다
 - 앞뒤 맥락을 보고 화제가 바뀌는 곳마다 나눠 topics에 순서대로 담으세요. time은 그 화제가 시작된 [시:분], points는 그 화제의 핵심을 짧은 문장 몇 개로.
 - 잘못 알아들은 말은 맥락으로 바로잡아 이해하되, 대화에 없는 내용을 지어내지 마세요. 확실하지 않으면 빼세요.
 - decisions에는 정해진 것만, todos에는 해야 할 일(who·when은 대화에 나왔을 때만, 없으면 빈 문자열), questions에는 아직 정하지 못했거나 다시 이야기해야 할 것.
-- title은 대화 전체를 나타내는 짧은 제목, summary는 두세 문장 요약.
+- final이 가장 중요합니다: 대화를 안 들은 사람이 이것만 읽어도 '무슨 이야기를 했고, 결국 어떻게 됐는지' 알 수 있게 최종 요약을 3~5개 짧은 문장으로 쓰세요. 결론·정해진 것을 먼저, 이유는 짧게. 대화 순서대로 늘어놓지 마세요.
+- title은 대화 전체를 나타내는 짧은 제목, summary는 대화 흐름을 두세 문장으로.
 - 쉬운 한국어 존댓말로, 카톡방에 그대로 올려도 될 만큼 짧고 깔끔하게 쓰세요.`;
 const talkHM = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const talkText = segs => segs.map(s => `[${talkHM(s.t)}] ${s.x}`).join('\n');
@@ -3556,23 +3560,33 @@ function talkBasic(segs) {
     todos: pick(/해야|하자|할게|해 줘|해줘|부탁|챙겨|예약|가져|사 ?와|까지/).map(x => ({ what: x, who: '', when: '' })),
     questions: pick(/\?|할까|까요|나요|어떡|어떻게 하/), ai: 0 };
 }
+function talkFinal(n) {   // 최종 요약 줄: AI 정리는 final, 기본 정리·예전 정리는 정한 것·할 일에서
+  if (n.final && n.final.length) return n.final;
+  return [...n.decisions.slice(0, 3), ...n.todos.slice(0, 2).map(t => `할 일: ${t.what}`)].slice(0, 5);
+}
 function talkShareText(n) {
-  const L = [`📝 ${n.title}`, n.summary, ''];
-  n.topics.forEach((tp, i) => { L.push(`${i + 1}. ${tp.title}${tp.time ? ` (${tp.time})` : ''}`); tp.points.forEach(p => L.push(` · ${p}`)); });
+  const fin = talkFinal(n), L = [`📝 ${n.title}`, ''];
+  if (fin.length) L.push('🧾 최종 요약', ...fin.map((x, i) => `${i + 1}. ${x}`)); else L.push(n.summary);
   if (n.decisions.length) L.push('', '✅ 정한 것', ...n.decisions.map(d => ` · ${d}`));
   if (n.todos.length) L.push('', '📌 할 일', ...n.todos.map(t => ` · ${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`));
   if (n.questions.length) L.push('', '❓ 아직 정할 것', ...n.questions.map(q => ` · ${q}`));
+  L.push('', '— 화제별 —');
+  n.topics.forEach((tp, i) => { L.push(`${i + 1}. ${tp.title}${tp.time ? ` (${tp.time})` : ''}`); tp.points.forEach(p => L.push(` · ${p}`)); });
   L.push('', '— Map Photo Diary 대화 정리');
   return L.join('\n');
 }
 function talkNoteView(n) {
-  const sec = (h, items) => items.length ? el('div', { class: 'tk-sec' }, el('b', { text: h }), el('ul', {}, ...items.map(x => el('li', { text: x })))) : null;
+  const sec = (h, items, cls) => items.length ? el('div', { class: 'tk-sec' + (cls ? ' ' + cls : '') }, el('b', { text: h }), el('ul', {}, ...items.map(x => el('li', { text: x })))) : null;
+  const fin = talkFinal(n);
   return el('div', { class: 'card tk-note' },
     el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('span', { class: 'tk-tag' + (n.ai ? ' ai' : ''), text: n.ai ? '✨ AI 정리' : '기본 정리' }), el('span', { class: 'sub', text: n.at ? new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '' })),
-    el('h2', { text: n.title }), el('p', { class: 'sub', style: 'margin:0;color:var(--ink)', text: n.summary }),
-    ...n.topics.map((tp, i) => el('div', { class: 'tk-topic' }, el('div', { class: 'tk-th' }, el('span', { text: i + 1 }), el('b', { text: tp.title }), tp.time ? el('small', { text: tp.time }) : null),
-      el('ul', {}, ...tp.points.map(p => el('li', { text: p }))))),
-    sec('✅ 정한 것', n.decisions), sec('📌 할 일', n.todos.map(t => `${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`)), sec('❓ 아직 정할 것', n.questions));
+    el('h2', { style: 'margin:0', text: n.title }),
+    el('div', { class: 'tk-final' }, el('b', { class: 'h', text: '🧾 최종 요약' }), fin.length ? el('ol', {}, ...fin.map(x => el('li', { text: x }))) : el('p', { text: n.summary })),
+    sec('✅ 정한 것', n.decisions), sec('📌 할 일', n.todos.map(t => `${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`), 'todo'), sec('❓ 아직 정할 것', n.questions),
+    n.topics.length ? el('details', { class: 'tk-more' }, el('summary', { text: `화제별 자세히 보기 (${n.topics.length}개)` }),
+      fin.length && n.summary ? el('p', { class: 'sub', style: 'margin:0 0 8px;color:var(--ink)', text: n.summary }) : null,
+      el('div', { class: 'stack', style: 'gap:10px' }, ...n.topics.map((tp, i) => el('div', { class: 'tk-topic' }, el('div', { class: 'tk-th' }, el('span', { text: i + 1 }), el('b', { text: tp.title }), tp.time ? el('small', { text: tp.time }) : null),
+        el('ul', {}, ...tp.points.map(p => el('li', { text: p }))))))) : null);
 }
 async function talkShare(n) {
   const text = talkShareText(n);
