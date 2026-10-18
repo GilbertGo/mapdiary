@@ -65,6 +65,31 @@ input::placeholder{color:#B3AC9C}
 .cnt span{font-size:13px;color:var(--muted)}
 .cnt.warn{background:var(--alert-soft);box-shadow:none} .cnt.warn b{color:var(--alert-ink)} .cnt.warn span{color:var(--alert-ink)}
 .note{font-size:16px;font-weight:600;color:#2D6A4F;line-height:1.5}
+.gm-item{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:18px;padding:14px 16px;text-decoration:none;color:inherit;box-shadow:var(--shadow)}
+.gm-item .grow{display:flex;flex-direction:column;gap:2px;min-width:0}.gm-item b{font-size:18px}.gm-e{font-size:34px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--soft);border-radius:14px;flex:none}
+.gm-best{font-size:12.5px;font-weight:800;color:#D9622B}
+.gm-info{display:flex;gap:16px;flex-wrap:wrap;font-size:15px;color:var(--muted)}.gm-info b{color:var(--ink);font-size:18px;font-variant-numeric:tabular-nums}
+.gm-area{display:flex;flex-direction:column;gap:12px;position:relative;user-select:none;-webkit-user-select:none}
+.gm-over{display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:center;background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:14px;box-shadow:var(--shadow)}.gm-over b{font-size:20px}
+.g2-board{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:8px;background:var(--line);border-radius:18px;padding:8px;aspect-ratio:1}
+.g2-c{background:var(--soft);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;transition:background .12s}
+.gp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gp-c{aspect-ratio:1;border:none;border-radius:14px;background:var(--pine);box-shadow:var(--shadow);padding:0;display:flex;align-items:center;justify-content:center}
+.gp-c .gp-f{display:none}.gp-c.on{background:var(--card);color:var(--pine)}.gp-c.on .gp-f{display:flex}.gp-c.ok{background:var(--soft);opacity:.75}
+.n25-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.n25-c{aspect-ratio:1;border:none;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:24px;font-weight:800;color:var(--ink)}
+.n25-c.done{background:var(--soft);color:transparent;box-shadow:none}.n25-c.bad{background:#FFD9C7}
+.sn-cv{width:100%;aspect-ratio:1;border-radius:16px;box-shadow:var(--shadow);background:#F7FBFF}
+.sn-pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-areas:'. u .' 'l d r';gap:6px;justify-content:center}
+.sn-b{height:56px;border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-size:22px;color:var(--pine);touch-action:none}
+.sn-b.d0{grid-area:u}.sn-b.d1{grid-area:r}.sn-b.d2{grid-area:d}.sn-b.d3{grid-area:l}
+.om-grid{display:grid;grid-template-columns:repeat(13,1fr);background:#F3D9A4;border-radius:12px;padding:4px;aspect-ratio:1;box-shadow:var(--shadow)}
+.om-c{border:none;padding:0;background:linear-gradient(#8A6A32,#8A6A32) center/100% 1px no-repeat,linear-gradient(#8A6A32,#8A6A32) center/1px 100% no-repeat;position:relative;aspect-ratio:1}
+.om-c.bk::after,.om-c.wh::after{content:'';position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#555,#111);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.om-c.wh::after{background:radial-gradient(circle at 35% 30%,#fff,#D8D8D8)}.om-c.last::before{content:'';position:absolute;inset:38%;border-radius:50%;background:#FF5A3C;z-index:1}
+.gm-pill{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);color:var(--pine);font-weight:800;font-size:15px;text-decoration:none}
+.gm-ban{display:flex;align-items:center;gap:14px;border-radius:20px;padding:16px 18px;text-decoration:none;color:#fff;background:linear-gradient(120deg,#FF8A4C,#FFB36B);box-shadow:0 8px 20px rgba(255,138,76,.3)}
+.gm-ban b{font-size:19px;display:block}.gm-ban span{font-size:13.5px;opacity:.92}.gm-ban .e{font-size:34px}
 .mem{display:flex;align-items:center;gap:14px;background:var(--card,#FFFDF8);border:1.5px solid #FFD2B8;border-radius:18px;padding:12px 14px;text-decoration:none;color:inherit;box-shadow:var(--shadow)}
 .mem-th{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;background:var(--soft,#EEE)}.mem-ic{display:flex;align-items:center;justify-content:center;color:var(--pine)}
 .mem .grow{display:flex;flex-direction:column;gap:3px;min-width:0}.mem b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mem .sm{font-size:13px;color:var(--muted)}
@@ -2238,6 +2263,7 @@ const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
 // 다른 주소(예전 단체 나들이 ?t= 등)는 모두 첫 화면으로 (단체 나들이 화면은 2026-10-06에 지웠어요)
 function route() {
   if (qs.get('walk') === '1') return viewWalk();
+  if (qs.get('game')) return viewGames();
   if (qs.get('room')) return viewRoom();
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
   if (qs.get('s')) return viewShareLink();
@@ -3119,6 +3145,186 @@ async function viewMyOne(t) {
   }, 0);
 }
 // 첫 화면: 기록 시작(모드 타일) / MD 공유하기
+// ---------- 게임 (2026-10-18, 사용자 '메인 화면에 게임 단추 → 게임 목록 → 골라서 하기') ----------
+// ?game=1 목록, ?game=1&g=2048|pair|n25|snake|omok 게임. 최고 기록은 ls gameBest = { 게임: 값 }
+function gameBest(k, v, low) {   // v를 주면 더 좋은 기록일 때 바꾸고 true
+  const b = ls.get('gameBest', {});
+  if (v == null) return b[k];
+  if (b[k] == null || (low ? v < b[k] : v > b[k])) { b[k] = v; ls.set('gameBest', b); return true; }
+  return false;
+}
+// 첫 화면 라우팅이 이 줄보다 먼저 돌아서 const 대신 함수로 (함수는 미리 올라가요)
+function gamesAll() { return [
+  { k: '2048', t: '2048', d: '밀어서 같은 숫자를 합쳐 2048 만들기', e: '🔢', best: v => `최고 ${v.toLocaleString()}점` },
+  { k: 'pair', t: '짝 맞추기', d: '뒤집힌 카드에서 같은 그림 둘씩 찾기', e: '🃏', best: v => `최고 ${v}번 만에` },
+  { k: 'n25', t: '1부터 25까지', d: '숫자를 1부터 차례로 빨리 누르기', e: '⏱', best: v => `최고 ${(v / 1000).toFixed(2)}초` },
+  { k: 'snake', t: '뱀 게임', d: '밀어서 방향을 바꾸고 먹이를 먹어 길게', e: '🐍', best: v => `최고 ${v}개` },
+  { k: 'omok', t: '오목', d: '다섯 개를 먼저 한 줄로. 둘이서 또는 컴퓨터와', e: '⚫', best: v => `컴퓨터에게 ${v}번 이김` },
+]; }
+function viewGames() {
+  const GAMES = gamesAll(), g = GAMES.find(x => x.k === qs.get('g'));
+  const top = [roleBar('leader', '게임'), el('a', { class: 'link', href: g ? './?game=1' : './', style: 'align-self:flex-start;padding:0', text: g ? '← 게임 목록' : '← 처음으로' })];
+  if (!g) {
+    app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: '🎮 게임' }),
+      el('div', { class: 'sub', text: '쉬는 시간에 가볍게 한 판. 최고 기록은 이 휴대폰에 남아요.' }),
+      ...GAMES.map(x => { const b = gameBest(x.k);
+        return el('a', { class: 'gm-item', href: `./?game=1&g=${x.k}` }, el('span', { class: 'gm-e', text: x.e }),
+          el('div', { class: 'grow' }, el('b', { text: x.t }), el('span', { class: 'sub', text: x.d }), b != null ? el('span', { class: 'gm-best', text: x.best(b) }) : null),
+          el('span', { class: 'mem-go', text: '›' })); })));
+    return;
+  }
+  const area = el('div', { class: 'gm-area' }), info = el('div', { class: 'gm-info' });
+  app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: `${g.e} ${g.t}` }), info, area));
+  ({ '2048': game2048, pair: gamePair, n25: gameN25, snake: gameSnake, omok: gameOmok })[g.k](area, info, g);
+}
+// 화면을 손가락으로 밀면 방향(0 위, 1 오른쪽, 2 아래, 3 왼쪽)을 알려 줘요. 키보드 화살표도
+function gameSwipe(target, on) {
+  let sx = 0, sy = 0, st = false;
+  target.style.touchAction = 'none';
+  target.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; st = true; });
+  target.addEventListener('pointerup', e => { if (!st) return; st = false; const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return; on(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0)); });
+  const key = e => { const d = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 }[e.key]; if (d != null && target.isConnected) { e.preventDefault(); on(d); } else if (!target.isConnected) removeEventListener('keydown', key); };
+  addEventListener('keydown', key);
+}
+function gameAgain(txt, fn) { return el('button', { class: 'btn primary full', text: txt || '다시 하기', onclick: fn }); }
+// ----- 2048 -----
+function game2048(area, info, g) {
+  let b, score;
+  const cells = [], board = el('div', { class: 'g2-board' });
+  for (let i = 0; i < 16; i++) { const c = el('div', { class: 'g2-c' }); cells.push(c); board.append(c); }
+  const COL = { 2: ['#E3EFF8', '#102A43'], 4: ['#CFE4F5', '#102A43'], 8: ['#FFC9A8', '#7A3510'], 16: ['#FFAD80', '#fff'], 32: ['#FF8A4C', '#fff'], 64: ['#F26B2A', '#fff'],
+    128: ['#7CC4F0', '#fff'], 256: ['#45A8E6', '#fff'], 512: ['#1E8AD0', '#fff'], 1024: ['#0277BD', '#fff'], 2048: ['#FFB400', '#fff'] };
+  const add = () => { const e = b.map((v, i) => v ? -1 : i).filter(i => i >= 0); if (e.length) b[e[Math.floor(Math.random() * e.length)]] = Math.random() < 0.9 ? 2 : 4; };
+  const draw = () => { b.forEach((v, i) => { const c = cells[i], [bg, fg] = COL[v] || ['#102A43', '#fff']; c.textContent = v || ''; c.style.background = v ? bg : ''; c.style.color = fg; c.style.fontSize = v >= 1024 ? '22px' : v >= 128 ? '27px' : '32px'; });
+    info.replaceChildren(el('span', {}, '점수 ', el('b', { text: score.toLocaleString() })), el('span', {}, '최고 ', el('b', { text: (gameBest('2048') || 0).toLocaleString() }))); };
+  const line = d => [0, 1, 2, 3].map(r => [0, 1, 2, 3].map(k => d === 3 ? r * 4 + k : d === 1 ? r * 4 + 3 - k : d === 0 ? k * 4 + r : (3 - k) * 4 + r));
+  const move = d => {
+    let moved = false;
+    for (const idx of line(d)) {
+      const v = idx.map(i => b[i]).filter(Boolean), out = [];
+      for (let k = 0; k < v.length; k++) { if (v[k] === v[k + 1]) { out.push(v[k] * 2); score += v[k] * 2; if (v[k] * 2 === 2048) toast('🎉 2048을 만들었어요!'); k++; } else out.push(v[k]); }
+      while (out.length < 4) out.push(0);
+      idx.forEach((i, k) => { if (b[i] !== out[k]) moved = true; b[i] = out[k]; });
+    }
+    if (!moved) return;
+    add(); gameBest('2048', score); draw();
+    const stuck = !b.includes(0) && b.every((v, i) => (i % 4 === 3 || v !== b[i + 1]) && (i > 11 || v !== b[i + 4]));
+    if (stuck) { try { navigator.vibrate && navigator.vibrate(120); } catch {} area.append(el('div', { class: 'gm-over' }, el('b', { text: `끝! ${score.toLocaleString()}점` }), gameAgain('다시 하기', start))); }
+  };
+  const start = () => { b = Array(16).fill(0); score = 0; add(); add(); area.replaceChildren(board, el('div', { class: 'sub center', text: '판을 위·아래·옆으로 밀어요' }), gameAgain('새로 시작', start)); draw(); };
+  gameSwipe(board, move); start();
+}
+// ----- 짝 맞추기: Map Diary 모드 아이콘 8쌍 -----
+function gamePair(area, info, g) {
+  let open = [], done = 0, tries = 0, lock = false, t0 = 0, iv = 0;
+  const start = () => {
+    clearInterval(iv); open = []; done = 0; tries = 0; lock = false; t0 = 0;
+    const ks = MODES.map(m => m.k).sort(() => Math.random() - 0.5).slice(0, 8), deck = [...ks, ...ks].sort(() => Math.random() - 0.5);
+    const grid = el('div', { class: 'gp-grid' }, ...deck.map(k => { const c = el('button', { class: 'gp-c', 'aria-label': '카드' }, el('span', { class: 'gp-f' }, ico(k, 34)));
+      c.onclick = () => flip(c, k); return c; }));
+    area.replaceChildren(grid, gameAgain('새로 섞기', start)); draw();
+  };
+  const draw = () => info.replaceChildren(el('span', {}, '뒤집은 횟수 ', el('b', { text: tries })), el('span', {}, '시간 ', el('b', { text: t0 ? fmtRunTime(Date.now() - t0) : '00:00' })),
+    el('span', {}, '최고 ', el('b', { text: gameBest('pair') != null ? `${gameBest('pair')}번` : '-' })));
+  const flip = (c, k) => {
+    if (lock || c.classList.contains('on')) return;
+    if (!t0) { t0 = Date.now(); iv = setInterval(() => area.isConnected ? draw() : clearInterval(iv), 1000); }
+    c.classList.add('on'); open.push([c, k]);
+    if (open.length < 2) return;
+    tries++; const [[a, ka], [b2, kb]] = open; open = [];
+    if (ka === kb) { a.classList.add('ok'); b2.classList.add('ok'); done++; draw();
+      if (done === 8) { clearInterval(iv); const nb = gameBest('pair', tries, true); area.prepend(el('div', { class: 'gm-over' }, el('b', { text: `다 찾았어요! ${tries}번 · ${fmtRunTime(Date.now() - t0)}${nb ? ' · 최고 기록!' : ''}` }), gameAgain('다시 하기', start))); } return; }
+    lock = true; draw(); setTimeout(() => { a.classList.remove('on'); b2.classList.remove('on'); lock = false; }, 750);
+  };
+  start();
+}
+// ----- 1부터 25까지 -----
+function gameN25(area, info, g) {
+  let next = 1, t0 = 0, iv = 0;
+  const tm = el('b', { text: '0.00' });
+  const start = () => {
+    clearInterval(iv); next = 1; t0 = 0; tm.textContent = '0.00';
+    const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+    const grid = el('div', { class: 'n25-grid' }, ...nums.map(n => el('button', { class: 'n25-c', text: n, onclick: e => tap(e.currentTarget, n) })));
+    area.replaceChildren(grid, el('div', { class: 'sub center', text: '1을 누르면 시간이 흘러요' }), gameAgain('새로 섞기', start));
+    info.replaceChildren(el('span', {}, '다음 ', el('b', { class: 'n25-next', text: 1 })), el('span', {}, '시간 ', tm), el('span', {}, '최고 ', el('b', { text: gameBest('n25') != null ? (gameBest('n25') / 1000).toFixed(2) + '초' : '-' })));
+  };
+  const tap = (b, n) => {
+    if (n !== next) { b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 250); try { navigator.vibrate && navigator.vibrate(40); } catch {} return; }
+    if (n === 1) { t0 = performance.now(); iv = setInterval(() => { if (!area.isConnected) return clearInterval(iv); tm.textContent = ((performance.now() - t0) / 1000).toFixed(2); }, 50); }
+    b.classList.add('done'); b.disabled = true; next++;
+    const nx = info.querySelector('.n25-next'); if (nx) nx.textContent = Math.min(next, 25);
+    if (next > 25) { clearInterval(iv); const ms = Math.round(performance.now() - t0); tm.textContent = (ms / 1000).toFixed(2);
+      const nb = gameBest('n25', ms, true); area.prepend(el('div', { class: 'gm-over' }, el('b', { text: `${(ms / 1000).toFixed(2)}초!${nb ? ' 최고 기록!' : ''}` }), gameAgain('다시 하기', start))); }
+  };
+  start();
+}
+// ----- 뱀 게임 -----
+function gameSnake(area, info, g) {
+  const N = 16, cv = el('canvas', { class: 'sn-cv', width: 480, height: 480 }), cx = cv.getContext('2d'), S = 480 / N;
+  let sn, dir, want, food, eat, timer = 0, alive = false;
+  const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+  const place = () => { do { food = [Math.floor(Math.random() * N), Math.floor(Math.random() * N)]; } while (sn.some(p => p[0] === food[0] && p[1] === food[1])); };
+  const draw = () => {
+    cx.fillStyle = '#F7FBFF'; cx.fillRect(0, 0, 480, 480);
+    cx.fillStyle = 'rgba(2,119,189,.05)'; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if ((i + j) % 2) cx.fillRect(i * S, j * S, S, S);
+    cx.fillStyle = css('--accent') || '#FF8A4C'; cx.beginPath(); cx.arc(food[0] * S + S / 2, food[1] * S + S / 2, S * 0.38, 0, 7); cx.fill();
+    sn.forEach((p, i) => { cx.fillStyle = i ? (css('--pine') || '#0277BD') : '#102A43'; cx.globalAlpha = i ? Math.max(0.45, 1 - i / (sn.length + 6)) : 1; cx.beginPath(); cx.roundRect ? cx.roundRect(p[0] * S + 2, p[1] * S + 2, S - 4, S - 4, 7) : cx.rect(p[0] * S + 2, p[1] * S + 2, S - 4, S - 4); cx.fill(); });
+    cx.globalAlpha = 1;
+    info.replaceChildren(el('span', {}, '먹은 개수 ', el('b', { text: eat })), el('span', {}, '최고 ', el('b', { text: gameBest('snake') ?? 0 })));
+  };
+  const step = () => {
+    if (!cv.isConnected) return clearTimeout(timer);
+    if ((want + 2) % 4 !== dir) dir = want;
+    const h = sn[0], nh = [h[0] + [0, 1, 0, -1][dir], h[1] + [-1, 0, 1, 0][dir]];
+    if (nh[0] < 0 || nh[1] < 0 || nh[0] >= N || nh[1] >= N || sn.some(p => p[0] === nh[0] && p[1] === nh[1])) {
+      alive = false; try { navigator.vibrate && navigator.vibrate(150); } catch {} const nb = eat > 0 && gameBest('snake', eat);
+      area.append(el('div', { class: 'gm-over' }, el('b', { text: `부딪혔어요! ${eat}개${nb && eat ? ' · 최고 기록!' : ''}` }), gameAgain('다시 하기', start))); draw(); return;
+    }
+    sn.unshift(nh);
+    if (nh[0] === food[0] && nh[1] === food[1]) { eat++; place(); try { navigator.vibrate && navigator.vibrate(20); } catch {} } else sn.pop();
+    draw(); timer = setTimeout(step, Math.max(85, 210 - eat * 6));
+  };
+  const pad = el('div', { class: 'sn-pad' }, ...[['▲', 0], ['◀', 3], ['▼', 2], ['▶', 1]].map(([t, d]) => el('button', { class: 'sn-b d' + d, text: t, 'aria-label': ['위', '오른쪽', '아래', '왼쪽'][d], onpointerdown: e => { e.preventDefault(); want = d; } })));
+  const start = () => { clearTimeout(timer); sn = [[7, 8], [6, 8], [5, 8]]; dir = want = 1; eat = 0; place(); alive = true;
+    area.replaceChildren(cv, pad, el('div', { class: 'sub center', text: '판을 밀거나 아래 단추로 방향을 바꿔요' })); draw(); timer = setTimeout(step, 500); };
+  gameSwipe(cv, d => { want = d; }); start();
+}
+// ----- 오목 (13×13, 둘이서 또는 컴퓨터와) -----
+function gameOmok(area, info, g) {
+  const N = 13; let b, turn, over, vsAI = ls.get('omokAI', true), last = -1;
+  const grid = el('div', { class: 'om-grid' }), cells = [];
+  for (let i = 0; i < N * N; i++) { const c = el('button', { class: 'om-c', 'aria-label': `${Math.floor(i / N) + 1}줄 ${i % N + 1}칸` }); c.onclick = () => put(i, true); cells.push(c); grid.append(c); }
+  const DIRS = [[1, 0], [0, 1], [1, 1], [1, -1]];
+  const run = (i, p, dx, dy) => { let n = 0, x = i % N + dx, y = Math.floor(i / N) + dy; while (x >= 0 && y >= 0 && x < N && y < N && b[y * N + x] === p) { n++; x += dx; y += dy; } return [n, x >= 0 && y >= 0 && x < N && y < N && b[y * N + x] === 0]; };
+  const wins = (i, p) => DIRS.some(([dx, dy]) => 1 + run(i, p, dx, dy)[0] + run(i, p, -dx, -dy)[0] >= 5);
+  // 컴퓨터: 빈칸마다 '내가 두면 / 상대가 두면' 이어지는 길이로 점수를 매겨 가장 좋은 곳
+  const score = (i, p) => { let s = 0; for (const [dx, dy] of DIRS) { const [a, oa] = run(i, p, dx, dy), [c, oc] = run(i, p, -dx, -dy), n = a + c + 1, open = oa + oc;
+    s += n >= 5 ? 1e6 : n === 4 ? (open === 2 ? 5e4 : open ? 4000 : 0) : n === 3 ? (open === 2 ? 3000 : open ? 300 : 0) : n === 2 ? (open === 2 ? 120 : open ? 20 : 0) : open; } return s; };
+  const ai = () => { let best = -1, bi = -1; const mid = (N - 1) / 2;
+    for (let i = 0; i < N * N; i++) { if (b[i]) continue; const s = score(i, 2) * 1.1 + score(i, 1) - (Math.abs(i % N - mid) + Math.abs(Math.floor(i / N) - mid)) * 0.5 + Math.random();
+      if (s > best) { best = s; bi = i; } }
+    if (bi >= 0) put(bi, false); };
+  const draw = () => { cells.forEach((c, i) => { c.className = 'om-c' + (b[i] === 1 ? ' bk' : b[i] === 2 ? ' wh' : '') + (i === last ? ' last' : ''); });
+    info.replaceChildren(el('span', {}, over ? over : vsAI ? (turn === 1 ? '내 차례 (검은 돌)' : '컴퓨터 생각 중…') : `${turn === 1 ? '⚫ 검은 돌' : '⚪ 흰 돌'} 차례`),
+      vsAI ? el('span', {}, '이긴 횟수 ', el('b', { text: gameBest('omok') || 0 })) : null); };
+  const put = (i, human) => {
+    if (over || b[i] || (vsAI && human && turn !== 1)) return;
+    b[i] = turn; last = i;
+    if (wins(i, turn)) { over = vsAI ? (turn === 1 ? '🎉 이겼어요!' : '컴퓨터가 이겼어요') : `${turn === 1 ? '⚫ 검은 돌' : '⚪ 흰 돌'} 승리!`;
+      if (vsAI && turn === 1) gameBest('omok', (gameBest('omok') || 0) + 1); draw(); area.append(el('div', { class: 'gm-over' }, el('b', { text: over }), gameAgain('한 판 더', start))); return; }
+    if (!b.includes(0)) { over = '비겼어요'; draw(); return; }
+    turn = 3 - turn; draw();
+    if (vsAI && turn === 2) setTimeout(ai, 350);
+  };
+  const start = () => { b = Array(N * N).fill(0); turn = 1; over = ''; last = -1;
+    area.replaceChildren(el('div', { class: 'mapbar' },
+      el('button', { class: 'btn small ' + (vsAI ? 'dark' : 'line'), text: '🤖 컴퓨터와', onclick: () => { vsAI = true; ls.set('omokAI', true); start(); } }),
+      el('button', { class: 'btn small ' + (vsAI ? 'line' : 'dark'), text: '👥 둘이서', onclick: () => { vsAI = false; ls.set('omokAI', false); start(); } })),
+      grid, gameAgain('새 판', start)); draw(); };
+  start();
+}
 // ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
 // 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
 function memoryPick() {
@@ -3222,6 +3428,7 @@ function viewLanding() {
   else if (qs.get('install') === '1') { try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} }
   installSlot = el('div'); drawInstall();
   const memSlot = el('div', { style: 'display:contents' }); drawMemory(memSlot);
+  const GMV = window.__gmv || '';   // 게임 단추 자리: 시안 고르는 중
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
@@ -3230,6 +3437,7 @@ function viewLanding() {
     el('div', { style: 'padding:28px 0 36px' },
       // 'MD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MD, 받은 MD…)
       el('h1', { style: 'font-size:34px;display:flex;align-items:center;gap:10px' }, 'Map Diary',
+        GMV === 'B' ? el('a', { class: 'gm-pill', href: './?game=1', style: 'order:3' }, '🎮 게임') : null,
         el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer', 'aria-label': '줄여서 MD', text: 'MD', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 켜기/끄기 (빠른 두 번 누름도 한 번씩 세게 pointerdown으로)
           const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
           if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
@@ -3246,9 +3454,11 @@ function viewLanding() {
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Diary로 남아요.' }),
     memSlot,
+    GMV === 'C' ? el('a', { class: 'gm-ban', href: './?game=1' }, el('span', { class: 'e', text: '🎮' }), el('div', { class: 'grow' }, el('b', { text: '게임 한 판' }), el('span', { text: '2048 · 짝 맞추기 · 1부터 25 · 뱀 · 오목' })), el('span', { style: 'font-size:26px', text: '›' })) : null,
     bigBtn('내 MD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
     bigBtn('MD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
+    GMV === 'A' ? bigBtn('🎮 게임', '2048 · 짝 맞추기 · 1부터 25 · 뱀 · 오목. 쉬는 시간에 한 판', false, () => { location.href = './?game=1'; }) : null,
     installSlot,
     (() => { const sea = ls.get('theme', 'sea') === 'sea';
       return el('button', { class: 'link', style: 'align-self:center;color:var(--muted);padding:10px', text: `🎨 화면 분위기: ${sea ? '바닷가' : '산'} · ${sea ? '산으로' : '바닷가로'} 바꾸기`,
