@@ -32,6 +32,7 @@ object Updater {
     } catch (e: Exception) { 0L }
     fun currentName(c: Context): String = try { c.packageManager.getPackageInfo(c.packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
 
+    var lastErr = ""   // 마지막으로 알아볼 때 안 된 까닭(판 번호를 누르면 보여 줘요)
     // 새 판이 있으면 Info, 없거나 인터넷이 안 되면 null (화면 쓰레드로 돌려줘요)
     fun check(c: Context, cb: (Info?) -> Unit) {
         val cur = current(c)
@@ -39,14 +40,18 @@ object Updater {
             val info = try {
                 val conn = URL(API).openConnection() as HttpURLConnection
                 conn.connectTimeout = 8000; conn.readTimeout = 8000; conn.setRequestProperty("Accept", "application/vnd.github+json")
+                conn.setRequestProperty("User-Agent", "MPD-Run-Watch")
+                if (conn.responseCode != 200) throw Exception("GitHub " + conn.responseCode)
                 val o = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                lastErr = ""
                 val m = Regex("0\\.1\\.(\\d+)").find(o.optString("body"))
                 val assets = o.optJSONArray("assets"); var url = ""
                 if (assets != null) for (i in 0 until assets.length()) { val a = assets.getJSONObject(i); val n = a.optString("name")
                     if (n == "MPD_run_watch.apk" || (url.isEmpty() && n.endsWith(".apk"))) url = a.optString("browser_download_url") }
                 val code = m?.groupValues?.get(1)?.toLongOrNull() ?: 0L
                 if (code > cur && url.isNotEmpty()) Info(code, "0.1.$code", url) else null
-            } catch (e: Exception) { null }
+            } catch (e: Exception) { lastErr = (e.javaClass.simpleName + " " + (e.message ?: "")).take(80); null }
+            if (info != null) lastErr = ""
             main.post { cb(info) }
         }
     }
