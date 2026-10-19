@@ -122,6 +122,7 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
 
     // cv가 null이면 높이만 셈
     private fun drawAll(cv: Canvas?): Float {
+        if (!detail) return drawSimple(cv)
         var y = 14 * u
         val c = Calendar.getInstance().apply { timeInMillis = r.at }
         val days = arrayOf("일", "월", "화", "수", "목", "금", "토")
@@ -145,15 +146,6 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
             y += 3 * u
         }
         y += 4 * u
-        // 시계에선 여기까지만(간단하게). 자세한 그래프·존·구간은 휴대폰 MPD에서
-        if (!detail) {
-            val on = Link.on(context)
-            for (l in wrap(if (on) "그래프·존·1km 구간은 휴대폰 MPD → 내 MPD에서 자세히 봐요" else "휴대폰으로 보내기를 켜면 휴대폰에서 자세히 봐요", 4.8f * u, false, R - L))
-                { text(cv, l, cx, y, 4.8f * u, BLUE); y += 6 * u }
-            if (on) { text(cv, if (Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "와이파이가 되면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u }
-            return y + 6 * u
-        }
-
         // 심박 · 페이스 그래프
         if (r.series.size >= 2) {
             y = head(cv, "심박 · 페이스", y)
@@ -206,6 +198,124 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
             text(cv, "자세 값은 손목 센서로 짐작한 대략값", cx, y, 4.6f * u, MUTED); y += 8 * u
         }
         return y + 4 * u
+    }
+
+    // 2026-10-19 사용자가 삼성헬스 시계 결과 화면 사진을 보내 줌 → 시계 요약을 그 모양으로:
+    // ① 색깔 숫자 네 줄(거리·시간·페이스·심박) ② 페이스 그래프(채운 산 + 평균 점선 · 평균/최고) ③ 심박수 그래프(존 색 선 + 뒤에 회색 페이스 · 평균/최대)
+    // ④ 심박수 구간(5→1 막대·시간) ⑤ 한눈에 보기 3개 ⑥ 휴대폰에서 자세히
+    private fun title(cv: Canvas?, s: String, y: Float): Float { text(cv, s, L + 2 * u, y, 6.2f * u, Color.WHITE, true, al = Paint.Align.LEFT); return y + 6 * u }
+    private fun rule(cv: Canvas?, y: Float) { if (cv != null) { paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(L + 6 * u, y, R - 6 * u, y, p) } }
+    private fun kv(cv: Canvas?, lab: String, v: String, y: Float, dots: Boolean = false) {
+        text(cv, (if (dots) "···  " else "") + lab, L + 3 * u, y, 5.2f * u, Color.WHITE, true, al = Paint.Align.LEFT)
+        text(cv, v, R - 3 * u, y, 5.6f * u, Color.WHITE, true, true, Paint.Align.RIGHT)
+    }
+    private fun dotted(cv: Canvas, x0: Float, x1: Float, y: Float) { paint(Color.WHITE); var x = x0; while (x < x1) { cv.drawCircle(x, y, .32f * u, p); x += 1.6f * u } }
+    private fun smooth(s: List<Run.Sample>) = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
+
+    private fun drawSimple(cv: Canvas?): Float {
+        var y = 16 * u
+        val c = Calendar.getInstance().apply { timeInMillis = r.at }
+        val days = arrayOf("일", "월", "화", "수", "목", "금", "토")
+        text(cv, if (justDone) "저장했어요!" else "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 (${days[c.get(Calendar.DAY_OF_WEEK) - 1]}) ${c.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", c.get(Calendar.MINUTE))}",
+            cx, y, 5f * u, if (justDone) BLUE else MUTED, true)
+        y += 15 * u
+        // ① 색깔 숫자 줄
+        val rows = ArrayList<Triple<String, String, Int>>()
+        rows.add(Triple(fmtKm(r.walk), "km", RunView.GOLD)); rows.add(Triple(fmtTime(r.moving), "", BLUE))
+        rows.add(Triple(fmtPace(r.avgPace), "/km", CORAL)); if (r.hrAvg > 0) rows.add(Triple("${r.hrAvg}", "bpm", RED))
+        val x0 = L + 17 * u; val top = y - 11 * u
+        rows.forEach { (v, unit, col) ->
+            if (cv != null) { paint(col); p.typeface = numBold; p.fontFeatureSettings = "tnum"; p.textSize = 13 * u; p.textAlign = Paint.Align.LEFT; cv.drawText(v, x0, y, p)
+                val w = p.measureText(v); p.textSize = 5.6f * u; p.typeface = krBold; if (unit.isNotEmpty()) cv.drawText(unit, x0 + w + 1.2f * u, y, p) }
+            y += 14 * u }
+        if (cv != null) { paint(RunView.LINE); p.strokeWidth = .4f * u; cv.drawLine(x0 - 4 * u, top, x0 - 4 * u, y - 12 * u, p)
+            text(cv, "RUN", x0 - 9 * u, (top + y - 12 * u) / 2 + 1.6f * u, 4.2f * u, CORAL, true, true) }
+        y += 2 * u; rule(cv, y); y += 12 * u
+
+        val s = r.series.let { all -> val st = maxOf(1, all.size / 120); all.filterIndexed { i, _ -> i % st == 0 || i == all.size - 1 } }
+        val gL = L + 3 * u; val gR = R - 3 * u
+        val t0 = s.firstOrNull()?.t?.toFloat() ?: 0f; val t1 = maxOf(s.lastOrNull()?.t?.toFloat() ?: 0f, t0 + 60000f)
+        fun xOf(t: Long) = gL + (gR - gL) * (t - t0) / (t1 - t0)
+        val sm = smooth(s); val ps = sm.filterNotNull()
+
+        // ② 페이스
+        if (ps.size >= 2 && r.avgPace != null) {
+            y = title(cv, "페이스", y)
+            val gt = y + 2 * u; val gb = y + 22 * u
+            val slow = ps.maxOrNull()!! * 1.05; val fast = ps.minOrNull()!! * .95
+            fun yP(pc: Double) = gb - (gb - gt) * ((slow - pc) / (slow - fast)).toFloat().coerceIn(0f, 1f)
+            if (cv != null) {
+                val line = Path(); val area = Path(); var first = true; var lastX = gL
+                s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = yP(pc)
+                    if (first) { line.moveTo(x, yy); area.moveTo(x, gb); area.lineTo(x, yy) } else { line.lineTo(x, yy); area.lineTo(x, yy) }; first = false; lastX = x }
+                area.lineTo(lastX, gb); area.close()
+                paint(CORAL); p.shader = android.graphics.LinearGradient(0f, gt, 0f, gb, RunView.alpha(CORAL, 0xB0), RunView.alpha(CORAL, 0x18), android.graphics.Shader.TileMode.CLAMP); cv.drawPath(area, p)
+                paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .8f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(line, p)
+                paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(gL, gb, gR, gb, p)
+                dotted(cv, gL, gR, yP(r.avgPace))
+            }
+            y = gb + 9 * u
+            kv(cv, "평균", "${fmtPace(r.avgPace)} /km", y, true); y += 7.5f * u
+            kv(cv, "최고 페이스", "${fmtPace(ps.minOrNull())} /km", y); y += 5 * u
+            rule(cv, y); y += 12 * u
+        }
+
+        // ③ 심박수
+        val hs = s.filter { it.hr > 0 }
+        if (hs.size >= 2 && r.hrAvg > 0) {
+            y = title(cv, "심박수", y)
+            val gt = y + 2 * u; val gb = y + 22 * u
+            val lo = (hs.minOf { it.hr } - 8).toFloat(); val hi = (hs.maxOf { it.hr } + 8).toFloat()
+            fun yH(h: Int) = gb - (gb - gt) * ((h - lo) / (hi - lo)).coerceIn(0f, 1f)
+            if (cv != null) {
+                // 뒤에 옅은 회색 페이스 산(삼성헬스처럼)
+                if (ps.size >= 2) { val slow = ps.maxOrNull()!! * 1.05; val fast = ps.minOrNull()!! * .95; val area = Path(); var first = true; var lastX = gL
+                    s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gb - (gb - gt) * .55f * ((slow - pc) / (slow - fast)).toFloat().coerceIn(0f, 1f)
+                        if (first) { area.moveTo(x, gb); area.lineTo(x, yy) } else area.lineTo(x, yy); first = false; lastX = x }
+                    area.lineTo(lastX, gb); area.close(); cv.drawPath(area, paint(Color.parseColor("#2B3038"))) }
+                paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(gL, gb, gR, gb, p)
+                p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeCap = Paint.Cap.ROUND
+                for (i in 1 until hs.size) { val a = hs[i - 1]; val b = hs[i]
+                    p.color = RunView.ZONE[((a.hr + b.hr) / 2.0 / r.hrMaxSet).let { f -> when { f < .6 -> 0; f < .7 -> 1; f < .8 -> 2; f < .9 -> 3; else -> 4 } }]
+                    cv.drawLine(xOf(a.t), yH(a.hr), xOf(b.t), yH(b.hr), p) }
+                dotted(cv, gL, gR, yH(r.hrAvg))
+            }
+            y = gb + 9 * u
+            kv(cv, "평균", "${r.hrAvg} bpm", y, true); y += 7.5f * u
+            kv(cv, "최대", "${r.hrMax} bpm", y); y += 5 * u
+            rule(cv, y); y += 12 * u
+        }
+
+        // ④ 심박수 구간
+        val zt = r.zone.sum()
+        if (zt > 0) {
+            y = title(cv, "심박수 구간", y); y += 4 * u
+            val mx = (r.zone.maxOrNull() ?: 1L).coerceAtLeast(1L)
+            for (k in 4 downTo 0) { val ms = r.zone[k]
+                text(cv, "${k + 1}", L + 5 * u, y, 5.6f * u, Color.WHITE, true, true)
+                if (ms > 0) cv?.drawRoundRect(RectF(L + 10 * u, y - 3.6f * u, L + 10 * u + 34 * u * (ms.toFloat() / mx).coerceAtLeast(.06f), y - .4f * u), 1.6f * u, 1.6f * u, paint(RunView.ZONE[k]))
+                text(cv, fmtTime(ms), R - 3 * u, y, 5.6f * u, Color.WHITE, true, true, Paint.Align.RIGHT)
+                y += 8 * u }
+            text(cv, "존2 ${r.zoneLo(1)}~${r.zoneLo(2) - 1} · 최대 심박 ${r.hrMaxSet} 기준", cx, y, 4.6f * u, MUTED); y += 4 * u
+            rule(cv, y); y += 12 * u
+        }
+
+        // ⑤ 한눈에 보기
+        y = title(cv, "한눈에 보기", y) + 2 * u
+        for (n in notes.take(3)) {
+            val tl = wrap(n.title, 5.2f * u, true, R - L - 5 * u); val dl = wrap(n.detail, 4.8f * u, false, R - L - 5 * u)
+            cv?.drawCircle(L + 1.4f * u, y - 1.6f * u, 1.3f * u, paint(n.col))
+            tl.forEach { text(cv, it, L + 4.5f * u, y, 5.2f * u, n.col, true, al = Paint.Align.LEFT); y += 6.4f * u }
+            dl.forEach { text(cv, it, L + 4.5f * u, y, 4.8f * u, Color.parseColor("#C9D1DB"), al = Paint.Align.LEFT); y += 6 * u }
+            y += 3 * u
+        }
+        rule(cv, y); y += 9 * u
+        // ⑥ 휴대폰에서 자세히
+        val on = Link.on(context)
+        for (l in wrap(if (on) "1km 구간·케이던스는 휴대폰 MPD → 내 MPD에서 자세히 봐요" else "휴대폰으로 보내기를 켜면 휴대폰에서 자세히 봐요", 4.8f * u, false, R - L))
+            { text(cv, l, cx, y, 4.8f * u, BLUE); y += 6 * u }
+        if (on) { text(cv, if (Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "와이파이가 되면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u }
+        return y + 6 * u
     }
 
     private fun graph(cv: Canvas, top: Float, bot: Float) {
