@@ -122,11 +122,11 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         // 목표 알약(누르면 목표 고르기)
         val gl = goal.label() + (if (goal.tgtPace() > 0) "  ·  ${fmtPace(goal.tgtPace())}" else "")
         val pw = measure(gl, 4.6f * u, false) + 7 * u; val ph = 7.6f * u; val py = 67.6f * u
-        val gw = measure(guideTxt, 4.6f * u, false) + 6 * u; val gap = 2 * u; val x0 = cx - (pw + gap + gw) / 2
-        pillBox = RectF(x0, py - ph / 2, x0 + pw, py + ph / 2)
+        val qw = measure(guideTxt, 4.6f * u, false) + 6 * u; val qgap = 2 * u; val qx = cx - (pw + qgap + qw) / 2
+        pillBox = RectF(qx, py - ph / 2, qx + pw, py + ph / 2)
         cv.drawRoundRect(pillBox, ph / 2, ph / 2, paint(a(Color.WHITE, 26)))
         text(cv, gl, pillBox.centerX(), py + 1.6f * u, 4.6f * u, Color.WHITE, true)
-        guideBox = RectF(x0 + pw + gap, py - ph / 2, x0 + pw + gap + gw, py + ph / 2)
+        guideBox = RectF(qx + pw + qgap, py - ph / 2, qx + pw + qgap + qw, py + ph / 2)
         cv.drawRoundRect(guideBox, ph / 2, ph / 2, paint(if (guideOn) a(CORAL, 60) else a(Color.WHITE, 26)))
         text(cv, guideTxt, guideBox.centerX(), py + 1.6f * u, 4.6f * u, if (guideOn) CORAL else MUTED, true)
 
