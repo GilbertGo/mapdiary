@@ -230,11 +230,11 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
         val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 6).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 6).toFloat()
         fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-        // 존2 띠: 옅게 + 가는 위아래 선 + 오른쪽 '존2'
+        // 존2 띠: 옅게 + 가는 위아래 선 + 왼쪽 '존2'(오른쪽은 지금 값 자리)
         val bt = yH(z2hi); val bb = yH(z2lo)
         cv.drawRect(X0, bt, X1, bb, paint(alpha(BLUE, 0x26)))
         paint(alpha(BLUE, 0x90)); p.strokeWidth = .25f * u; cv.drawLine(X0, bt, X1, bt, p); cv.drawLine(X0, bb, X1, bb, p)
-        text(cv, "존2", X1 - .8f * u, bb - 1.2f * u, 3.8f * u, BLUE, true, align = Paint.Align.RIGHT)
+        text(cv, "존2", X0 + .8f * u, bb - 1.2f * u, 3.8f * u, BLUE, true, align = Paint.Align.LEFT)
         if (all.size < 3 || hs.size < 2) {
             text(cv, "달리면 10초마다", cx, (bt + bb) / 2 - 1 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
             text(cv, "그려져요", cx, (bt + bb) / 2 + 5 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
