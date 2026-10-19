@@ -21,12 +21,12 @@ import kotlin.math.min
 import kotlin.math.sin
 
 // 달리는 중 화면 (둥근 시계 화면에 그려요). 옆으로 밀어 넘겨요:
-// 0 A안 목표 링 · 1 B안 네 칸 숫자 · 2 C안 코치 신호등 · 3 1km 구간 · 4 멈춤·끝내기
+// 달리기 · 목표(목표 있을 때) · 몸(심박·케이던스) · 1km 구간 · 멈춤·끝내기
 // 2026-10-18 새 디자인(사용자 '이쁘게, 시인성 좋게, 지금은 초보티 나'): 검은 바탕에 흰 큰 숫자(좁은 굵은 글꼴, 숫자 폭 고정),
 // 휴대폰 MPD 바닷가 색(산호 #FF8A4C · 하늘 #4FC3F7), 테두리 링·알약 딱지·그린 아이콘(이모지 안 씀)
 class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     companion object {
-        const val PAGES = 5
+        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4
         val CORAL = Color.parseColor("#FF8A4C"); val BLUE = Color.parseColor("#4FC3F7"); val GOLD = Color.parseColor("#FFD166")
         val RED = Color.parseColor("#FF4D5E"); val LATE = Color.parseColor("#FF7A59"); val MUTED = Color.parseColor("#8D97A5")
         val SURF = Color.parseColor("#16191E"); val LINE = Color.parseColor("#2A2F37"); val TRACK = Color.parseColor("#22262D")
@@ -35,7 +35,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val ORANGE = CORAL; val GREEN = BLUE; val PINE = Color.parseColor("#2A2F37")
         fun alpha(c: Int, a: Int) = (c and 0xFFFFFF) or (a shl 24)
     }
-    var page = Store.page(c).coerceIn(0, 2)
+    var page = Store.page(c).coerceIn(0, 3)
     var ambient = false
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val numBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
@@ -82,186 +82,153 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     }
     private fun clock(): String { val c = Calendar.getInstance(); return "${c.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", c.get(Calendar.MINUTE))}" }
 
+    // 화면 차례: 달리기 → 목표(목표가 있을 때만) → 몸(심박·케이던스) → 1km 구간 → 멈춤·끝내기
+    // 2026-10-19 정리(사용자 '중복되는 내용, 조잡해, 작은 글씨 안 보여'): 한 화면에 한 가지 일만, 같은 숫자는 한 곳에만,
+    // 글자는 가장 작아도 화면의 5%(이름표), 색은 화면마다 강조 하나
+    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_SPLIT, P_CTL)
+    private val LAB = 5f   // 이름표 글자 크기(u)
+
     override fun onDraw(cv: Canvas) {
         val now = System.currentTimeMillis(); W = width.toFloat(); cx = W / 2; u = min(W, height.toFloat()) / 100f   // u = 화면 크기의 1%
         cv.drawColor(Color.BLACK)
+        val ps = pages(); if (page !in ps) page = P_MAIN
         if (ambient) pageAmbient(cv, now)
         else when (page) {
-            0 -> pageA(cv, now)
-            1 -> pageB(cv, now)
-            2 -> pageC(cv, now)
-            3 -> pageSplits(cv)
+            P_MAIN -> pageMain(cv, now)
+            P_COACH -> pageCoach(cv)
+            P_BODY -> pageBody(cv, now)
+            P_SPLIT -> pageSplits(cv)
             else -> pageCtl(cv, now)
         }
         // 아래 점: 몇 번째 화면인지(지금 화면은 길쭉하게)
-        if (!ambient) for (i in 0 until PAGES) {
-            val x = cx + (i - (PAGES - 1) / 2f) * 3.4f * u; val y = 96f * u
-            if (i == page) cv.drawRoundRect(RectF(x - 1.8f * u, y - .9f * u, x + 1.8f * u, y + .9f * u), .9f * u, .9f * u, paint(Color.WHITE))
-            else cv.drawCircle(x, y, .85f * u, paint(Color.parseColor("#3B414A")))
+        if (!ambient) ps.forEachIndexed { i, id ->
+            val x = cx + (i - (ps.size - 1) / 2f) * 3.6f * u; val y = 96f * u
+            if (id == page) cv.drawRoundRect(RectF(x - 1.9f * u, y - 1f * u, x + 1.9f * u, y + 1f * u), u, u, paint(Color.WHITE))
+            else cv.drawCircle(x, y, .9f * u, paint(Color.parseColor("#4A515C")))
         }
         if (!ambient && (Run.running || holdStart > 0)) postInvalidateDelayed(if (holdStart > 0) 30 else 1000)
     }
 
-    private fun status(now: Long): Pair<String, Int> = when {
+    // 기록이 순조로우면 null, 아니면 알릴 말
+    private fun alert(now: Long): Pair<String, Int>? = when {
         Run.manualPause -> "잠시 멈춤" to CORAL
         !Run.gpsOn || Run.lastAcc < 0 -> "GPS 찾는 중" to MUTED
         Run.lastAcc > TRACK_MAX_ACC -> "GPS 약함" to LATE
         Run.paused(now) -> "멈춰 있어요" to CORAL
-        else -> "기록 중" to BLUE
+        else -> null
     }
     private fun frac(): Float { val g = Run.goal; return when (g.k) { "dist" -> (Run.walk / (g.v * 1000)).toFloat(); "time" -> (Run.moving / (g.v * 60000)).toFloat(); else -> ((Run.walk % 1000) / 1000).toFloat() } }
     private fun leftText(): String { val g = Run.goal; return when (g.k) { "dist" -> "${fmtDist(g.v * 1000 - Run.walk)} 남음"; "time" -> "${fmtTime((g.v * 60000 - Run.moving).toLong())} 남음"; else -> "" } }
-    private fun goalSub(): String = when {
-        Run.goal.k == "free" -> "자유 달리기 · 링은 이번 1km"
-        Run.goalDone -> "목표 ${Run.goal.label()} 달성!"
-        else -> "목표 ${Run.goal.label()} · ${leftText()}"
-    }
-    // 맨 위: 지금 시각 + 심박(빨간 하트)
-    private fun topBar(cv: Canvas, now: Long) {
-        text(cv, clock(), cx, 15.5f * u, 4.6f * u, MUTED, true, true)
-        val hr = Run.hrNow(now)
-        if (hr > 0) { val s = "$hr"; val tot = 5 * u + measure(s, 7 * u); heart(cv, cx - tot / 2 + 1.8f * u, 23.2f * u, 2.1f * u, RED); text(cv, s, cx - tot / 2 + 4.6f * u, 25.6f * u, 7 * u, Color.WHITE, true, true, Paint.Align.LEFT) }
-        else { val (s, col) = status(now); text(cv, s, cx, 25f * u, 4.4f * u, col, true) }
-    }
     // 큰 숫자 + 작은 단위를 가운데 맞춰 그려요
-    private fun bigWithUnit(cv: Canvas, big: String, unit: String, y: Float, size: Float, unitSize: Float, unitCol: Int) {
-        val bw = min(measure(big, size), W * 0.62f); val sz = if (measure(big, size) > W * 0.62f) size * W * 0.62f / measure(big, size) else size
+    private fun bigWithUnit(cv: Canvas, big: String, unit: String, y: Float, size: Float, unitSize: Float, unitCol: Int, col: Int = Color.WHITE) {
+        val mw = measure(big, size); val sz = if (mw > W * 0.62f) size * W * 0.62f / mw else size; val bw = min(mw, W * 0.62f)
         val kw = measure(unit, unitSize) + 1.2f * u; val x0 = cx - (bw + kw) / 2
-        text(cv, big, x0, y, sz, Color.WHITE, true, true, Paint.Align.LEFT); text(cv, unit, x0 + bw + 1.2f * u, y, unitSize, unitCol, true, true, Paint.Align.LEFT)
+        text(cv, big, x0, y, sz, col, true, true, Paint.Align.LEFT); text(cv, unit, x0 + bw + 1.2f * u, y, unitSize, unitCol, true, true, Paint.Align.LEFT)
     }
 
-    // ---------- A안 · 목표 링 ----------
-    private fun pageA(cv: Canvas, now: Long) {
-        if (Run.goal.k == "free") ring(cv, frac(), BLUE, BLUE) else ring(cv, frac(), CORAL, if (Run.goalDone) GOLD else Color.parseColor("#FFB066"))
-        topBar(cv, now)
-        bigWithUnit(cv, fmtKm(Run.walk), "km", 57 * u, 31 * u, 7 * u, CORAL)
-        text(cv, goalSub(), cx, 64.5f * u, 4.3f * u, if (Run.goalDone) GOLD else MUTED, max = 0.7f)
-        cv.drawRect(cx - .15f * u, 68 * u, cx + .15f * u, 79 * u, paint(LINE))
-        text(cv, fmtTime(Run.liveMoving(now)), cx - 15 * u, 76 * u, 9.5f * u, Color.WHITE, true, true, max = 0.3f); text(cv, "시간", cx - 15 * u, 80.6f * u, 3.4f * u, MUTED)
-        text(cv, fmtPace(Run.nowPace(now)), cx + 15 * u, 76 * u, 9.5f * u, CORAL, true, true, max = 0.3f); text(cv, "페이스 /km", cx + 15 * u, 80.6f * u, 3.4f * u, MUTED)
-        val (line, col) = coachShort()
-        pill(cv, line, 87.5f * u, col, 3.8f * u)
-    }
-    // A안 맨 아래 한 줄 코치 판단
-    private fun coachShort(): Pair<String, Int> {
-        if (Run.goalDone) return "목표 달성!" to GOLD
-        val J = Run.judge() ?: return (if (Run.goal.k == "free") "평균 ${fmtPace(Run.avgPace())}" else "달리면 예상이 나와요") to MUTED
-        val d = J.diff
-        return if (Run.goal.k == "dist") {
-            if (d == null) "완주 예상 ${fmtTime(J.pred.toLong())}" to BLUE
-            else if (abs(d) <= J.near) "목표와 딱 맞아요" to BLUE
-            else if (d > 0) "▲ 목표보다 ${sayDur(d)} 빨라요" to BLUE else "▼ 목표보다 ${sayDur(-d)} 늦어요" to LATE
-        } else {
-            if (d == null) "예상 거리 ${fmtDist(J.pred)}" to BLUE
-            else if (abs(d) <= J.near) "목표 거리와 딱 맞아요" to BLUE
-            else if (d > 0) "▲ 목표보다 ${fmtDist(d)} 더" to BLUE else "▼ 목표보다 ${fmtDist(-d)} 모자라요" to LATE
-        }
+    // ---------- 1. 달리기: 링(목표까지, 자유 달리기는 이번 1km) · 거리 크게 · 시간 | 지금 페이스 ----------
+    private fun pageMain(cv: Canvas, now: Long) {
+        when { Run.goalDone -> ring(cv, frac(), GOLD, GOLD); Run.goal.k == "free" -> ring(cv, frac(), BLUE, BLUE); else -> ring(cv, frac(), CORAL, Color.parseColor("#FFB066")) }
+        val al = alert(now)
+        if (al != null) pill(cv, al.first, 18 * u, al.second, LAB * u) else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
+        bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
+        if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
+        cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
+        text(cv, fmtTime(Run.liveMoving(now)), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
+        text(cv, "시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
+        text(cv, fmtPace(Run.nowPace(now)), cx + 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
+        text(cv, "페이스", cx + 16 * u, 87 * u, LAB * u, MUTED)
     }
 
-    // ---------- B안 · 네 칸 숫자 ----------
-    private fun pageB(cv: Canvas, now: Long) {
-        val (st, sc) = status(now); val sLine = "$st · ${clock()}"; val sw = measure(sLine, 4.2f * u, false)
-        cv.drawCircle(cx - sw / 2 - 2 * u, 15.1f * u, 1f * u, paint(sc)); text(cv, sLine, cx + 1f * u, 16.6f * u, 4.2f * u, MUTED)
-        cv.drawRect(13 * u, 51 * u, 87 * u, 51.3f * u, paint(LINE)); cv.drawRect(cx - .15f * u, 24 * u, cx + .15f * u, 78 * u, paint(LINE))
-        val hr = Run.hrNow(now)
-        cell(cv, cx - 18 * u, 29 * u, "거리 km", fmtKm(Run.walk), Color.WHITE)
-        cell(cv, cx + 18 * u, 29 * u, "시간", fmtTime(Run.liveMoving(now)), Color.WHITE)
-        cell(cv, cx - 18 * u, 58 * u, "페이스", fmtPace(Run.nowPace(now)), CORAL)
-        cell(cv, cx + 18 * u, 58 * u, "심박", if (hr > 0) "$hr" else "-", Color.WHITE)
-        heart(cv, cx + 18 * u - 5.6f * u, 56.7f * u, 1.3f * u, RED)
-        val J = Run.judge(); val g = Run.goal
-        val bottom = when {
-            Run.goalDone -> "목표 달성! 평균 ${fmtPace(Run.avgPace())}"
-            J != null && g.k == "dist" -> "완주 예상 ${fmtTime(J.pred.toLong())}"
-            J != null && g.k == "time" -> "예상 거리 ${fmtDist(J.pred)}"
-            Run.cadNow(now) != null -> "케이던스 ${Run.cadNow(now)} · 평균 ${fmtPace(Run.avgPace())}"
-            else -> "평균 페이스 ${fmtPace(Run.avgPace())}"
-        }
-        pill(cv, bottom, 87f * u, if (Run.goalDone) GOLD else BLUE, 3.9f * u)
-    }
-    private fun cell(cv: Canvas, x: Float, y: Float, lab: String, v: String, col: Int) {
-        text(cv, lab, x, y, 3.8f * u, MUTED); text(cv, v, x, y + 15 * u, 14.5f * u, col, true, true, max = 0.33f)
-    }
-
-    // ---------- C안 · 코치 신호등 (앞서면 하늘색, 늦으면 산호색 바탕) ----------
-    private fun pageC(cv: Canvas, now: Long) {
+    // ---------- 2. 목표: 이대로면 목표보다 얼마나 빠른지/늦는지 (앞서면 하늘색, 늦으면 산호색) ----------
+    private fun pageCoach(cv: Canvas) {
         val g = Run.goal; val J = Run.judge(); val d = J?.diff
         var title: String; var big: String; var sub: String; var col: Int
         when {
-            Run.goalDone -> { title = "목표 달성!"; big = fmtKm(Run.walk) + "km"; sub = "달린 시간 ${fmtTime(Run.moving)}"; col = GOLD }
-            J == null -> { title = if (g.k == "free") "평균 페이스" else "조금 더 달리면 나와요"; big = fmtPace(Run.avgPace()); sub = if (g.k == "free") "자유 달리기" else "목표 ${g.label()}"; col = MUTED }
+            Run.goalDone -> { title = "목표 달성!"; big = g.label(); sub = "평균 ${fmtPace(Run.avgPace())}"; col = GOLD }
+            J == null -> { title = "목표 ${g.label()}"; big = "…"; sub = "조금 더 달리면 예상이 나와요"; col = MUTED }
             g.k == "dist" && d == null -> { title = "완주 예상"; big = fmtTime(J.pred.toLong()); sub = "목표 ${g.label()}"; col = BLUE }
             g.k == "time" && d == null -> { title = "예상 거리"; big = fmtDist(J.pred); sub = "${minLabel(g.v.toInt())} 동안"; col = BLUE }
             g.k == "dist" -> {
-                val ok = d!! >= -J.near; col = if (ok) BLUE else LATE
-                title = if (abs(d) <= J.near) "목표와 딱 맞아요" else if (d > 0) "목표 안에 들어와요" else "목표보다 늦어요"
+                col = if (d!! >= -J.near) BLUE else LATE
+                title = if (abs(d) <= J.near) "딱 맞아요" else if (d > 0) "빨라요" else "늦어요"
                 big = (if (d >= 0) "−" else "+") + fmtTime(abs(d).toLong()).trimStart('0').let { if (it.startsWith(":")) "0$it" else it }
-                sub = "완주 예상 ${fmtTime(J.pred.toLong())} · 목표 ${fmtTime(J.target.toLong())}"
+                sub = if (d < -J.near && J.need > 0) "필요 페이스 ${fmtPace(J.need)}" else "완주 예상 ${fmtTime(J.pred.toLong())}"
             }
             else -> {
-                val ok = d!! >= -J.near; col = if (ok) BLUE else LATE
-                title = if (abs(d) <= J.near) "목표 거리와 딱 맞아요" else if (d > 0) "목표보다 더 가요" else "목표 거리에 모자라요"
+                col = if (d!! >= -J.near) BLUE else LATE
+                title = if (abs(d) <= J.near) "딱 맞아요" else if (d > 0) "더 가요" else "모자라요"
                 big = (if (d >= 0) "+" else "−") + fmtDist(abs(d))
-                sub = "예상 ${fmtDist(J.pred)} · 목표 ${fmtDist(J.target)}"
+                sub = "예상 ${fmtDist(J.pred)}"
             }
         }
-        val base = when (col) { LATE -> Color.parseColor("#4A1E10"); GOLD -> Color.parseColor("#4A3B10"); MUTED -> Color.parseColor("#1A1E24"); else -> Color.parseColor("#0E3A55") }
-        paint(base); p.shader = RadialGradient(cx, 34 * u, 62 * u, base, Color.BLACK, Shader.TileMode.CLAMP); cv.drawCircle(cx, 50 * u, 75 * u, p); p.shader = null
-        if (g.k != "free") ring(cv, frac(), col, col, 46.5f * u, 2.2f * u)
+        val base = when (col) { LATE -> Color.parseColor("#3E1A0E"); GOLD -> Color.parseColor("#3E320E"); MUTED -> Color.parseColor("#15191E"); else -> Color.parseColor("#0B3049") }
+        paint(base); p.shader = RadialGradient(cx, 40 * u, 60 * u, base, Color.BLACK, Shader.TileMode.CLAMP); cv.drawCircle(cx, 50 * u, 75 * u, p); p.shader = null
+        ring(cv, frac(), col, col, 46.5f * u, 2.4f * u)
+        text(cv, "목표 ${g.label()}", cx, 22 * u, LAB * u, MUTED, true, max = 0.6f)
+        pill(cv, title, 32 * u, col, 5.6f * u)
+        text(cv, big, cx, 60 * u, 23 * u, col, true, true, max = 0.74f)
+        text(cv, sub, cx, 72 * u, 5.6f * u, Color.WHITE, true, max = 0.7f)
+    }
+
+    // ---------- 3. 몸: 심박 크게 · 평균/최고 · 케이던스(가이드가 켜져 있으면 목표 박자) ----------
+    private fun pageBody(cv: Canvas, now: Long) {
         val hr = Run.hrNow(now)
-        text(cv, "${fmtKm(Run.walk)}km · ${fmtTime(Run.liveMoving(now))}" + if (hr > 0) " · ♥$hr" else "", cx, 17 * u, 4.2f * u, MUTED, num = true, max = 0.6f)
-        pill(cv, title, 27 * u, col, 4.4f * u)
-        text(cv, big, cx, 55 * u, 24 * u, col, true, true, max = 0.74f)
-        text(cv, sub, cx, 64 * u, 4f * u, MUTED, max = 0.74f)
-        bigWithUnit(cv, fmtPace(Run.nowPace(now)), "/km", 80 * u, 11 * u, 4 * u, MUTED)
+        val s = if (hr > 0) "$hr" else "-"; val sz = 24 * u; val tw = measure(s, sz) + 9 * u; val x0 = cx - tw / 2
+        heart(cv, x0 + 3 * u, 39 * u, 3.2f * u, RED)
+        text(cv, s, x0 + 8.5f * u, 47 * u, sz, Color.WHITE, true, true, Paint.Align.LEFT)
+        text(cv, "심박" + (if (Run.hrAvg() > 0) " · 평균 ${Run.hrAvg()} · 최고 ${Run.hrMax}" else ""), cx, 56 * u, LAB * u, MUTED, max = 0.7f)
+        cv.drawRect(22 * u, 62 * u, 78 * u, 62.3f * u, paint(LINE))
+        val cad = Run.cadNow(now)
+        if (Cadence.kind != Cadence.OFF) bigWithUnit(cv, cad?.toString() ?: "-", " / ${Cadence.spm}", 77 * u, 13 * u, 5.5f * u, CORAL)
+        else bigWithUnit(cv, cad?.toString() ?: "-", "spm", 77 * u, 13 * u, 5.5f * u, MUTED)
+        text(cv, "케이던스", cx, 85 * u, LAB * u, MUTED)
     }
 
-    // ---------- 1km 구간 (막대가 길수록 빠른 구간, 가장 빠른 곳은 산호색) ----------
+    // ---------- 4. 1km 구간 (막대가 길수록 빠른 구간, 가장 빠른 곳은 산호색) ----------
     private fun pageSplits(cv: Canvas) {
-        text(cv, "1km 구간", cx, 17 * u, 4.8f * u, CORAL, true)
+        text(cv, "1km 구간", cx, 20 * u, 5.6f * u, Color.WHITE, true)
         val sp = Run.splits
-        if (sp.isEmpty()) text(cv, "1km를 달리면 여기에 쌓여요", cx, 47 * u, 4.6f * u, MUTED)
+        if (sp.isEmpty()) { text(cv, "1km를 달리면", cx, 47 * u, 5.6f * u, MUTED); text(cv, "여기에 쌓여요", cx, 55 * u, 5.6f * u, MUTED) }
         else {
-            val lo = sp.minOrNull() ?: 0L; val hi = sp.maxOrNull() ?: 0L; val show = sp.withIndex().toList().takeLast(5)
+            val lo = sp.minOrNull() ?: 0L; val hi = sp.maxOrNull() ?: 0L; val show = sp.withIndex().toList().takeLast(4)
             show.forEachIndexed { i, (k, ms) ->
-                val y = 27 * u + i * 9 * u; val best = ms == lo && sp.size > 1
-                text(cv, "${k + 1}", 22 * u, y + 2.2f * u, 4.4f * u, MUTED, true, true, Paint.Align.RIGHT)
-                val f = 0.45f + 0.55f * (hi - ms).toFloat() / maxOf(1L, hi - lo).toFloat()
-                cv.drawRoundRect(RectF(25 * u, y - 1.6f * u, 59 * u, y + 2f * u), 1.8f * u, 1.8f * u, paint(TRACK))
-                cv.drawRoundRect(RectF(25 * u, y - 1.6f * u, 25 * u + 34 * u * f, y + 2f * u), 1.8f * u, 1.8f * u, paint(if (best) CORAL else BLUE))
-                text(cv, fmtPace(ms.toDouble()), 78 * u, y + 2.4f * u, 6.2f * u, if (best) CORAL else Color.WHITE, true, true, Paint.Align.RIGHT)
+                val y = 33 * u + i * 11 * u; val best = ms == lo && sp.size > 1
+                text(cv, "${k + 1}", 21 * u, y + 2.4f * u, 6 * u, MUTED, true, true, Paint.Align.RIGHT)
+                val f = 0.4f + 0.6f * (hi - ms).toFloat() / maxOf(1L, hi - lo).toFloat()
+                cv.drawRoundRect(RectF(25 * u, y - 1.8f * u, 54 * u, y + 1.8f * u), 1.8f * u, 1.8f * u, paint(TRACK))
+                cv.drawRoundRect(RectF(25 * u, y - 1.8f * u, 25 * u + 29 * u * f, y + 1.8f * u), 1.8f * u, 1.8f * u, paint(if (best) CORAL else BLUE))
+                text(cv, fmtPace(ms.toDouble()), 81 * u, y + 2.8f * u, 7.6f * u, if (best) CORAL else Color.WHITE, true, true, Paint.Align.RIGHT)
             }
         }
-        val avgHr = Run.hrAvg(); val cad = Run.cadAvg()
-        text(cv, "평균 ${fmtPace(Run.avgPace())}" + (if (avgHr > 0) " · ♥ 평균 $avgHr · 최고 ${Run.hrMax}" else ""), cx, 78 * u, 3.9f * u, MUTED, max = 0.7f)
-        if (cad != null) text(cv, "케이던스 $cad · ${Run.steps}걸음", cx, 85 * u, 3.9f * u, MUTED, max = 0.6f)
+        text(cv, "평균 ${fmtPace(Run.avgPace())}", cx, 86 * u, LAB * u, MUTED, true)
     }
 
-    // ---------- 멈춤 · 끝내기 (끝내기는 1.5초 꾹) ----------
-    private fun btnL() = floatArrayOf(cx - 19 * u, 50 * u, 15.5f * u)
-    private fun btnR() = floatArrayOf(cx + 19 * u, 50 * u, 15.5f * u)
+    // ---------- 5. 멈춤 · 끝내기 (끝내기는 1.5초 꾹) + 목소리·가이드 켜고 끄기 ----------
+    private fun btnL() = floatArrayOf(cx - 18.5f * u, 48 * u, 14f * u)
+    private fun btnR() = floatArrayOf(cx + 18.5f * u, 48 * u, 14f * u)
     private fun pageCtl(cv: Canvas, now: Long) {
-        pill(cv, if (Run.voice) "목소리 코치 켬" else "목소리 코치 끔", 19 * u, if (Run.voice) BLUE else MUTED, 4f * u)
+        pill(cv, if (Run.voice) "목소리 켬" else "목소리 끔", 19 * u, if (Run.voice) BLUE else MUTED, LAB * u)
         val L = btnL(); val R = btnR()
         if (Run.manualPause) {   // 다시 달리기(하늘색 동그라미 + 세모)
             cv.drawCircle(L[0], L[1], L[2], paint(BLUE))
-            cv.drawPath(Path().apply { moveTo(L[0] - 3.6f * u, L[1] - 6 * u); lineTo(L[0] - 3.6f * u, L[1] + 6 * u); lineTo(L[0] + 6 * u, L[1]); close() }, paint(INK))
+            cv.drawPath(Path().apply { moveTo(L[0] - 3.4f * u, L[1] - 5.6f * u); lineTo(L[0] - 3.4f * u, L[1] + 5.6f * u); lineTo(L[0] + 5.6f * u, L[1]); close() }, paint(INK))
         } else {
             cv.drawCircle(L[0], L[1], L[2], paint(LINE))
-            paint(Color.WHITE); cv.drawRoundRect(RectF(L[0] - 4.2f * u, L[1] - 6 * u, L[0] - 1.2f * u, L[1] + 6 * u), u, u, p); cv.drawRoundRect(RectF(L[0] + 1.2f * u, L[1] - 6 * u, L[0] + 4.2f * u, L[1] + 6 * u), u, u, p)
+            paint(Color.WHITE); cv.drawRoundRect(RectF(L[0] - 4f * u, L[1] - 5.6f * u, L[0] - 1.2f * u, L[1] + 5.6f * u), u, u, p); cv.drawRoundRect(RectF(L[0] + 1.2f * u, L[1] - 5.6f * u, L[0] + 4f * u, L[1] + 5.6f * u), u, u, p)
         }
         cv.drawCircle(R[0], R[1], R[2], paint(CORAL))
-        cv.drawRoundRect(RectF(R[0] - 5 * u, R[1] - 5 * u, R[0] + 5 * u, R[1] + 5 * u), 1.6f * u, 1.6f * u, paint(INK))
+        cv.drawRoundRect(RectF(R[0] - 4.6f * u, R[1] - 4.6f * u, R[0] + 4.6f * u, R[1] + 4.6f * u), 1.5f * u, 1.5f * u, paint(INK))
         if (holdStart > 0) {
-            val f = ((now - holdStart).toFloat() / HOLD_MS).coerceIn(0f, 1f); val rr = R[2] + 2.6f * u
+            val f = ((now - holdStart).toFloat() / HOLD_MS).coerceIn(0f, 1f); val rr = R[2] + 2.4f * u
             paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = 1.8f * u; p.strokeCap = Paint.Cap.ROUND
             cv.drawArc(RectF(R[0] - rr, R[1] - rr, R[0] + rr, R[1] + rr), -90f, 360 * f, false, p)
             if (f >= 1f) { holdStart = 0; post { onFinish() } }
         }
-        text(cv, if (Run.manualPause) "다시 달리기" else "멈춤", L[0], 73 * u, 4.6f * u, Color.WHITE, true, max = 0.34f)
-        text(cv, "끝내기", R[0], 73 * u, 4.6f * u, Color.WHITE, true)
-        text(cv, "끝내기는 1.5초 꾹 누르세요", cx, 80 * u, 3.6f * u, MUTED)
-        pill(cv, if (Cadence.kind != Cadence.OFF) "♩ 가이드 ${Cadence.spm} 켬" else "♩ 가이드 끔", 87.5f * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, 3.8f * u)
+        text(cv, if (Run.manualPause) "다시" else "멈춤", L[0], 70 * u, 5.4f * u, Color.WHITE, true, max = 0.34f)
+        text(cv, "끝내기", R[0], 70 * u, 5.4f * u, Color.WHITE, true)
+        text(cv, "1.5초 꾹", R[0], 76 * u, 4.6f * u, MUTED)
+        pill(cv, if (Cadence.kind != Cadence.OFF) "가이드 ${Cadence.spm} 켬" else "가이드 끔", 87 * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, LAB * u)
     }
 
     // ---------- 화면이 어두워졌을 때(앰비언트): 선과 글자만, 숫자 크게 ----------
@@ -281,14 +248,15 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 downX = e.x; downY = e.y; downT = System.currentTimeMillis()
-                if (page == 4) { val R = btnR(); if (hypot(e.x - R[0], e.y - R[1]) < R[2] * 1.15f) { holdStart = downT; invalidate() } }
+                if (page == P_CTL) { val R = btnR(); if (hypot(e.x - R[0], e.y - R[1]) < R[2] * 1.15f) { holdStart = downT; invalidate() } }
             }
             MotionEvent.ACTION_MOVE -> if (holdStart > 0 && hypot(e.x - downX, e.y - downY) > 12 * uu) { holdStart = 0; invalidate() }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 val dx = e.x - downX; val wasHold = holdStart > 0; holdStart = 0
-                if (abs(dx) > width * 0.16f && abs(dx) > abs(e.y - downY)) { page = (page + (if (dx < 0) 1 else -1) + PAGES) % PAGES; if (page <= 2) Store.setPage(context, page); invalidate(); return true }
+                if (abs(dx) > width * 0.16f && abs(dx) > abs(e.y - downY)) { val ps = pages(); val i = ps.indexOf(page).coerceAtLeast(0)
+                    page = ps[(i + (if (dx < 0) 1 else -1) + ps.size) % ps.size]; if (page != P_CTL) Store.setPage(context, page); invalidate(); return true }
                 if (wasHold) { invalidate(); return true }
-                if (e.actionMasked == MotionEvent.ACTION_UP && page == 4 && hypot(dx, e.y - downY) < 8 * uu) {
+                if (e.actionMasked == MotionEvent.ACTION_UP && page == P_CTL && hypot(dx, e.y - downY) < 8 * uu) {
                     val L = btnL()
                     if (hypot(e.x - L[0], e.y - L[1]) < L[2] * 1.15f) { Run.setPause(!Run.manualPause); performClick() }
                     else if (e.y < 30 * uu) { Run.voice = !Run.voice; Store.setVoice(context, Run.voice) }
