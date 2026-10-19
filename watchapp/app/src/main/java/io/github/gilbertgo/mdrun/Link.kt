@@ -87,7 +87,7 @@ object Link {
                     if (code == 200) { sent.removeAll { it.startsWith("$id:") }; sent.add(sig); n++ } else fail++
                 }
                 prefs(app).edit().putStringSet("linkSent", sent).apply()
-                status = if (fail > 0) "보내지 못한 기록 $fail개 · 와이파이 확인" else if (n > 0) "기록 $n개를 보냈어요" else "모두 보냈어요"
+                status = if (fail > 0) "보내지 못한 기록 ${fail}개 · 와이파이 확인" else if (n > 0) "기록 ${n}개를 보냈어요" else "모두 보냈어요"
             } catch (e: Exception) { status = "보내지 못했어요 · 인터넷 확인" }
             finally { busy = false; Updater.releaseNet(app); done?.let { android.os.Handler(android.os.Looper.getMainLooper()).post(it) } }
         }
