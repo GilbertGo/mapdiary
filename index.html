@@ -1854,7 +1854,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-16';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2406,6 +2406,7 @@ function route() {
   if (qs.get('walk') === '1') return viewWalk();
   if (qs.get('game')) return viewGames();
   if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
+  if (qs.get('applogin')) return setTimeout(viewAppLogin);
   if (qs.get('room')) return viewRoom();
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
   if (qs.get('s')) return viewShareLink();
@@ -2858,9 +2859,79 @@ async function cloudSync(quiet) {
 }
 // 지운 기록: 로그인한 적이 있으면 다음 맞추기 때 클라우드에서도 지워요
 function cloudForget(ids) { if (!ls.get('cloudSig', null)) return; ls.set('cloudGone', [...new Set([...ls.get('cloudGone', []), ...ids])]); }
+// ---------- 앱 안 구글 로그인 (2026-10-19 사용자 '만들어': 앱과 크롬 기록을 하나로) ----------
+// 앱(웹뷰)은 구글 팝업이 막혀서 크롬에 맡겨요: 앱이 비밀 번호 N을 만들어 크롬으로 ?applogin=1#al=N 을 열고,
+// 크롬에서 구글 로그인 → 로그인 표(refresh token)를 N에서 만든 열쇠로 잠가 rooms/{N의 지문}/x/login에 잠깐 올려요 → 앱이 받아 풀고 바로 지워요.
+// N은 주소 # 뒤라 서버로 안 가고, 앱과 그 크롬 탭만 알아요. 앱은 그 표로 securetoken에서 ID token을 받아 cfetch에 써요
+async function alKeys(n) {
+  const h = async t => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
+  const id = [...(await h('mpd-applogin-id:' + n))].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+  return { path: `rooms/al${id}/x/login`, key: await crypto.subtle.importKey('raw', await h('mpd-applogin-key:' + n), 'AES-GCM', false, ['encrypt', 'decrypt']) };
+}
+function nativeUser(c) {
+  let tok = null, exp = 0;
+  return { uid: c.uid, email: c.email || '', displayName: c.email || '', async getIdToken() {
+    if (tok && Date.now() < exp - 60000) return tok;
+    const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(c.rt) });
+    if (r.status === 400 || r.status === 401) { ls.set('cloudRt', null); cloudUser = null; document.dispatchEvent(new Event('md-cloud')); throw new Error('login expired'); }
+    if (!r.ok) throw new Error('token ' + r.status);
+    const j = await r.json(); tok = j.id_token; exp = Date.now() + (+j.expires_in || 3600) * 1000;
+    if (j.refresh_token && j.refresh_token !== c.rt) { c.rt = j.refresh_token; ls.set('cloudRt', c); }
+    return tok;
+  } };
+}
+let alTimer = null;
+function appLoginPoll() {
+  const pend = ls.get('cloudPend', null); if (!pend || alTimer) return;
+  if (Date.now() - pend.at > 15 * 60000) { ls.set('cloudPend', null); document.dispatchEvent(new Event('md-cloud')); return; }
+  const tick = async () => {
+    alTimer = null; const p = ls.get('cloudPend', null); if (!p) return;
+    if (Date.now() - p.at > 15 * 60000) { ls.set('cloudPend', null); document.dispatchEvent(new Event('md-cloud')); return; }
+    try { const { path, key } = await alKeys(p.n), d = await fsGet(path, 1);
+      if (typeof d === 'string') { const v = await roomOpen(key, JSON.parse(d));
+        if (v && v.rt && v.uid && Date.now() - v.at < 20 * 60000) {
+          fsDel(path).catch(() => {}); ls.set('cloudPend', null); ls.set('cloudRt', { rt: v.rt, uid: v.uid, email: v.email || '' }); ls.set('cloudOn', true); ls.set('cloudName', v.email || '');
+          cloudUser = nativeUser(ls.get('cloudRt')); document.dispatchEvent(new Event('md-cloud')); toast(`☁ ${v.email || '구글 계정'}으로 로그인했어요. 기록을 맞출게요`);
+          setTimeout(() => cloudSync(false), 600); return; } } } catch {}
+    if (!document.hidden) alTimer = setTimeout(tick, 3000);
+  };
+  alTimer = setTimeout(tick, 300);
+}
+function appLoginStart() {
+  const n = rid(24); ls.set('cloudPend', { n, at: Date.now() }); document.dispatchEvent(new Event('md-cloud'));
+  const pkg = { run: 'io.github.gilbertgo.mdrun', pgolf: 'io.github.gilbertgo.mdgolf' }[(window.MD_APP || {}).mode] || 'io.github.gilbertgo.mapdiary';
+  toast('크롬이 열려요. 로그인한 뒤 앱으로 돌아오세요');
+  setTimeout(() => { location.href = `${APP_BASE}?applogin=1#al=${n}&p=${pkg}`; }, 400);   // 앱 밖 주소라 휴대폰 기본 브라우저로 열려요
+  appLoginPoll();
+}
+// 크롬에서 열리는 쪽: 구글 로그인 → 잠근 로그인 표를 앱에 건네요
+function viewAppLogin() {
+  const n = (/[#&]al=([A-Za-z0-9]{16,40})/.exec(location.hash) || [])[1];
+  const box = el('div', { class: 'card stack', style: 'gap:12px;margin-top:16px' });
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '앱 로그인'), box));
+  if (!n) { box.append(el('b', { text: '앱에서 다시 눌러 주세요' }), el('div', { class: 'sub', text: '앱의 내 기록 → ☁ 구글로 로그인을 누르면 이 화면이 열려요.' })); return; }
+  if (IN_KAKAO) { box.append(el('b', { text: '크롬에서 열어 주세요' }), el('div', { class: 'sub', text: '카카오톡 안에서는 구글 로그인이 안 돼요.' })); return; }
+  fbAuth().catch(() => {});   // 팝업이 막히지 않게 미리 불러요
+  const msg = el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 앱·크롬·다른 휴대폰의 내 기록과 사진이 하나로 모여요. 기록은 로그인한 본인만 볼 수 있어요.' });
+  const go = el('button', { class: 'btn primary full big' }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:20px' }), ' 구글로 로그인하고 앱에 넘기기');
+  go.onclick = async () => {
+    go.disabled = true; go.textContent = '로그인 중…';
+    try { const F = fbReady || await fbAuth(); if (!F.auth.currentUser) await F.signIn(); const u = F.auth.currentUser; if (!u) throw new Error('no user');
+      const { path, key } = await alKeys(n);
+      await fsPut(path, JSON.stringify(await roomSeal(key, { rt: u.refreshToken, uid: u.uid, email: u.email || '', at: Date.now() })));
+      ls.set('cloudOn', true);
+      box.replaceChildren(el('div', { style: 'font-size:44px;text-align:center', text: '✅' }), el('b', { style: 'text-align:center;font-size:20px', text: '로그인했어요' }),
+        el('div', { class: 'sub', style: 'text-align:center', text: `${u.email || ''} · 이제 MPD 앱으로 돌아가세요. 휴대폰 아래 뒤로(‹) 단추나 최근 앱(|||)에서 MPD를 누르면 앱이 저절로 로그인하고 기록을 맞춰요.` }));
+    } catch (e) {
+      const c = String(e && e.code || ''); go.disabled = false; go.textContent = '다시 로그인하기';
+      if (!/popup-closed|cancelled-popup/.test(c)) toast(c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요');
+    }
+  };
+  box.append(el('b', { style: 'font-size:20px', text: '📱 MPD 앱에 구글 로그인' }), msg, go);
+}
 async function cloudLogin() {
   if (IN_KAKAO) return toast('카카오톡 안에서는 구글 로그인이 안 돼요. 크롬에서 열어 주세요');
-  if (IN_NATIVE) return toast('앱 안에서는 아직 구글 로그인이 안 돼요. 크롬에서 열어 주세요 (곧 앱도 돼요)');
+  if (IN_NATIVE) return appLoginStart();
   // 팝업은 누른 바로 그때 열어야 막히지 않아서, 미리 불러 둔 fbReady가 있으면 기다리지 않고 바로 열어요
   try { const F = fbReady || await fbAuth(); await F.signIn(); }
   catch (e) {
@@ -2869,10 +2940,19 @@ async function cloudLogin() {
     toast(c.includes('operation-not-allowed') ? 'Firebase에서 구글 로그인이 아직 꺼져 있어요' : c.includes('unauthorized-domain') ? 'Firebase 승인된 도메인에 gilbertgo.github.io를 넣어 주세요' : c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요');
   }
 }
-async function cloudLogout() { if (!confirm('로그아웃할까요? 이 휴대폰의 기록은 그대로 남아요.')) return; try { await (await fbAuth()).signOut(); } catch {} ls.set('cloudSig', null); ls.set('cloudPh', {}); toast('로그아웃했어요'); document.dispatchEvent(new Event('md-cloud')); }
+async function cloudLogout() { if (!confirm('로그아웃할까요? 이 휴대폰의 기록은 그대로 남아요.')) return;
+  if (IN_NATIVE) { ls.set('cloudRt', null); ls.set('cloudOn', false); cloudUser = null; } else try { await (await fbAuth()).signOut(); } catch {} ls.set('cloudSig', null); ls.set('cloudPh', {}); toast('로그아웃했어요'); document.dispatchEvent(new Event('md-cloud')); }
 // 로그인 상태 지켜보기: 로그인돼 있으면 켤 때·돌아올 때(5분마다까지)·기록을 끝낸 뒤 맞춰요
 function cloudWatch() {
-  if (cloudWatching || IN_KAKAO || IN_NATIVE || !ls.get('cloudOn', false) && !window.__mdAuthStub) return;   // 한 번이라도 로그인한 브라우저만 SDK를 불러요
+  if (cloudWatching || IN_KAKAO) return;
+  if (IN_NATIVE) {   // 앱: 크롬에서 받아 둔 로그인 표로
+    cloudWatching = true; const c = ls.get('cloudRt', null);
+    if (c && c.rt && c.uid) { cloudUser = nativeUser(c); setTimeout(() => cloudSync(true), 1500); }
+    appLoginPoll();
+    document.addEventListener('visibilitychange', () => { if (document.hidden) return; appLoginPoll(); if (cloudUser && Date.now() - ls.get('cloudAt', 0) > 5 * 60000) cloudSync(true); });
+    return;
+  }
+  if (!ls.get('cloudOn', false) && !window.__mdAuthStub) return;   // 한 번이라도 로그인한 브라우저만 SDK를 불러요
   cloudWatching = true;
   fbAuth().then(F => F.onChange(u => { cloudUser = u || null; document.dispatchEvent(new Event('md-cloud')); if (u) { ls.set('cloudOn', true); ls.set('cloudName', u.email || u.displayName || ''); setTimeout(() => cloudSync(true), 800); } else ls.set('cloudOn', false); })).catch(() => {});
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudUser && Date.now() - ls.get('cloudAt', 0) > 5 * 60000) cloudSync(true); });
@@ -2881,11 +2961,15 @@ function cloudWatch() {
 function cloudCard() {
   const box = el('div', { class: 'card stack cl-card', style: 'gap:8px' });
   const draw = () => {
-    if (IN_NATIVE) { box.replaceChildren(el('b', { text: '☁ 클라우드 (구글 로그인)' }), el('div', { class: 'sub', text: '앱 안에서는 아직 구글 로그인이 안 돼요. 크롬에서 Map Photo Diary를 열어 로그인하면 휴대폰·컴퓨터 기록이 하나로 모여요. 앱도 곧 돼요.' })); return; }
+    if (IN_NATIVE && !cloudUser && ls.get('cloudPend', null)) {
+      box.replaceChildren(el('b', { text: '☁ 크롬에서 로그인을 기다리는 중…' }), el('div', { class: 'sub', text: '크롬에서 구글 로그인을 마치고 이 앱으로 돌아오면 저절로 로그인돼요.' }),
+        el('div', { class: 'two' }, el('button', { class: 'btn line', text: '크롬 다시 열기', onclick: appLoginStart }), el('button', { class: 'btn line', text: '그만두기', onclick: () => { ls.set('cloudPend', null); draw(); } })));
+      return;
+    }
     if (!cloudUser) {
-      fbAuth().catch(() => {});   // 로그인 단추를 누르기 전에 미리 불러 둬요(팝업이 막히지 않게)
+      if (!IN_NATIVE) fbAuth().catch(() => {});   // 로그인 단추를 누르기 전에 미리 불러 둬요(팝업이 막히지 않게)
       box.replaceChildren(el('b', { text: '☁ 구글로 로그인하고 기록 모으기' }),
-        el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 휴대폰·컴퓨터·다른 브라우저의 내 MPD와 사진이 하나로 모이고, 휴대폰을 바꿔도 그대로예요. 기록은 로그인한 본인만 볼 수 있어요.' }),
+        el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 앱·크롬·컴퓨터의 내 MPD와 사진이 하나로 모이고, 휴대폰을 바꿔도 그대로예요. 기록은 로그인한 본인만 볼 수 있어요.' + (IN_NATIVE ? ' 누르면 크롬이 열려요. 거기서 로그인하고 앱으로 돌아오면 돼요.' : '') }),
         el('button', { class: 'btn primary full', onclick: () => { ls.set('cloudOn', true); cloudWatch(); cloudLogin(); } }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:18px' }), ' 구글로 로그인'));
       return;
     }
