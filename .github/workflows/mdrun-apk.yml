@@ -1,6 +1,6 @@
 # MD Run·MD 파크골프 안드로이드 앱(APK)을 만들어 Releases에 올려요.
-# 휴대폰에서 받는 주소: https://github.com/GilbertGo/mapdiary/releases/latest/download/MDRun.apk (러닝)
-#                       https://github.com/GilbertGo/mapdiary/releases/latest/download/MDGolf.apk (파크골프)
+# 휴대폰에서 받는 주소(2026-10-19 사용자 '휴대폰 용은 파일 이름 바꿔서'): …/releases/latest/download/MPD.apk (전체) · MPD_run.apk (러닝) · MPD_golf.apk (파크골프)
+# 예전 이름(MapDiary.apk·MDRun.apk·MDGolf.apk)도 같은 파일로 같이 올려요: 예전 링크와 깔린 앱의 '새 판' 안내가 쓰고 있어서
 name: MD 앱 APK (러닝·파크골프·Map Diary)
 on:
   push:
@@ -28,6 +28,7 @@ jobs:
           mkdir -p ~/.android && cp debug.keystore ~/.android/debug.keystore
           for app in $(node -e "console.log(Object.keys(require('./apps.json')).join(' '))"); do
             apk=$(node -e "console.log(require('./apps.json')['$app'].apk)")
+            file=$(node -e "console.log(require('./apps.json')['$app'].file)")
             rm -rf android www
             MD_APP=$app node build.mjs
             npx cap add android
@@ -35,13 +36,17 @@ jobs:
             npx cap sync android
             (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
             cp android/app/build/outputs/apk/debug/app-debug.apk ../$apk
+            cp ../$apk ../$file
           done
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: mdrun-${{ github.run_number }}
           name: MD 앱 0.1.${{ github.run_number }} (러닝·파크골프)
-          body: 러닝은 MDRun.apk, 파크골프는 MDGolf.apk, 전체 Map Diary는 MapDiary.apk를 휴대폰에서 눌러 받고 설치하세요. 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
+          body: 전체 MPD는 MPD.apk, 러닝은 MPD_run.apk, 파크골프는 MPD_golf.apk를 휴대폰에서 눌러 받고 설치하세요(예전 이름 MapDiary·MDRun·MDGolf.apk도 같은 파일). 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
           files: |
+            MPD.apk
+            MPD_run.apk
+            MPD_golf.apk
             MDRun.apk
             MDGolf.apk
             MapDiary.apk
