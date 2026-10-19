@@ -28,6 +28,7 @@ jobs:
           gradle assembleDebug --no-daemon --stacktrace
           cp app/build/outputs/apk/debug/app-debug.apk ../MPD_run_watch.apk
           cp ../MPD_run_watch.apk ../MDRunWatch.apk
+          ls -l ../MPD_run_watch.apk
       - uses: actions/upload-artifact@v4
         with: { name: MPD_run_watch, path: MPD_run_watch.apk }
       - if: github.ref == 'refs/heads/main'

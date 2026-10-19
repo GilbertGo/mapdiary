@@ -20,7 +20,12 @@ android {
             storePassword = "android"; keyAlias = "androiddebugkey"; keyPassword = "android"
         }
     }
-    buildTypes { getByName("debug") { signingConfig = signingConfigs.getByName("debug") } }
+    // 파일 크기 줄이기(2026-10-19): 안 쓰는 코드·그림을 빼서 블루투스로도 빨리 받게. 화면·도우미는 manifest에 있어 저절로 남아요
+    buildTypes { getByName("debug") {
+        signingConfig = signingConfigs.getByName("debug")
+        isMinifyEnabled = true; isShrinkResources = true
+        proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+    } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
 }
