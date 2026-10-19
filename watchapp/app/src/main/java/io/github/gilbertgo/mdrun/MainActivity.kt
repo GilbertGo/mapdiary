@@ -124,7 +124,8 @@ class MainActivity : ComponentActivity() {
         val g = Store.goal(this)
         val u0 = upd
         val install = { if (u0 != null) Updater.install(this, u0) { m -> android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show() } }
-        val hv = HomeView(this, HomeView.Act({ countdown() }, { showGoal() }, if (u0 != null) install else null)).apply {
+        val hv = HomeView(this, HomeView.Act({ countdown() }, { showGoal() }, if (u0 != null) install else null, { showGuide() })).apply {
+            guideOn = Cadence.kind != Cadence.OFF; guideTxt = if (guideOn) "♩ ${Cadence.spm}" else "♩ 끔"
             week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
         gpsText = null
         val tgt = when (g.k) { "dist" -> row("완주 목표 시간", if (g.t > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
@@ -134,13 +135,11 @@ class MainActivity : ComponentActivity() {
         val rows = listOfNotNull(
             if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
             row("목표", g.label()) { showGoal() }, tgt,
+            row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
             row("휴대폰으로 보내기", if (Link.on(this)) "켬 · ${Link.code(this)}" else "끔") { showLink() },
             row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
             row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() },
-            row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { Cadence.set(this, (Cadence.kind + 1) % 4); showStart() },
-            row("가이드 미리 듣기", "▶ ${Cadence.spm}") { Cadence.preview(this) },
-            if (Cadence.kind != Cadence.OFF) row("가이드 빠르기 (1분에 걸음)", "${Cadence.spm}") { Cadence.setSpm(this, if (Cadence.spm >= 200) 150 else Cadence.spm + 5); showStart() } else null,
             row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
             row("지난 기록", "${Store.list(this).size}개") { showHistory() },
             tv("판 ${Updater.currentName(this)} · 새 판 확인", 12f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
@@ -198,6 +197,35 @@ class MainActivity : ComponentActivity() {
             btn("이걸로 정하기", RunView.CORAL, RunView.INK) {
                 Store.setGoal(this, if (isD) g.copy(t = vt) else g.copy(d = vd)); showStart() },
             btn("정하지 않음", RunView.SURF, RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
+    }
+
+    // 케이던스 가이드 정하기 (2026-10-19 사용자 '가이드 케이던스도 설정할 수 있게, 중요하니 앞쪽으로'):
+    // 방식(끔·소리·진동·소리+진동) · 빠르기(−5 −1 +1 +5, 120~220) · 미리 듣기 · 내 평균 케이던스로 추천
+    private fun showGuide() {
+        val big = tv("", 30f, Color.WHITE, true); val sub = tv("1분에 걸음 수", 12f, RunView.MUTED)
+        val kinds = listOf(Cadence.OFF, Cadence.SOUND, Cadence.VIB, Cadence.BOTH)
+        val kBtns = kinds.map { k -> btn(Cadence.label(k), RunView.SURF) { Cadence.set(this, k); showGuide() } }
+        kBtns.forEachIndexed { i, b -> val on = kinds[i] == Cadence.kind
+            (b.background as GradientDrawable).setColor(if (on) RunView.CORAL else RunView.SURF); b.setTextColor(if (on) RunView.INK else Color.WHITE) }
+        fun draw() { big.text = "${Cadence.spm}" }
+        draw()
+        val w = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins((1.2f * u).toInt(), 0, (1.2f * u).toInt(), 0) }
+        fun pm(d: Int) = btn(if (d > 0) "+$d" else "−${-d}", RunView.SURF) { Cadence.setSpm(this, Cadence.spm + d); draw() }
+        val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            listOf(-5, -1, 1, 5).forEach { addView(pm(it), LinearLayout.LayoutParams(w)) } }
+        fun two(a: View, b: View) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; addView(a, LinearLayout.LayoutParams(w)); addView(b, LinearLayout.LayoutParams(w)) }
+        // 지난 기록 평균 케이던스(최근 5번)로 추천: 지금보다 5 높게(한 번에 5~10%보다 많이 올리지 않게)
+        val cads = Store.list(this).take(5).mapNotNull { it.optJSONObject("sum")?.optInt("cad")?.takeIf { c -> c > 100 } }
+        val avg = if (cads.isNotEmpty()) cads.average().roundToInt() else 0
+        val rec = if (avg > 0) ((minOf(maxOf(avg + 5, 160), 185) + 2) / 5 * 5) else 0
+        val views = listOfNotNull(
+            tv("케이던스 가이드", 15f, RunView.CORAL, true), big, sub, r1,
+            btn("▶ 미리 듣기", RunView.SURF, RunView.CORAL) { Cadence.preview(this) },
+            tv("방식", 13f, RunView.MUTED, true), two(kBtns[0], kBtns[1]), two(kBtns[2], kBtns[3]),
+            if (rec > 0) btn("추천 ${rec}으로 (내 평균 $avg)", RunView.SURF) { Cadence.setSpm(this, rec); draw() } else null,
+            tv("달릴 때 이 박자에 발을 맞추면 케이던스가 올라 보폭이 줄고 무릎 부담이 줄어요. 보통 170~180이 좋고, 지금 평균보다 5 정도만 높여 시작하세요.", 12f, Color.WHITE),
+            btn("다 됐어요", RunView.CORAL, RunView.INK) { showStart() })
+        show(page(*views.toTypedArray()))
     }
 
     // 휴대폰으로 보내기: 연결 코드를 보여 주고 켜고 꺼요
