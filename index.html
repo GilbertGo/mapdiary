@@ -425,10 +425,10 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 /* 2026-10-19 사용자 '아랫부분이 경계 없이 차차 흐려지게, 바탕색은 사진 중 밝은 부분 색으로': 그림 아래 150px가 바탕색으로 녹아들고, 러닝 시작 화면 바탕은 사진 하늘의 밝은 색 */
 html.rh-page{--rh-bg:#DAE8F3}
 html.rh-page body,html[data-theme=sea].rh-page body{background:#DAE8F3}
-.rh{height:calc(min(60vh,470px) + 120px)!important}
-.rh::after{content:'';position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(180deg,rgba(218,232,243,0) 0%,rgba(218,232,243,.55) 45%,rgba(218,232,243,.92) 80%,#DAE8F3 100%);pointer-events:none}
-.rh .rh-bot{bottom:128px;z-index:1}.rh .rh-top{z-index:1;top:70px}
-html.rh-page .rh{margin-top:-20px}
+.rh{height:calc(min(60vh,470px) + 50px)!important}
+.rh::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(180deg,rgba(218,232,243,0) 0%,rgba(218,232,243,.6) 50%,rgba(218,232,243,.95) 85%,#DAE8F3 100%);pointer-events:none}
+.rh .rh-bot{bottom:62px;z-index:1}.rh .rh-top{z-index:1;top:62px}
+html.rh-page .rh{margin-top:-20px;margin-bottom:-14px}html.rh-page .rh~*{position:relative;z-index:1}
 html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background-size:auto!important}
 .rh .rh-bar{position:absolute;top:0;left:0;right:0;width:auto;margin:0!important;z-index:2;padding:14px 20px 26px;color:#fff}
 html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gradient(180deg,rgba(6,30,55,.45),rgba(6,30,55,0))!important}
@@ -1852,7 +1852,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-11';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-12';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
