@@ -224,7 +224,12 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, hrNow, paceNow)
         paint(Color.BLACK); p.shader = android.graphics.LinearGradient(0f, 0f, 0f, W, Color.parseColor("#1B2A44"), Color.parseColor("#05080D"), Shader.TileMode.CLAMP)
         cv.drawCircle(cx, cx, cx, p); p.shader = null
-        text(cv, if (el > win) "심박 · 페이스 · 최근 20분" else "심박 · 페이스", cx, 19 * u, 5.2f * u, Color.WHITE, true)
+        // 제목이 색 안내: '심박'은 흰 선, '페이스'는 산호 선 (2026-10-19 사용자 '심박은 무슨 색? 페이스는 무슨 색?')
+        run { val sz = 5.2f * u; val a1 = "━ 심박"; val a2 = "   ━ 페이스"; val a3 = if (el > win) " · 20분" else ""
+            val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val w3 = if (a3.isEmpty()) 0f else measure(a3, sz, false); var x = cx - (w1 + w2 + w3) / 2
+            text(cv, a1, x, 19 * u, sz, Color.WHITE, true, align = Paint.Align.LEFT); x += w1
+            text(cv, a2, x, 19 * u, sz, CORAL, true, align = Paint.Align.LEFT); x += w2
+            if (a3.isNotEmpty()) text(cv, a3, x, 19 * u, sz, MUTED, true, align = Paint.Align.LEFT) }
         val X0 = 18 * u; val X1 = 82 * u; val Y0 = 33 * u; val Y1 = 62 * u
         val hs = all.filter { it.hr > 0 }
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
