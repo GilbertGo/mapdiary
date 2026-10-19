@@ -235,11 +235,19 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
         val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 6).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 6).toFloat()
         fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-        // 존2 띠: 옅게 + 가는 위아래 선 + 왼쪽 '존2'(오른쪽은 지금 값 자리)
+        // 존2 띠: 옅게 + 가는 위아래 선
         val bt = yH(z2hi); val bb = yH(z2lo)
         cv.drawRect(X0, bt, X1, bb, paint(alpha(BLUE, 0x26)))
         paint(alpha(BLUE, 0x90)); p.strokeWidth = .25f * u; cv.drawLine(X0, bt, X1, bt, p); cv.drawLine(X0, bb, X1, bb, p)
-        text(cv, "존2", X0 + .8f * u, bb - 1.2f * u, 3.8f * u, BLUE, true, align = Paint.Align.LEFT)
+        // 왼쪽에 존 번호(1·2·3…)를 그 높이 가운데에, 존 경계는 아주 옅은 점선 (2026-10-19 사용자가 그림에 1·2·3을 적어 보냄)
+        for (z in 0 until 5) {
+            val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
+            if (hi - lo < (hHi - hLo) * .08f) continue
+            val ym = Y1 - (Y1 - Y0) * (((lo + hi) / 2 - hLo) / (hHi - hLo))
+            text(cv, "${z + 1}", X0 - 2 * u, ym + 1.6f * u, 4.6f * u, ZONE[z], true, true, Paint.Align.RIGHT)
+            if (z > 0 && z != 1 && z != 2 && Run.zoneLo(z) > hLo) { val y = yH(Run.zoneLo(z)); paint(alpha(Color.WHITE, 0x30)); p.strokeWidth = .2f * u
+                p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(.8f * u, .8f * u), 0f); cv.drawLine(X0, y, X1, y, p); p.pathEffect = null }
+        }
         if (all.size < 3 || hs.size < 2) {
             text(cv, "달리면 10초마다", cx, (bt + bb) / 2 - 1 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
             text(cv, "그려져요", cx, (bt + bb) / 2 + 5 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
@@ -278,7 +286,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
         heart(cv, cx - 21 * u, 77.4f * u, 1.7f * u, zc)
         text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 17.5f * u, 80 * u, 7.2f * u, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", cx - 12 * u, 86 * u, 4.2f * u, zc, true)
+        text(cv, "심박", cx - 12 * u, 86 * u, 4.2f * u, MUTED, true)
         text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx + 12 * u, 80 * u, 7.2f * u, CORAL, true, true)
         text(cv, "페이스", cx + 12 * u, 86 * u, 4.2f * u, MUTED, true)
     }
