@@ -50,6 +50,12 @@
 - **저절로 백업**(2026-10-06, 앱만): 켜고 20초 뒤 `autoBackup` — 마지막 백업(`lastBackup`·`lastAutoBackup`)이 7일 넘으면 '내 파일 > Documents > MapDiary'에 `{MapDiary|MDRun|MDGolf}_autobackup_날짜.json`(백업 파일과 같은 모양, `auto:1`). 사진이 많아도 되게 `mdNativeBackup.start/add/end`로 한 장씩 이어 쓰고(.part → 이름 바꾸기) 최근 3개만 남김
 - 다음 할 일: 현장 시험(화면 끄고 달리기), 삼성헬스(헬스 커넥트)에서 심박·자세 읽기, 이름·아이콘 시안, 화면 꺼져도 케이던스 가이드 소리
 
+## 구글 플레이 스토어 (2026-10-19 시작)
+- 사용자 '앱 설치 번거롭지 않게' → 플레이 '내부 테스트'로 올리기로(사용자 '플레이 스토어로 하자', 등록비 25달러 사용자가 냄). 개발자 계정: **seongsikgo69@gmail.com, 개인 계정, 개발자 이름 'Gilbert Go'**(새 구글 계정을 만들려 했으나 휴대폰 번호가 너무 많이 쓰였다고 막혀 기존 계정으로). 웹사이트 칸 https://gilbertgo.github.io/mapdiary/
+- 2026-10-19 상태: 결제·주소 서류(등본 등) 올림·Play Console 앱 로그인(휴대폰 확인) 끝, **신원 확인 기다리는 중**(며칠) → 끝나면 전화번호 확인 → 사용자가 '확인 다 됐어'라고 하면 앱 올리기 시작
+- 개인정보 처리방침 `privacy.html`(https://gilbertgo.github.io/mapdiary/privacy.html, 한글+영어: 위치·백그라운드 위치·사진·센서·심박·마이크·구글 로그인·잠근 공유·OSM·지우기·문의 메일). 앱 기능이 바뀌면 같이 고칠 것
+- 할 일: AAB(`bundleRelease`)로 만들기 + **업로드 열쇠**(공개 저장소에 두면 안 됨 → 사용자에게 GitHub Secrets에 넣어 달라고 할 것, 순서는 그때 그 자리에서), versionCode 겹치지 않게(휴대폰 MD Run과 시계가 같은 appId `io.github.gilbertgo.mdrun`), 데이터 안전·콘텐츠 등급·백그라운드 위치 신고, 내부 테스터(유진 님 등) 추가. **플레이 판은 서명이 달라 지금 깔린 앱을 한 번 지우고 다시 깔아야 함 → 그 전에 백업 안내**
+
 ## 갤럭시워치 앱 MPD Run 워치 (`watchapp/`, 2026-10-17 시작, 예전 이름 MD Run)
 - 사용자 "이 앱 스마트워치 앱으로" → 고른 것: MD Run(개인용) · 갤럭시워치(사용자 시계는 **갤럭시워치9**) · **시계 혼자 기록**(휴대폰 없이). 웹을 감쌀 수 없어 **Kotlin Wear OS 앱을 새로** 짬(androidx는 `activity`·`wear`(앰비언트)만, 화면은 Canvas/기본 View). 자세한 건 `watchapp/README.md`
 - 달리는 중 화면: 시안 A(목표 링)·B(네 칸 숫자)·C(코치 신호등)를 보여 주자 사용자가 'b,c안' → '화면을 세 가지로 a,b,c' → **옆으로 밀어 A → B → C → 1km 구간 → 멈춤·끝내기(1.5초 꾹)** (`RunView`, 마지막 본 A·B·C는 `page` 기억). 시안 그림은 scratchpad `watch/drafts.html`
