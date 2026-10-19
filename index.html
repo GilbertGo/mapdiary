@@ -1519,26 +1519,37 @@ async function drawBragCard(o) {
     }
     return lines;
   };
-  // 바탕 + 맨 위 풍경
+  // 바탕 + 맨 위 풍경 (고른 사진이 있으면 그 사진을 맨 위에 가득, 2026-10-19 사용자 '저 자리에 사진 넣어줘')
   g.fillStyle = '#F4F0E6'; g.fillRect(0, 0, W, H);
-  if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
+  font(700, 76); const tl = wrap(o.name, W - 144, 2);
+  const yDate = 330 + (tl.length - 1) * 92 + 64, yEnd = yDate + (o.note ? 56 : 0), topH = Math.max(yEnd + 48, 520) - 28;
+  let cov = null; if (o.cover && o.cover.blob) try { cov = await createImageBitmap(o.cover.blob); } catch {}
+  if (cov) {
+    const sc = Math.max(W / cov.width, topH / cov.height), dw = cov.width * sc, dh = cov.height * sc;
+    g.save(); g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(W, topH - 40); g.quadraticCurveTo(W / 2, topH + 30, 0, topH - 40); g.closePath(); g.clip();
+    g.drawImage(cov, (W - dw) / 2, (topH - dh) * 0.45, dw, dh);
+    const sh = g.createLinearGradient(0, 0, 0, topH); sh.addColorStop(0, 'rgba(0,0,0,.38)'); sh.addColorStop(.35, 'rgba(0,0,0,.08)'); sh.addColorStop(.6, 'rgba(0,0,0,.25)'); sh.addColorStop(1, 'rgba(0,0,0,.6)');
+    g.fillStyle = sh; g.fillRect(0, 0, W, topH); g.restore();
+  } else if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
+  const onPh = !!cov, shadow = on => { g.shadowColor = on && onPh ? 'rgba(0,0,0,.45)' : 'transparent'; g.shadowBlur = on && onPh ? 14 : 0; };
   // 로고: 앱 아이콘 그림(동네 지도 위 MPD 길)을 둥근 네모로 (못 불러오면 초록 네모만)
   rr(72, 64, 72, 72, 18); g.fillStyle = PINE; g.fill();
   try { const lo = new Image(); lo.src = 'icon-192.png'; await lo.decode(); g.save(); rr(72, 64, 72, 72, 18); g.clip(); g.drawImage(lo, 72, 64, 72, 72); g.restore(); } catch {}
-  font(700, 38); g.fillStyle = PINE; g.textBaseline = 'middle'; g.fillText('Map Photo Diary', 162, 101);
+  shadow(true); font(700, 38); g.fillStyle = onPh ? '#FFFFFF' : PINE; g.textBaseline = 'middle'; g.fillText('Map Photo Diary', 162, 101);
   // 제목, 날짜
   g.textBaseline = 'alphabetic';
-  font(700, 76); g.fillStyle = INK;
-  const tl = wrap(o.name, W - 144, 2); tl.forEach((s, i) => g.fillText(s, 72, 330 + i * 92));
-  let y = 330 + (tl.length - 1) * 92 + 64;
-  font(500, 36); g.fillStyle = MUTED; g.fillText(o.dateText, 72, y);
+  font(700, 76); g.fillStyle = onPh ? '#FFFFFF' : INK;
+  tl.forEach((s, i) => g.fillText(s, 72, 330 + i * 92));
+  let y = yDate;
+  font(500, 36); g.fillStyle = onPh ? 'rgba(255,255,255,.92)' : MUTED; g.fillText(o.dateText, 72, y);
   if (o.modeLabel) {   // 날짜 옆: · [모드 아이콘] 모드 이름
     let mx = 72 + g.measureText(o.dateText + '  ·  ').width;
     g.fillText('  ·  ', 72 + g.measureText(o.dateText).width, y);
-    if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, '#2D6A4F'); mx += 46; }
+    if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, onPh ? '#FFFFFF' : '#2D6A4F'); mx += 46; }
     g.fillText(o.modeLabel, mx, y);
   }
-  if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MPD 메모 첫 줄
+  if (o.note) { y += 56; font(600, 36); g.fillStyle = onPh ? '#FFE1CF' : '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MPD 메모 첫 줄
+  shadow(false);
   // 경로 판
   // 파크골프 점수표: 출발·도착 줄 바로 위에. 그만큼 지도(와 사진)를 위로 올려요 (3명 넘으면 카드에 사진은 빼요)
   const GF = o.golf ? golfClean(o.golf) : null, gOn = GF && golfTot(GF, 0).played > 0;
@@ -1733,18 +1744,31 @@ function openBrag(info, t, count, allDone, room) {
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
     if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick.map(noLoc); }
+    { const cid = ls.get('walkCover:' + t, null); cardOpts.cover = cid ? phs.recs.find(r => r.id === cid) : undefined; coverBtn.style.display = phs.recs.length ? '' : 'none'; }
     cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
     if (cardOpts.golf && zone.length) cardOpts.golf = Object.assign({}, cardOpts.golf, { h: cardOpts.golf.h.map(q => q && inZone({ lat: q[0], lng: q[1] }) ? null : q) });
     cardOpts.secret = secretOn;
     await card.draw(cardOpts);
   }
   let cardOpts = null;
+  // 카드 맨 위 그림을 이 MPD 사진으로 (walkCover:{ID} = 사진 id, 없으면 바닷가 풍경)
+  const coverBtn = el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0;display:none', text: '🖼 맨 위 사진 고르기', onclick: () => {
+    const cur = ls.get('walkCover:' + t, null), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+    const pick = v => { ls.set('walkCover:' + t, v); cb.remove(); draw(); toast(v ? '맨 위에 사진을 넣었어요' : '맨 위를 풍경 그림으로 돌렸어요'); };
+    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '맨 위 사진 고르기' }, el('h2', { text: '맨 위 사진 고르기' }),
+      el('p', { class: 'sub', style: 'margin:0', text: '카드 맨 위(제목 뒤)에 크게 들어갈 사진을 골라요.' }),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto' },
+        el('button', { style: `aspect-ratio:1;border-radius:12px;border:${cur ? '1px solid var(--line)' : '3px solid var(--accent)'};background:linear-gradient(#A9DCFF,#EEF8FF 60%,#4FB3E8 61%);font-weight:700;color:#102A43`, text: '풍경 그림', onclick: () => pick(null) }),
+        ...phs.recs.map(r => el('button', { 'aria-label': '이 사진', style: `aspect-ratio:1;border-radius:12px;padding:0;overflow:hidden;border:${r.id === cur ? '3px solid var(--accent)' : '1px solid var(--line)'};background:#ddd center/cover url(${r.thumb})`, onclick: () => pick(r.id) }))),
+      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
+    document.body.append(cb);
+  } });
   const card = bragView(img, () => cardOpts);
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 공유하기' },
     el('h2', { text: 'MPD 공유하기' }),
     el('p', { class: 'sub', style: 'margin:0', text: '사진 한 장이나 지도 링크로 보내요. 그림을 누르면 지도로 크게 볼 수 있어요.' + (count ? ' 참여자 이름과 위치는 들어가지 않아요.' : '') }),
-    img, opts,
+    img, opts, coverBtn,
     // 제목 바꾸기: 내 기록·여행은 저장된 이름도 바꾸고, 단체 나들이는 카드 제목만 바꿔요
     el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '제목 바꾸기', onclick: () => {
       const iN = el('input', { type: 'text', id: 'bn', maxlength: 40, value: info.name });
@@ -1799,7 +1823,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3022,7 +3046,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
