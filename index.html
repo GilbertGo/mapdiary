@@ -1519,26 +1519,37 @@ async function drawBragCard(o) {
     }
     return lines;
   };
-  // 바탕 + 맨 위 풍경
+  // 바탕 + 맨 위 풍경 (고른 사진이 있으면 그 사진을 맨 위에 가득, 2026-10-19 사용자 '저 자리에 사진 넣어줘')
   g.fillStyle = '#F4F0E6'; g.fillRect(0, 0, W, H);
-  if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
+  font(700, 76); const tl = wrap(o.name, W - 144, 2);
+  const yDate = 330 + (tl.length - 1) * 92 + 64, yEnd = yDate + (o.note ? 56 : 0), topH = Math.max(yEnd + 48, 520) - 28;
+  let cov = null; if (o.cover && o.cover.blob) try { cov = await createImageBitmap(o.cover.blob); } catch {}
+  if (cov) {
+    const sc = Math.max(W / cov.width, topH / cov.height), dw = cov.width * sc, dh = cov.height * sc;
+    g.save(); g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(W, topH - 40); g.quadraticCurveTo(W / 2, topH + 30, 0, topH - 40); g.closePath(); g.clip();
+    g.drawImage(cov, (W - dw) / 2, (topH - dh) * 0.45, dw, dh);
+    const sh = g.createLinearGradient(0, 0, 0, topH); sh.addColorStop(0, 'rgba(0,0,0,.38)'); sh.addColorStop(.35, 'rgba(0,0,0,.08)'); sh.addColorStop(.6, 'rgba(0,0,0,.25)'); sh.addColorStop(1, 'rgba(0,0,0,.6)');
+    g.fillStyle = sh; g.fillRect(0, 0, W, topH); g.restore();
+  } else if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
+  const onPh = !!cov, shadow = on => { g.shadowColor = on && onPh ? 'rgba(0,0,0,.45)' : 'transparent'; g.shadowBlur = on && onPh ? 14 : 0; };
   // 로고: 앱 아이콘 그림(동네 지도 위 MPD 길)을 둥근 네모로 (못 불러오면 초록 네모만)
   rr(72, 64, 72, 72, 18); g.fillStyle = PINE; g.fill();
   try { const lo = new Image(); lo.src = 'icon-192.png'; await lo.decode(); g.save(); rr(72, 64, 72, 72, 18); g.clip(); g.drawImage(lo, 72, 64, 72, 72); g.restore(); } catch {}
-  font(700, 38); g.fillStyle = PINE; g.textBaseline = 'middle'; g.fillText('Map Photo Diary', 162, 101);
+  shadow(true); font(700, 38); g.fillStyle = onPh ? '#FFFFFF' : PINE; g.textBaseline = 'middle'; g.fillText('Map Photo Diary', 162, 101);
   // 제목, 날짜
   g.textBaseline = 'alphabetic';
-  font(700, 76); g.fillStyle = INK;
-  const tl = wrap(o.name, W - 144, 2); tl.forEach((s, i) => g.fillText(s, 72, 330 + i * 92));
-  let y = 330 + (tl.length - 1) * 92 + 64;
-  font(500, 36); g.fillStyle = MUTED; g.fillText(o.dateText, 72, y);
+  font(700, 76); g.fillStyle = onPh ? '#FFFFFF' : INK;
+  tl.forEach((s, i) => g.fillText(s, 72, 330 + i * 92));
+  let y = yDate;
+  font(500, 36); g.fillStyle = onPh ? 'rgba(255,255,255,.92)' : MUTED; g.fillText(o.dateText, 72, y);
   if (o.modeLabel) {   // 날짜 옆: · [모드 아이콘] 모드 이름
     let mx = 72 + g.measureText(o.dateText + '  ·  ').width;
     g.fillText('  ·  ', 72 + g.measureText(o.dateText).width, y);
-    if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, '#2D6A4F'); mx += 46; }
+    if (ICONS[o.modeK]) { drawIco(g, o.modeK, mx, y - 32, 38, onPh ? '#FFFFFF' : '#2D6A4F'); mx += 46; }
     g.fillText(o.modeLabel, mx, y);
   }
-  if (o.note) { y += 56; font(600, 36); g.fillStyle = '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MPD 메모 첫 줄
+  if (o.note) { y += 56; font(600, 36); g.fillStyle = onPh ? '#FFE1CF' : '#2D6A4F'; g.fillText(fit(`“${o.note.split('\n')[0]}”`, W - 144), 72, y); }   // MPD 메모 첫 줄
+  shadow(false);
   // 경로 판
   // 파크골프 점수표: 출발·도착 줄 바로 위에. 그만큼 지도(와 사진)를 위로 올려요 (3명 넘으면 카드에 사진은 빼요)
   const GF = o.golf ? golfClean(o.golf) : null, gOn = GF && golfTot(GF, 0).played > 0;
@@ -1733,18 +1744,31 @@ function openBrag(info, t, count, allDone, room) {
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
     if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick.map(noLoc); }
+    { const cid = ls.get('walkCover:' + t, null); cardOpts.cover = cid ? phs.recs.find(r => r.id === cid) : undefined; coverBtn.style.display = phs.recs.length ? '' : 'none'; }
     cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
     if (cardOpts.golf && zone.length) cardOpts.golf = Object.assign({}, cardOpts.golf, { h: cardOpts.golf.h.map(q => q && inZone({ lat: q[0], lng: q[1] }) ? null : q) });
     cardOpts.secret = secretOn;
     await card.draw(cardOpts);
   }
   let cardOpts = null;
+  // 카드 맨 위 그림을 이 MPD 사진으로 (walkCover:{ID} = 사진 id, 없으면 바닷가 풍경)
+  const coverBtn = el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0;display:none', text: '🖼 맨 위 사진 고르기', onclick: () => {
+    const cur = ls.get('walkCover:' + t, null), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+    const pick = v => { ls.set('walkCover:' + t, v); cb.remove(); draw(); toast(v ? '맨 위에 사진을 넣었어요' : '맨 위를 풍경 그림으로 돌렸어요'); };
+    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '맨 위 사진 고르기' }, el('h2', { text: '맨 위 사진 고르기' }),
+      el('p', { class: 'sub', style: 'margin:0', text: '카드 맨 위(제목 뒤)에 크게 들어갈 사진을 골라요.' }),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto' },
+        el('button', { style: `aspect-ratio:1;border-radius:12px;border:${cur ? '1px solid var(--line)' : '3px solid var(--accent)'};background:linear-gradient(#A9DCFF,#EEF8FF 60%,#4FB3E8 61%);font-weight:700;color:#102A43`, text: '풍경 그림', onclick: () => pick(null) }),
+        ...phs.recs.map(r => el('button', { 'aria-label': '이 사진', style: `aspect-ratio:1;border-radius:12px;padding:0;overflow:hidden;border:${r.id === cur ? '3px solid var(--accent)' : '1px solid var(--line)'};background:#ddd center/cover url(${r.thumb})`, onclick: () => pick(r.id) }))),
+      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
+    document.body.append(cb);
+  } });
   const card = bragView(img, () => cardOpts);
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 공유하기' },
     el('h2', { text: 'MPD 공유하기' }),
     el('p', { class: 'sub', style: 'margin:0', text: '사진 한 장이나 지도 링크로 보내요. 그림을 누르면 지도로 크게 볼 수 있어요.' + (count ? ' 참여자 이름과 위치는 들어가지 않아요.' : '') }),
-    img, opts,
+    img, opts, coverBtn,
     // 제목 바꾸기: 내 기록·여행은 저장된 이름도 바꾸고, 단체 나들이는 카드 제목만 바꿔요
     el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '제목 바꾸기', onclick: () => {
       const iN = el('input', { type: 'text', id: 'bn', maxlength: 40, value: info.name });
@@ -1799,7 +1823,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2396,7 +2420,7 @@ const roomOpen = async (key, v) => JSON.parse(new TextDecoder().decode(await ope
 // 모임방처럼 단어 코드(예: 빠른나무)를 아는 사람끼리. 달리는 동안 10초마다 내 거리·시간·페이스·위치를 잠가서
 // Firestore rooms/{방번호}/run/{내 번호}에 올리고, 다른 사람 것을 받아 순위·차이를 보여 줘요(거리로 견줘서 어디서 달려도 돼요).
 // 라우팅이 스크립트 중간에 돌아서 상태는 함수에 붙여 둬요(const·let이면 아직 없을 수 있어서)
-function crewS() { return crewS.s || (crewS.s = { R: null, code: null, list: [], ahead: {}, sentDone: null }); }
+function crewS() { return crewS.s || (crewS.s = { R: null, code: null, list: [], runs: [], ahead: {}, sentDone: null, rrAt: 0 }); }
 function crewMe() { let m = ls.get('crewMe', ''); if (!m) { m = rid(8).toLowerCase(); ls.set('crewMe', m); } return m; }
 function crewGet() { const c = ls.get('runCrew', null); return c && roomParse(c.code)?.code === c.code ? c : null; }
 function crewLink(c) { return `${APP_BASE}?walk=1&mode=run#crew=${encodeURIComponent(c.pretty.replace(/ /g, '-'))}`; }
@@ -2411,8 +2435,12 @@ async function crewSend(v) { const R = await crewRoom(); if (!R) return; try { a
 async function crewPull() {
   const R = await crewRoom(); if (!R) return [];
   const rows = await fsList(`rooms/${R.rid}/run`), out = [];
-  for (const r of rows) { try { const v = await roomOpen(R.key, JSON.parse(r.d)); if (v && Date.now() - v.at < 4 * 36e5) out.push(Object.assign(v, { id: r.id, me: r.id === crewMe() })); } catch {} }
+  for (const r of rows) { try { const v = await roomOpen(R.key, JSON.parse(r.d)); if (v && Date.now() - v.at < (v.st === 'done' ? 4 * 36e5 : 10 * 60000)) out.push(Object.assign(v, { id: r.id, me: r.id === crewMe() })); } catch {} }
   crewS().list = out;
+  // 방 기록(2026-10-19 사용자 '같은 시간이 아니어도 되게'): 달린 기록이 rooms/{방번호}/rr/{내 번호}-{기록ID}에 30일 남아서, 나중에 달린 사람이 같은 시간대 거리로 겨뤄요
+  try { const rr = await fsList(`rooms/${R.rid}/rr`), runs = [];
+    for (const r of rr) { try { const v = await roomOpen(R.key, JSON.parse(r.d)); if (v && Date.now() - v.at < 30 * 864e5 && v.d > 0) runs.push(Object.assign(v, { doc: r.id, mine: r.id.startsWith(crewMe() + '-') })); } catch {} }
+    crewS().runs = runs.sort((a, b) => b.at - a.at); } catch {}
   // 방 이름(2026-10-19 사용자 '방 이름 어떻게 바꿔?'): rooms/{방번호}/cx/name에 잠가 둬서 방 사람 모두 같은 이름을 봐요
   try { const d = await fsGet(`rooms/${R.rid}/cx/name`); if (typeof d === 'string') { const v = await roomOpen(R.key, JSON.parse(d)); const c = crewGet();
     if (c && v && typeof v.name === 'string' && v.name !== (c.name || '')) ls.set('runCrew', Object.assign({}, c, { name: v.name.slice(0, 20) })); } } catch {}
@@ -2421,6 +2449,14 @@ async function crewPull() {
 async function crewRename(name) { const R = await crewRoom(), c = crewGet(); if (!R || !c) return false;
   ls.set('runCrew', Object.assign({}, c, { name }));
   try { await fsPut(`rooms/${R.rid}/cx/name`, JSON.stringify(await roomSeal(R.key, { name, at: Date.now() }))); return true; } catch { return false; } }
+async function crewSendRun(rec, v) { const R = await crewRoom(); if (!R) return false;
+  try { await fsPut(`rooms/${R.rid}/rr/${crewMe()}-${rec}`, JSON.stringify(await roomSeal(R.key, Object.assign({ n: ls.get('nick', '') || '나' }, v)))); return true; } catch { return false; } }
+// 지난 기록이 시작하고 e(ms) 지났을 때 달린 거리 (g = [[초, m], …])
+function crewGhostAt(r, e) { const a = r && r.g; if (!a || !a.length) return null; const t = e / 1000;
+  if (t >= a[a.length - 1][0]) return { d: a[a.length - 1][1], end: true };
+  const i = a.findIndex(x => x[0] >= t); if (i <= 0) return { d: i === 0 ? a[0][1] * t / Math.max(1, a[0][0]) : 0 };
+  const [t0, d0] = a[i - 1], [t1, d1] = a[i]; return { d: d0 + (d1 - d0) * (t - t0) / Math.max(1, t1 - t0) }; }
+function crewDay(at) { const d = new Date(at); return `${d.getMonth() + 1}월 ${d.getDate()}일`; }
 function crewTitle(c) { return c.name || c.pretty; }
 async function crewLeave() { const R = await crewRoom(); if (R) fsDel(`rooms/${R.rid}/run/${crewMe()}`).catch(() => {}); ls.set('runCrew', null); const S = crewS(); S.code = null; S.list = []; }
 // 글 한 줄 받기 창 (이름·방 이름 같은 것)
@@ -3010,7 +3046,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
@@ -4322,11 +4358,26 @@ function viewWalk() {
     return { st: done ? 'done' : pausedNow ? 'pause' : 'run', d: Math.round(st.walk), e: runElapsed(), p: st.walk > 100 && mv > 0 ? Math.round(mv / (st.walk / 1000)) : null,
       lat: far ? +last[0].toFixed(5) : null, lng: far ? +last[1].toFixed(5) : null };
   }
-  function crewAll() { const me = crewMine(); return { me, list: crewS().list.filter(o => !o.me).concat([Object.assign({ id: crewMe(), me: true, n: ls.get('nick', '') || '나', at: Date.now() }, me)]) }; }
+  // 겨룰 지난 기록: 고른 것(ls crewGhost) 아니면 친구가 가장 최근에 끝낸 기록. 지금 내 기록은 빼요
+  function crewGhost() { const runs = crewS().runs.filter(r => !(id && r.doc === crewMe() + '-' + id) && r.d >= 200), pick = ls.get('crewGhost', '');
+    if (pick === 'none') return null; return runs.find(r => r.doc === pick) || runs.find(r => !r.mine && r.fin) || null; }
+  function crewAll() { const me = crewMine(), list = crewS().list.filter(o => !o.me).concat([Object.assign({ id: crewMe(), me: true, n: ls.get('nick', '') || '나', at: Date.now() }, me)]);
+    const g = crewGhost(), at = g && me.st !== 'ready' && me.e != null ? crewGhostAt(g, me.e) : null;
+    if (at) list.push({ id: 'ghost', ghost: true, n: `👻 ${g.mine ? '지난번 나' : g.n || '친구'}`, sub: `${crewDay(g.at)} 기록 · 이 시간에`, st: at.end ? 'done' : 'run', d: Math.round(at.d), e: at.end ? g.e : me.e, p: g.p, at: Date.now() });
+    return { me, list }; }
+  // 내 진행(15초마다 [초, m])을 모아 두었다가 1분마다·끝낼 때 방 기록으로 올려요
+  function crewProg(me) { if (!id || me.st === 'ready' || me.e == null) return []; const k = 'crewProg:' + id, g = ls.get(k, []), t = Math.round(me.e / 1000);
+    if (!g.length || t - g[g.length - 1][0] >= 15) { g.push([t, me.d || 0]); ls.set(k, g); } return g; }
+  async function crewRunUp(me) {
+    if (!id || me.st === 'ready' || !(me.d >= 200)) return; const S = crewS(), key = crewGet().code + ':' + id;
+    if (me.st === 'done' ? S.sentDone === key : Date.now() - S.rrAt < 60000) return;
+    let g = [[0, 0], ...crewProg(me), [Math.round(me.e / 1000), me.d]]; while (g.length > 240) g = g.filter((_, i) => i % 2 === 0 || i === g.length - 1);
+    const tr = trackLoad(id), ok = await crewSendRun(id, { at: (tr[0] && tr[0][2]) || Date.now(), d: me.d, e: me.e, p: me.p, fin: me.st === 'done' ? 1 : 0, g });
+    if (ok) { S.rrAt = Date.now(); if (me.st === 'done') S.sentDone = key; } }
   let crewBusy = false;
   async function crewTick() {
     if (!crewGet() || crewBusy) return; crewBusy = true;
-    try { await crewSend(crewMine()); await crewPull(); crewOvertake(); crewDraw(); } finally { crewBusy = false; }
+    try { const me = crewMine(); crewProg(me); await crewSend(me); await crewRunUp(me); await crewPull(); crewOvertake(); crewDraw(); } finally { crewBusy = false; }
   }
   function crewOvertake() {
     const { me, list } = crewAll(), A = crewS().ahead; if (me.st !== 'run' || !(me.d > 200)) return;
@@ -4337,6 +4388,7 @@ function viewWalk() {
       let msg = '';
       if (prev && diff < -30) { A[o.id] = false; msg = `${o.n || '친구'}님이 앞서 나갔어요`; }
       else if (!prev && diff > 30) { A[o.id] = true; msg = `${o.n || '친구'}님을 앞질렀어요`; }
+      if (msg && o.ghost) msg = msg.replace('님이 앞서 나갔어요', ' 기록이 앞서 나갔어요').replace('님을 앞질렀어요', ' 기록을 앞질렀어요').replace('👻 ', '');
       if (msg) { toast('👥 ' + msg); if (Date.now() - saidAt > 10000 && !(window.speechSynthesis && speechSynthesis.speaking)) say(msg); }
     }
   }
@@ -4345,16 +4397,36 @@ function viewWalk() {
     return list.slice().sort((a, b) => (b.st === 'ready' ? -1 : b.d || 0) - (a.st === 'ready' ? -1 : a.d || 0)).map(o => {
       const age = Date.now() - o.at, live = o.st !== 'ready' && o.d != null;
       const gap = !o.me && myD != null && live ? o.d - myD : null;
-      const stt = o.st === 'ready' ? '준비 중' : o.st === 'pause' ? '잠시 멈춤' : o.st === 'done' ? '끝냄' : '달리는 중';
-      return el('div', { class: 'cw-row' }, el('i', { class: 'cw-dot', style: `background:${crewColor(o.id)}` }),
+      const stt = o.ghost ? o.sub + (o.st === 'done' ? ' · 끝냄' : '') : o.st === 'ready' ? '준비 중' : o.st === 'pause' ? '잠시 멈춤' : o.st === 'done' ? '끝냄' : '달리는 중';
+      return el('div', { class: 'cw-row' }, el('i', { class: 'cw-dot', style: o.ghost ? 'background:transparent;border:2px dashed var(--muted,#5F7A92)' : `background:${crewColor(o.id)}` }),
         el('div', { class: 'grow', style: 'min-width:0' }, el('b', { text: (o.n || '친구') + (o.me ? ' (나)' : '') }),
-          el('div', { class: 'sub', style: 'font-size:13px', text: [stt, live ? fmtDist(o.d) : '', live && o.e ? fmtRunTime(o.e) : '', live && o.p ? fmtPace(1000, o.p) + '/km' : '', !o.me && age > 90000 ? `${Math.round(age / 60000)}분 전` : ''].filter(Boolean).join(' · ') })),
+          el('div', { class: 'sub', style: 'font-size:13px', text: [stt, live ? fmtDist(o.d) : '', live && o.e ? fmtRunTime(o.e) : '', live && o.p ? fmtPace(1000, o.p) + '/km' : '', !o.me && !o.ghost && age > 90000 ? `${Math.round(age / 60000)}분 전` : ''].filter(Boolean).join(' · ') })),
         gap != null && Math.abs(gap) >= 10 ? el('span', { class: 'cw-gap' + (gap > 0 ? ' ahead' : ''), text: gap > 0 ? `${fmtDist(gap)} 앞` : `${fmtDist(-gap)} 뒤` }) : null);
     });
   }
+  // 방 기록판: 이번 주 순위(거리) + 최근 기록(누르면 겨룰 상대로)
+  function crewBoard() {
+    const runs = crewS().runs; if (!runs.length) return [];
+    const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - (wk.getDay() + 6) % 7);
+    const by = {}; runs.filter(r => r.at >= +wk).forEach(r => { const k = r.doc.split('-')[0], o = by[k] || (by[k] = { n: r.n, d: 0, c: 0, mine: r.mine, k }); o.d += r.d; o.c++; });
+    const rank = Object.values(by).sort((a, b) => b.d - a.d), g = crewGhost(), out = [];
+    out.push(el('b', { style: 'margin-top:10px', text: '🏁 이번 주 순위' }));
+    out.push(...(rank.length ? rank.map((o, i) => el('div', { class: 'cw-row' }, el('b', { style: 'width:20px;text-align:center;color:' + (i ? 'var(--muted)' : 'var(--accent)'), text: String(i + 1) }),
+      el('i', { class: 'cw-dot', style: `background:${crewColor(o.k)}` }), el('b', { class: 'grow', text: (o.n || '친구') + (o.mine ? ' (나)' : '') }),
+      el('span', { class: 'sub', style: 'font-size:13px', text: `${o.c}번` }), el('b', { style: 'font-variant-numeric:tabular-nums', text: fmtDist(o.d) }))) : [el('div', { class: 'sub', style: 'font-size:13px', text: '이번 주엔 아직 기록이 없어요.' })]));
+    out.push(el('b', { style: 'margin-top:10px', text: '👻 지난 기록과 겨루기' }),
+      el('div', { class: 'sub', style: 'font-size:12px', text: '고른 기록이 달리는 중 화면에 같이 달려요. 그 사람이 같은 시간에 어디쯤이었는지로 앞·뒤를 알려 줘요.' }));
+    runs.slice(0, 6).forEach(r => { const on = g && g.doc === r.doc;
+      out.push(el('div', { class: 'cw-row' }, el('i', { class: 'cw-dot', style: `background:${crewColor(r.doc.split('-')[0])}` }),
+        el('div', { class: 'grow', style: 'min-width:0' }, el('b', { text: (r.n || '친구') + (r.mine ? ' (나)' : '') }),
+          el('div', { class: 'sub', style: 'font-size:13px', text: [crewDay(r.at), fmtDist(r.d), r.e ? fmtRunTime(r.e) : '', r.p ? fmtPace(1000, r.p) + '/km' : '', r.fin ? '' : '달리는 중'].filter(Boolean).join(' · ') })),
+        el('button', { class: 'btn small ' + (on ? 'primary' : 'line'), style: 'flex:none;padding:6px 10px;font-size:13px;min-height:0', text: on ? '✓ 겨루는 중' : '겨루기',
+          onclick: () => { ls.set('crewGhost', on ? 'none' : r.doc); crewS().ahead.ghost = undefined; crewDraw(); toast(on ? '겨루기를 껐어요' : `${r.mine ? '지난번 나' : r.n || '친구'}의 ${crewDay(r.at)} 기록과 겨뤄요`); } }))); });
+    return out;
+  }
   function crewInvite() {
     const c = crewGet(); if (!c) return;
-    const text = `같이 달려요! MPD 러닝 '같이 달리기'${c.name ? ` '${c.name}'` : ''} 코드: ${c.pretty}\n같은 곳이든 각자 동네든, 같은 시간에 달리면 서로 거리·페이스가 보여요.`;
+    const text = `같이 달려요! MPD 러닝 '같이 달리기'${c.name ? ` '${c.name}'` : ''} 코드: ${c.pretty}\n같은 곳이든 각자 동네든, 같은 시간이든 아니든 돼요. 먼저 달린 사람 기록과 같은 시간대 거리로 겨뤄요.`;
     if (navigator.share) navigator.share({ title: 'MPD 같이 달리기', text, url: crewLink(c) }).catch(() => {});
     else { try { navigator.clipboard.writeText(text + '\n' + crewLink(c)); toast('초대 글을 복사했어요. 카톡에 붙여 넣어 보내세요'); } catch { prompt('이 글을 복사해 보내세요', text + '\n' + crewLink(c)); } }
   }
@@ -4362,7 +4434,7 @@ function viewWalk() {
     const c = crewGet();
     if (!c) {
       crewBox.replaceChildren(el('b', { text: '👟 같이 달리기' }),
-        el('div', { class: 'sub', style: 'font-size:14px', text: '친구와 같은 시간에 달리며 서로의 거리·페이스·순위를 봐요. 나란히 달려도, 각자 사는 동네에서 달려도 돼요.' }),
+        el('div', { class: 'sub', style: 'font-size:14px', text: '친구와 거리·페이스·순위를 견줘요. 나란히 달려도, 각자 동네에서 달려도, 서로 다른 시간에 달려도 돼요. 먼저 달린 친구 기록과 같은 시간대 거리로 겨뤄요.' }),
         el('div', { class: 'row', style: 'gap:8px' },
           el('button', { class: 'btn primary small grow', text: '방 만들기', onclick: async () => { if (!await myNick()) return; const p = roomNewCode(); ls.set('runCrew', { code: p.code, pretty: p.pretty }); crewDraw(); crewInvite(); crewTick(); } }),
           el('button', { class: 'btn line small grow', text: '코드로 들어가기', onclick: async () => {
@@ -4382,12 +4454,13 @@ function viewWalk() {
           const v = await askText('방 이름 바꾸기', '방 이름', c.name || '', '예: 태안 마라톤 크루', `방 사람 모두에게 이 이름으로 보여요. 들어오는 코드는 그대로 '${c.pretty}'예요.`, 20); if (!v) return;
           const ok = await crewRename(v); crewDraw(); toast(ok ? `방 이름을 '${v}'(으)로 바꿨어요` : '이 휴대폰에만 바꿨어요. 인터넷이 되면 다시 해 주세요'); } })),
       ...crewRows(),
-      ...(others ? [] : [el('div', { class: 'sub', style: 'font-size:13px', text: '아직 친구가 없어요. 초대를 보내고, 같은 시간에 시작하면 서로 보여요.' })]),
+      ...(others || crewS().runs.length ? [] : [el('div', { class: 'sub', style: 'font-size:13px', text: '아직 친구가 없어요. 초대를 보내 주세요. 같은 시간에 달리면 실시간으로, 다른 시간에 달리면 먼저 달린 기록과 겨뤄요.' })]),
+      ...crewBoard(),
       el('button', { class: 'btn line small full', text: '📨 친구 초대 보내기', onclick: crewInvite }),
       el('div', { class: 'sub', style: 'font-size:12px', text: `이름: ${ls.get('nick', '') || '나'} · 출발 500m 안에선 내 위치를 안 보내요(거리·시간만). 10초마다 맞춰요.` }));
     crewPane.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('b', {}, '👥 같이 달리기 · ', el('span', { class: 'cw-code', text: crewTitle(c) })),
       el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '초대', onclick: crewInvite })), ...crewRows(),
-      el('div', { class: 'sub', style: 'font-size:12px', text: '오른쪽 숫자는 나보다 앞(산호색)·뒤에 있는 거리예요. 가까이서 달리면 지도에도 보여요.' }));
+      el('div', { class: 'sub', style: 'font-size:12px', text: '오른쪽 숫자는 나보다 앞(산호색)·뒤에 있는 거리예요. 👻는 지난 기록이 같은 시간에 있던 곳이에요. 가까이서 달리면 지도에도 보여요.' }));
     if (map) {
       if (!cLayer || cLayer._map !== map) { if (cLayer) cLayer.remove(); cLayer = L.layerGroup().addTo(map); }
       cLayer.clearLayers();
