@@ -33,12 +33,16 @@ jobs:
           ls -l ../MPD_run_watch.apk
       - uses: actions/upload-artifact@v4
         with: { name: MPD_run_watch, path: MPD_run_watch.apk }
+      - name: 판 설명 글
+        run: |
+          printf '%s 판 0.1.%s\n새로워진 점: %s\n' "갤럭시워치에 까는 MPD Run 시계 앱이에요. 앱 시작 화면이 이 글의 판 번호를 읽어 새 판을 알려 줘요(형식 바꾸지 말 것). 설치 방법은 저장소 watchapp/README.md를 보세요." "${{ github.run_number }}" "$(head -1 watchapp/CHANGES.txt)" > notes.md
       - if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: watch
           name: MPD Run 워치 앱 (갤럭시워치)
-          body: 갤럭시워치에 까는 MPD Run 시계 앱이에요. 앱 시작 화면이 이 글의 판 번호를 읽어 새 판을 알려 줘요(형식 바꾸지 말 것). 설치 방법은 저장소 watchapp/README.md를 보세요. 판 0.1.${{ github.run_number }}
+          # 설명 글: '판 0.1.N'(앱이 읽어요, 형식 바꾸지 말 것) 다음 줄에 '새로워진 점: …'(watchapp/CHANGES.txt 첫 줄, 판 번호 같은 숫자는 넣지 말 것)
+          body_path: notes.md
           files: |
             MPD_run_watch.apk
             MDRunWatch.apk

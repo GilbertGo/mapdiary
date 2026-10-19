@@ -181,7 +181,42 @@ if (Capacitor.isNativePlatform()) {
     const n = Number((String(j.tag_name || '').match(/^mdrun-(\d+)$/) || [])[1]) || 0;
     if (!n || n <= cur || localStorage.getItem('mdUpdAsk') === String(n) || recording()) return;
     localStorage.setItem('mdUpdAsk', String(n));
-    if (confirm(`${APP.name} 새 판이 나왔어요.\n(위치·잠금 같은 휴대폰 기능이 바뀌었어요)\n\n지금 받을까요? 지우지 말고 덮어 설치하면 기록은 그대로 남아요.`)) location.href = WEB + PAGE;
+    updDialog(cur, n, (String(j.body || '').match(/새로워진 점:\s*(.+)/) || [])[1] || '');
+  }
+  // '새 판이 있어요' 창 (2026-10-19 사용자가 다른 앱의 업데이트 창을 보여 주며 '이런 화면'): 선물 그림 · 새로워진 점 · 지금 → 새 · [업데이트](받는 중… %) · 나중에
+  // 새 판 앱이면 앱 안에서 받아 바로 설치(MdApp.installApk), 예전 판이면 받는 쪽(run/golf/md.html)으로
+  const APK = { run: 'MPD_run.apk', pgolf: 'MPD_golf.apk' }[APP.mode] || 'MPD.apk';
+  function updDialog(cur, n, notes) {
+    const bg = document.createElement('div');
+    bg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(16,42,67,.45);display:flex;align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box;font-family:Pretendard,system-ui,sans-serif';
+    const card = document.createElement('div');
+    card.style.cssText = 'width:100%;max-width:440px;background:#F3F6FA;border-radius:30px;padding:30px 22px 14px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:24px';
+    card.innerHTML = `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#0277BD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8c-1.5-3-5-3.6-5-1.4C7 8 9.8 8 12 8zm0 0c1.5-3 5-3.6 5-1.4C17 8 14.2 8 12 8z"/></svg>
+      <div style="font-size:24px;font-weight:800;color:#102A43;margin:10px 0 8px">새 판이 있어요</div>
+      <div style="font-size:15px;color:#33475B;line-height:1.5">${(notes || '더 좋아진 새 판이에요').replace(/[<>&]/g, '')}</div>
+      <div style="font-size:14px;color:#5F7A92;margin:10px 0 6px">지금 ${cur} → 새 ${n}</div>
+      <button id="mdUpGo" style="display:block;width:100%;border:0;background:none;color:#0277BD;font:inherit;font-size:19px;font-weight:800;padding:16px 0">업데이트</button>
+      <div id="mdUpMsg" style="font-size:13px;color:#5F7A92;min-height:0"></div>
+      <button id="mdUpLater" style="display:block;width:100%;border:0;background:none;color:#5F7A92;font:inherit;font-size:16px;padding:14px 0">나중에</button>`;
+    bg.append(card); document.body.append(bg);
+    const go = card.querySelector('#mdUpGo'), msg = card.querySelector('#mdUpMsg');
+    card.querySelector('#mdUpLater').onclick = () => bg.remove();
+    let busy = false;
+    go.onclick = async () => {
+      if (busy) return;
+      if (!MdApp.installApk) { location.href = WEB + PAGE; return; }
+      try {
+        const ok = (await MdApp.canInstall()).ok;
+        if (!ok) { msg.textContent = "설정에서 '이 출처 허용'을 켠 뒤 돌아와 '업데이트'를 다시 눌러 주세요"; await MdApp.openInstallSettings(); return; }
+      } catch { location.href = WEB + PAGE; return; }   // 예전 판 앱(이 기능이 없어요)
+      busy = true; go.textContent = '받는 중… 0%'; msg.textContent = '';
+      const h = await MdApp.addListener('updProgress', e => { go.textContent = `받는 중… ${e.p}%`; });
+      try {
+        await MdApp.installApk({ url: `https://github.com/GilbertGo/mapdiary/releases/download/mdrun-${n}/${APK}` });
+        go.textContent = '받는 중… 100%'; msg.textContent = "설치 창이 뜨면 '업데이트'를 눌러 주세요. 기록은 그대로 남아요";
+      } catch (e) { go.textContent = '다시 받기'; msg.textContent = '받지 못했어요. 인터넷을 확인해 주세요'; }
+      finally { busy = false; h.remove(); }
+    };
   }
   addEventListener('load', () => {
     try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => say(t), 800); } } catch {}
