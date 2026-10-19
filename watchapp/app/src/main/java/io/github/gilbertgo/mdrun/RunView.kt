@@ -234,8 +234,10 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             val ps = s.mapNotNull { it.pace }.filter { it < 900000 }
             if (ps.size >= 2) {
                 val lo = ps.minOrNull()!! - 10000; val hi = ps.maxOrNull()!! + 10000
+                // 들쭉날쭉하지 않게 앞뒤 2점(약 30초)씩 평균
+                val sm = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
                 val path = Path(); var first = true
-                s.forEach { q -> val pc = q.pace; if (pc != null && pc < 900000) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
+                s.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
                 paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .9f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
             }
             val hs = s.filter { it.hr > 0 }
