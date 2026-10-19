@@ -29,6 +29,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <ul>
 <li>사용자가 '링크 보내기'나 '모임방에 올리기'를 누를 때만 그 기록이 서버(Google Firebase, 공개 MQTT 서버)에 올라갑니다. 길·사진은 <b>잠가서(AES 암호화)</b> 올리고, 여는 열쇠는 링크의 # 뒤에만 있어 서버는 내용을 읽을 수 없습니다.</li>
 <li>기본으로 출발·도착 근처 500m는 가려서 보냅니다(집 위치 보호).</li>
+<li><b>같이 달리기</b>(러닝, 사용자가 방에 들어갈 때만): 달리는 동안 10초마다 이름·거리·시간·페이스·지금 위치(출발 500m 밖일 때만)를 잠가서 올리고, 같은 방 코드를 아는 친구만 열어 볼 수 있습니다. 방에서 나가면 내 칸을 지웁니다.</li>
 <li>지도 그림은 OpenStreetMap에서 받으며, 이때 보고 있는 지도 위치가 지도 서버에 전달될 수 있습니다.</li>
 </ul>
 
@@ -56,6 +57,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>Microphone</b> is used only by the optional "conversation notes" feature, via on-device/system speech recognition. No audio is stored. Transcribed text is sent to Anthropic only if you enter your own API key.</li>
 <li><b>Google sign-in</b> (optional, web) stores your email, name and records in your own space in Google Firebase to sync your devices; only you can access it.</li>
 <li>When you choose to share a link or post to a group, the record is uploaded <b>encrypted</b>; the key stays in the link fragment, so servers cannot read it. Start/end areas are hidden by default.</li>
+<li><b>Run together</b> (optional): while you run in a crew, your name, distance, time, pace and current position (only beyond 500 m from the start) are uploaded encrypted every 10 seconds and can be read only by friends who know the crew code. Leaving the crew deletes your entry.</li>
 <li>Map tiles are loaded from OpenStreetMap.</li>
 <li>You can delete records in the app at any time; uninstalling removes local data. To delete cloud or shared data, email <a href="mailto:seongsikgo69@gmail.com">seongsikgo69@gmail.com</a>.</li>
 <li>The apps are not directed at children.</li>
