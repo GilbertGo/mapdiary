@@ -38,15 +38,25 @@ object Updater {
 
     // 시계는 휴대폰 블루투스로 인터넷에 붙으면 아주 느려요 → 와이파이를 먼저 달라고 하고(최대 10초), 안 되면 지금 연결로.
     // 쓰레드 안에서만 불러요
+    private var wifiCb: ConnectivityManager.NetworkCallback? = null; private var wifiNet: Network? = null
     private fun net(c: Context): Network? {
         val cm = c.getSystemService(ConnectivityManager::class.java) ?: return null
-        val lock = Object(); var got: Network? = null
-        val cb = object : ConnectivityManager.NetworkCallback() { override fun onAvailable(n: Network) { synchronized(lock) { got = n; lock.notifyAll() } } }
-        try {
-            cm.requestNetwork(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(), cb)
-            synchronized(lock) { if (got == null) lock.wait(10000) }
-        } catch (e: Exception) {}
-        return got ?: cm.activeNetwork
+        wifiNet?.let { return it }
+        val lock = Object()
+        if (wifiCb == null) {
+            val cb = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(n: Network) { synchronized(lock) { wifiNet = n; lock.notifyAll() } }
+                override fun onLost(n: Network) { if (wifiNet == n) wifiNet = null }
+            }
+            try { cm.requestNetwork(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(), cb); wifiCb = cb } catch (e: Exception) {}
+        }
+        try { synchronized(lock) { if (wifiNet == null) lock.wait(10000) } } catch (e: Exception) {}
+        return wifiNet ?: cm.activeNetwork
+    }
+    // 다 받았으면 와이파이 요청을 거둬요(배터리)
+    private fun release(c: Context) {
+        val cb = wifiCb ?: return; wifiCb = null; wifiNet = null
+        try { c.getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(cb) } catch (e: Exception) {}
     }
     private fun open(c: Context, url: String, readMs: Int): HttpURLConnection {
         val n = net(c)
@@ -73,6 +83,7 @@ object Updater {
                 if (code > cur && url.isNotEmpty()) Info(code, "0.1.$code", url) else null
             } catch (e: Exception) { lastErr = (e.javaClass.simpleName + " " + (e.message ?: "")).take(80); null }
             if (info != null) lastErr = ""
+            if (!busy) release(c)
             main.post { cb(info) }
         }
     }
@@ -106,7 +117,7 @@ object Updater {
                 main.post { say("설치 확인 창이 뜨면 '업데이트'를 눌러 주세요") }
             } catch (e: Exception) {
                 main.post { say("새 판을 못 받았어요. 와이파이를 확인해 주세요 (" + (e.message ?: e.javaClass.simpleName).take(60) + ")") }
-            } finally { busy = false }
+            } finally { busy = false; release(a) }
         }
     }
 }
