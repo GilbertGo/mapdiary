@@ -1527,7 +1527,7 @@ async function drawBragCard(o) {
   // 사진 카드 색(2026-10-19 사용자 '아래는 흐려지며 바탕색으로, 바탕색도 어울리게'): 사진 아래쪽 평균 색에서 뽑은 바탕
   const P = { bg: '#F4F0E6', ink: INK, muted: MUTED, chip: '#EFE9DC', foot: '#9A9585' };
   if (cov) {
-    const tone = o.coverTone || 'photo';
+    const tone = o.coverTone || 'night';
     if (tone === 'sky') Object.assign(P, { bg: '#EEF4FA', ink: '#102A43', muted: '#5F7A92', chip: '#DDE8F3', foot: '#8AA0B4' });
     else if (tone === 'night') Object.assign(P, { bg: '#0F1B2D', ink: '#FFFFFF', muted: '#9FB3C8', chip: '#1F3049', foot: '#5F7A92' });
     else { const sm = document.createElement('canvas'); sm.width = 24; sm.height = 8; const sg = sm.getContext('2d'); sg.drawImage(cov, 0, 0, cov.width, cov.height, 0, 0, 24, 8);
@@ -1835,7 +1835,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
