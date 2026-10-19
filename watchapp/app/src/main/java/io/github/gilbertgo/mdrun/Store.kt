@@ -15,6 +15,8 @@ object Store {
     fun setGoal(c: Context, g: Goal) = prefs(c).edit().putString("goal", g.toJson().toString()).apply()
     fun voice(c: Context) = prefs(c).getBoolean("voice", true)
     fun setVoice(c: Context, on: Boolean) = prefs(c).edit().putBoolean("voice", on).apply()
+    fun weekGoal(c: Context) = prefs(c).getInt("weekGoal", 20)
+    fun setWeekGoal(c: Context, km: Int) = prefs(c).edit().putInt("weekGoal", km).apply()
     fun page(c: Context) = prefs(c).getInt("page", 0)
     fun setPage(c: Context, p: Int) = prefs(c).edit().putInt("page", p).apply()
 

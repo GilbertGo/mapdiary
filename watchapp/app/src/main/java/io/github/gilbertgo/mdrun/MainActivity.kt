@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (Run.id == null && gpsText != null) startGpsPreview()
+        if (Run.id == null && atStart) startGpsPreview()
     }
 
     override fun onDestroy() { stopGpsPreview(); super.onDestroy() }
@@ -104,27 +104,43 @@ class MainActivity : ComponentActivity() {
         views.forEach { col.addView(it, lp()) }
         return ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(col); isFocusable = true; isFocusableInTouchMode = true; post { requestFocus() } }
     }
-    private fun show(v: View) { runView = null; atStart = false; root.removeAllViews(); root.addView(v) }
+    private fun show(v: View) { runView = null; home = null; atStart = false; root.removeAllViews(); root.addView(v) }
 
     // ---------- 시작 화면 ----------
+    // 첫 장은 그림 화면(HomeView: 이번 주 링·▶ 시작), 용두로 내리면 설정 줄
+    private var home: HomeView? = null
+    private fun weekSum(): HomeView.Week {
+        val c = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            add(Calendar.DAY_OF_MONTH, -((get(Calendar.DAY_OF_WEEK) + 5) % 7)) }   // 이번 주 월요일 0시
+        val mon = c.timeInMillis; val days = BooleanArray(7); var km = 0.0; var n = 0
+        for (o in Store.list(this)) { val at = o.optLong("at"); if (at < mon) continue
+            val d = ((at - mon) / 86400000L).toInt(); if (d in 0..6) days[d] = true
+            km += (o.optJSONObject("sum")?.optDouble("walk", 0.0) ?: 0.0) / 1000; n++ }
+        return HomeView.Week(km, n, days, Store.weekGoal(this))
+    }
     private fun showStart() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val g = Store.goal(this)
-        gpsText = tv("GPS 찾는 중…", 12f, RunView.MUTED)
+        val u0 = upd
+        val install = { if (u0 != null) Updater.install(this, u0) { m -> android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show() } }
+        val hv = HomeView(this, HomeView.Act({ countdown() }, { showGoal() }, if (u0 != null) install else null)).apply {
+            week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
+        gpsText = null
         val tgt = when (g.k) { "dist" -> row("완주 목표 시간", if (g.t > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             "time" -> row("목표 거리", if (g.d > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             else -> null }
-        val u0 = upd
-        val views = listOfNotNull(
-            tv("MPD Run", 15f, RunView.CORAL, true), gpsText,
-            if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { Updater.install(this, u0) { m -> android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show() } } else null,
+        val wg = listOf(10, 15, 20, 30, 40, 50, 60, 80)
+        val rows = listOfNotNull(
+            if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
             row("목표", g.label()) { showGoal() }, tgt,
-            if (g.tgtPace() > 0) tv("1km ${fmtPace(g.tgtPace())} 페이스", 11f, RunView.BLUE, true) else null,
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
-            btn("시작", RunView.CORAL, RunView.INK) { countdown() }.apply { textSize = 22f; setPadding(0, (4.6f * u).toInt(), 0, (4.6f * u).toInt()) },
-            tv("지난 기록 ›", 13f, RunView.MUTED, true).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { showHistory() } },
+            row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
+            row("지난 기록", "${Store.list(this).size}개") { showHistory() },
             tv("판 ${Updater.currentName(this)} · 새 판 확인", 9f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
-        show(page(*views.toTypedArray())); atStart = true
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding((13 * u).toInt(), (4 * u).toInt(), (13 * u).toInt(), (24 * u).toInt())
+            rows.forEach { addView(it, lp()) } }
+        val all = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(hv, LinearLayout.LayoutParams(-1, -2)); addView(col) }
+        show(ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(all); isFocusable = true; isFocusableInTouchMode = true; post { requestFocus() } }); atStart = true; home = hv
         startGpsPreview()
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
         if (!updChecked) { updChecked = true; checkNow(false) }
@@ -138,6 +154,7 @@ class MainActivity : ComponentActivity() {
     private fun stopGpsPreview() { try { lm?.removeUpdates(gpsL) } catch (e: Exception) {} }
     private fun drawGps() {
         val a = Run.lastAcc
+        home?.let { it.gpsAcc = a; it.invalidate() }
         gpsText?.text = if (a < 0) "GPS 찾는 중 · 하늘이 트인 곳에서" else if (a <= 20) "● GPS 준비됐어요 · ${a.toInt()}m" else "● GPS 잡는 중 · ${a.toInt()}m"
         gpsText?.setTextColor(if (a in 0f..20f) RunView.BLUE else RunView.MUTED)
     }
