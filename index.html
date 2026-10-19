@@ -2912,20 +2912,20 @@ function watchNotes(t, W) {
 function watchChart(W) {
   const s0 = W.ser; if (s0.length < 2) return null;
   const step = Math.max(1, Math.floor(s0.length / 300)), s = s0.filter((_, i) => i % step === 0 || i === s0.length - 1);
-  const Wd = 600, Ht = 230, L = 34, R = 566, T = 10, Bt = 200, t0 = s[0].t, t1 = Math.max(s[s.length - 1].t, t0 + 6e4), xOf = t => L + (R - L) * (t - t0) / (t1 - t0);
+  const Wd = 600, Ht = 300, L = 54, R = 590, T = 30, Bt = 256, t0 = s[0].t, t1 = Math.max(s[s.length - 1].t, t0 + 6e4), xOf = t => L + (R - L) * (t - t0) / (t1 - t0);
   const hLo = W.mx * 0.5, hHi = W.mx, yH = h => Bt - (Bt - T) * Math.min(1, Math.max(0, (h - hLo) / (hHi - hLo)));
   const sm = s.map((q, i) => { if (!q.p) return null; const l = s.slice(Math.max(0, i - 2), i + 3).map(x => x.p).filter(Boolean); return l.reduce((a, b) => a + b, 0) / l.length; });
   const ps = sm.filter(Boolean), lo = Math.min(...ps) - 1e4, hi = Math.max(...ps) + 1e4, yP = p => T + (Bt - T) * (p - lo) / (hi - lo);
   let pp = '', hp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
   f = true; s.forEach(q => { if (!q.hr) return; hp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1); f = false; });
-  const ticks = [1, 2, 3, 4].map(z => `<line x1="${L}" x2="${R}" y1="${yH(zoneLo(W.mx, z))}" y2="${yH(zoneLo(W.mx, z))}" stroke="#D6E5F1" stroke-dasharray="3 4"/><text x="${L - 4}" y="${yH(zoneLo(W.mx, z)) + 4}" text-anchor="end" font-size="11" fill="#5F7A92">${zoneLo(W.mx, z)}</text>`).join('');
+  const ticks = [1, 2, 3, 4].map(z => `<line x1="${L}" x2="${R}" y1="${yH(zoneLo(W.mx, z))}" y2="${yH(zoneLo(W.mx, z))}" stroke="#D6E5F1" stroke-dasharray="3 4"/><text x="${L - 6}" y="${yH(zoneLo(W.mx, z)) + 7}" text-anchor="end" font-size="20" fill="#5F7A92">${zoneLo(W.mx, z)}</text>`).join('');
   const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
   box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박과 페이스 그래프">
     <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
-    ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="2.5" stroke-linejoin="round"/>` : ''}
-    <path d="${hp}" fill="none" stroke="#E53950" stroke-width="2.8" stroke-linejoin="round"/>
-    <text x="${R}" y="${T + 12}" text-anchor="end" font-size="12" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 4}" text-anchor="end" font-size="12" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
-    <text x="${L}" y="${Ht - 8}" font-size="12" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 8}" text-anchor="end" font-size="12" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
+    ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
+    <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
+    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt + 24}"  text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
+    <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
     <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span><span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
   return box;
 }
