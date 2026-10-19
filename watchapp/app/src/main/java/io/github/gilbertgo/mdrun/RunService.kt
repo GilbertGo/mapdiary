@@ -58,7 +58,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         Run.speak = { text -> if (ttsOk) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "md") else pending.add(text) }
         Run.speaking = { tts?.isSpeaking == true }
         Run.buzz = { p -> vibrate(p) }
-        Run.voice = Store.voice(this)
+        Run.voice = Store.voice(this); Cadence.load(this)
         // 앱이 정리됐다가 다시 켜진 경우: 하던 기록을 이어서
         if (Run.id == null) Store.loadCurrent(this)?.let { try { Run.restore(it) } catch (e: Exception) {} }
     }
@@ -100,6 +100,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         if (granted(Manifest.permission.BODY_SENSORS)) sm?.getDefaultSensor(Sensor.TYPE_HEART_RATE)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         if (Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACTIVITY_RECOGNITION)) sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         h.post(tick)
+        Cadence.start(this)
     }
 
     // 1초마다: 시간 목표의 남은 5분·1분 안내, 기록 중이면 30초마다 저장
@@ -138,7 +139,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     }
 
     private fun shutdown() {
-        listening = false; h.removeCallbacks(tick)
+        listening = false; h.removeCallbacks(tick); Cadence.stop()
         try { lm?.removeUpdates(this) } catch (e: Exception) {}
         sm?.unregisterListener(this)
         try { wake?.release() } catch (e: Exception) {}

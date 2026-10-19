@@ -17,6 +17,10 @@ object Store {
     fun setVoice(c: Context, on: Boolean) = prefs(c).edit().putBoolean("voice", on).apply()
     fun weekGoal(c: Context) = prefs(c).getInt("weekGoal", 20)
     fun setWeekGoal(c: Context, km: Int) = prefs(c).edit().putInt("weekGoal", km).apply()
+    fun cadKind(c: Context) = prefs(c).getInt("cadKind", 0)
+    fun cadSpm(c: Context) = prefs(c).getInt("cadSpm", 180)
+    fun cadLast(c: Context) = prefs(c).getInt("cadLast", 1)
+    fun setCad(c: Context, k: Int, spm: Int, last: Int) = prefs(c).edit().putInt("cadKind", k).putInt("cadSpm", spm).putInt("cadLast", last).apply()
     fun page(c: Context) = prefs(c).getInt("page", 0)
     fun setPage(c: Context, p: Int) = prefs(c).edit().putInt("page", p).apply()
 

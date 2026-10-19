@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         setContentView(root)
-        Run.voice = Store.voice(this)
+        Run.voice = Store.voice(this); Cadence.load(this)
         // 화면이 어두워져도(앰비언트) 이 앱을 그대로 보여 줘요
         attachAmbient(this, { runView?.let { it.ambient = true; it.invalidate() } }, { runView?.invalidate() }, { runView?.let { it.ambient = false; it.invalidate() } })
         if (PERMS.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) requestPermissions(PERMS, 1)
@@ -134,6 +134,8 @@ class MainActivity : ComponentActivity() {
             if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
             row("목표", g.label()) { showGoal() }, tgt,
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
+            row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { Cadence.set(this, (Cadence.kind + 1) % 4); showStart() },
+            if (Cadence.kind != Cadence.OFF) row("가이드 빠르기 (1분에 걸음)", "${Cadence.spm}") { Cadence.setSpm(this, if (Cadence.spm >= 200) 150 else Cadence.spm + 5); showStart() } else null,
             row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
             row("지난 기록", "${Store.list(this).size}개") { showHistory() },
             tv("판 ${Updater.currentName(this)} · 새 판 확인", 9f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
