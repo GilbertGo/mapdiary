@@ -445,6 +445,27 @@ html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gr
 .rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rh-pills .row{gap:6px!important;flex-wrap:nowrap}.rh-pills .row .sub{display:none}
 .rh-pills .pill,.rh-pill{background:rgba(255,255,255,.92)!important;color:#102A43!important;border:none;font:inherit;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.rs-page{z-index:3000;background:var(--ground,#EEF6FC);display:block;overflow:auto;padding:0}
+.rs-in{max-width:560px;margin:0 auto;padding:12px 16px 120px;display:flex;flex-direction:column;gap:12px}
+.rs-top{display:flex;justify-content:space-between;align-items:center;padding:4px 0 2px}.rs-ey2{font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:700}
+.rs-x{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card,#fff);font-size:18px;color:var(--ink)}
+.rs-photo{height:210px;border-radius:18px;background:center 80%/cover no-repeat;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;color:#fff}
+.rs-ey{font-size:12px;letter-spacing:.14em;font-weight:800;color:#FFD2B8}.rs-h{font-size:clamp(28px,8.5vw,36px);font-weight:900;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.rs-card{background:var(--card,#fff);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.rs-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.rs-sm{font-size:12px;color:var(--muted)}
+.rs-big{font-size:28px;font-weight:900;color:var(--pine);font-variant-numeric:tabular-nums;letter-spacing:-.01em}.rs-big small,.rs-row small{font-size:16px;font-weight:800;color:var(--pine)}
+.rs-ctl{display:flex;align-items:center;gap:10px}.rs-pm{flex:none;width:52px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card,#fff);font-size:24px;font-weight:600;color:var(--ink)}
+.rs-mid{flex:1;text-align:center;font-size:14px;color:var(--muted);font-weight:600}
+.rs-range{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:999px;background:#C9D6E2;outline:none;margin:0}
+.rs-range::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.rs-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid #fff}
+.rs-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.rs-chip{height:42px;border-radius:10px;border:1px solid var(--line);background:var(--card,#fff);font:inherit;font-size:13px;font-weight:700;color:var(--ink);padding:0 2px;white-space:nowrap}
+.rs-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}.rs-hr{height:1px;background:var(--line)}
+.rs-tog{flex:none;border:1px solid var(--line);background:var(--card,#fff);color:var(--muted);font:inherit;font-size:13px;font-weight:800;padding:9px 14px;border-radius:10px}.rs-tog.on{background:var(--pine);border-color:var(--pine);color:#fff}
+.rs-card input[type=text]{font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ground)}
+.rs-foot{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(238,246,252,0),var(--ground,#EEF6FC) 35%)}
+.rs-go{display:flex;flex-direction:column;align-items:center;width:100%;max-width:528px;margin:0 auto;border:none;border-radius:16px;background:var(--accent);color:#fff;font:inherit;padding:12px;box-shadow:0 8px 20px rgba(255,138,76,.35)}
+.rs-go-t{font-size:20px;font-weight:900}.rs-go-s{font-size:12px;font-weight:700;opacity:.95;margin-top:2px}
 .where-pill{border:1px solid var(--line,#D6E5F1);background:rgba(255,255,255,.85);color:var(--muted,#5F7A92);font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
 .where-pill.light{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45);color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
 .rh-go-t{display:block}.rh-go-s{display:flex;justify-content:center;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-top:3px;opacity:.95}
@@ -1860,7 +1881,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-18';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-19';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4758,7 +4779,7 @@ function viewWalk() {
       el('div', { class: 'rh-bot' },
       // 2026-10-19 사용자가 GPS·목표 알약에서 시작 단추로 화살표를 그려 보냄 → 두 알약을 단추 안 아랫줄로
       // 2026-10-19 사용자 '시작 단추를 딴 곳으로, 크기도 줄이고' → 사진 아래 흐려지는 자리 가운데에 작게
-      el('button', { class: 'rh-go', onclick: countdown }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
+      el('button', { class: 'rh-go', onclick: runSetup }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
         el('span', { class: 'rh-go-s', text: `🎯 목표 ${goalTxt}` }))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
@@ -4786,7 +4807,67 @@ function viewWalk() {
       el('div', { class: 'rd-grid' }, tile('거리', kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0), 'km'), tile('러닝', String(W.n), '번'), tile('평균 페이스', W.dist >= 100 ? fmtPace(W.dist, W.mv) : '-')),
       (crewDraw(), crewBox),
       W.runs.length ? el('div', { class: 'rh-wk' }, el('b', { text: '최근 러닝' }), el('a', { class: 'link', style: 'padding:0;font-size:13px', href: './?my=1', text: '전체 기록 →' })) : null,
-      ...recent, settings].filter(Boolean);
+      ...recent].filter(Boolean);
+  }
+  // ---------- 러닝 준비 화면 (2026-10-19 사용자가 PACE 앱 캡처 두 장을 보여 주며 '이런 방식이 좋아보여') ----------
+  // 첫 화면의 시작 단추 → 화면 가득 준비 창: 사진 · 이번 러닝 목표(거리 밀대·칩) · 목표 시간 · 케이던스 가이드 · 목소리 안내 · 제목 → 아래 큰 '시작'
+  // 창이라 휴대폰 뒤로가기로 닫혀요. 고른 것은 runGoal·cadGuideSpm·cgOn·runVoice에 남아 다음에도 그대로
+  function runSetup() {
+    let G = goalOf(runGoalSaved()), km = G.k === 'dist' ? G.v : 0, min = G.k === 'dist' && G.t ? Math.round(G.t / 60) : G.k === 'time' ? G.v : 0;
+    const save = () => { ls.set('runGoal', km ? (min ? { k: 'dist', v: km, t: min * 60 } : { k: 'dist', v: km }) : min ? { k: 'time', v: min } : { k: 'free' }); };
+    const kmTxt = () => km ? (km === 21.0975 ? '하프 21.1' : km === 42.195 ? '풀 42.2' : (+km.toFixed(1)).toFixed(1)) : '자유';
+    const paceTxt = () => km && min ? `1km ${fmtPace(1000, min * 60000 / km)} 페이스` : min && !km ? `${min}분 동안 자유롭게` : km ? '시간 제한 없이' : '거리·시간 없이 마음대로';
+    const fill = r => { const p = (r.value - r.min) / (r.max - r.min) * 100; r.style.background = `linear-gradient(90deg,var(--accent) ${p}%,#C9D6E2 ${p}%)`; };
+    const kmV = el('b', { class: 'rs-big' }), kmU = el('small'), minV = el('b', { class: 'rs-big' }), minU = el('small'), paceL = el('div', { class: 'rs-mid' });
+    const kmR = el('input', { type: 'range', min: 1, max: 42, step: 0.5, class: 'rs-range', 'aria-label': '목표 거리' }), kmChips = el('div', { class: 'rs-chips' }), minChips = el('div', { class: 'rs-chips' });
+    const goTxt = el('span', { class: 'rs-go-s' });
+    const paint = () => {
+      kmV.textContent = kmTxt(); kmU.textContent = km ? ' km' : ''; kmR.value = km || 1; fill(kmR); kmR.style.opacity = km ? 1 : .45;
+      minV.textContent = min ? String(min) : '제한 없음'; minU.textContent = min ? ' 분' : ''; paceL.textContent = paceTxt();
+      kmChips.replaceChildren(...[[0, '자유'], [3, '3 km'], [5, '5 km'], [10, '10 km'], [21.0975, '하프']].map(([v, t]) => el('button', { class: 'rs-chip' + (km === v ? ' on' : ''), text: t, onclick: () => { km = v; save(); paint(); } })));
+      minChips.replaceChildren(...[[0, '제한 없음'], [30, '30분'], [45, '45분'], [60, '60분'], [90, '90분']].map(([v, t]) => el('button', { class: 'rs-chip' + (min === v ? ' on' : ''), text: t, onclick: () => { min = v; save(); paint(); } })));
+      const g = goalOf(ls.get('runGoal', { k: 'free' })); goTxt.textContent = g.k === 'free' ? '🎯 자유 달리기' : `🎯 목표 ${goalLabel(g)}${tgtLabel(g) ? ' · ' + tgtLabel(g) : ''}`;
+    };
+    kmR.oninput = () => { km = +kmR.value; save(); paint(); };
+    const stepKm = d => { km = Math.min(42.195, Math.max(1, Math.round(((km === 21.0975 ? 21 : km === 42.195 ? 42 : km) || 0) * 2 + d * 2) / 2)); save(); paint(); };
+    const stepMin = d => { min = Math.min(300, Math.max(0, (min || (d > 0 ? 0 : 0)) + d)); if (min && min < 5) min = d > 0 ? 5 : 0; save(); paint(); };
+    // 케이던스 가이드
+    const cgV = el('b', { class: 'rs-big' }, String(cgSpm()), el('small', { text: ' spm' })), cgR = el('input', { type: 'range', min: 140, max: 200, step: 5, value: cgSpm(), class: 'rs-range', 'aria-label': '케이던스 가이드 빠르기' });
+    const cgBtn = el('button', { class: 'rs-tog' });
+    const cgPaint = () => { cgV.firstChild.textContent = String(cgSpm()); cgR.value = cgSpm(); fill(cgR); const on = ls.get('cgOn', false); cgBtn.textContent = on ? '가이드 켜짐' : '가이드 꺼짐'; cgBtn.classList.toggle('on', on); };
+    cgR.oninput = () => { ls.set('cadGuideSpm', +cgR.value); cgPaint(); };
+    cgBtn.onclick = () => { ls.set('cgOn', !ls.get('cgOn', false)); cgPaint(); };
+    let tryT = null; const tryBtn = el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '▶ 소리 들어보기', onclick: () => { if (cgTimer) { cgStop(); clearTimeout(tryT); return; } cgStart(); tryT = setTimeout(cgStop, 3500); } });
+    // 목소리 안내
+    const vBtn = el('button', { class: 'rs-tog' }); const vPaint = () => { const on = ls.get('runVoice', true); vBtn.textContent = on ? '켜짐' : '꺼짐'; vBtn.classList.toggle('on', on); };
+    vBtn.onclick = () => { ls.set('runVoice', !ls.get('runVoice', true)); vPaint(); };
+    const iT = el('input', { type: 'text', maxlength: 40, value: startTitle, placeholder: `비워 두면 "${dayName} 러닝"`, oninput: () => { startTitle = iT.value; }, 'aria-label': '제목' });
+    const close = () => bg.remove();
+    // GPS 알약은 첫 화면 것을 그대로 따라 그려요(같은 걸 옮기면 첫 화면에서 빠져서)
+    let going = false; const gpsMini = el('span', { class: 'row' });
+    const gpsCopy = () => { if (!bg.isConnected) { if (!going) { if (cgTimer && !id) cgStop(); draw(); } return; } gpsMini.innerHTML = gpsReady.innerHTML; setTimeout(gpsCopy, 1000); };   // 뒤로가기로 닫혀도 첫 화면을 새로 그려요
+    const photo = el('div', { class: 'rs-photo', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.05) 30%,rgba(6,30,55,.78)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
+      el('div', { class: 'rs-ey', text: 'READY · 야외 러닝' }), el('div', { class: 'rs-h', text: '오늘, 내 속도로.' }), el('div', { class: 'rh-info' }, gpsMini, wherePill(true)));
+    const row = (a, b) => el('div', { class: 'rs-row' }, a, b);
+    const card = (...c) => el('div', { class: 'rs-card' }, ...c);
+    const bg = el('div', { class: 'sheet-bg rs-page', role: 'dialog', 'aria-label': '러닝 준비' },
+      el('div', { class: 'rs-in' },
+        el('div', { class: 'rs-top' }, el('span', { class: 'rs-ey2', text: 'MPD  /  러닝 준비' }), el('button', { class: 'rs-x', 'aria-label': '닫기', text: '✕', onclick: close })),
+        photo,
+        card(row(el('b', { text: '이번 러닝 목표' }), el('span', {}, kmV, kmU)),
+          el('div', { class: 'rs-ctl' }, el('button', { class: 'rs-pm', text: '−', 'aria-label': '거리 줄이기', onclick: () => stepKm(-0.5) }), kmR, el('button', { class: 'rs-pm', text: '+', 'aria-label': '거리 늘리기', onclick: () => stepKm(0.5) })),
+          kmChips, el('div', { class: 'rs-row rs-sm' }, el('span', { text: '1 km' }), el('span', { text: '42 km' })),
+          el('div', { class: 'rs-hr' }),
+          row(el('b', { text: '목표 시간' }), el('span', {}, minV, minU)),
+          el('div', { class: 'rs-ctl' }, el('button', { class: 'rs-pm', text: '−', 'aria-label': '1분 줄이기', onclick: () => stepMin(-1) }), paceL, el('button', { class: 'rs-pm', text: '+', 'aria-label': '1분 늘리기', onclick: () => stepMin(1) })),
+          minChips),
+        card(row(el('span', {}, el('b', { text: '케이던스 가이드' }), el('div', { class: 'rs-sm', text: '1분에 이만큼 뚝 소리에 발 맞추기' })), cgBtn),
+          row(cgV, tryBtn), cgR, el('div', { class: 'rs-row rs-sm' }, el('span', { text: '140 spm' }), el('span', { text: '200 spm' }))),
+        card(row(el('span', {}, el('b', { text: '목소리 안내' }), el('div', { class: 'rs-sm', text: '1km마다 페이스·남은 거리·코치 한마디' })), vBtn)),
+        card(el('b', { text: '제목 (선택)' }), iT,
+          el('div', { class: 'rs-sm', text: IN_NATIVE ? '앱은 화면을 꺼도 계속 기록해요. 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' : '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요).' }))),
+      el('div', { class: 'rs-foot' }, el('button', { class: 'rs-go', onclick: () => { going = true; bg.remove(); countdown(); } }, el('span', { class: 'rs-go-t', text: '▶ 시작' }), goTxt)));
+    document.body.append(bg); paint(); cgPaint(); vPaint(); gpsCopy();
   }
   function drawGpsReady() {
     const ok = gps === 'on' && lastAcc != null && lastAcc <= 20, meh = gps === 'on' && lastAcc != null && lastAcc <= TRACK_MAX_ACC;
@@ -5341,6 +5422,7 @@ function viewWalk() {
     if (pick === 'pgolf') { const G = golfNew(); ls.set('walkGolf:' + id, G); if (G.c) ls.set('trackName:' + id, /파크골프/.test(G.c) ? `${G.c} 라운드` : `${G.c} 파크골프`); }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
     if (pick === 'run' && goalOf(runGoalSaved()).k !== 'free') ls.set('walkGoal:' + id, goalOf(runGoalSaved()));
+    if (pick === 'run' && ls.get('cgOn', false)) cgStart();   // 러닝 준비 화면에서 켠 케이던스 가이드
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw(); scrollTo(0, 0);   // 시작 화면에서 내려 둔 채로 남지 않게
   }
