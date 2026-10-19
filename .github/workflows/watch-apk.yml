@@ -2,7 +2,7 @@
 # main에 올라가면 Releases의 'watch'에 MDRunWatch.apk로 올려요 (받는 주소가 늘 같아요):
 #   https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
 # 휴대폰 앱의 'latest' 주소(MDRun.apk 등)는 건드리지 않아요 (make_latest: false)
-name: MD Run 워치 앱 (갤럭시워치)
+name: MPD Run 워치 앱 (갤럭시워치)
 on:
   push:
     branches: [main, 'claude/**']
@@ -32,7 +32,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: watch
-          name: MD Run 워치 앱 (갤럭시워치)
-          body: 갤럭시워치에 까는 MD Run 시계 앱이에요. 설치 방법은 저장소 watchapp/README.md를 보세요. 판 0.1.${{ github.run_number }}
+          name: MPD Run 워치 앱 (갤럭시워치)
+          body: 갤럭시워치에 까는 MPD Run 시계 앱이에요. 앱 시작 화면이 이 글의 판 번호를 읽어 새 판을 알려 줘요(형식 바꾸지 말 것). 설치 방법은 저장소 watchapp/README.md를 보세요. 판 0.1.${{ github.run_number }}
           files: MDRunWatch.apk
           make_latest: false
