@@ -118,7 +118,7 @@ object Run {
     fun begin(now: Long, g: Goal, title: String) {
         id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title
         pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
-        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
+        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
 
@@ -204,6 +204,44 @@ object Run {
         if (now - b.first > 4000 || b.first - a.first < 8000 || b.second - a.second < 8) return null
         return ((b.second - a.second) / ((b.first - a.first) / 60000.0)).roundToInt()
     }
+    // ---------- 그래프용 기록: 10초마다 (시작부터 ms, 심박, 페이스 ms/km) ----------
+    class Sample(val t: Long, val hr: Int, val pace: Double?)
+    val series = ArrayList<Sample>(); private var lastSample = 0L
+    fun sampleTick(now: Long) {
+        if (id == null || paused(now) || now - lastSample < 10000) return
+        lastSample = now; series.add(Sample(now - startAt, hrNow(now), nowPace(now)))
+    }
+
+    // ---------- 달리기 자세 (2026-10-19): 손목 흔들림 센서로 짐작한 대략값 ----------
+    // 흔들림 크기가 평소보다 3 m/s² 넘게 튀었다 내려오면 한 번 착지로 셈(0.25초 간격 이상) → 최근 40번의 간격 고르기(%)·충격(G)
+    private var accBase = 9.81; private var pkMax = 0.0; private var inPk = false; private var pkT = 0L; private var lastPk = 0L
+    private val stepIv = ArrayDeque<Long>(); private val stepG = ArrayDeque<Double>()
+    fun onAccel(x: Float, y: Float, z: Float, now: Long) {
+        if (id == null || paused(now)) { inPk = false; return }
+        val m = sqrt((x * x + y * y + z * z).toDouble())
+        accBase = accBase * .98 + m * .02
+        if (!inPk && m > accBase + 3) { inPk = true; pkMax = m; pkT = now }
+        else if (inPk) {
+            if (m > pkMax) { pkMax = m; pkT = now }
+            if (m < accBase + 1) {
+                inPk = false
+                if (pkT - lastPk >= 250) {
+                    if (lastPk > 0 && pkT - lastPk < 1500) { stepIv.addLast(pkT - lastPk); if (stepIv.size > 40) stepIv.removeFirst() }
+                    stepG.addLast(pkMax / 9.81); if (stepG.size > 40) stepG.removeFirst()
+                    lastPk = pkT
+                }
+            }
+        }
+    }
+    // 걸음 고르기: 착지 간격이 들쭉날쭉한 정도(%), 작을수록 고름
+    fun formReg(now: Long): Double? {
+        if (stepIv.size < 15 || now - lastPk > 10000) return null
+        val a = stepIv.average(); val sd = sqrt(stepIv.sumOf { (it - a) * (it - a) } / stepIv.size); return sd / a * 100
+    }
+    fun formImpact(now: Long): Double? = if (stepG.size < 15 || now - lastPk > 10000) null else stepG.sorted()[stepG.size / 2]
+    // 보폭(m) = 1분에 간 거리 ÷ 1분 걸음 수
+    fun stride(now: Long): Double? { val p = nowPace(now) ?: return null; val c = cadNow(now) ?: return null; return if (c < 60) null else (60000.0 / p * 1000) / c }
+
     fun cadAvg(): Int? = if (steps > 20 && moving > 60000) (steps / (moving / 60000.0)).roundToInt() else null
 
     // ---------- 1km 구간 · 목표 ----------
@@ -313,6 +351,7 @@ object Run {
         val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
+            .put("series", JSONArray().apply { series.forEach { s -> put(JSONArray().put(s.t / 1000).put(s.hr).put(s.pace?.roundToLong() ?: 0)) } })
     }
     private fun round6(v: Double) = Math.round(v * 1e6) / 1e6
     // 기록 도우미가 꺼졌다 다시 켜졌을 때(시계가 앱을 정리한 경우) 이어서 기록해요
@@ -325,5 +364,6 @@ object Run {
         val sp = JSONArray(data.optString("walkSplits:$i", "[]")); for (k in 0 until sp.length()) splits.add(sp.getLong(k))
         val s = o.optJSONObject("sum"); if (s != null) { walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps
             s.optJSONArray("zone")?.let { z -> for (k in 0 until minOf(5, z.length())) zoneMs[k] = z.optLong(k) } }
+        o.optJSONArray("series")?.let { a -> for (k in 0 until a.length()) { val q = a.getJSONArray(k); val pc = q.optLong(2); series.add(Sample(q.optLong(0) * 1000, q.optInt(1), if (pc > 0) pc.toDouble() else null)) } }
     }
 }

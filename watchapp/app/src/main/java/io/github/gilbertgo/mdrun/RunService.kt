@@ -99,6 +99,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         sm = getSystemService(SENSOR_SERVICE) as SensorManager
         if (granted(Manifest.permission.BODY_SENSORS)) sm?.getDefaultSensor(Sensor.TYPE_HEART_RATE)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         if (Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACTIVITY_RECOGNITION)) sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        sm?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
         h.post(tick)
         Cadence.start(this)
     }
@@ -107,7 +108,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     private val tick = object : Runnable {
         override fun run() {
             if (!listening) return
-            Run.coachTick()
+            Run.coachTick(); Run.sampleTick(System.currentTimeMillis())
             val now = System.currentTimeMillis()
             if (Run.id != null && now - lastSave > 30000) { lastSave = now; Store.saveCurrent(this@RunService) }
             h.postDelayed(this, 1000)
@@ -127,6 +128,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         when (e.sensor.type) {
             Sensor.TYPE_HEART_RATE -> if (e.accuracy != SensorManager.SENSOR_STATUS_NO_CONTACT && e.accuracy != SensorManager.SENSOR_STATUS_UNRELIABLE) Run.onHr(e.values[0].toInt(), now)
             Sensor.TYPE_STEP_COUNTER -> Run.onSteps(e.values[0].toInt(), now)
+            Sensor.TYPE_ACCELEROMETER -> Run.onAccel(e.values[0], e.values[1], e.values[2], now)
         }
     }
     override fun onAccuracyChanged(s: Sensor?, a: Int) {}
