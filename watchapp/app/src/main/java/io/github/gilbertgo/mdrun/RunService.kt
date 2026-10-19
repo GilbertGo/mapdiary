@@ -58,7 +58,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         Run.speak = { text -> if (ttsOk) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "md") else pending.add(text) }
         Run.speaking = { tts?.isSpeaking == true }
         Run.buzz = { p -> vibrate(p) }
-        Run.voice = Store.voice(this); Cadence.load(this)
+        Run.voice = Store.voice(this); Cadence.load(this); Run.hrMaxSet = Store.hrMaxSet(this); Run.z2Alert = Store.z2Alert(this)
         // 앱이 정리됐다가 다시 켜진 경우: 하던 기록을 이어서
         if (Run.id == null) Store.loadCurrent(this)?.let { try { Run.restore(it) } catch (e: Exception) {} }
     }
