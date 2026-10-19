@@ -19,8 +19,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-// 시작 화면 첫 장 (2026-10-19, 사용자 '아주 감각적으로'): 검은 하늘 아래에서 떠오르는 산호빛 해(숨 쉬듯 밝아졌다 어두워짐),
-// 테두리 링 = 이번 주 달린 거리 / 주간 목표, 가운데 큰 숫자, 요일 점 7개(달린 날 산호), 목표 알약, 아래 큰 둥근 ▶ 시작.
+// 시작 화면 첫 장: 사진 + 테두리 고리(시안 W1, 아래 onDraw 설명). ▶ 러닝 시작 → 목표 세팅(SetupView).
 // 용두를 돌리거나 위로 밀면 아래에 설정 줄이 이어져요
 class HomeView(c: Context, private val act: Act) : View(c) {
     class Act(val start: () -> Unit, val goal: () -> Unit, val update: (() -> Unit)?, val guide: () -> Unit = {})
@@ -54,91 +53,68 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         val s = MeasureSpec.getSize(w); setMeasuredDimension(s, resources.displayMetrics.heightPixels)
     }
 
+    // 2026-10-19 사용자가 시안 W1 고름: 휴대폰 첫 화면과 같은 사진(세 사람)을 어둡게 깔고, 테두리 전체가 주간 목표 고리.
+    // 가운데 'TUESDAY, YOUR PACE' · THIS WEEK · 이번 주 km · '/ 주간 목표' · 요일 점 · ▶ 러닝 시작 · 아래 GPS·목표 한 줄 (문구는 사용자가 만든 PACE 앱 것)
+    private val photo by lazy { try { android.graphics.BitmapFactory.decodeResource(resources, R.drawable.run_hero) } catch (e: Exception) { null } }
+    private var goBox = RectF()
     override fun onDraw(cv: Canvas) {
         val now = System.currentTimeMillis(); W = width.toFloat(); cx = W / 2; u = min(W, height.toFloat()) / 100f
-        val br = ((sin((now - born) / 1000.0 * 2 * Math.PI / 3.2) + 1) / 2).toFloat()   // 3.2초에 한 번 숨쉬기 0..1
+        val br = ((sin((now - born) / 1000.0 * 2 * Math.PI / 3.2) + 1) / 2).toFloat()
         cv.drawColor(Color.BLACK)
-        // 떠오르는 해: 화면 아래에서 번지는 산호빛 + 그 위 옅은 금빛
-        paint(Color.WHITE); p.shader = RadialGradient(cx, 112f * u, 78f * u, intArrayOf(a(CORAL, 120 + (40 * br).toInt()), a(CORAL, 40), a(CORAL, 0)), floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
-        cv.drawRect(0f, 0f, W, height.toFloat(), p); p.shader = null
-        paint(Color.WHITE); p.shader = RadialGradient(cx, 104f * u, 40f * u, intArrayOf(a(GOLD, 70), a(GOLD, 0)), null, Shader.TileMode.CLAMP)
-        cv.drawRect(0f, 0f, W, height.toFloat(), p); p.shader = null
-        // 별 몇 개(위쪽 하늘)
-        for ((sx, sy, k) in listOf(Triple(24f, 26f, 0), Triple(78f, 22f, 1), Triple(70f, 38f, 2), Triple(30f, 41f, 3), Triple(86f, 47f, 4))) {
-            val tw = ((sin((now - born) / 1000.0 * 1.3 + k * 1.7) + 1) / 2).toFloat()
-            cv.drawCircle(sx * u, sy * u, (.35f + .25f * tw) * u, paint(a(Color.WHITE, 60 + (110 * tw).toInt())))
-        }
+        val H = height.toFloat()
+        photo?.let { bm -> val sc = maxOf(W / bm.width, H / bm.height); val dw = bm.width * sc; val dh = bm.height * sc
+            cv.drawBitmap(bm, null, RectF((W - dw) / 2, (H - dh) * .75f, (W - dw) / 2 + dw, (H - dh) * .75f + dh), paint(Color.WHITE).apply { isFilterBitmap = true }) }
+        paint(Color.WHITE); p.shader = RadialGradient(cx, H / 2, W * .62f, intArrayOf(Color.argb(95, 6, 30, 55), Color.argb(225, 6, 30, 55)), floatArrayOf(.15f, 1f), Shader.TileMode.CLAMP)
+        cv.drawRect(0f, 0f, W, H, p); p.shader = null
 
-        // 테두리 링: 이번 주 거리 / 주간 목표 (금 → 산호)
+        // 테두리 고리: 이번 주 거리 / 주간 목표
         val f = (week.km / week.goalKm).toFloat().coerceIn(0f, 1f)
-        val r = 47f * u; val w = 2.6f * u; val box = RectF(cx - r, cx - r, cx + r, cx + r)
-        paint(Color.parseColor("#1D2127")); p.style = Paint.Style.STROKE; p.strokeWidth = w; cv.drawArc(box, 0f, 360f, false, p)
+        val r = 47.4f * u; val w = 2.4f * u; val box = RectF(cx - r, cx - r, cx + r, cx + r)
+        paint(a(Color.WHITE, 46)); p.style = Paint.Style.STROKE; p.strokeWidth = w; cv.drawArc(box, 0f, 360f, false, p)
         if (f > 0f) {
             paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = w; p.strokeCap = Paint.Cap.ROUND
-            p.shader = SweepGradient(cx, cx, intArrayOf(GOLD, CORAL, CORAL), floatArrayOf(0f, f.coerceAtLeast(.01f), 1f)).apply { setLocalMatrix(Matrix().apply { setRotate(-90f, cx, cx) }) }
-            cv.drawArc(box, -90f, 360f * f, false, p); p.shader = null
-            val ang = Math.toRadians(-90.0 + 360.0 * f); val ex = cx + r * cos(ang).toFloat(); val ey = cx + r * sin(ang).toFloat()
-            cv.drawCircle(ex, ey, w * (1.1f + .5f * br), paint(a(CORAL, 70)))
-            cv.drawCircle(ex, ey, w * .42f, paint(Color.WHITE))
+            cv.drawArc(box, -90f, 360f * f, false, p)
+            val ang = Math.toRadians(-90.0 + 360.0 * f); cv.drawCircle(cx + r * cos(ang).toFloat(), cx + r * sin(ang).toFloat(), w * .42f, paint(Color.WHITE))
         }
 
-        // 맨 위: 새 판 알림(금색 알약) 또는 시각
+        // 맨 위: 새 판 알림(금색 알약) 또는 'TUESDAY, YOUR PACE'
         val c = Calendar.getInstance()
         if (updName.isNotEmpty()) {
-            val s = "새 판 $updName 설치"; val tw = measure(s, 4.8f * u, false) + 6 * u; val h = 8.4f * u; val y = 14f * u
+            val s = "새 판 $updName 설치"; val tw = measure(s, 4.6f * u, false) + 6 * u; val h = 8f * u; val y = 15f * u
             updBox = RectF(cx - tw / 2, y - h / 2, cx + tw / 2, y + h / 2)
             cv.drawRoundRect(updBox, h / 2, h / 2, paint(GOLD))
-            text(cv, s, cx, y + 1.7f * u, 4.8f * u, RunView.INK, true)
+            text(cv, s, cx, y + 1.6f * u, 4.6f * u, RunView.INK, true)
         } else {
             updBox = RectF()
-            text(cv, "${c.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", c.get(Calendar.MINUTE))}", cx, 15f * u, 6.4f * u, Color.WHITE, true, true)
+            val day = arrayOf("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")[c.get(Calendar.DAY_OF_WEEK) - 1]
+            paint(Color.parseColor("#FFD2B8")); p.textSize = 3.6f * u; p.typeface = Typeface.MONOSPACE; p.letterSpacing = .18f; p.textAlign = Paint.Align.CENTER
+            cv.drawText("$day, YOUR PACE", cx, 16f * u, p)
         }
-        // GPS: 준비되면 하늘색 점이 맥박처럼
-        val ready = gpsAcc in 0f..20f
-        val gs = if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS ${gpsAcc.toInt()}m" else "GPS 잡는 중 ${gpsAcc.toInt()}m"
-        val gw = measure(gs, 4.6f * u, false); val gx = cx - gw / 2 + 1.8f * u; val gy = 23f * u
-        val dc = if (ready) BLUE else MUTED
-        if (ready) cv.drawCircle(gx - 3.4f * u, gy - 1.5f * u, (1f + 1.1f * br) * u, paint(a(BLUE, (90 * (1 - br)).toInt())))
-        cv.drawCircle(gx - 3.4f * u, gy - 1.5f * u, 1.1f * u, paint(dc))
-        text(cv, gs, gx, gy, 4.6f * u, dc, true, align = Paint.Align.LEFT)
-
-        // 가운데: 이번 주 거리
-        text(cv, "이번 주", cx, 32f * u, 4.8f * u, MUTED, true)
+        text(cv, "THIS WEEK", cx, 24.5f * u, 4f * u, a(Color.WHITE, 215), true)
         val ks = if (week.km < 100) String.format("%.1f", week.km) else String.format("%.0f", week.km)
-        val big = 19f * u; val unit = 5.4f * u
-        val kw = measure(ks, big, true); val uw = measure("km", unit, true); val x0 = cx - (kw + uw + .8f * u) / 2
-        text(cv, ks, x0, 48.5f * u, big, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, "km", x0 + kw + .8f * u, 48.5f * u, unit, CORAL, true, true, Paint.Align.LEFT)
-        text(cv, "목표 ${week.goalKm}km · ${week.runs}번 달림", cx, 55.5f * u, 4.6f * u, MUTED)
-        // 요일 점(월~일): 달린 날 산호, 오늘은 흰 테두리
+        text(cv, ks, cx, 42.5f * u, 17f * u, Color.WHITE, true, true)
+        text(cv, "/ 주간 목표 ${week.goalKm} km", cx, 50f * u, 4.4f * u, Color.WHITE)
+        // 요일 점(월~일): 달린 날 산호, 오늘은 흰 테
         val today = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7
         for (i in 0 until 7) {
-            val x = cx + (i - 3) * 4.6f * u; val y = 60.5f * u
-            if (week.days[i]) cv.drawCircle(x, y, 1.25f * u, paint(CORAL))
-            else cv.drawCircle(x, y, .8f * u, paint(if (i < today) Color.parseColor("#3B414A") else Color.parseColor("#262A31")))
-            if (i == today) { paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .35f * u; cv.drawCircle(x, y, 2f * u, p) }
+            val x = cx + (i - 3) * 4.4f * u; val y = 56.5f * u
+            cv.drawCircle(x, y, 1.15f * u, paint(if (week.days[i]) CORAL else a(Color.WHITE, 80)))
+            if (i == today) { paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .35f * u; cv.drawCircle(x, y, 1.9f * u, p) }
         }
-
-        // 목표 알약(누르면 목표 고르기)
-        val gl = goal.label() + (if (goal.tgtPace() > 0) "  ·  ${fmtPace(goal.tgtPace())}" else "")
-        val pw = measure(gl, 4.6f * u, false) + 7 * u; val ph = 7.6f * u; val py = 67.6f * u
-        val qw = measure(guideTxt, 4.6f * u, false) + 6 * u; val qgap = 2 * u; val qx = cx - (pw + qgap + qw) / 2
-        pillBox = RectF(qx, py - ph / 2, qx + pw, py + ph / 2)
-        cv.drawRoundRect(pillBox, ph / 2, ph / 2, paint(a(Color.WHITE, 26)))
-        text(cv, gl, pillBox.centerX(), py + 1.6f * u, 4.6f * u, Color.WHITE, true)
-        guideBox = RectF(qx + pw + qgap, py - ph / 2, qx + pw + qgap + qw, py + ph / 2)
-        cv.drawRoundRect(guideBox, ph / 2, ph / 2, paint(if (guideOn) a(CORAL, 60) else a(Color.WHITE, 26)))
-        text(cv, guideTxt, guideBox.centerX(), py + 1.6f * u, 4.6f * u, if (guideOn) CORAL else MUTED, true)
-
-        // 시작 단추: 산호 동그라미 + 숨쉬는 빛 + 진한 ▶
-        val R = playR; val py2 = playY
-        paint(Color.WHITE); p.shader = RadialGradient(cx, py2, R * 1.9f, intArrayOf(a(CORAL, 110 + (70 * br).toInt()), a(CORAL, 0)), floatArrayOf(.45f, 1f), Shader.TileMode.CLAMP)
-        cv.drawCircle(cx, py2, R * 1.9f, p); p.shader = null
-        paint(Color.WHITE); p.shader = RadialGradient(cx - R * .35f, py2 - R * .45f, R * 1.4f, intArrayOf(Color.parseColor("#FFB07F"), CORAL, Color.parseColor("#F06A2E")), floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
-        cv.drawCircle(cx, py2, R, p); p.shader = null
-        val t = R * .42f
-        cv.drawPath(Path().apply { moveTo(cx - t * .7f, py2 - t); lineTo(cx + t, py2); lineTo(cx - t * .7f, py2 + t); close() }, paint(RunView.INK))
-        // 처음 1분만 움직이고(배터리), 그 뒤엔 30초마다 시각만 새로
+        // ▶ 러닝 시작 (산호 알약)
+        val gs = "▶  러닝 시작"; val gw = measure(gs, 5.6f * u, false) + 12 * u; val gh = 11.5f * u; val gy = 69f * u
+        goBox = RectF(cx - gw / 2, gy - gh / 2, cx + gw / 2, gy + gh / 2)
+        paint(Color.WHITE); p.shader = RadialGradient(cx, gy, gw * .75f, intArrayOf(a(CORAL, 80 + (50 * br).toInt()), a(CORAL, 0)), floatArrayOf(.5f, 1f), Shader.TileMode.CLAMP)
+        cv.drawRect(goBox.left - 6 * u, goBox.top - 6 * u, goBox.right + 6 * u, goBox.bottom + 6 * u, p); p.shader = null
+        cv.drawRoundRect(goBox, gh / 2, gh / 2, paint(CORAL))
+        text(cv, gs, cx, gy + 2f * u, 5.6f * u, Color.WHITE, true)
+        // 아래 한 줄: GPS · 목표
+        val ready = gpsAcc in 0f..20f
+        val gl = (if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS 준비" else "GPS ${gpsAcc.toInt()}m") + "  ·  🎯 " + goal.label() + (if (goal.tgtLabel().isNotEmpty()) " " + goal.tgtLabel() else "")
+        val lw = measure(gl, 3.8f * u, false); val lx = cx - lw / 2 + 1.6f * u; val ly = 80f * u
+        cv.drawCircle(lx - 2.8f * u, ly - 1.3f * u, .9f * u, paint(if (ready) BLUE else MUTED))
+        text(cv, gl, lx, ly, 3.8f * u, a(Color.WHITE, 220), false, align = Paint.Align.LEFT)
+        text(cv, "용두 ↓ 기록·설정", cx, 88f * u, 3.4f * u, a(Color.WHITE, 140))
         postInvalidateDelayed(if (now - born < 60000) 50 else 30000)
     }
 
@@ -150,9 +126,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
                 if (abs(e.x - dx) > 4 * u || abs(e.y - dy) > 4 * u) return true
                 val x = e.x; val y = e.y
                 if (!updBox.isEmpty && updBox.contains(x, y)) act.update?.invoke()
-                else if (Math.hypot((x - cx).toDouble(), (y - playY).toDouble()) < playR * 1.5) act.start()
-                else if (RectF(guideBox).apply { inset(-1 * u, -2 * u) }.contains(x, y)) act.guide()
-                else if (RectF(pillBox).apply { inset(-1 * u, -2 * u) }.contains(x, y)) act.goal()
+                else if (RectF(goBox).apply { inset(-2 * u, -3 * u) }.contains(x, y)) act.start()
+                else if (y > 75 * u && y < 84 * u) act.goal()
                 return true
             }
         }

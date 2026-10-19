@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         val g = Store.goal(this)
         val u0 = upd
         val install = { if (u0 != null) showUpdate(u0) }
-        val hv = HomeView(this, HomeView.Act({ countdown() }, { showGoal() }, if (u0 != null) install else null, { showGuide() })).apply {
+        val hv = HomeView(this, HomeView.Act({ showSetup() }, { showGoal() }, if (u0 != null) install else null, { showGuide() })).apply {
             guideOn = Cadence.kind != Cadence.OFF; guideTxt = if (guideOn) "♩ ${Cadence.spm}" else "♩ 끔"
             week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
         gpsText = null
@@ -175,6 +175,9 @@ class MainActivity : ComponentActivity() {
         gpsText?.text = if (a < 0) "GPS 찾는 중 · 하늘이 트인 곳에서" else if (a <= 20) "● GPS 준비됐어요 · ${a.toInt()}m" else "● GPS 잡는 중 · ${a.toInt()}m"
         gpsText?.setTextColor(if (a in 0f..20f) RunView.BLUE else RunView.MUTED)
     }
+
+    // ▶ 러닝 시작 → 목표 세팅 네 장(거리 · 시간 · 케이던스 비프 · 출발) → 3·2·1
+    private fun showSetup() { show(SetupView(this, { countdown() }, { showStart() }).apply { isFocusable = true }) }
 
     // 목표 고르기
     private fun showGoal() {
