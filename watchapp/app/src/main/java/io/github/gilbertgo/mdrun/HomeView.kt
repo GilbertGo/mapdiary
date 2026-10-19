@@ -45,8 +45,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
     private fun measure(s: String, size: Float, num: Boolean): Float { paint(Color.WHITE); p.textSize = size; p.typeface = if (num) numBold else krBold; if (num) p.fontFeatureSettings = "tnum"; return p.measureText(s) }
 
     // 버튼 자리(눌렀는지 볼 때 써요)
-    private val playR get() = 11f * u
-    private val playY get() = 81f * u
+    private val playR get() = 10.5f * u
+    private val playY get() = 82.5f * u
     private var pillBox = RectF(); private var updBox = RectF()
 
     override fun onMeasure(w: Int, h: Int) {
