@@ -1799,7 +1799,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2412,8 +2412,16 @@ async function crewPull() {
   const R = await crewRoom(); if (!R) return [];
   const rows = await fsList(`rooms/${R.rid}/run`), out = [];
   for (const r of rows) { try { const v = await roomOpen(R.key, JSON.parse(r.d)); if (v && Date.now() - v.at < 4 * 36e5) out.push(Object.assign(v, { id: r.id, me: r.id === crewMe() })); } catch {} }
-  crewS().list = out; return out;
+  crewS().list = out;
+  // 방 이름(2026-10-19 사용자 '방 이름 어떻게 바꿔?'): rooms/{방번호}/cx/name에 잠가 둬서 방 사람 모두 같은 이름을 봐요
+  try { const d = await fsGet(`rooms/${R.rid}/cx/name`); if (typeof d === 'string') { const v = await roomOpen(R.key, JSON.parse(d)); const c = crewGet();
+    if (c && v && typeof v.name === 'string' && v.name !== (c.name || '')) ls.set('runCrew', Object.assign({}, c, { name: v.name.slice(0, 20) })); } } catch {}
+  return out;
 }
+async function crewRename(name) { const R = await crewRoom(), c = crewGet(); if (!R || !c) return false;
+  ls.set('runCrew', Object.assign({}, c, { name }));
+  try { await fsPut(`rooms/${R.rid}/cx/name`, JSON.stringify(await roomSeal(R.key, { name, at: Date.now() }))); return true; } catch { return false; } }
+function crewTitle(c) { return c.name || c.pretty; }
 async function crewLeave() { const R = await crewRoom(); if (R) fsDel(`rooms/${R.rid}/run/${crewMe()}`).catch(() => {}); ls.set('runCrew', null); const S = crewS(); S.code = null; S.list = []; }
 // 글 한 줄 받기 창 (이름·방 이름 같은 것)
 function askText(title, label, value, placeholder, sub, max = 40, allowEmpty = false) {
@@ -4346,7 +4354,7 @@ function viewWalk() {
   }
   function crewInvite() {
     const c = crewGet(); if (!c) return;
-    const text = `같이 달려요! MPD 러닝 '같이 달리기' 코드: ${c.pretty}\n같은 곳이든 각자 동네든, 같은 시간에 달리면 서로 거리·페이스가 보여요.`;
+    const text = `같이 달려요! MPD 러닝 '같이 달리기'${c.name ? ` '${c.name}'` : ''} 코드: ${c.pretty}\n같은 곳이든 각자 동네든, 같은 시간에 달리면 서로 거리·페이스가 보여요.`;
     if (navigator.share) navigator.share({ title: 'MPD 같이 달리기', text, url: crewLink(c) }).catch(() => {});
     else { try { navigator.clipboard.writeText(text + '\n' + crewLink(c)); toast('초대 글을 복사했어요. 카톡에 붙여 넣어 보내세요'); } catch { prompt('이 글을 복사해 보내세요', text + '\n' + crewLink(c)); } }
   }
@@ -4367,13 +4375,17 @@ function viewWalk() {
     }
     const others = crewS().list.filter(o => !o.me).length;   // 줄은 두 곳(첫 화면 칸·달리는 중 칸)에 따로 만들어 넣어요
     crewBox.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;align-items:center;flex-wrap:nowrap' },
-        el('b', {}, '👟 같이 달리기 · ', el('span', { class: 'cw-code', text: c.pretty })),
-        el('button', { class: 'link', style: 'padding:0;font-size:13px;color:var(--muted)', text: '나가기', onclick: async () => { if (!confirm('같이 달리기 방에서 나갈까요?')) return; await crewLeave(); crewDraw(); } })),
+        el('b', { style: 'min-width:0' }, '👟 같이 달리기 · ', el('span', { class: 'cw-code', text: crewTitle(c) })),
+        el('button', { class: 'link', style: 'padding:0;font-size:13px;color:var(--muted);white-space:nowrap;flex:none', text: '나가기', onclick: async () => { if (!confirm('같이 달리기 방에서 나갈까요?')) return; await crewLeave(); crewDraw(); } })),
+      el('div', { class: 'row', style: 'gap:10px;margin-top:-6px;font-size:13px;flex-wrap:wrap' }, el('span', { class: 'sub', style: 'font-size:13px', text: `들어오는 코드 ${c.pretty}` }),
+        el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '✎ 방 이름 바꾸기', onclick: async () => {
+          const v = await askText('방 이름 바꾸기', '방 이름', c.name || '', '예: 태안 마라톤 크루', `방 사람 모두에게 이 이름으로 보여요. 들어오는 코드는 그대로 '${c.pretty}'예요.`, 20); if (!v) return;
+          const ok = await crewRename(v); crewDraw(); toast(ok ? `방 이름을 '${v}'(으)로 바꿨어요` : '이 휴대폰에만 바꿨어요. 인터넷이 되면 다시 해 주세요'); } })),
       ...crewRows(),
       ...(others ? [] : [el('div', { class: 'sub', style: 'font-size:13px', text: '아직 친구가 없어요. 초대를 보내고, 같은 시간에 시작하면 서로 보여요.' })]),
       el('button', { class: 'btn line small full', text: '📨 친구 초대 보내기', onclick: crewInvite }),
       el('div', { class: 'sub', style: 'font-size:12px', text: `이름: ${ls.get('nick', '') || '나'} · 출발 500m 안에선 내 위치를 안 보내요(거리·시간만). 10초마다 맞춰요.` }));
-    crewPane.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('b', {}, '👥 같이 달리기 · ', el('span', { class: 'cw-code', text: c.pretty })),
+    crewPane.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('b', {}, '👥 같이 달리기 · ', el('span', { class: 'cw-code', text: crewTitle(c) })),
       el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '초대', onclick: crewInvite })), ...crewRows(),
       el('div', { class: 'sub', style: 'font-size:12px', text: '오른쪽 숫자는 나보다 앞(산호색)·뒤에 있는 거리예요. 가까이서 달리면 지도에도 보여요.' }));
     if (map) {
