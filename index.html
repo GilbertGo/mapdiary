@@ -441,7 +441,9 @@ html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gr
 .rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rh-pills .row{gap:6px!important;flex-wrap:nowrap}.rh-pills .row .sub{display:none}
 .rh-pills .pill,.rh-pill{background:rgba(255,255,255,.92)!important;color:#102A43!important;border:none;font:inherit;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
-.rh-go{height:58px;border:none;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-size:19px;font-weight:900;box-shadow:0 8px 20px rgba(255,138,76,.35);margin-top:4px}
+.rh-go-t{display:block}.rh-go-s{display:flex;justify-content:center;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-top:3px;opacity:.95}
+.rh-go-s .row{gap:6px!important;flex-wrap:nowrap}.rh-go-s .sub{display:none}.rh-go-s .pill{background:none!important;color:#fff!important;border:none;padding:0;font-size:13px;font-weight:700}
+.rh-go{min-height:66px;padding:9px 14px;border:none;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-size:19px;font-weight:900;box-shadow:0 8px 20px rgba(255,138,76,.35);margin-top:4px}
 .rh-wk{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}.rh-wk b{font-size:17px}
 .rh-rr{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:8px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
 .rh-th{width:54px;height:54px;border-radius:10px;flex:none;background:var(--soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--pine)}
@@ -1852,7 +1854,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-12';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-13';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4644,8 +4646,9 @@ function viewWalk() {
     hero.append(tag, el('div', { class: 'rh-top' },
       el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` })),   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
       el('div', { class: 'rh-bot' },
-      el('div', { class: 'rh-pills' }, gpsReady, el('button', { class: 'rh-pill', onclick: () => settings.scrollIntoView({ behavior: 'smooth' }) }, `🎯 ${goalTxt}`)),
-      el('button', { class: 'rh-go', onclick: countdown }, '▶ 러닝 시작하기')));
+      // 2026-10-19 사용자가 GPS·목표 알약에서 시작 단추로 화살표를 그려 보냄 → 두 알약을 단추 안 아랫줄로
+      el('button', { class: 'rh-go', onclick: countdown }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
+        el('span', { class: 'rh-go-s' }, gpsReady, el('span', { text: `· 🎯 ${goalTxt}` })))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
