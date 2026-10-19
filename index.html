@@ -1799,7 +1799,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2817,6 +2817,141 @@ function cloudCard() {
   document.addEventListener('md-cloud', draw); draw();
   return box;
 }
+// ---------- 시계(MPD Run 워치) 기록 받기 + 자세히 보기 (2026-10-19, 사용자 '와치로는 간단하게, 폰으로는 상세하게') ----------
+// 시계가 끝낸 기록을 '휴대폰 연결 코드'(단어 4글자, 예: 빠른나무)로 잠가 rooms/{방번호}/w/{기록ID}에 올려요({enc, z:1}: 압축 뒤 잠금).
+// 휴대폰은 같은 코드로 받아 내 MPD에 넣어요(백업 파일과 같은 키 + walkHr:·walkSeries:). 자세한 분석은 내 MPD 그 기록의 '⌚ 시계 분석'
+function watchGet() { const c = ls.get('watchLink', null); return c && roomParse(c.code)?.code === c.code ? c : null; }
+async function watchPull() {
+  const c = watchGet(); if (!c) return 0;
+  const R = await roomOf(c.code), rows = await fsList(`rooms/${R.rid}/w`), got = ls.get('watchGot', {}); let n = 0;
+  for (const r of rows) {
+    const sig = String(r.d.length); if (got[r.id] === sig) continue;
+    try {
+      const v = JSON.parse(r.d); let buf = await openBytes(v.enc, R.key);
+      if (v.z) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+      const o = JSON.parse(new TextDecoder().decode(buf)), id = String(o.id || '');
+      if (!/^run_w[a-z0-9]+$/.test(id) || !o.data || typeof o.data !== 'object') continue;
+      for (const [k, val] of Object.entries(o.data)) {
+        if (typeof val !== 'string' || !k.endsWith(':' + id) || !MD_KEYS.some(p => k.startsWith(p))) continue;
+        if (k.startsWith('track:')) { let a; try { a = JSON.parse(val); } catch { continue; } const b = ls.get(k, null); if (Array.isArray(a) && (!Array.isArray(b) || a.length > b.length)) localStorage.setItem(k, val); }
+        else if (localStorage.getItem(k) == null) localStorage.setItem(k, val);
+      }
+      const s = o.sum || {};
+      ls.set('walkHr:' + id, { avg: s.hrAvg || 0, max: s.hrMax || 0, zone: Array.isArray(s.zone) ? s.zone.slice(0, 5) : [], hrMaxSet: s.hrMaxSet || 170, cad: s.cad || 0, steps: s.steps || 0, moving: s.moving || 0, walk: s.walk || 0, watch: 1 });
+      if (Array.isArray(o.series)) ls.set('walkSeries:' + id, o.series.filter(Array.isArray).slice(0, 5000));
+      got[r.id] = sig; n++;
+    } catch {}
+  }
+  ls.set('watchGot', got); return n;
+}
+function watchCard(redraw) {
+  const c = watchGet(), box = el('div', { class: 'card stack', style: 'gap:10px;margin-top:8px' });
+  const link = async () => {
+    const v = await askText('시계 연결', '연결 코드', '', '예: 빠른나무', "시계 MPD Run 시작 화면에서 용두로 내려 '휴대폰 연결'을 누르면 코드가 나와요. 그 코드를 적어 주세요.", 20);
+    if (v == null) return; const p = roomParse(v); if (!p) return toast('코드 모양이 아니에요. 시계에 나온 네 글자를 그대로 적어 주세요');
+    ls.set('watchLink', p); ls.set('watchGot', {}); toast('시계 기록을 받는 중…'); const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '받을 시계 기록이 아직 없어요'); redraw();
+  };
+  if (!c) return box.append(el('b', { text: '⌚ 시계 기록 받기' }),
+    el('div', { class: 'sub', text: '갤럭시워치 MPD Run으로 달린 기록을 이 휴대폰으로 받아 자세히 볼 수 있어요. 시계에서 휴대폰 연결을 켜고 나온 코드를 적어 주세요.' }),
+    el('button', { class: 'btn primary full', text: '⌚ 연결 코드 적기', onclick: link })), box;
+  box.append(el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { text: '⌚ 시계 연결됨' }), el('span', { class: 'sub', text: '코드 ' + c.pretty })),
+    el('div', { class: 'sub', text: '시계가 기록을 끝내면 인터넷이 될 때 올리고, 내 MPD를 열 때 저절로 받아요.' }),
+    el('div', { class: 'two' },
+      el('button', { class: 'btn line', text: '지금 받기', onclick: async e => { e.target.disabled = true; const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '새 시계 기록이 없어요'); if (n) redraw(); else e.target.disabled = false; } }),
+      el('button', { class: 'btn line', text: '연결 끊기', onclick: () => { if (confirm('시계 연결을 끊을까요? 받은 기록은 그대로 남아요.')) { ls.set('watchLink', null); redraw(); } } })));
+  return box;
+}
+// 심박 존: 최대 심박의 50~60% 존1 · 60~70% 존2 · 70~80% 존3 · 80~90% 존4 · 90%~ 존5 (시계와 같아요)
+const ZONE_COL = ['#9AA5B4', '#0277BD', '#FFA94D', '#FF6B3D', '#E53950'], ZONE_NAME = ['회복', '유산소', '템포', '역치', '최대'];
+const zoneLo = (mx, z) => Math.round(mx * (0.5 + 0.1 * z));
+const zoneOf = (mx, h) => { const f = h / mx; return f < .6 ? 0 : f < .7 ? 1 : f < .8 ? 2 : f < .9 ? 3 : 4; };
+const paceTxt = ms => { if (!ms || ms <= 0 || ms > 36e5) return '-'; const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`; };
+// series 한 칸: [초, 심박, 페이스 ms/km, 케이던스, 고르기×10, 충격×100] (0은 없음)
+function watchStats(t) {
+  const H = ls.get('walkHr:' + t, null), S = ls.get('walkSeries:' + t, []); if (!H && !S.length) return null;
+  const mx = (H && H.hrMaxSet) || 170, ser = S.map(q => ({ t: q[0] * 1000, hr: q[1] || 0, p: q[2] > 0 && q[2] < 9e5 ? q[2] : null, cad: q[3] || null, reg: q[4] ? q[4] / 10 : null, g: q[5] ? q[5] / 100 : null }));
+  const ok = ser.filter(s => s.hr > 0 && s.p), skip = (ok.length && ok[ok.length - 1].t > 18e5) ? 6e5 : 0, dd = ok.filter(s => s.t >= skip);
+  let drift = null; if (dd.length >= 12) { const h = dd.length >> 1, eff = l => l.reduce((a, s) => a + 1 / s.p / s.hr, 0) / l.length, a = eff(dd.slice(0, h)), b = eff(dd.slice(h)); drift = (a - b) / a * 100; }
+  const z2 = ok.filter(s => zoneOf(mx, s.hr) === 1), z2Pace = z2.length >= 6 ? z2.reduce((a, s) => a + s.p, 0) / z2.length : null;
+  const avg = (l, f) => { const v = l.map(f).filter(x => x != null); return v.length >= 5 ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  return { H, mx, ser, drift, z2Pace, z2N: z2.length, reg: avg(ser, s => s.reg), g: avg(ser, s => s.g), zone: (H && H.zone) || [] };
+}
+function watchNotes(t, W) {
+  const out = [], sp = ls.get('walkSplits:' + t, []), H = W.H || {}, g = ls.get('walkGoal:' + t, null);
+  const B = 'var(--pine)', G = '#E08A00', C = '#E5532D';
+  if (g && g.k && g.k !== 'free') out.push(ls.get('walkGoalDone:' + t, false) ? ['🏁', '목표 달성', '끝까지 해냈어요', B] : ['🏁', '목표에 못 미쳤어요', '다음엔 목표를 조금 낮춰도 좋아요', C]);
+  if (sp.length >= 2) {
+    const h = sp.length >> 1, av = l => l.reduce((a, b) => a + b, 0) / l.length, a = av(sp.slice(0, h)), b = av(sp.slice(sp.length - h)), d = (b - a) / a * 100, m = av(sp), cv = Math.sqrt(sp.reduce((s, x) => s + (x - m) ** 2, 0) / sp.length) / m * 100;
+    out.push(d < -1.5 ? ['📈', '네거티브 스플릿!', `후반 평균 ${paceTxt(b)}이 전반 ${paceTxt(a)}보다 빨랐어요. 체력 배분을 잘했어요.`, B]
+      : Math.abs(d) <= 3 && cv <= 4 ? ['➖', '페이스가 고르게 유지됐어요', `1km마다 차이 ${Math.round(cv)}% · 전반 ${paceTxt(a)} · 후반 ${paceTxt(b)}`, B]
+      : d > 6 ? ['📉', '후반에 페이스가 처졌어요', `전반 ${paceTxt(a)} → 후반 ${paceTxt(b)} (${Math.round(d)}% 느려짐). 처음 2~3km를 10~15초 천천히 시작해 보세요.`, C]
+      : ['〰', '페이스가 조금 흔들렸어요', `전반 ${paceTxt(a)} · 후반 ${paceTxt(b)} · 1km마다 차이 ${Math.round(cv)}%`, G]);
+  }
+  const zt = W.zone.reduce((a, b) => a + b, 0);
+  if (zt > 12e4) {
+    const z2 = Math.round(W.zone[1] * 100 / zt), hi = Math.round((W.zone[2] + W.zone[3] + W.zone[4]) * 100 / zt);
+    out.push(z2 >= 60 ? ['💙', `존2 러닝 잘했어요 · 존2 ${z2}%`, `심박 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1} 안에서 오래 달렸어요. 이렇게 쌓으면 같은 심박에서 점점 빨라져요.`, B]
+      : hi >= 50 ? ['🔥', `존3 이상이 ${hi}%예요`, `존2 훈련이라면 심박을 ${zoneLo(W.mx, 2) - 1} 아래로. 말을 할 수 있을 만큼 천천히, 오르막에선 걸어도 돼요.`, C]
+      : ['🎯', `존2 ${z2}% · 존3 이상 ${hi}%`, '존2 비율 60%를 넘겨 보세요. 시계의 존2 지키기 알림을 켜면 도움이 돼요.', G]);
+  }
+  if (W.z2Pace) {
+    const prev = pastTrips().filter(x => !x.album && x.t !== t && x.info.startAt < (trackLoad(t)[0] || [0, 0, Date.now()])[2]).map(x => watchStats(x.t)).find(s => s && s.z2Pace);
+    const d = prev ? Math.round((prev.z2Pace - W.z2Pace) / 1000) : null;
+    out.push(['🫀', `존2 페이스 ${paceTxt(W.z2Pace)}`, d == null ? '존2 심박으로 달린 평균 페이스예요. 다음 기록과 견줘서 빨라지는지 볼게요.' : d > 0 ? `지난번(${paceTxt(prev.z2Pace)})보다 ${d}초 빨라졌어요. 유산소 체력이 늘고 있어요.` : d < 0 ? `지난번(${paceTxt(prev.z2Pace)})보다 ${-d}초 느려요. 더위·피로·잠이 영향을 줄 수 있어요.` : `지난번과 같아요(${paceTxt(prev.z2Pace)}).`, d == null || d >= 0 ? B : G]);
+  }
+  if (W.drift != null) { const d = W.drift.toFixed(1);
+    out.push(W.drift < 5 ? ['🫁', `심박 드리프트 ${d}%`, '같은 속도에서 후반 심박이 거의 안 올랐어요(5% 아래). 유산소 체력이 버텨 줬어요.', B]
+      : W.drift < 10 ? ['🫁', `심박 드리프트 ${d}%`, '후반에 같은 속도에 심박이 조금 올랐어요. 5% 아래가 목표예요.', G]
+      : ['🫁', `심박 드리프트 ${d}%`, '후반 심박이 많이 올랐어요. 더위·물 부족·피로·처음 속도를 확인해 보세요.', C]); }
+  const cad = H.cad || 0;
+  if (cad) out.push(cad >= 170 ? ['👟', `케이던스 ${cad} 좋아요`, '발을 빠르고 가볍게 디뎠어요.', B] : cad >= 160 ? ['👟', `케이던스 ${cad} 보통`, '170을 목표로 보폭을 조금 줄이고 발을 빠르게. 시계 케이던스 가이드를 170~175에 맞춰 보세요.', G] : ['👟', `케이던스 ${cad} 낮아요`, '보폭이 커서 브레이크가 걸리기 쉬워요. 가이드 소리를 165부터 조금씩 올려 연습해 보세요.', C]);
+  if (W.reg != null && W.reg > 7) out.push(['🥁', `걸음 리듬이 흔들렸어요 ${Math.round(W.reg)}%`, '착지 간격이 들쭉날쭉했어요. 케이던스 가이드 박자에 맞춰 보세요.', G]);
+  if (W.g != null && W.g > 4) out.push(['🦶', `착지 충격이 세요 ${W.g.toFixed(1)}G`, '발을 몸 바로 아래에 살짝 내려놓듯. 보폭을 줄이면 충격도 줄어요.', G]);
+  return out;
+}
+function watchChart(W) {
+  const s0 = W.ser; if (s0.length < 2) return null;
+  const step = Math.max(1, Math.floor(s0.length / 300)), s = s0.filter((_, i) => i % step === 0 || i === s0.length - 1);
+  const Wd = 600, Ht = 300, L = 54, R = 590, T = 30, Bt = 256, t0 = s[0].t, t1 = Math.max(s[s.length - 1].t, t0 + 6e4), xOf = t => L + (R - L) * (t - t0) / (t1 - t0);
+  const hLo = W.mx * 0.5, hHi = W.mx, yH = h => Bt - (Bt - T) * Math.min(1, Math.max(0, (h - hLo) / (hHi - hLo)));
+  const sm = s.map((q, i) => { if (!q.p) return null; const l = s.slice(Math.max(0, i - 2), i + 3).map(x => x.p).filter(Boolean); return l.reduce((a, b) => a + b, 0) / l.length; });
+  const ps = sm.filter(Boolean), lo = Math.min(...ps) - 1e4, hi = Math.max(...ps) + 1e4, yP = p => T + (Bt - T) * (p - lo) / (hi - lo);
+  let pp = '', hp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
+  f = true; s.forEach(q => { if (!q.hr) return; hp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1); f = false; });
+  const ticks = [1, 2, 3, 4].map(z => `<line x1="${L}" x2="${R}" y1="${yH(zoneLo(W.mx, z))}" y2="${yH(zoneLo(W.mx, z))}" stroke="#D6E5F1" stroke-dasharray="3 4"/><text x="${L - 6}" y="${yH(zoneLo(W.mx, z)) + 7}" text-anchor="end" font-size="20" fill="#5F7A92">${zoneLo(W.mx, z)}</text>`).join('');
+  const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
+  box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박과 페이스 그래프">
+    <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
+    ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
+    <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
+    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
+    <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
+    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span><span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
+  return box;
+}
+function watchAnalysis(t) {
+  const W = watchStats(t); if (!W) return null;
+  const notes = watchNotes(t, W), H = W.H || {}, zt = W.zone.reduce((a, b) => a + b, 0), mxZ = Math.max(1, ...W.zone);
+  const wrap = el('div', { class: 'stack', style: 'gap:10px' });
+  wrap.append(el('div', { class: 'card stack', style: 'gap:10px;padding:14px 16px' },
+    el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '⌚ 시계 분석' }), H.avg ? el('span', { class: 'sub', text: `심박 평균 ${H.avg} · 최고 ${H.max}` }) : null),
+    notes.length ? notes.map(([i, a, b, c]) => el('div', { class: 'row', style: 'gap:10px;align-items:flex-start' }, el('span', { style: 'font-size:20px;line-height:1.3', text: i }),
+      el('div', { class: 'grow' }, el('div', { style: `font-weight:700;color:${c}`, text: a }), el('div', { class: 'sub', style: 'font-size:14px', text: b })))) : el('div', { class: 'sub', text: '1km 넘게 달리면 자세히 분석해 드려요.' })));
+  const ch = watchChart(W); if (ch) wrap.append(ch);
+  if (zt > 0) wrap.append(el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' },
+    el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '심박 존' }), el('span', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준` })),
+    [4, 3, 2, 1, 0].map(z => el('div', { class: 'row', style: 'gap:8px;align-items:center' },
+      el('div', { style: `width:74px;flex:none;font-weight:${z === 1 ? 800 : 600};color:${ZONE_COL[z]}` }, `존${z + 1} `, el('span', { style: 'font-size:12px;color:var(--muted);font-weight:500', text: ZONE_NAME[z] })),
+      el('div', { class: 'grow', style: 'height:12px;border-radius:6px;background:var(--soft)' }, el('div', { style: `height:100%;border-radius:6px;background:${ZONE_COL[z]};width:${W.zone[z] ? Math.max(4, W.zone[z] / mxZ * 100) : 0}%` })),
+      el('div', { style: 'width:104px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-size:14px' }, `${fmtRunTime(W.zone[z] || 0)} `, el('b', { text: `${Math.round((W.zone[z] || 0) * 100 / zt)}%` })),
+      el('div', { class: 'sub', style: 'width:66px;flex:none;text-align:right;font-size:12px', text: z === 4 ? `${zoneLo(W.mx, 4)}~` : `${zoneLo(W.mx, z)}~${zoneLo(W.mx, z + 1) - 1}` })))));
+  const rows = [['평균 케이던스', H.cad ? `${H.cad} spm` : null], ['평균 보폭', H.steps > 100 && H.walk ? `${(H.walk / H.steps).toFixed(2)} m` : null], ['걸음 수', H.steps ? H.steps.toLocaleString() : null],
+    ['존2 페이스', W.z2Pace ? paceTxt(W.z2Pace) : null], ['심박 드리프트', W.drift != null ? `${W.drift.toFixed(1)}%` : null], ['걸음 고르기', W.reg != null ? `${Math.round(W.reg)}%` : null], ['착지 충격', W.g != null ? `${W.g.toFixed(1)} G` : null]].filter(r => r[1]);
+  if (rows.length) wrap.append(el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' }, el('b', { style: 'color:var(--pine)', text: '케이던스 · 자세 · 심박' }),
+    rows.map(([a, b]) => el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { class: 'sub', text: a }), el('b', { style: 'font-variant-numeric:tabular-nums', text: b }))),
+    el('div', { class: 'sub', style: 'font-size:12px', text: '심박 드리프트: 처음 10분을 빼고 앞·뒤 절반의 \'속도÷심박\'이 얼마나 떨어졌는지. 걸음 고르기·착지 충격은 손목 센서로 짐작한 대략값이에요.' })));
+  return wrap;
+}
 route();
 cloudWatch();
 if (!IN_NATIVE) { try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => toast(t), 600); } } catch {} }   // 다시 그린 뒤 알림 (앱은 native.js가 해요)
@@ -2862,7 +2997,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
@@ -3224,8 +3359,9 @@ function viewMyList() {
     el('h1', { text: '내 MPD' }),
     el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
     tabs, body,
-    cloudCard(), backupCard(list.filter(x => !x.album).length)));
+    watchCard(viewMyList), cloudCard(), backupCard(list.filter(x => !x.album).length)));
   draw();
+  if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
 // ---------- MPD 수정하기: 모드, 출발·도착 이름, 사진 더하기, 경로 앞뒤 자르기 ----------
 function editMD(x) {
@@ -3462,7 +3598,7 @@ async function viewMyOne(t) {
           el('span', { class: 'sub', style: 'font-size:13px', text: sp.length >= o.m / 1000 ? `움직인 시간만 ${fmtRunTime(sp.slice(0, Math.floor(o.m / 1000)).reduce((a, b) => a + b, 0))}` : '' }))),
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
     M.k === 'run' && !live && !x.album ? el('button', { class: 'btn line full', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기 (예: 10km · 1:30:00)', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null,
-    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
+    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? watchAnalysis(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
