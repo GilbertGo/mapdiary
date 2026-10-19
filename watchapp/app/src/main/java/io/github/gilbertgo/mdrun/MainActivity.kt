@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
     private val h = Handler(Looper.getMainLooper())
     private var runView: RunView? = null
     private var gpsText: TextView? = null
+    private var upd: Updater.Info? = null; private var updChecked = false; private var atStart = false
     private var lm: LocationManager? = null
     private val gpsL = object : LocationListener {
         override fun onLocationChanged(l: Location) { Run.lastAcc = l.accuracy; Run.gpsOn = true; drawGps() }
@@ -92,7 +93,7 @@ class MainActivity : ComponentActivity() {
         views.forEach { col.addView(it, lp()) }
         return ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(col); isFocusable = true; isFocusableInTouchMode = true; post { requestFocus() } }
     }
-    private fun show(v: View) { runView = null; root.removeAllViews(); root.addView(v) }
+    private fun show(v: View) { runView = null; atStart = false; root.removeAllViews(); root.addView(v) }
 
     // ---------- 시작 화면 ----------
     private fun showStart() {
@@ -102,15 +103,20 @@ class MainActivity : ComponentActivity() {
         val tgt = when (g.k) { "dist" -> row("완주 목표 시간", if (g.t > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             "time" -> row("목표 거리", if (g.d > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             else -> null }
+        val u0 = upd
         val views = listOfNotNull(
             tv("MPD Run", 15f, RunView.CORAL, true), gpsText,
+            if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { Updater.install(this, u0) { m -> android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show() } } else null,
             row("목표", g.label()) { showGoal() }, tgt,
             if (g.tgtPace() > 0) tv("1km ${fmtPace(g.tgtPace())} 페이스", 11f, RunView.BLUE, true) else null,
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
             btn("시작", RunView.CORAL, RunView.INK) { countdown() }.apply { textSize = 22f; setPadding(0, (4.6f * u).toInt(), 0, (4.6f * u).toInt()) },
-            tv("지난 기록 ›", 13f, RunView.MUTED, true).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { showHistory() } })
-        show(page(*views.toTypedArray()))
+            tv("지난 기록 ›", 13f, RunView.MUTED, true).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { showHistory() } },
+            tv("판 ${Updater.currentName(this)}", 9f, RunView.MUTED))
+        show(page(*views.toTypedArray())); atStart = true
         startGpsPreview()
+        // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
+        if (!updChecked) { updChecked = true; Updater.check(this) { i -> if (i != null) { upd = i; if (atStart && Run.id == null) showStart() } } }
     }
     private fun startGpsPreview() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { gpsText?.text = "위치 권한을 허용해 주세요"; return }
