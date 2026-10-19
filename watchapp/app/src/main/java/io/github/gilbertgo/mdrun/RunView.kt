@@ -217,40 +217,48 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
 
     // ---------- 심박·페이스 그래프: 파란 띠 = 존2, 빨간 선 = 심박, 산호 선 = 페이스(위로 갈수록 빠름) ----------
     private fun pageGraph(cv: Canvas, now: Long) {
-        text(cv, "심박 · 페이스", cx, 20 * u, 5.6f * u, Color.WHITE, true)
-        val all = Run.series
-        val X0 = 15 * u; val X1 = 85 * u; val Y0 = 28 * u; val Y1 = 68 * u
-        if (all.size < 2) { text(cv, "달리면 10초마다", cx, 46 * u, 5.4f * u, MUTED); text(cv, "그래프가 그려져요", cx, 54 * u, 5.4f * u, MUTED) }
+        // 2026-10-19 사용자 '이 그래프를 뛰며 실시간 보게': 휴대폰 분석 그래프와 같은 모양(존 경계 점선·심박 숫자·존2 띠·페이스 숫자),
+        // 달리는 중엔 최근 20분만 크게 보여 주고, 맨 끝은 지금 값(1초마다)으로 이어요
+        val win = 20 * 60000L; val el = now - Run.startAt
+        val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, Run.hrNow(now), Run.nowPace(now))
+        text(cv, if (el > win) "심박 · 페이스 · 최근 20분" else "심박 · 페이스", cx, 20 * u, 5.2f * u, Color.WHITE, true)
+        val X0 = 21 * u; val X1 = 84 * u; val Y0 = 29 * u; val Y1 = 67 * u
+        val hLo = Run.hrMaxSet * .5f; val hHi = Run.hrMaxSet.toFloat()
+        fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
+        // 존2 띠 + 존 경계 점선과 심박 숫자
+        cv.drawRect(X0, yH(Run.zoneLo(2)), X1, yH(Run.zoneLo(1)), paint(alpha(BLUE, 0x40)))
+        for (z in 1..4) { val y = yH(Run.zoneLo(z)); paint(LINE); p.strokeWidth = .3f * u; p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(u, u), 0f); cv.drawLine(X0, y, X1, y, p); p.pathEffect = null
+            text(cv, "${Run.zoneLo(z)}", X0 - 1.2f * u, y + 1.5f * u, 4.2f * u, if (z == 1 || z == 2) BLUE else MUTED, true, true, Paint.Align.RIGHT) }
+        if (all.size < 3) { text(cv, "달리면 그래프가", cx, 46 * u, 5.2f * u, MUTED); text(cv, "그려져요", cx, 53 * u, 5.2f * u, MUTED) }
         else {
             val step = maxOf(1, all.size / 140); val s = all.filterIndexed { i, _ -> i % step == 0 || i == all.size - 1 }
             val t0 = s.first().t.toFloat(); val t1 = maxOf(s.last().t.toFloat(), t0 + 60000f)
             fun xOf(t: Long) = X0 + (X1 - X0) * (t - t0) / (t1 - t0)
-            // 심박 눈금: 최대 심박의 50%~100%
-            val hLo = Run.hrMaxSet * .5f; val hHi = Run.hrMaxSet.toFloat()
-            fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-            cv.drawRect(X0, yH(Run.zoneLo(2)), X1, yH(Run.zoneLo(1)), paint(alpha(BLUE, 0x38)))
-            paint(LINE); p.strokeWidth = .3f * u; cv.drawLine(X0, Y1, X1, Y1, p)
-            // 페이스 눈금: 보이는 범위(15분/km보다 느린 건 뺌), 빠를수록 위
-            val ps = s.mapNotNull { it.pace }.filter { it < 900000 }
+            val sm = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
+            val ps = sm.filterNotNull()
             if (ps.size >= 2) {
                 val lo = ps.minOrNull()!! - 10000; val hi = ps.maxOrNull()!! + 10000
-                // 들쭉날쭉하지 않게 앞뒤 2점(약 30초)씩 평균
-                val sm = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
-                val path = Path(); var first = true
-                s.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
+                fun yP(pc: Double) = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat()
+                val path = Path(); var first = true; var lx = 0f; var ly = 0f
+                s.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { lx = xOf(q.t); ly = yP(pc); if (first) path.moveTo(lx, ly) else path.lineTo(lx, ly); first = false } }
                 paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .9f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+                cv.drawCircle(lx, ly, 1.3f * u, paint(Color.WHITE)); cv.drawCircle(lx, ly, .8f * u, paint(CORAL))
+                text(cv, fmtPace(ps.minOrNull()), X1, Y0 - 1.6f * u, 4.2f * u, CORAL, true, true, Paint.Align.RIGHT)
+                text(cv, fmtPace(ps.maxOrNull()), X1, Y1 + 5 * u, 4.2f * u, CORAL, true, true, Paint.Align.RIGHT)
             }
             val hs = s.filter { it.hr > 0 }
             if (hs.size >= 2) {
                 val path = Path(); hs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yH(q.hr); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
-                paint(RED); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+                paint(RED); p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+                val q = hs.last(); cv.drawCircle(xOf(q.t), yH(q.hr), 1.4f * u, paint(Color.WHITE)); cv.drawCircle(xOf(q.t), yH(q.hr), .9f * u, paint(RED))
             }
-            text(cv, fmtTime(s.last().t - s.first().t), X1, Y1 + 5 * u, 4.4f * u, MUTED, num = true, align = Paint.Align.RIGHT)
+            text(cv, if (el > win) "−20분" else "0분", X0, Y1 + 5 * u, 4.2f * u, MUTED, num = true, align = Paint.Align.LEFT)
         }
-        val hr = Run.hrNow(now)
-        heart(cv, cx - 21 * u, 77.2f * u, 1.8f * u, RED); text(cv, if (hr > 0) "$hr" else "-", cx - 18 * u, 79.5f * u, 7 * u, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, fmtPace(Run.nowPace(now)), cx + 21 * u, 79.5f * u, 7 * u, CORAL, true, true, Paint.Align.RIGHT)
-        text(cv, "파란 띠 = 존2", cx, 87 * u, LAB * u, BLUE, true)
+        // 지금 값: 심박(존 색) · 페이스
+        val hr = Run.hrNow(now); val zc = if (hr > 0) ZONE[Run.zoneOf(hr)] else RED
+        heart(cv, cx - 22 * u, 77.6f * u, 1.9f * u, zc); text(cv, if (hr > 0) "$hr" else "-", cx - 19 * u, 80 * u, 7.4f * u, Color.WHITE, true, true, Paint.Align.LEFT)
+        text(cv, fmtPace(Run.nowPace(now)), cx + 22 * u, 80 * u, 7.4f * u, CORAL, true, true, Paint.Align.RIGHT)
+        text(cv, if (hr > 0) "존${Run.zoneOf(hr) + 1} · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}" else "존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", cx, 87.5f * u, LAB * u, if (hr > 0) zc else BLUE, true)
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
