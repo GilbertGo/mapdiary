@@ -91,8 +91,8 @@ class MainActivity : ComponentActivity() {
         background = GradientDrawable().apply { cornerRadius = 40 * u; setColor(RunView.SURF) }
         setPadding((6 * u).toInt(), (2.4f * u).toInt(), (4 * u).toInt(), (2.4f * u).toInt())
         val col = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.VERTICAL
-            addView(tv(label, 10f, RunView.MUTED).apply { gravity = Gravity.START })
-            addView(tv(value, 14f, Color.WHITE, true).apply { gravity = Gravity.START; maxLines = 1 }) }
+            addView(tv(label, 12f, RunView.MUTED).apply { gravity = Gravity.START })
+            addView(tv(value, 15f, Color.WHITE, true).apply { gravity = Gravity.START; maxLines = 1 }) }
         addView(col, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(tv("›", 18f, RunView.MUTED))
         setOnClickListener { onClick() }
@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
             if (Cadence.kind != Cadence.OFF) row("가이드 빠르기 (1분에 걸음)", "${Cadence.spm}") { Cadence.setSpm(this, if (Cadence.spm >= 200) 150 else Cadence.spm + 5); showStart() } else null,
             row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
             row("지난 기록", "${Store.list(this).size}개") { showHistory() },
-            tv("판 ${Updater.currentName(this)} · 새 판 확인", 9f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
+            tv("판 ${Updater.currentName(this)} · 새 판 확인", 12f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding((13 * u).toInt(), (4 * u).toInt(), (13 * u).toInt(), (24 * u).toInt())
             rows.forEach { addView(it, lp()) } }
         val all = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(hv, LinearLayout.LayoutParams(-1, -2)); addView(col) }
@@ -177,7 +177,7 @@ class MainActivity : ComponentActivity() {
         // 처음 값: 1km 6분 페이스쯤
         var vt = if (g.t > 0) g.t else (g.v * 360).toInt() / 60 * 60
         var vd = if (g.d > 0) g.d else Math.round(g.v / 6 * 2) / 2.0
-        val big = tv("", 28f, Color.WHITE, true); val sub = tv("", 11f, RunView.GREEN)
+        val big = tv("", 28f, Color.WHITE, true); val sub = tv("", 13f, RunView.GREEN)
         fun draw() {
             if (isD) { big.text = fmtTime(vt * 1000L); sub.text = "1km ${fmtPace(vt * 1000.0 / g.v)}" }
             else { big.text = "${num(vd)}km"; sub.text = "1km ${fmtPace(g.v * 60000 / vd)}" }
@@ -248,7 +248,7 @@ class MainActivity : ComponentActivity() {
             LinearLayout(this).apply { orientation = LinearLayout.VERTICAL
                 background = GradientDrawable().apply { cornerRadius = 6 * u; setColor(RunView.SURF) }
                 setPadding((4 * u).toInt(), (2.5f * u).toInt(), (4 * u).toInt(), (2.5f * u).toInt())
-                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 11f, RunView.MUTED))
+                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 13f, RunView.MUTED))
                 addView(tv(summaryLine(o), 13f, Color.WHITE, true))
                 setOnClickListener { showDetail(o.optString("id"), false) } }
         }
@@ -266,8 +266,8 @@ class MainActivity : ComponentActivity() {
         lines.add(tv("${fmtKm(walk)} km", 26f, Color.WHITE, true))
         lines.add(tv("${fmtTime(mv)} · 평균 ${fmtPace(if (walk > 50) mv / (walk / 1000) else null)}", 13f, Color.WHITE, true))
         if (s.optInt("hrAvg") > 0) lines.add(tv("♥ 평균 ${s.optInt("hrAvg")} · 최고 ${s.optInt("hrMax")}", 12f, RunView.RED))
-        if (s.optInt("cad") > 0) lines.add(tv("케이던스 ${s.optInt("cad")} · ${s.optInt("steps")}걸음", 11f, RunView.MUTED))
-        if (g.k != "free") lines.add(tv("목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 11f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
+        if (s.optInt("cad") > 0) lines.add(tv("케이던스 ${s.optInt("cad")} · ${s.optInt("steps")}걸음", 13f, RunView.MUTED))
+        if (g.k != "free") lines.add(tv("목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 13f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
         for (k in 0 until sp.length()) lines.add(tv("${k + 1}km  ${fmtPace(sp.getLong(k).toDouble())}", 12f, Color.WHITE))
         var armed = false
         lines.add(btn(if (justDone) "처음으로" else "목록으로", RunView.CORAL, RunView.INK) { if (justDone) showStart() else showHistory() })

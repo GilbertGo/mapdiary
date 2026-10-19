@@ -45,8 +45,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
     private fun measure(s: String, size: Float, num: Boolean): Float { paint(Color.WHITE); p.textSize = size; p.typeface = if (num) numBold else krBold; if (num) p.fontFeatureSettings = "tnum"; return p.measureText(s) }
 
     // 버튼 자리(눌렀는지 볼 때 써요)
-    private val playR get() = 10.5f * u
-    private val playY get() = 82.5f * u
+    private val playR get() = 9.5f * u
+    private val playY get() = 83.5f * u
     private var pillBox = RectF(); private var updBox = RectF()
 
     override fun onMeasure(w: Int, h: Int) {
@@ -84,10 +84,10 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         // 맨 위: 새 판 알림(금색 알약) 또는 시각
         val c = Calendar.getInstance()
         if (updName.isNotEmpty()) {
-            val s = "새 판 $updName 설치"; val tw = measure(s, 3.8f * u, false) + 6 * u; val h = 7f * u; val y = 13.5f * u
+            val s = "새 판 $updName 설치"; val tw = measure(s, 4.8f * u, false) + 6 * u; val h = 8.4f * u; val y = 14f * u
             updBox = RectF(cx - tw / 2, y - h / 2, cx + tw / 2, y + h / 2)
             cv.drawRoundRect(updBox, h / 2, h / 2, paint(GOLD))
-            text(cv, s, cx, y + 1.35f * u, 3.8f * u, RunView.INK, true)
+            text(cv, s, cx, y + 1.7f * u, 4.8f * u, RunView.INK, true)
         } else {
             updBox = RectF()
             text(cv, "${c.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", c.get(Calendar.MINUTE))}", cx, 15f * u, 6.4f * u, Color.WHITE, true, true)
@@ -95,24 +95,24 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         // GPS: 준비되면 하늘색 점이 맥박처럼
         val ready = gpsAcc in 0f..20f
         val gs = if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS ${gpsAcc.toInt()}m" else "GPS 잡는 중 ${gpsAcc.toInt()}m"
-        val gw = measure(gs, 3.3f * u, false); val gx = cx - gw / 2 + 1.6f * u; val gy = 21.3f * u
+        val gw = measure(gs, 4.6f * u, false); val gx = cx - gw / 2 + 1.8f * u; val gy = 23f * u
         val dc = if (ready) BLUE else MUTED
-        if (ready) cv.drawCircle(gx - 3.2f * u, gy - 1.1f * u, (1f + 1.1f * br) * u, paint(a(BLUE, (90 * (1 - br)).toInt())))
-        cv.drawCircle(gx - 3.2f * u, gy - 1.1f * u, .9f * u, paint(dc))
-        text(cv, gs, gx, gy, 3.3f * u, dc, true, align = Paint.Align.LEFT)
+        if (ready) cv.drawCircle(gx - 3.4f * u, gy - 1.5f * u, (1f + 1.1f * br) * u, paint(a(BLUE, (90 * (1 - br)).toInt())))
+        cv.drawCircle(gx - 3.4f * u, gy - 1.5f * u, 1.1f * u, paint(dc))
+        text(cv, gs, gx, gy, 4.6f * u, dc, true, align = Paint.Align.LEFT)
 
         // 가운데: 이번 주 거리
-        text(cv, "이번 주", cx, 33f * u, 3.6f * u, MUTED, true)
+        text(cv, "이번 주", cx, 32f * u, 4.8f * u, MUTED, true)
         val ks = if (week.km < 100) String.format("%.1f", week.km) else String.format("%.0f", week.km)
         val big = 19f * u; val unit = 5.4f * u
         val kw = measure(ks, big, true); val uw = measure("km", unit, true); val x0 = cx - (kw + uw + .8f * u) / 2
-        text(cv, ks, x0, 50.5f * u, big, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, "km", x0 + kw + .8f * u, 50.5f * u, unit, CORAL, true, true, Paint.Align.LEFT)
-        text(cv, "주간 목표 ${week.goalKm}km · ${week.runs}번 달렸어요", cx, 56.5f * u, 3.2f * u, MUTED)
+        text(cv, ks, x0, 48.5f * u, big, Color.WHITE, true, true, Paint.Align.LEFT)
+        text(cv, "km", x0 + kw + .8f * u, 48.5f * u, unit, CORAL, true, true, Paint.Align.LEFT)
+        text(cv, "목표 ${week.goalKm}km · ${week.runs}번 달림", cx, 55.5f * u, 4.6f * u, MUTED)
         // 요일 점(월~일): 달린 날 산호, 오늘은 흰 테두리
         val today = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7
         for (i in 0 until 7) {
-            val x = cx + (i - 3) * 4.6f * u; val y = 61.5f * u
+            val x = cx + (i - 3) * 4.6f * u; val y = 60.5f * u
             if (week.days[i]) cv.drawCircle(x, y, 1.25f * u, paint(CORAL))
             else cv.drawCircle(x, y, .8f * u, paint(if (i < today) Color.parseColor("#3B414A") else Color.parseColor("#262A31")))
             if (i == today) { paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .35f * u; cv.drawCircle(x, y, 2f * u, p) }
@@ -120,10 +120,10 @@ class HomeView(c: Context, private val act: Act) : View(c) {
 
         // 목표 알약(누르면 목표 고르기)
         val gl = goal.label() + (if (goal.tgtPace() > 0) "  ·  ${fmtPace(goal.tgtPace())}" else "")
-        val pw = measure(gl, 3.4f * u, false) + 7 * u; val ph = 6.2f * u; val py = 67.6f * u
+        val pw = measure(gl, 4.6f * u, false) + 7 * u; val ph = 7.6f * u; val py = 67.6f * u
         pillBox = RectF(cx - pw / 2, py - ph / 2, cx + pw / 2, py + ph / 2)
         cv.drawRoundRect(pillBox, ph / 2, ph / 2, paint(a(Color.WHITE, 26)))
-        text(cv, gl, cx, py + 1.2f * u, 3.4f * u, Color.WHITE, true)
+        text(cv, gl, cx, py + 1.6f * u, 4.6f * u, Color.WHITE, true)
 
         // 시작 단추: 산호 동그라미 + 숨쉬는 빛 + 진한 ▶
         val R = playR; val py2 = playY
@@ -133,10 +133,6 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         cv.drawCircle(cx, py2, R, p); p.shader = null
         val t = R * .42f
         cv.drawPath(Path().apply { moveTo(cx - t * .7f, py2 - t); lineTo(cx + t, py2); lineTo(cx - t * .7f, py2 + t); close() }, paint(RunView.INK))
-        // 아래 '더 보기' 꺾쇠
-        paint(a(Color.WHITE, 90)); p.style = Paint.Style.STROKE; p.strokeWidth = .5f * u; p.strokeCap = Paint.Cap.ROUND
-        cv.drawPath(Path().apply { moveTo(cx - 1.6f * u, 95.3f * u); lineTo(cx, 96.6f * u); lineTo(cx + 1.6f * u, 95.3f * u) }, p)
-
         // 처음 1분만 움직이고(배터리), 그 뒤엔 30초마다 시각만 새로
         postInvalidateDelayed(if (now - born < 60000) 50 else 30000)
     }
