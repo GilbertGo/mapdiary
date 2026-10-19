@@ -9,14 +9,14 @@
 - 끝내면 저장하고 요약(거리·시간·평균 페이스·심박·케이던스·목표 결과·1km 구간)
 
 ## 받는 곳
-https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
+https://github.com/GilbertGo/mapdiary/releases/download/watch/MPD_run_watch.apk
 
 ## 시계에 까는 법 (플레이스토어에 없어서 '무선 디버깅'으로 넣어요)
 1. **시계**: 설정 → 시계 정보 → 소프트웨어 정보 → '소프트웨어 버전'을 7번 누르기 (개발자 모드 켜짐)
 2. **시계**: 설정 → 개발자 옵션 → 'ADB 디버깅' 켜기, '무선 디버깅' 켜기 (휴대폰과 같은 와이파이에 연결)
-3. **휴대폰**: 플레이스토어에서 'Wear Installer 2' 설치, 위 주소에서 MDRunWatch.apk 받기
+3. **휴대폰**: 플레이스토어에서 'Wear Installer 2' 설치, 위 주소에서 MPD_run_watch.apk 받기
 4. **시계**: 무선 디버깅 → '새 기기 페어링' → 나온 IP 주소·포트·페어링 코드를 Wear Installer 2에 적기
-5. **휴대폰**: Wear Installer 2에서 받은 MDRunWatch.apk를 골라 설치
+5. **휴대폰**: Wear Installer 2에서 받은 MPD_run_watch.apk를 골라 설치
 6. **시계**: 앱 목록의 MPD Run을 열고 위치·신체 센서·신체 활동·알림을 모두 허용
 7. 다 깔았으면 시계의 '무선 디버깅'은 꺼 두세요 (배터리)
 

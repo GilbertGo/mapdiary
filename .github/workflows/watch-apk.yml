@@ -1,6 +1,7 @@
 # MD Run 갤럭시워치 앱(APK)을 만들어요.
-# main에 올라가면 Releases의 'watch'에 MDRunWatch.apk로 올려요 (받는 주소가 늘 같아요):
-#   https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
+# main에 올라가면 Releases의 'watch'에 MPD_run_watch.apk로 올려요 (받는 주소가 늘 같아요):
+#   https://github.com/GilbertGo/mapdiary/releases/download/watch/MPD_run_watch.apk
+# 예전 이름 MDRunWatch.apk도 같은 파일로 같이 올려요(예전 링크와 0.1.7 시계 앱의 '새 판 받기'가 쓰고 있어서)
 # 휴대폰 앱의 'latest' 주소(MDRun.apk 등)는 건드리지 않아요 (make_latest: false)
 name: MPD Run 워치 앱 (갤럭시워치)
 on:
@@ -25,14 +26,17 @@ jobs:
         env: { RUN_NUMBER: '${{ github.run_number }}' }
         run: |
           gradle assembleDebug --no-daemon --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk ../MDRunWatch.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../MPD_run_watch.apk
+          cp ../MPD_run_watch.apk ../MDRunWatch.apk
       - uses: actions/upload-artifact@v4
-        with: { name: MDRunWatch, path: MDRunWatch.apk }
+        with: { name: MPD_run_watch, path: MPD_run_watch.apk }
       - if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: watch
           name: MPD Run 워치 앱 (갤럭시워치)
           body: 갤럭시워치에 까는 MPD Run 시계 앱이에요. 앱 시작 화면이 이 글의 판 번호를 읽어 새 판을 알려 줘요(형식 바꾸지 말 것). 설치 방법은 저장소 watchapp/README.md를 보세요. 판 0.1.${{ github.run_number }}
-          files: MDRunWatch.apk
+          files: |
+            MPD_run_watch.apk
+            MDRunWatch.apk
           make_latest: false

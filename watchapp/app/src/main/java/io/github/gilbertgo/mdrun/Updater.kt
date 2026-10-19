@@ -19,7 +19,7 @@ import kotlin.concurrent.thread
 
 // 앱 안에서 새 판 받기 (2026-10-19): Wear Installer 없이 시계 혼자 업데이트해요.
 // GitHub Releases 'watch'의 설명 글 '판 0.1.N'에서 N(= versionCode)을 읽어 지금 판보다 크면
-// MDRunWatch.apk를 받아 PackageInstaller로 깔아요(같은 서명이라 기록 그대로). 처음 한 번은 '이 앱에서 설치 허용'을 켜야 해요.
+// MPD_run_watch.apk(없으면 예전 이름 MDRunWatch.apk)를 받아 PackageInstaller로 깔아요(같은 서명이라 기록 그대로). 처음 한 번은 '이 앱에서 설치 허용'을 켜야 해요.
 object Updater {
     class Info(val code: Long, val name: String, val url: String)
     private const val API = "https://api.github.com/repos/GilbertGo/mapdiary/releases/tags/watch"
@@ -42,7 +42,8 @@ object Updater {
                 val o = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
                 val m = Regex("0\\.1\\.(\\d+)").find(o.optString("body"))
                 val assets = o.optJSONArray("assets"); var url = ""
-                if (assets != null) for (i in 0 until assets.length()) { val a = assets.getJSONObject(i); if (a.optString("name").endsWith(".apk")) url = a.optString("browser_download_url") }
+                if (assets != null) for (i in 0 until assets.length()) { val a = assets.getJSONObject(i); val n = a.optString("name")
+                    if (n == "MPD_run_watch.apk" || (url.isEmpty() && n.endsWith(".apk"))) url = a.optString("browser_download_url") }
                 val code = m?.groupValues?.get(1)?.toLongOrNull() ?: 0L
                 if (code > cur && url.isNotEmpty()) Info(code, "0.1.$code", url) else null
             } catch (e: Exception) { null }
@@ -68,7 +69,7 @@ object Updater {
                 pi.openSession(id).use { s ->
                     val conn = URL(info.url).openConnection() as HttpURLConnection
                     conn.connectTimeout = 15000; conn.readTimeout = 30000; conn.instanceFollowRedirects = true
-                    s.openWrite("MDRunWatch.apk", 0, -1).use { out -> conn.inputStream.use { it.copyTo(out) }; s.fsync(out) }
+                    s.openWrite("MPD_run_watch.apk", 0, -1).use { out -> conn.inputStream.use { it.copyTo(out) }; s.fsync(out) }
                     val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
                     val pend = PendingIntent.getBroadcast(a, id, Intent(a, UpdateReceiver::class.java), flags)
                     s.commit(pend.intentSender)
