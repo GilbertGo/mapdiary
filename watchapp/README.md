@@ -22,6 +22,12 @@ https://github.com/GilbertGo/mapdiary/releases/download/watch/MDRunWatch.apk
 
 새 판은 같은 방법으로 덮어 깔면 기록이 그대로 남아요(늘 같은 서명).
 
+## 앱 안에서 새 판 받기 (0.1.6부터)
+- 시작 화면을 열면 GitHub Releases `watch`의 설명 글 '판 0.1.N'을 읽어, 지금 판보다 새 판이 있으면 맨 위에 **'새 판이 있어요 · 0.1.N 설치하기'**가 떠요(`Updater.kt`).
+- 누르면 시계가 와이파이로 APK를 받아 설치 창을 띄워요. 처음 한 번은 **'이 앱에서 설치 허용'**(알 수 없는 앱 설치)을 켜야 해요(설정 화면이 저절로 열려요).
+- 그래서 Wear Installer는 0.1.6을 처음 깔 때 한 번만 쓰면 돼요. 시작 화면 맨 아래 작은 글씨가 지금 판이에요.
+- **지킬 것**: 서명 열쇠(`runapp/debug.keystore`)를 바꾸지 말 것(바꾸면 덮어 깔기가 안 돼 지우고 다시 깔아야 함), 릴리스 설명 글의 '판 0.1.{실행 번호}' 형식을 바꾸지 말 것(versionCode = 실행 번호).
+
 ## 만들기
 `.github/workflows/watch-apk.yml`이 `watchapp/`가 바뀌면 GitHub에서 APK를 만들어요(main이면 Releases 'watch'에 올림). 서명은 휴대폰 MD Run과 같은 `runapp/debug.keystore`, 앱 ID도 같은 `io.github.gilbertgo.mdrun` (나중에 시계 → 휴대폰으로 기록 넘기기를 하려고).
 
