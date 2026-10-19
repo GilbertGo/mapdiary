@@ -161,6 +161,7 @@ class MainActivity : ComponentActivity() {
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
         if (!updChecked) { updChecked = true; checkNow(false) }
         Link.pushAll(this)   // 못 보낸 기록이 있으면 보내요
+        Link.pullBg(this) { home?.reloadPhoto() }   // 휴대폰에서 바탕 사진을 바꿨으면 받아요
     }
     private fun startGpsPreview() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { gpsText?.text = "위치 권한을 허용해 주세요"; return }

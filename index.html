@@ -1895,7 +1895,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-25';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-26';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4785,18 +4785,35 @@ function viewWalk() {
   }
   // 러닝 첫 화면·준비 화면 바탕 사진 (2026-10-19 사용자 '앱 화면 사진을 사용자가 바꿀 수 있게'): 휴대폰 사진에서 골라 1400px로 줄여 이 기기에 둠(ls runHero), 비우면 기본 그림
   function runHeroUrl() { return ls.get('runHero', '') || `${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg`; }
+  // 시계 바탕 사진 (2026-10-19 사용자 '시계에도 바탕 사진 바꾸게'): 시계는 사진첩이 없어서 휴대폰에서 고른 사진을 480px 정사각으로 잘라
+  // 시계 연결 코드의 열쇠로 잠가 rooms/{방번호}/x/bg={enc} (기본 사진이면 {none:1})에 올려요. 시계가 첫 화면을 열 때 받아 가요
+  async function watchBgSend() {
+    const c = watchGet(); if (!c) return false;
+    try {
+      const R = await roomOf(c.code), url = ls.get('runHero', '');
+      if (!url) { await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ none: 1 })); return true; }
+      const im = new Image(); im.src = url; await im.decode();
+      const S = 480, cv = el('canvas', { width: S, height: S }), k = Math.max(S / im.width, S / im.height), w = im.width * k, h = im.height * k;
+      cv.getContext('2d').drawImage(im, (S - w) / 2, (S - h) * .75, w, h);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .8));
+      await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ enc: await sealBytes(new Uint8Array(await blob.arrayBuffer()), R.key) }));
+      return true;
+    } catch (e) { return false; }
+  }
   function runHeroPick(after) {
     const cur = ls.get('runHero', ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
     const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
       try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set('runHero', url); } catch (e) { ls.set('runHero', await shrinkImage(f, 900, 'url', .75)); }
-        cb.remove(); toast('바탕 사진을 바꿨어요'); if (after) after(); }
+        cb.remove(); toast('바탕 사진을 바꿨어요' + (watchGet() ? ' · 시계에도 보내요' : '')); watchBgSend(); if (after) after(); }
       catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
     cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: '바탕 사진 바꾸기' }),
       el('p', { class: 'sub', style: 'margin:0', text: '러닝 첫 화면과 준비 화면 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
       el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${runHeroUrl()}")` }),
       el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
-      cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); if (after) after(); } }) : null,
+      cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); watchBgSend(); if (after) after(); } }) : null,
+      watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
+        : el('div', { class: 'sub', style: 'font-size:13px', text: '⌚ 시계와 연결돼 있으면(내 MPD → 시계 기록 받기) 시계 첫 화면 사진도 같이 바뀌어요.' }),
       el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
     document.body.append(cb);
   }
