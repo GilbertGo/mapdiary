@@ -1894,7 +1894,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-20';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-21';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5073,21 +5073,21 @@ function viewWalk() {
     const num = el('div', { style: 'font-size:140px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;min-height:170px', text: '' });
     const cap = el('div', { style: 'color:#fff;font-size:22px;font-weight:700', text: '달리기를 시작합니다' });
     const go = () => { if (dead) return; dead = true; ov.remove(); start(); };
-    const ov = el('div', { class: 'sheet-bg', style: 'z-index:4200;align-items:center;justify-content:center;flex-direction:column;background:rgba(30,59,47,.94)', onclick: go },
+    const ov = el('div', { class: 'sheet-bg', style: 'z-index:4200;align-items:center;justify-content:center;flex-direction:column;background:rgba(16,42,67,.95)', onclick: go },
       cap, num, el('div', { style: 'color:#D5DED7;font-size:16px;margin-top:12px', text: '누르면 바로 시작해요' }));
     document.body.append(ov);
-    const beeps = () => {
-      if (dead) return;
-      [3, 2, 1].forEach((n, k) => setTimeout(() => { if (dead) return; num.textContent = n; tone(880, 0.18); }, k * 1000));
-      setTimeout(() => { if (dead) return; num.textContent = 'GO'; tone(1320, 0.9); setTimeout(go, 700); }, 3000);
-    };
-    // 목소리가 끝나면 신호음 (목소리 안내가 꺼져 있거나 목소리가 안 나오면 1초 뒤에)
-    let started = false; const once = () => { if (!started) { started = true; setTimeout(beeps, 300); } };
-    if (ls.get('runVoice', true) && 'speechSynthesis' in window) {
-      const g0 = runGoal(), tp0 = tgtPace(g0);   // 완주 목표 시간이 있으면 목표 페이스도 말해요
-      try { const u = new SpeechSynthesisUtterance(`달리기를 시작합니다.${tp0 ? ` 목표는 ${goalSay(g0)} ${g0.k === 'dist' ? `${sayDur(g0.t * 1000)} 완주` : `동안 ${sayKm(g0.d * 1000)}`}, 1킬로 ${sayDur(tp0)} 페이스예요.` : ''}`); u.lang = 'ko-KR'; u.onend = once; u.onerror = once; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch { once(); }
-      setTimeout(once, tp0 ? 9000 : 3000);
-    } else setTimeout(once, 700);
+    // 2026-10-19 사용자 '목표 설정을 다 하고 시작 단추를 누르면 3 2 1 0~~~': 누르자마자 3·2·1 짧은 '뚜'(880Hz) → 길게 '뚜~'(1320Hz 1초)와 GO → 시작.
+    // 목표를 말하는 목소리는 시작한 뒤에
+    num.textContent = ''; cap.textContent = '곧 출발해요';
+    [3, 2, 1].forEach((n, k) => setTimeout(() => { if (dead) return; num.textContent = n; tone(880, 0.18); try { navigator.vibrate && navigator.vibrate(120); } catch {} }, 300 + k * 1000));
+    setTimeout(() => { if (dead) return; num.textContent = 'GO'; tone(1320, 1.0); try { navigator.vibrate && navigator.vibrate(600); } catch {} }, 3300);
+    setTimeout(() => {
+      if (dead) return; go();
+      if (ls.get('runVoice', true) && 'speechSynthesis' in window) {
+        const g0 = runGoal(), tp0 = tgtPace(g0);
+        setTimeout(() => { try { const u = new SpeechSynthesisUtterance(`달리기를 시작합니다.${tp0 ? ` 목표는 ${goalSay(g0)} ${g0.k === 'dist' ? `${sayDur(g0.t * 1000)} 완주` : `동안 ${sayKm(g0.d * 1000)}`}, 1킬로 ${sayDur(tp0)} 페이스예요.` : ''}`); u.lang = 'ko-KR'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch {} }, 1100);
+      }
+    }, 3900);
   }
   // ---------- 러닝 대시보드 (나이키 런 클럽·스트라바처럼 큰 숫자 한눈에) ----------
   const rd = { hero: el('div', { class: 'rd-hero' }), time: el('b'), avg: el('b'), now: el('b'), cad: el('b'), cadSub: el('span', { class: 'sm' }), nowSub: el('span', { class: 'sm' }), timeSub: el('span', { class: 'sm' }), pz: el('div', { class: 'rd-pz', style: 'display:none' }, el('b', { text: '⏸ 멈춰 있어요' }), el('span', { text: '달린 시간은 멈춘 시간까지 계속 흘러요(마라톤 기록처럼). 시간도 세지 않으려면 아래 ⏸ 멈춤을 누르세요.' })), pzT: el('b', { style: 'display:inline;font-size:13px;color:inherit' }), state: null,
