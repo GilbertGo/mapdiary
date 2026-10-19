@@ -445,11 +445,24 @@ html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gr
 .rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rh-pills .row{gap:6px!important;flex-wrap:nowrap}.rh-pills .row .sub{display:none}
 .rh-pills .pill,.rh-pill{background:rgba(255,255,255,.92)!important;color:#102A43!important;border:none;font:inherit;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.rh3{position:relative;margin:-20px -20px -24px;min-height:max(640px,100svh);background:#0b2036 50% 100%/cover no-repeat;color:#fff;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!important;margin:0!important;width:100%;padding:14px 20px 0;color:#fff}
+.r3-top{text-align:center;padding:10px 22px 0}.r3-ey{font-family:ui-monospace,'DejaVu Sans Mono',monospace;font-size:11px;letter-spacing:.22em;color:#FFD2B8}
+.r3-hi{font-size:clamp(24px,7vw,28px);font-weight:900;letter-spacing:-.02em;margin-top:4px;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.r3-ring{background:none;border:none;padding:0;margin-top:8px;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.25))}
+.r3-dots{display:flex;gap:10px;margin-top:4px}.r3-dots span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;opacity:.92}
+.r3-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}.r3-dots i.on{background:#FF8A4C}.r3-dots i.td{outline:2px solid #fff;outline-offset:2px}
+.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 44px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
+.r3-go{width:100%;max-width:420px;border:none;border-radius:999px;background:var(--accent,#FF8A4C);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:0 8px 20px rgba(255,138,76,.45);margin-bottom:6px}
+.r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
+.r3-stats div{padding:14px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px}.r3-stats div:last-child{border:none}
+.r3-stats span{font-size:12px;color:var(--muted)}.r3-stats b{font-family:ui-monospace,'DejaVu Sans Mono',monospace;font-size:22px;color:var(--ink)}.r3-stats small{font-size:11px;color:var(--muted)}
 .rs-page{z-index:3000;background:var(--ground,#EEF6FC);display:block;overflow:auto;padding:0}
 .rs-in{max-width:560px;margin:0 auto;padding:12px 16px 120px;display:flex;flex-direction:column;gap:12px}
 .rs-top{display:flex;justify-content:space-between;align-items:center;padding:4px 0 2px}.rs-ey2{font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:700}
 .rs-x{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card,#fff);font-size:18px;color:var(--ink)}
-.rs-photo{height:210px;border-radius:18px;background:center 80%/cover no-repeat;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;color:#fff}
+.rs-photo{height:230px;border-radius:18px;background:center 100%/cover no-repeat;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;color:#fff}
 .rs-ey{font-size:12px;letter-spacing:.14em;font-weight:800;color:#FFD2B8}.rs-h{font-size:clamp(28px,8.5vw,36px);font-weight:900;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.35)}
 .rs-card{background:var(--card,#fff);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
 .rs-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.rs-sm{font-size:12px;color:var(--muted)}
@@ -1881,7 +1894,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-19';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-20';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4757,54 +4770,46 @@ function viewWalk() {
     const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // 이번 주 월요일 0시
     const runs = pastTrips().filter(x => !x.album && ls.get('walkMode:' + x.t, null) === 'run');
     let dist = 0, mv = 0, n = 0;
-    for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist += trackStats(tr, 25).walk; mv += movingMs(tr, 25); n++; }
-    return { dist, mv, n, runs };
+    const days = new Set();
+    for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist += trackStats(tr, 25).walk; mv += movingMs(tr, 25); n++; days.add((new Date(x.info.startAt).getDay() + 6) % 7); }
+    return { dist, mv, n, runs, days };
   }
   function runHome() {
     const g = goalOf(runGoalSaved()), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
-    const hero = el('div', { class: 'rh' }, el('div', { class: 'rh-ov' }));
-    // 그림: 사용자가 고른 그림(2026-10-17, Gemini로 만든 동해 해변 러닝). 앱에서도 웹 주소로 받아요. 못 받으면 바다 그림
-    // (예전엔 가장 최근 러닝 사진을 썼는데, 숲 사진이 화면 색과 안 어울려 사용자가 바꿈)
-    const tag = el('span', { class: 'rh-tag', style: 'display:none' });
-    // 그림: 사용자가 Gemini로 만들어 보내 준 것(2026-10-17 세 번째, 파란 하늘·햇빛 아래 달리는 세 사람(뚱·꼬·떡), 세로 4:5라 그대로 꽉 채움)
-    hero.style.background = `url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg") 50% 100%/cover no-repeat, var(--rh-art) center/cover`;
+    // 2026-10-19 사용자가 시안 B3-2(가운데 큰 고리) 고름: 사진이 한 화면 가득 · 맨 위 인사 · 가운데 이번 주 고리와 요일 점 · 아래 PACE 문구와 큰 시작 단추
+    // (문구는 사용자가 만든 PACE 앱 것이라 그대로 씀)
     startGps(); drawGpsReady();
-    const goalTxt = g.k === 'free' ? '자유 달리기' : goalLabel(g) + (tgtLabel(g) ? ' · ' + tgtLabel(g) : '');
     const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); draw(); };
-    const settings = el('div', { class: 'card stack', style: 'gap:14px' });
-    // 그림 속 세 사람이 아래쪽에 있어서, 날짜·한마디는 위쪽 하늘에 (2026-10-17)
-    hero.append(tag, el('div', { class: 'rh-top' },
-      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
-      el('div', { class: 'rh-info' }, gpsReady, wherePill(true))),   // 2026-10-19 사용자 'gps 정보는 딴 곳에 작게'   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
-      el('div', { class: 'rh-bot' },
-      // 2026-10-19 사용자가 GPS·목표 알약에서 시작 단추로 화살표를 그려 보냄 → 두 알약을 단추 안 아랫줄로
-      // 2026-10-19 사용자 '시작 단추를 딴 곳으로, 크기도 줄이고' → 사진 아래 흐려지는 자리 가운데에 작게
-      el('button', { class: 'rh-go', onclick: runSetup }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
-        el('span', { class: 'rh-go-s', text: `🎯 목표 ${goalTxt}` }))));
+    const kmW0 = W.dist / 1000, C = 2 * Math.PI * 92, pr = wg ? Math.min(1, kmW0 / wg) : 0;
+    const ring = el('button', { class: 'r3-ring', 'aria-label': '주간 목표 정하기', onclick: setWeekGoal });
+    ring.innerHTML = `<svg viewBox="0 0 210 210" width="210" height="210" aria-hidden="true"><circle cx="105" cy="105" r="92" stroke="rgba(255,255,255,.22)" stroke-width="10" fill="rgba(6,30,55,.28)"/>`
+      + (pr > 0 ? `<circle cx="105" cy="105" r="92" stroke="#FF8A4C" stroke-width="10" fill="none" stroke-dasharray="${(C * pr).toFixed(1)} ${C.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 105 105)"/>` : '')
+      + `<text x="105" y="84" fill="#FFD2B8" font-size="11" text-anchor="middle" letter-spacing="3" font-family="ui-monospace,monospace">THIS WEEK</text>`
+      + `<text x="105" y="126" fill="#fff" font-size="42" font-weight="900" text-anchor="middle" font-family="ui-monospace,monospace">${kmW0 < 10 ? kmW0.toFixed(1) : kmW0.toFixed(0)}</text>`
+      + `<text x="105" y="150" fill="#fff" font-size="13" text-anchor="middle">${wg ? `/ 주간 목표 ${wg} km` : 'km · 주간 목표 정하기 ✎'}</text></svg>`;
+    const today = (now.getDay() + 6) % 7;
+    const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
+    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 42%,rgba(6,30,55,.32) 62%,rgba(6,30,55,.9)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
+      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
+      el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
+        el('div', { class: 'r3-hi', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.` })),
+      ring, dots,
+      el('div', { class: 'r3-bot' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
+        el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }),
+        el('button', { class: 'r3-go', onclick: runSetup }, '▶ 러닝 시작하기'),
+        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
       photoList(x.t).then(ps => { if (ps[0] && ps[0].thumb) { th.replaceChildren(); th.style.backgroundImage = `url("${ps[0].thumb}")`; } }).catch(() => {});
       return el('a', { class: 'rh-rr', href: `./?my=1&t=${encodeURIComponent(x.t)}` }, th,
         el('div', { class: 'grow' }, el('b', { text: x.info.name }), el('div', { class: 'sub', style: 'font-size:13px', text: `${d.getMonth() + 1}월 ${d.getDate()}일 · ${fmtDist(st.walk)} · ${fmtRunTime(st.ms)} · ${fmtPace(st.walk, movingMs(tr, 25))}/km` })), el('span', { text: '›', style: 'color:var(--muted);font-size:20px' })); });
-    settings.append(el('b', { text: '러닝 설정' }), goalPicker(),
-      el('button', { class: 'sw-row', role: 'switch', 'aria-checked': ls.get('runVoice', true) ? 'true' : 'false', onclick: () => { ls.set('runVoice', !ls.get('runVoice', true)); draw(); } },
-        el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: ls.get('runVoice', true) ? '켜져 있어요 · 누르면 꺼져요' : '꺼져 있어요 · 누르면 켜져요' })),
-        el('span', { class: 'sw' + (ls.get('runVoice', true) ? ' on' : '') }, el('i'))),
-      (() => { const iT = el('input', { type: 'text', id: 'wt', maxlength: 40, value: startTitle, placeholder: `비워 두면 "${dayName} 러닝"`, oninput: () => { startTitle = iT.value; } });
-        return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
-      el('div', { class: 'sub', style: 'font-size:14px', text: IN_NATIVE ? '앱은 화면을 꺼도 계속 기록해요. 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요(화면이 켜져 있을 때).' : '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }),
-      el('button', { class: 'btn primary full big', onclick: countdown }, ico('run', 24), '러닝 시작하기'));
-    // 2026-10-19 사용자 '사진을 맨 위로 끌어올려': 맨 위 띠를 사진 위에 투명하게 얹어요
-    { const bar = roleBar('leader', '내 기록'); bar.classList.add('rh-bar'); hero.prepend(bar); }
     return [hero,
       pending ? el('div', { class: 'banner info' }, el('b', { text: `'${pending.name}' 길을 따라가요` }), el('div', { text: `전체 ${fmtDist(pathLen(pending.route))}. 시작하면 이 길이 지도에 파란 선으로 깔려요.` }),
         el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가지 않기', onclick: () => { pending = null; ls.set('guideNext', null); draw(); } })) : null,
       IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }), el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남아요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
         el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
-      el('div', { class: 'rh-wk' }, el('b', { text: '이번 주' }), el('button', { class: 'link', style: 'padding:0;font-size:13px', onclick: setWeekGoal, text: wg ? `목표 ${wg}km · ${kmW >= wg ? '달성!' : fmtDist(wg * 1000 - W.dist) + ' 남음'} ✎` : '주간 목표 정하기 ✎' })),
-      wg ? el('div', { class: 'rd-bar' }, el('i', { style: `width:${Math.max(3, pct)}%` })) : null,
-      el('div', { class: 'rd-grid' }, tile('거리', kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0), 'km'), tile('러닝', String(W.n), '번'), tile('평균 페이스', W.dist >= 100 ? fmtPace(W.dist, W.mv) : '-')),
+      el('div', { class: 'r3-stats' }, ...[['이번 주 거리', kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0), 'KM'], ['이번 주 러닝', String(W.n), 'SESSIONS'], ['평균 페이스', W.dist >= 100 ? fmtPace(W.dist, W.mv) : '--:--', '/KM']].map(([l, v, u]) => el('div', {}, el('span', { text: l }), el('b', { text: v }), el('small', { text: u })))),
       (crewDraw(), crewBox),
       W.runs.length ? el('div', { class: 'rh-wk' }, el('b', { text: '최근 러닝' }), el('a', { class: 'link', style: 'padding:0;font-size:13px', href: './?my=1', text: '전체 기록 →' })) : null,
       ...recent].filter(Boolean);
@@ -4824,7 +4829,7 @@ function viewWalk() {
     const paint = () => {
       kmV.textContent = kmTxt(); kmU.textContent = km ? ' km' : ''; kmR.value = km || 1; fill(kmR); kmR.style.opacity = km ? 1 : .45;
       minV.textContent = min ? String(min) : '제한 없음'; minU.textContent = min ? ' 분' : ''; paceL.textContent = paceTxt();
-      kmChips.replaceChildren(...[[0, '자유'], [3, '3 km'], [5, '5 km'], [10, '10 km'], [21.0975, '하프']].map(([v, t]) => el('button', { class: 'rs-chip' + (km === v ? ' on' : ''), text: t, onclick: () => { km = v; save(); paint(); } })));
+      kmChips.replaceChildren(...[[0, '자유'], [3, '3 km'], [5, '5 km'], [10, '10 km'], [21.0975, '21.1 km']].map(([v, t]) => el('button', { class: 'rs-chip' + (km === v ? ' on' : ''), text: t, onclick: () => { km = v; save(); paint(); } })));
       minChips.replaceChildren(...[[0, '제한 없음'], [30, '30분'], [45, '45분'], [60, '60분'], [90, '90분']].map(([v, t]) => el('button', { class: 'rs-chip' + (min === v ? ' on' : ''), text: t, onclick: () => { min = v; save(); paint(); } })));
       const g = goalOf(ls.get('runGoal', { k: 'free' })); goTxt.textContent = g.k === 'free' ? '🎯 자유 달리기' : `🎯 목표 ${goalLabel(g)}${tgtLabel(g) ? ' · ' + tgtLabel(g) : ''}`;
     };
@@ -4832,9 +4837,9 @@ function viewWalk() {
     const stepKm = d => { km = Math.min(42.195, Math.max(1, Math.round(((km === 21.0975 ? 21 : km === 42.195 ? 42 : km) || 0) * 2 + d * 2) / 2)); save(); paint(); };
     const stepMin = d => { min = Math.min(300, Math.max(0, (min || (d > 0 ? 0 : 0)) + d)); if (min && min < 5) min = d > 0 ? 5 : 0; save(); paint(); };
     // 케이던스 가이드
-    const cgV = el('b', { class: 'rs-big' }, String(cgSpm()), el('small', { text: ' spm' })), cgR = el('input', { type: 'range', min: 140, max: 200, step: 5, value: cgSpm(), class: 'rs-range', 'aria-label': '케이던스 가이드 빠르기' });
+    const cgV = el('b', { class: 'rs-big' }, String(cgSpm()), el('small', { text: ' SPM' })), cgR = el('input', { type: 'range', min: 150, max: 200, step: 5, value: cgSpm(), class: 'rs-range', 'aria-label': '케이던스 가이드 빠르기' });
     const cgBtn = el('button', { class: 'rs-tog' });
-    const cgPaint = () => { cgV.firstChild.textContent = String(cgSpm()); cgR.value = cgSpm(); fill(cgR); const on = ls.get('cgOn', false); cgBtn.textContent = on ? '가이드 켜짐' : '가이드 꺼짐'; cgBtn.classList.toggle('on', on); };
+    const cgPaint = () => { cgV.firstChild.textContent = String(cgSpm()); cgR.value = cgSpm(); fill(cgR); const on = ls.get('cgOn', false); cgBtn.textContent = on ? '비프 켜짐' : '비프 꺼짐'; cgBtn.classList.toggle('on', on); };
     cgR.oninput = () => { ls.set('cadGuideSpm', +cgR.value); cgPaint(); };
     cgBtn.onclick = () => { ls.set('cgOn', !ls.get('cgOn', false)); cgPaint(); };
     let tryT = null; const tryBtn = el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '▶ 소리 들어보기', onclick: () => { if (cgTimer) { cgStop(); clearTimeout(tryT); return; } cgStart(); tryT = setTimeout(cgStop, 3500); } });
@@ -4847,12 +4852,12 @@ function viewWalk() {
     let going = false; const gpsMini = el('span', { class: 'row' });
     const gpsCopy = () => { if (!bg.isConnected) { if (!going) { if (cgTimer && !id) cgStop(); draw(); } return; } gpsMini.innerHTML = gpsReady.innerHTML; setTimeout(gpsCopy, 1000); };   // 뒤로가기로 닫혀도 첫 화면을 새로 그려요
     const photo = el('div', { class: 'rs-photo', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.05) 30%,rgba(6,30,55,.78)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
-      el('div', { class: 'rs-ey', text: 'READY · 야외 러닝' }), el('div', { class: 'rs-h', text: '오늘, 내 속도로.' }), el('div', { class: 'rh-info' }, gpsMini, wherePill(true)));
+      el('div', { class: 'rs-ey', text: 'READY  /  OUTDOOR RUN' }), el('div', { class: 'rs-h', text: '오늘의 리듬으로.' }), el('div', { style: 'font-size:13px;margin-bottom:6px', text: 'MPD · FIELD SESSION' }), el('div', { class: 'rh-info' }, gpsMini, wherePill(true)));
     const row = (a, b) => el('div', { class: 'rs-row' }, a, b);
     const card = (...c) => el('div', { class: 'rs-card' }, ...c);
     const bg = el('div', { class: 'sheet-bg rs-page', role: 'dialog', 'aria-label': '러닝 준비' },
       el('div', { class: 'rs-in' },
-        el('div', { class: 'rs-top' }, el('span', { class: 'rs-ey2', text: 'MPD  /  러닝 준비' }), el('button', { class: 'rs-x', 'aria-label': '닫기', text: '✕', onclick: close })),
+        el('div', { class: 'rs-top' }, el('span', { class: 'rs-ey2', text: 'MPD  /  OUTDOOR RUN' }), el('button', { class: 'rs-x', 'aria-label': '닫기', text: '✕', onclick: close })),
         photo,
         card(row(el('b', { text: '이번 러닝 목표' }), el('span', {}, kmV, kmU)),
           el('div', { class: 'rs-ctl' }, el('button', { class: 'rs-pm', text: '−', 'aria-label': '거리 줄이기', onclick: () => stepKm(-0.5) }), kmR, el('button', { class: 'rs-pm', text: '+', 'aria-label': '거리 늘리기', onclick: () => stepKm(0.5) })),
@@ -4861,12 +4866,12 @@ function viewWalk() {
           row(el('b', { text: '목표 시간' }), el('span', {}, minV, minU)),
           el('div', { class: 'rs-ctl' }, el('button', { class: 'rs-pm', text: '−', 'aria-label': '1분 줄이기', onclick: () => stepMin(-1) }), paceL, el('button', { class: 'rs-pm', text: '+', 'aria-label': '1분 늘리기', onclick: () => stepMin(1) })),
           minChips),
-        card(row(el('span', {}, el('b', { text: '케이던스 가이드' }), el('div', { class: 'rs-sm', text: '1분에 이만큼 뚝 소리에 발 맞추기' })), cgBtn),
-          row(cgV, tryBtn), cgR, el('div', { class: 'rs-row rs-sm' }, el('span', { text: '140 spm' }), el('span', { text: '200 spm' }))),
-        card(row(el('span', {}, el('b', { text: '목소리 안내' }), el('div', { class: 'rs-sm', text: '1km마다 페이스·남은 거리·코치 한마디' })), vBtn)),
+        card(row(el('span', {}, el('b', { text: '케이던스 비프' }), el('div', { class: 'rs-sm', text: '1분에 이만큼 뚝 소리에 발 맞추기' })), cgBtn),
+          row(cgV, tryBtn), cgR, el('div', { class: 'rs-row rs-sm' }, el('span', { text: '150 SPM' }), el('span', { text: '200 SPM' }))),
+        card(row(el('span', {}, el('b', { text: '음성 안내' }), el('div', { class: 'rs-sm', text: '1km마다 페이스·남은 거리 안내' })), vBtn)),
         card(el('b', { text: '제목 (선택)' }), iT,
           el('div', { class: 'rs-sm', text: IN_NATIVE ? '앱은 화면을 꺼도 계속 기록해요. 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' : '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요).' }))),
-      el('div', { class: 'rs-foot' }, el('button', { class: 'rs-go', onclick: () => { going = true; bg.remove(); countdown(); } }, el('span', { class: 'rs-go-t', text: '▶ 시작' }), goTxt)));
+      el('div', { class: 'rs-foot' }, el('button', { class: 'rs-go', onclick: () => { going = true; bg.remove(); countdown(); } }, el('span', { class: 'rs-go-t', text: '▶ 출발' }), goTxt)));
     document.body.append(bg); paint(); cgPaint(); vPaint(); gpsCopy();
   }
   function drawGpsReady() {
