@@ -216,18 +216,48 @@ class MainActivity : ComponentActivity() {
     }
 
     // 최대 심박 정하기: 존을 나누는 기준. 모르면 '220 − 나이'
-    private fun showHrMax() {
-        var v = Run.hrMaxSet
-        val big = tv("", 30f, Color.WHITE, true); val sub = tv("", 13f, RunView.BLUE, true)
-        fun draw() { big.text = "$v"; sub.text = "존2 ${(v * .6).roundToInt()}~${(v * .7).roundToInt() - 1}" }
+    // 최대 심박 정하기 (2026-10-19 사용자 '개인이 고를 수 있게, 어떤 값인지 설명도'):
+    // 세 가지 방법 — 직접 맞추기(±) · 나이로(220−나이 / 208−0.7×나이) · 내 기록에서 가장 높았던 심박. 아래에 뜻 설명과 존 표
+    private fun showHrMax(start: Int = Run.hrMaxSet) {
+        var v = start
+        var age = Store.age(this)
+        val big = tv("", 30f, Color.WHITE, true)
+        val zones = tv("", 13f, Color.WHITE)
+        val names = arrayOf("회복", "유산소", "템포", "역치", "최대")
+        fun draw() {
+            big.text = "$v"
+            zones.text = (0 until 5).joinToString("\n") { z -> val lo = (v * (.5 + .1 * z)).roundToInt(); val hi = (v * (.6 + .1 * z)).roundToInt() - 1
+                "존${z + 1} ${names[z]}  " + if (z == 4) "$lo~" else "$lo~$hi" }
+        }
         draw()
         fun pm(d: Int) = btn(if (d > 0) "+$d" else "−${-d}", RunView.SURF) { v = (v + d).coerceIn(120, 220); draw() }
+        val w = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins((1.2f * u).toInt(), 0, (1.2f * u).toInt(), 0) }
         val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            val w = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins((1.2f * u).toInt(), 0, (1.2f * u).toInt(), 0) }
-            addView(pm(-5), w); addView(pm(-1), w); addView(pm(1), w); addView(pm(5), w) }
-        show(page(tv("최대 심박", 15f, RunView.CORAL, true), big, sub, r1,
-            tv("모르면 220 − 나이 (예: 55세 → 165)", 12f, RunView.MUTED),
-            btn("이걸로 정하기", RunView.CORAL, RunView.INK) { Run.hrMaxSet = v; Store.setHrMaxSet(this, v); showStart() }))
+            addView(pm(-5), w); addView(pm(-1), LinearLayout.LayoutParams(w)); addView(pm(1), LinearLayout.LayoutParams(w)); addView(pm(5), LinearLayout.LayoutParams(w)) }
+        // 나이로 정하기
+        val ageTv = tv("", 15f, Color.WHITE, true)
+        val f1 = btn("", RunView.SURF) { v = 220 - age; draw() }; val f2 = btn("", RunView.SURF) { v = (208 - 0.7 * age).roundToInt(); draw() }
+        fun drawAge() { ageTv.text = "나이 ${age}세"; f1.text = "220 − 나이 = ${220 - age}"; f2.text = "208 − 0.7×나이 = ${(208 - 0.7 * age).roundToInt()}" }
+        drawAge()
+        fun am(d: Int) = btn(if (d > 0) "+$d" else "−${-d}", RunView.SURF) { age = (age + d).coerceIn(10, 90); Store.setAge(this, age); drawAge() }
+        val r2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            addView(am(-1), LinearLayout.LayoutParams(w)); addView(am(1), LinearLayout.LayoutParams(w)) }
+        // 내 기록에서 가장 높았던 심박
+        val best = Store.list(this).maxOfOrNull { it.optJSONObject("sum")?.optInt("hrMax") ?: 0 } ?: 0
+        val fromRec = if (best >= 130) btn("내 기록 최고 심박 $best", RunView.SURF) { v = best; draw() } else null
+        val views = listOfNotNull(
+            tv("최대 심박", 15f, RunView.CORAL, true), big, r1,
+            btn("이걸로 정하기", RunView.CORAL, RunView.INK) { Run.hrMaxSet = v; Store.setHrMaxSet(this, v); showStart() },
+            zones,
+            tv("최대 심박이란?", 14f, RunView.CORAL, true),
+            tv("있는 힘껏 달릴 때 심장이 1분에 뛸 수 있는 가장 많은 횟수예요. 심박 존은 이 숫자를 기준으로 나눠요(존2 = 60~70%). 사람마다 달라서 맞게 정할수록 존이 정확해져요.", 13f, Color.WHITE),
+            tv("나이로 정하기", 14f, RunView.CORAL, true),
+            ageTv, r2, f1, f2,
+            tv("나이 공식은 사람에 따라 10 넘게 틀릴 수 있어요. 208 − 0.7×나이가 조금 더 맞는 편이에요.", 12f, RunView.MUTED),
+            if (fromRec != null) tv("내 기록에서", 14f, RunView.CORAL, true) else null, fromRec,
+            if (fromRec != null) tv("전력으로 달린 적이 있다면 기록에서 본 가장 높은 심박이 가장 정확해요. 공식보다 높으면 그 값을 쓰세요.", 12f, RunView.MUTED) else null,
+            btn("돌아가기", RunView.SURF, RunView.MUTED) { showStart() })
+        show(page(*views.toTypedArray()))
     }
 
     // ---------- 3 · 2 · 1 ----------

@@ -17,6 +17,8 @@ object Store {
     fun setVoice(c: Context, on: Boolean) = prefs(c).edit().putBoolean("voice", on).apply()
     fun weekGoal(c: Context) = prefs(c).getInt("weekGoal", 20)
     fun setWeekGoal(c: Context, km: Int) = prefs(c).edit().putInt("weekGoal", km).apply()
+    fun age(c: Context) = prefs(c).getInt("age", 50)
+    fun setAge(c: Context, v: Int) = prefs(c).edit().putInt("age", v).apply()
     fun hrMaxSet(c: Context) = prefs(c).getInt("hrMaxSet", 170)
     fun setHrMaxSet(c: Context, v: Int) = prefs(c).edit().putInt("hrMaxSet", v).apply()
     fun z2Alert(c: Context) = prefs(c).getBoolean("z2Alert", false)
