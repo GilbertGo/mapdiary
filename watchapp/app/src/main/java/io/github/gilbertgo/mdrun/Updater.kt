@@ -6,6 +6,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -32,15 +36,32 @@ object Updater {
     } catch (e: Exception) { 0L }
     fun currentName(c: Context): String = try { c.packageManager.getPackageInfo(c.packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
 
+    // 시계는 휴대폰 블루투스로 인터넷에 붙으면 아주 느려요 → 와이파이를 먼저 달라고 하고(최대 10초), 안 되면 지금 연결로.
+    // 쓰레드 안에서만 불러요
+    private fun net(c: Context): Network? {
+        val cm = c.getSystemService(ConnectivityManager::class.java) ?: return null
+        val lock = Object(); var got: Network? = null
+        val cb = object : ConnectivityManager.NetworkCallback() { override fun onAvailable(n: Network) { synchronized(lock) { got = n; lock.notifyAll() } } }
+        try {
+            cm.requestNetwork(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(), cb)
+            synchronized(lock) { if (got == null) lock.wait(10000) }
+        } catch (e: Exception) {}
+        return got ?: cm.activeNetwork
+    }
+    private fun open(c: Context, url: String, readMs: Int): HttpURLConnection {
+        val n = net(c)
+        val conn = (if (n != null) n.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
+        conn.connectTimeout = 30000; conn.readTimeout = readMs; conn.instanceFollowRedirects = true
+        conn.setRequestProperty("User-Agent", "MPD-Run-Watch")
+        return conn
+    }
     var lastErr = ""   // 마지막으로 알아볼 때 안 된 까닭(판 번호를 누르면 보여 줘요)
     // 새 판이 있으면 Info, 없거나 인터넷이 안 되면 null (화면 쓰레드로 돌려줘요)
     fun check(c: Context, cb: (Info?) -> Unit) {
         val cur = current(c)
         thread {
             val info = try {
-                val conn = URL(API).openConnection() as HttpURLConnection
-                conn.connectTimeout = 8000; conn.readTimeout = 8000; conn.setRequestProperty("Accept", "application/vnd.github+json")
-                conn.setRequestProperty("User-Agent", "MPD-Run-Watch")
+                val conn = open(c, API, 30000); conn.setRequestProperty("Accept", "application/vnd.github+json")
                 if (conn.responseCode != 200) throw Exception("GitHub " + conn.responseCode)
                 val o = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
                 lastErr = ""
@@ -72,8 +93,11 @@ object Updater {
                 val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply { setAppPackageName(a.packageName) }
                 val id = pi.createSession(params)
                 pi.openSession(id).use { s ->
-                    val conn = URL(info.url).openConnection() as HttpURLConnection
-                    conn.connectTimeout = 15000; conn.readTimeout = 30000; conn.instanceFollowRedirects = true
+                    var conn = open(a, info.url, 60000)
+                    // GitHub는 다른 주소로 넘기는데, 네트워크를 정해 열면 저절로 안 따라갈 수 있어 직접 따라가요
+                    var hop = 0
+                    while (conn.responseCode in 301..308 && hop++ < 5) { val to = conn.getHeaderField("Location") ?: break; conn.disconnect(); conn = open(a, to, 60000) }
+                    if (conn.responseCode != 200) throw Exception("받기 " + conn.responseCode)
                     s.openWrite("MPD_run_watch.apk", 0, -1).use { out -> conn.inputStream.use { it.copyTo(out) }; s.fsync(out) }
                     val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
                     val pend = PendingIntent.getBroadcast(a, id, Intent(a, UpdateReceiver::class.java), flags)
@@ -81,7 +105,7 @@ object Updater {
                 }
                 main.post { say("설치 확인 창이 뜨면 '업데이트'를 눌러 주세요") }
             } catch (e: Exception) {
-                main.post { say("새 판을 못 받았어요. 와이파이를 확인해 주세요") }
+                main.post { say("새 판을 못 받았어요. 와이파이를 확인해 주세요 (" + (e.message ?: e.javaClass.simpleName).take(60) + ")") }
             } finally { busy = false }
         }
     }
