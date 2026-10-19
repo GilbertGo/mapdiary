@@ -132,19 +132,26 @@ class MainActivity : ComponentActivity() {
             "time" -> row("목표 거리", if (g.d > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             else -> null }
         val wg = listOf(10, 15, 20, 30, 40, 50, 60, 80)
-        val rows = listOfNotNull(
-            if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
-            row("목표", g.label()) { showGoal() }, tgt,
-            row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
-            row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
-            row("휴대폰으로 보내기", if (Link.on(this)) "켬 · ${Link.code(this)}" else "끔") { showLink() },
-            row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
-            row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() },
-            row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
-            row("지난 기록", "${Store.list(this).size}개") { showHistory() },
-            tv("판 ${Updater.currentName(this)} · 새 판 확인", 12f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding((13 * u).toInt(), (4 * u).toInt(), (13 * u).toInt(), (24 * u).toInt())
-            rows.forEach { addView(it, lp()) } }
+        // 설정은 묶음으로 (2026-10-19 사용자 '첫 화면 구성이 이상해, 체계가 없어'): 오늘 달리기 · 심박 존 · 기록 · 앱
+        val sections = listOf(
+            "오늘 달리기" to listOfNotNull(
+                row("목표", g.label()) { showGoal() }, tgt,
+                row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
+                row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() }),
+            "심박 존" to listOf(
+                row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
+                row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() }),
+            "기록" to listOf(
+                row("지난 기록", "${Store.list(this).size}개") { showHistory() },
+                row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
+                row("휴대폰으로 보내기", if (Link.on(this)) "켬 · ${Link.code(this)}" else "끔") { showLink() }),
+            "앱" to listOfNotNull(
+                if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
+                row("판 ${Updater.currentName(this)}", "새 판 확인") { checkNow(true) }))
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((13 * u).toInt(), (2 * u).toInt(), (13 * u).toInt(), (24 * u).toInt())
+            sections.forEachIndexed { i, (title, rs) ->
+                addView(tv(title, 13f, RunView.CORAL, true).apply { gravity = Gravity.START; setPadding((3 * u).toInt(), 0, 0, 0) }, lp(if (i == 0) 2f else 7f))
+                rs.forEach { addView(it, lp(1.6f)) } } }
         val all = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(hv, LinearLayout.LayoutParams(-1, -2)); addView(col) }
         show(ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(all); isFocusable = true; isFocusableInTouchMode = true; post { requestFocus() } }); atStart = true; home = hv
         startGpsPreview()
