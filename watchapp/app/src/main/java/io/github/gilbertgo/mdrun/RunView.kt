@@ -26,7 +26,10 @@ import kotlin.math.sin
 // 휴대폰 MPD 바닷가 색(산호 #FF8A4C · 하늘 #4FC3F7), 테두리 링·알약 딱지·그린 아이콘(이모지 안 씀)
 class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     companion object {
-        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4
+        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4; const val P_ZONE = 5
+        // 심박 존 색: 존1 회색 · 존2 하늘 · 존3 금 · 존4 산호 · 존5 빨강
+        val ZONE = intArrayOf(Color.parseColor("#9AA5B4"), Color.parseColor("#4FC3F7"), Color.parseColor("#FFD166"), Color.parseColor("#FF8A4C"), Color.parseColor("#FF4D5E"))
+        val ZNAME = arrayOf("회복", "유산소", "템포", "역치", "최대")
         val CORAL = Color.parseColor("#FF8A4C"); val BLUE = Color.parseColor("#4FC3F7"); val GOLD = Color.parseColor("#FFD166")
         val RED = Color.parseColor("#FF4D5E"); val LATE = Color.parseColor("#FF7A59"); val MUTED = Color.parseColor("#8D97A5")
         val SURF = Color.parseColor("#16191E"); val LINE = Color.parseColor("#2A2F37"); val TRACK = Color.parseColor("#22262D")
@@ -85,7 +88,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     // 화면 차례: 달리기 → 목표(목표가 있을 때만) → 몸(심박·케이던스) → 1km 구간 → 멈춤·끝내기
     // 2026-10-19 정리(사용자 '중복되는 내용, 조잡해, 작은 글씨 안 보여'): 한 화면에 한 가지 일만, 같은 숫자는 한 곳에만,
     // 글자는 가장 작아도 화면의 5%(이름표), 색은 화면마다 강조 하나
-    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_SPLIT, P_CTL)
+    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_SPLIT, P_CTL)
     private val LAB = 5f   // 이름표 글자 크기(u)
 
     override fun onDraw(cv: Canvas) {
@@ -97,6 +100,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             P_MAIN -> pageMain(cv, now)
             P_COACH -> pageCoach(cv)
             P_BODY -> pageBody(cv, now)
+            P_ZONE -> pageZones(cv)
             P_SPLIT -> pageSplits(cv)
             else -> pageCtl(cv, now)
         }
@@ -130,7 +134,10 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     private fun pageMain(cv: Canvas, now: Long) {
         when { Run.goalDone -> ring(cv, frac(), GOLD, GOLD); Run.goal.k == "free" -> ring(cv, frac(), BLUE, BLUE); else -> ring(cv, frac(), CORAL, Color.parseColor("#FFB066")) }
         val al = alert(now)
-        if (al != null) pill(cv, al.first, 18 * u, al.second, LAB * u) else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
+        val hr = Run.hrNow(now)
+        if (al != null) pill(cv, al.first, 18 * u, al.second, LAB * u)
+        else if (hr > 0) { val z = Run.zoneOf(hr); pill(cv, "존${z + 1} · $hr", 18 * u, ZONE[z], 5.4f * u) }
+        else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
         if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
@@ -171,18 +178,38 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, sub, cx, 72 * u, 5.6f * u, Color.WHITE, true, max = 0.7f)
     }
 
-    // ---------- 3. 몸: 심박 크게 · 평균/최고 · 케이던스(가이드가 켜져 있으면 목표 박자) ----------
+    // ---------- 3. 몸: 지금 존 · 심박 크게 · 존 막대(어디쯤인지) · 존2 범위 · 케이던스 ----------
     private fun pageBody(cv: Canvas, now: Long) {
-        val hr = Run.hrNow(now)
-        val s = if (hr > 0) "$hr" else "-"; val sz = 24 * u; val tw = measure(s, sz) + 9 * u; val x0 = cx - tw / 2
-        heart(cv, x0 + 3 * u, 39 * u, 3.2f * u, RED)
-        text(cv, s, x0 + 8.5f * u, 47 * u, sz, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, "심박" + (if (Run.hrAvg() > 0) " · 평균 ${Run.hrAvg()} · 최고 ${Run.hrMax}" else ""), cx, 56 * u, LAB * u, MUTED, max = 0.7f)
-        cv.drawRect(22 * u, 62 * u, 78 * u, 62.3f * u, paint(LINE))
+        val hr = Run.hrNow(now); val z = if (hr > 0) Run.zoneOf(hr) else -1
+        if (z >= 0) pill(cv, "존${z + 1} · ${ZNAME[z]}", 20 * u, ZONE[z], 5.4f * u) else text(cv, "심박 재는 중", cx, 21 * u, LAB * u, MUTED, true)
+        val s = if (hr > 0) "$hr" else "-"; val sz = 22 * u; val tw = measure(s, sz) + 9 * u; val x0 = cx - tw / 2
+        heart(cv, x0 + 3 * u, 40 * u, 3.2f * u, if (z >= 0) ZONE[z] else RED)
+        text(cv, s, x0 + 8.5f * u, 48 * u, sz, Color.WHITE, true, true, Paint.Align.LEFT)
+        // 존 막대: 다섯 칸, 지금 존은 진하게 + 흰 점이 그 존 안 어디쯤인지
+        val L = 17 * u; val Wd = 66 * u; val gap = .8f * u; val cw = (Wd - gap * 4) / 5; val y = 55.5f * u; val h = 2.8f * u
+        for (k in 0 until 5) { val x = L + k * (cw + gap)
+            cv.drawRoundRect(RectF(x, y - h / 2, x + cw, y + h / 2), h / 2, h / 2, paint(if (k == z) ZONE[k] else alpha(ZONE[k], 0x50))) }
+        if (z >= 0) { val f = ((hr.toDouble() / Run.hrMaxSet - (.5 + .1 * z)) / .1).coerceIn(0.0, 1.0).toFloat(); val zz = if (hr.toDouble() / Run.hrMaxSet < .5) 0f else f
+            val x = L + z * (cw + gap) + cw * zz; cv.drawCircle(x, y, 2.2f * u, paint(Color.WHITE)); cv.drawCircle(x, y, 1.2f * u, paint(ZONE[z])) }
+        text(cv, "존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", cx, 64 * u, LAB * u, BLUE, true)
+        cv.drawRect(26 * u, 68 * u, 74 * u, 68.3f * u, paint(LINE))
         val cad = Run.cadNow(now)
-        if (Cadence.kind != Cadence.OFF) bigWithUnit(cv, cad?.toString() ?: "-", " / ${Cadence.spm}", 77 * u, 13 * u, 5.5f * u, CORAL)
-        else bigWithUnit(cv, cad?.toString() ?: "-", "spm", 77 * u, 13 * u, 5.5f * u, MUTED)
-        text(cv, "케이던스", cx, 85 * u, LAB * u, MUTED)
+        if (Cadence.kind != Cadence.OFF) bigWithUnit(cv, cad?.toString() ?: "-", " / ${Cadence.spm}", 80 * u, 11 * u, 5f * u, CORAL)
+        else bigWithUnit(cv, cad?.toString() ?: "-", "spm", 80 * u, 11 * u, 5f * u, MUTED)
+        text(cv, "케이던스", cx, 87 * u, LAB * u, MUTED)
+    }
+
+    // ---------- 3-2. 존별 시간 (존5가 위, 존2는 이름을 흰색으로) + 평균·최고 심박 ----------
+    private fun pageZones(cv: Canvas) {
+        text(cv, "심박 존 시간", cx, 20 * u, 5.6f * u, Color.WHITE, true)
+        val mx = (Run.zoneMs.maxOrNull() ?: 0L).coerceAtLeast(1L)
+        for (i in 0 until 5) { val k = 4 - i; val y = 30 * u + i * 10.5f * u; val ms = Run.zoneMs[k]
+            text(cv, "존${k + 1}", 24 * u, y + 2.3f * u, 5.4f * u, if (k == 1) Color.WHITE else ZONE[k], true, false, Paint.Align.RIGHT)
+            cv.drawRoundRect(RectF(27 * u, y - 1.6f * u, 55 * u, y + 1.6f * u), 1.6f * u, 1.6f * u, paint(TRACK))
+            if (ms > 0) cv.drawRoundRect(RectF(27 * u, y - 1.6f * u, 27 * u + 28 * u * (ms.toFloat() / mx).coerceAtLeast(.06f), y + 1.6f * u), 1.6f * u, 1.6f * u, paint(ZONE[k]))
+            text(cv, fmtTime(ms), 80 * u, y + 2.5f * u, 6.4f * u, if (k == 1) Color.WHITE else MUTED, true, true, Paint.Align.RIGHT)
+        }
+        text(cv, if (Run.hrAvg() > 0) "평균 ${Run.hrAvg()} · 최고 ${Run.hrMax}" else "심박이 아직 없어요", cx, 87 * u, LAB * u, MUTED, true)
     }
 
     // ---------- 4. 1km 구간 (막대가 길수록 빠른 구간, 가장 빠른 곳은 산호색) ----------

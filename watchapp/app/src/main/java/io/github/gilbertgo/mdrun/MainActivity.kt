@@ -25,6 +25,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import java.util.Calendar
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 // 시계 화면: 시작(목표 고르기) → 3·2·1 → 달리는 중(RunView) → 끝(저장) / 지난 기록
 class MainActivity : ComponentActivity() {
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         setContentView(root)
-        Run.voice = Store.voice(this); Cadence.load(this)
+        Run.voice = Store.voice(this); Cadence.load(this); Run.hrMaxSet = Store.hrMaxSet(this); Run.z2Alert = Store.z2Alert(this)
         // 화면이 어두워져도(앰비언트) 이 앱을 그대로 보여 줘요
         attachAmbient(this, { runView?.let { it.ambient = true; it.invalidate() } }, { runView?.invalidate() }, { runView?.let { it.ambient = false; it.invalidate() } })
         if (PERMS.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) requestPermissions(PERMS, 1)
@@ -134,6 +135,8 @@ class MainActivity : ComponentActivity() {
             if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
             row("목표", g.label()) { showGoal() }, tgt,
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
+            row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
+            row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() },
             row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { Cadence.set(this, (Cadence.kind + 1) % 4); showStart() },
             if (Cadence.kind != Cadence.OFF) row("가이드 빠르기 (1분에 걸음)", "${Cadence.spm}") { Cadence.setSpm(this, if (Cadence.spm >= 200) 150 else Cadence.spm + 5); showStart() } else null,
             row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
@@ -192,6 +195,21 @@ class MainActivity : ComponentActivity() {
             btn("이걸로 정하기", RunView.CORAL, RunView.INK) {
                 Store.setGoal(this, if (isD) g.copy(t = vt) else g.copy(d = vd)); showStart() },
             btn("정하지 않음", RunView.SURF, RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
+    }
+
+    // 최대 심박 정하기: 존을 나누는 기준. 모르면 '220 − 나이'
+    private fun showHrMax() {
+        var v = Run.hrMaxSet
+        val big = tv("", 30f, Color.WHITE, true); val sub = tv("", 13f, RunView.BLUE, true)
+        fun draw() { big.text = "$v"; sub.text = "존2 ${(v * .6).roundToInt()}~${(v * .7).roundToInt() - 1}" }
+        draw()
+        fun pm(d: Int) = btn(if (d > 0) "+$d" else "−${-d}", RunView.SURF) { v = (v + d).coerceIn(120, 220); draw() }
+        val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            val w = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins((1.2f * u).toInt(), 0, (1.2f * u).toInt(), 0) }
+            addView(pm(-5), w); addView(pm(-1), w); addView(pm(1), w); addView(pm(5), w) }
+        show(page(tv("최대 심박", 15f, RunView.CORAL, true), big, sub, r1,
+            tv("모르면 220 − 나이 (예: 55세 → 165)", 12f, RunView.MUTED),
+            btn("이걸로 정하기", RunView.CORAL, RunView.INK) { Run.hrMaxSet = v; Store.setHrMaxSet(this, v); showStart() }))
     }
 
     // ---------- 3 · 2 · 1 ----------
@@ -266,6 +284,8 @@ class MainActivity : ComponentActivity() {
         lines.add(tv("${fmtKm(walk)} km", 26f, Color.WHITE, true))
         lines.add(tv("${fmtTime(mv)} · 평균 ${fmtPace(if (walk > 50) mv / (walk / 1000) else null)}", 13f, Color.WHITE, true))
         if (s.optInt("hrAvg") > 0) lines.add(tv("♥ 평균 ${s.optInt("hrAvg")} · 최고 ${s.optInt("hrMax")}", 12f, RunView.RED))
+        s.optJSONArray("zone")?.let { z -> val tot = (0 until z.length()).sumOf { z.optLong(it) }
+            if (tot > 60000) lines.add(tv("존2 ${fmtTime(z.optLong(1))} (${z.optLong(1) * 100 / tot}%) · 존3+ ${fmtTime(z.optLong(2) + z.optLong(3) + z.optLong(4))}", 13f, RunView.BLUE, true)) }
         if (s.optInt("cad") > 0) lines.add(tv("케이던스 ${s.optInt("cad")} · ${s.optInt("steps")}걸음", 13f, RunView.MUTED))
         if (g.k != "free") lines.add(tv("목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 13f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
         for (k in 0 until sp.length()) lines.add(tv("${k + 1}km  ${fmtPace(sp.getLong(k).toDouble())}", 12f, Color.WHITE))

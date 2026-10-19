@@ -7,6 +7,7 @@ import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.sin
@@ -93,6 +94,12 @@ object Run {
     var gpsOn = false
     // 심박
     var hr = 0; var hrT = 0L; var hrSum = 0L; var hrN = 0; var hrMax = 0
+    // 심박 존 (2026-10-19, 사용자 '존투러닝 중요해'): 최대 심박(hrMaxSet)의 50~60% 존1 · 60~70% 존2 · 70~80% 존3 · 80~90% 존4 · 90%~ 존5
+    var hrMaxSet = 170; var z2Alert = false
+    val zoneMs = LongArray(5); private var zT = 0L; private var zLast = 0
+    private var overSince = 0L; private var underSince = 0L; private var zSaid = 0L
+    fun zoneOf(bpm: Int): Int { val f = bpm.toDouble() / hrMaxSet; return when { f < .6 -> 0; f < .7 -> 1; f < .8 -> 2; f < .9 -> 3; else -> 4 } }
+    fun zoneLo(z: Int) = (hrMaxSet * (.5 + .1 * z)).roundToInt()   // z: 0~4 (존1~존5)
     // 걸음 (휴대폰의 걸음 수 센서. 처음 값을 0으로)
     private var stepBase = -1; private var stepOff = 0; var steps = 0
     private val stepS = ArrayDeque<Pair<Long, Int>>()
@@ -111,7 +118,7 @@ object Run {
     fun begin(now: Long, g: Goal, title: String) {
         id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title
         pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
-        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
+        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
 
@@ -166,7 +173,21 @@ object Run {
     fun onHr(bpm: Int, now: Long) {
         if (bpm < 30 || bpm > 240) return
         hr = bpm; hrT = now
-        if (id != null && !paused(now)) { hrSum += bpm; hrN++; hrMax = max(hrMax, bpm) }
+        if (id != null && !paused(now)) {
+            hrSum += bpm; hrN++; hrMax = max(hrMax, bpm)
+            if (zT > 0) zoneMs[zLast] += min(now - zT, 10000L)
+            zLast = zoneOf(bpm); zT = now
+            if (z2Alert) z2Check(bpm, now)
+        } else zT = 0
+    }
+    // 존2 지키기: 존2보다 20초 넘게 높으면, 5분 지난 뒤 40초 넘게 낮으면 진동 + 목소리(1분 반에 한 번까지)
+    private fun z2Check(bpm: Int, now: Long) {
+        val hi = zoneLo(2); val lo = zoneLo(1)
+        if (bpm >= hi) { if (overSince == 0L) overSince = now } else overSince = 0
+        if (bpm < lo) { if (underSince == 0L) underSince = now } else underSince = 0
+        if (now - zSaid < 90000) return
+        if (overSince > 0 && now - overSince > 20000) { zSaid = now; buzz(longArrayOf(0, 220, 140, 220)); say("심박 ${bpm}, 존2보다 높아요. 조금 천천히요.") }
+        else if (underSince > 0 && now - underSince > 40000 && now - startAt > 300000) { zSaid = now; buzz(longArrayOf(0, 120)); say("존2보다 낮아요. 조금 더 빠르게 달려도 돼요.") }
     }
     fun hrNow(now: Long) = if (now - hrT < 10000) hr else 0
     fun hrAvg() = if (hrN > 0) (hrSum / hrN).toInt() else 0
@@ -287,9 +308,9 @@ object Run {
             .put("walkMode:$id", "\"run\"")
             .put("walkSplits:$id", JSONArray(splits).toString())
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
-            .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).toString())
+            .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
         if (goal.k != "free") { data.put("walkGoal:$id", goal.toJson().toString()); data.put("walkGoalDone:$id", goalDone.toString()) }
-        val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0)
+        val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
     }
@@ -302,6 +323,7 @@ object Run {
         val tr = JSONArray(data.optString("track:$i", "[]"))
         for (k in 0 until tr.length()) { val q = tr.getJSONArray(k); pts.add(Pt(q.getDouble(0), q.getDouble(1), q.getLong(2), if (q.length() > 3 && !q.isNull(3)) q.getDouble(3) else null)) }
         val sp = JSONArray(data.optString("walkSplits:$i", "[]")); for (k in 0 until sp.length()) splits.add(sp.getLong(k))
-        val s = o.optJSONObject("sum"); if (s != null) { walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps }
+        val s = o.optJSONObject("sum"); if (s != null) { walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps
+            s.optJSONArray("zone")?.let { z -> for (k in 0 until minOf(5, z.length())) zoneMs[k] = z.optLong(k) } }
     }
 }
