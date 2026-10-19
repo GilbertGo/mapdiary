@@ -427,7 +427,11 @@ html.rh-page{--rh-bg:#DAE8F3}
 html.rh-page body,html[data-theme=sea].rh-page body{background:#DAE8F3}
 .rh{height:calc(min(60vh,470px) + 50px)!important}
 .rh::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(180deg,rgba(218,232,243,0) 0%,rgba(218,232,243,.6) 50%,rgba(218,232,243,.95) 85%,#DAE8F3 100%);pointer-events:none}
-.rh .rh-bot{bottom:62px;z-index:1}.rh .rh-top{z-index:1;top:62px}
+.rh .rh-bot{bottom:10px;z-index:1;align-items:center}
+.rh .rh-go{min-height:0;padding:10px 30px 9px;font-size:17px;border-radius:999px;margin:0;box-shadow:0 6px 16px rgba(255,138,76,.35)}
+.rh .rh-go-s{font-size:12px;margin-top:1px}
+.rh-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}.rh-info .row{gap:6px!important;flex-wrap:nowrap}.rh-info .sub{display:none}
+.rh-info .pill{background:rgba(255,255,255,.22)!important;border:1px solid rgba(255,255,255,.45);color:#fff!important;font-size:12px;font-weight:700;padding:4px 10px;text-shadow:0 1px 4px rgba(0,0,0,.3)}.rh-info .pill i{width:7px;height:7px}.rh .rh-top{z-index:1;top:62px}
 html.rh-page .rh{margin-top:-20px;margin-bottom:-14px}html.rh-page .rh~*{position:relative;z-index:1}
 html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background-size:auto!important}
 .rh .rh-bar{position:absolute;top:0;left:0;right:0;width:auto;margin:0!important;z-index:2;padding:14px 20px 26px;color:#fff}
@@ -1856,7 +1860,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-17';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-18';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4750,11 +4754,12 @@ function viewWalk() {
     // 그림 속 세 사람이 아래쪽에 있어서, 날짜·한마디는 위쪽 하늘에 (2026-10-17)
     hero.append(tag, el('div', { class: 'rh-top' },
       el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
-      el('div', {}, wherePill(true))),   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
+      el('div', { class: 'rh-info' }, gpsReady, wherePill(true))),   // 2026-10-19 사용자 'gps 정보는 딴 곳에 작게'   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
       el('div', { class: 'rh-bot' },
       // 2026-10-19 사용자가 GPS·목표 알약에서 시작 단추로 화살표를 그려 보냄 → 두 알약을 단추 안 아랫줄로
+      // 2026-10-19 사용자 '시작 단추를 딴 곳으로, 크기도 줄이고' → 사진 아래 흐려지는 자리 가운데에 작게
       el('button', { class: 'rh-go', onclick: countdown }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
-        el('span', { class: 'rh-go-s' }, gpsReady, el('span', { text: `· 🎯 목표 ${goalTxt}` })))));
+        el('span', { class: 'rh-go-s', text: `🎯 목표 ${goalTxt}` }))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
