@@ -427,7 +427,11 @@ html.rh-page{--rh-bg:#DAE8F3}
 html.rh-page body,html[data-theme=sea].rh-page body{background:#DAE8F3}
 .rh{height:calc(min(60vh,470px) + 120px)!important}
 .rh::after{content:'';position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(180deg,rgba(218,232,243,0) 0%,rgba(218,232,243,.55) 45%,rgba(218,232,243,.92) 80%,#DAE8F3 100%);pointer-events:none}
-.rh .rh-bot{bottom:128px;z-index:1}.rh .rh-top{z-index:1}
+.rh .rh-bot{bottom:128px;z-index:1}.rh .rh-top{z-index:1;top:70px}
+html.rh-page .rh{margin-top:-20px}
+html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background-size:auto!important}
+.rh .rh-bar{position:absolute;top:0;left:0;right:0;width:auto;margin:0!important;z-index:2;padding:14px 20px 26px;color:#fff}
+html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gradient(180deg,rgba(6,30,55,.45),rgba(6,30,55,0))!important}
 .rh-tag{position:absolute;left:18px;top:14px;background:rgba(255,255,255,.9);color:var(--pine);font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px}
 .rh-bot{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}
 .rh-top{position:absolute;left:18px;right:18px;top:20px;display:flex;flex-direction:column;gap:6px}
@@ -1848,7 +1852,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-11';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4638,8 +4642,7 @@ function viewWalk() {
     const settings = el('div', { class: 'card stack', style: 'gap:14px' });
     // 그림 속 세 사람이 아래쪽에 있어서, 날짜·한마디는 위쪽 하늘에 (2026-10-17)
     hero.append(tag, el('div', { class: 'rh-top' },
-      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
-      el('div', { class: 'rh-h big' }, '뚱 꼬 떡 달려!!!')),   // 2026-10-17 사용자: 태안 마라톤 같이 갈 세 친구(그림 속 세 사람)에게, 크게
+      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` })),   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
       el('div', { class: 'rh-bot' },
       el('div', { class: 'rh-pills' }, gpsReady, el('button', { class: 'rh-pill', onclick: () => settings.scrollIntoView({ behavior: 'smooth' }) }, `🎯 ${goalTxt}`)),
       el('button', { class: 'rh-go', onclick: countdown }, '▶ 러닝 시작하기')));
@@ -4657,7 +4660,9 @@ function viewWalk() {
         return el('label', { class: 'f', for: 'wt' }, '제목 (선택, 나중에 바꿀 수 있어요)', iT); })(),
       el('div', { class: 'sub', style: 'font-size:14px', text: IN_NATIVE ? '앱은 화면을 꺼도 계속 기록해요. 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요(화면이 켜져 있을 때).' : '화면을 켜 둔 채로 뛰세요(꺼지면 기록이 멈춰요). 휴대폰을 팔 밴드나 허리 벨트에 두면 케이던스가 정확해요.' }),
       el('button', { class: 'btn primary full big', onclick: countdown }, ico('run', 24), '러닝 시작하기'));
-    return [roleBar('leader', '내 기록'), hero,
+    // 2026-10-19 사용자 '사진을 맨 위로 끌어올려': 맨 위 띠를 사진 위에 투명하게 얹어요
+    { const bar = roleBar('leader', '내 기록'); bar.classList.add('rh-bar'); hero.prepend(bar); }
+    return [hero,
       pending ? el('div', { class: 'banner info' }, el('b', { text: `'${pending.name}' 길을 따라가요` }), el('div', { text: `전체 ${fmtDist(pathLen(pending.route))}. 시작하면 이 길이 지도에 파란 선으로 깔려요.` }),
         el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가지 않기', onclick: () => { pending = null; ls.set('guideNext', null); draw(); } })) : null,
       IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }), el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남아요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
