@@ -1533,21 +1533,28 @@ async function drawBragCard(o) {
   // 사진 카드 색(2026-10-19 사용자 '아래는 흐려지며 바탕색으로, 바탕색도 어울리게'): 사진 아래쪽 평균 색에서 뽑은 바탕
   const P = { bg: '#F4F0E6', ink: INK, muted: MUTED, chip: '#EFE9DC', foot: '#9A9585' };
   if (cov) {
-    const tone = o.coverTone || 'night';
+    const tone = o.coverTone || 'bright';
     if (tone === 'sky') Object.assign(P, { bg: '#EEF4FA', ink: '#102A43', muted: '#5F7A92', chip: '#DDE8F3', foot: '#8AA0B4' });
     else if (tone === 'night') Object.assign(P, { bg: '#0F1B2D', ink: '#FFFFFF', muted: '#9FB3C8', chip: '#1F3049', foot: '#5F7A92' });
+    else if (tone === 'bright') {   // 2026-10-19 사용자 '이것도 그렇게': 사진에서 밝은 부분(위쪽 70% 중 밝은 10%) 색을 바탕으로
+      const sm = document.createElement('canvas'); sm.width = 40; sm.height = 50; const sg = sm.getContext('2d'); sg.drawImage(cov, 0, 0, 40, 50);
+      const d = sg.getImageData(0, 0, 40, 35).data, px = []; for (let i = 0; i < d.length; i += 4) px.push([d[i], d[i + 1], d[i + 2]]);
+      px.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2])); const top = px.slice(Math.floor(px.length * .88), Math.floor(px.length * .97));
+      const c = [0, 1, 2].map(k => top.reduce((a, q) => a + q[k], 0) / top.length), mx = (k, t) => '#' + c.map(v => Math.round(v + (t - v) * k).toString(16).padStart(2, '0')).join('');
+      Object.assign(P, { bg: mx(.1, 255), chip: mx(.55, 255), ink: mx(.85, 0), muted: mx(.6, 30), foot: mx(.35, 60) }); }
     else { const sm = document.createElement('canvas'); sm.width = 24; sm.height = 8; const sg = sm.getContext('2d'); sg.drawImage(cov, 0, 0, cov.width, cov.height, 0, 0, 24, 8);
       const d = sg.getImageData(0, 0, 24, 8).data; let r = 0, gg = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; } const n = d.length / 4; r /= n; gg /= n; b /= n;
       const mix = (k, t) => '#' + [r, gg, b].map(v => Math.round(v + (t - v) * k).toString(16).padStart(2, '0')).join('');
       Object.assign(P, { bg: mix(.86, 255), chip: mix(.72, 255), ink: mix(.82, 0), muted: mix(.5, 40), foot: mix(.45, 150) }); }
-    const fadeTo = topH + 150, sc = Math.max(W / cov.width, fadeTo / cov.height), dw = cov.width * sc, dh = cov.height * sc;
+    const fadeTo = topH + 210, sc = Math.max(W / cov.width, fadeTo / cov.height), dw = cov.width * sc, dh = cov.height * sc;
     g.fillStyle = P.bg; g.fillRect(0, 0, W, H);
     g.save(); g.beginPath(); g.rect(0, 0, W, fadeTo); g.clip(); g.drawImage(cov, (W - dw) / 2, (topH - dh) * 0.5, dw, dh); g.restore();
-    const sh = g.createLinearGradient(0, 0, 0, topH); sh.addColorStop(0, 'rgba(0,0,0,.36)'); sh.addColorStop(.35, 'rgba(0,0,0,.06)'); sh.addColorStop(.75, 'rgba(0,0,0,.28)'); sh.addColorStop(1, 'rgba(0,0,0,.2)');
-    g.fillStyle = sh; g.fillRect(0, 0, W, topH);
-    const n2 = parseInt(P.bg.slice(1), 16), rgb = `${n2 >> 16},${n2 >> 8 & 255},${n2 & 255}`, fd = g.createLinearGradient(0, topH - 130, 0, fadeTo);
+    const sh = g.createLinearGradient(0, 0, 0, fadeTo), k = topH / fadeTo;   // 위·글자 둘레만 살짝 어둡게, 아래로 갈수록 0 (경계 줄이 안 생기게)
+    sh.addColorStop(0, 'rgba(0,0,0,.36)'); sh.addColorStop(k * .35, 'rgba(0,0,0,.06)'); sh.addColorStop(k * .72, 'rgba(0,0,0,.28)'); sh.addColorStop(k * .95, 'rgba(0,0,0,.08)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = sh; g.fillRect(0, 0, W, fadeTo);
+    const n2 = parseInt(P.bg.slice(1), 16), rgb = `${n2 >> 16},${n2 >> 8 & 255},${n2 & 255}`, fd = g.createLinearGradient(0, topH - 150, 0, fadeTo);
     fd.addColorStop(0, `rgba(${rgb},0)`); fd.addColorStop(.55, `rgba(${rgb},.75)`); fd.addColorStop(1, `rgba(${rgb},1)`);
-    g.fillStyle = fd; g.fillRect(0, topH - 130, W, fadeTo - topH + 131);
+    g.fillStyle = fd; g.fillRect(0, topH - 150, W, fadeTo - topH + 151);
   } else if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
   const onPh = !!cov, shadow = on => { g.shadowColor = on && onPh ? 'rgba(0,0,0,.45)' : 'transparent'; g.shadowBlur = on && onPh ? 14 : 0; };
   // 로고: 앱 아이콘 그림(동네 지도 위 MPD 길)을 둥근 네모로 (못 불러오면 초록 네모만)
@@ -1841,7 +1848,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
