@@ -2924,7 +2924,7 @@ function watchChart(W) {
     <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
     ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
     <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
-    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt + 24}"  text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
+    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
     <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
     <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span><span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
   return box;
