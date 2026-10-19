@@ -65,6 +65,13 @@ object Updater {
         conn.setRequestProperty("User-Agent", "MPD-Run-Watch")
         return conn
     }
+    // 휴대폰으로 보내기(Link)가 써요: JSON을 POST하고 응답 번호를 돌려줘요
+    fun postJson(c: Context, url: String, body: String): Int {
+        val conn = open(c, url, 30000); conn.requestMethod = "POST"; conn.doOutput = true; conn.setRequestProperty("content-type", "application/json")
+        conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+        return try { conn.responseCode } finally { conn.disconnect() }
+    }
+    fun releaseNet(c: Context) { if (!busy) release(c) }
     var lastErr = ""   // 마지막으로 알아볼 때 안 된 까닭(판 번호를 누르면 보여 줘요)
     // 새 판이 있으면 Info, 없거나 인터넷이 안 되면 null (화면 쓰레드로 돌려줘요)
     fun check(c: Context, cb: (Info?) -> Unit) {

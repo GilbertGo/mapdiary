@@ -135,6 +135,7 @@ class MainActivity : ComponentActivity() {
             if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
             row("목표", g.label()) { showGoal() }, tgt,
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
+            row("휴대폰으로 보내기", if (Link.on(this)) "켬 · ${Link.code(this)}" else "끔") { showLink() },
             row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
             row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() },
             row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { Cadence.set(this, (Cadence.kind + 1) % 4); showStart() },
@@ -149,6 +150,7 @@ class MainActivity : ComponentActivity() {
         startGpsPreview()
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
         if (!updChecked) { updChecked = true; checkNow(false) }
+        Link.pushAll(this)   // 못 보낸 기록이 있으면 보내요
     }
     private fun startGpsPreview() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { gpsText?.text = "위치 권한을 허용해 주세요"; return }
@@ -195,6 +197,22 @@ class MainActivity : ComponentActivity() {
             btn("이걸로 정하기", RunView.CORAL, RunView.INK) {
                 Store.setGoal(this, if (isD) g.copy(t = vt) else g.copy(d = vd)); showStart() },
             btn("정하지 않음", RunView.SURF, RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
+    }
+
+    // 휴대폰으로 보내기: 연결 코드를 보여 주고 켜고 꺼요
+    private fun showLink() {
+        val on = Link.on(this)
+        val st = tv(Link.status, 12f, RunView.BLUE, true)
+        val views = if (!on) listOf(tv("휴대폰으로 보내기", 15f, RunView.CORAL, true),
+            tv("달린 기록을 휴대폰 MPD로 보내 자세히 봐요. 기록은 잠가서 보내요.", 13f, Color.WHITE),
+            btn("켜기", RunView.CORAL, RunView.INK) { Link.enable(this, true); showLink() },
+            btn("돌아가기", RunView.SURF) { showStart() })
+        else listOf(tv("연결 코드", 13f, RunView.MUTED, true), tv(Link.code(this), 30f, Color.WHITE, true),
+            tv("휴대폰 MPD → 내 MPD → '⌚ 시계 기록 받기'에 이 코드를 적어 주세요", 13f, Color.WHITE), st,
+            btn("지금 보내기", RunView.CORAL, RunView.INK) { st.text = "보내는 중…"; Link.pushAll(this) { st.text = Link.status } },
+            btn("돌아가기", RunView.SURF) { showStart() },
+            btn("끄기", RunView.SURF, RunView.MUTED) { Link.enable(this, false); showStart() })
+        show(page(*views.toTypedArray()))
     }
 
     // 최대 심박 정하기: 존을 나누는 기준. 모르면 '220 − 나이'
@@ -250,6 +268,7 @@ class MainActivity : ComponentActivity() {
         RunService.stop(this)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (id == null) { show(page(tv("거리가 거의 없어서 저장하지 않았어요", 13f), btn("처음으로", RunView.CORAL, RunView.INK) { showStart() })); return }
+        Link.pushAll(this)
         showDetail(id, true)
     }
 

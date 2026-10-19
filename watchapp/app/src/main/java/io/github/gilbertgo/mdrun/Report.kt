@@ -101,6 +101,7 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
     private val L get() = 13 * u; private val R get() = W - 13 * u
     private val CORAL = RunView.CORAL; private val BLUE = RunView.BLUE; private val MUTED = RunView.MUTED; private val RED = RunView.RED
     private val notes = r.notes()
+    var detail = false   // 2026-10-19 사용자 '와치로는 간단하게, 폰으로는 상세하게': 시계는 요약 + 판단 글 3개까지
 
     private fun paint(col: Int) = p.apply { reset(); isAntiAlias = true; color = col }
     private fun text(cv: Canvas?, s: String, x: Float, y: Float, size: Float, col: Int, b: Boolean = false, num: Boolean = false, al: Paint.Align = Paint.Align.CENTER) {
@@ -136,7 +137,7 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
 
         // 한눈에 보기
         y = head(cv, "한눈에 보기", y)
-        for (n in notes) {
+        for (n in if (detail) notes else notes.take(3)) {
             val tl = wrap(n.title, 5.2f * u, true, R - L - 5 * u); val dl = wrap(n.detail, 4.8f * u, false, R - L - 5 * u)
             cv?.drawCircle(L + 1.4f * u, y - 1.6f * u, 1.3f * u, paint(n.col))
             tl.forEach { text(cv, it, L + 4.5f * u, y, 5.2f * u, n.col, true, al = Paint.Align.LEFT); y += 6.4f * u }
@@ -144,6 +145,14 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
             y += 3 * u
         }
         y += 4 * u
+        // 시계에선 여기까지만(간단하게). 자세한 그래프·존·구간은 휴대폰 MPD에서
+        if (!detail) {
+            val on = Link.on(context)
+            for (l in wrap(if (on) "그래프·존·1km 구간은 휴대폰 MPD → 내 MPD에서 자세히 봐요" else "휴대폰으로 보내기를 켜면 휴대폰에서 자세히 봐요", 4.8f * u, false, R - L))
+                { text(cv, l, cx, y, 4.8f * u, BLUE); y += 6 * u }
+            if (on) { text(cv, if (Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "와이파이가 되면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u }
+            return y + 6 * u
+        }
 
         // 심박 · 페이스 그래프
         if (r.series.size >= 2) {
