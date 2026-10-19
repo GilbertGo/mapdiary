@@ -1894,7 +1894,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-22';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-23';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2565,8 +2565,13 @@ function askLong(title, value, placeholder, sub, max = 1000) {
 }
 async function myNick() {
   let n = ls.get('nick', '');
-  if (!n) { n = await askText('내 이름', '이름', '', '예: 성식', '모임방에 올린 MPD에 이 이름이 붙어요.'); if (n) ls.set('nick', n.slice(0, 20)); }
+  if (!n) { n = await askText('내 이름', '이름', '', '예: 성식', '같이 달리기·모임방에서 친구들에게 보이는 내 이름이에요. 방 이름이 아니에요.'); if (n) ls.set('nick', n.slice(0, 20)); }
   return n;
+}
+// 내 이름 바꾸기 (2026-10-19 사용자 '내 이름이 왜 유진회복기념이지?' — 방 만들 때 방 이름처럼 적었던 것)
+async function nickEdit(after) {
+  const n = await askText('내 이름 바꾸기', '이름', ls.get('nick', ''), '예: 성식', '같이 달리기·모임방에서 친구들에게 보이고, 러닝 첫 화면 인사에도 나와요.');
+  if (!n) return; ls.set('nick', n.slice(0, 20)); toast(`이름을 '${n.slice(0, 20)}'(으)로 바꿨어요`); if (after) after();
 }
 // MPD를 모임방에 올려요. o = 공유 카드 내용(openBrag의 cardOpts)
 async function roomPost(room, o) {
@@ -4632,7 +4637,9 @@ function viewWalk() {
       ...(others || crewS().runs.length ? [] : [el('div', { class: 'sub', style: 'font-size:13px', text: '아직 친구가 없어요. 초대를 보내 주세요. 같은 시간에 달리면 실시간으로, 다른 시간에 달리면 먼저 달린 기록과 겨뤄요.' })]),
       ...crewBoard(),
       el('button', { class: 'btn line small full', text: '📨 친구 초대 보내기', onclick: crewInvite }),
-      el('div', { class: 'sub', style: 'font-size:12px', text: `이름: ${ls.get('nick', '') || '나'} · 출발 500m 안에선 내 위치를 안 보내요(거리·시간만). 10초마다 맞춰요.` }));
+      el('div', { class: 'row', style: 'gap:8px;font-size:13px;align-items:center' }, el('span', { class: 'sub', style: 'font-size:13px', text: `내 이름: ${ls.get('nick', '') || '나'}` }),
+        el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '✎ 이름 바꾸기', onclick: () => nickEdit(() => { crewTick(); draw(); }) })),
+      el('div', { class: 'sub', style: 'font-size:12px', text: '출발 500m 안에선 내 위치를 안 보내요(거리·시간만). 10초마다 맞춰요.' }));
     crewPane.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('b', {}, '👥 같이 달리기 · ', el('span', { class: 'cw-code', text: crewTitle(c) })),
       el('button', { class: 'link', style: 'padding:0;font-size:13px', text: '초대', onclick: crewInvite })), ...crewRows(),
       el('div', { class: 'sub', style: 'font-size:12px', text: '오른쪽 숫자는 나보다 앞(산호색)·뒤에 있는 거리예요. 👻는 지난 기록이 같은 시간에 있던 곳이에요. 가까이서 달리면 지도에도 보여요.' }));
@@ -4793,7 +4800,7 @@ function viewWalk() {
     const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 42%,rgba(6,30,55,.32) 62%,rgba(6,30,55,.9)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
       (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
-        el('div', { class: 'r3-hi', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.` })),
+        el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
       ring, dots,
       el('div', { class: 'r3-bot' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
         el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }),
