@@ -1799,7 +1799,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2918,15 +2918,20 @@ function watchChart(W) {
   const ps = sm.filter(Boolean), lo = Math.min(...ps) - 1e4, hi = Math.max(...ps) + 1e4, yP = p => T + (Bt - T) * (p - lo) / (hi - lo);
   let pp = '', hp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
   f = true; s.forEach(q => { if (!q.hr) return; hp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1); f = false; });
+  // 케이던스(2026-10-19, 사용자 '그래프에 케이던스 측정값도'): 보라 선, 자기 눈금(위가 높음)
+  const cs = s.map((q, i) => { if (!q.cad) return null; const l = s.slice(Math.max(0, i - 2), i + 3).map(x => x.cad).filter(Boolean); return l.reduce((a, b) => a + b, 0) / l.length; });
+  const cv = cs.filter(Boolean), cLo = cv.length ? Math.min(...cv) - 6 : 0, cHi = cv.length ? Math.max(...cv) + 6 : 1, yC = c => Bt - (Bt - T) * (c - cLo) / (cHi - cLo);
+  let cp = ''; f = true; s.forEach((q, i) => { if (cs[i] == null) return; cp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yC(cs[i]).toFixed(1); f = false; });
   const ticks = [1, 2, 3, 4].map(z => `<line x1="${L}" x2="${R}" y1="${yH(zoneLo(W.mx, z))}" y2="${yH(zoneLo(W.mx, z))}" stroke="#D6E5F1" stroke-dasharray="3 4"/><text x="${L - 6}" y="${yH(zoneLo(W.mx, z)) + 7}" text-anchor="end" font-size="20" fill="#5F7A92">${zoneLo(W.mx, z)}</text>`).join('');
   const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
-  box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박과 페이스 그래프">
+  box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스 · 케이던스</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박·페이스·케이던스 그래프">
     <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
     ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
+    ${cv.length >= 2 ? `<path d="${cp}" fill="none" stroke="#8E6BFF" stroke-width="3" stroke-linejoin="round" opacity=".85"/>` : ''}
     <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
     <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
     <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
-    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span><span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
+    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span>${cv.length >= 2 ? `<span><b style="color:#8E6BFF">━</b> 케이던스 ${Math.round(Math.min(...cv))}~${Math.round(Math.max(...cv))}</span>` : ''}<span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
   return box;
 }
 function watchAnalysis(t) {
