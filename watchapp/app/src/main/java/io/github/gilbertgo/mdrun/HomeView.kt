@@ -114,7 +114,7 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         val lw = measure(gl, 3.8f * u, false); val lx = cx - lw / 2 + 1.6f * u; val ly = 80f * u
         cv.drawCircle(lx - 2.8f * u, ly - 1.3f * u, .9f * u, paint(if (ready) BLUE else MUTED))
         text(cv, gl, lx, ly, 3.8f * u, a(Color.WHITE, 220), false, align = Paint.Align.LEFT)
-        text(cv, "용두 ↓ 기록·설정", cx, 88f * u, 3.4f * u, a(Color.WHITE, 140))
+        text(cv, "︿ 밀어 올리면 기록·설정", cx, 88f * u, 3.4f * u, a(Color.WHITE, 150))   // 2026-10-19 사용자 '용두? 그게 뭐야?' → 쉬운 말로
         postInvalidateDelayed(if (now - born < 60000) 50 else 30000)
     }
 
