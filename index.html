@@ -1894,7 +1894,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-21';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-22';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3567,8 +3567,9 @@ function viewMyList() {
     el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
     el('h1', { text: '내 MPD' }),
     el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
+    cloudCard(),   // 2026-10-19 사용자 '로그인 안 보여 어딨어?' → 맨 아래에서 맨 위로
     tabs, body,
-    watchCard(viewMyList), cloudCard(), backupCard(list.filter(x => !x.album).length)));
+    watchCard(viewMyList), backupCard(list.filter(x => !x.album).length)));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
