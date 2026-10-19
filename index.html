@@ -421,7 +421,13 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .rh{position:relative;margin:-12px -20px 0;height:min(60vh,470px);min-height:380px;background:#5DB4F0 center/cover no-repeat;color:#fff;overflow:hidden}
 :root{--rh-art:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%235DB4F0'/%3E%3Cstop offset='.5' stop-color='%23BFE4FB'/%3E%3Cstop offset='.62' stop-color='%23FFF1E4'/%3E%3C/linearGradient%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%233A9FD8'/%3E%3Cstop offset='1' stop-color='%231E6FA8'/%3E%3C/linearGradient%3E%3CradialGradient id='sun'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.3' stop-color='%23FFF6EC'/%3E%3Cstop offset='1' stop-color='%23FFF6EC' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='400' height='500' fill='url(%23s)'/%3E%3Ccircle cx='290' cy='300' r='120' fill='url(%23sun)'/%3E%3Cg fill='%23fff' opacity='.85'%3E%3Cellipse cx='90' cy='90' rx='50' ry='12'/%3E%3Cellipse cx='118' cy='80' rx='28' ry='14'/%3E%3Cellipse cx='300' cy='60' rx='40' ry='9'/%3E%3C/g%3E%3Crect y='300' width='400' height='200' fill='url(%23w)'/%3E%3Cpath d='M0 318 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.6' stroke-width='2' fill='none'/%3E%3Cpath d='M0 352 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0' stroke='%23fff' stroke-opacity='.4' stroke-width='2' fill='none'/%3E%3C/svg%3E")}
 .rh{background-image:var(--rh-art);background-position:45% center}
-.rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.38) 0%,rgba(6,30,55,0) 32%,rgba(6,30,55,0) 45%,rgba(6,30,55,.72) 100%)}
+.rh-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,30,55,.38) 0%,rgba(6,30,55,0) 32%,rgba(6,30,55,0) 45%,rgba(6,30,55,.6) 78%,rgba(6,30,55,0) 100%)}
+/* 2026-10-19 사용자 '아랫부분이 경계 없이 차차 흐려지게, 바탕색은 사진 중 밝은 부분 색으로': 그림 아래 150px가 바탕색으로 녹아들고, 러닝 시작 화면 바탕은 사진 하늘의 밝은 색 */
+html.rh-page{--rh-bg:#DAE8F3}
+html.rh-page body,html[data-theme=sea].rh-page body{background:#DAE8F3}
+.rh{height:calc(min(60vh,470px) + 120px)!important}
+.rh::after{content:'';position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(180deg,rgba(218,232,243,0) 0%,rgba(218,232,243,.55) 45%,rgba(218,232,243,.92) 80%,#DAE8F3 100%);pointer-events:none}
+.rh .rh-bot{bottom:128px;z-index:1}.rh .rh-top{z-index:1}
 .rh-tag{position:absolute;left:18px;top:14px;background:rgba(255,255,255,.9);color:var(--pine);font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px}
 .rh-bot{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}
 .rh-top{position:absolute;left:18px;right:18px;top:20px;display:flex;flex-direction:column;gap:6px}
@@ -1835,7 +1841,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5298,7 +5304,8 @@ function viewWalk() {
         el('a', { class: 'btn line full', href: './', text: '처음으로' })].filter(Boolean));
       return;
     }
-    if (!id && pick === 'run' && qs.get('mode')) { root.replaceChildren(...runHome()); return; }   // 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게)
+    const rhOn = !id && pick === 'run' && !!qs.get('mode'); document.documentElement.classList.toggle('rh-page', rhOn);
+    if (rhOn) { root.replaceChildren(...runHome()); return; }   // 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게)
     if (!id) {
       root.replaceChildren(...[roleBar('leader', '내 기록'),
         el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
