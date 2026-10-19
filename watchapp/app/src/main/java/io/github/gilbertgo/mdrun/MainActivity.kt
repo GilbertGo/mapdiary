@@ -63,6 +63,17 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() { stopGpsPreview(); super.onDestroy() }
+    // 시계는 앱을 닫지 않고 두는 일이 많아서, 시작 화면으로 돌아올 때마다(1분에 한 번까지) 새 판을 다시 알아봐요
+    private var lastCheck = 0L
+    override fun onResume() { super.onResume(); if (atStart && Run.id == null && System.currentTimeMillis() - lastCheck > 60000) checkNow(false) }
+    private fun checkNow(say: Boolean) {
+        lastCheck = System.currentTimeMillis()
+        if (say) android.widget.Toast.makeText(this, "새 판을 알아보는 중…", android.widget.Toast.LENGTH_SHORT).show()
+        Updater.check(this) { i ->
+            if (i != null) { upd = i; if (atStart && Run.id == null) showStart() }
+            if (say) android.widget.Toast.makeText(this, if (i != null) "새 판 ${i.name}이 있어요. 맨 위 '설치하기'를 눌러 주세요" else if (Updater.lastErr.isNotEmpty()) "알아보지 못했어요 · 인터넷 연결을 확인해 주세요 (${Updater.lastErr})" else "지금이 가장 새 판이에요", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 
     // ---------- 작은 도우미 ----------
     private val u get() = min(resources.displayMetrics.widthPixels, resources.displayMetrics.heightPixels) / 100f
@@ -112,11 +123,11 @@ class MainActivity : ComponentActivity() {
             row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() },
             btn("시작", RunView.CORAL, RunView.INK) { countdown() }.apply { textSize = 22f; setPadding(0, (4.6f * u).toInt(), 0, (4.6f * u).toInt()) },
             tv("지난 기록 ›", 13f, RunView.MUTED, true).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { showHistory() } },
-            tv("판 ${Updater.currentName(this)}", 9f, RunView.MUTED))
+            tv("판 ${Updater.currentName(this)} · 새 판 확인", 9f, RunView.MUTED).apply { setPadding(0, (2 * u).toInt(), 0, (2 * u).toInt()); setOnClickListener { checkNow(true) } })
         show(page(*views.toTypedArray())); atStart = true
         startGpsPreview()
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
-        if (!updChecked) { updChecked = true; Updater.check(this) { i -> if (i != null) { upd = i; if (atStart && Run.id == null) showStart() } } }
+        if (!updChecked) { updChecked = true; checkNow(false) }
     }
     private fun startGpsPreview() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { gpsText?.text = "위치 권한을 허용해 주세요"; return }
