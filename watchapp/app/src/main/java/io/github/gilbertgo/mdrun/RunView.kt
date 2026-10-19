@@ -35,6 +35,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val RED = Color.parseColor("#FF4D5E"); val LATE = Color.parseColor("#FF7A59"); val MUTED = Color.parseColor("#8D97A5")
         val SURF = Color.parseColor("#16191E"); val LINE = Color.parseColor("#2A2F37"); val TRACK = Color.parseColor("#22262D")
         val INK = Color.parseColor("#1A0D06")
+        val CADC = Color.parseColor("#C3A6FF")   // 케이던스 보라
         // 예전 이름(시작 화면 등에서 써요)
         val ORANGE = CORAL; val GREEN = BLUE; val PINE = Color.parseColor("#2A2F37")
         fun alpha(c: Int, a: Int) = (c and 0xFFFFFF) or (a shl 24)
@@ -221,14 +222,16 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         // 존2는 옅은 띠 + 가는 테두리, 심박 눈금은 데이터에 맞춰(바닥에 깔리지 않게), 시간 눈금 3개, 둥근 화면 안쪽에 여백
         val win = 20 * 60000L; val el = now - Run.startAt
         val hrNow = Run.hrNow(now); val paceNow = Run.nowPace(now)
-        val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, hrNow, paceNow)
+        val cadNow = Run.cadNow(now)
+        val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, hrNow, paceNow, cadNow)
         paint(Color.BLACK); p.shader = android.graphics.LinearGradient(0f, 0f, 0f, W, Color.parseColor("#1B2A44"), Color.parseColor("#05080D"), Shader.TileMode.CLAMP)
         cv.drawCircle(cx, cx, cx, p); p.shader = null
         // 제목이 색 안내: '심박'은 흰 선, '페이스'는 산호 선 (2026-10-19 사용자 '심박은 무슨 색? 페이스는 무슨 색?')
-        run { val sz = 5.2f * u; val a1 = "━ 심박"; val a2 = "   ━ 페이스"; val a3 = if (el > win) " · 20분" else ""
-            val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val w3 = if (a3.isEmpty()) 0f else measure(a3, sz, false); var x = cx - (w1 + w2 + w3) / 2
+        run { val sz = 4.4f * u; val a1 = "━ 심박"; val a2 = "  ━ 페이스"; val a4 = "  ━ 케이던스"; val a3 = if (el > win) " · 20분" else ""
+            val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val w4 = measure(a4, sz, false); val w3 = if (a3.isEmpty()) 0f else measure(a3, sz, false); var x = cx - (w1 + w2 + w4 + w3) / 2
             text(cv, a1, x, 19 * u, sz, Color.WHITE, true, align = Paint.Align.LEFT); x += w1
             text(cv, a2, x, 19 * u, sz, CORAL, true, align = Paint.Align.LEFT); x += w2
+            text(cv, a4, x, 19 * u, sz, CADC, true, align = Paint.Align.LEFT); x += w4
             if (a3.isNotEmpty()) text(cv, a3, x, 19 * u, sz, MUTED, true, align = Paint.Align.LEFT) }
         val X0 = 18 * u; val X1 = 82 * u; val Y0 = 33 * u; val Y1 = 62 * u
         val hs = all.filter { it.hr > 0 }
@@ -261,6 +264,17 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                 val path = Path(); var first = true
                 all.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
                 paint(alpha(CORAL, 0xB0)); p.style = Paint.Style.STROKE; p.strokeWidth = .55f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
+            // 케이던스: 보라 가는 선(1분 걸음 수, 가이드가 켜져 있으면 그 박자를 보라 점선으로) (2026-10-19 사용자 '그래프에 케이던스 측정값도')
+            val cs = all.filter { it.cad != null && it.cad > 60 }
+            if (cs.size >= 2) {
+                val gOn = Cadence.kind != Cadence.OFF
+                val cLo = (minOf(cs.minOf { it.cad!! }, if (gOn) Cadence.spm else 999) - 6).toFloat(); val cHi = (maxOf(cs.maxOf { it.cad!! }, if (gOn) Cadence.spm else 0) + 6).toFloat()
+                fun yC(c: Int) = Y1 - (Y1 - Y0) * ((c - cLo) / (cHi - cLo)).coerceIn(0f, 1f)
+                if (gOn) { paint(alpha(CADC, 0x70)); p.strokeWidth = .25f * u; p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(1.2f * u, .8f * u), 0f)
+                    cv.drawLine(X0, yC(Cadence.spm), X1, yC(Cadence.spm), p); p.pathEffect = null }
+                val path = Path(); cs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yC(q.cad!!); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
+                paint(alpha(CADC, 0xC0)); p.style = Paint.Style.STROKE; p.strokeWidth = .5f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+            }
             // 심박: 흰 가는 선 + 아래로 옅은 빛 + 끝 점 위에 지금 값
             val hsm = hs.indices.map { i -> (maxOf(0, i - 1)..minOf(hs.size - 1, i + 1)).map { hs[it].hr }.average().toFloat() }
             val line = Path(); hs.forEachIndexed { i, q -> val x = xOf(q.t); val y = Y1 - (Y1 - Y0) * ((hsm[i] - hLo) / (hHi - hLo)).coerceIn(0f, 1f); if (i == 0) line.moveTo(x, y) else line.lineTo(x, y) }
@@ -281,14 +295,16 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                 paint(alpha(Color.WHITE, 0x60)); p.strokeWidth = .25f * u; cv.drawLine(x, Y1, x, Y1 + 1.5f * u, p)
                 text(cv, s, x, Y1 + 6 * u, 3.9f * u, MUTED, true, align = if (k == 0) Paint.Align.LEFT else if (k == 2) Paint.Align.RIGHT else Paint.Align.CENTER) }
         }
-        // 아래: 지금 심박(존 색 하트) | 지금 페이스, 이름표
-        cv.drawRect(cx - .15f * u, 73 * u, cx + .15f * u, 86 * u, paint(alpha(Color.WHITE, 0x30)))
+        // 아래: 지금 심박(존 색 하트) | 페이스 | 케이던스, 이름표
+        paint(alpha(Color.WHITE, 0x30)); cv.drawRect(cx - 11 * u, 74 * u, cx - 10.7f * u, 86 * u, p); cv.drawRect(cx + 10.7f * u, 74 * u, cx + 11 * u, 86 * u, p)
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
-        heart(cv, cx - 21 * u, 77.4f * u, 1.7f * u, zc)
-        text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 17.5f * u, 80 * u, 7.2f * u, Color.WHITE, true, true, Paint.Align.LEFT)
-        text(cv, "심박", cx - 12 * u, 86 * u, 4.2f * u, MUTED, true)
-        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx + 12 * u, 80 * u, 7.2f * u, CORAL, true, true)
-        text(cv, "페이스", cx + 12 * u, 86 * u, 4.2f * u, MUTED, true)
+        heart(cv, cx - 28.5f * u, 77.8f * u, 1.4f * u, zc)
+        text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 20.5f * u, 80 * u, 6.4f * u, Color.WHITE, true, true)
+        text(cv, "심박", cx - 21 * u, 86 * u, 3.9f * u, MUTED, true)
+        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx, 80 * u, 6.4f * u, CORAL, true, true)
+        text(cv, "페이스", cx, 86 * u, 3.9f * u, MUTED, true)
+        text(cv, cadNow?.toString() ?: "--", cx + 21 * u, 80 * u, 6.4f * u, CADC, true, true)
+        text(cv, "케이던스", cx + 21 * u, 86 * u, 3.9f * u, MUTED, true)
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
