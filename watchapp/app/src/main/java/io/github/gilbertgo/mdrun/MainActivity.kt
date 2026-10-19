@@ -273,26 +273,16 @@ class MainActivity : ComponentActivity() {
         show(page(tv("지난 기록", 13f, RunView.ORANGE, true), *(if (items.isEmpty()) listOf(tv("아직 기록이 없어요", 12f, RunView.MUTED)) else items).toTypedArray(),
             btn("처음으로", RunView.SURF) { showStart() }))
     }
+    // 달린 기록 자세히 보기: 분석 화면(ReportView) + 아래 단추
     private fun showDetail(id: String, justDone: Boolean) {
         val o = Store.get(this, id) ?: return showHistory()
-        val s = o.optJSONObject("sum") ?: org.json.JSONObject(); val walk = s.optDouble("walk", 0.0); val mv = s.optLong("moving")
-        val g = Goal.from(o.optJSONObject("goal"))
-        val sp = org.json.JSONArray(o.optJSONObject("data")?.optString("walkSplits:$id", "[]") ?: "[]")
-        val lines = ArrayList<View>()
-        if (justDone) lines.add(tv("저장했어요!", 13f, RunView.GREEN, true))
-        lines.add(tv(o.optString("name"), 12f, RunView.MUTED))
-        lines.add(tv("${fmtKm(walk)} km", 26f, Color.WHITE, true))
-        lines.add(tv("${fmtTime(mv)} · 평균 ${fmtPace(if (walk > 50) mv / (walk / 1000) else null)}", 13f, Color.WHITE, true))
-        if (s.optInt("hrAvg") > 0) lines.add(tv("♥ 평균 ${s.optInt("hrAvg")} · 최고 ${s.optInt("hrMax")}", 12f, RunView.RED))
-        s.optJSONArray("zone")?.let { z -> val tot = (0 until z.length()).sumOf { z.optLong(it) }
-            if (tot > 60000) lines.add(tv("존2 ${fmtTime(z.optLong(1))} (${z.optLong(1) * 100 / tot}%) · 존3+ ${fmtTime(z.optLong(2) + z.optLong(3) + z.optLong(4))}", 13f, RunView.BLUE, true)) }
-        if (s.optInt("cad") > 0) lines.add(tv("케이던스 ${s.optInt("cad")} · ${s.optInt("steps")}걸음", 13f, RunView.MUTED))
-        if (g.k != "free") lines.add(tv("목표 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""} → ${if (o.optBoolean("goalDone")) "달성" else "못 미침"}", 13f, if (o.optBoolean("goalDone")) RunView.GREEN else RunView.ORANGE))
-        for (k in 0 until sp.length()) lines.add(tv("${k + 1}km  ${fmtPace(sp.getLong(k).toDouble())}", 12f, Color.WHITE))
         var armed = false
-        lines.add(btn(if (justDone) "처음으로" else "목록으로", RunView.CORAL, RunView.INK) { if (justDone) showStart() else showHistory() })
-        lines.add(btn("이 기록 지우기", RunView.SURF, RunView.MUTED) {}.apply {
-            setOnClickListener { if (!armed) { armed = true; text = "한 번 더 누르면 지워요" } else { Store.delete(this@MainActivity, id); showHistory() } } })
-        show(page(*lines.toTypedArray()))
+        val btns = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((13 * u).toInt(), 0, (13 * u).toInt(), (24 * u).toInt())
+            addView(btn(if (justDone) "처음으로" else "목록으로", RunView.CORAL, RunView.INK) { if (justDone) showStart() else showHistory() }, lp())
+            addView(btn("이 기록 지우기", RunView.SURF, RunView.MUTED) {}.apply {
+                setOnClickListener { if (!armed) { armed = true; text = "한 번 더 누르면 지워요" } else { Store.delete(this@MainActivity, id); showHistory() } } }, lp()) }
+        val all = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL
+            addView(ReportView(this@MainActivity, Report(o), justDone), LinearLayout.LayoutParams(-1, -2)); addView(btns) }
+        show(ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(all); isFocusable = true; isFocusableInTouchMode = true; post { requestFocus() } })
     }
 }
