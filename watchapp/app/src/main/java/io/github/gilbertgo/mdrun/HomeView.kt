@@ -55,7 +55,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
 
     // 2026-10-19 사용자가 시안 W1 고름: 휴대폰 첫 화면과 같은 사진(세 사람)을 어둡게 깔고, 테두리 전체가 주간 목표 고리.
     // 가운데 'TUESDAY, YOUR PACE' · THIS WEEK · 이번 주 km · '/ 주간 목표' · 요일 점 · ▶ 러닝 시작 · 아래 GPS·목표 한 줄 (문구는 사용자가 만든 PACE 앱 것)
-    private val photo by lazy { try { android.graphics.BitmapFactory.decodeResource(resources, R.drawable.run_hero) } catch (e: Exception) { null } }
+    private var photo = Link.hero(c)
+    fun reloadPhoto() { photo = Link.hero(context); invalidate() }
     private var goBox = RectF()
     override fun onDraw(cv: Canvas) {
         val now = System.currentTimeMillis(); W = width.toFloat(); cx = W / 2; u = min(W, height.toFloat()) / 100f

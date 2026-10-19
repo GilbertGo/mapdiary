@@ -1,7 +1,6 @@
 package io.github.gilbertgo.mdrun
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -20,7 +19,7 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
     private val numBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
     private val krBold = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     private val CORAL = RunView.CORAL; private val MUTED = RunView.MUTED; private val SURF = Color.parseColor("#22262D")
-    private val photo by lazy { try { BitmapFactory.decodeResource(resources, R.drawable.run_hero) } catch (e: Exception) { null } }
+    private val photo by lazy { Link.hero(context) }
     var page = 0
     private var km = 0.0; private var min = 0
     private var W = 0f; private var cx = 0f; private var u = 0f

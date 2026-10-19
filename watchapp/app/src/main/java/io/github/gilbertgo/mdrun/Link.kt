@@ -12,6 +12,9 @@ import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.File
 import kotlin.concurrent.thread
 
 // 휴대폰으로 보내기 (2026-10-19, 사용자 '와치로는 간단하게, 폰으로는 상세하게'):
@@ -90,6 +93,39 @@ object Link {
                 status = if (fail > 0) "보내지 못한 기록 ${fail}개 · 와이파이 확인" else if (n > 0) "기록 ${n}개를 보냈어요" else "모두 보냈어요"
             } catch (e: Exception) { status = "보내지 못했어요 · 인터넷 확인" }
             finally { busy = false; Updater.releaseNet(app); done?.let { android.os.Handler(android.os.Looper.getMainLooper()).post(it) } }
+        }
+    }
+    // 바탕 사진 (2026-10-19 사용자 '시계에도 바탕 사진 바꾸게'): 시계엔 사진첩이 없어서 휴대폰 러닝 첫 화면 '바탕 사진 바꾸기'에서 고른 사진을
+    // 휴대폰이 같은 연결 코드 열쇠로 잠가 rooms/{방번호}/x/bg={enc}(기본 사진이면 {none:1})에 올려요. 시작 화면을 열 때 바뀌었으면 받아 files/bg.jpg에 둬요
+    private fun bgFile(c: Context) = File(c.filesDir, "bg.jpg")
+    fun hero(c: Context): Bitmap? = try { bgFile(c).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) } ?: BitmapFactory.decodeResource(c.resources, R.drawable.run_hero) }
+        catch (e: Exception) { null }
+    @Volatile private var bgBusy = false
+    fun pullBg(c: Context, changed: () -> Unit) {
+        if (!on(c) || bgBusy) return; bgBusy = true
+        val app = c.applicationContext
+        thread {
+            var ch = false
+            try {
+                val (rid, key) = room(app)
+                val (code, txt) = Updater.getText(app, "$FS/rooms/$rid/x/bg?key=$KEY")
+                val f = bgFile(app)
+                if (code == 404 && f.exists()) { f.delete(); prefs(app).edit().putString("bgT", "").apply(); ch = true }
+                if (code == 200) {
+                    val fields = JSONObject(txt).getJSONObject("fields"); val t = fields.optJSONObject("t")?.optString("integerValue") ?: ""
+                    if (t != prefs(app).getString("bgT", "")) {
+                        val d = JSONObject(fields.getJSONObject("d").getString("stringValue"))
+                        if (d.has("enc")) {
+                            val u = Base64.decode(d.getString("enc"), Base64.DEFAULT)
+                            val ci = Cipher.getInstance("AES/GCM/NoPadding"); ci.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, u, 0, 12))
+                            val img = ci.doFinal(u, 12, u.size - 12)
+                            if (BitmapFactory.decodeByteArray(img, 0, img.size) != null) { File(app.filesDir, "bg.part").apply { writeBytes(img); renameTo(f) } }
+                        } else f.delete()
+                        prefs(app).edit().putString("bgT", t).apply(); ch = true
+                    }
+                }
+            } catch (e: Exception) {}
+            finally { bgBusy = false; Updater.releaseNet(app); if (ch) android.os.Handler(android.os.Looper.getMainLooper()).post(changed) }
         }
     }
     fun sent(c: Context, id: String) = prefs(c).getStringSet("linkSent", emptySet())!!.any { it.startsWith("$id:") }

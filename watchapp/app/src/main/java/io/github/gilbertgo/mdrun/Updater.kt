@@ -71,6 +71,11 @@ object Updater {
         conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
         return try { conn.responseCode } finally { conn.disconnect() }
     }
+    // GET 해서 (응답 번호, 글)을 돌려줘요
+    fun getText(c: Context, url: String): Pair<Int, String> {
+        val conn = open(c, url, 30000)
+        return try { val code = conn.responseCode; code to (if (code == 200) conn.inputStream.bufferedReader().readText() else "") } finally { conn.disconnect() }
+    }
     fun releaseNet(c: Context) { if (!busy) release(c) }
     var lastErr = ""   // 마지막으로 알아볼 때 안 된 까닭(판 번호를 누르면 보여 줘요)
     // 새 판이 있으면 Info, 없거나 인터넷이 안 되면 null (화면 쓰레드로 돌려줘요)
