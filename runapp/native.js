@@ -147,7 +147,9 @@ if (Capacitor.isNativePlatform()) {
   const WEB = window.MD_WEB_BASE, MdApp = registerPlugin('MdApp');
   const recording = () => { try { return !!JSON.parse(localStorage.getItem('walkNow') || 'null'); } catch { return false; } };
   const hex = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, '0')).join('');
+  let luAt = 0;
   async function liveUpdate() {
+    luAt = Date.now();
     if (recording()) return;   // 기록 중엔 다시 열지 않아요 (다음에 켤 때)
     const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
@@ -162,7 +164,7 @@ if (Capacitor.isNativePlatform()) {
     for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) {
       try { const b = await (await fetch('/' + f)).blob(); await Filesystem.writeFile({ path: dir + '/' + f, data: (await toB64(b)).split(',')[1], directory: Directory.Data, recursive: true }); } catch {}
     }
-    if (recording()) return;
+    if (recording() || document.querySelector('.sheet-bg')) return;   // 창을 보는 중이면 다음에
     const { uri } = await Filesystem.getUri({ path: dir, directory: Directory.Data });
     try { sessionStorage.setItem('mdBack', location.search + location.hash); sessionStorage.setItem('mdToast', '새 화면으로 바꿨어요'); } catch {}
     await MdApp.setWeb({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')) });
@@ -221,6 +223,10 @@ if (Capacitor.isNativePlatform()) {
   addEventListener('load', () => {
     try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => say(t), 800); } } catch {}
     setTimeout(() => { cleanWeb(); liveUpdate().catch(() => {}).finally(() => checkBinary().catch(() => {})); }, 2500);
+  });
+  // 2026-10-19 사용자 '앱에서 그렇게 나오게': 앱을 닫지 않고 다시 펼쳐도(다른 앱 갔다가 돌아와도) 3분 넘었으면 새 화면을 확인해요
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - luAt > 3 * 60000) setTimeout(() => liveUpdate().catch(() => {}), 1200);
   });
 
   // ---------- 갤러리 사진: 기록한 시간에 휴대폰 카메라로 찍은 사진 찾기 ----------
