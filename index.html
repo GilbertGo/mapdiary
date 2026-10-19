@@ -1854,7 +1854,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2451,6 +2451,11 @@ const roomOpen = async (key, v) => JSON.parse(new TextDecoder().decode(await ope
 // 모임방처럼 단어 코드(예: 빠른나무)를 아는 사람끼리. 달리는 동안 10초마다 내 거리·시간·페이스·위치를 잠가서
 // Firestore rooms/{방번호}/run/{내 번호}에 올리고, 다른 사람 것을 받아 순위·차이를 보여 줘요(거리로 견줘서 어디서 달려도 돼요).
 // 라우팅이 스크립트 중간에 돌아서 상태는 함수에 붙여 둬요(const·let이면 아직 없을 수 있어서)
+// 러닝 목표 기본값: 5km · 30분 완주 (2026-10-19 사용자 '목표 5k 30분 디폴트로해'). 이미 고른 목표가 있던 휴대폰도 한 번만 이걸로 바꿔요
+function runGoalSaved() {
+  try { if (!ls.get('runGoalDef5k', false)) { ls.set('runGoalDef5k', true); ls.set('runGoal', { k: 'dist', v: 5, t: 1800 }); } } catch {}
+  return ls.get('runGoal', { k: 'dist', v: 5, t: 1800 });
+}
 function crewS() { return crewS.s || (crewS.s = { R: null, code: null, list: [], runs: [], ahead: {}, sentDone: null, rrAt: 0 }); }
 function crewMe() { let m = ls.get('crewMe', ''); if (!m) { m = rid(8).toLowerCase(); ls.set('crewMe', m); } return m; }
 function crewGet() { const c = ls.get('runCrew', null); return c && roomParse(c.code)?.code === c.code ? c : null; }
@@ -4631,7 +4636,7 @@ function viewWalk() {
     return { dist, mv, n, runs };
   }
   function runHome() {
-    const g = goalOf(ls.get('runGoal', 0)), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
+    const g = goalOf(runGoalSaved()), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
     const hero = el('div', { class: 'rh' }, el('div', { class: 'rh-ov' }));
     // 그림: 사용자가 고른 그림(2026-10-17, Gemini로 만든 동해 해변 러닝). 앱에서도 웹 주소로 받아요. 못 받으면 바다 그림
     // (예전엔 가장 최근 러닝 사진을 썼는데, 숲 사진이 화면 색과 안 어울려 사용자가 바꿈)
@@ -4684,7 +4689,7 @@ function viewWalk() {
   }
   // 목표: { k: 'free' } 자유 달리기 / { k: 'dist', v: km } / { k: 'time', v: 분 }. 예전 숫자(km)도 읽어요
   const goalOf = r => typeof r === 'number' ? (r > 0 ? { k: 'dist', v: r } : { k: 'free' }) : r && (r.k === 'dist' || r.k === 'time') && r.v > 0 ? r : { k: 'free' };
-  const runGoal = () => goalOf(id ? ls.get('walkGoal:' + id, 0) : ls.get('runGoal', 0));
+  const runGoal = () => goalOf(id ? ls.get('walkGoal:' + id, 0) : runGoalSaved());
   const goalKm = () => { const g = runGoal(); return g.k === 'dist' ? g.v : 0; };
   const goalMin = () => { const g = runGoal(); return g.k === 'time' ? g.v : 0; };
   const minLabel = v => v >= 60 ? `${Math.floor(v / 60)}시간${v % 60 ? ` ${v % 60}분` : ''}` : `${v}분`;
@@ -4772,7 +4777,7 @@ function viewWalk() {
   }
   // 목표 고르기 (시작 화면): 자유 달리기 / 거리 / 시간, 자주 쓰는 값 + 직접 입력
   function goalPicker() {
-    const g = goalOf(ls.get('runGoal', 0)), setG = v => { ls.set('runGoal', v); draw(); };
+    const g = goalOf(runGoalSaved()), setG = v => { ls.set('runGoal', v); draw(); };
     const tab = (k, label, def) => el('button', { class: 'btn small ' + (g.k === k ? 'dark' : 'line'), style: 'flex:1;white-space:nowrap;padding:0 8px;min-width:0', text: label, onclick: () => { if (g.k !== k) setG(def); } });
     const chip = (label, on, fn) => el('button', { class: 'btn small ' + (on ? 'dark' : 'line'), text: label, onclick: fn });
     const custom = async () => {
@@ -5229,7 +5234,7 @@ function viewWalk() {
     }
     if (pick === 'pgolf') { const G = golfNew(); ls.set('walkGolf:' + id, G); if (G.c) ls.set('trackName:' + id, /파크골프/.test(G.c) ? `${G.c} 라운드` : `${G.c} 파크골프`); }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
-    if (pick === 'run' && goalOf(ls.get('runGoal', 0)).k !== 'free') ls.set('walkGoal:' + id, goalOf(ls.get('runGoal', 0)));
+    if (pick === 'run' && goalOf(runGoalSaved()).k !== 'free') ls.set('walkGoal:' + id, goalOf(runGoalSaved()));
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw(); scrollTo(0, 0);   // 시작 화면에서 내려 둔 채로 남지 않게
   }
