@@ -205,11 +205,14 @@ object Run {
         return ((b.second - a.second) / ((b.first - a.first) / 60000.0)).roundToInt()
     }
     // ---------- 그래프용 기록: 10초마다 (시작부터 ms, 심박, 페이스 ms/km) ----------
-    class Sample(val t: Long, val hr: Int, val pace: Double?)
+    class Sample(val t: Long, val hr: Int, val pace: Double?, val cad: Int? = null, val reg: Double? = null, val g: Double? = null)
     val series = ArrayList<Sample>(); private var lastSample = 0L
+    // 저장한 [초, 심박, 페이스, 케이던스, 고르기×10, 충격×100] → Sample (0은 없음)
+    fun sampleOf(q: JSONArray): Sample { val pc = q.optLong(2); val c = q.optInt(3); val r = q.optInt(4); val g = q.optInt(5)
+        return Sample(q.optLong(0) * 1000, q.optInt(1), if (pc > 0) pc.toDouble() else null, if (c > 0) c else null, if (r > 0) r / 10.0 else null, if (g > 0) g / 100.0 else null) }
     fun sampleTick(now: Long) {
         if (id == null || paused(now) || now - lastSample < 10000) return
-        lastSample = now; series.add(Sample(now - startAt, hrNow(now), nowPace(now)))
+        lastSample = now; series.add(Sample(now - startAt, hrNow(now), nowPace(now), cadNow(now), formReg(now), formImpact(now)))
     }
 
     // ---------- 달리기 자세 (2026-10-19): 손목 흔들림 센서로 짐작한 대략값 ----------
@@ -351,7 +354,7 @@ object Run {
         val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
-            .put("series", JSONArray().apply { series.forEach { s -> put(JSONArray().put(s.t / 1000).put(s.hr).put(s.pace?.roundToLong() ?: 0)) } })
+            .put("series", JSONArray().apply { series.forEach { s -> put(JSONArray().put(s.t / 1000).put(s.hr).put(s.pace?.roundToLong() ?: 0).put(s.cad ?: 0).put(((s.reg ?: 0.0) * 10).roundToInt()).put(((s.g ?: 0.0) * 100).roundToInt())) } })
     }
     private fun round6(v: Double) = Math.round(v * 1e6) / 1e6
     // 기록 도우미가 꺼졌다 다시 켜졌을 때(시계가 앱을 정리한 경우) 이어서 기록해요
@@ -364,6 +367,6 @@ object Run {
         val sp = JSONArray(data.optString("walkSplits:$i", "[]")); for (k in 0 until sp.length()) splits.add(sp.getLong(k))
         val s = o.optJSONObject("sum"); if (s != null) { walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps
             s.optJSONArray("zone")?.let { z -> for (k in 0 until minOf(5, z.length())) zoneMs[k] = z.optLong(k) } }
-        o.optJSONArray("series")?.let { a -> for (k in 0 until a.length()) { val q = a.getJSONArray(k); val pc = q.optLong(2); series.add(Sample(q.optLong(0) * 1000, q.optInt(1), if (pc > 0) pc.toDouble() else null)) } }
+        o.optJSONArray("series")?.let { a -> for (k in 0 until a.length()) { val q = a.getJSONArray(k); series.add(sampleOf(q)) } }
     }
 }
