@@ -25,7 +25,7 @@ import kotlin.concurrent.thread
 // GitHub Releases 'watch'의 설명 글 '판 0.1.N'에서 N(= versionCode)을 읽어 지금 판보다 크면
 // MPD_run_watch.apk(없으면 예전 이름 MDRunWatch.apk)를 받아 PackageInstaller로 깔아요(같은 서명이라 기록 그대로). 처음 한 번은 '이 앱에서 설치 허용'을 켜야 해요.
 object Updater {
-    class Info(val code: Long, val name: String, val url: String)
+    class Info(val code: Long, val name: String, val url: String, val notes: String = "")
     private const val API = "https://api.github.com/repos/GilbertGo/mapdiary/releases/tags/watch"
     private val main = Handler(Looper.getMainLooper())
     var busy = false
@@ -87,7 +87,8 @@ object Updater {
                 if (assets != null) for (i in 0 until assets.length()) { val a = assets.getJSONObject(i); val n = a.optString("name")
                     if (n == "MPD_run_watch.apk" || (url.isEmpty() && n.endsWith(".apk"))) url = a.optString("browser_download_url") }
                 val code = m?.groupValues?.get(1)?.toLongOrNull() ?: 0L
-                if (code > cur && url.isNotEmpty()) Info(code, "0.1.$code", url) else null
+                val notes = Regex("새로워진 점:\\s*(.+)").find(o.optString("body"))?.groupValues?.get(1)?.trim() ?: ""
+                if (code > cur && url.isNotEmpty()) Info(code, "0.1.$code", url, notes) else null
             } catch (e: Exception) { lastErr = (e.javaClass.simpleName + " " + (e.message ?: "")).take(80); null }
             if (info != null) lastErr = ""
             if (!busy) release(c)
@@ -96,7 +97,7 @@ object Updater {
     }
 
     // 받아서 깔기. 설치 허용이 꺼져 있으면 설정 화면을 열어 줘요
-    fun install(a: Activity, info: Info, say: (String) -> Unit) {
+    fun install(a: Activity, info: Info, say: (String) -> Unit, progress: (Int) -> Unit = {}) {
         if (busy) return
         if (!a.packageManager.canRequestPackageInstalls()) {
             say("'이 앱에서 설치 허용'을 켠 뒤 다시 눌러 주세요")
@@ -116,14 +117,19 @@ object Updater {
                     var hop = 0
                     while (conn.responseCode in 301..308 && hop++ < 5) { val to = conn.getHeaderField("Location") ?: break; conn.disconnect(); conn = open(a, to, 60000) }
                     if (conn.responseCode != 200) throw Exception("받기 " + conn.responseCode)
-                    s.openWrite("MPD_run_watch.apk", 0, -1).use { out -> conn.inputStream.use { it.copyTo(out) }; s.fsync(out) }
+                    // 받는 만큼 % 를 알려 줘요(화면의 '받는 중… 63%')
+                    val total = conn.contentLengthLong; var got = 0L; var last = -1
+                    s.openWrite("MPD_run_watch.apk", 0, -1).use { out -> conn.inputStream.use { inp ->
+                        val buf = ByteArray(65536); while (true) { val n = inp.read(buf); if (n < 0) break; out.write(buf, 0, n); got += n
+                            if (total > 0) { val pc = (got * 100 / total).toInt(); if (pc != last) { last = pc; main.post { progress(pc) } } } } }
+                        s.fsync(out) }
                     val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
                     val pend = PendingIntent.getBroadcast(a, id, Intent(a, UpdateReceiver::class.java), flags)
                     s.commit(pend.intentSender)
                 }
-                main.post { say("설치 확인 창이 뜨면 '업데이트'를 눌러 주세요") }
+                main.post { progress(100); say("설치 확인 창이 뜨면 '업데이트'를 눌러 주세요") }
             } catch (e: Exception) {
-                main.post { say("새 판을 못 받았어요. 와이파이를 확인해 주세요 (" + (e.message ?: e.javaClass.simpleName).take(60) + ")") }
+                main.post { progress(-1); say("새 판을 못 받았어요. 와이파이를 확인해 주세요 (" + (e.message ?: e.javaClass.simpleName).take(60) + ")") }
             } finally { busy = false; release(a) }
         }
     }

@@ -57,7 +57,13 @@ public class MdPinPlugin extends Plugin {
 writeFileSync(`${jdir}/MdAppPlugin.java`, `package ${appId};
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ContentUris;
+import android.content.Intent;
+import android.content.pm.PackageInstaller;
+import android.provider.Settings;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -116,6 +122,46 @@ public class MdAppPlugin extends Plugin {
             }
         } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); return; }
         JSObject r = new JSObject(); r.put("items", items); call.resolve(r);
+    }
+
+    // 새 판(APK)을 앱 안에서 받아 바로 설치 (2026-10-19 사용자가 다른 앱의 '새 버전이 있어요 · 받는 중 100%' 창을 보여 줌)
+    // 받는 동안 'updProgress' {p} 를 알려 주고, 다 받으면 안드로이드 설치 확인 창(MdUpdateReceiver)을 띄워요. 같은 열쇠라 덮어 설치(기록 그대로)
+    @PluginMethod
+    public void canInstall(PluginCall call) {
+        JSObject r = new JSObject(); r.put("ok", Build.VERSION.SDK_INT < 26 || getContext().getPackageManager().canRequestPackageInstalls()); call.resolve(r);
+    }
+    @PluginMethod
+    public void openInstallSettings(PluginCall call) {
+        try { Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName())); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); } catch (Exception e) { }
+        call.resolve();
+    }
+    @PluginMethod
+    public void installApk(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || !url.startsWith("https://github.com/GilbertGo/mapdiary/releases/")) { call.reject("bad url"); return; }
+        new Thread(() -> {
+            try {
+                PackageInstaller pi = getContext().getPackageManager().getPackageInstaller();
+                PackageInstaller.SessionParams sp = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+                sp.setAppPackageName(getContext().getPackageName());
+                int id = pi.createSession(sp);
+                try (PackageInstaller.Session s = pi.openSession(id)) {
+                    HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                    c.setInstanceFollowRedirects(true); c.setConnectTimeout(30000); c.setReadTimeout(60000); c.setRequestProperty("User-Agent", "MPD-App");
+                    if (c.getResponseCode() != 200) throw new IOException("받기 " + c.getResponseCode());
+                    long total = c.getContentLengthLong(), got = 0; int last = -1;
+                    try (OutputStream out = s.openWrite("app.apk", 0, -1); InputStream in = c.getInputStream()) {
+                        byte[] buf = new byte[65536]; int n;
+                        while ((n = in.read(buf)) > 0) { out.write(buf, 0, n); got += n;
+                            if (total > 0) { int p = (int) (got * 100 / total); if (p != last) { last = p; JSObject o = new JSObject(); o.put("p", p); notifyListeners("updProgress", o); } } }
+                        s.fsync(out);
+                    }
+                    int fl = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+                    s.commit(PendingIntent.getBroadcast(getContext(), id, new Intent(getContext(), MdUpdateReceiver.class), fl).getIntentSender());
+                }
+                call.resolve();
+            } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+        }).start();
     }
 
     static boolean okId(String id) { return id != null && id.matches("[A-Za-z0-9_]{1,40}"); }
@@ -180,6 +226,26 @@ public class MdAppPlugin extends Plugin {
 }
 `);
 // 내 기록을 같은 열쇠로 서명한 앱(Map Diary)에게만 내놓는 창구 (signature 권한)
+writeFileSync(`${jdir}/MdUpdateReceiver.java`, `package ${appId};
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInstaller;
+import android.os.Build;
+import android.widget.Toast;
+
+// 새 판 설치가 '사용자 확인'을 기다리면 확인 창을 띄우고, 안 되면 알려 줘요
+public class MdUpdateReceiver extends BroadcastReceiver {
+    @Override public void onReceive(Context c, Intent i) {
+        int st = i.getIntExtra(PackageInstaller.EXTRA_STATUS, -999);
+        if (st == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            Intent confirm = Build.VERSION.SDK_INT >= 33 ? i.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class) : i.getParcelableExtra(Intent.EXTRA_INTENT);
+            if (confirm != null) { confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); try { c.startActivity(confirm); } catch (Exception e) { } }
+        } else if (st != PackageInstaller.STATUS_SUCCESS) Toast.makeText(c, "업데이트가 안 됐어요: " + i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE), Toast.LENGTH_LONG).show();
+    }
+}
+`);
 writeFileSync(`${jdir}/MdSyncProvider.java`, `package ${appId};
 
 import android.content.ContentProvider;
@@ -229,7 +295,7 @@ public class MainActivity extends BridgeActivity {
 const mf = 'android/app/src/main/AndroidManifest.xml', PERM = 'io.github.gilbertgo.mapdiary.SYNC';
 let m = readFileSync(mf, 'utf8');
 if (!m.includes('</application>') || !m.includes('</manifest>')) throw new Error('AndroidManifest 모양이 달라요');
-m = m.replace('</application>', `    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
-  .replace('</manifest>', `    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
+m = m.replace('</application>', `    <receiver android:name="${appId}.MdUpdateReceiver" android:exported="false" />\n    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
+  .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
 writeFileSync(mf, m);
 console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);

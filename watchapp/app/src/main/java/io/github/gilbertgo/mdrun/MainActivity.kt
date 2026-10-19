@@ -71,7 +71,10 @@ class MainActivity : ComponentActivity() {
         lastCheck = System.currentTimeMillis()
         if (say) android.widget.Toast.makeText(this, "새 판을 알아보는 중…", android.widget.Toast.LENGTH_SHORT).show()
         Updater.check(this) { i ->
-            if (i != null) { upd = i; if (atStart && Run.id == null) showStart() }
+            if (i != null) { upd = i
+                // 새 판은 판마다 한 번 저절로 '새 판이 있어요' 창을 띄워요(2026-10-19 사용자가 다른 앱의 업데이트 창을 보여 주며 '이런 화면')
+                val p = getSharedPreferences("mdrun", MODE_PRIVATE)
+                if (atStart && Run.id == null) { if (p.getLong("updAsk", 0) != i.code) { p.edit().putLong("updAsk", i.code).apply(); showUpdate(i) } else showStart() } }
             if (say) android.widget.Toast.makeText(this, if (i != null) "새 판 ${i.name}이 있어요. 맨 위 '설치하기'를 눌러 주세요" else if (Updater.lastErr.isNotEmpty()) "알아보지 못했어요 · 인터넷 연결을 확인해 주세요 (${Updater.lastErr})" else "지금이 가장 새 판이에요", android.widget.Toast.LENGTH_LONG).show()
         }
     }
@@ -123,7 +126,7 @@ class MainActivity : ComponentActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val g = Store.goal(this)
         val u0 = upd
-        val install = { if (u0 != null) Updater.install(this, u0) { m -> android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show() } }
+        val install = { if (u0 != null) showUpdate(u0) }
         val hv = HomeView(this, HomeView.Act({ countdown() }, { showGoal() }, if (u0 != null) install else null, { showGuide() })).apply {
             guideOn = Cadence.kind != Cadence.OFF; guideTxt = if (guideOn) "♩ ${Cadence.spm}" else "♩ 끔"
             week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
@@ -204,6 +207,38 @@ class MainActivity : ComponentActivity() {
             btn("이걸로 정하기", RunView.CORAL, RunView.INK) {
                 Store.setGoal(this, if (isD) g.copy(t = vt) else g.copy(d = vd)); showStart() },
             btn("정하지 않음", RunView.SURF, RunView.MUTED) { Store.setGoal(this, g.copy(t = 0, d = 0.0)); showStart() }))
+    }
+
+    // 새 판이 있어요: 선물 그림 · 무엇이 새로워졌는지 · 지금 → 새 판 · [업데이트](받는 중… %) · 나중에
+    private fun showUpdate(info: Updater.Info) {
+        val status = tv("", 12f, RunView.BLUE, true)
+        val go = btn("업데이트", RunView.CORAL, RunView.INK) {}
+        go.setOnClickListener {
+            if (Updater.busy) return@setOnClickListener
+            go.text = "받는 중… 0%"
+            Updater.install(this, info, { m -> status.text = m }) { pc ->
+                go.text = when { pc < 0 -> "다시 받기"; pc >= 100 -> "설치 확인 창을 기다려요"; else -> "받는 중… $pc%" } }
+            if (!Updater.busy) go.text = "업데이트"   // 설치 허용이 꺼져 있어 설정을 연 경우
+        }
+        show(page(GiftView(this), tv("새 판이 있어요", 19f, Color.WHITE, true),
+            tv(info.notes.ifEmpty { "더 좋아진 새 판이에요" }, 13f, Color.parseColor("#C9D1DB")),
+            tv("지금 ${Updater.currentName(this)} → 새 ${info.name}", 13f, RunView.MUTED, true),
+            go, status,
+            tv("나중에", 14f, RunView.MUTED, true).apply { setPadding(0, (3 * u).toInt(), 0, (3 * u).toInt()); setOnClickListener { showStart() } }))
+    }
+    // 선물 상자 그림(산호 선)
+    private class GiftView(c: android.content.Context) : View(c) {
+        private val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE; color = RunView.CORAL; strokeCap = android.graphics.Paint.Cap.ROUND; strokeJoin = android.graphics.Paint.Join.ROUND }
+        override fun onMeasure(w: Int, h: Int) { val s = (resources.displayMetrics.widthPixels * .2f).toInt(); setMeasuredDimension(MeasureSpec.getSize(w), s) }
+        override fun onDraw(cv: android.graphics.Canvas) {
+            val s = height.toFloat(); val cx = width / 2f; val u = s / 20f; p.strokeWidth = 1.6f * u
+            cv.drawRoundRect(android.graphics.RectF(cx - 7 * u, 8 * u, cx + 7 * u, 18 * u), u, u, p)          // 상자
+            cv.drawRoundRect(android.graphics.RectF(cx - 8.5f * u, 5 * u, cx + 8.5f * u, 8.5f * u), u, u, p)  // 뚜껑
+            cv.drawLine(cx, 5 * u, cx, 18 * u, p)                                                            // 끈
+            val path = android.graphics.Path().apply { moveTo(cx, 5 * u); cubicTo(cx - 2 * u, 1 * u, cx - 6 * u, 2 * u, cx - 4 * u, 4.6f * u); close()
+                moveTo(cx, 5 * u); cubicTo(cx + 2 * u, 1 * u, cx + 6 * u, 2 * u, cx + 4 * u, 4.6f * u); close() }
+            cv.drawPath(path, p)                                                                             // 리본
+        }
     }
 
     // 케이던스 가이드 정하기 (2026-10-19 사용자 '가이드 케이던스도 설정할 수 있게, 중요하니 앞쪽으로'):

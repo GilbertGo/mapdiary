@@ -34,15 +34,19 @@ jobs:
             npx cap add android
             MD_APP=$app node patch-android.mjs
             npx cap sync android
-            (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
+            set -o pipefail
+            (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log) || { grep -E "error:|What went wrong" -A2 build.log | head -30 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
             cp android/app/build/outputs/apk/debug/app-debug.apk ../$apk
             cp ../$apk ../$file
           done
-      - uses: softprops/action-gh-release@v2
+      # 새 판 창의 '새로워진 점'(runapp/CHANGES.txt 첫 줄). 가지에서 손으로 돌리면 만들기만 하고 올리지 않아요
+      - run: printf '%s\n새로워진 점: %s\n' "전체 MPD는 MPD.apk, 러닝은 MPD_run.apk, 파크골프는 MPD_golf.apk를 휴대폰에서 눌러 받고 설치하세요(예전 이름 MapDiary·MDRun·MDGolf.apk도 같은 파일). 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로)." "$(head -1 runapp/CHANGES.txt)" > notes.md
+      - if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: mdrun-${{ github.run_number }}
           name: MD 앱 0.1.${{ github.run_number }} (러닝·파크골프)
-          body: 전체 MPD는 MPD.apk, 러닝은 MPD_run.apk, 파크골프는 MPD_golf.apk를 휴대폰에서 눌러 받고 설치하세요(예전 이름 MapDiary·MDRun·MDGolf.apk도 같은 파일). 예전 판이 있으면 그 위에 덮어 설치돼요(기록은 그대로).
+          body_path: notes.md
           files: |
             MPD.apk
             MPD_run.apk
