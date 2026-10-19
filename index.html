@@ -441,6 +441,8 @@ html .rh .role.rh-bar,html[data-theme=sea] .rh .role.rh-bar{background:linear-gr
 .rh-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rh-pills .row{gap:6px!important;flex-wrap:nowrap}.rh-pills .row .sub{display:none}
 .rh-pills .pill,.rh-pill{background:rgba(255,255,255,.92)!important;color:#102A43!important;border:none;font:inherit;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.where-pill{border:1px solid var(--line,#D6E5F1);background:rgba(255,255,255,.85);color:var(--muted,#5F7A92);font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.where-pill.light{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45);color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
 .rh-go-t{display:block}.rh-go-s{display:flex;justify-content:center;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-top:3px;opacity:.95}
 .rh-go-s .row{gap:6px!important;flex-wrap:nowrap}.rh-go-s .sub{display:none}.rh-go-s .pill{background:none!important;color:#fff!important;border:none;padding:0;font-size:13px;font-weight:700}
 .rh-go{min-height:66px;padding:9px 14px;border:none;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-size:19px;font-weight:900;box-shadow:0 8px 20px rgba(255,138,76,.35);margin-top:4px}
@@ -1854,7 +1856,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-16';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-17';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4406,6 +4408,19 @@ async function openRecap(Y, Mo, recs) {
     el('button', { class: 'btn line small', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg); ovGuard();
 }
+// 지금 어디서 열었는지 (2026-10-19 사용자 '메인 화면 상단에 작게, apk인지 뭔지 쉽게 알게'): 앱·바탕화면 웹앱·브라우저마다 기록 서랍이 달라서
+function whereNow() {
+  const ua = navigator.userAgent;
+  if (IN_NATIVE) { const m = (window.MD_APP || {}).mode; return { ico: '📱', t: m === 'run' ? 'MPD Run 앱 (APK)' : m === 'pgolf' ? 'MPD 파크골프 앱 (APK)' : 'MPD 앱 (APK)' }; }
+  if (IN_KAKAO) return { ico: '💬', t: '카카오톡 안 화면' };
+  const br = /SamsungBrowser/.test(ua) ? '삼성 인터넷' : /Edg[A]?\//.test(ua) ? '엣지' : /Whale/.test(ua) ? '웨일' : /CriOS|Chrome\//.test(ua) ? '크롬' : /Safari/.test(ua) ? '사파리' : '브라우저';
+  return IS_APP ? { ico: '🏠', t: `바탕화면 웹앱 (${br})` } : { ico: '🌐', t: `${br}에서 열림 (웹)` };
+}
+function wherePill(light) {
+  const w = whereNow(), on = !!ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false));
+  return el('button', { class: 'where-pill' + (light ? ' light' : ''), 'aria-label': '지금 연 곳: ' + w.t, onclick: () => toast(`${w.ico} 지금 연 곳: ${w.t}. 기록은 여기에만 저장돼요. ${on ? '구글 로그인이 돼 있어서 다른 곳 기록과 하나로 모여요.' : '앱·크롬 기록을 하나로 모으려면 내 기록 → ☁ 구글로 로그인'}`) },
+    `${w.ico} ${w.t}`, on ? el('span', { text: ' · ☁ 모음' }) : null);
+}
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
@@ -4417,6 +4432,7 @@ function viewLanding() {
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
   app.replaceChildren(el('div', { class: 'stack' },
     roleBar('leader', '내 기록'),
+    el('div', { style: 'display:flex;justify-content:flex-end;margin:-2px 0 -26px' }, wherePill()),
     el('div', { style: 'padding:28px 0 36px' },
       // 'MPD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MPD, 받은 MPD…)
       el('h1', { style: 'font-size:clamp(28px,8.4vw,34px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;white-space:nowrap' }, 'Map Photo Diary',
@@ -4733,7 +4749,8 @@ function viewWalk() {
     const settings = el('div', { class: 'card stack', style: 'gap:14px' });
     // 그림 속 세 사람이 아래쪽에 있어서, 날짜·한마디는 위쪽 하늘에 (2026-10-17)
     hero.append(tag, el('div', { class: 'rh-top' },
-      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` })),   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
+      el('div', { class: 'rh-k', text: `오늘의 러닝 · ${now.getMonth() + 1}월 ${now.getDate()}일 ${'일월화수목금토'[now.getDay()]}요일` }),
+      el('div', {}, wherePill(true))),   // '뚱 꼬 떡 달려!!!'는 2026-10-19 사용자가 지움
       el('div', { class: 'rh-bot' },
       // 2026-10-19 사용자가 GPS·목표 알약에서 시작 단추로 화살표를 그려 보냄 → 두 알약을 단추 안 아랫줄로
       el('button', { class: 'rh-go', onclick: countdown }, el('span', { class: 'rh-go-t', text: '▶ 러닝 시작하기' }),
