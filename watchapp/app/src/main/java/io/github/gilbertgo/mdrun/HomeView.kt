@@ -23,7 +23,7 @@ import kotlin.math.sin
 // 테두리 링 = 이번 주 달린 거리 / 주간 목표, 가운데 큰 숫자, 요일 점 7개(달린 날 산호), 목표 알약, 아래 큰 둥근 ▶ 시작.
 // 용두를 돌리거나 위로 밀면 아래에 설정 줄이 이어져요
 class HomeView(c: Context, private val act: Act) : View(c) {
-    class Act(val start: () -> Unit, val goal: () -> Unit, val update: (() -> Unit)?)
+    class Act(val start: () -> Unit, val goal: () -> Unit, val update: (() -> Unit)?, val guide: () -> Unit = {})
     class Week(val km: Double, val runs: Int, val days: BooleanArray, val goalKm: Int)
     var week = Week(0.0, 0, BooleanArray(7), 20)
     var gpsAcc = -1f
@@ -47,7 +47,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
     // 버튼 자리(눌렀는지 볼 때 써요)
     private val playR get() = 9.5f * u
     private val playY get() = 83.5f * u
-    private var pillBox = RectF(); private var updBox = RectF()
+    private var pillBox = RectF(); private var updBox = RectF(); private var guideBox = RectF()
+    var guideTxt = ""; var guideOn = false   // 케이던스 가이드 알약(목표 알약 옆, 2026-10-19 사용자 '중요하니 앞쪽으로')
 
     override fun onMeasure(w: Int, h: Int) {
         val s = MeasureSpec.getSize(w); setMeasuredDimension(s, resources.displayMetrics.heightPixels)
@@ -121,9 +122,13 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         // 목표 알약(누르면 목표 고르기)
         val gl = goal.label() + (if (goal.tgtPace() > 0) "  ·  ${fmtPace(goal.tgtPace())}" else "")
         val pw = measure(gl, 4.6f * u, false) + 7 * u; val ph = 7.6f * u; val py = 67.6f * u
-        pillBox = RectF(cx - pw / 2, py - ph / 2, cx + pw / 2, py + ph / 2)
+        val qw = measure(guideTxt, 4.6f * u, false) + 6 * u; val qgap = 2 * u; val qx = cx - (pw + qgap + qw) / 2
+        pillBox = RectF(qx, py - ph / 2, qx + pw, py + ph / 2)
         cv.drawRoundRect(pillBox, ph / 2, ph / 2, paint(a(Color.WHITE, 26)))
-        text(cv, gl, cx, py + 1.6f * u, 4.6f * u, Color.WHITE, true)
+        text(cv, gl, pillBox.centerX(), py + 1.6f * u, 4.6f * u, Color.WHITE, true)
+        guideBox = RectF(qx + pw + qgap, py - ph / 2, qx + pw + qgap + qw, py + ph / 2)
+        cv.drawRoundRect(guideBox, ph / 2, ph / 2, paint(if (guideOn) a(CORAL, 60) else a(Color.WHITE, 26)))
+        text(cv, guideTxt, guideBox.centerX(), py + 1.6f * u, 4.6f * u, if (guideOn) CORAL else MUTED, true)
 
         // 시작 단추: 산호 동그라미 + 숨쉬는 빛 + 진한 ▶
         val R = playR; val py2 = playY
@@ -146,7 +151,8 @@ class HomeView(c: Context, private val act: Act) : View(c) {
                 val x = e.x; val y = e.y
                 if (!updBox.isEmpty && updBox.contains(x, y)) act.update?.invoke()
                 else if (Math.hypot((x - cx).toDouble(), (y - playY).toDouble()) < playR * 1.5) act.start()
-                else if (RectF(pillBox).apply { inset(-2 * u, -2 * u) }.contains(x, y)) act.goal()
+                else if (RectF(guideBox).apply { inset(-1 * u, -2 * u) }.contains(x, y)) act.guide()
+                else if (RectF(pillBox).apply { inset(-1 * u, -2 * u) }.contains(x, y)) act.goal()
                 return true
             }
         }
