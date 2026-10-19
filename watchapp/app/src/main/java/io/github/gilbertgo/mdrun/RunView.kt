@@ -18,6 +18,7 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 // 달리는 중 화면 (둥근 시계 화면에 그려요). 옆으로 밀어 넘겨요:
@@ -26,7 +27,7 @@ import kotlin.math.sin
 // 휴대폰 MPD 바닷가 색(산호 #FF8A4C · 하늘 #4FC3F7), 테두리 링·알약 딱지·그린 아이콘(이모지 안 씀)
 class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     companion object {
-        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4; const val P_ZONE = 5
+        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4; const val P_ZONE = 5; const val P_GRAPH = 6; const val P_FORM = 7
         // 심박 존 색: 존1 회색 · 존2 하늘 · 존3 금 · 존4 산호 · 존5 빨강
         val ZONE = intArrayOf(Color.parseColor("#9AA5B4"), Color.parseColor("#4FC3F7"), Color.parseColor("#FFD166"), Color.parseColor("#FF8A4C"), Color.parseColor("#FF4D5E"))
         val ZNAME = arrayOf("회복", "유산소", "템포", "역치", "최대")
@@ -88,7 +89,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     // 화면 차례: 달리기 → 목표(목표가 있을 때만) → 몸(심박·케이던스) → 1km 구간 → 멈춤·끝내기
     // 2026-10-19 정리(사용자 '중복되는 내용, 조잡해, 작은 글씨 안 보여'): 한 화면에 한 가지 일만, 같은 숫자는 한 곳에만,
     // 글자는 가장 작아도 화면의 5%(이름표), 색은 화면마다 강조 하나
-    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_SPLIT, P_CTL)
+    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_FORM, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_GRAPH, P_FORM, P_SPLIT, P_CTL)
     private val LAB = 5f   // 이름표 글자 크기(u)
 
     override fun onDraw(cv: Canvas) {
@@ -101,6 +102,8 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             P_COACH -> pageCoach(cv)
             P_BODY -> pageBody(cv, now)
             P_ZONE -> pageZones(cv)
+            P_GRAPH -> pageGraph(cv, now)
+            P_FORM -> pageForm(cv, now)
             P_SPLIT -> pageSplits(cv)
             else -> pageCtl(cv, now)
         }
@@ -210,6 +213,72 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             text(cv, fmtTime(ms), 80 * u, y + 2.5f * u, 6.4f * u, if (k == 1) Color.WHITE else MUTED, true, true, Paint.Align.RIGHT)
         }
         text(cv, if (Run.hrAvg() > 0) "평균 ${Run.hrAvg()} · 최고 ${Run.hrMax}" else "심박이 아직 없어요", cx, 87 * u, LAB * u, MUTED, true)
+    }
+
+    // ---------- 심박·페이스 그래프: 파란 띠 = 존2, 빨간 선 = 심박, 산호 선 = 페이스(위로 갈수록 빠름) ----------
+    private fun pageGraph(cv: Canvas, now: Long) {
+        text(cv, "심박 · 페이스", cx, 20 * u, 5.6f * u, Color.WHITE, true)
+        val all = Run.series
+        val X0 = 15 * u; val X1 = 85 * u; val Y0 = 28 * u; val Y1 = 68 * u
+        if (all.size < 2) { text(cv, "달리면 10초마다", cx, 46 * u, 5.4f * u, MUTED); text(cv, "그래프가 그려져요", cx, 54 * u, 5.4f * u, MUTED) }
+        else {
+            val step = maxOf(1, all.size / 140); val s = all.filterIndexed { i, _ -> i % step == 0 || i == all.size - 1 }
+            val t0 = s.first().t.toFloat(); val t1 = maxOf(s.last().t.toFloat(), t0 + 60000f)
+            fun xOf(t: Long) = X0 + (X1 - X0) * (t - t0) / (t1 - t0)
+            // 심박 눈금: 최대 심박의 50%~100%
+            val hLo = Run.hrMaxSet * .5f; val hHi = Run.hrMaxSet.toFloat()
+            fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
+            cv.drawRect(X0, yH(Run.zoneLo(2)), X1, yH(Run.zoneLo(1)), paint(alpha(BLUE, 0x38)))
+            paint(LINE); p.strokeWidth = .3f * u; cv.drawLine(X0, Y1, X1, Y1, p)
+            // 페이스 눈금: 보이는 범위(15분/km보다 느린 건 뺌), 빠를수록 위
+            val ps = s.mapNotNull { it.pace }.filter { it < 900000 }
+            if (ps.size >= 2) {
+                val lo = ps.minOrNull()!! - 10000; val hi = ps.maxOrNull()!! + 10000
+                // 들쭉날쭉하지 않게 앞뒤 2점(약 30초)씩 평균
+                val sm = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
+                val path = Path(); var first = true
+                s.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
+                paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .9f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+            }
+            val hs = s.filter { it.hr > 0 }
+            if (hs.size >= 2) {
+                val path = Path(); hs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yH(q.hr); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
+                paint(RED); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
+            }
+            text(cv, fmtTime(s.last().t - s.first().t), X1, Y1 + 5 * u, 4.4f * u, MUTED, num = true, align = Paint.Align.RIGHT)
+        }
+        val hr = Run.hrNow(now)
+        heart(cv, cx - 21 * u, 77.2f * u, 1.8f * u, RED); text(cv, if (hr > 0) "$hr" else "-", cx - 18 * u, 79.5f * u, 7 * u, Color.WHITE, true, true, Paint.Align.LEFT)
+        text(cv, fmtPace(Run.nowPace(now)), cx + 21 * u, 79.5f * u, 7 * u, CORAL, true, true, Paint.Align.RIGHT)
+        text(cv, "파란 띠 = 존2", cx, 87 * u, LAB * u, BLUE, true)
+    }
+
+    // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
+    private fun pageForm(cv: Canvas, now: Long) {
+        text(cv, "달리기 자세", cx, 20 * u, 5.6f * u, Color.WHITE, true)
+        cv.drawRect(cx - .15f * u, 26 * u, cx + .15f * u, 78 * u, paint(LINE)); cv.drawRect(16 * u, 51.8f * u, 84 * u, 52.1f * u, paint(LINE))
+        val cad = Run.cadNow(now); val st = Run.stride(now); val reg = Run.formReg(now); val g = Run.formImpact(now)
+        fun tag(v: Double?, good: Double, ok: Double, lowGood: Boolean, t: Array<String>): Pair<String, Int> = when {
+            v == null -> "-" to MUTED
+            if (lowGood) v <= good else v >= good -> t[0] to BLUE
+            if (lowGood) v <= ok else v >= ok -> t[1] to GOLD
+            else -> t[2] to CORAL }
+        fcell(cv, cx - 17 * u, 32 * u, "케이던스", cad?.toString() ?: "-", tag(cad?.toDouble(), 170.0, 160.0, false, arrayOf("좋아요", "보통", "낮아요")))
+        fcell(cv, cx + 17 * u, 32 * u, "보폭", if (st != null) String.format("%.2fm", st) else "-", (if (st != null) "참고" else "-") to MUTED)
+        fcell(cv, cx - 17 * u, 58 * u, "걸음 고르기", if (reg != null) "${reg.roundToInt()}%" else "-", tag(reg, 4.0, 7.0, true, arrayOf("고르게", "보통", "흔들려요")))
+        fcell(cv, cx + 17 * u, 58 * u, "착지 충격", if (g != null) String.format("%.1fG", g) else "-", tag(g, 3.0, 4.0, true, arrayOf("부드러워요", "보통", "세요")))
+        val tip = when {
+            cad != null && cad < 160 -> "보폭 줄이고 발을 빠르게"
+            reg != null && reg > 7 -> "리듬을 일정하게"
+            g != null && g > 4 -> "발을 살짝 내려놓듯"
+            else -> "손목 센서로 짐작한 값"
+        }
+        text(cv, tip, cx, 87 * u, LAB * u, MUTED, true, max = 0.62f)
+    }
+    private fun fcell(cv: Canvas, x: Float, y: Float, lab: String, v: String, tg: Pair<String, Int>) {
+        text(cv, lab, x, y, 4.6f * u, MUTED, true, max = 0.32f)
+        text(cv, v, x, y + 11 * u, 10 * u, Color.WHITE, true, true, max = 0.32f)
+        text(cv, tg.first, x, y + 17.5f * u, 4.6f * u, tg.second, true, max = 0.32f)
     }
 
     // ---------- 4. 1km 구간 (막대가 길수록 빠른 구간, 가장 빠른 곳은 산호색) ----------
