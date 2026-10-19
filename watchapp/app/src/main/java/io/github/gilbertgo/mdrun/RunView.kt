@@ -260,7 +260,8 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         }
         text(cv, if (Run.manualPause) "다시 달리기" else "멈춤", L[0], 73 * u, 4.6f * u, Color.WHITE, true, max = 0.34f)
         text(cv, "끝내기", R[0], 73 * u, 4.6f * u, Color.WHITE, true)
-        text(cv, "끝내기는 1.5초 꾹 누르세요", cx, 82 * u, 3.9f * u, MUTED)
+        text(cv, "끝내기는 1.5초 꾹 누르세요", cx, 80 * u, 3.6f * u, MUTED)
+        pill(cv, if (Cadence.kind != Cadence.OFF) "♩ 가이드 ${Cadence.spm} 켬" else "♩ 가이드 끔", 87.5f * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, 3.8f * u)
     }
 
     // ---------- 화면이 어두워졌을 때(앰비언트): 선과 글자만, 숫자 크게 ----------
@@ -291,6 +292,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                     val L = btnL()
                     if (hypot(e.x - L[0], e.y - L[1]) < L[2] * 1.15f) { Run.setPause(!Run.manualPause); performClick() }
                     else if (e.y < 30 * uu) { Run.voice = !Run.voice; Store.setVoice(context, Run.voice) }
+                    else if (e.y > 83 * uu) Cadence.set(context, if (Cadence.kind != Cadence.OFF) Cadence.OFF else Cadence.last)
                 }
                 invalidate()
             }
