@@ -346,19 +346,32 @@ class MainActivity : ComponentActivity() {
         val go = { if (!dead) { dead = true; h.removeCallbacksAndMessages(null); begin() } }
         box.setOnClickListener { go() }
         show(box)
-        num.text = "준비"; num.textSize = 26f
-        val tone = try { ToneGenerator(AudioManager.STREAM_MUSIC, 80) } catch (e: Exception) { null }
-        h.postDelayed({ if (!dead) Run.say(Run.startLine()) }, 400)
-        val wait = if (Run.voice) (if (Run.goal.tgtPace() > 0) 7000L else 2500L) else 600L
-        listOf(3, 2, 1).forEachIndexed { k, n -> h.postDelayed({ if (!dead) { num.textSize = 60f; num.text = "$n"; tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 180); Run.buzz(longArrayOf(0, 120)) } }, wait + k * 1000L) }
-        h.postDelayed({ if (!dead) { num.text = "GO"; tone?.startTone(ToneGenerator.TONE_PROP_BEEP2, 700); Run.buzz(longArrayOf(0, 400)) } }, wait + 3000L)
-        h.postDelayed({ go(); tone?.release() }, wait + 3700L)
+        // 2026-10-19 사용자 '달리기 시작 단추를 누르면 3 2 1 0~~~': 누르자마자 3·2·1(짧은 '삐' 880Hz)과 진동, 그리고 길게 '삐~'(1320Hz 1초)와 함께 시작.
+        // 목소리 안내(목표 말하기)는 시작한 뒤에 해요
+        listOf(3, 2, 1).forEachIndexed { k, n -> h.postDelayed({ if (!dead) { num.textSize = 70f; num.text = "$n"; beep(880, 180); Run.buzz(longArrayOf(0, 120)) } }, 300L + k * 1000L) }
+        h.postDelayed({ if (!dead) { num.text = "GO"; beep(1320, 1000); Run.buzz(longArrayOf(0, 700)) } }, 3300L)
+        h.postDelayed({ go() }, 3900L)
+    }
+    // 짧은 소리 하나 (미디어 소리로, 시계가 진동 모드여도 들리게)
+    private fun beep(hz: Int, ms: Int) {
+        Thread {
+            try {
+                val rate = 22050; val n = rate * ms / 1000; val pcm = ShortArray(n)
+                for (i in 0 until n) { val env = minOf(1.0, i / 200.0, (n - i) / 400.0); pcm[i] = (Math.sin(2 * Math.PI * hz * i / rate) * env * 30000).toInt().toShort() }
+                val t = android.media.AudioTrack.Builder()
+                    .setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                    .setAudioFormat(android.media.AudioFormat.Builder().setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).setSampleRate(rate).setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).build())
+                    .setBufferSizeInBytes(n * 2).setTransferMode(android.media.AudioTrack.MODE_STATIC).build()
+                t.write(pcm, 0, n); t.play(); Thread.sleep(ms + 150L); t.release()
+            } catch (e: Exception) {}
+        }.start()
     }
     private fun begin() {
         val c = Calendar.getInstance()
         Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 러닝")
         Store.saveCurrent(this)
         showRun()
+        h.postDelayed({ Run.say(Run.startLine()) }, 1200)   // 목표 말하기는 시작한 뒤에
     }
 
     // ---------- 달리는 중 ----------
