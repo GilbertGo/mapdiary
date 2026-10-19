@@ -452,6 +452,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .r3-ring{background:none;border:none;padding:0;margin-top:8px;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.25))}
 .r3-dots{display:flex;gap:10px;margin-top:4px}.r3-dots span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;opacity:.92}
 .r3-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}.r3-dots i.on{background:#FF8A4C}.r3-dots i.td{outline:2px solid #fff;outline-offset:2px}
+.r3-bgbtn{margin-top:4px;background:none;border:0;color:rgba(255,255,255,.82);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:6px 10px;cursor:pointer}
 .r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 120px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
 .r3-go{width:100%;max-width:420px;border:none;border-radius:999px;background:var(--accent,#FF8A4C);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:0 8px 20px rgba(255,138,76,.45);margin-bottom:6px}
@@ -1894,7 +1895,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-24';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.19-25';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4782,6 +4783,23 @@ function viewWalk() {
     for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist += trackStats(tr, 25).walk; mv += movingMs(tr, 25); n++; days.add((new Date(x.info.startAt).getDay() + 6) % 7); }
     return { dist, mv, n, runs, days };
   }
+  // 러닝 첫 화면·준비 화면 바탕 사진 (2026-10-19 사용자 '앱 화면 사진을 사용자가 바꿀 수 있게'): 휴대폰 사진에서 골라 1400px로 줄여 이 기기에 둠(ls runHero), 비우면 기본 그림
+  function runHeroUrl() { return ls.get('runHero', '') || `${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg`; }
+  function runHeroPick(after) {
+    const cur = ls.get('runHero', ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+    const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set('runHero', url); } catch (e) { ls.set('runHero', await shrinkImage(f, 900, 'url', .75)); }
+        cb.remove(); toast('바탕 사진을 바꿨어요'); if (after) after(); }
+      catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
+    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: '바탕 사진 바꾸기' }),
+      el('p', { class: 'sub', style: 'margin:0', text: '러닝 첫 화면과 준비 화면 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
+      el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${runHeroUrl()}")` }),
+      el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
+      cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); if (after) after(); } }) : null,
+      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
+    document.body.append(cb);
+  }
   function runHome() {
     const g = goalOf(runGoalSaved()), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
     // 2026-10-19 사용자가 시안 B3-2(가운데 큰 고리) 고름: 사진이 한 화면 가득 · 맨 위 인사 · 가운데 이번 주 고리와 요일 점 · 아래 PACE 문구와 큰 시작 단추
@@ -4797,7 +4815,7 @@ function viewWalk() {
       + `<text x="105" y="150" fill="#fff" font-size="13" text-anchor="middle">${wg ? `/ 주간 목표 ${wg} km` : 'km · 주간 목표 정하기 ✎'}</text></svg>`;
     const today = (now.getDay() + 6) % 7;
     const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
-    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 42%,rgba(6,30,55,.32) 62%,rgba(6,30,55,.9)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
+    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 42%,rgba(6,30,55,.32) 62%,rgba(6,30,55,.9)),url("${runHeroUrl()}")` },
       (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
         el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
@@ -4805,7 +4823,8 @@ function viewWalk() {
       el('div', { class: 'r3-bot' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
         el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }),
         el('button', { class: 'r3-go', onclick: runSetup }, '▶ 러닝 시작하기'),
-        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true))));
+        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true)),
+        el('button', { class: 'r3-bgbtn', onclick: () => runHeroPick(draw) }, '🖼 바탕 사진 바꾸기')));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
@@ -4859,7 +4878,7 @@ function viewWalk() {
     // GPS 알약은 첫 화면 것을 그대로 따라 그려요(같은 걸 옮기면 첫 화면에서 빠져서)
     let going = false; const gpsMini = el('span', { class: 'row' });
     const gpsCopy = () => { if (!bg.isConnected) { if (!going) { if (cgTimer && !id) cgStop(); draw(); } return; } gpsMini.innerHTML = gpsReady.innerHTML; setTimeout(gpsCopy, 1000); };   // 뒤로가기로 닫혀도 첫 화면을 새로 그려요
-    const photo = el('div', { class: 'rs-photo', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.05) 30%,rgba(6,30,55,.78)),url("${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg")` },
+    const photo = el('div', { class: 'rs-photo', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.05) 30%,rgba(6,30,55,.78)),url("${runHeroUrl()}")` },
       el('div', { class: 'rs-ey', text: 'READY  /  OUTDOOR RUN' }), el('div', { class: 'rs-h', text: '오늘의 리듬으로.' }), el('div', { style: 'font-size:13px;margin-bottom:6px', text: 'MPD · FIELD SESSION' }), el('div', { class: 'rh-info' }, gpsMini, wherePill(true)));
     const row = (a, b) => el('div', { class: 'rs-row' }, a, b);
     const card = (...c) => el('div', { class: 'rs-card' }, ...c);
