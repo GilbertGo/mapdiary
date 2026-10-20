@@ -1924,7 +1924,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3925,14 +3925,15 @@ async function viewMyOne(t) {
           el('span', { text: lbl(o.m) }), el('b', { style: 'font-size:22px;color:var(--pine)', text: fmtRunTime(o.ms) }),
           el('span', { class: 'sub', style: 'font-size:13px', text: sp.length >= o.m / 1000 ? `움직인 시간만 ${fmtRunTime(sp.slice(0, Math.floor(o.m / 1000)).reduce((a, b) => a + b, 0))}` : '' }))),
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
-    M.k === 'run' && !live && !x.album ? el('button', { class: 'btn line full', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기 (예: 10km · 1:30:00)', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null,
     golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? watchAnalysis(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
     el('div', { class: 'two' },
       el('button', { class: 'btn line', text: 'GPX 받기', onclick: gpx }),
-      el('button', { class: 'btn line', style: 'color:var(--alert-ink)', text: '지우기', onclick: del }))));
+      el('button', { class: 'btn line', style: 'color:var(--alert-ink)', text: '지우기', onclick: del })),
+    // 대회 기록 맞추기는 가끔만 쓰니 맨 아래 작은 글자로 (2026-10-20 사용자 '잘 안 보이는 곳으로')
+    M.k === 'run' && !live && !x.album ? el('button', { class: 'link', style: 'align-self:center;font-size:13px;color:var(--muted);padding:4px 0 10px', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
     golfLyr = L.layerGroup().addTo(m); drawGolf();
