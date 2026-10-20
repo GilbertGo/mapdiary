@@ -1925,7 +1925,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2959,7 +2959,10 @@ const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join('
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
   cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '';
-  const live = ls.get('walkNow', null), sig = ls.get('cloudSig', {}), phSent = ls.get('cloudPh', {});
+  // 로그아웃하면 cloudSig가 null로 남아서(2026-10-21 앱에서 'Cannot read properties of null') {}로. 다른 계정(구글↔카카오)으로 바뀌면 처음부터 맞춰요
+  const same = ls.get('cloudUid', null) === cloudUser.uid;
+  const live = ls.get('walkNow', null), sig = (same && ls.get('cloudSig', null)) || {}, phSent = (same && ls.get('cloudPh', null)) || {};
+  ls.set('cloudUid', cloudUser.uid);
   try {
     // 지운 기록은 클라우드에서도 지워요
     const gone = ls.get('cloudGone', []);
