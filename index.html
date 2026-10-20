@@ -1961,9 +1961,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📸 가족 앨범이 생겼어요: 가족끼리 사진을 모으고 댓글·♥를 달면 사진마다 짧은 글귀가 써져요 · 첫 화면 알약이나 맨 위 📸로 들어가요 · 내 MPD 기록에서 "📸 가족 앨범에 올리기"로 그날 사진을 한 번에';
+const UI_NOTES = '📸 가족 앨범이 생겼어요: 가족끼리 사진을 모으고 댓글·♥를 달면 사진마다 짧은 글귀가 써져요 · 첫 화면 알약이나 맨 위 📸로 들어가요 · 내 MPD 기록에서 "📸 가족 앨범에 올리기"로 그날 사진을 한 번에 · 사진 글귀가 쓰는 중인지, 못 썼다면 왜인지 보여요 · "✍ 지금 글귀 쓰기"로 바로 다시 써요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3806,7 +3806,9 @@ function famPhoto(S, pid, order) {
       inp.disabled = false;
     };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); } });
-    const hasKey = !!ls.get('claudeKey', '');
+    const hasKey = !!ls.get('claudeKey', ''), old = panel.querySelector('.fa-in');   // 다시 그려도 쓰던 댓글은 그대로
+    if (old && old.dataset.pid === p.id) { inp.value = old.value; if (document.activeElement === old) setTimeout(() => inp.focus()); }
+    inp.dataset.pid = p.id;
     faRc(panel, 
       el('div', { class: 'row', style: 'justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:8px' },
         el('div', { class: 'sub', style: 'color:#C9D6E2', text: `${nm(p.by)} · ${p.ts ? new Date(p.ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : famDayText(p.day)}${p.mdName ? ' · ' + p.mdName : ''}` }),
@@ -3819,7 +3821,7 @@ function famPhoto(S, pid, order) {
           try { const t = Date.now(); await afetchRaw([wPatch(`albums/${S.aid}/p/${p.id}`, { cap: v, u: t }, ['cap', 'u'])]); p.cap = v; p.u = t; drawPanel(); } catch { toast('저장하지 못했어요'); } } }) : null),
       el('div', { class: 'fa-qbox' }, el('div', { class: 'fa-ql', text: '✍ 댓글로 쓴 글귀' }),
         el('div', { class: 'fa-q', text: (p.q && p.q.x) || (cs.length ? '아직 글귀가 없어요' : '댓글이 달리면 글귀가 써져요') }),
-        !hasKey ? el('div', { class: 'fa-ql', style: 'margin-top:4px', text: '글귀는 열쇠를 넣은 가족이 앨범을 열 때 새로 써져요' }) : (p.q && p.q.n < (p.cn || 0)) ? el('div', { class: 'fa-ql', style: 'margin-top:4px', text: '새 댓글을 읽고 다시 쓰는 중…' }) : null),
+        famCapNote(S, p, hasKey, () => famCaption(S, p.id, true))),
       el('div', { class: 'fa-cms' }, ...cs.map(c => el('div', { class: 'fa-cm' }, el('b', { text: nm(c.by) }), el('span', { text: c.x }),
         c.by === me || boss ? el('button', { class: 'fa-mini', 'aria-label': '댓글 지우기', text: '지우기', onclick: async () => {
           if (!confirm('이 댓글을 지울까요?')) return; const t = Date.now();
@@ -3884,11 +3886,15 @@ let famCapBusy = false;
 async function famCaption(S, pid, now) {
   const key = ls.get('claudeKey', ''); if (!key) return false;
   const p = S.ph.get(pid); if (!p || !(p.cn > 0)) return false;
-  const me = cloudUser.uid, t0 = Date.now();
+  const me = cloudUser.uid, t0 = Date.now(), cs = S.cap || (S.cap = new Map());
+  if ((cs.get(pid) || {}).st === 'busy') return false;
+  const set = v => { v ? cs.set(pid, v) : cs.delete(pid); document.dispatchEvent(new Event('fa-changed')); };
+  let step = 'album';
   try {
+    set({ st: 'busy' });
     const fresh = fsDoc(await afetch(`albums/${S.aid}/p/${pid}`)); Object.assign(p, fresh);
-    if (p.q && p.q.lock && t0 - p.q.lock < 60000 && p.q.lb !== me) return false;   // 다른 가족이 60초 안에 쓰는 중
-    if (!now && p.q && p.q.n >= p.cn) return false;
+    if (p.q && p.q.lock && t0 - p.q.lock < 60000 && p.q.lb !== me) { set({ st: 'other', who: (S.mem[p.q.lb] || {}).name || '다른 가족' }); return false; }   // 다른 가족이 60초 안에 쓰는 중
+    if (!now && p.q && p.q.n >= p.cn) { set(null); return false; }
     await afetchRaw([wPatch(`albums/${S.aid}/p/${pid}`, { q: Object.assign({}, p.q || {}, { lock: t0, lb: me }), u: t0 }, ['q', 'u'])]);
     const nm = uid => (S.mem[uid] && S.mem[uid].name) || '가족';
     const cms = ps => [...S.cm.values()].filter(c => ps.includes(c.pid)).sort((a, b) => a.t - b.t).slice(-30).map(c => `${nm(c.by)}: ${c.x}`).join('\n') || '(없음)';
@@ -3897,22 +3903,52 @@ async function famCaption(S, pid, now) {
     if (inB) { const st = S.bd.get(b.key) || {}, others = b.ps.filter(q => q.id !== pid);
       txt += `\n\n이 사진은 같은 날 같은 곳에서 찍은 사진 ${b.ps.length}장 묶음(${famDayText(b.ps[0].day)}, ${st.place || (b.ps.find(q => q.mdName) || {}).mdName || '장소 모름'})에 들어 있어.\n[묶음의 다른 사진 설명]\n${others.map(q => q.cap).filter(Boolean).join('\n') || '(없음)'}\n[묶음의 다른 사진 댓글]\n${cms(others.map(q => q.id))}\n두 줄을 써 줘: 이 사진 한 장의 글귀(photo)와, 묶음 전체를 하루의 장면으로 담은 글귀(bundle).\n다른 말 없이 JSON 한 줄로만 답해: {"photo":"...","bundle":"..."}`; }
     else txt += '\n\n설명 없이 글귀 한 줄만 출력해.';
-    const { default: Anthropic } = await import(TALK_SDK);
-    const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+    step = 'sdk'; const { default: Anthropic } = await import(TALK_SDK);
+    step = 'claude'; const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
     const res = await client.messages.create({ model: FA_MODEL, max_tokens: 300, messages: [{ role: 'user', content: txt }] });
     const tb = res.content.find(x => x.type === 'text'); if (!tb || res.stop_reason === 'refusal') throw new Error('empty');
     let ph = tb.text, bu = null; if (inB) { try { const j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || [tb.text])[0]); ph = j.photo; bu = j.bundle; } catch { ph = tb.text; } }
     ph = famClean(ph); bu = bu && famClean(bu); if (!ph) throw new Error('empty');
-    const t = Date.now(), q = { x: ph, t, n: p.cn || 0 }, ws = [wPatch(`albums/${S.aid}/p/${pid}`, { q, u: t }, ['q', 'u'])];
+    step = 'save'; const t = Date.now(), q = { x: ph, t, n: p.cn || 0 }, ws = [wPatch(`albums/${S.aid}/p/${pid}`, { q, u: t }, ['q', 'u'])];
     if (bu) ws.push(wPatch(`albums/${S.aid}/b/${b.key}`, { q: { x: bu, t }, u: t }, ['q', 'u']));
     await afetchRaw(ws); p.q = q; p.u = t; if (bu) S.bd.set(b.key, Object.assign({}, S.bd.get(b.key) || {}, { id: b.key, q: { x: bu, t } }));
-    document.dispatchEvent(new Event('fa-changed')); if (!document.querySelector('.fa-viewer, .fa-bsheet')) S.draw();
+    const live = S.ph.get(pid); if (live && live !== p) Object.assign(live, { q, u: t });   // 20초 새로 고침이 사진을 바꿔 넣었을 때
+    set(null); if (!document.querySelector('.fa-viewer, .fa-bsheet')) S.draw();
     return true;
   } catch (e) {
+    const why = famCapWhy(e, step); set({ st: 'err', why, at: Date.now() });
+    try { console.warn('글귀 실패', step, e); } catch {}
     try { await afetchRaw([wPatch(`albums/${S.aid}/p/${pid}`, { q: Object.assign({}, p.q || {}, { lock: 0 }), u: Date.now() }, ['q', 'u'])]); } catch {}
-    if (now) toast('글귀를 쓰지 못했어요 (Claude 열쇠·인터넷 확인). 댓글은 올라갔어요');
+    if (now) toast('글귀를 쓰지 못했어요 · ' + why);
     return false;
   }
+}
+// 왜 못 썼는지 쉬운 말로 (Claude SDK 오류는 status, 앨범 저장 오류는 'cloud 403' 같은 것)
+function famCapWhy(e, step) {
+  const st = e && e.status, m = String((e && e.error && e.error.error && e.error.error.message) || (e && e.message) || '');
+  if (step === 'sdk') return 'Claude 도구를 받지 못했어요(인터넷 확인)';
+  if (step === 'album' || step === 'save') return st === 403 ? '앨범 권한이 없어요(다시 로그인해 보세요)' : `앨범에 저장하지 못했어요${st ? ` (${st})` : ''}`;
+  if (m === 'empty') return 'Claude가 빈 답을 줬어요';
+  if (st === 401) return 'Claude 열쇠가 맞지 않아요(⚙에서 열쇠를 다시 넣어 주세요)';
+  if (st === 403) return 'Claude 열쇠에 권한이 없어요';
+  if (st === 400 && /credit|balance|billing/i.test(m)) return 'Claude 계정에 남은 금액이 없어요(콘솔에서 충전)';
+  if (st === 404) return 'Claude 모델을 찾지 못했어요';
+  if (st === 429) return 'Claude 사용 한도에 걸렸어요(잠시 뒤 다시)';
+  if (st >= 500) return 'Claude가 지금 바빠요(잠시 뒤 다시)';
+  if (!st) return '인터넷이 끊겼거나 Claude에 닿지 못했어요';
+  return `Claude 오류 ${st}${m ? ' · ' + m.slice(0, 60) : ''}`;
+}
+// 글귀 상자 아랫줄: 쓰는 중 / 다른 가족이 쓰는 중 / 못 쓴 까닭 + 다시 쓰기 / 열쇠 없음
+function famCapNote(S, p, hasKey, retry) {
+  const c = (S.cap && S.cap.get(p.id)) || {}, line = (t, col) => el('div', { class: 'fa-ql', style: `margin-top:6px${col ? ';color:' + col : ''}`, text: t });
+  if (!hasKey) return line('글귀는 Claude 열쇠를 넣은 가족이 앨범을 열 때 새로 써져요');
+  if (!(p.cn > 0)) return null;
+  if (c.st === 'busy') return line('⏳ 댓글을 읽고 글귀를 쓰는 중이에요…', '#FFD27A');
+  if (c.st === 'other') return line(`⏳ ${c.who} 님 휴대폰이 글귀를 쓰는 중이에요`, '#FFD27A');
+  const btn = el('button', { class: 'fa-mini', style: 'margin-top:6px', text: p.q && p.q.x ? '↻ 글귀 다시 쓰기' : '✍ 지금 글귀 쓰기', onclick: retry });
+  if (c.st === 'err') return el('div', {}, line('⚠ 글귀를 쓰지 못했어요 · ' + c.why, '#FFB4A8'), btn);
+  if (p.q && p.q.x && (p.q.n || 0) < p.cn) return el('div', {}, line('새 댓글이 있어요. 앨범을 열면 다시 써져요'), btn);
+  return btn;
 }
 async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다 새로운 사진을 최근 것부터 한 번에 5장까지
   if (famCapBusy || !ls.get('claudeKey', '')) return; famCapBusy = true;
