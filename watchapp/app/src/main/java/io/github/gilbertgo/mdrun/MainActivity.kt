@@ -309,7 +309,7 @@ class MainActivity : ComponentActivity() {
             btn("켜기", RunView.CORAL, RunView.INK) { Link.enable(this, true); showLink() },
             btn("돌아가기", RunView.SURF) { showStart() })
         else listOf(tv("연결 코드", 13f, RunView.MUTED, true), tv(Link.code(this), 30f, Color.WHITE, true),
-            tv("휴대폰 MPD → 내 MPD → '⌚ 시계 기록 받기'에 이 코드를 적어 주세요", 13f, Color.WHITE), st,
+            tv("휴대폰 MPD → 내 MPD 맨 위 '⌚ 연결 코드 넣기'에 이 코드를 적어 주세요", 13f, Color.WHITE), st,
             btn("지금 보내기", RunView.CORAL, RunView.INK) { st.text = "보내는 중…"; Link.pushAll(this) { st.text = Link.status } },
             btn("돌아가기", RunView.SURF) { showStart() },
             btn("끄기", RunView.SURF, RunView.MUTED) { Link.enable(this, false); showStart() })
