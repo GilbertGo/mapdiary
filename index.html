@@ -451,9 +451,15 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .r3-hi{font-size:clamp(24px,7vw,28px);font-weight:900;letter-spacing:-.02em;margin-top:4px;text-shadow:0 2px 12px rgba(0,0,0,.3)}
 .r3-ring{background:none;border:none;padding:0;margin-top:8px;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.25))}
 .r3-dots{display:flex;gap:10px;margin-top:4px}.r3-dots span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;opacity:.92}
-.r3-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}.r3-dots i.on{background:#FF8A4C}.r3-dots i.td{outline:2px solid #fff;outline-offset:2px}
+.r3-dots i{width:10px;height:10px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,.3)}.r3-dots i.on{background:#FF8A4C}.r3-dots i.td{border:2px solid #fff;background:transparent}.r3-dots i.td.on{background:#FF8A4C}
+.r3-dots span{font-size:11px!important;font-weight:700;opacity:1!important;text-shadow:0 1px 4px rgba(0,0,0,.55)}
+.r3-say .r3-ey{font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.6),0 0 2px rgba(0,0,0,.4)}
+.r3-tri{color:#FF8A4C;margin-right:2px}
+.r3-bgic{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.35);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:auto;margin-right:10px;cursor:pointer}
+.r3-st .pill,.r3-st .where-pill{font-size:11px!important;padding:3px 9px!important}
+.wp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:1px;opacity:.85}
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
-.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 76px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 92px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
 .r3-go{width:100%;max-width:420px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:none;text-shadow:0 1px 4px rgba(0,0,0,.35);margin-bottom:6px}
 .r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
@@ -1895,7 +1901,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4461,10 +4467,10 @@ function whereNow() {
   const br = /SamsungBrowser/.test(ua) ? '삼성 인터넷' : /Edg[A]?\//.test(ua) ? '엣지' : /Whale/.test(ua) ? '웨일' : /CriOS|Chrome\//.test(ua) ? '크롬' : /Safari/.test(ua) ? '사파리' : '브라우저';
   return IS_APP ? { ico: '🏠', t: `바탕화면 웹앱 (${br})` } : { ico: '🌐', t: `${br}에서 열림 (웹)` };
 }
-function wherePill(light) {
+function wherePill(light, plain) {
   const w = whereNow(), on = !!ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false));
   return el('button', { class: 'where-pill' + (light ? ' light' : ''), 'aria-label': '지금 연 곳: ' + w.t, onclick: () => toast(`${w.ico} 지금 연 곳: ${w.t}. 기록은 여기에만 저장돼요. ${on ? '구글 로그인이 돼 있어서 다른 곳 기록과 하나로 모여요.' : '앱·크롬 기록을 하나로 모으려면 내 기록 → ☁ 구글로 로그인'}`) },
-    `${w.ico} ${w.t}`, on ? el('span', { text: ' · ☁ 모음' }) : null);
+    plain ? el('i', { class: 'wp-dot' }) : `${w.ico} `, w.t, on ? el('span', { text: plain ? ' · 모음' : ' · ☁ 모음' }) : null);
 }
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
@@ -4825,15 +4831,19 @@ function viewWalk() {
     const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); draw(); };
     const kmW0 = W.dist / 1000, C = 2 * Math.PI * 92, pr = wg ? Math.min(1, kmW0 / wg) : 0;
     const ring = el('button', { class: 'r3-ring', 'aria-label': '주간 목표 정하기', onclick: setWeekGoal });
-    ring.innerHTML = `<svg viewBox="0 0 210 210" width="210" height="210" aria-hidden="true"><circle cx="105" cy="105" r="92" stroke="rgba(255,255,255,.22)" stroke-width="10" fill="rgba(6,30,55,.28)"/>`
-      + (pr > 0 ? `<circle cx="105" cy="105" r="92" stroke="#FF8A4C" stroke-width="10" fill="none" stroke-dasharray="${(C * pr).toFixed(1)} ${C.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 105 105)"/>` : '')
+    ring.innerHTML = `<svg viewBox="0 0 210 210" width="210" height="210" aria-hidden="true"><circle cx="105" cy="105" r="92" stroke="rgba(255,255,255,.3)" stroke-width="5" fill="rgba(6,30,55,.14)"/>`
+      + (pr > 0 ? `<circle cx="105" cy="105" r="92" stroke="#FF8A4C" stroke-width="5" fill="none" stroke-dasharray="${(C * pr).toFixed(1)} ${C.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 105 105)"/>` : `<circle cx="105" cy="13" r="4.5" fill="#FF8A4C"/>`)
       + `<text x="105" y="84" fill="#FFD2B8" font-size="11" text-anchor="middle" letter-spacing="3" font-family="ui-monospace,monospace">THIS WEEK</text>`
       + `<text x="105" y="126" fill="#fff" font-size="42" font-weight="900" text-anchor="middle" font-family="ui-monospace,monospace">${kmW0 < 10 ? kmW0.toFixed(1) : kmW0.toFixed(0)}</text>`
       + `<text x="105" y="150" fill="#fff" font-size="13" text-anchor="middle">${wg ? `/ 주간 목표 ${wg} km` : 'km · 주간 목표 정하기 ✎'}</text></svg>`;
     const today = (now.getDay() + 6) % 7;
     const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
-    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 42%,rgba(6,30,55,.32) 62%,rgba(6,30,55,.9)),url("${runHeroUrl()}")` },
-      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
+    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 40%,rgba(6,30,55,.28) 58%,rgba(6,30,55,.72) 82%,rgba(6,30,55,.92)),url("${runHeroUrl()}")` },
+      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar');
+        // 2026-10-20 디자인 정리: '바탕 사진'은 상태 알약이 아니라 설정이라 맨 위 '내 기록' 옆 작은 그림 단추로
+        const b = el('button', { class: 'r3-bgic', 'aria-label': '바탕 사진 바꾸기', title: '바탕 사진 바꾸기', onclick: () => runHeroPick(draw) });
+        b.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>';
+        bar.insertBefore(b, bar.lastChild); return bar; })(),
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
         el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
       ring, dots,
@@ -4841,9 +4851,8 @@ function viewWalk() {
       el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
         el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' })),
       el('div', { class: 'r3-bot' },
-        el('button', { class: 'r3-go', onclick: runSetup }, '▶ 러닝 시작하기'),
-        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true),
-          el('button', { class: 'where-pill light', onclick: () => runHeroPick(draw) }, '🖼 바탕 사진'))));
+        el('button', { class: 'r3-go', onclick: runSetup }, el('span', { class: 'r3-tri', text: '▶' }), ' 러닝 시작하기'),
+        el('div', { class: 'rh-info r3-st', style: 'justify-content:center' }, gpsReady, wherePill(true, true))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
