@@ -472,6 +472,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .lh .r3-bar .home{font-size:0;gap:0}  /* 첫 화면엔 큰 제목이 있어서 띠의 글자는 숨기고 집 그림만 */
 .lh-modes{width:100%;max-width:520px}.lh-modes .mode{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.28);box-shadow:none;color:#fff;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .lh-modes .mode svg,.lh-modes .mode svg *{stroke:#fff!important}.lh-modes .mode .ic svg [fill]:not([fill=none]){fill:#fff!important}
+.kk-btn{background:#FEE500!important;color:#191919!important;border:0!important;font-weight:700;gap:6px}
 .my-th{width:56px;height:56px;border-radius:12px;flex:none;background:#DCE8F2 center/cover no-repeat;box-shadow:0 1px 4px rgba(16,42,67,.18);margin-left:4px}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
 .r3-bar .home{font-size:20px}.r3-bar .home .hi{width:22px;height:22px}
@@ -1924,7 +1925,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-11';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2925,10 +2926,16 @@ function fbAuth() {
   return fbAuthP || (fbAuthP = (async () => {
     const [{ initializeApp }, A] = await Promise.all([import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app.js`), import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth.js`)]);
     const auth = A.getAuth(initializeApp(FB_CFG)); auth.languageCode = 'ko';
-    return (fbReady = { auth, onChange: f => A.onAuthStateChanged(auth, f), signIn: () => A.signInWithPopup(auth, new A.GoogleAuthProvider()), signOut: () => A.signOut(auth) });
+    // 카카오는 Firebase(Identity Platform)의 OpenID Connect 제공업체 'oidc.kakao'로 붙여요(2026-10-20)
+    const prov = kind => { if (kind !== 'kakao') return new A.GoogleAuthProvider(); const p = new A.OAuthProvider('oidc.kakao'); p.addScope('openid'); p.addScope('profile_nickname'); return p; };
+    return (fbReady = { auth, onChange: f => A.onAuthStateChanged(auth, f), signIn: kind => A.signInWithPopup(auth, prov(kind)), signOut: () => A.signOut(auth) });
   })());
 }
 // 로그인한 사람 이름으로 Firestore 읽고 쓰기 (열쇠 = 로그인 표 ID token)
+function cloudWho(u) { if (!u) return ''; const kk = (u.providerData || []).some(x => /kakao/.test(x.providerId || '')) || u.via === 'kakao';
+  return u.email || u.displayName || (kk ? '카카오 계정' : '구글 계정'); }
+const KAKAO_ICO = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#191919" d="M12 3.5C6.8 3.5 2.6 6.8 2.6 10.9c0 2.6 1.7 4.9 4.3 6.2l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .7.1 1.1.1 5.2 0 9.4-3.3 9.4-7.5S17.2 3.5 12 3.5z"/></svg>';
+function kakaoBtn(on, txt) { const b = el('button', { class: 'btn full kk-btn', onclick: on }); b.innerHTML = KAKAO_ICO; b.append(' ' + (txt || '카카오로 로그인')); return b; }
 async function cfetch(path, opt = {}) {
   const tok = await cloudUser.getIdToken();
   const r = await fetch(`${FS_URL}users/${cloudUser.uid}/${path}`, Object.assign({}, opt, { headers: Object.assign({ authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, opt.headers || {}) }));
@@ -3016,7 +3023,7 @@ async function alKeys(n) {
 }
 function nativeUser(c) {
   let tok = null, exp = 0;
-  return { uid: c.uid, email: c.email || '', displayName: c.email || '', async getIdToken() {
+  return { uid: c.uid, email: c.email || '', displayName: c.name || c.email || '', via: c.via || '', async getIdToken() {
     if (tok && Date.now() < exp - 60000) return tok;
     const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(c.rt) });
     if (r.status === 400 || r.status === 401) { ls.set('cloudRt', null); cloudUser = null; document.dispatchEvent(new Event('md-cloud')); throw new Error('login expired'); }
@@ -3036,18 +3043,19 @@ function appLoginPoll() {
     try { const { path, key } = await alKeys(p.n), d = await fsGet(path, 1);
       if (typeof d === 'string') { const v = await roomOpen(key, JSON.parse(d));
         if (v && v.rt && v.uid && Date.now() - v.at < 20 * 60000) {
-          fsDel(path).catch(() => {}); ls.set('cloudPend', null); ls.set('cloudRt', { rt: v.rt, uid: v.uid, email: v.email || '' }); ls.set('cloudOn', true); ls.set('cloudName', v.email || '');
-          cloudUser = nativeUser(ls.get('cloudRt')); document.dispatchEvent(new Event('md-cloud')); toast(`☁ ${v.email || '구글 계정'}으로 로그인했어요. 기록을 맞출게요`);
+          fsDel(path).catch(() => {}); ls.set('cloudPend', null); ls.set('cloudRt', { rt: v.rt, uid: v.uid, email: v.email || '', name: String(v.name || '').slice(0, 40), via: v.via === 'kakao' ? 'kakao' : '' }); ls.set('cloudOn', true);
+          cloudUser = nativeUser(ls.get('cloudRt')); ls.set('cloudName', cloudWho(cloudUser)); document.dispatchEvent(new Event('md-cloud')); toast(`☁ ${cloudWho(cloudUser)}으로 로그인했어요. 기록을 맞출게요`);
           setTimeout(() => cloudSync(false), 600); return; } } } catch {}
     if (!document.hidden) alTimer = setTimeout(tick, 3000);
   };
   alTimer = setTimeout(tick, 300);
 }
-function appLoginStart() {
-  const n = rid(24); ls.set('cloudPend', { n, at: Date.now() }); document.dispatchEvent(new Event('md-cloud'));
+function appLoginStart(kind) {
+  kind = kind === 'kakao' ? 'kakao' : (kind === 'google' ? 'google' : (ls.get('cloudPend', null) || {}).k || 'google');
+  const n = rid(24); ls.set('cloudPend', { n, at: Date.now(), k: kind }); document.dispatchEvent(new Event('md-cloud'));
   const pkg = { run: 'io.github.gilbertgo.mdrun', pgolf: 'io.github.gilbertgo.mdgolf' }[(window.MD_APP || {}).mode] || 'io.github.gilbertgo.mapdiary';
   toast('크롬이 열려요. 로그인한 뒤 앱으로 돌아오세요');
-  setTimeout(() => { location.href = `${APP_BASE}?applogin=1#al=${n}&p=${pkg}`; }, 400);   // 앱 밖 주소라 휴대폰 기본 브라우저로 열려요
+  setTimeout(() => { location.href = `${APP_BASE}?applogin=1#al=${n}&p=${pkg}${kind === 'kakao' ? '&k=kakao' : ''}`; }, 400);   // 앱 밖 주소라 휴대폰 기본 브라우저로 열려요
   appLoginPoll();
 }
 // 크롬에서 열리는 쪽: 구글 로그인 → 잠근 로그인 표를 앱에 건네요
@@ -3055,42 +3063,50 @@ function viewAppLogin() {
   const n = (/[#&]al=([A-Za-z0-9]{16,40})/.exec(location.hash) || [])[1];
   const box = el('div', { class: 'card stack', style: 'gap:12px;margin-top:16px' });
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '앱 로그인'), box));
-  if (!n) { box.append(el('b', { text: '앱에서 다시 눌러 주세요' }), el('div', { class: 'sub', text: '앱의 내 기록 → ☁ 구글로 로그인을 누르면 이 화면이 열려요.' })); return; }
-  if (IN_KAKAO) { box.append(el('b', { text: '크롬에서 열어 주세요' }), el('div', { class: 'sub', text: '카카오톡 안에서는 구글 로그인이 안 돼요.' })); return; }
+  const kk = /[#&]k=kakao/.test(location.hash), lbl = kk ? '카카오' : '구글';
+  if (!n) { box.append(el('b', { text: '앱에서 다시 눌러 주세요' }), el('div', { class: 'sub', text: '앱의 내 기록 → ☁ 로그인 단추를 누르면 이 화면이 열려요.' })); return; }
+  if (IN_KAKAO && !kk) { box.append(el('b', { text: '크롬에서 열어 주세요' }), el('div', { class: 'sub', text: '카카오톡 안에서는 구글 로그인이 안 돼요.' })); return; }
   fbAuth().catch(() => {});   // 팝업이 막히지 않게 미리 불러요
-  const msg = el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 앱·크롬·다른 휴대폰의 내 기록과 사진이 하나로 모여요. 기록은 로그인한 본인만 볼 수 있어요.' });
-  const go = el('button', { class: 'btn primary full big' }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:20px' }), ' 구글로 로그인하고 앱에 넘기기');
-  go.onclick = async () => {
+  const msg = el('div', { class: 'sub', text: `같은 ${lbl} 계정으로 로그인하면 앱·크롬·다른 휴대폰의 내 기록과 사진이 하나로 모여요. 기록은 로그인한 본인만 볼 수 있어요.` });
+  let go;
+  const run = async () => {
     go.disabled = true; go.textContent = '로그인 중…';
-    try { const F = fbReady || await fbAuth(); if (!F.auth.currentUser) await F.signIn(); const u = F.auth.currentUser; if (!u) throw new Error('no user');
+    try { const F = fbReady || await fbAuth(); const cur = F.auth.currentUser, curKk = cur && cur.providerData.some(x => /kakao/.test(x.providerId));
+      if (!cur || curKk !== kk) await F.signIn(kk ? 'kakao' : 'google'); const u = F.auth.currentUser; if (!u) throw new Error('no user');
       const { path, key } = await alKeys(n);
-      await fsPut(path, JSON.stringify(await roomSeal(key, { rt: u.refreshToken, uid: u.uid, email: u.email || '', at: Date.now() })));
+      await fsPut(path, JSON.stringify(await roomSeal(key, { rt: u.refreshToken, uid: u.uid, email: u.email || '', name: u.displayName || '', via: kk ? 'kakao' : '', at: Date.now() })));
       ls.set('cloudOn', true);
       box.replaceChildren(el('div', { style: 'font-size:44px;text-align:center', text: '✅' }), el('b', { style: 'text-align:center;font-size:20px', text: '로그인했어요' }),
-        el('div', { class: 'sub', style: 'text-align:center', text: `${u.email || ''} · 이제 MPD 앱으로 돌아가세요. 휴대폰 아래 뒤로(‹) 단추나 최근 앱(|||)에서 MPD를 누르면 앱이 저절로 로그인하고 기록을 맞춰요.` }));
+        el('div', { class: 'sub', style: 'text-align:center', text: `${cloudWho(u)} · 이제 MPD 앱으로 돌아가세요. 휴대폰 아래 뒤로(‹) 단추나 최근 앱(|||)에서 MPD를 누르면 앱이 저절로 로그인하고 기록을 맞춰요.` }));
     } catch (e) {
       const c = String(e && e.code || ''); go.disabled = false; go.textContent = '다시 로그인하기';
-      if (!/popup-closed|cancelled-popup/.test(c)) toast(c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요');
+      if (!/popup-closed|cancelled-popup/.test(c)) toast(loginErr(c, kk));
     }
   };
-  box.append(el('b', { style: 'font-size:20px', text: '📱 MPD 앱에 구글 로그인' }), msg, go);
+  go = kk ? kakaoBtn(run, '카카오로 로그인하고 앱에 넘기기') : el('button', { class: 'btn primary full big', onclick: run }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:20px' }), ' 구글로 로그인하고 앱에 넘기기');
+  box.append(el('b', { style: 'font-size:20px', text: `📱 MPD 앱에 ${lbl} 로그인` }), msg, go);
 }
-async function cloudLogin() {
-  if (IN_KAKAO) return toast('카카오톡 안에서는 구글 로그인이 안 돼요. 크롬에서 열어 주세요');
-  if (IN_NATIVE) return appLoginStart();
+function loginErr(c, kk) {
+  if (kk && /operation-not-allowed|configuration-not-found|invalid-provider|admin-restricted|invalid-oauth|internal-error/.test(c)) return '카카오 로그인 설정이 아직 끝나지 않았어요';
+  return c.includes('operation-not-allowed') ? 'Firebase에서 구글 로그인이 아직 꺼져 있어요' : c.includes('unauthorized-domain') ? 'Firebase 승인된 도메인에 gilbertgo.github.io를 넣어 주세요' : c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요';
+}
+async function cloudLogin(kind) {
+  const kk = kind === 'kakao';
+  if (IN_KAKAO && !kk) return toast('카카오톡 안에서는 구글 로그인이 안 돼요. 카카오로 로그인하거나 크롬에서 열어 주세요');
+  if (IN_NATIVE) return appLoginStart(kk ? 'kakao' : 'google');
   // 팝업은 누른 바로 그때 열어야 막히지 않아서, 미리 불러 둔 fbReady가 있으면 기다리지 않고 바로 열어요
-  try { const F = fbReady || await fbAuth(); await F.signIn(); }
+  try { const F = fbReady || await fbAuth(); await F.signIn(kk ? 'kakao' : 'google'); }
   catch (e) {
     const c = String(e && e.code || '');
     if (/popup-closed|cancelled-popup/.test(c)) return;
-    toast(c.includes('operation-not-allowed') ? 'Firebase에서 구글 로그인이 아직 꺼져 있어요' : c.includes('unauthorized-domain') ? 'Firebase 승인된 도메인에 gilbertgo.github.io를 넣어 주세요' : c.includes('popup-blocked') ? '팝업이 막혔어요. 다시 눌러 주세요' : '로그인하지 못했어요. 인터넷을 확인해 주세요');
+    toast(loginErr(c, kk));
   }
 }
 async function cloudLogout() { if (!confirm('로그아웃할까요? 이 휴대폰의 기록은 그대로 남아요.')) return;
   if (IN_NATIVE) { ls.set('cloudRt', null); ls.set('cloudOn', false); cloudUser = null; } else try { await (await fbAuth()).signOut(); } catch {} ls.set('cloudSig', null); ls.set('cloudPh', {}); toast('로그아웃했어요'); document.dispatchEvent(new Event('md-cloud')); }
 // 로그인 상태 지켜보기: 로그인돼 있으면 켤 때·돌아올 때(5분마다까지)·기록을 끝낸 뒤 맞춰요
 function cloudWatch() {
-  if (cloudWatching || IN_KAKAO) return;
+  if (cloudWatching) return;   // 카카오톡 안에서도 카카오 로그인은 돼요
   if (IN_NATIVE) {   // 앱: 크롬에서 받아 둔 로그인 표로
     cloudWatching = true; const c = ls.get('cloudRt', null);
     if (c && c.rt && c.uid) { cloudUser = nativeUser(c); setTimeout(() => cloudSync(true), 1500); }
@@ -3100,7 +3116,7 @@ function cloudWatch() {
   }
   if (!ls.get('cloudOn', false) && !window.__mdAuthStub) return;   // 한 번이라도 로그인한 브라우저만 SDK를 불러요
   cloudWatching = true;
-  fbAuth().then(F => F.onChange(u => { cloudUser = u || null; document.dispatchEvent(new Event('md-cloud')); if (u) { ls.set('cloudOn', true); ls.set('cloudName', u.email || u.displayName || ''); setTimeout(() => cloudSync(true), 800); } else ls.set('cloudOn', false); })).catch(() => {});
+  fbAuth().then(F => F.onChange(u => { cloudUser = u || null; document.dispatchEvent(new Event('md-cloud')); if (u) { ls.set('cloudOn', true); ls.set('cloudName', cloudWho(u)); setTimeout(() => cloudSync(true), 800); } else ls.set('cloudOn', false); })).catch(() => {});
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudUser && Date.now() - ls.get('cloudAt', 0) > 5 * 60000) cloudSync(true); });
 }
 // 내 MPD에 붙는 카드: 로그인 안 했으면 '구글로 로그인', 했으면 누구·마지막으로 맞춘 때·지금 맞추기·로그아웃
@@ -3108,20 +3124,22 @@ function cloudCard() {
   const box = el('div', { class: 'card stack cl-card', style: 'gap:8px' });
   const draw = () => {
     if (IN_NATIVE && !cloudUser && ls.get('cloudPend', null)) {
-      box.replaceChildren(el('b', { text: '☁ 크롬에서 로그인을 기다리는 중…' }), el('div', { class: 'sub', text: '크롬에서 구글 로그인을 마치고 이 앱으로 돌아오면 저절로 로그인돼요.' }),
-        el('div', { class: 'two' }, el('button', { class: 'btn line', text: '크롬 다시 열기', onclick: appLoginStart }), el('button', { class: 'btn line', text: '그만두기', onclick: () => { ls.set('cloudPend', null); draw(); } })));
+      box.replaceChildren(el('b', { text: '☁ 크롬에서 로그인을 기다리는 중…' }), el('div', { class: 'sub', text: '크롬에서 로그인을 마치고 이 앱으로 돌아오면 저절로 로그인돼요.' }),
+        el('div', { class: 'two' }, el('button', { class: 'btn line', text: '크롬 다시 열기', onclick: () => appLoginStart() }), el('button', { class: 'btn line', text: '그만두기', onclick: () => { ls.set('cloudPend', null); draw(); } })));
       return;
     }
     if (!cloudUser) {
       if (!IN_NATIVE) fbAuth().catch(() => {});   // 로그인 단추를 누르기 전에 미리 불러 둬요(팝업이 막히지 않게)
-      box.replaceChildren(el('b', { text: '☁ 구글로 로그인하고 기록 모으기' }),
-        el('div', { class: 'sub', text: '같은 구글 계정으로 로그인하면 앱·크롬·컴퓨터의 내 MPD와 사진이 하나로 모이고, 휴대폰을 바꿔도 그대로예요. 기록은 로그인한 본인만 볼 수 있어요.' + (IN_NATIVE ? ' 누르면 크롬이 열려요. 거기서 로그인하고 앱으로 돌아오면 돼요.' : '') }),
-        el('button', { class: 'btn primary full', onclick: () => { ls.set('cloudOn', true); cloudWatch(); cloudLogin(); } }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:18px' }), ' 구글로 로그인'));
+      const go = kind => { ls.set('cloudOn', true); cloudWatch(); cloudLogin(kind); };
+      const kb = kakaoBtn(() => go('kakao')), gb = el('button', { class: 'btn ' + (IN_KAKAO ? 'line' : 'primary') + ' full', onclick: () => go('google') }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:18px' }), ' 구글로 로그인');
+      box.replaceChildren(el('b', { text: '☁ 로그인하고 기록 모으기' }),
+        el('div', { class: 'sub', text: '같은 계정으로 로그인하면 앱·크롬·컴퓨터의 내 MPD와 사진이 하나로 모이고, 휴대폰을 바꿔도 그대로예요. 기록은 로그인한 본인만 볼 수 있어요. 카카오와 구글은 서로 다른 모음이라 늘 같은 것으로 로그인해 주세요.' + (IN_NATIVE ? ' 누르면 크롬이 열려요. 거기서 로그인하고 앱으로 돌아오면 돼요.' : '') }),
+        ...(IN_KAKAO ? [kb, gb] : [gb, kb]));
       return;
     }
     const at = ls.get('cloudAt', 0);
     box.replaceChildren(el('b', { text: '☁ 클라우드에 모으는 중' }),
-      el('div', { class: 'sub', text: `${cloudUser.email || cloudUser.displayName || ''} · ${at ? `마지막으로 맞춤 ${new Date(at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '아직 맞추지 않음'}` }),
+      el('div', { class: 'sub', text: `${cloudWho(cloudUser)} · ${at ? `마지막으로 맞춤 ${new Date(at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '아직 맞추지 않음'}` }),
       el('div', { class: 'two' }, el('button', { class: 'btn line', text: cloudBusy ? '맞추는 중…' : '↻ 지금 맞추기', onclick: () => cloudSync(false).then(draw) }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
   };
   document.addEventListener('md-cloud', draw); draw();
