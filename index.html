@@ -452,8 +452,8 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .r3-ring{background:none;border:none;padding:0;margin-top:8px;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.25))}
 .r3-dots{display:flex;gap:10px;margin-top:4px}.r3-dots span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;opacity:.92}
 .r3-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}.r3-dots i.on{background:#FF8A4C}.r3-dots i.td{outline:2px solid #fff;outline-offset:2px}
-.r3-bgbtn{margin-top:4px;background:none;border:0;color:rgba(255,255,255,.82);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:6px 10px;cursor:pointer}
-.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 120px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 76px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
 .r3-go{width:100%;max-width:420px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:none;text-shadow:0 1px 4px rgba(0,0,0,.35);margin-bottom:6px}
 .r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
@@ -1895,7 +1895,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.19-28';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4837,11 +4837,13 @@ function viewWalk() {
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
         el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
       ring, dots,
-      el('div', { class: 'r3-bot' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
-        el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }),
+      // 2026-10-20 사용자 그림: 문구 두 줄은 위로(요일 점 아래), 시작 단추·알약은 더 아래로, '바탕 사진'은 알약 줄에 같은 모양으로
+      el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
+        el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' })),
+      el('div', { class: 'r3-bot' },
         el('button', { class: 'r3-go', onclick: runSetup }, '▶ 러닝 시작하기'),
-        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true)),
-        el('button', { class: 'r3-bgbtn', onclick: () => runHeroPick(draw) }, '🖼 바탕 사진 바꾸기')));
+        el('div', { class: 'rh-info', style: 'justify-content:center' }, gpsReady, wherePill(true),
+          el('button', { class: 'where-pill light', onclick: () => runHeroPick(draw) }, '🖼 바탕 사진'))));
     const kmW = W.dist / 1000, pct = wg ? Math.min(100, kmW / wg * 100) : 0;
     const tile = (l, v, u) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: l }), el('b', {}, v, u ? el('small', { text: u }) : null));
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 25), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('run', 22));
