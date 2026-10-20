@@ -1923,7 +1923,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3468,7 +3468,7 @@ async function syncPull() {
         try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
           await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() }); } catch {}
       }
-      got[key] = it.mtime; if (!exists) { n++; from.add(SYNC_APPS[it.app] || '다른 앱'); } else u++;
+      got[key] = it.mtime; if (!exists) { n++; from.add(/^run_w/.test(it.id) ? '시계' : SYNC_APPS[it.app] || '다른 앱'); } else u++;   // 시계 기록은 휴대폰 MD Run이 블루투스로 받아 둔 것(2026-10-20)
       ls.set('syncGot', got);
     }
     ls.set('syncGot', got);

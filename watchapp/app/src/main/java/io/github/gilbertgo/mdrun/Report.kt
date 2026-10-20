@@ -311,10 +311,9 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         }
         rule(cv, y); y += 9 * u
         // ⑥ 휴대폰에서 자세히
-        val on = Link.on(context)
-        for (l in wrap(if (on) "1km 구간·케이던스는 휴대폰 MPD → 내 MPD에서 자세히 봐요" else "휴대폰으로 보내기를 켜면 휴대폰에서 자세히 봐요", 4.8f * u, false, R - L))
+        for (l in wrap("1km 구간·케이던스는 휴대폰 MPD → 내 MPD에서 자세히 봐요", 4.8f * u, false, R - L))
             { text(cv, l, cx, y, 4.8f * u, BLUE); y += 6 * u }
-        if (on) { text(cv, if (Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "와이파이가 되면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u }
+        text(cv, if (Wear.sent(context, r.id) || Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "휴대폰과 이어지면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u
         return y + 6 * u
     }
 
