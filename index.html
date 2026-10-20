@@ -455,7 +455,12 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .r3-dots span{font-size:11px!important;font-weight:700;opacity:1!important;text-shadow:0 1px 4px rgba(0,0,0,.55)}
 .r3-say .r3-ey{font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.6),0 0 2px rgba(0,0,0,.4)}
 .r3-tri{color:#FF8A4C;margin-right:2px}
-.r3-bgic{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.35);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:auto;margin-right:10px;cursor:pointer}
+.r3-bgic{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:auto;margin-right:10px;cursor:pointer;flex:none}
+.st-h{font-size:12px;font-weight:800;color:var(--muted);margin:10px 2px 0;letter-spacing:.04em}
+.st-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card,#fff);border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);cursor:pointer}
+.st-ic{width:40px;height:40px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.st-th{width:40px;height:40px;border-radius:10px;background:#0b2036 center/cover no-repeat;flex:none}
+.st-go{color:var(--muted);font-size:22px}
 .r3-st .pill,.r3-st .where-pill{font-size:11px!important;padding:3px 9px!important}
 .wp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:1px;opacity:.85}
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -635,7 +640,11 @@ function roleBar(role, who, iconK) {
     if (w && !confirm(w)) e.preventDefault();
   } },
     el('span', { class: 'hi', 'aria-hidden': 'true' }), 'Map Photo Diary');
-  return el('div', { class: 'role ' + role, role: 'banner' }, home,
+  // '내 기록'·'내 MPD' 띠엔 그 왼쪽에 ⚙ 설정(appSettings)
+  const gear = (who === '내 기록' || who === '내 MPD') && !iconK ? (() => { const b = el('button', { class: 'r3-bgic', 'aria-label': '설정', title: '설정', onclick: appSettings });
+    b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+    return b; })() : null;
+  return el('div', { class: 'role ' + role, role: 'banner' }, home, gear,
     iconK ? el('span', { class: 'who who-ico', role: 'img', 'aria-label': who || '' }, iconK === 'run' ? runnerSvg(32) : ico(iconK, 30))
       // 2026-10-20 사용자 '내 기록은 왜 클릭 안 되지?' → 오른쪽 '내 기록'은 내 MPD 목록으로 가는 링크
       : who === '내 기록' ? el('a', { class: 'who', href: './?my=1', text: who, style: 'text-decoration:none', onclick: e => { const w = typeof leaveWarn === 'function' ? leaveWarn() : null; if (w && !confirm(w)) e.preventDefault(); } })
@@ -1903,7 +1912,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2581,6 +2590,73 @@ async function myNick() {
 async function nickEdit(after) {
   const n = await askText('내 이름 바꾸기', '이름', ls.get('nick', ''), '예: 성식', '같이 달리기·모임방에서 친구들에게 보이고, 러닝 첫 화면 인사에도 나와요.');
   if (!n) return; ls.set('nick', n.slice(0, 20)); toast(`이름을 '${n.slice(0, 20)}'(으)로 바꿨어요`); if (after) after();
+}
+// 러닝 첫 화면·준비 화면 바탕 사진 (2026-10-19 사용자 '앱 화면 사진을 사용자가 바꿀 수 있게'): 휴대폰 사진에서 골라 1400px로 줄여 이 기기에 둠(ls runHero), 비우면 기본 그림
+function runHeroUrl() { return ls.get('runHero', '') || `${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg`; }
+// 시계 바탕 사진 (2026-10-19 사용자 '시계에도 바탕 사진 바꾸게'): 시계는 사진첩이 없어서 휴대폰에서 고른 사진을 480px 정사각으로 잘라
+// 시계 연결 코드의 열쇠로 잠가 rooms/{방번호}/x/bg={enc} (기본 사진이면 {none:1})에 올려요. 시계가 첫 화면을 열 때 받아 가요
+async function watchBgSend() {
+  const c = watchGet(); if (!c) return false;
+  try {
+    const R = await roomOf(c.code), url = ls.get('runHero', '');
+    if (!url) { await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ none: 1 })); return true; }
+    const im = new Image(); im.src = url; await im.decode();
+    const S = 480, cv = el('canvas', { width: S, height: S }), k = Math.max(S / im.width, S / im.height), w = im.width * k, h = im.height * k;
+    cv.getContext('2d').drawImage(im, (S - w) / 2, (S - h) * .75, w, h);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .8));
+    await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ enc: await sealBytes(new Uint8Array(await blob.arrayBuffer()), R.key) }));
+    return true;
+  } catch (e) { return false; }
+}
+function runHeroPick(after) {
+  const cur = ls.get('runHero', ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+  const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set('runHero', url); } catch (e) { ls.set('runHero', await shrinkImage(f, 900, 'url', .75)); }
+      cb.remove(); toast('바탕 사진을 바꿨어요' + (watchGet() ? ' · 시계에도 보내요' : '')); watchBgSend(); if (after) after(); }
+    catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
+  cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: '바탕 사진 바꾸기' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '러닝 첫 화면과 준비 화면 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
+    el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${runHeroUrl()}")` }),
+    el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
+    cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); watchBgSend(); if (after) after(); } }) : null,
+    watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
+      : el('div', { class: 'sub', style: 'font-size:13px', text: '⌚ 시계와 연결돼 있으면(내 MPD → 시계 기록 받기) 시계 첫 화면 사진도 같이 바뀌어요.' }),
+    el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
+  document.body.append(cb);
+}
+// 앱 설정 (2026-10-20 사용자 '앱 설정 메뉴를 만들고 메인 화면 사진 선택은 거기로'): 맨 위 띠 '내 기록' 옆 톱니바퀴 → 이 창.
+// 바꾼 게 있으면 닫을 때 화면을 다시 그려요(기록 중이 아닐 때만)
+function appSettings() {
+  let changed = false;
+  const cb = el('div', { class: 'sheet-bg', style: 'z-index:3100', onclick: e => { if (e.target === cb) close(); } });
+  const close = () => { cb.remove(); if (changed && !ls.get('walkNow', null)) location.reload(); };
+  const done = () => { changed = true; paint(); };
+  const row = (ic, t, v, on) => el('button', { class: 'st-row', onclick: on }, el('span', { class: 'st-ic', text: ic }),
+    el('span', { class: 'grow' }, el('b', { text: t }), v ? el('div', { class: 'sub', style: 'font-size:13px;margin-top:2px', text: v }) : null), el('span', { class: 'st-go', text: '›' }));
+  const head = t => el('div', { class: 'st-h', text: t });
+  const body = el('div', { class: 'stack', style: 'gap:6px' });
+  const paint = () => {
+    const sea = ls.get('theme', 'sea') === 'sea', wg = ls.get('weekGoal', 0), voice = ls.get('runVoice', true), w = whereNow();
+    const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
+    const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내가 고른 사진' + (watchGet() ? ' · 시계에도 보내요' : '') : '기본 사진', () => runHeroPick(done));
+    photoRow.firstChild.replaceWith(thumb);
+    body.replaceChildren(
+      head('화면'), photoRow,
+      row('🎨', '화면 분위기', sea ? '바닷가 · 누르면 산으로' : '산 · 누르면 바닷가로', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); }),
+      head('나'), row('👤', '내 이름', ls.get('nick', '') || '아직 없어요 · 같이 달리기·모임방에 보여요', () => nickEdit(done)),
+      head('러닝'),
+      row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '정하지 않았어요', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
+      row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
+      head('연결'),
+      row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
+      row('☁️', '구글 로그인 · 기록 모으기', ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)) ? '로그인돼 있어요' : '앱·크롬 기록을 하나로', () => { location.href = './?my=1'; }),
+      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}` }));
+  };
+  paint();
+  cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '앱 설정' }, el('h2', { text: '⚙ 설정' }), body,
+    el('button', { class: 'btn line small full', text: '닫기', onclick: close })));
+  document.body.append(cb);
 }
 // MPD를 모임방에 올려요. o = 공유 카드 내용(openBrag의 cardOpts)
 async function roomPost(room, o) {
@@ -4791,40 +4867,6 @@ function viewWalk() {
     for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist += trackStats(tr, 25).walk; mv += movingMs(tr, 25); n++; days.add((new Date(x.info.startAt).getDay() + 6) % 7); }
     return { dist, mv, n, runs, days };
   }
-  // 러닝 첫 화면·준비 화면 바탕 사진 (2026-10-19 사용자 '앱 화면 사진을 사용자가 바꿀 수 있게'): 휴대폰 사진에서 골라 1400px로 줄여 이 기기에 둠(ls runHero), 비우면 기본 그림
-  function runHeroUrl() { return ls.get('runHero', '') || `${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg`; }
-  // 시계 바탕 사진 (2026-10-19 사용자 '시계에도 바탕 사진 바꾸게'): 시계는 사진첩이 없어서 휴대폰에서 고른 사진을 480px 정사각으로 잘라
-  // 시계 연결 코드의 열쇠로 잠가 rooms/{방번호}/x/bg={enc} (기본 사진이면 {none:1})에 올려요. 시계가 첫 화면을 열 때 받아 가요
-  async function watchBgSend() {
-    const c = watchGet(); if (!c) return false;
-    try {
-      const R = await roomOf(c.code), url = ls.get('runHero', '');
-      if (!url) { await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ none: 1 })); return true; }
-      const im = new Image(); im.src = url; await im.decode();
-      const S = 480, cv = el('canvas', { width: S, height: S }), k = Math.max(S / im.width, S / im.height), w = im.width * k, h = im.height * k;
-      cv.getContext('2d').drawImage(im, (S - w) / 2, (S - h) * .75, w, h);
-      const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .8));
-      await fsPut(`rooms/${R.rid}/x/bg`, JSON.stringify({ enc: await sealBytes(new Uint8Array(await blob.arrayBuffer()), R.key) }));
-      return true;
-    } catch (e) { return false; }
-  }
-  function runHeroPick(after) {
-    const cur = ls.get('runHero', ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
-    const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
-      const f = inp.files && inp.files[0]; if (!f) return;
-      try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set('runHero', url); } catch (e) { ls.set('runHero', await shrinkImage(f, 900, 'url', .75)); }
-        cb.remove(); toast('바탕 사진을 바꿨어요' + (watchGet() ? ' · 시계에도 보내요' : '')); watchBgSend(); if (after) after(); }
-      catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
-    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: '바탕 사진 바꾸기' }),
-      el('p', { class: 'sub', style: 'margin:0', text: '러닝 첫 화면과 준비 화면 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
-      el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${runHeroUrl()}")` }),
-      el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
-      cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); watchBgSend(); if (after) after(); } }) : null,
-      watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
-        : el('div', { class: 'sub', style: 'font-size:13px', text: '⌚ 시계와 연결돼 있으면(내 MPD → 시계 기록 받기) 시계 첫 화면 사진도 같이 바뀌어요.' }),
-      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
-    document.body.append(cb);
-  }
   function runHome() {
     const g = goalOf(runGoalSaved()), W = runWeek(), wg = ls.get('weekGoal', 0), now = new Date();
     // 2026-10-19 사용자가 시안 B3-2(가운데 큰 고리) 고름: 사진이 한 화면 가득 · 맨 위 인사 · 가운데 이번 주 고리와 요일 점 · 아래 PACE 문구와 큰 시작 단추
@@ -4841,11 +4883,7 @@ function viewWalk() {
     const today = (now.getDay() + 6) % 7;
     const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
     const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 40%,rgba(6,30,55,.28) 58%,rgba(6,30,55,.72) 82%,rgba(6,30,55,.92)),url("${runHeroUrl()}")` },
-      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar');
-        // 2026-10-20 디자인 정리: '바탕 사진'은 상태 알약이 아니라 설정이라 맨 위 '내 기록' 옆 작은 그림 단추로
-        const b = el('button', { class: 'r3-bgic', 'aria-label': '바탕 사진 바꾸기', title: '바탕 사진 바꾸기', onclick: () => runHeroPick(draw) });
-        b.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>';
-        bar.insertBefore(b, bar.lastChild); return bar; })(),
+      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
         el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
       ring, dots,
