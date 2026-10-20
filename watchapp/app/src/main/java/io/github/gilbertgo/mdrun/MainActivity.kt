@@ -137,6 +137,8 @@ class MainActivity : ComponentActivity() {
         val wg = listOf(10, 15, 20, 30, 40, 50, 60, 80)
         // 설정은 묶음으로 (2026-10-19 사용자 '첫 화면 구성이 이상해, 체계가 없어'): 오늘 달리기 · 심박 존 · 기록 · 앱
         val sections = listOf(
+            // 2026-10-20 휴대폰 ⚙ 설정과 같이 '화면' 묶음: 바탕 사진은 휴대폰에서 골라 보내요(시계엔 사진첩이 없어서)
+            "화면" to listOf(row("바탕 사진", if (Link.hasBg(this)) "휴대폰에서 고른 사진" else "기본 사진") { showBg() }),
             "오늘 달리기" to listOfNotNull(
                 row("목표", g.label()) { showGoal() }, tgt,
                 row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
@@ -275,6 +277,18 @@ class MainActivity : ComponentActivity() {
     }
 
     // 휴대폰으로 보내기: 연결 코드를 보여 주고 켜고 꺼요
+    // 바탕 사진 (2026-10-20 사용자 '방금 한 거 시계 앱에도'): 휴대폰 MPD ⚙ 설정 → 러닝 첫 화면 사진에서 고르면 시계로 와요
+    private fun showBg() {
+        val st = tv(if (Link.hasBg(this)) "지금: 휴대폰에서 고른 사진" else "지금: 기본 사진", 12f, RunView.BLUE, true)
+        val views = arrayListOf<View>(tv("바탕 사진", 15f, RunView.CORAL, true),
+            tv("휴대폰 MPD 맨 위 ⚙ 설정 → '러닝 첫 화면 사진'에서 고르면 이 시계에도 같이 바뀌어요.", 13f, Color.WHITE), st)
+        if (Link.on(this)) views.add(btn("지금 받기", RunView.CORAL, RunView.INK) { st.text = "받는 중…"; Link.forceBg(this) { st.text = if (Link.hasBg(this)) "받았어요" else "기본 사진이에요" }
+            android.os.Handler(mainLooper).postDelayed({ if (st.text == "받는 중…") st.text = "새 사진이 없어요" }, 15000) })
+        else views.add(tv("먼저 '휴대폰으로 보내기'를 켜고 휴대폰에 연결 코드를 적어 주세요.", 12f, RunView.MUTED))
+        if (Link.hasBg(this)) views.add(btn("기본 사진으로", RunView.SURF) { Link.clearBg(this); showBg() })
+        views.add(btn("돌아가기", RunView.SURF) { showStart() })
+        show(page(*views.toTypedArray()))
+    }
     private fun showLink() {
         val on = Link.on(this)
         val st = tv(Link.status, 12f, RunView.BLUE, true)
