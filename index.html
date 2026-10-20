@@ -637,6 +637,8 @@ function roleBar(role, who, iconK) {
     el('span', { class: 'hi', 'aria-hidden': 'true' }), 'Map Photo Diary');
   return el('div', { class: 'role ' + role, role: 'banner' }, home,
     iconK ? el('span', { class: 'who who-ico', role: 'img', 'aria-label': who || '' }, iconK === 'run' ? runnerSvg(32) : ico(iconK, 30))
+      // 2026-10-20 사용자 '내 기록은 왜 클릭 안 되지?' → 오른쪽 '내 기록'은 내 MPD 목록으로 가는 링크
+      : who === '내 기록' ? el('a', { class: 'who', href: './?my=1', text: who, style: 'text-decoration:none', onclick: e => { const w = typeof leaveWarn === 'function' ? leaveWarn() : null; if (w && !confirm(w)) e.preventDefault(); } })
       : el('span', { class: 'who', text: who || (role === 'leader' ? '인솔자 화면' : '참여자 화면') }));
 }
 // ---------- 예정 경로 ----------
@@ -1901,7 +1903,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
