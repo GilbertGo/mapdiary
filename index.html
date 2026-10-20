@@ -1923,7 +1923,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3160,9 +3160,12 @@ function watchCard(redraw) {
     if (v == null) return; const p = roomParse(v); if (!p) return toast('코드 모양이 아니에요. 시계에 나온 네 글자를 그대로 적어 주세요');
     ls.set('watchLink', p); ls.set('watchGot', {}); toast('시계 기록을 받는 중…'); const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '받을 시계 기록이 아직 없어요'); redraw();
   };
-  if (!c) return box.append(el('b', { text: '⌚ 시계 기록 받기' }),
-    el('div', { class: 'sub', text: '갤럭시워치 MPD Run으로 달린 기록을 이 휴대폰으로 받아 자세히 볼 수 있어요. 시계에서 휴대폰 연결을 켜고 나온 코드를 적어 주세요.' }),
-    el('button', { class: 'btn primary full', text: '⌚ 연결 코드 적기', onclick: link })), box;
+  // 2026-10-20 사용자 '코드 넣기를 안 했네, 코드 넣으라는 안내 띄워': 연결 전이면 내 MPD 맨 위에 눈에 띄게(산호 테), '시계 없어요'로 숨김(watchAskHide)
+  if (!c) { box.style.border = '2px solid var(--accent)';
+    return box.append(el('b', { text: '⌚ 시계 기록을 받으려면 연결 코드를 넣어 주세요' }),
+    el('div', { class: 'sub', text: "갤럭시워치 MPD Run에서 첫 화면을 위로 밀어 '휴대폰으로 보내기' → '예전 방식(연결 코드)' → 켜기를 누르면 코드(예: 빠른나무)가 나와요. 그 코드를 한 번만 적으면 그 뒤로는 저절로 받아요." }),
+    el('button', { class: 'btn primary full', text: '⌚ 연결 코드 넣기', onclick: link }),
+    ls.get('watchAskHide', false) ? null : el('button', { class: 'link', style: 'align-self:center;padding:2px;color:var(--muted)', text: '시계가 없어요 · 이 안내 숨기기', onclick: () => { ls.set('watchAskHide', true); redraw(); } })), box; }
   box.append(el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { text: '⌚ 시계 연결됨' }), el('span', { class: 'sub', text: '코드 ' + c.pretty })),
     el('div', { class: 'sub', text: '시계가 기록을 끝내면 인터넷이 될 때 올리고, 내 MPD를 열 때 저절로 받아요.' }),
     el('div', { class: 'two' },
@@ -3673,8 +3676,9 @@ function viewMyList() {
     el('h1', { text: '내 MPD' }),
     el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
     cloudCard(),   // 2026-10-19 사용자 '로그인 안 보여 어딨어?' → 맨 아래에서 맨 위로
+    !watchGet() && !ls.get('watchAskHide', false) ? watchCard(viewMyList) : null,   // 시계 연결 전이면 맨 위에(2026-10-20)
     tabs, body,
-    watchCard(viewMyList), backupCard(list.filter(x => !x.album).length)));
+    watchGet() || ls.get('watchAskHide', false) ? watchCard(viewMyList) : null, backupCard(list.filter(x => !x.album).length)));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
