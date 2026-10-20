@@ -472,6 +472,10 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .lh .r3-bar .home{font-size:0;gap:0}  /* 첫 화면엔 큰 제목이 있어서 띠의 글자는 숨기고 집 그림만 */
 .lh-modes{width:100%;max-width:520px}.lh-modes .mode{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.28);box-shadow:none;color:#fff;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .lh-modes .mode svg,.lh-modes .mode svg *{stroke:#fff!important}.lh-modes .mode .ic svg [fill]:not([fill=none]){fill:#fff!important}
+.upd-bg{align-items:flex-end;justify-content:center;padding:16px}
+.upd-card{width:100%;max-width:440px;background:var(--card);border-radius:28px;padding:26px 22px 16px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:20px}
+.upd-ico{color:var(--pine)}.upd-t{font-size:23px;font-weight:800;margin:8px 0 4px}.upd-v{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.upd-l{text-align:left;margin:14px 4px 10px;padding-left:20px;font-size:15px;line-height:1.55}.upd-l li{margin:3px 0}.upd-s{font-size:12.5px;color:var(--muted);margin-bottom:12px}
 .kk-btn{background:#FEE500!important;color:#191919!important;border:0!important;font-weight:700;gap:6px}
 .my-th{width:56px;height:56px;border-radius:12px;flex:none;background:#DCE8F2 center/cover no-repeat;box-shadow:0 1px 4px rgba(16,42,67,.18);margin-left:4px}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
@@ -1925,7 +1929,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+// 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
+const UI_NOTES = '화면이 저절로 새로 바뀌면 이 창으로 알려 드려요 · 카카오로 로그인할 수 있어요 · 클라우드 맞추기가 멈추던 것을 고쳤어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2931,6 +2937,25 @@ function fbAuth() {
     return (fbReady = { auth, onChange: f => A.onAuthStateChanged(auth, f), signIn: kind => A.signInWithPopup(auth, prov(kind)), signOut: () => A.signOut(auth) });
   })());
 }
+// '화면이 새로 바뀌었어요' 창 (2026-10-21 사용자 '업그레이드를 자동으로 하니까 잘 모르겠어. 업그레이드되는 걸 알 수 있게'):
+// 지난번에 본 판(ls uiSeen)과 지금 판이 다르면 한 번 띄워요. 처음 연 사람·받은 링크 화면·기록 중엔 안 띄움(기록 중이면 끝난 뒤에)
+function uiNewCheck() {
+  const seen = ls.get('uiSeen', null);
+  if (seen === UI_VER) return;
+  if (!seen) { ls.set('uiSeen', UI_VER); return; }
+  if (ls.get('walkNow', null) || ['s', 'brag', 'fm', 'applogin', 'game', 'talk'].some(k => qs.get(k))) return;
+  ls.set('uiSeen', UI_VER);
+  const bg = el('div', { class: 'sheet-bg upd-bg' }), close = () => bg.remove();
+  const ico = el('div', { class: 'upd-ico' }); ico.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.5l-.8-1.9-1.9-.8 1.9-.8zM5 15.5l.6 1.4 1.4.6-1.4.6L5 19.5l-.6-1.4-1.4-.6 1.4-.6z"/></svg>';
+  bg.append(el('div', { class: 'upd-card', role: 'dialog', 'aria-label': '화면이 새로 바뀌었어요' }, ico,
+    el('div', { class: 'upd-t', text: '화면이 새로 바뀌었어요' }),
+    el('div', { class: 'upd-v', text: `판 ${seen} → ${UI_VER}` }),
+    el('ul', { class: 'upd-l' }, ...UI_NOTES.split('·').map(x => x.trim()).filter(Boolean).map(x => el('li', { text: x }))),
+    el('div', { class: 'upd-s', text: '기록과 사진은 그대로예요. 판 번호는 ⚙ 설정 맨 아래에서도 볼 수 있어요.' }),
+    el('button', { class: 'btn primary full', text: '확인', onclick: close })));
+  bg.addEventListener('click', e => { if (e.target === bg) close(); });
+  document.body.append(bg);
+}
 // 로그인한 사람 이름으로 Firestore 읽고 쓰기 (열쇠 = 로그인 표 ID token)
 function cloudWho(u) { if (!u) return ''; const kk = (u.providerData || []).some(x => /kakao/.test(x.providerId || '')) || u.via === 'kakao';
   return u.email || u.displayName || (kk ? '카카오 계정' : '구글 계정'); }
@@ -3294,6 +3319,7 @@ function watchAnalysis(t) {
 }
 route();
 cloudWatch();
+setTimeout(uiNewCheck, 1500);
 if (!IN_NATIVE) { try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => toast(t), 600); } } catch {} }   // 다시 그린 뒤 알림 (앱은 native.js가 해요)
 
 // =====================================================================
