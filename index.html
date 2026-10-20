@@ -1929,9 +1929,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '화면이 저절로 새로 바뀌면 이 창으로 알려 드려요 · 카카오로 로그인할 수 있어요 · 클라우드 맞추기가 멈추던 것을 고쳤어요';
+const UI_NOTES = '클라우드 맞추기가 어디까지 했는지 단추에 보여요(처음엔 사진을 모두 올려서 몇 분 걸려요) · 인터넷이 끊겨도 멈추지 않고, 다음엔 이어서 해요 · 화면이 저절로 새로 바뀌면 이 창으로 알려 드려요 · 카카오로 로그인할 수 있어요 · 클라우드 맞추기가 멈추던 것을 고쳤어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2963,9 +2963,16 @@ function cloudWho(u) { if (!u) return ''; const kk = (u.providerData || []).some
   return u.email || u.displayName || (kk ? '카카오 계정' : '구글 계정'); }
 const KAKAO_ICO = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#191919" d="M12 3.5C6.8 3.5 2.6 6.8 2.6 10.9c0 2.6 1.7 4.9 4.3 6.2l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .7.1 1.1.1 5.2 0 9.4-3.3 9.4-7.5S17.2 3.5 12 3.5z"/></svg>';
 function kakaoBtn(on, txt) { const b = el('button', { class: 'btn full kk-btn', onclick: on }); b.innerHTML = KAKAO_ICO; b.append(' ' + (txt || '카카오로 로그인')); return b; }
+// 휴대폰 인터넷이 잠깐 끊기면 fetch가 끝나지 않아 '맞추는 중…'에 영원히 멈춰서(2026-10-21) 시간 제한을 둬요
+async function fetchT(url, opt = {}, ms = 45000) {
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms);
+  try { return await fetch(url, Object.assign({}, opt, { signal: ac.signal })); }
+  catch (e) { throw new Error(ac.signal.aborted ? '시간 초과' : '인터넷 끊김'); }
+  finally { clearTimeout(tm); }
+}
 async function cfetch(path, opt = {}) {
   const tok = await cloudUser.getIdToken();
-  const r = await fetch(`${FS_URL}users/${cloudUser.uid}/${path}`, Object.assign({}, opt, { headers: Object.assign({ authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, opt.headers || {}) }));
+  const r = await fetchT(`${FS_URL}users/${cloudUser.uid}/${path}`, Object.assign({}, opt, { headers: Object.assign({ authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, opt.headers || {}) }));
   if (r.status === 404) return null;
   if (!r.ok) throw new Error('cloud ' + r.status);
   return opt.method === 'DELETE' ? true : r.json();
@@ -2983,8 +2990,12 @@ async function cList(col) {   // [{ id, d, t }] 다 모아요
 function recPack(id) { const o = {}; for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) o[k] = v; } return o; }
 const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join(','));
 // 맞추기: 클라우드에만 있는 기록은 가져오고, 여기서 고친(지문이 바뀐) 기록은 올리고, 다른 기기에서 고친 기록은 받아요
+// 맞추는 동안 카드 단추에 어디까지 했는지 보여요 (처음엔 기록·사진을 모두 올려서 몇 분 걸릴 수 있어요)
+let cloudProg = '';
+function cloudProgSet(t) { cloudProg = t; document.querySelectorAll('.cl-prog').forEach(b => { b.textContent = t || '맞추는 중…'; }); }
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
+  cloudProgSet('맞추는 중… 목록 받는 중');
   cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '';
   // 로그아웃하면 cloudSig가 null로 남아서(2026-10-21 앱에서 'Cannot read properties of null') {}로. 다른 계정(구글↔카카오)으로 바뀌면 처음부터 맞춰요
   const same = ls.get('cloudUid', null) === cloudUser.uid;
@@ -2998,7 +3009,9 @@ async function cloudSync(quiet) {
     const remote = new Map((await cList('recs')).map(x => [x.id, x]));
     const local = new Set(); pastTrips().forEach(x => { if (!x.album) local.add(x.t); else (albumGet(x.t)?.days || []).forEach(d => local.add(d)); });
     // 1) 가져오기: 클라우드에만 있거나, 여기선 안 고쳤는데 클라우드가 바뀐 것
+    let k = 0;
     for (const [id, r] of remote) {
+      k++; if (k % 3 === 1) cloudProgSet(`맞추는 중… 받아 보는 중 ${k}/${remote.size}`);
       if (id === live) continue;
       let d; try { d = JSON.parse(r.d); } catch { continue; }
       if (!d || typeof d.ls !== 'object') continue;
@@ -3014,16 +3027,20 @@ async function cloudSync(quiet) {
       }
       sig[id] = d.sig; local.add(id); down++;
     }
-    // 2) 올리기: 여기에만 있거나 여기서 고친 것 (기록 중인 건 끝난 뒤에)
+    // 2) 올리기: 여기에만 있거나 여기서 고친 것 (기록 중인 건 끝난 뒤에). 하나 할 때마다 저장해서, 중간에 앱을 닫아도 다음엔 이어서 해요
+    let n = 0; const total = local.size;
     for (const id of local) {
+      n++; cloudProgSet(`맞추는 중… ${n}/${total}${phUp ? ` · 사진 ${phUp}장` : ''}`);
       if (id === live) continue;
       const phs = await photoList(id), phIds = phs.map(p => p.id).sort(), pack = recPack(id), s = recSig(pack, phIds);
       if (sig[id] === s && remote.has(id)) continue;
       if (!pack['track:']) continue;
       for (const ph of phs) { if (phSent[ph.id]) continue;
+        cloudProgSet(`맞추는 중… ${n}/${total} · 사진 ${phUp + 1}장째`);
         try { await cPut(`ph/${ph.id}`, JSON.stringify({ t: id, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) })); phSent[ph.id] = 1; phUp++; } catch {} }
       // 기록 하나가 안 올라가도(너무 크거나 잠깐 끊김) 나머지는 계속해요
       try { await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s })); sig[id] = s; up++; } catch (e) { bad++; why = why || String(e && e.message || e); }
+      ls.set('cloudSig', sig); ls.set('cloudPh', phSent);
     }
     // 3) 여행 묶음·모임방 목록·이름 등 (합치기)
     const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}'); } catch {}
@@ -3034,8 +3051,8 @@ async function cloudSync(quiet) {
     const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', '') });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
-  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); if (!quiet) toast(`클라우드와 맞추지 못했어요. 인터넷을 확인해 주세요 (${String(e && e.message || e).slice(0, 40)})`); cloudBusy = false; return; }
-  cloudBusy = false;
+  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); cloudBusy = false; cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
+  cloudBusy = false; cloudProgSet('');
   const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   if (down && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
@@ -3056,7 +3073,7 @@ function nativeUser(c) {
   let tok = null, exp = 0;
   return { uid: c.uid, email: c.email || '', displayName: c.name || c.email || '', via: c.via || '', async getIdToken() {
     if (tok && Date.now() < exp - 60000) return tok;
-    const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(c.rt) });
+    const r = await fetchT(`https://securetoken.googleapis.com/v1/token?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(c.rt) });
     if (r.status === 400 || r.status === 401) { ls.set('cloudRt', null); cloudUser = null; document.dispatchEvent(new Event('md-cloud')); throw new Error('login expired'); }
     if (!r.ok) throw new Error('token ' + r.status);
     const j = await r.json(); tok = j.id_token; exp = Date.now() + (+j.expires_in || 3600) * 1000;
@@ -3171,7 +3188,7 @@ function cloudCard() {
     const at = ls.get('cloudAt', 0);
     box.replaceChildren(el('b', { text: '☁ 클라우드에 모으는 중' }),
       el('div', { class: 'sub', text: `${cloudWho(cloudUser)} · ${at ? `마지막으로 맞춤 ${new Date(at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '아직 맞추지 않음'}` }),
-      el('div', { class: 'two' }, el('button', { class: 'btn line', text: cloudBusy ? '맞추는 중…' : '↻ 지금 맞추기', onclick: () => cloudSync(false).then(draw) }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
+      el('div', { class: 'two' }, el('button', { class: 'btn line' + (cloudBusy ? ' cl-prog' : ''), text: cloudBusy ? (cloudProg || '맞추는 중…') : '↻ 지금 맞추기', onclick: () => { if (!cloudBusy) { cloudSync(false).then(draw); draw(); } } }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
   };
   document.addEventListener('md-cloud', draw); draw();
   return box;
