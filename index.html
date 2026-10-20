@@ -1925,7 +1925,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2958,7 +2958,7 @@ const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join('
 // 맞추기: 클라우드에만 있는 기록은 가져오고, 여기서 고친(지문이 바뀐) 기록은 올리고, 다른 기기에서 고친 기록은 받아요
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
-  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0;
+  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '';
   const live = ls.get('walkNow', null), sig = ls.get('cloudSig', {}), phSent = ls.get('cloudPh', {});
   try {
     // 지운 기록은 클라우드에서도 지워요
@@ -2992,7 +2992,8 @@ async function cloudSync(quiet) {
       if (!pack['track:']) continue;
       for (const ph of phs) { if (phSent[ph.id]) continue;
         try { await cPut(`ph/${ph.id}`, JSON.stringify({ t: id, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) })); phSent[ph.id] = 1; phUp++; } catch {} }
-      await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s })); sig[id] = s; up++;
+      // 기록 하나가 안 올라가도(너무 크거나 잠깐 끊김) 나머지는 계속해요
+      try { await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s })); sig[id] = s; up++; } catch (e) { bad++; why = why || String(e && e.message || e); }
     }
     // 3) 여행 묶음·모임방 목록·이름 등 (합치기)
     const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}'); } catch {}
@@ -3003,9 +3004,9 @@ async function cloudSync(quiet) {
     const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', '') });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
-  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); if (!quiet) toast('클라우드와 맞추지 못했어요. 인터넷을 확인해 주세요'); cloudBusy = false; return; }
+  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); if (!quiet) toast(`클라우드와 맞추지 못했어요. 인터넷을 확인해 주세요 (${String(e && e.message || e).slice(0, 40)})`); cloudBusy = false; return; }
   cloudBusy = false;
-  const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : ''].filter(Boolean).join(' · ');
+  const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   if (down && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
   document.dispatchEvent(new Event('md-cloud'));
