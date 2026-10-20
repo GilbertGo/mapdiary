@@ -84,7 +84,7 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         // 맨 위: 새 판 알림(금색 알약) 또는 'TUESDAY, YOUR PACE'
         val c = Calendar.getInstance()
         if (updName.isNotEmpty()) {
-            val s = "새 판 $updName 설치"; val tw = measure(s, 4.6f * u, false) + 6 * u; val h = 8f * u; val y = 15f * u
+            val s = "새 판 $updName 설치"; val tw = measure(s, 4.6f * u, false) + 6 * u; val h = 8f * u; val y = 18.5f * u
             updBox = RectF(cx - tw / 2, y - h / 2, cx + tw / 2, y + h / 2)
             cv.drawRoundRect(updBox, h / 2, h / 2, paint(GOLD))
             text(cv, s, cx, y + 1.6f * u, 4.6f * u, RunView.INK, true)
@@ -92,12 +92,15 @@ class HomeView(c: Context, private val act: Act) : View(c) {
             updBox = RectF()
             val day = arrayOf("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")[c.get(Calendar.DAY_OF_WEEK) - 1]
             paint(Color.parseColor("#FFD2B8")); p.textSize = 3.6f * u; p.typeface = Typeface.MONOSPACE; p.letterSpacing = .18f; p.textAlign = Paint.Align.CENTER
-            cv.drawText("$day, YOUR PACE", cx, 16f * u, p)
+            cv.drawText("$day, YOUR PACE", cx, 19.5f * u, p)
         }
-        text(cv, "THIS WEEK", cx, 24.5f * u, 4f * u, a(Color.WHITE, 215), true)
+        // 2026-10-20 휴대폰과 같이 로고(맨 위, 크게): 'MPD' 산호 + ' Run' 흰색, 아래 묶음은 조금 내려 가운데로
+        run { val a1 = "MPD"; val a2 = " Run"; val sz = 5.4f * u; val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val lx0 = cx - (w1 + w2) / 2
+            text(cv, a1, lx0, 12.6f * u, sz, CORAL, true, align = Paint.Align.LEFT); text(cv, a2, lx0 + w1, 12.6f * u, sz, Color.WHITE, true, align = Paint.Align.LEFT) }
+        text(cv, "THIS WEEK", cx, 26.5f * u, 4f * u, a(Color.WHITE, 215), true)
         val ks = if (week.km < 100) String.format("%.1f", week.km) else String.format("%.0f", week.km)
-        text(cv, ks, cx, 42.5f * u, 17f * u, Color.WHITE, true, true)
-        text(cv, "/ 주간 목표 ${week.goalKm} km", cx, 50f * u, 4.4f * u, Color.WHITE)
+        text(cv, ks, cx, 43.5f * u, 17f * u, Color.WHITE, true, true)
+        text(cv, "/ 주간 목표 ${week.goalKm} km", cx, 50.5f * u, 4.4f * u, Color.WHITE)
         // 요일 점(월~일): 달린 날 산호, 오늘은 흰 테
         val today = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7
         for (i in 0 until 7) {
