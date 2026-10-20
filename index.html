@@ -476,6 +476,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .upd-card{width:100%;max-width:440px;background:var(--card);border-radius:28px;padding:26px 22px 16px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:20px}
 .upd-ico{color:var(--pine)}.upd-t{font-size:23px;font-weight:800;margin:8px 0 4px}.upd-v{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .upd-l{text-align:left;margin:14px 4px 10px;padding-left:20px;font-size:15px;line-height:1.55}.upd-l li{margin:3px 0}.upd-s{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.cl-st{font-size:19px;font-weight:800;margin-top:2px}
 .kk-btn{background:#FEE500!important;color:#191919!important;border:0!important;font-weight:700;gap:6px}
 .my-th{width:56px;height:56px;border-radius:12px;flex:none;background:#DCE8F2 center/cover no-repeat;box-shadow:0 1px 4px rgba(16,42,67,.18);margin-left:4px}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
@@ -1929,9 +1930,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '클라우드 맞추기가 어디까지 했는지 단추에 보여요(처음엔 사진을 모두 올려서 몇 분 걸려요) · 인터넷이 끊겨도 멈추지 않고, 다음엔 이어서 해요 · 화면이 저절로 새로 바뀌면 이 창으로 알려 드려요 · 카카오로 로그인할 수 있어요 · 클라우드 맞추기가 멈추던 것을 고쳤어요';
+const UI_NOTES = '내 MPD 맨 위 카드에 맞추기 결과(✅ 다 맞췄어요 / ⚠ 못 했어요)가 남아요 · 클라우드 맞추기가 어디까지 했는지 단추에 보여요(처음엔 사진을 모두 올려서 몇 분 걸려요) · 인터넷이 끊겨도 멈추지 않고, 다음엔 이어서 해요 · 화면이 저절로 새로 바뀌면 이 창으로 알려 드려요 · 카카오로 로그인할 수 있어요 · 클라우드 맞추기가 멈추던 것을 고쳤어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2673,7 +2674,8 @@ function appSettings() {
       row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
       head('연결'),
       row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
-      row('☁️', '구글 로그인 · 기록 모으기', ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)) ? '로그인돼 있어요' : '앱·크롬 기록을 하나로', () => { location.href = './?my=1'; }),
+      row('☁️', '로그인 · 기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '카카오·구글로 앱·크롬 기록을 하나로';
+        const L = ls.get('cloudLast', null), who = ls.get('cloudName', '') || '로그인돼 있어요'; return `${who} · ${!L ? '아직 맞추지 않음' : !L.ok || L.bad ? '⚠ 다시 맞춰 주세요' : `✅ 기록 ${L.n}개 모두 모음`}`; })(), () => { location.href = './?my=1'; }),
       el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}` }));
   };
   paint();
@@ -3051,7 +3053,10 @@ async function cloudSync(quiet) {
     const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', '') });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
-  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); cloudBusy = false; cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
+    const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
+    ls.set('cloudLast', { at: Date.now(), ok: 1, n: mine.length, c: inCloud, bad, why: why.slice(0, 40), ph: Object.keys(phSent).length });
+  } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); cloudBusy = false;
+    ls.set('cloudLast', { at: Date.now(), ok: 0, why: String(e && e.message || e).slice(0, 60) }); cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
   cloudBusy = false; cloudProgSet('');
   const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   if (down && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); } catch {} location.reload(); return; }
@@ -3185,9 +3190,17 @@ function cloudCard() {
         ...(IN_KAKAO ? [kb, gb] : [gb, kb]));
       return;
     }
-    const at = ls.get('cloudAt', 0);
-    box.replaceChildren(el('b', { text: '☁ 클라우드에 모으는 중' }),
-      el('div', { class: 'sub', text: `${cloudWho(cloudUser)} · ${at ? `마지막으로 맞춤 ${new Date(at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '아직 맞추지 않음'}` }),
+    // 된 건지 안 된 건지 알 수 있게(2026-10-21 사용자 '된 건지 만 건지 알 수가 없다'): 알림은 3초면 사라지니, 마지막 결과를 카드에 크게 남겨요
+    const L = ls.get('cloudLast', null), when = t => new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const via = (cloudUser.providerData || []).some(x => /kakao/.test(x.providerId || '')) || cloudUser.via === 'kakao' ? '카카오' : '구글';
+    let st, stc, sub;
+    if (cloudBusy) { st = '⏳ 맞추는 중이에요'; stc = 'var(--pine)'; sub = '화면을 켠 채 잠시 기다려 주세요. 처음엔 사진을 모두 올려서 몇 분 걸려요. 끝나면 여기에 ✅가 떠요.'; }
+    else if (!L) { st = '아직 맞추지 않았어요'; stc = 'var(--muted)'; sub = "'↻ 지금 맞추기'를 눌러 주세요."; }
+    else if (!L.ok) { st = '⚠ 맞추지 못했어요'; stc = 'var(--alert-ink)'; sub = `${when(L.at)} · ${L.why || ''} · '↻ 지금 맞추기'를 다시 눌러 주세요.`; }
+    else if (L.bad) { st = `⚠ ${L.bad}개는 아직 못 올렸어요`; stc = 'var(--alert-ink)'; sub = `${when(L.at)} · 나머지 ${L.c}개는 클라우드에 있어요. 다시 누르면 남은 것만 올려요.`; }
+    else { st = '✅ 다 맞췄어요'; stc = 'var(--pine)'; sub = `${when(L.at)} · 이 휴대폰 기록 ${L.n}개가 모두 클라우드에 있어요${L.ph ? ` · 사진 ${L.ph}장` : ''}`; }
+    box.replaceChildren(el('b', { text: `☁ ${via}로 로그인 · ${cloudWho(cloudUser)}` }),
+      el('div', { class: 'cl-st', style: `color:${stc}`, text: st }), el('div', { class: 'sub', text: sub }),
       el('div', { class: 'two' }, el('button', { class: 'btn line' + (cloudBusy ? ' cl-prog' : ''), text: cloudBusy ? (cloudProg || '맞추는 중…') : '↻ 지금 맞추기', onclick: () => { if (!cloudBusy) { cloudSync(false).then(draw); draw(); } } }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
   };
   document.addEventListener('md-cloud', draw); draw();
