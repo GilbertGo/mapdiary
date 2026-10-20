@@ -472,6 +472,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .lh .r3-bar .home{font-size:0;gap:0}  /* 첫 화면엔 큰 제목이 있어서 띠의 글자는 숨기고 집 그림만 */
 .lh-modes{width:100%;max-width:520px}.lh-modes .mode{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.28);box-shadow:none;color:#fff;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .lh-modes .mode svg,.lh-modes .mode svg *{stroke:#fff!important}.lh-modes .mode .ic svg [fill]:not([fill=none]){fill:#fff!important}
+.my-th{width:56px;height:56px;border-radius:12px;flex:none;background:#DCE8F2 center/cover no-repeat;box-shadow:0 1px 4px rgba(16,42,67,.18);margin-left:4px}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
 .r3-bar .home{font-size:20px}.r3-bar .home .hi{width:22px;height:22px}
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -1923,7 +1924,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3628,7 +3629,15 @@ function viewMyList() {
   const row = x => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(x.t)}`, style: 'text-decoration:none;color:inherit' },
     el('span', { style: 'color:var(--pine);flex:none' }, ico(ls.get('walkMode:' + x.t, null) ? modeOfT(x.t).k : 'pin', 26)),
     el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }), el('div', { class: 'dt', text: mdLine(x) })),
-    x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null);
+    x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null,
+    myThumb(x.t));
+  // 대표 사진 (2026-10-20 사용자 '요기에 그 MPD의 대표 사진 넣기'): 줄 오른쪽에 작은 사진 — 공유 카드 '맨 위 사진'(walkCover)으로 고른 것, 없으면 첫 사진. 사진 없으면 안 보임
+  function myThumb(t) {
+    const th = el('span', { class: 'my-th', style: 'display:none' });
+    photoList(t).then(ps => { if (!ps.length) return; const cid = ls.get('walkCover:' + t, null), p = (cid && ps.find(r => r.id === cid)) || ps[0];
+      if (p && p.thumb) { th.style.backgroundImage = `url("${p.thumb}")`; th.style.display = ''; } }).catch(() => {});
+    return th;
+  }
   // 목록 / 달력 (고른 것을 기억해요)
   let mode = ls.get('myView', 'list');
   const days = list.filter(x => !x.album), last = days.length ? new Date(days[0].info.startAt) : new Date();
