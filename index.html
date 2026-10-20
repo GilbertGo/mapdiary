@@ -1925,7 +1925,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-11';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2477,7 +2477,7 @@ function route() {
   if (qs.get('walk') === '1') return viewWalk();
   if (qs.get('game')) return viewGames();
   if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
-  if (qs.get('applogin')) return setTimeout(viewAppLogin);
+  if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
   if (qs.get('room')) return viewRoom();
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
   if (qs.get('s')) return viewShareLink();
@@ -3055,7 +3055,7 @@ function appLoginStart(kind) {
   const n = rid(24); ls.set('cloudPend', { n, at: Date.now(), k: kind }); document.dispatchEvent(new Event('md-cloud'));
   const pkg = { run: 'io.github.gilbertgo.mdrun', pgolf: 'io.github.gilbertgo.mdgolf' }[(window.MD_APP || {}).mode] || 'io.github.gilbertgo.mapdiary';
   toast('크롬이 열려요. 로그인한 뒤 앱으로 돌아오세요');
-  setTimeout(() => { location.href = `${APP_BASE}?applogin=1#al=${n}&p=${pkg}${kind === 'kakao' ? '&k=kakao' : ''}`; }, 400);   // 앱 밖 주소라 휴대폰 기본 브라우저로 열려요
+  setTimeout(() => { location.href = `${APP_BASE}?applogin=${n.slice(0, 6)}#al=${n}&p=${pkg}${kind === 'kakao' ? '&k=kakao' : ''}`; }, 400);   // 앱 밖 주소라 휴대폰 기본 브라우저로 열려요
   appLoginPoll();
 }
 // 크롬에서 열리는 쪽: 구글 로그인 → 잠근 로그인 표를 앱에 건네요
