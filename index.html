@@ -463,6 +463,15 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .st-go{color:var(--muted);font-size:22px}
 .r3-st .pill,.r3-st .where-pill{font-size:11px!important;padding:3px 9px!important}
 .wp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:1px;opacity:.85}
+.lh-t{font-size:clamp(30px,9vw,38px);font-weight:900;letter-spacing:-.02em;margin:8px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;text-shadow:0 2px 14px rgba(0,0,0,.35);color:#fff}
+.lh-sub{font-size:13px;opacity:.82;margin-top:4px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.lh .lh-pills{justify-content:center;margin-top:16px}.lh .gm-pill{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.35);color:#fff;box-shadow:none;height:36px;font-size:14px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.lh .r3-mid .r3-ey{text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.lh-bot{gap:8px}.lh-k{color:#fff!important;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.6);align-self:flex-start;margin-left:2px}
+.lh-modes .mode span,html[data-theme=sea] .lh-modes .mode span{color:#fff!important}.lh-modes .mode span{text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.lh .r3-bar .home{font-size:0;gap:0}  /* 첫 화면엔 큰 제목이 있어서 띠의 글자는 숨기고 집 그림만 */
+.lh-modes{width:100%;max-width:520px}.lh-modes .mode{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.28);box-shadow:none;color:#fff;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.lh-modes .mode svg,.lh-modes .mode svg *{stroke:#fff!important}.lh-modes .mode .ic svg [fill]:not([fill=none]){fill:#fff!important}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
 .r3-bar .home{font-size:20px}.r3-bar .home .hi{width:22px;height:22px}
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -1914,7 +1923,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2595,6 +2604,8 @@ async function nickEdit(after) {
 }
 // 러닝 첫 화면·준비 화면 바탕 사진 (2026-10-19 사용자 '앱 화면 사진을 사용자가 바꿀 수 있게'): 휴대폰 사진에서 골라 1400px로 줄여 이 기기에 둠(ls runHero), 비우면 기본 그림
 function runHeroUrl() { return ls.get('runHero', '') || `${IN_NATIVE ? APP_BASE : './'}img/run-hero-3.jpg`; }
+// 메인 첫 화면 사진 (2026-10-20): 따로 고르지 않았으면 러닝 첫 화면 사진을 같이 써요
+function homeHeroUrl() { return ls.get('homeHero', '') || runHeroUrl(); }
 // 시계 바탕 사진 (2026-10-19 사용자 '시계에도 바탕 사진 바꾸게'): 시계는 사진첩이 없어서 휴대폰에서 고른 사진을 480px 정사각으로 잘라
 // 시계 연결 코드의 열쇠로 잠가 rooms/{방번호}/x/bg={enc} (기본 사진이면 {none:1})에 올려요. 시계가 첫 화면을 열 때 받아 가요
 async function watchBgSend() {
@@ -2610,19 +2621,19 @@ async function watchBgSend() {
     return true;
   } catch (e) { return false; }
 }
-function runHeroPick(after) {
-  const cur = ls.get('runHero', ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+function runHeroPick(after, key = 'runHero') {
+  const run = key === 'runHero', cur = ls.get(key, ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
   const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set('runHero', url); } catch (e) { ls.set('runHero', await shrinkImage(f, 900, 'url', .75)); }
-      cb.remove(); toast('바탕 사진을 바꿨어요' + (watchGet() ? ' · 시계에도 보내요' : '')); watchBgSend(); if (after) after(); }
+    try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set(key, url); } catch (e) { ls.set(key, await shrinkImage(f, 900, 'url', .75)); }
+      cb.remove(); toast('바탕 사진을 바꿨어요' + (run && watchGet() ? ' · 시계에도 보내요' : '')); if (run) watchBgSend(); if (after) after(); }
     catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
-  cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: '바탕 사진 바꾸기' }),
-    el('p', { class: 'sub', style: 'margin:0', text: '러닝 첫 화면과 준비 화면 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
-    el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${runHeroUrl()}")` }),
+  cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: run ? '러닝 첫 화면 사진' : '첫 화면 사진' }),
+    el('p', { class: 'sub', style: 'margin:0', text: (run ? '러닝 첫 화면과 준비 화면' : '앱 첫 화면') + ' 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
+    el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${run ? runHeroUrl() : homeHeroUrl()}")` }),
     el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
-    cur ? el('button', { class: 'btn line small full', text: '↺ 기본 사진으로 되돌리기', onclick: () => { ls.set('runHero', ''); cb.remove(); toast('기본 사진으로 돌렸어요'); watchBgSend(); if (after) after(); } }) : null,
-    watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
+    cur ? el('button', { class: 'btn line small full', text: run ? '↺ 기본 사진으로 되돌리기' : '↺ 러닝 첫 화면 사진과 같게', onclick: () => { ls.set(key, ''); cb.remove(); toast('기본 사진으로 돌렸어요'); if (run) watchBgSend(); if (after) after(); } }) : null,
+    !run ? null : watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
       : el('div', { class: 'sub', style: 'font-size:13px', text: '⌚ 시계와 연결돼 있으면(내 MPD → 시계 기록 받기) 시계 첫 화면 사진도 같이 바뀌어요.' }),
     el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
   document.body.append(cb);
@@ -2643,8 +2654,10 @@ function appSettings() {
     const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
     const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내가 고른 사진' + (watchGet() ? ' · 시계에도 보내요' : '') : '기본 사진', () => runHeroPick(done));
     photoRow.firstChild.replaceWith(thumb);
+    const homeRow = row('', '첫 화면 사진', ls.get('homeHero', '') ? '내가 고른 사진' : '러닝 첫 화면 사진과 같아요', () => runHeroPick(done, 'homeHero'));
+    homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     body.replaceChildren(
-      head('화면'), photoRow,
+      head('화면'), homeRow, photoRow,
       row('🎨', '화면 분위기', sea ? '바닷가 · 누르면 산으로' : '산 · 누르면 바닷가로', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); }),
       head('나'), row('👤', '내 이름', ls.get('nick', '') || '아직 없어요 · 같이 달리기·모임방에 보여요', () => nickEdit(done)),
       head('러닝'),
@@ -4561,37 +4574,37 @@ function viewLanding() {
   const bigBtn = (title, desc, cls, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:22px 20px;cursor:pointer' + (cls ? ';background:var(--pine);color:#fff' : ''), onclick },
     el('b', { class: 'with-ico', style: 'gap:8px;font-size:21px;letter-spacing:-.02em' + (cls ? ';color:var(--accent)' : ';color:var(--pine)') }, title),
     el('span', { style: 'font-size:15px;' + (cls ? 'color:#D5DED7' : 'color:var(--muted)'), text: desc }));
-  app.replaceChildren(el('div', { class: 'stack' },
-    roleBar('leader', '내 기록'),
-    el('div', { style: 'display:flex;justify-content:flex-end;margin:-2px 0 -26px' }, wherePill()),
-    el('div', { style: 'padding:28px 0 36px' },
+  // 2026-10-20 사용자 '이 화면도 run하고 동일한 컨셉': 사진이 한 화면 가득, 맨 위 띠 투명, 가운데 날짜·제목·한 줄, 아래 투명 유리 모드 타일·상태 알약
+  const now = new Date(), wNow = ls.get('walkNow', null);
+  const hero = el('div', { class: 'rh3 lh', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.6),rgba(6,30,55,.16) 34%,rgba(6,30,55,.3) 52%,rgba(6,30,55,.78) 74%,rgba(6,30,55,.94)),url("${homeHeroUrl()}")` },
+    (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
+    el('div', { class: 'r3-mid' },
+      el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR DIARY` }),
       // 'MPD'가 무슨 말인지 첫 화면에서 알려 줘요 (내 MPD, 받은 MPD…)
-      el('h1', { style: 'font-size:clamp(28px,8.4vw,34px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;white-space:nowrap' }, 'Map Photo Diary',
+      el('h1', { class: 'lh-t' }, 'Map Photo Diary',
         el('span', { style: 'font-size:17px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--accent);border-radius:10px;padding:3px 9px;line-height:1.2;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer', 'aria-label': '줄여서 MPD', text: 'MPD', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 켜기/끄기 (빠른 두 번 누름도 한 번씩 세게 pointerdown으로)
           const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
           if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
           if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } })),
-      el('p', { class: 'sub', style: 'margin:6px 0 0;font-size:16px;color:#4A5249', text: '다닌 길과 사진이 그대로 일기가 돼요' }),
-      el('p', { class: 'sub', style: 'margin:4px 0 0;font-size:13.5px;color:#7A7F76', text: '기록 한 편 한 편을 줄여서 MPD라고 불러요' }),
-      // 게임 · 대화 정리 (2026-10-18 시안 B안 '작은 알약 단추', 사용자 '추천대로'. 둘이라 제목 옆 대신 바로 아래 줄에)
-      el('div', { class: 'gm-pills' }, el('a', { class: 'gm-pill', href: './?game=1' }, '🎮 게임'), el('a', { class: 'gm-pill', href: './?talk=1' }, '🎙 대화 정리'))),
-    // 기록 중이면 이어서 보기가 맨 위
-    // 기록 중이면 그 기록의 제목과 얼마나 됐는지도 보여줘요
-    (() => { const w = ls.get('walkNow', null); if (!w) return null;
-      const M = modeOfT(w), name = ls.get('trackName:' + w, `${M.label} 기록`), dur = fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
-      return bigBtn([ico(M.k, 24), `기록 중 · ${name}`], `${dur}째 · 누르면 이어서 기록해요`, true, () => { location.href = '?walk=1'; }); })(),
-    // 기록 시작: 모드를 고르면 바로 그 모드의 시작 화면으로
-    el('h2', { style: 'margin-top:4px', text: '기록 시작' }),
-    modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
-    el('div', { class: 'sub', style: 'margin-top:-4px', text: '앱을 켜 두고 다니면 지나간 길이 Map Photo Diary로 남아요.' }),
+      el('div', { class: 'r3-msg', style: 'margin:2px 0 0', text: '다닌 길과 사진이 그대로 일기가 돼요' }),
+      el('div', { class: 'lh-sub', text: '기록 한 편 한 편을 줄여서 MPD라고 불러요' }),
+      // 게임 · 대화 정리 (2026-10-18 작은 알약 → 2026-10-20 유리 알약)
+      el('div', { class: 'gm-pills lh-pills' }, el('a', { class: 'gm-pill', href: './?game=1' }, '🎮 게임'), el('a', { class: 'gm-pill', href: './?talk=1' }, '🎙 대화 정리'))),
+    el('div', { class: 'r3-bot lh-bot' },
+      // 기록 중이면 이어서 보기가 맨 위
+      wNow ? (() => { const M = modeOfT(wNow), name = ls.get('trackName:' + wNow, `${M.label} 기록`), dur = fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())));
+        return el('button', { class: 'r3-go', style: 'font-size:17px;padding:13px', onclick: () => { location.href = '?walk=1'; } }, el('span', { class: 'r3-tri', text: '●' }), ` 기록 중 · ${name} · ${dur}째`); })() : null,
+      el('div', { class: 'r3-ey lh-k', text: 'START A RECORD · 기록 시작' }),
+      (() => { const g = modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }); g.classList.add('lh-modes'); return g; })(),
+      el('div', { class: 'rh-info r3-st', style: 'justify-content:center;margin-top:6px' }, wherePill(true, true))));
+  app.replaceChildren(el('div', { class: 'stack' },
+    hero,
+    el('div', { class: 'sub', style: 'margin-top:32px', text: '앱을 켜 두고 다니면 지나간 길이 Map Photo Diary로 남아요.' }),
     memSlot,
     bigBtn('내 MPD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', false, () => { location.href = './?my=1'; }),
     bigBtn('MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', false, openPastTrips),
     bigBtn('모임방', '코드를 아는 사람끼리 MPD를 모아 보고, 마음에 드는 길을 따라가 봐요', false, () => { location.href = './?room=1'; }),
     installSlot,
-    (() => { const sea = ls.get('theme', 'sea') === 'sea';
-      return el('button', { class: 'link', style: 'align-self:center;color:var(--muted);padding:10px', text: `🎨 화면 분위기: ${sea ? '바닷가' : '산'} · ${sea ? '산으로' : '바닷가로'} 바꾸기`,
-        onclick: () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; viewLanding(); } }); })(),
     // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
     el('div', { class: 'sub center', style: 'font-size:12px;opacity:.7;margin-top:-6px', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` })));
 }
