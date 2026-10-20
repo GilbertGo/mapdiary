@@ -463,8 +463,10 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .st-go{color:var(--muted);font-size:22px}
 .r3-st .pill,.r3-st .where-pill{font-size:11px!important;padding:3px 9px!important}
 .wp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;margin-right:6px;vertical-align:1px;opacity:.85}
+.r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
+.r3-bar .home{font-size:20px}.r3-bar .home .hi{width:22px;height:22px}
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
-.r3-bot{margin-top:auto;width:100%;box-sizing:border-box;padding:0 22px 92px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.r3-bot{width:100%;box-sizing:border-box;padding:0 22px 92px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
 .r3-go{width:100%;max-width:420px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:none;text-shadow:0 1px 4px rgba(0,0,0,.35);margin-bottom:6px}
 .r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
@@ -1912,7 +1914,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.20-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.20-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4884,12 +4886,14 @@ function viewWalk() {
     const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
     const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 40%,rgba(6,30,55,.28) 58%,rgba(6,30,55,.72) 82%,rgba(6,30,55,.92)),url("${runHeroUrl()}")` },
       (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
+      // 2026-10-20 사용자 그림: 인사~문구 묶음을 화면 가운데쯤으로(.r3-mid가 맨 위 띠와 시작 단추 사이 남는 높이 가운데)
+      el('div', { class: 'r3-mid' },
       el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR PACE` }),
         el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '러너'}님.`, onclick: () => nickEdit(draw) })),
       ring, dots,
       // 2026-10-20 사용자 그림: 문구 두 줄은 위로(요일 점 아래), 시작 단추·알약은 더 아래로, '바탕 사진'은 알약 줄에 같은 모양으로
       el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'A LITTLE GOES A LONG WAY' }),
-        el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' })),
+        el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }))),
       el('div', { class: 'r3-bot' },
         el('button', { class: 'r3-go', onclick: runSetup }, el('span', { class: 'r3-tri', text: '▶' }), ' 러닝 시작하기'),
         el('div', { class: 'rh-info r3-st', style: 'justify-content:center' }, gpsReady, wherePill(true, true))));
