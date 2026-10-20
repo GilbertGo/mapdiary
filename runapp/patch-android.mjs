@@ -299,3 +299,57 @@ m = m.replace('</application>', `    <receiver android:name="${appId}.MdUpdateRe
   .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
 writeFileSync(mf, m);
 console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);
+// 시계 기록 받기 (2026-10-20 사용자 '와치에 러닝 데이터 폰으로 보내기 어렵다' → '저절로 연결'): 시계 MPD Run(같은 이름 io.github.gilbertgo.mdrun·같은 서명)이
+// 블루투스(Wearable Data Layer)로 보낸 기록(/mpd/run/{ID}, 압축한 기록 파일)을 받아 files/mdsync/{ID}.json에 둬요 → 휴대폰 MPD 앱이 켤 때 저절로 가져가요(syncPull)
+if (appId === 'io.github.gilbertgo.mdrun') {
+  writeFileSync(`${jdir}/MdWearService.java`, `package ${appId};
+
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
+import com.google.android.gms.wearable.WearableListenerService;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.GZIPInputStream;
+
+public class MdWearService extends WearableListenerService {
+    @Override public void onDataChanged(DataEventBuffer events) {
+        for (DataEvent e : events) {
+            if (e.getType() != DataEvent.TYPE_CHANGED) continue;
+            DataItem it = e.getDataItem(); String path = it.getUri().getPath();
+            if (path == null || !path.startsWith("/mpd/run/")) continue;
+            String id = path.substring(9);
+            if (!id.matches("[A-Za-z0-9_]{1,40}")) continue;
+            try {
+                Asset a = DataMapItem.fromDataItem(it).getDataMap().getAsset("d"); if (a == null) continue;
+                ByteArrayOutputStream b = new ByteArrayOutputStream();
+                try (InputStream in = new GZIPInputStream(Tasks.await(Wearable.getDataClient(this).getFdForAsset(a)).getInputStream())) {
+                    byte[] buf = new byte[65536]; int n; while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+                }
+                File dir = new File(getFilesDir(), "mdsync"); dir.mkdirs();
+                File tmp = new File(dir, id + ".tmp");
+                try (OutputStream o = new FileOutputStream(tmp)) { o.write(b.toByteArray()); }
+                tmp.renameTo(new File(dir, id + ".json"));
+            } catch (Exception ex) { }
+        }
+    }
+}
+`);
+  // 시계가 '받는 휴대폰이 있나' 알아볼 수 있게(capability mpd_phone)
+  writeFileSync(`${res}/values/wear.xml`, `<?xml version="1.0" encoding="utf-8"?>\n<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@array/android_wear_capabilities">\n    <string-array name="android_wear_capabilities">\n        <item>mpd_phone</item>\n    </string-array>\n</resources>\n`);
+  let mm = readFileSync(mf, 'utf8');
+  mm = mm.replace('</application>', `    <service android:name="${appId}.MdWearService" android:exported="true">\n        <intent-filter>\n            <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />\n            <data android:scheme="wear" android:host="*" android:pathPrefix="/mpd/run/" />\n        </intent-filter>\n    </service>\n    </application>`);
+  writeFileSync(mf, mm);
+  const gg = readFileSync(g, 'utf8');
+  if (!/\ndependencies \{/.test(gg)) throw new Error('build.gradle dependencies를 못 찾았어요');
+  writeFileSync(g, gg.replace(/\ndependencies \{/, m => m + "\n    implementation 'com.google.android.gms:play-services-wearable:18.2.0'"));
+  console.log('시계 기록 받기(MdWearService) 넣음');
+}
+

@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
             "기록" to listOf(
                 row("지난 기록", "${Store.list(this).size}개") { showHistory() },
                 row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
-                row("휴대폰으로 보내기", if (Link.on(this)) "켬 · ${Link.code(this)}" else "끔") { showLink() }),
+                row("휴대폰으로 보내기", "저절로 · 블루투스") { showPhone() }),
             "앱" to listOfNotNull(
                 if (u0 != null) row("새 판이 있어요", "${u0.name} 설치하기") { install() } else null,
                 row("판 ${Updater.currentName(this)}", "새 판 확인") { checkNow(true) }))
@@ -162,7 +162,8 @@ class MainActivity : ComponentActivity() {
         startGpsPreview()
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
         if (!updChecked) { updChecked = true; checkNow(false) }
-        Link.pushAll(this)   // 못 보낸 기록이 있으면 보내요
+        Wear.pushAll(this)   // 휴대폰으로 저절로(블루투스): 못 보낸 기록이 있으면 보내요
+        Link.pushAll(this)   // 예전 연결 코드 방식(켜 둔 경우만)
         Link.pullBg(this) { home?.reloadPhoto() }   // 휴대폰에서 바탕 사진을 바꿨으면 받아요
     }
     private fun startGpsPreview() {
@@ -276,6 +277,17 @@ class MainActivity : ComponentActivity() {
         show(page(*views.toTypedArray()))
     }
 
+    // 휴대폰으로 보내기 (2026-10-20 '저절로 연결'): 코드 없이 블루투스로. 휴대폰에 MPD Run 앱이 있어야 받아요
+    private fun showPhone() {
+        val st = tv("휴대폰을 찾는 중…", 12f, RunView.BLUE, true)
+        val views = arrayListOf<View>(tv("휴대폰으로 보내기", 15f, RunView.CORAL, true),
+            tv("달리기를 끝내면 시계와 이어진 휴대폰으로 저절로 보내요. 코드는 필요 없어요.", 13f, Color.WHITE), st,
+            btn("지금 보내기", RunView.CORAL, RunView.INK) { st.text = "보내는 중…"; Wear.pushAll(this) { st.text = Wear.status } },
+            btn("돌아가기", RunView.SURF) { showStart() },
+            btn("예전 방식(연결 코드)", RunView.SURF, RunView.MUTED) { showLink() })
+        show(page(*views.toTypedArray()))
+        Wear.phoneReady(this) { ok -> st.text = when (ok) { true -> "휴대폰과 이어져 있어요 ✓"; false -> "휴대폰에 'MPD Run' 앱을 깔아 주세요 (받는 앱)"; else -> "휴대폰을 찾지 못했어요" } }
+    }
     // 휴대폰으로 보내기: 연결 코드를 보여 주고 켜고 꺼요
     // 바탕 사진 (2026-10-20 사용자 '방금 한 거 시계 앱에도'): 휴대폰 MPD ⚙ 설정 → 러닝 첫 화면 사진에서 고르면 시계로 와요
     private fun showBg() {
@@ -400,7 +412,7 @@ class MainActivity : ComponentActivity() {
         RunService.stop(this)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (id == null) { show(page(tv("거리가 거의 없어서 저장하지 않았어요", 13f), btn("처음으로", RunView.CORAL, RunView.INK) { showStart() })); return }
-        Link.pushAll(this)
+        Wear.pushAll(this); Link.pushAll(this)
         showDetail(id, true)
     }
 

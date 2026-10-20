@@ -32,4 +32,6 @@ android {
 dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.wear:wear:1.3.0")
+    // 휴대폰으로 저절로 보내기(Wear.kt, 2026-10-20): 시계↔휴대폰 블루투스 길(Wearable Data Layer)
+    implementation("com.google.android.gms:play-services-wearable:18.2.0")
 }
