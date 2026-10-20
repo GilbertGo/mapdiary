@@ -84,6 +84,19 @@
 - 설치: 플레이스토어가 아니라 시계 개발자 모드 → 무선 디버깅 → 휴대폰 'Wear Installer 2'로 넣음(README에 순서)
 - 여기(클라우드) 확인 방법: dl.google.com이 막혀 안드로이드 SDK·androidx가 없음 → Kotlin 컴파일러(GitHub 릴리스) + robolectric `android-all` jar(Maven Central)로 androidx만 흉내(stub) 내서 컴파일해 보고, `Run`에 가짜 위치를 넣어 코치 말을 확인. 실제 APK는 GitHub Actions에서
 
+## 가족 앨범 (2026-10-21, 설계서 `FAMILY_ALBUM.md`)
+- 사용자가 설계서를 주며 '그대로 해 줘'. 가족끼리 사진을 모으고 댓글·♥를 달면 **열쇠(`ls claudeKey`)를 넣은 가족의 휴대폰이 Claude(`claude-haiku-5-5`, `FA_MODEL`)로 사진마다 35자 글귀**를 새로 씀. 모임방과는 따로(합치지 않음). 새 서버·결제 없음
+- 주소: `?album=1` 목록(`famListView`, 내 앨범 목록은 `users/{uid}/x/fam` d=[{aid,name}] + `ls famList`) · `#a={aid}` 앨범(`famAlbumView`) · `#j={aid}.{초대코드12자}` 초대(`famJoin`, `#` 뒤라 서버로 안 감). 로그인(구글·카카오, `cloudUser`) 필요, 안 돼 있으면 `cloudCard()`. **카톡 안은 설계서와 달리 기본 브라우저로 안 넘김**(카카오 로그인이 카톡 안에서도 되니까). 들어가는 곳: 첫 화면 알약 '📸 가족 앨범'(맨 앞), 맨 위 띠 📸(`.fa-bar`, ⚙ 옆), ⚙ 설정 '연결', 내 MPD 하나 보기·공유 창 '📸 가족 앨범에 올리기'(`famFromMD`)
+- Firestore(REST, 타입 있는 칸): `fsv`/`fsJs`/`fsDoc`, `afetch`(아무 자리, 로그인 표), `afetchRaw(writes)`=`:commit`(여러 개 한 번에), `wSet`/`wPatch`(updateMask, `updateTransforms` cn ±1)/`wDel`, `aList(col, mask)`, `aQuery`(runQuery 조건 하나), `faRc`(replaceChildren은 null을 'null' 글자로 넣어서 빈 것 빼기). 자료: `albums/{aid}`{name,owner,code,t} · `m/{uid}`{name,code,t} · `p/{pid}`{by,t,u,ts,day,lat,lng,mdId?,mdName?,cap,th(240px),sz,lk{uid:true},cn,q?{x,t,n,lock,lb}} · `i/{pid}`{by,img(1280px, 600KB 넘으면 품질 낮춰 다시 `famImg`)} · `c/{cid}`{pid,by,x,t} · `b/{key}`{place,q,u}. `u`는 바뀔 때마다 올리는 시각(실시간용)
+- 규칙 `firestore.rules`(저장소, 기존 shares·rooms·users + albums를 합친 전체): 멤버(`m/{auth.uid}` 있음)만 읽기, 참여는 `code == getAfter(album).code`, ♥는 자기 uid만, 설명은 올린 사람만, 지우기는 본인·주인, list 막음. **사용자가 콘솔 Rules에 통째로 붙여 넣어야 함**. 시험: 에뮬레이터(scratchpad `emu/fs-emu.jar`, `java -jar fs-emu.jar --host 127.0.0.1 --port 8089 --rules firestore.rules`)로 `fa/rules_t.mjs` 47개 통과(예전 shares·rooms·users 동작 포함)
+- 화면: 앨범 머리(이름·'사진 N장 · 댓글 N개 · 가족 N명'·📷 사진 올리기·묶어서/한 장씩/내 사진/댓글 많은 순 `ls famView`·⚙ `famGear`: 사용량 MB, 초대 링크 보내기·새로 만들기(주인), 이름 바꾸기(주인), ✍ Claude 열쇠(`talkKeySheet`), 가족 목록·내 이름·내보내기(주인), 나가기) → 달별 2열 정사각 카드(`.fa-grid`, 글귀 2줄 Gowun Batang, '댓글 4 · ♥ 2'). 꾸러미 카드는 겹친 모양+'5장'. `famBundle` 꾸러미 화면(제목=꾸러미 글귀|MPD 이름|장소|날짜, 장소 이름 ✎ 누구나, 내 MPD면 '이 나들이 보기'). `famPhoto` 크게 보기(어두운 화면, 좌우로 밀기, 아래 패널: 올린 사람·날짜, 설명 ✎(본인), '✍ 댓글로 쓴 글귀' 상자, ♥, 댓글·지우기, Enter 보내기(한글 조합 중 무시), 🗑)
+- 꾸러미 `famBundles`: 같은 mdId → `md_{ID}` / 나머지는 날마다 1km 중심 묶기 / 위치 없는 사진은 그날 묶음이 하나면 합류 / 키 `d_{날짜}_{가장 먼저 올라온 id}`. 시험 `fa/bundle_t.js` 6개 통과
+- 사진첩 올리기: `famExif`(직접 짠 JPEG EXIF: DateTimeOriginal·GPS, 줄이기 전에 읽음. 안드로이드 크롬 사진 고르기는 GPS를 지워서 줄 수 있음 → 그러면 위치 없음) → `famImg`·썸네일 240 → `famPut`(p+i 한 번에). MPD에서: 사진 고르기(기본 전부), 메모 `m` → cap, `mdId`=그 MPD(여행이면 album ID), **집 가리기**(`hideEnds` 켜짐이면 `famHidden`: trimEnds로 잘리는 앞뒤 구간·출발/도착 500m 안 사진은 위치 빼고 올림)
+- 실시간: 열려 있을 때 20초마다 `u > 마지막`·댓글 `t > 마지막`만 가져옴(읽기 아끼기), 3분마다 사진 목록을 `u`칸만 읽어 지운 것 확인, 돌아올 때도. 내보내지면 목록으로
+- 글귀 `famCaption`: 쓰기 전 `q.lock`(60초, 다른 가족이 잡으면 건너뜀), 댓글 최근 30개 '이름: 내용' + 설계서 프롬프트 그대로, 꾸러미면 한 번에 `{"photo","bundle"}`(JSON 뽑기), `famClean`(첫 줄·따옴표·80자). 앨범 열 때 `famCaptionAuto`(cn > q.n, 최근 댓글 순 5장), 내가 댓글 달면 바로. 실패는 조용히(댓글은 남음). SDK는 대화 정리와 같은 `TALK_SDK`. 시험 `fa/e2e.js`(두 사람·틀린 코드·남·가짜 Claude), `fa/md.js`(MPD에서·집 가리기)
+- **Spark 무료 한도**(2026-10-21 확인): 저장 1GiB · 읽기 하루 5만 · 쓰기 하루 2만 · 지우기 하루 2만 · 내려받기 월 10GiB. 사진 한 장 약 0.5~0.7MB(본 사진+썸네일) → 모든 앨범 합쳐 사진 1,500장 안팎이 한계. 목록은 썸네일만, 본 사진은 크게 볼 때만 읽음(`famPhoto.cache`)
+- 아직: 실제 휴대폰 두 대로 확인(규칙 붙여 넣은 뒤), 열쇠 없는 가족이 댓글 달아도 바로 글귀(Blaze+Cloud Function 필요, 안 함), 회사 팀 앨범(슬랙, 나중)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 

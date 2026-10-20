@@ -1,0 +1,114 @@
+rules_version = '2';
+// Map Photo Diary (map-photo-diary) Firestore 규칙 — 콘솔 Firestore → 규칙(Rules)에 통째로 붙여 넣고 게시(Publish)
+// 2026-10-18: shares·rooms·users / 2026-10-21: albums(가족 앨범) 더함
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- 짧은 지도 링크: 읽기(get)만, 새로 만들기만, 고치기·지우기·목록 막음 ----------
+    match /shares/{sid} {
+      allow get: if true;
+      allow list, update, delete: if false;
+      allow create: if sid.size() >= 6 && sid.size() <= 20
+        && request.resource.data.keys().hasOnly(['d', 't'])
+        && request.resource.data.d is string && request.resource.data.d.size() < 900000;
+      match /p/{n} {
+        allow get: if true;
+        allow list, update, delete: if false;
+        allow create: if request.resource.data.keys().hasOnly(['d', 't'])
+          && request.resource.data.d is string && request.resource.data.d.size() < 900000;
+      }
+    }
+
+    // ---------- 모임방·같이 달리기·시계 연결 등 (내용은 휴대폰에서 잠가서 올림) ----------
+    match /rooms/{rid}/{col}/{doc} {
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['d', 't'])
+        && request.resource.data.d is string && request.resource.data.d.size() < 200000;
+    }
+
+    // ---------- 로그인한 본인 칸 (클라우드 맞추기) ----------
+    match /users/{uid}/{col}/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ---------- 가족 앨범 (2026-10-21) ----------
+    function signedIn() { return request.auth != null; }
+    function albumDoc(aid) { return get(/databases/$(database)/documents/albums/$(aid)); }
+    function isMember(aid) { return signedIn() && exists(/databases/$(database)/documents/albums/$(aid)/m/$(request.auth.uid)); }
+    function isOwner(aid) { return signedIn() && albumDoc(aid).data.owner == request.auth.uid; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    match /albums/{aid} {
+      allow list: if false;
+      allow get: if isMember(aid);
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'code', 't'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.code is string && request.resource.data.code.size() == 12;
+      allow update: if isOwner(aid) && changed().hasOnly(['name', 'code', 't'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.code is string && request.resource.data.code.size() == 12;
+      allow delete: if isOwner(aid);
+
+      // 멤버: 초대코드를 아는 로그인 사용자만 자기 문서를 만들 수 있음 (서버 없이 초대)
+      match /m/{uid} {
+        allow read: if isMember(aid);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['name', 'code', 't'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 20
+          && request.resource.data.code == getAfter(/databases/$(database)/documents/albums/$(aid)).data.code;
+        allow update: if signedIn() && request.auth.uid == uid && changed().hasOnly(['name', 't'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 20;
+        allow delete: if signedIn() && (request.auth.uid == uid || isOwner(aid));
+      }
+
+      // 사진 (목록용 썸네일 포함)
+      match /p/{pid} {
+        allow read: if isMember(aid);
+        allow create: if isMember(aid) && request.resource.data.by == request.auth.uid
+          && request.resource.data.keys().hasOnly(['by', 't', 'u', 'ts', 'day', 'lat', 'lng', 'mdId', 'mdName', 'cap', 'th', 'sz', 'lk', 'cn', 'q'])
+          && request.resource.data.cap is string && request.resource.data.cap.size() <= 200
+          && request.resource.data.th is string && request.resource.data.th.size() < 200000;
+        allow update: if isMember(aid) && (
+          // ① 올린 사람이 설명만
+          (resource.data.by == request.auth.uid && changed().hasOnly(['cap', 'u'])
+            && request.resource.data.cap is string && request.resource.data.cap.size() <= 200)
+          // ② 누구나 ♥에서 자기 것만 넣고 빼기
+          || (changed().hasOnly(['lk', 'u']) && request.resource.data.lk.diff(resource.data.lk).affectedKeys().hasOnly([request.auth.uid]))
+          // ③ 댓글 수
+          || (changed().hasOnly(['cn', 'u']) && request.resource.data.cn is int)
+          // ④ Claude 글귀
+          || (changed().hasOnly(['q', 'u']) && request.resource.data.q is map));
+        allow delete: if isMember(aid) && (resource.data.by == request.auth.uid || isOwner(aid));
+      }
+
+      // 본 사진 (크게 볼 때만 읽어서 가볍게)
+      match /i/{pid} {
+        allow read: if isMember(aid);
+        allow create: if isMember(aid) && request.resource.data.by == request.auth.uid
+          && request.resource.data.keys().hasOnly(['by', 'img'])
+          && request.resource.data.img is string && request.resource.data.img.size() < 900000;
+        allow update: if false;
+        allow delete: if isMember(aid) && (resource.data.by == request.auth.uid || isOwner(aid));
+      }
+
+      // 댓글: 고치기 없음
+      match /c/{cid} {
+        allow read: if isMember(aid);
+        allow create: if isMember(aid) && request.resource.data.by == request.auth.uid
+          && request.resource.data.keys().hasOnly(['pid', 'by', 'x', 't'])
+          && request.resource.data.x is string && request.resource.data.x.size() >= 1 && request.resource.data.x.size() <= 300;
+        allow update: if false;
+        allow delete: if isMember(aid) && (resource.data.by == request.auth.uid || isOwner(aid));
+      }
+
+      // 꾸러미: 장소 이름·글귀
+      match /b/{key} {
+        allow read: if isMember(aid);
+        allow create, update: if isMember(aid) && request.resource.data.keys().hasOnly(['place', 'q', 'u'])
+          && (!('place' in request.resource.data) || (request.resource.data.place is string && request.resource.data.place.size() <= 40));
+        allow delete: if isOwner(aid);
+      }
+    }
+  }
+}
