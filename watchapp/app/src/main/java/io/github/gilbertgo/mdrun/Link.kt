@@ -128,5 +128,9 @@ object Link {
             finally { bgBusy = false; Updater.releaseNet(app); if (ch) android.os.Handler(android.os.Looper.getMainLooper()).post(changed) }
         }
     }
+    fun hasBg(c: Context) = bgFile(c).exists()
+    // 기본 사진으로: 받은 사진만 지워요(휴대폰이 새 사진을 보내면 다시 받아요)
+    fun clearBg(c: Context) { bgFile(c).delete() }
+    fun forceBg(c: Context, changed: () -> Unit) { prefs(c).edit().putString("bgT", "").apply(); pullBg(c, changed) }
     fun sent(c: Context, id: String) = prefs(c).getStringSet("linkSent", emptySet())!!.any { it.startsWith("$id:") }
 }
