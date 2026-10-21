@@ -1971,9 +1971,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ MPD Run 앱만 있어도 갤럭시워치 기록이 블루투스로 저절로 들어와요(연결 코드 없이) · 내 MPD 아래 "⌚ 시계 기록은 저절로 와요" 카드에서 받은 개수를 볼 수 있어요 · MPD Run 앱에서 ⌂·처음으로를 누르면 러닝 첫 화면으로 가요(전체 MPD 첫 화면으로 안 가요)';
+const UI_NOTES = '⌚ MPD Run 앱만 있어도 갤럭시워치 기록이 블루투스로 저절로 들어와요(연결 코드 없이) · 내 MPD 아래 "⌚ 시계 기록은 저절로 와요" 카드에서 받은 개수를 볼 수 있어요 · MPD Run 앱에서 ⌂·처음으로를 누르면 러닝 첫 화면으로 가요(전체 MPD 첫 화면으로 안 가요) · ☁ 기록 맞추기가 저절로 돌고 있으면 카드에 "⏳ 맞추는 중"과 몇 개째인지 바로 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3053,6 +3053,7 @@ async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
   cloudProgSet('맞추는 중… 목록 받는 중');
   cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '';
+  document.dispatchEvent(new Event('md-cloud'));   // 카드를 '⏳ 맞추는 중'으로 바로 다시 그려요(2026-10-21 앱 켜자마자 저절로 맞추는 중인데 카드는 '아직 안 맞춤'이라 단추가 반응 없어 보였음)
   // 로그아웃하면 cloudSig가 null로 남아서(2026-10-21 앱에서 'Cannot read properties of null') {}로. 다른 계정(구글↔카카오)으로 바뀌면 처음부터 맞춰요
   const same = ls.get('cloudUid', null) === cloudUser.uid;
   const live = ls.get('walkNow', null), sig = (same && ls.get('cloudSig', null)) || {}, phSent = (same && ls.get('cloudPh', null)) || {};
@@ -3079,9 +3080,10 @@ async function cloudSync(quiet) {
         if (havePh.has(pid)) continue;
         try { const s = await cGet(`ph/${pid}`); if (!s) continue; const ph = JSON.parse(s); if (typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
           await photoPut({ id: pid, t: id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() });
-          phSent[pid] = 1; phDown++; } catch {}
+          phSent[pid] = 1; phDown++; cloudProgSet(`맞추는 중… 받는 중 ${k}/${remote.size} · 사진 ${phDown}장`); } catch {}
       }
       sig[id] = d.sig; local.add(id); down++;
+      ls.set('cloudSig', sig); ls.set('cloudPh', phSent);   // 받은 것도 하나마다 저장(중간에 앱을 닫아도 이어서)
     }
     // 2) 올리기: 여기에만 있거나 여기서 고친 것 (기록 중인 건 끝난 뒤에). 하나 할 때마다 저장해서, 중간에 앱을 닫아도 다음엔 이어서 해요
     let n = 0; const total = local.size;
@@ -3113,7 +3115,8 @@ async function cloudSync(quiet) {
     ls.set('cloudLast', { at: Date.now(), ok: 0, why: String(e && e.message || e).slice(0, 60) }); cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
   cloudBusy = false; cloudProgSet('');
   const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
-  if (down && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); } catch {} location.reload(); return; }
+  let again = false; try { again = Date.now() - +(sessionStorage.getItem('cloudReload') || 0) < 120000; } catch {}   // 받자마자 또 받는 일이 생겨도 다시 불러오기를 되풀이하지 않게
+  if (down && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
   document.dispatchEvent(new Event('md-cloud'));
 }
@@ -3255,7 +3258,7 @@ function cloudCard() {
     else { st = '✅ 다 맞췄어요'; stc = 'var(--pine)'; sub = `${when(L.at)} · 이 휴대폰 기록 ${L.n}개가 모두 클라우드에 있어요${L.ph ? ` · 사진 ${L.ph}장` : ''}`; }
     box.replaceChildren(el('b', { text: `☁ ${via}로 로그인 · ${cloudWho(cloudUser)}` }),
       el('div', { class: 'cl-st', style: `color:${stc}`, text: st }), el('div', { class: 'sub', text: sub }),
-      el('div', { class: 'two' }, el('button', { class: 'btn line' + (cloudBusy ? ' cl-prog' : ''), text: cloudBusy ? (cloudProg || '맞추는 중…') : '↻ 지금 맞추기', onclick: () => { if (!cloudBusy) { cloudSync(false).then(draw); draw(); } } }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
+      el('div', { class: 'two' }, el('button', { class: 'btn line' + (cloudBusy ? ' cl-prog' : ''), text: cloudBusy ? (cloudProg || '맞추는 중…') : '↻ 지금 맞추기', onclick: () => { if (cloudBusy) return toast('이미 맞추는 중이에요. 화면을 켠 채 기다려 주세요'); cloudSync(false).then(draw); draw(); } }), el('button', { class: 'btn line', text: '로그아웃', onclick: cloudLogout })));
   };
   document.addEventListener('md-cloud', draw); draw();
   return box;
