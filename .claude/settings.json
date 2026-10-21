@@ -3,7 +3,10 @@
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "cat \"$CLAUDE_PROJECT_DIR/정한것.md\" 2>/dev/null || true" }
+          {
+            "type": "command",
+            "command": "cat \"$CLAUDE_PROJECT_DIR/정한것.md\" 2>/dev/null || true"
+          }
         ]
       }
     ],
@@ -11,7 +14,20 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-commit.py\"" }
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-commit.py\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-sync.sh\""
+          }
         ]
       }
     ]
