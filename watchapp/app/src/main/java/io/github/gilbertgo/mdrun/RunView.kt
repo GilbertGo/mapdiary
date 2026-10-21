@@ -226,14 +226,16 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val cadNow = Run.cadNow(now)
         val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, hrNow, paceNow, cadNow)
         paint(Color.BLACK); cv.drawCircle(cx, cx, cx, p)
-        val X0 = 20 * u; val X1 = 80 * u
-        val HR0 = 17 * u; val HR1 = 45 * u; val PC0 = 49 * u; val PC1 = 57 * u; val CD0 = 61 * u; val CD1 = 68 * u
+        // 2026-10-21 사용자 '아래 값들을 오른편으로, 왼쪽 축 글씨 키워': 아래 세 칸 줄을 없애고 지금 값을 칸마다 오른쪽에,
+        //   그만큼 칸을 위아래로 넓힘. 왼쪽 칸 이름은 크게(심박 5.4u · 페이스·케이던스 4.4u)
+        val X0 = 25 * u; val X1 = 65 * u; val VX = 90 * u   // VX = 지금 값 오른쪽 끝
+        val HR0 = 15 * u; val HR1 = 46 * u; val PC0 = 51 * u; val PC1 = 62 * u; val CD0 = 67 * u; val CD1 = 78 * u
         // 칸 바탕: 아주 옅은 둥근 판
         for ((t, b) in listOf(HR0 to HR1, PC0 to PC1, CD0 to CD1)) cv.drawRoundRect(RectF(X0 - 1.5f * u, t - 1.2f * u, X1 + 1.5f * u, b + 1.2f * u), 2f * u, 2f * u, paint(alpha(Color.WHITE, 0x12)))
         // 칸 이름은 칸 왼쪽 바깥에(선을 가리지 않게)
-        text(cv, "심박", X0 - 2.6f * u, (HR0 + HR1) / 2 + 1.3f * u, 3.6f * u, Color.WHITE, true, align = Paint.Align.RIGHT)
-        text(cv, "페이스", X0 - 2.6f * u, (PC0 + PC1) / 2 + 1.2f * u, 3.2f * u, CORAL, true, align = Paint.Align.RIGHT)
-        text(cv, "케이던스", X0 - 2.6f * u, (CD0 + CD1) / 2 + 1.2f * u, 3.2f * u, CADC, true, align = Paint.Align.RIGHT)
+        text(cv, "심박", X0 - 2.4f * u, (HR0 + HR1) / 2 + 1.9f * u, 5.4f * u, Color.WHITE, true, align = Paint.Align.RIGHT)
+        text(cv, "페이스", X0 - 2.4f * u, (PC0 + PC1) / 2 + 1.5f * u, 4.4f * u, CORAL, true, align = Paint.Align.RIGHT)
+        text(cv, "케이던스", X0 - 2.4f * u, (CD0 + CD1) / 2 + 1.5f * u, 4.4f * u, CADC, true, align = Paint.Align.RIGHT, max = 0.19f)
         val hs = all.filter { it.hr > 0 }
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
         val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 5).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 5).toFloat()
@@ -243,7 +245,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         for (z in 0 until 5) {
             val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
             if (hi - lo < (hHi - hLo) * .12f) continue
-            text(cv, "${z + 1}", X1 + 3.4f * u, yH((lo + hi) / 2) + 1.5f * u, 4f * u, ZONE[z], true, true)
+            text(cv, "${z + 1}", X1 + 3.2f * u, yH((lo + hi) / 2) + 1.3f * u, 3.6f * u, ZONE[z], true, true)
         }
         if (all.size < 3 || hs.size < 2) {
             text(cv, "달리면 10초마다 그려져요", cx, (HR0 + HR1) / 2 + 1.5f * u, 4.4f * u, Color.parseColor("#C9D1DB"), true)
@@ -282,15 +284,13 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             text(cv, if (el > win) "−20분" else "0분", X0, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.LEFT)
             text(cv, "지금", X1, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.RIGHT)
         }
-        // 아래: 지금 심박(존 색) | 페이스 | 케이던스 크게
-        paint(alpha(Color.WHITE, 0x30)); cv.drawRect(cx - 11 * u, 76 * u, cx - 10.7f * u, 88 * u, p); cv.drawRect(cx + 10.7f * u, 76 * u, cx + 11 * u, 88 * u, p)
+        // 지금 값: 칸마다 오른쪽(심박은 존 색 + 아래 '존1')
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
-        text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 21 * u, 83 * u, 7.4f * u, zc, true, true)
-        text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", cx - 21 * u, 88.5f * u, 3.8f * u, MUTED, true)
-        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx, 83 * u, 7.4f * u, CORAL, true, true)
-        text(cv, "페이스", cx, 88.5f * u, 3.8f * u, MUTED, true)
-        text(cv, cadNow?.toString() ?: "--", cx + 21 * u, 83 * u, 7.4f * u, CADC, true, true)
-        text(cv, "케이던스", cx + 21 * u, 88.5f * u, 3.8f * u, MUTED, true)
+        val hy = (HR0 + HR1) / 2
+        text(cv, if (hrNow > 0) "$hrNow" else "--", VX, hy + 2.4f * u, 8f * u, zc, true, true, Paint.Align.RIGHT, max = 0.16f)
+        text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", VX, hy + 7.4f * u, 3.8f * u, zc, true, align = Paint.Align.RIGHT)
+        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", VX, (PC0 + PC1) / 2 + 2.3f * u, 6.4f * u, CORAL, true, true, Paint.Align.RIGHT, max = 0.21f)
+        text(cv, cadNow?.toString() ?: "--", VX - 1.5f * u, (CD0 + CD1) / 2 + 2.3f * u, 6.4f * u, CADC, true, true, Paint.Align.RIGHT, max = 0.19f)
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
