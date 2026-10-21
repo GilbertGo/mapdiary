@@ -1971,9 +1971,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-13';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.21-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ MPD Run 앱만 있어도 갤럭시워치 기록이 블루투스로 저절로 들어와요(연결 코드 없이) · 내 MPD 아래 "⌚ 시계 기록은 저절로 와요" 카드에서 받은 개수를 볼 수 있어요';
+const UI_NOTES = '⌚ MPD Run 앱만 있어도 갤럭시워치 기록이 블루투스로 저절로 들어와요(연결 코드 없이) · 내 MPD 아래 "⌚ 시계 기록은 저절로 와요" 카드에서 받은 개수를 볼 수 있어요 · MPD Run 앱에서 ⌂·처음으로를 누르면 러닝 첫 화면으로 가요(전체 MPD 첫 화면으로 안 가요)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2532,6 +2532,7 @@ function route() {
   if (qs.get('s')) return viewShareLink();
   if (qs.get('brag')) return viewBragLink();
   if (qs.get('fm')) return viewFoodLink();
+  if (window.MD_APP && window.MD_APP.mode) return location.replace(location.pathname + '?walk=1&mode=' + window.MD_APP.mode);   // MPD Run·파크골프 앱의 '처음'은 그 앱 시작 화면(2026-10-21 사용자 '독립된 달리기에서 메인으로 오네')
   return viewLanding();
 }
 
