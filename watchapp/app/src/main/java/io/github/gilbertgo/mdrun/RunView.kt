@@ -218,93 +218,79 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
 
     // ---------- 심박·페이스 그래프: 파란 띠 = 존2, 빨간 선 = 심박, 산호 선 = 페이스(위로 갈수록 빠름) ----------
     private fun pageGraph(cv: Canvas, now: Long) {
-        // 2026-10-19 사용자가 삼성 '시간별 날씨'와 견줘 보라며 보냄 → 그 화면처럼: 은은한 남색 바탕, 가는 선, 점 위에 값,
-        // 존2는 옅은 띠 + 가는 테두리, 심박 눈금은 데이터에 맞춰(바닥에 깔리지 않게), 시간 눈금 3개, 둥근 화면 안쪽에 여백
+        // 2026-10-21 사용자가 달리며 찍은 영상을 보내며 '시인성 개선': 선 세 개가 한 칸에 겹쳐 무엇이 무엇인지 안 보였음
+        // → 칸을 셋으로 나눔(위 큰 칸 심박 · 가운데 페이스 · 아래 케이던스), 선은 굵고 부드럽게, 심박 선은 그때 존 색으로,
+        //   칸마다 왼쪽에 이름(그 선 색), 오른쪽 끝 점 옆에 지금 값. 위 색 안내 줄은 뺌(칸 이름이 대신)
         val win = 20 * 60000L; val el = now - Run.startAt
         val hrNow = Run.hrNow(now); val paceNow = Run.nowPace(now)
         val cadNow = Run.cadNow(now)
         val all = Run.series.filter { it.t >= el - win } + Run.Sample(el, hrNow, paceNow, cadNow)
-        paint(Color.BLACK); p.shader = android.graphics.LinearGradient(0f, 0f, 0f, W, Color.parseColor("#1B2A44"), Color.parseColor("#05080D"), Shader.TileMode.CLAMP)
-        cv.drawCircle(cx, cx, cx, p); p.shader = null
-        // 제목이 색 안내: '심박'은 흰 선, '페이스'는 산호 선 (2026-10-19 사용자 '심박은 무슨 색? 페이스는 무슨 색?')
-        run { val sz = 4.4f * u; val a1 = "━ 심박"; val a2 = "  ━ 페이스"; val a4 = "  ━ 케이던스"; val a3 = if (el > win) " · 20분" else ""
-            val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val w4 = measure(a4, sz, false); val w3 = if (a3.isEmpty()) 0f else measure(a3, sz, false); var x = cx - (w1 + w2 + w4 + w3) / 2
-            text(cv, a1, x, 19 * u, sz, Color.WHITE, true, align = Paint.Align.LEFT); x += w1
-            text(cv, a2, x, 19 * u, sz, CORAL, true, align = Paint.Align.LEFT); x += w2
-            text(cv, a4, x, 19 * u, sz, CADC, true, align = Paint.Align.LEFT); x += w4
-            if (a3.isNotEmpty()) text(cv, a3, x, 19 * u, sz, MUTED, true, align = Paint.Align.LEFT) }
-        val X0 = 18 * u; val X1 = 82 * u; val Y0 = 33 * u; val Y1 = 62 * u
+        paint(Color.BLACK); cv.drawCircle(cx, cx, cx, p)
+        val X0 = 20 * u; val X1 = 80 * u
+        val HR0 = 17 * u; val HR1 = 45 * u; val PC0 = 49 * u; val PC1 = 57 * u; val CD0 = 61 * u; val CD1 = 68 * u
+        // 칸 바탕: 아주 옅은 둥근 판
+        for ((t, b) in listOf(HR0 to HR1, PC0 to PC1, CD0 to CD1)) cv.drawRoundRect(RectF(X0 - 1.5f * u, t - 1.2f * u, X1 + 1.5f * u, b + 1.2f * u), 2f * u, 2f * u, paint(alpha(Color.WHITE, 0x12)))
+        // 칸 이름은 칸 왼쪽 바깥에(선을 가리지 않게)
+        text(cv, "심박", X0 - 2.6f * u, (HR0 + HR1) / 2 + 1.3f * u, 3.6f * u, Color.WHITE, true, align = Paint.Align.RIGHT)
+        text(cv, "페이스", X0 - 2.6f * u, (PC0 + PC1) / 2 + 1.2f * u, 3.2f * u, CORAL, true, align = Paint.Align.RIGHT)
+        text(cv, "케이던스", X0 - 2.6f * u, (CD0 + CD1) / 2 + 1.2f * u, 3.2f * u, CADC, true, align = Paint.Align.RIGHT)
         val hs = all.filter { it.hr > 0 }
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
-        val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 6).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 6).toFloat()
-        fun yH(h: Int) = Y1 - (Y1 - Y0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-        // 존2 띠: 옅게 + 가는 위아래 선
-        val bt = yH(z2hi); val bb = yH(z2lo)
-        cv.drawRect(X0, bt, X1, bb, paint(alpha(BLUE, 0x26)))
-        paint(alpha(BLUE, 0x90)); p.strokeWidth = .25f * u; cv.drawLine(X0, bt, X1, bt, p); cv.drawLine(X0, bb, X1, bb, p)
-        // 왼쪽에 존 번호(1·2·3…)를 그 높이 가운데에, 존 경계는 아주 옅은 점선 (2026-10-19 사용자가 그림에 1·2·3을 적어 보냄)
+        val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 5).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 5).toFloat()
+        fun yH(h: Float) = HR1 - (HR1 - HR0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
+        // 존2 띠 + 오른쪽에 존 번호(그 존 높이 가운데)
+        cv.drawRect(X0, yH(z2hi.toFloat()), X1, yH(z2lo.toFloat()), paint(alpha(BLUE, 0x2A)))
         for (z in 0 until 5) {
             val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
-            if (hi - lo < (hHi - hLo) * .08f) continue
-            val ym = Y1 - (Y1 - Y0) * (((lo + hi) / 2 - hLo) / (hHi - hLo))
-            text(cv, "${z + 1}", X0 - 2 * u, ym + 1.6f * u, 4.6f * u, ZONE[z], true, true, Paint.Align.RIGHT)
-            if (z > 0 && z != 1 && z != 2 && Run.zoneLo(z) > hLo) { val y = yH(Run.zoneLo(z)); paint(alpha(Color.WHITE, 0x30)); p.strokeWidth = .2f * u
-                p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(.8f * u, .8f * u), 0f); cv.drawLine(X0, y, X1, y, p); p.pathEffect = null }
+            if (hi - lo < (hHi - hLo) * .12f) continue
+            text(cv, "${z + 1}", X1 + 3.4f * u, yH((lo + hi) / 2) + 1.5f * u, 4f * u, ZONE[z], true, true)
         }
         if (all.size < 3 || hs.size < 2) {
-            text(cv, "달리면 10초마다", cx, (bt + bb) / 2 - 1 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
-            text(cv, "그려져요", cx, (bt + bb) / 2 + 5 * u, 4.6f * u, Color.parseColor("#C9D1DB"))
+            text(cv, "달리면 10초마다 그려져요", cx, (HR0 + HR1) / 2 + 1.5f * u, 4.4f * u, Color.parseColor("#C9D1DB"), true)
         } else {
             val t0 = all.first().t.toFloat(); val t1 = maxOf(all.last().t.toFloat(), t0 + 60000f)
             fun xOf(t: Long) = X0 + (X1 - X0) * (t - t0) / (t1 - t0)
-            // 페이스: 옅은 산호 가는 선(위가 빠름, 30초 평균)
-            val sm = all.indices.map { i -> (maxOf(0, i - 2)..minOf(all.size - 1, i + 2)).mapNotNull { j -> all[j].pace?.takeIf { it < 900000 } }.let { l -> if (all[i].pace == null || l.isEmpty()) null else l.average() } }
-            val ps = sm.filterNotNull()
-            if (ps.size >= 2) { val lo = ps.minOrNull()!! - 15000; val hi = ps.maxOrNull()!! + 15000
-                val path = Path(); var first = true
-                all.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = Y0 + (Y1 - Y0) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
-                paint(alpha(CORAL, 0xB0)); p.style = Paint.Style.STROKE; p.strokeWidth = .55f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
-            // 케이던스: 보라 가는 선(1분 걸음 수, 가이드가 켜져 있으면 그 박자를 보라 점선으로) (2026-10-19 사용자 '그래프에 케이던스 측정값도')
+            fun smooth(v: List<Double?>, k: Int) = v.indices.map { i -> if (v[i] == null) null else (maxOf(0, i - k)..minOf(v.size - 1, i + k)).mapNotNull { v[it] }.average() }
+            fun stroke(c: Int, w: Float) { paint(c); p.style = Paint.Style.STROKE; p.strokeWidth = w; p.strokeJoin = Paint.Join.ROUND; p.strokeCap = Paint.Cap.ROUND }
+            // 심박: 굵은 선, 구간마다 그때 존 색
+            val hsm = smooth(hs.map { it.hr.toDouble() }, 2).map { it!!.toFloat() }
+            for (i in 1 until hs.size) { stroke(ZONE[Run.zoneOf(hsm[i].roundToInt())], 1.1f * u)
+                cv.drawLine(xOf(hs[i - 1].t), yH(hsm[i - 1]), xOf(hs[i].t), yH(hsm[i]), p) }
+            val lx = xOf(hs.last().t); val ly = yH(hsm.last())
+            cv.drawCircle(lx, ly, 1.7f * u, paint(Color.WHITE)); cv.drawCircle(lx, ly, 1.0f * u, paint(ZONE[Run.zoneOf(hs.last().hr)]))
+            // 페이스(위가 빠름)
+            val ps = smooth(all.map { it.pace?.takeIf { v -> v < 900000 } }, 3)
+            val pv = ps.filterNotNull()
+            if (pv.size >= 2) { val lo = pv.minOrNull()!! - 10000; val hi = pv.maxOrNull()!! + 10000
+                val path = Path(); var first = true; var ex = 0f; var ey = 0f
+                all.forEachIndexed { i, q -> val v = ps[i] ?: return@forEachIndexed; ex = xOf(q.t); ey = PC0 + (PC1 - PC0) * ((v - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(ex, ey) else path.lineTo(ex, ey); first = false }
+                stroke(CORAL, .85f * u); cv.drawPath(path, p); cv.drawCircle(ex, ey, 1.1f * u, paint(CORAL)) }
+            else text(cv, "--", cx, PC1, 3.6f * u, MUTED, true)
+            // 케이던스 (가이드 켜져 있으면 그 박자를 점선)
             val cs = all.filter { it.cad != null && it.cad > 60 }
             if (cs.size >= 2) {
                 val gOn = Cadence.kind != Cadence.OFF
-                val cLo = (minOf(cs.minOf { it.cad!! }, if (gOn) Cadence.spm else 999) - 6).toFloat(); val cHi = (maxOf(cs.maxOf { it.cad!! }, if (gOn) Cadence.spm else 0) + 6).toFloat()
-                fun yC(c: Int) = Y1 - (Y1 - Y0) * ((c - cLo) / (cHi - cLo)).coerceIn(0f, 1f)
-                if (gOn) { paint(alpha(CADC, 0x70)); p.strokeWidth = .25f * u; p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(1.2f * u, .8f * u), 0f)
-                    cv.drawLine(X0, yC(Cadence.spm), X1, yC(Cadence.spm), p); p.pathEffect = null }
-                val path = Path(); cs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yC(q.cad!!); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
-                paint(alpha(CADC, 0xC0)); p.style = Paint.Style.STROKE; p.strokeWidth = .5f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p)
-            }
-            // 심박: 흰 가는 선 + 아래로 옅은 빛 + 끝 점 위에 지금 값
-            val hsm = hs.indices.map { i -> (maxOf(0, i - 1)..minOf(hs.size - 1, i + 1)).map { hs[it].hr }.average().toFloat() }
-            val line = Path(); hs.forEachIndexed { i, q -> val x = xOf(q.t); val y = Y1 - (Y1 - Y0) * ((hsm[i] - hLo) / (hHi - hLo)).coerceIn(0f, 1f); if (i == 0) line.moveTo(x, y) else line.lineTo(x, y) }
-            val fill = Path(line).apply { lineTo(xOf(hs.last().t), Y1); lineTo(xOf(hs.first().t), Y1); close() }
-            paint(Color.WHITE); p.shader = android.graphics.LinearGradient(0f, Y0, 0f, Y1, alpha(Color.WHITE, 0x40), alpha(Color.WHITE, 0), Shader.TileMode.CLAMP); cv.drawPath(fill, p); p.shader = null
-            paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .6f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(line, p)
-            val lx = xOf(hs.last().t); val ly = yH(hs.last().hr); val z = Run.zoneOf(hs.last().hr)
-            cv.drawCircle(lx, ly, 1.5f * u, paint(Color.WHITE)); cv.drawCircle(lx, ly, .9f * u, paint(ZONE[z]))
-            text(cv, "${hs.last().hr}", minOf(lx, X1 - 3 * u), ly - 3 * u, 4.6f * u, Color.WHITE, true, true)
-            // 가장 높았던 곳에도 값
-            val mi = hs.indices.maxByOrNull { hs[it].hr }!!
-            if (mi < hs.size - 3) { val mx = xOf(hs[mi].t); val my = yH(hs[mi].hr); paint(alpha(Color.WHITE, 0x80)); p.strokeWidth = .25f * u; cv.drawLine(mx, my + 1 * u, mx, Y1, p)
-                text(cv, "${hs[mi].hr}", mx, my - 2 * u, 4f * u, Color.parseColor("#C9D1DB"), true, true) }
-            // 시간 눈금 3개
-            val span = (t1 - t0) / 60000f
-            for ((k, f) in listOf(0f, .5f, 1f).withIndex()) { val x = X0 + (X1 - X0) * f
-                val s = if (k == 2) "지금" else if (el > win) "−${(span * (1 - f)).roundToInt()}분" else "${(t0 / 60000f + span * f).roundToInt()}분"
-                paint(alpha(Color.WHITE, 0x60)); p.strokeWidth = .25f * u; cv.drawLine(x, Y1, x, Y1 + 1.5f * u, p)
-                text(cv, s, x, Y1 + 6 * u, 3.9f * u, MUTED, true, align = if (k == 0) Paint.Align.LEFT else if (k == 2) Paint.Align.RIGHT else Paint.Align.CENTER) }
+                val csm = smooth(cs.map { it.cad!!.toDouble() }, 2).map { it!! }
+                val cLo = minOf(csm.minOrNull()!!, if (gOn) Cadence.spm.toDouble() else 999.0) - 4; val cHi = maxOf(csm.maxOrNull()!!, if (gOn) Cadence.spm.toDouble() else 0.0) + 4
+                fun yC(c: Double) = (CD1 - (CD1 - CD0) * ((c - cLo) / (cHi - cLo)).coerceIn(0.0, 1.0)).toFloat()
+                if (gOn) { stroke(alpha(CADC, 0x80), .3f * u); p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(1.2f * u, .9f * u), 0f)
+                    cv.drawLine(X0, yC(Cadence.spm.toDouble()), X1, yC(Cadence.spm.toDouble()), p); p.pathEffect = null }
+                val path = Path(); cs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yC(csm[i]); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
+                stroke(CADC, .85f * u); cv.drawPath(path, p); cv.drawCircle(xOf(cs.last().t), yC(csm.last()), 1.1f * u, paint(CADC))
+            } else text(cv, "--", cx, CD1, 3.6f * u, MUTED, true)
+            // 시간: 처음 · 지금
+            text(cv, if (el > win) "−20분" else "0분", X0, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.LEFT)
+            text(cv, "지금", X1, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.RIGHT)
         }
-        // 아래: 지금 심박(존 색 하트) | 페이스 | 케이던스, 이름표
-        paint(alpha(Color.WHITE, 0x30)); cv.drawRect(cx - 11 * u, 74 * u, cx - 10.7f * u, 86 * u, p); cv.drawRect(cx + 10.7f * u, 74 * u, cx + 11 * u, 86 * u, p)
+        // 아래: 지금 심박(존 색) | 페이스 | 케이던스 크게
+        paint(alpha(Color.WHITE, 0x30)); cv.drawRect(cx - 11 * u, 76 * u, cx - 10.7f * u, 88 * u, p); cv.drawRect(cx + 10.7f * u, 76 * u, cx + 11 * u, 88 * u, p)
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
-        heart(cv, cx - 28.5f * u, 77.8f * u, 1.4f * u, zc)
-        text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 20.5f * u, 80 * u, 6.4f * u, Color.WHITE, true, true)
-        text(cv, "심박", cx - 21 * u, 86 * u, 3.9f * u, MUTED, true)
-        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx, 80 * u, 6.4f * u, CORAL, true, true)
-        text(cv, "페이스", cx, 86 * u, 3.9f * u, MUTED, true)
-        text(cv, cadNow?.toString() ?: "--", cx + 21 * u, 80 * u, 6.4f * u, CADC, true, true)
-        text(cv, "케이던스", cx + 21 * u, 86 * u, 3.9f * u, MUTED, true)
+        text(cv, if (hrNow > 0) "$hrNow" else "--", cx - 21 * u, 83 * u, 7.4f * u, zc, true, true)
+        text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", cx - 21 * u, 88.5f * u, 3.8f * u, MUTED, true)
+        text(cv, if (paceNow != null) fmtPace(paceNow) else "--", cx, 83 * u, 7.4f * u, CORAL, true, true)
+        text(cv, "페이스", cx, 88.5f * u, 3.8f * u, MUTED, true)
+        text(cv, cadNow?.toString() ?: "--", cx + 21 * u, 83 * u, 7.4f * u, CADC, true, true)
+        text(cv, "케이던스", cx + 21 * u, 88.5f * u, 3.8f * u, MUTED, true)
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
