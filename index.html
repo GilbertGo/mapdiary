@@ -1971,9 +1971,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.23-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.23-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ 시계 분석 그래프가 심박·페이스·고도로 바뀌었어요(케이던스는 아래 표에) · 바닥의 옅은 산 모양이 높이, 아래 줄에 오른 높이 · 갤럭시워치 달린 뒤 화면에도 같은 "한눈에 그래프"가 생겼어요';
+const UI_NOTES = '⌚ 시계 분석 그래프의 심박 선과 바탕을 존마다 다른 색으로 칠했어요(존1 회색 · 존2 파랑 · 존3 주황 · 존4 진한 주황 · 존5 빨강) · 시계 그래프들도 같은 색 바탕';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3371,8 +3371,13 @@ function watchChart(W, t) {
   const hLo = W.mx * 0.5, hHi = W.mx, yH = h => Bt - (Bt - T) * Math.min(1, Math.max(0, (h - hLo) / (hHi - hLo)));
   const sm = s.map((q, i) => { if (!q.p) return null; const l = s.slice(Math.max(0, i - 2), i + 3).map(x => x.p).filter(Boolean); return l.reduce((a, b) => a + b, 0) / l.length; });
   const ps = sm.filter(Boolean), lo = Math.min(...ps) - 1e4, hi = Math.max(...ps) + 1e4, yP = p => T + (Bt - T) * (p - lo) / (hi - lo);
-  let pp = '', hp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
-  f = true; s.forEach(q => { if (!q.hr) return; hp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1); f = false; });
+  let pp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
+  // 심박 선은 그 순간 존 색으로(2026-10-23 사용자 '심박 존 별로 색깔 구분'): 같은 존이 이어지는 동안 한 줄로 묶어 그림
+  const hq = s.filter(q => q.hr); let hz = -1; const hSegs = [];
+  hq.forEach((q, i) => { if (!i) return; const a = hq[i - 1], z = zoneOf(W.mx, (a.hr + q.hr) / 2), pt = xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1);
+    if (z !== hz) { hSegs.push({ z, d: 'M' + xOf(a.t).toFixed(1) + ' ' + yH(a.hr).toFixed(1) + 'L' + pt }); hz = z; } else hSegs[hSegs.length - 1].d += 'L' + pt; });
+  const bands = [0, 1, 2, 3, 4].map(z => { const top = yH(z === 4 ? W.mx * 2 : zoneLo(W.mx, z + 1)), bot = yH(zoneLo(W.mx, z)); return bot - top < 1 ? '' :
+    `<rect x="${L}" y="${top}" width="${R - L}" height="${bot - top}" fill="${ZONE_COL[z]}" opacity="${z === 1 ? .16 : .09}"/><text x="${L + 6}" y="${(top + bot) / 2 + 6}" font-size="17" font-weight="700" fill="${ZONE_COL[z]}" opacity=".9">존${z + 1}</text>`; }).join('');
   // 고도(2026-10-23, 시계와 같이 케이던스 대신): 길 점의 GPS 높이를 바닥 은빛 산으로(아래 42%), 칸 높이 최소 20m. 케이던스는 아래 표에
   const tr = t ? ls.get('track:' + t, []) : [], tr0 = tr.length ? tr[0][2] : 0, ap = tr.filter(q => Number.isFinite(q[3]));
   const aStep = Math.max(1, Math.floor(ap.length / 300)), aps = ap.filter((_, i) => i % aStep === 0 || i === ap.length - 1);
@@ -3385,12 +3390,12 @@ function watchChart(W, t) {
   const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
   box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스 · 고도</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박·페이스·고도 그래프">
     ${aps.length >= 2 ? `<path d="${ap2}L${xA(aps[aps.length - 1][2]).toFixed(1)} ${Bt}L${xA(aps[0][2]).toFixed(1)} ${Bt}Z" fill="rgba(95,122,146,.16)"/><path d="${ap2}" fill="none" stroke="#9FB3C6" stroke-width="2.5" stroke-linejoin="round"/>` : ''}
-    <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
-    ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
-    <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
-    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
+    ${bands}${ticks}
+    ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#8E6BFF" stroke-width="3" stroke-dasharray="7 4" stroke-linejoin="round"/>` : ''}
+    ${hSegs.map(g => `<path d="${g.d}" fill="none" stroke="${ZONE_COL[g.z]}" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+    <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#8E6BFF">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#8E6BFF">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
     <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
-    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span>${aps.length >= 2 ? `<span><b style="color:#9FB3C6">▲</b> 고도 ${Math.round(Math.min(...av))}~${Math.round(Math.max(...av))}m${E ? ` · 오른 높이 ${E.gain}m` : ''}</span>` : ''}<span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
+    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span>심박 <b style="color:${ZONE_COL[0]}">━</b><b style="color:${ZONE_COL[1]}">━</b><b style="color:${ZONE_COL[2]}">━</b><b style="color:${ZONE_COL[3]}">━</b><b style="color:${ZONE_COL[4]}">━</b> 존1→5</span><span><b style="color:#8E6BFF">━</b> 페이스(위가 빠름)</span>${aps.length >= 2 ? `<span><b style="color:#9FB3C6">▲</b> 고도 ${Math.round(Math.min(...av))}~${Math.round(Math.max(...av))}m${E ? ` · 오른 높이 ${E.gain}m` : ''}</span>` : ''}<span>존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
   return box;
 }
 function watchAnalysis(t) {
