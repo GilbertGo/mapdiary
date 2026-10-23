@@ -297,6 +297,21 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             cv.drawRoundRect(X0 - 1f * u, my - 4.4f * u, X1 + 1f * u, my + 2.2f * u, 3.3f * u, 3.3f * u, paint(Color.argb(0xD0, 0x1C, 0x22, 0x2B)))
             text(cv, why, (X0 + X1) / 2, my, 3.8f * u, Color.parseColor("#FFB4A8"), true, max = (X1 - X0 + 1f * u) / (100f * u))
         }
+        // 페이스가 안 나올 때도 까닭을 페이스 칸에 (2026-10-23 사용자 '페이스 안나오는 경우?')
+        if (paceNow == null && Run.id != null && el > 30000) {
+            val last = Run.pts.lastOrNull()?.t ?: 0L
+            val why = when {
+                Run.manualPause -> "잠시 멈춤 중"
+                !Run.gpsOn || Run.lastAcc < 0 -> "GPS 찾는 중"
+                now - Run.fixT > 15000 -> "GPS 신호가 끊겼어요"
+                Run.lastAcc > TRACK_MAX_ACC -> "GPS 약해요 · 오차 ${Run.lastAcc.roundToInt()}m"
+                now - last > PAUSE_MS -> "멈춰 있어요 · 달리면 나와요"
+                else -> "조금 더 달리면 나와요"
+            }
+            val my = (PC0 + PC1) / 2 + 1.3f * u
+            cv.drawRoundRect(X0 - 1f * u, my - 4.4f * u, X1 + 1f * u, my + 2.2f * u, 3.3f * u, 3.3f * u, paint(Color.argb(0xD0, 0x1C, 0x22, 0x2B)))
+            text(cv, why, (X0 + X1) / 2, my, 3.8f * u, Color.parseColor("#FFC9A8"), true, max = (X1 - X0 + 1f * u) / (100f * u))
+        }
         // 지금 값: 칸마다 오른쪽(심박은 존 색 + 아래 '존1')
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
         val hy = (HR0 + HR1) / 2

@@ -91,6 +91,7 @@ object Run {
     var manualPause = false
     private var brk = false   // 멈췄다 다시 달리면 그 사이는 거리에 안 넣어요
     var lastAcc = -1f
+    var fixT = 0L   // 마지막으로 GPS 위치가 온 때(버린 점 포함)
     var gpsOn = false
     // 심박
     var hrEvT = 0L; var hrNoContact = false; var hrPerm = true   // 심박 센서 상태: 마지막으로 값이 온 때 · 손목에 안 닿음 · 권한
@@ -127,7 +128,7 @@ object Run {
 
     // ---------- 위치 ----------
     fun addPoint(lat: Double, lng: Double, acc: Float, alt: Double?, now: Long): Boolean {
-        lastAcc = acc; gpsOn = true
+        lastAcc = acc; gpsOn = true; fixT = now
         if (id == null || manualPause || acc > TRACK_MAX_ACC) return false
         val last = pts.lastOrNull()
         if (last != null && dist(last.lat, last.lng, lat, lng) < TRACK_MIN_M) return false
