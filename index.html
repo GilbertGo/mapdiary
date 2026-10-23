@@ -1408,9 +1408,12 @@ function movingMs(tr, kmh) {
 const NOW_PACE_MS = 30000;
 function nowPace(tr) {
   const n = tr.length; if (n < 2) return null;
-  const t1 = tr[n - 1][2]; if (Date.now() - t1 > 15000) return null;
+  // 2026-10-23 걸을 때 안 나왔음: 15m마다 점이라 걸으면 12~15초마다 와서 '15초 지나면 멈춤'·'30초 안 50m'를 못 채웠음
+  //   → 기다리는 시간은 지난 점 간격의 1.6배(15~40초), 50m가 찰 때까지 더 거슬러 봄(2분 안)
+  const t1 = tr[n - 1][2], gap0 = t1 - tr[n - 2][2];
+  if (Date.now() - t1 > Math.max(15000, Math.min(40000, gap0 * 1.6))) return null;
   let d = 0, t = 0;
-  for (let i = n - 1; i > 0 && t < NOW_PACE_MS && t1 - tr[i - 1][2] <= 120000; i--) {
+  for (let i = n - 1; i > 0 && (t < NOW_PACE_MS || d < 50) && t1 - tr[i - 1][2] <= 120000; i--) {
     const dt = tr[i][2] - tr[i - 1][2], dd = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
     if (dt > 0 && dd / (dt / 1000) >= 0.7) { d += dd; t += dt; }
   }
@@ -1971,9 +1974,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.23-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.23-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ 시계 분석 그래프의 심박 선과 바탕을 존마다 다른 색으로 칠했어요(존1 회색 · 존2 파랑 · 존3 주황 · 존4 진한 주황 · 존5 빨강) · 시계 그래프들도 같은 색 바탕';
+const UI_NOTES = '걸을 때도 지금 페이스가 나와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
