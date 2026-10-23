@@ -153,9 +153,12 @@ object Run {
     // 현재 페이스: 최근에 움직인 30초 (멈춘 구간은 건너뛰고 2분 전까지)
     fun nowPace(now: Long): Double? {
         val n = pts.size; if (n < 2 || manualPause) return null
-        val t1 = pts[n - 1].t; if (now - t1 > PAUSE_MS) return null
+        // 2026-10-23 걸을 때 안 나왔음: 15m마다 점이라 걸으면 12~15초마다 와서 '15초 지나면 멈춤'·'30초 안 50m'를 못 채웠음
+        //   → 기다리는 시간은 지난 점 간격의 1.6배(15~40초), 50m가 찰 때까지 더 거슬러 봄(2분 안)
+        val t1 = pts[n - 1].t; val gap0 = t1 - pts[n - 2].t
+        if (now - t1 > maxOf(PAUSE_MS, minOf(40000L, (gap0 * 1.6).toLong()))) return null
         var d = 0.0; var t = 0L; var i = n - 1
-        while (i > 0 && t < 30000 && t1 - pts[i - 1].t <= 120000) {
+        while (i > 0 && (t < 30000 || d < 50) && t1 - pts[i - 1].t <= 120000) {
             val dt = pts[i].t - pts[i - 1].t; val dd = dist(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng)
             if (dt > 0 && dd / (dt / 1000.0) >= 0.7) { d += dd; t += dt }
             i--
