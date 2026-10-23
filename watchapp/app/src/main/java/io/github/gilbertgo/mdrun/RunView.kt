@@ -301,12 +301,10 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         if (up != null) text(cv, "↑ ${up}m", VX - 2.5f * u, CD1 + 2.2f * u, 3.6f * u, MUTED, true, true, Paint.Align.RIGHT)
     }
 
-    // 오른 높이(m): 5점 평균한 높이가 바로 전 기준보다 4m 넘게 오를 때만 더함, 내려가면 기준을 낮춤
+    // 오른 높이(m): gainOf(Report.kt, 휴대폰 elevStats와 같은 셈)
     private fun altGain(): Int? {
         val a = Run.pts.mapNotNull { it.alt }; if (a.size < 5) return null
-        var base = a.take(5).average(); var up = 0.0
-        for (i in 2 until a.size - 2) { val m = (a[i - 2] + a[i - 1] + a[i] + a[i + 1] + a[i + 2]) / 5; if (m - base > 4) { up += m - base; base = m } else if (m < base) base = m }
-        return up.roundToInt()
+        return gainOf(a)
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
