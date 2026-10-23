@@ -19,6 +19,14 @@ import kotlin.math.sqrt
 // 달리고 나서 자세히 보기 (2026-10-19, 사용자 '달리고 나서 데이터 보고 자세히 분석하는 기능'):
 // 저장한 기록 하나로 ① 요약 ② 한눈에 보기(페이스 흐름·존2·심박 드리프트·케이던스·자세 판단 글) ③ 심박·페이스 그래프
 // ④ 심박 존 시간 ⑤ 1km 구간 전부 ⑥ 케이던스·자세 평균 을 위에서 아래로 그려요(용두로 내려 봄)
+// 오른 높이(m): 휴대폰 index.html elevStats와 똑같이 — 앞뒤 2점(5점) 평균, 기준보다 4m 넘게 오르면 더하고 4m 넘게 내리면 기준만 내림
+fun gainOf(a: List<Double>): Int {
+    val h = a.indices.map { i -> (maxOf(0, i - 2)..minOf(a.size - 1, i + 2)).map { a[it] }.average() }
+    var up = 0.0; var ref = h[0]
+    for (v in h) { if (v - ref > 4) { up += v - ref; ref = v } else if (ref - v > 4) ref = v }
+    return up.roundToInt()
+}
+
 class Report(o: JSONObject) {
     class Note(val title: String, val detail: String, val col: Int)
     val id = o.optString("id"); val name = o.optString("name"); val at = o.optLong("at")
@@ -31,6 +39,12 @@ class Report(o: JSONObject) {
     val splits: List<Long> = JSONArray(o.optJSONObject("data")?.optString("walkSplits:$id", "[]") ?: "[]").let { a -> (0 until a.length()).map { a.getLong(it) } }
     val series: List<Run.Sample> = o.optJSONArray("series")?.let { a -> (0 until a.length()).map { Run.sampleOf(a.getJSONArray(it)) } } ?: emptyList()
     val avgPace: Double? = if (walk > 50 && moving > 0) moving / (walk / 1000) else null
+    // 고도: 길 점의 4번째 값(GPS 높이, m) → (시작부터 ms, 높이)
+    val alts: List<Pair<Long, Double>> = try { JSONArray(o.optJSONObject("data")?.optString("track:$id", "[]") ?: "[]").let { a ->
+        (0 until a.length()).mapNotNull { k -> val q = a.optJSONArray(k); if (q != null && q.length() >= 4 && !q.isNull(3)) (q.optLong(2) - at) to q.optDouble(3) else null } } } catch (e: Exception) { emptyList() }
+    // 오른 높이(m): gainOf(휴대폰 elevStats와 같은 셈)
+    val gain: Int? = alts.map { it.second }.let { a -> if (a.size < 5) null else {
+        gainOf(a) } }
     fun zoneLo(z: Int) = (hrMaxSet * (.5 + .1 * z)).roundToInt()
 
     // 심박 드리프트(%): 앞 절반과 뒤 절반의 '속도 ÷ 심박'이 얼마나 떨어졌는지. 처음 10분(몸 푸는 시간)은 빼요
@@ -237,6 +251,54 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         val t0 = s.firstOrNull()?.t?.toFloat() ?: 0f; val t1 = maxOf(s.lastOrNull()?.t?.toFloat() ?: 0f, t0 + 60000f)
         fun xOf(t: Long) = gL + (gR - gL) * (t - t0) / (t1 - t0)
         val sm = smooth(s); val ps = sm.filterNotNull()
+
+        // ①-2 한눈에 그래프(2026-10-23 사용자 '세 그래프를 합치면?' → 추천대로 달린 뒤 화면에): 달리는 중엔 세 칸이 잘 읽히고,
+        //   달린 뒤엔 한 칸에 겹쳐 '오르막에서 심박이 오르고 페이스가 떨어진' 관계를 봄. 바닥 은빛 산 = 고도(아래 42%),
+        //   산호 선 = 페이스(위가 빠름, 위 62%), 굵은 선 = 심박(그때 존 색) + 존2 띠
+        val hsAll = s.filter { it.hr > 0 }
+        val al = r.alts.let { a -> val st = maxOf(1, a.size / 160); a.filterIndexed { i, _ -> i % st == 0 || i == a.size - 1 } }
+        if (hsAll.size >= 2 || ps.size >= 2 || al.size >= 2) {
+            y = title(cv, "한눈에 그래프", y)
+            var lx = L + 2 * u
+            for ((t, col) in listOf("━ 심박" to BLUE, "━ 페이스" to CORAL, "▲ 고도" to RunView.ALTC)) {
+                text(cv, t, lx, y + 1 * u, 4.4f * u, col, true, al = Paint.Align.LEFT); lx += (t.length * 3.6f + 4f) * u }
+            y += 4 * u
+            val gt = y + 2 * u; val gb = y + 32 * u
+            if (cv != null) {
+                if (al.size >= 2) {
+                    val av = al.indices.map { i -> (maxOf(0, i - 3)..minOf(al.size - 1, i + 3)).map { al[it].second }.average() }
+                    var aLo = av.minOrNull()!!; var aHi = av.maxOrNull()!!; if (aHi - aLo < 20) { val m = (aHi + aLo) / 2; aLo = m - 10; aHi = m + 10 }
+                    fun yA(a: Double) = (gb - (gb - gt) * .42 * ((a - aLo) / (aHi - aLo)).coerceIn(0.0, 1.0)).toFloat()
+                    fun xA(t: Long) = xOf(t).coerceIn(gL, gR)
+                    val area = Path(); val line = Path()
+                    al.forEachIndexed { i, q -> val x = xA(q.first); val yy = yA(av[i]); if (i == 0) { area.moveTo(x, gb); area.lineTo(x, yy); line.moveTo(x, yy) } else { area.lineTo(x, yy); line.lineTo(x, yy) } }
+                    area.lineTo(xA(al.last().first), gb); area.close()
+                    cv.drawPath(area, paint(RunView.alpha(RunView.ALTC, 0x2A)))
+                    paint(RunView.alpha(RunView.ALTC, 0x90)); p.style = Paint.Style.STROKE; p.strokeWidth = .5f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(line, p)
+                }
+                if (hsAll.size >= 2) {
+                    val hLo = (minOf(hsAll.minOf { it.hr }, r.zoneLo(1)) - 5).toFloat(); val hHi = (maxOf(hsAll.maxOf { it.hr }, r.zoneLo(2)) + 5).toFloat()
+                    fun yH(h: Int) = gb - (gb - gt) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
+                    cv.drawRect(gL, yH(r.zoneLo(2)), gR, yH(r.zoneLo(1)), paint(RunView.alpha(BLUE, 0x24)))
+                    if (ps.size >= 2) { val fast = ps.minOrNull()!!; val slow = maxOf(ps.maxOrNull()!!, fast + 1); val path = Path(); var first = true
+                        s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gt + (gb - gt) * .62f * ((pc - fast) / (slow - fast)).toFloat(); if (first) path.moveTo(x, yy) else path.lineTo(x, yy); first = false }
+                        paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
+                    paint(BLUE); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeCap = Paint.Cap.ROUND
+                    for (i in 1 until hsAll.size) { val a = hsAll[i - 1]; val b = hsAll[i]
+                        p.color = RunView.ZONE[((a.hr + b.hr) / 2.0 / r.hrMaxSet).let { f -> when { f < .6 -> 0; f < .7 -> 1; f < .8 -> 2; f < .9 -> 3; else -> 4 } }]
+                        cv.drawLine(xOf(a.t), yH(a.hr), xOf(b.t), yH(b.hr), p) }
+                } else if (ps.size >= 2) { val fast = ps.minOrNull()!!; val slow = maxOf(ps.maxOrNull()!!, fast + 1); val path = Path(); var first = true
+                    s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gt + (gb - gt) * .62f * ((pc - fast) / (slow - fast)).toFloat(); if (first) path.moveTo(x, yy) else path.lineTo(x, yy); first = false }
+                    paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; cv.drawPath(path, p) }
+                paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(gL, gb, gR, gb, p)
+            }
+            y = gb + 5 * u
+            text(cv, "0", gL, y, 4.2f * u, MUTED, num = true, al = Paint.Align.LEFT)
+            text(cv, fmtTime((s.lastOrNull()?.t ?: al.lastOrNull()?.first ?: 0L) - (s.firstOrNull()?.t ?: 0L)), gR, y, 4.2f * u, MUTED, num = true, al = Paint.Align.RIGHT)
+            y += 8 * u
+            if (r.gain != null) { kv(cv, "오른 높이", "${r.gain} m", y); y += 5 * u }
+            rule(cv, y); y += 12 * u
+        }
 
         // ② 페이스
         if (ps.size >= 2 && r.avgPace != null) {

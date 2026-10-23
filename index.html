@@ -1971,9 +1971,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.21-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.23-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ MPD Run 앱만 있어도 갤럭시워치 기록이 블루투스로 저절로 들어와요(연결 코드 없이) · 내 MPD 아래 "⌚ 시계 기록은 저절로 와요" 카드에서 받은 개수를 볼 수 있어요 · MPD Run 앱에서 ⌂·처음으로를 누르면 러닝 첫 화면으로 가요(전체 MPD 첫 화면으로 안 가요) · ☁ 기록 맞추기가 저절로 돌고 있으면 카드에 "⏳ 맞추는 중"과 몇 개째인지 바로 보여요';
+const UI_NOTES = '⌚ 시계 분석 그래프가 심박·페이스·고도로 바뀌었어요(케이던스는 아래 표에) · 바닥의 옅은 산 모양이 높이, 아래 줄에 오른 높이 · 갤럭시워치 달린 뒤 화면에도 같은 "한눈에 그래프"가 생겼어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3364,7 +3364,7 @@ function watchNotes(t, W) {
   if (W.g != null && W.g > 4) out.push(['🦶', `착지 충격이 세요 ${W.g.toFixed(1)}G`, '발을 몸 바로 아래에 살짝 내려놓듯. 보폭을 줄이면 충격도 줄어요.', G]);
   return out;
 }
-function watchChart(W) {
+function watchChart(W, t) {
   const s0 = W.ser; if (s0.length < 2) return null;
   const step = Math.max(1, Math.floor(s0.length / 300)), s = s0.filter((_, i) => i % step === 0 || i === s0.length - 1);
   const Wd = 600, Ht = 300, L = 54, R = 590, T = 30, Bt = 256, t0 = s[0].t, t1 = Math.max(s[s.length - 1].t, t0 + 6e4), xOf = t => L + (R - L) * (t - t0) / (t1 - t0);
@@ -3373,20 +3373,24 @@ function watchChart(W) {
   const ps = sm.filter(Boolean), lo = Math.min(...ps) - 1e4, hi = Math.max(...ps) + 1e4, yP = p => T + (Bt - T) * (p - lo) / (hi - lo);
   let pp = '', hp = '', f = true; s.forEach((q, i) => { if (sm[i] == null) return; pp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yP(sm[i]).toFixed(1); f = false; });
   f = true; s.forEach(q => { if (!q.hr) return; hp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yH(q.hr).toFixed(1); f = false; });
-  // 케이던스(2026-10-19, 사용자 '그래프에 케이던스 측정값도'): 보라 선, 자기 눈금(위가 높음)
-  const cs = s.map((q, i) => { if (!q.cad) return null; const l = s.slice(Math.max(0, i - 2), i + 3).map(x => x.cad).filter(Boolean); return l.reduce((a, b) => a + b, 0) / l.length; });
-  const cv = cs.filter(Boolean), cLo = cv.length ? Math.min(...cv) - 6 : 0, cHi = cv.length ? Math.max(...cv) + 6 : 1, yC = c => Bt - (Bt - T) * (c - cLo) / (cHi - cLo);
-  let cp = ''; f = true; s.forEach((q, i) => { if (cs[i] == null) return; cp += (f ? 'M' : 'L') + xOf(q.t).toFixed(1) + ' ' + yC(cs[i]).toFixed(1); f = false; });
+  // 고도(2026-10-23, 시계와 같이 케이던스 대신): 길 점의 GPS 높이를 바닥 은빛 산으로(아래 42%), 칸 높이 최소 20m. 케이던스는 아래 표에
+  const tr = t ? ls.get('track:' + t, []) : [], tr0 = tr.length ? tr[0][2] : 0, ap = tr.filter(q => Number.isFinite(q[3]));
+  const aStep = Math.max(1, Math.floor(ap.length / 300)), aps = ap.filter((_, i) => i % aStep === 0 || i === ap.length - 1);
+  const av = aps.map((_, i) => { const l = aps.slice(Math.max(0, i - 3), i + 4); return l.reduce((a, q) => a + q[3], 0) / l.length; });
+  let aLo = av.length ? Math.min(...av) : 0, aHi = av.length ? Math.max(...av) : 1; if (aHi - aLo < 20) { const m = (aHi + aLo) / 2; aLo = m - 10; aHi = m + 10; }
+  const yA = a => Bt - (Bt - T) * 0.42 * (a - aLo) / (aHi - aLo), xA = ts => Math.min(R, Math.max(L, xOf(ts - tr0)));
+  let ap2 = ''; aps.forEach((q, i) => { ap2 += (i ? 'L' : 'M') + xA(q[2]).toFixed(1) + ' ' + yA(av[i]).toFixed(1); });
+  const E = aps.length >= 2 ? elevStats(tr) : null;
   const ticks = [1, 2, 3, 4].map(z => `<line x1="${L}" x2="${R}" y1="${yH(zoneLo(W.mx, z))}" y2="${yH(zoneLo(W.mx, z))}" stroke="#D6E5F1" stroke-dasharray="3 4"/><text x="${L - 6}" y="${yH(zoneLo(W.mx, z)) + 7}" text-anchor="end" font-size="20" fill="#5F7A92">${zoneLo(W.mx, z)}</text>`).join('');
   const box = el('div', { class: 'card stack', style: 'gap:6px;padding:14px 16px' });
-  box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스 · 케이던스</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박·페이스·케이던스 그래프">
+  box.innerHTML = `<b style="color:var(--pine)">심박 · 페이스 · 고도</b><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" aria-label="심박·페이스·고도 그래프">
+    ${aps.length >= 2 ? `<path d="${ap2}L${xA(aps[aps.length - 1][2]).toFixed(1)} ${Bt}L${xA(aps[0][2]).toFixed(1)} ${Bt}Z" fill="rgba(95,122,146,.16)"/><path d="${ap2}" fill="none" stroke="#9FB3C6" stroke-width="2.5" stroke-linejoin="round"/>` : ''}
     <rect x="${L}" y="${yH(zoneLo(W.mx, 2))}" width="${R - L}" height="${yH(zoneLo(W.mx, 1)) - yH(zoneLo(W.mx, 2))}" fill="rgba(2,119,189,.12)"/>${ticks}
     ${ps.length >= 2 ? `<path d="${pp}" fill="none" stroke="#FF8A4C" stroke-width="3.5" stroke-linejoin="round"/>` : ''}
-    ${cv.length >= 2 ? `<path d="${cp}" fill="none" stroke="#8E6BFF" stroke-width="3" stroke-linejoin="round" opacity=".85"/>` : ''}
     <path d="${hp}" fill="none" stroke="#E53950" stroke-width="4" stroke-linejoin="round"/>
     <text x="${R}" y="${T - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.min(...ps)) : ''}</text><text x="${R}" y="${Bt - 8}" text-anchor="end" font-size="21" fill="#FF8A4C">${ps.length ? paceTxt(Math.max(...ps)) : ''}</text>
     <text x="${L}" y="${Ht - 4}" font-size="21" fill="#5F7A92">0분</text><text x="${R}" y="${Ht - 4}" text-anchor="end" font-size="21" fill="#5F7A92">${Math.round((t1 - t0) / 6e4)}분</text></svg>
-    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span>${cv.length >= 2 ? `<span><b style="color:#8E6BFF">━</b> 케이던스 ${Math.round(Math.min(...cv))}~${Math.round(Math.max(...cv))}</span>` : ''}<span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
+    <div class="sub" style="font-size:13px;display:flex;gap:14px;flex-wrap:wrap"><span><b style="color:#E53950">━</b> 심박</span><span><b style="color:#FF8A4C">━</b> 페이스(위가 빠름)</span>${aps.length >= 2 ? `<span><b style="color:#9FB3C6">▲</b> 고도 ${Math.round(Math.min(...av))}~${Math.round(Math.max(...av))}m${E ? ` · 오른 높이 ${E.gain}m` : ''}</span>` : ''}<span><b style="color:#0277BD">▬</b> 존2 ${zoneLo(W.mx, 1)}~${zoneLo(W.mx, 2) - 1}</span></div>`;
   return box;
 }
 function watchAnalysis(t) {
@@ -3397,7 +3401,7 @@ function watchAnalysis(t) {
     el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '⌚ 시계 분석' }), H.avg ? el('span', { class: 'sub', text: `심박 평균 ${H.avg} · 최고 ${H.max}` }) : null),
     notes.length ? notes.map(([i, a, b, c]) => el('div', { class: 'row', style: 'gap:10px;align-items:flex-start' }, el('span', { style: 'font-size:20px;line-height:1.3', text: i }),
       el('div', { class: 'grow' }, el('div', { style: `font-weight:700;color:${c}`, text: a }), el('div', { class: 'sub', style: 'font-size:14px', text: b })))) : el('div', { class: 'sub', text: '1km 넘게 달리면 자세히 분석해 드려요.' })));
-  const ch = watchChart(W); if (ch) wrap.append(ch);
+  const ch = watchChart(W, t); if (ch) wrap.append(ch);
   if (zt > 0) wrap.append(el('div', { class: 'card stack', style: 'gap:8px;padding:14px 16px' },
     el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '심박 존' }), el('span', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준` })),
     [4, 3, 2, 1, 0].map(z => el('div', { class: 'row', style: 'gap:8px;align-items:center' },
