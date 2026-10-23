@@ -254,13 +254,13 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
 
         // ①-2 한눈에 그래프(2026-10-23 사용자 '세 그래프를 합치면?' → 추천대로 달린 뒤 화면에): 달리는 중엔 세 칸이 잘 읽히고,
         //   달린 뒤엔 한 칸에 겹쳐 '오르막에서 심박이 오르고 페이스가 떨어진' 관계를 봄. 바닥 은빛 산 = 고도(아래 42%),
-        //   산호 선 = 페이스(위가 빠름, 위 62%), 굵은 선 = 심박(그때 존 색) + 존2 띠
+        //   보라 선 = 페이스(위가 빠름, 위 62%. 2026-10-23 존4 산호와 헷갈려 보라로), 굵은 선 = 심박(그때 존 색) + 존2 띠
         val hsAll = s.filter { it.hr > 0 }
         val al = r.alts.let { a -> val st = maxOf(1, a.size / 160); a.filterIndexed { i, _ -> i % st == 0 || i == a.size - 1 } }
         if (hsAll.size >= 2 || ps.size >= 2 || al.size >= 2) {
             y = title(cv, "한눈에 그래프", y)
             var lx = L + 2 * u
-            for ((t, col) in listOf("━ 심박" to BLUE, "━ 페이스" to CORAL, "▲ 고도" to RunView.ALTC)) {
+            for ((t, col) in listOf("━ 심박" to BLUE, "━ 페이스" to RunView.CADC, "▲ 고도" to RunView.ALTC)) {
                 text(cv, t, lx, y + 1 * u, 4.4f * u, col, true, al = Paint.Align.LEFT); lx += (t.length * 3.6f + 4f) * u }
             y += 4 * u
             val gt = y + 2 * u; val gb = y + 32 * u
@@ -279,17 +279,17 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
                 if (hsAll.size >= 2) {
                     val hLo = (minOf(hsAll.minOf { it.hr }, r.zoneLo(1)) - 5).toFloat(); val hHi = (maxOf(hsAll.maxOf { it.hr }, r.zoneLo(2)) + 5).toFloat()
                     fun yH(h: Int) = gb - (gb - gt) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-                    cv.drawRect(gL, yH(r.zoneLo(2)), gR, yH(r.zoneLo(1)), paint(RunView.alpha(BLUE, 0x24)))
+                    zoneBands(cv, gL, gR) { yH(it) }
                     if (ps.size >= 2) { val fast = ps.minOrNull()!!; val slow = maxOf(ps.maxOrNull()!!, fast + 1); val path = Path(); var first = true
                         s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gt + (gb - gt) * .62f * ((pc - fast) / (slow - fast)).toFloat(); if (first) path.moveTo(x, yy) else path.lineTo(x, yy); first = false }
-                        paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
+                        paint(RunView.CADC); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
                     paint(BLUE); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeCap = Paint.Cap.ROUND
                     for (i in 1 until hsAll.size) { val a = hsAll[i - 1]; val b = hsAll[i]
                         p.color = RunView.ZONE[((a.hr + b.hr) / 2.0 / r.hrMaxSet).let { f -> when { f < .6 -> 0; f < .7 -> 1; f < .8 -> 2; f < .9 -> 3; else -> 4 } }]
                         cv.drawLine(xOf(a.t), yH(a.hr), xOf(b.t), yH(b.hr), p) }
                 } else if (ps.size >= 2) { val fast = ps.minOrNull()!!; val slow = maxOf(ps.maxOrNull()!!, fast + 1); val path = Path(); var first = true
                     s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gt + (gb - gt) * .62f * ((pc - fast) / (slow - fast)).toFloat(); if (first) path.moveTo(x, yy) else path.lineTo(x, yy); first = false }
-                    paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; cv.drawPath(path, p) }
+                    paint(RunView.CADC); p.style = Paint.Style.STROKE; p.strokeWidth = .7f * u; cv.drawPath(path, p) }
                 paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(gL, gb, gR, gb, p)
             }
             y = gb + 5 * u
@@ -335,6 +335,7 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
                     s.forEachIndexed { i, q -> val pc = sm[i] ?: return@forEachIndexed; val x = xOf(q.t); val yy = gb - (gb - gt) * .55f * ((slow - pc) / (slow - fast)).toFloat().coerceIn(0f, 1f)
                         if (first) { area.moveTo(x, gb); area.lineTo(x, yy) } else area.lineTo(x, yy); first = false; lastX = x }
                     area.lineTo(lastX, gb); area.close(); cv.drawPath(area, paint(Color.parseColor("#2B3038"))) }
+                zoneBands(cv, gL, gR) { yH(it) }
                 paint(RunView.LINE); p.strokeWidth = .35f * u; cv.drawLine(gL, gb, gR, gb, p)
                 p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeCap = Paint.Cap.ROUND
                 for (i in 1 until hs.size) { val a = hs[i - 1]; val b = hs[i]
@@ -379,13 +380,19 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         return y + 6 * u
     }
 
+    // 존마다 옅은 바탕 띠(존2만 조금 진하게). yH는 칸 밖이면 가장자리로 붙여 주는 함수라 그대로 써요
+    private fun zoneBands(cv: Canvas, x0: Float, x1: Float, yH: (Int) -> Float) {
+        for (z in 0 until 5) { val a = yH(if (z == 4) r.hrMaxSet + 60 else r.zoneLo(z + 1)); val b = yH(r.zoneLo(z))
+            if (b - a > .5f) cv.drawRect(x0, a, x1, b, paint(RunView.alpha(RunView.ZONE[z], if (z == 1) 0x34 else 0x16))) }
+    }
+
     private fun graph(cv: Canvas, top: Float, bot: Float) {
         val all = r.series; val step = maxOf(1, all.size / 160); val s = all.filterIndexed { i, _ -> i % step == 0 || i == all.size - 1 }
         val t0 = s.first().t.toFloat(); val t1 = maxOf(s.last().t.toFloat(), t0 + 60000f)
         fun xOf(t: Long) = L + (R - L) * (t - t0) / (t1 - t0)
         val hLo = r.hrMaxSet * .5f; val hHi = r.hrMaxSet.toFloat()
         fun yH(h: Int) = bot - (bot - top) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
-        cv.drawRect(L, yH(r.zoneLo(2)), R, yH(r.zoneLo(1)), paint(RunView.alpha(BLUE, 0x38)))
+        zoneBands(cv, L, R) { yH(it) }
         paint(RunView.LINE); p.strokeWidth = .3f * u; cv.drawLine(L, bot, R, bot, p)
         val sm = s.indices.map { i -> (maxOf(0, i - 2)..minOf(s.size - 1, i + 2)).mapNotNull { j -> s[j].pace?.takeIf { it < 900000 } }.let { l -> if (s[i].pace == null || l.isEmpty()) null else l.average() } }
         val ps = sm.filterNotNull()
@@ -393,8 +400,10 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
             s.forEachIndexed { i, q -> val pc = sm[i]; if (pc != null) { val x = xOf(q.t); val y = top + (bot - top) * ((pc - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(x, y) else path.lineTo(x, y); first = false } }
             paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = .8f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
         val hs = s.filter { it.hr > 0 }
-        if (hs.size >= 2) { val path = Path(); hs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yH(q.hr); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
-            paint(RED); p.style = Paint.Style.STROKE; p.strokeWidth = 1f * u; p.strokeJoin = Paint.Join.ROUND; cv.drawPath(path, p) }
+        if (hs.size >= 2) { paint(RED); p.style = Paint.Style.STROKE; p.strokeWidth = 1f * u; p.strokeCap = Paint.Cap.ROUND
+            for (i in 1 until hs.size) { val a = hs[i - 1]; val b = hs[i]
+                p.color = RunView.ZONE[((a.hr + b.hr) / 2.0 / r.hrMaxSet).let { f -> when { f < .6 -> 0; f < .7 -> 1; f < .8 -> 2; f < .9 -> 3; else -> 4 } }]
+                cv.drawLine(xOf(a.t), yH(a.hr), xOf(b.t), yH(b.hr), p) } }
         text(cv, "0", L, bot + 4.6f * u, 4.4f * u, MUTED, num = true, al = Paint.Align.LEFT)
         text(cv, fmtTime(s.last().t - s.first().t), R, bot + 4.6f * u, 4.4f * u, MUTED, num = true, al = Paint.Align.RIGHT)
     }

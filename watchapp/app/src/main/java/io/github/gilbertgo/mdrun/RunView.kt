@@ -242,7 +242,9 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 5).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 5).toFloat()
         fun yH(h: Float) = HR1 - (HR1 - HR0) * ((h - hLo) / (hHi - hLo)).coerceIn(0f, 1f)
         // 존2 띠 + 오른쪽에 존 번호(그 존 높이 가운데)
-        cv.drawRect(X0, yH(z2hi.toFloat()), X1, yH(z2lo.toFloat()), paint(alpha(BLUE, 0x2A)))
+        // 2026-10-23 사용자 '심박 존 별로 색깔 구분': 존마다 옅은 바탕 띠(존2만 조금 진하게) — 선도 그 존 색
+        for (z in 0 until 5) { val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
+            if (hi > lo) cv.drawRect(X0, yH(hi), X1, yH(lo), paint(alpha(ZONE[z], if (z == 1) 0x34 else 0x16))) }
         for (z in 0 until 5) {
             val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
             if (hi - lo < (hHi - hLo) * .12f) continue
