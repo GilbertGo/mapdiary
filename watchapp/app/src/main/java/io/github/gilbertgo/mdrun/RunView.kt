@@ -36,6 +36,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val SURF = Color.parseColor("#16191E"); val LINE = Color.parseColor("#2A2F37"); val TRACK = Color.parseColor("#22262D")
         val INK = Color.parseColor("#1A0D06")
         val CADC = Color.parseColor("#C3A6FF")   // 케이던스 보라
+        val ALTC = Color.parseColor("#D7E3F0")   // 고도 옅은 은빛(녹색·누런색 안 씀)
         // 예전 이름(시작 화면 등에서 써요)
         val ORANGE = CORAL; val GREEN = BLUE; val PINE = Color.parseColor("#2A2F37")
         fun alpha(c: Int, a: Int) = (c and 0xFFFFFF) or (a shl 24)
@@ -235,7 +236,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         // 칸 이름은 칸 왼쪽 바깥에(선을 가리지 않게)
         text(cv, "심박", X0 - 2.4f * u, (HR0 + HR1) / 2 + 1.9f * u, 5.4f * u, Color.WHITE, true, align = Paint.Align.RIGHT)
         text(cv, "페이스", X0 - 2.4f * u, (PC0 + PC1) / 2 + 1.5f * u, 4.4f * u, CORAL, true, align = Paint.Align.RIGHT)
-        text(cv, "케이던스", X0 - 2.4f * u, (CD0 + CD1) / 2 + 1.5f * u, 4.4f * u, CADC, true, align = Paint.Align.RIGHT, max = 0.19f)
+        text(cv, "고도", X0 - 2.4f * u, (CD0 + CD1) / 2 + 1.5f * u, 4.4f * u, ALTC, true, align = Paint.Align.RIGHT)
         val hs = all.filter { it.hr > 0 }
         val z2lo = Run.zoneLo(1); val z2hi = Run.zoneLo(2)
         val hLo = (minOf(hs.minOfOrNull { it.hr } ?: z2lo, z2lo) - 5).toFloat(); val hHi = (maxOf(hs.maxOfOrNull { it.hr } ?: z2hi, z2hi) + 5).toFloat()
@@ -268,17 +269,20 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                 all.forEachIndexed { i, q -> val v = ps[i] ?: return@forEachIndexed; ex = xOf(q.t); ey = PC0 + (PC1 - PC0) * ((v - lo) / (hi - lo)).toFloat(); if (first) path.moveTo(ex, ey) else path.lineTo(ex, ey); first = false }
                 stroke(CORAL, .85f * u); cv.drawPath(path, p); cv.drawCircle(ex, ey, 1.1f * u, paint(CORAL)) }
             else text(cv, "--", cx, PC1, 3.6f * u, MUTED, true)
-            // 케이던스 (가이드 켜져 있으면 그 박자를 점선)
-            val cs = all.filter { it.cad != null && it.cad > 60 }
-            if (cs.size >= 2) {
-                val gOn = Cadence.kind != Cadence.OFF
-                val csm = smooth(cs.map { it.cad!!.toDouble() }, 2).map { it!! }
-                val cLo = minOf(csm.minOrNull()!!, if (gOn) Cadence.spm.toDouble() else 999.0) - 4; val cHi = maxOf(csm.maxOrNull()!!, if (gOn) Cadence.spm.toDouble() else 0.0) + 4
-                fun yC(c: Double) = (CD1 - (CD1 - CD0) * ((c - cLo) / (cHi - cLo)).coerceIn(0.0, 1.0)).toFloat()
-                if (gOn) { stroke(alpha(CADC, 0x80), .3f * u); p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(1.2f * u, .9f * u), 0f)
-                    cv.drawLine(X0, yC(Cadence.spm.toDouble()), X1, yC(Cadence.spm.toDouble()), p); p.pathEffect = null }
-                val path = Path(); cs.forEachIndexed { i, q -> val x = xOf(q.t); val y = yC(csm[i]); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
-                stroke(CADC, .85f * u); cv.drawPath(path, p); cv.drawCircle(xOf(cs.last().t), yC(csm.last()), 1.1f * u, paint(CADC))
+            // 고도 (2026-10-23 사용자 '케이던스 빼고 고도를 넣어'): GPS 높이를 앞뒤 3점 평균, 아래를 옅게 채운 산 모양.
+            //   GPS 높이는 몇 m씩 흔들려서 칸 높이는 적어도 20m로(평지가 산처럼 보이지 않게)
+            val aps = Run.pts.filter { it.alt != null && it.t - Run.startAt >= el - win }
+            if (aps.size >= 2) {
+                val asm = smooth(aps.map { it.alt }, 3).map { it!! }
+                var aLo = asm.minOrNull()!!; var aHi = asm.maxOrNull()!!
+                if (aHi - aLo < 20) { val m = (aHi + aLo) / 2; aLo = m - 10; aHi = m + 10 }
+                fun yA(a: Double) = (CD1 - (CD1 - CD0) * ((a - aLo) / (aHi - aLo)).coerceIn(0.0, 1.0)).toFloat()
+                fun xA(p: Pt) = xOf(p.t - Run.startAt).coerceIn(X0, X1)
+                val line = Path(); val fill = Path()
+                aps.forEachIndexed { i, q -> val x = xA(q); val y = yA(asm[i]); if (i == 0) { line.moveTo(x, y); fill.moveTo(x, CD1); fill.lineTo(x, y) } else { line.lineTo(x, y); fill.lineTo(x, y) } }
+                fill.lineTo(xA(aps.last()), CD1); fill.close()
+                cv.drawPath(fill, paint(alpha(ALTC, 0x38)))
+                stroke(ALTC, .85f * u); cv.drawPath(line, p); cv.drawCircle(xA(aps.last()), yA(asm.last()), 1.1f * u, paint(ALTC))
             } else text(cv, "--", cx, CD1, 3.6f * u, MUTED, true)
             // 시간: 처음 · 지금
             text(cv, if (el > win) "−20분" else "0분", X0, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.LEFT)
@@ -290,7 +294,19 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, if (hrNow > 0) "$hrNow" else "--", VX, hy + 2.4f * u, 8f * u, zc, true, true, Paint.Align.RIGHT, max = 0.16f)
         text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", VX, hy + 7.4f * u, 3.8f * u, zc, true, align = Paint.Align.RIGHT)
         text(cv, if (paceNow != null) fmtPace(paceNow) else "--", VX, (PC0 + PC1) / 2 + 2.3f * u, 6.4f * u, CORAL, true, true, Paint.Align.RIGHT, max = 0.21f)
-        text(cv, cadNow?.toString() ?: "--", VX - 1.5f * u, (CD0 + CD1) / 2 + 2.3f * u, 6.4f * u, CADC, true, true, Paint.Align.RIGHT, max = 0.19f)
+        // 고도: 지금 높이 + 아래 작게 오른 높이(처음부터, 4m 넘게 오를 때만 더함 — 휴대폰 elevStats와 같은 셈)
+        val altNow = Run.pts.lastOrNull { it.alt != null }?.alt
+        text(cv, if (altNow != null) "${altNow.roundToInt()}m" else "--", VX - 1.5f * u, (CD0 + CD1) / 2 + 2.3f * u, 6.4f * u, ALTC, true, true, Paint.Align.RIGHT, max = 0.19f)
+        val up = altGain()
+        if (up != null) text(cv, "↑ ${up}m", VX - 2.5f * u, CD1 + 2.2f * u, 3.6f * u, MUTED, true, true, Paint.Align.RIGHT)
+    }
+
+    // 오른 높이(m): 5점 평균한 높이가 바로 전 기준보다 4m 넘게 오를 때만 더함, 내려가면 기준을 낮춤
+    private fun altGain(): Int? {
+        val a = Run.pts.mapNotNull { it.alt }; if (a.size < 5) return null
+        var base = a.take(5).average(); var up = 0.0
+        for (i in 2 until a.size - 2) { val m = (a[i - 2] + a[i - 1] + a[i] + a[i + 1] + a[i + 2]) / 5; if (m - base > 4) { up += m - base; base = m } else if (m < base) base = m }
+        return up.roundToInt()
     }
 
     // ---------- 달리기 자세: 케이던스 · 보폭 · 걸음 고르기 · 착지 충격 (손목 센서로 짐작) ----------
