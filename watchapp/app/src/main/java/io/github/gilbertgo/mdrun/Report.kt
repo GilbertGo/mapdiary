@@ -380,10 +380,10 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         return y + 6 * u
     }
 
-    // 존마다 옅은 바탕 띠(존2만 조금 진하게). yH는 칸 밖이면 가장자리로 붙여 주는 함수라 그대로 써요
+    // 바탕은 존2 띠만(다른 존은 심박 선 색으로 구분). yH는 칸 밖이면 가장자리로 붙여 주는 함수라 그대로 써요
     private fun zoneBands(cv: Canvas, x0: Float, x1: Float, yH: (Int) -> Float) {
         for (z in 0 until 5) { val a = yH(if (z == 4) r.hrMaxSet + 60 else r.zoneLo(z + 1)); val b = yH(r.zoneLo(z))
-            if (b - a > .5f) cv.drawRect(x0, a, x1, b, paint(RunView.alpha(RunView.ZONE[z], if (z == 1) 0x34 else 0x16))) }
+            if (z == 1 && b - a > .5f) cv.drawRect(x0, a, x1, b, paint(RunView.alpha(RunView.ZONE[z], 0x34))) }   // 존2 띠만(2026-10-23 '후')
     }
 
     private fun graph(cv: Canvas, top: Float, bot: Float) {
