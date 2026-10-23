@@ -244,7 +244,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         // 존2 띠 + 오른쪽에 존 번호(그 존 높이 가운데)
         // 2026-10-23 사용자 '심박 존 별로 색깔 구분': 존마다 옅은 바탕 띠(존2만 조금 진하게) — 선도 그 존 색
         for (z in 0 until 5) { val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
-            if (hi > lo) cv.drawRect(X0, yH(hi), X1, yH(lo), paint(alpha(ZONE[z], if (z == 1) 0x34 else 0x16))) }
+            if (z == 1 && hi > lo) cv.drawRect(X0, yH(hi), X1, yH(lo), paint(alpha(ZONE[z], 0x34))) }   // 2026-10-23 전/후 비교 뒤 '후': 존2 띠만(다른 존 바탕은 검은 화면에서 탁해 보여서), 존은 선 색으로
         for (z in 0 until 5) {
             val lo = maxOf(Run.zoneLo(z).toFloat(), hLo); val hi = minOf(if (z == 4) hHi else Run.zoneLo(z + 1).toFloat(), hHi)
             if (hi - lo < (hHi - hLo) * .12f) continue
