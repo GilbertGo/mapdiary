@@ -290,6 +290,13 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             text(cv, if (el > win) "−20분" else "0분", X0, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.LEFT)
             text(cv, "지금", X1, CD1 + 5.2f * u, 3.6f * u, MUTED, true, align = Paint.Align.RIGHT)
         }
+        // 심박이 안 올 때는 까닭을 심박 칸에 (2026-10-23 실제 시계에서 심박 칸이 텅 비어 보여서)
+        if (hrNow == 0 && Run.id != null && el > 20000) {
+            val why = when { !Run.hrPerm -> "심박 권한이 꺼져 있어요"; Run.hrNoContact -> "시계를 손목에 꼭 맞게"; Run.hrEvT == 0L -> "심박 재는 중…"; else -> "심박이 잠깐 끊겼어요" }
+            val my = HR0 + 6f * u
+            cv.drawRoundRect(X0 - 1f * u, my - 4.4f * u, X1 + 1f * u, my + 2.2f * u, 3.3f * u, 3.3f * u, paint(Color.argb(0xD0, 0x1C, 0x22, 0x2B)))
+            text(cv, why, (X0 + X1) / 2, my, 3.8f * u, Color.parseColor("#FFB4A8"), true, max = (X1 - X0 + 1f * u) / (100f * u))
+        }
         // 지금 값: 칸마다 오른쪽(심박은 존 색 + 아래 '존1')
         val zc = if (hrNow > 0) ZONE[Run.zoneOf(hrNow)] else MUTED
         val hy = (HR0 + HR1) / 2

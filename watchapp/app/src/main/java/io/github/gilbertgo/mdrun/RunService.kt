@@ -97,11 +97,20 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         lm = getSystemService(LOCATION_SERVICE) as LocationManager
         if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) try { lm?.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper()) } catch (e: Exception) {}
         sm = getSystemService(SENSOR_SERVICE) as SensorManager
-        if (granted(Manifest.permission.BODY_SENSORS)) sm?.getDefaultSensor(Sensor.TYPE_HEART_RATE)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        hrListen()
         if (Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACTIVITY_RECOGNITION)) sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         sm?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
         h.post(tick)
         Cadence.start(this)
+    }
+
+    // 심박 센서 켜기. 30초 넘게 아무 값도 안 오면 다시 켜요(화면이 꺼질 때 멈추는 시계가 있어서)
+    private var hrReg = 0L
+    private fun hrListen() {
+        Run.hrPerm = granted(Manifest.permission.BODY_SENSORS)
+        if (!Run.hrPerm) return
+        val s = sm?.getDefaultSensor(Sensor.TYPE_HEART_RATE) ?: return
+        sm?.unregisterListener(this, s); sm?.registerListener(this, s, SensorManager.SENSOR_DELAY_NORMAL); hrReg = System.currentTimeMillis()
     }
 
     // 1초마다: 시간 목표의 남은 5분·1분 안내, 기록 중이면 30초마다 저장
@@ -111,6 +120,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
             Run.coachTick(); Run.sampleTick(System.currentTimeMillis())
             val now = System.currentTimeMillis()
             if (Run.id != null && now - lastSave > 30000) { lastSave = now; Store.saveCurrent(this@RunService) }
+            if (now - maxOf(Run.hrEvT, hrReg) > 30000) { if (Run.hrPerm || granted(Manifest.permission.BODY_SENSORS)) goForeground(); hrListen() }
             h.postDelayed(this, 1000)
         }
     }
@@ -126,7 +136,9 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     override fun onSensorChanged(e: SensorEvent) {
         val now = System.currentTimeMillis()
         when (e.sensor.type) {
-            Sensor.TYPE_HEART_RATE -> if (e.accuracy != SensorManager.SENSOR_STATUS_NO_CONTACT && e.accuracy != SensorManager.SENSOR_STATUS_UNRELIABLE) Run.onHr(e.values[0].toInt(), now)
+            // 2026-10-23: '흔들림(UNRELIABLE)' 값도 받아요(달리면 자주 이렇게 와서 심박이 통째로 비었음). 손목에 안 닿음만 버림
+            Sensor.TYPE_HEART_RATE -> { Run.hrEvT = now; Run.hrNoContact = e.accuracy == SensorManager.SENSOR_STATUS_NO_CONTACT || e.values[0] <= 0f
+                if (!Run.hrNoContact) Run.onHr(e.values[0].toInt(), now) }
             Sensor.TYPE_STEP_COUNTER -> Run.onSteps(e.values[0].toInt(), now)
             Sensor.TYPE_ACCELEROMETER -> Run.onAccel(e.values[0], e.values[1], e.values[2], now)
         }
