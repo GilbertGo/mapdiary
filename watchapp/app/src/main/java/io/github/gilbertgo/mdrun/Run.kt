@@ -93,6 +93,7 @@ object Run {
     var lastAcc = -1f
     var gpsOn = false
     // 심박
+    var hrEvT = 0L; var hrNoContact = false; var hrPerm = true   // 심박 센서 상태: 마지막으로 값이 온 때 · 손목에 안 닿음 · 권한
     var hr = 0; var hrT = 0L; var hrSum = 0L; var hrN = 0; var hrMax = 0
     // 심박 존 (2026-10-19, 사용자 '존투러닝 중요해'): 최대 심박(hrMaxSet)의 50~60% 존1 · 60~70% 존2 · 70~80% 존3 · 80~90% 존4 · 90%~ 존5
     var hrMaxSet = 170; var z2Alert = false
