@@ -112,7 +112,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             else -> pageCtl(cv, now)
         }
         // 아래 점: 몇 번째 화면인지(지금 화면은 길쭉하게)
-        if (!ambient) ps.forEachIndexed { i, id ->
+        if (!ambient && !(page == P_MAP && mapFull)) ps.forEachIndexed { i, id ->
             val x = cx + (i - (ps.size - 1) / 2f) * 3.6f * u; val y = 96f * u
             if (id == page) cv.drawRoundRect(RectF(x - 1.9f * u, y - 1f * u, x + 1.9f * u, y + 1f * u), u, u, paint(Color.WHITE))
             else cv.drawCircle(x, y, .9f * u, paint(Color.parseColor("#4A515C")))
@@ -341,8 +341,13 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     //   그동안은 화면 넘기기를 안 해요(화면 넘기기는 아래 글자 칸에서). '◎ 내 위치로'를 누르면 다시 가운데
     private var mapOX = 0.0; private var mapOY = 0.0; private var mapDrag = false; private var lastMX = 0f; private var lastMY = 0f
     private val mapMoved get() = abs(mapOX) > 1 || abs(mapOY) > 1
+    // 지도 전체 화면(2026-10-24 사용자 '지도 전체화면보기도 넣어'): 오른쪽 ⛶ 단추 → 지도가 화면 가득, 아래 '✕ 작게 보기'로 돌아옴
+    //   전체 화면에선 어디를 끌어도 지도가 옮겨지고 화면 넘기기는 안 돼요(작게 보기로 나와서 넘김)
+    private var mapFull = false
+    private fun mapB(uu: Float) = if (mapFull) 100 * uu else 63 * uu      // 지도 아래 끝
+    private fun mapRc(uu: Float) = if (mapFull) 74 * uu else 49.5f * uu   // '내 위치로' 알약 위 끝
     private fun pageMap(cv: Canvas, now: Long) {
-        val MB = 63 * u   // 지도 아래 끝
+        val MB = mapB(u)   // 지도 아래 끝
         val has = Run.gpsOn && (Run.fixLat != 0.0 || Run.fixLng != 0.0)
         val lat = if (has) Run.fixLat else Run.pts.lastOrNull()?.lat ?: 0.0
         val lng = if (has) Run.fixLng else Run.pts.lastOrNull()?.lng ?: 0.0
@@ -378,10 +383,27 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val mx = sx(mex); val my = sy(mey)
         if (Run.lastAcc > 0) { val r = (Run.lastAcc / mpp).toFloat().coerceIn(2f * u, 30f * u); cv.drawCircle(mx, my, r, paint(alpha(BLUE, 0x38))) }
         cv.drawCircle(mx, my, 2.6f * u, paint(Color.WHITE)); cv.drawCircle(mx, my, 1.8f * u, paint(if (has && now - Run.fixT < 15000) BLUE else MUTED))
-        if (mapMoved) { cv.drawRoundRect(RectF(cx - 15 * u, MB - 13.5f * u, cx + 15 * u, MB - 6.5f * u), 3.5f * u, 3.5f * u, paint(Color.argb(0xD8, 0x10, 0x14, 0x1A)))
-            text(cv, "◎ 내 위치로", cx, MB - 8.6f * u, 3.8f * u, BLUE, true) }
-        if (drawn == 0) text(cv, if (need > 0 && now - Tiles.lastFail < 70000) "지도를 못 받았어요 · 길만 보여요" else "지도 받는 중…", cx, MB - 4 * u, 3.6f * u, MUTED, true)
+        val rc = mapRc(u)
+        if (mapMoved) { cv.drawRoundRect(RectF(cx - 15 * u, rc, cx + 15 * u, rc + 7 * u), 3.5f * u, 3.5f * u, paint(Color.argb(0xD8, 0x10, 0x14, 0x1A)))
+            text(cv, "◎ 내 위치로", cx, rc + 4.9f * u, 3.8f * u, BLUE, true) }
+        if (drawn == 0) text(cv, if (need > 0 && now - Tiles.lastFail < 70000) "지도를 못 받았어요 · 길만 보여요" else "지도 받는 중…", cx, rc - 2.5f * u, 3.6f * u, MUTED, true)
         cv.restore()
+        if (mapFull) {
+            // 전체 화면: 아래 '✕ 작게 보기' (위도·경도·해발은 작게 보기에서)
+            cv.drawRoundRect(RectF(cx - 14 * u, 84 * u, cx + 14 * u, 91 * u), 3.5f * u, 3.5f * u, paint(Color.argb(0xD8, 0x10, 0x14, 0x1A)))
+            text(cv, "✕ 작게 보기", cx, 88.9f * u, 3.8f * u, Color.WHITE, true)
+            cv.drawRoundRect(RectF(cx - 21 * u, 5.6f * u, cx + 21 * u, 11.2f * u), 2.8f * u, 2.8f * u, paint(Color.argb(0xB0, 0, 0, 0)))
+            text(cv, "끌면 옮겨요 · 누르면 확대 $z", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
+            return
+        }
+        // 전체 화면 단추(⛶: 네 귀퉁이 꺾쇠)
+        val bx = 85 * u; val by = 49 * u
+        cv.drawCircle(bx, by, 4.8f * u, paint(Color.argb(0xD8, 0x10, 0x14, 0x1A)))
+        paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .55f * u; p.strokeCap = Paint.Cap.ROUND
+        val a = 2.1f * u; val b = 1.0f * u
+        for (sxs in intArrayOf(-1, 1)) for (sys in intArrayOf(-1, 1)) {
+            val px0 = bx + sxs * a; val py0 = by + sys * a
+            cv.drawLine(px0, py0, px0 - sxs * b, py0, p); cv.drawLine(px0, py0, px0, py0 - sys * b, p) }
         cv.drawRect(0f, MB, W, MB + .25f * u, paint(LINE))
         cv.drawRoundRect(RectF(cx - 21 * u, 5.6f * u, cx + 21 * u, 11.2f * u), 2.8f * u, 2.8f * u, paint(Color.argb(0xB0, 0, 0, 0)))
         text(cv, "끌면 옮겨요 · 누르면 확대 $z", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
@@ -497,7 +519,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (holdStart > 0 && hypot(e.x - downX, e.y - downY) > 12 * uu) { holdStart = 0; invalidate() }
-                if (page == P_MAP && downY < 63 * uu) {
+                if (page == P_MAP && downY < mapB(uu)) {
                     if (!mapDrag && hypot(e.x - downX, e.y - downY) > 4 * uu) { mapDrag = true; lastMX = e.x; lastMY = e.y }
                     if (mapDrag) { val sc = width / 400.0; mapOX -= (e.x - lastMX) / sc; mapOY -= (e.y - lastMY) / sc; lastMX = e.x; lastMY = e.y; invalidate() }
                 }
@@ -508,8 +530,11 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                 if (abs(dx) > width * 0.16f && abs(dx) > abs(e.y - downY)) { val ps = pages(); val i = ps.indexOf(page).coerceAtLeast(0)
                     page = ps[(i + (if (dx < 0) 1 else -1) + ps.size) % ps.size]; if (page != P_CTL) Store.setPage(context, page); invalidate(); return true }
                 if (wasHold) { invalidate(); return true }
-                if (e.actionMasked == MotionEvent.ACTION_UP && page == P_MAP && hypot(dx, e.y - downY) < 8 * uu && e.y < 63 * uu) {
-                    if (mapMoved && abs(e.x - width / 2f) < 15 * uu && e.y > 49.5f * uu && e.y < 56.5f * uu) { mapOX = 0.0; mapOY = 0.0; invalidate(); return true }
+                if (e.actionMasked == MotionEvent.ACTION_UP && page == P_MAP && hypot(dx, e.y - downY) < 8 * uu && e.y < mapB(uu)) {
+                    if (!mapFull && hypot(e.x - 85 * uu, e.y - 49 * uu) < 7 * uu) { mapFull = true; invalidate(); return true }
+                    if (mapFull && abs(e.x - width / 2f) < 15 * uu && e.y > 83 * uu && e.y < 93 * uu) { mapFull = false; invalidate(); return true }
+                    val rc = mapRc(uu)
+                    if (mapMoved && abs(e.x - width / 2f) < 15 * uu && e.y > rc && e.y < rc + 7 * uu) { mapOX = 0.0; mapOY = 0.0; invalidate(); return true }
                     val nz = if (mapZ >= 17) 14 else mapZ + 1; val f = Math.pow(2.0, (nz - mapZ).toDouble()); mapOX *= f; mapOY *= f
                     mapZ = nz; invalidate(); return true }
                 if (e.actionMasked == MotionEvent.ACTION_UP && page == P_CTL && hypot(dx, e.y - downY) < 8 * uu) {
