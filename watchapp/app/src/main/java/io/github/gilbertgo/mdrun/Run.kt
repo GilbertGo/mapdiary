@@ -105,6 +105,7 @@ object Run {
     // 걸음 (휴대폰의 걸음 수 센서. 처음 값을 0으로)
     private var stepBase = -1; private var stepOff = 0; var steps = 0
     private val stepS = ArrayDeque<Pair<Long, Int>>()
+    private val spdS = ArrayDeque<Pair<Long, Float>>()   // GPS가 알려 준 속도(m/s), 최근 20초
     // 목소리·진동 (RunService가 채워요)
     var speak: (String) -> Unit = {}
     var speaking: () -> Boolean = { false }
@@ -120,7 +121,7 @@ object Run {
     fun begin(now: Long, g: Goal, title: String) {
         id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title
         pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
-        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
+        hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
 
@@ -152,7 +153,11 @@ object Run {
 
     // 현재 페이스: 최근에 움직인 30초 (멈춘 구간은 건너뛰고 2분 전까지)
     fun nowPace(now: Long): Double? {
-        val n = pts.size; if (n < 2 || manualPause) return null
+        if (manualPause) return null
+        return distPace(now) ?: speedPace(now)
+    }
+    private fun distPace(now: Long): Double? {
+        val n = pts.size; if (n < 2) return null
         // 2026-10-23 걸을 때 안 나왔음: 15m마다 점이라 걸으면 12~15초마다 와서 '15초 지나면 멈춤'·'30초 안 50m'를 못 채웠음
         //   → 기다리는 시간은 지난 점 간격의 1.6배(15~40초), 50m가 찰 때까지 더 거슬러 봄(2분 안)
         val t1 = pts[n - 1].t; val gap0 = t1 - pts[n - 2].t
@@ -164,6 +169,17 @@ object Run {
             i--
         }
         return if (t >= 15000 && d >= 50) t / (d / 1000) else null
+    }
+    // GPS 속도(도플러)로 셈한 페이스: 점이 15m마다라 걸으면 거리로는 자주 비어서 이걸로 메꿔요 (2026-10-24 사용자 '잠깐 나왔는데 다시 안 나와, 계속 걷는 중')
+    fun onSpeed(v: Float, acc: Float, now: Long) {
+        if (id == null || acc > TRACK_MAX_ACC) return
+        spdS.addLast(now to v); while (spdS.isNotEmpty() && now - spdS.first().first > 20000) spdS.removeFirst()
+    }
+    private fun speedPace(now: Long): Double? {
+        val r = spdS.filter { now - it.first <= 15000 }
+        if (r.size < 3 || now - r.last().first > 5000) return null
+        val v = r.map { it.second.toDouble() }.average()
+        return if (v >= 0.7 && v <= CAR_MS) 1000000.0 / v else null
     }
     fun avgPace(): Double? = if (walk >= 50 && moving > 0) moving / (walk / 1000) else null
     // 달린 시간을 1초마다 흐르게 (마지막 점 뒤 12초까지만, 뒤로 줄지 않게)
