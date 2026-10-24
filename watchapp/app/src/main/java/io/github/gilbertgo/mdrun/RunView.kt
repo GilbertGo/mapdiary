@@ -27,7 +27,7 @@ import kotlin.math.sin
 // 휴대폰 MPD 바닷가 색(산호 #FF8A4C · 하늘 #4FC3F7), 테두리 링·알약 딱지·그린 아이콘(이모지 안 씀)
 class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     companion object {
-        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4; const val P_ZONE = 5; const val P_GRAPH = 6; const val P_FORM = 7
+        const val P_MAIN = 0; const val P_COACH = 1; const val P_BODY = 2; const val P_SPLIT = 3; const val P_CTL = 4; const val P_ZONE = 5; const val P_GRAPH = 6; const val P_FORM = 7; const val P_MAP = 8
         // 심박 존 색: 존1 회색 · 존2 하늘 · 존3 금 · 존4 산호 · 존5 빨강
         val ZONE = intArrayOf(Color.parseColor("#9AA5B4"), Color.parseColor("#4FC3F7"), Color.parseColor("#FFD166"), Color.parseColor("#FF8A4C"), Color.parseColor("#FF4D5E"))
         val ZNAME = arrayOf("회복", "유산소", "템포", "역치", "최대")
@@ -43,6 +43,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     }
     var page = Store.page(c).coerceIn(0, 3)
     var ambient = false
+    init { Tiles.onReady = { postInvalidate() } }
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val numBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
     private val krBold = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -91,7 +92,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     // 화면 차례: 달리기 → 목표(목표가 있을 때만) → 몸(심박·케이던스) → 1km 구간 → 멈춤·끝내기
     // 2026-10-19 정리(사용자 '중복되는 내용, 조잡해, 작은 글씨 안 보여'): 한 화면에 한 가지 일만, 같은 숫자는 한 곳에만,
     // 글자는 가장 작아도 화면의 5%(이름표), 색은 화면마다 강조 하나
-    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_FORM, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_GRAPH, P_FORM, P_SPLIT, P_CTL)
+    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL)
     private val LAB = 5f   // 이름표 글자 크기(u)
 
     override fun onDraw(cv: Canvas) {
@@ -105,6 +106,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             P_BODY -> pageBody(cv, now)
             P_ZONE -> pageZones(cv)
             P_GRAPH -> pageGraph(cv, now)
+            P_MAP -> pageMap(cv, now)
             P_FORM -> pageForm(cv, now)
             P_SPLIT -> pageSplits(cv)
             else -> pageCtl(cv, now)
@@ -318,11 +320,73 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, if (hrNow > 0) "$hrNow" else "--", VX, hy + 2.4f * u, 8f * u, zc, true, true, Paint.Align.RIGHT, max = 0.16f)
         text(cv, if (hrNow > 0) "존${Run.zoneOf(hrNow) + 1}" else "심박", VX, hy + 7.4f * u, 3.8f * u, zc, true, align = Paint.Align.RIGHT)
         text(cv, if (paceNow != null) fmtPace(paceNow) else "--", VX, (PC0 + PC1) / 2 + 2.3f * u, 6.4f * u, CORAL, true, true, Paint.Align.RIGHT, max = 0.21f)
-        // 고도: 지금 높이 + 아래 작게 오른 높이(처음부터, 4m 넘게 오를 때만 더함 — 휴대폰 elevStats와 같은 셈)
-        val altNow = Run.pts.lastOrNull { it.alt != null }?.alt
-        text(cv, if (altNow != null) "${altNow.roundToInt()}m" else "--", VX - 1.5f * u, (CD0 + CD1) / 2 + 2.3f * u, 6.4f * u, ALTC, true, true, Paint.Align.RIGHT, max = 0.19f)
+        // 고도: 출발점 기준 높이(+23m / −12m) + 아래 작게 오른 높이(처음부터, 4m 넘게 오를 때만 더함 — 휴대폰 elevStats와 같은 셈)
+        //   2026-10-24 사용자 '출발점을 고도 0으로': GPS 높이는 해발이 아니라(25m쯤 높음) 출발 기준으로. 켠 직후 흔들려서 처음 30초 평균이 0
+        val altNow = Run.pts.lastOrNull { it.alt != null }?.alt; val base = altBase()
+        val rel = if (altNow != null && base != null) (altNow - base).roundToInt() else null
+        text(cv, if (rel != null) (if (rel > 0) "+${rel}m" else if (rel < 0) "−${-rel}m" else "0m") else "--", VX - 1.5f * u, (CD0 + CD1) / 2 + 2.3f * u, 6.4f * u, ALTC, true, true, Paint.Align.RIGHT, max = 0.19f)
         val up = altGain()
         if (up != null) text(cv, "↑ ${up}m", VX - 2.5f * u, CD1 + 2.2f * u, 3.6f * u, MUTED, true, true, Paint.Align.RIGHT)
+    }
+
+    // 출발점 높이: 높이가 있는 첫 점부터 30초 안 점들의 평균
+    private fun altBase(): Double? {
+        val a = Run.pts.filter { it.alt != null }; if (a.isEmpty()) return null
+        val t0 = a[0].t; return a.filter { it.t - t0 <= 30000 }.map { it.alt!! }.average()
+    }
+
+    // ---------- 지도: 지금 위치 · 다닌 길 · 위도·경도·해발 고도 (2026-10-24 사용자 '지도화면 추가해서 현위치, 위도·경도·해발고도') ----------
+    private var mapZ = 16
+    private fun pageMap(cv: Canvas, now: Long) {
+        val MB = 63 * u   // 지도 아래 끝
+        val has = Run.gpsOn && (Run.fixLat != 0.0 || Run.fixLng != 0.0)
+        val lat = if (has) Run.fixLat else Run.pts.lastOrNull()?.lat ?: 0.0
+        val lng = if (has) Run.fixLng else Run.pts.lastOrNull()?.lng ?: 0.0
+        if (!has && Run.pts.isEmpty()) {
+            text(cv, "GPS 찾는 중", cx, 40 * u, 6f * u, Color.WHITE, true)
+            text(cv, "하늘이 보이는 곳에서 잠깐 기다려 주세요", cx, 49 * u, 3.8f * u, MUTED, true)
+            return
+        }
+        val z = mapZ; val sc = W / 400f   // 조각 하나 = 256 × sc 화면 픽셀
+        val cxw = Tiles.px(lng, z); val cyw = Tiles.py(lat, z); val cy = MB * .52f
+        fun sx(wx: Double) = (cx + (wx - cxw) * sc).toFloat()
+        fun sy(wy: Double) = (cy + (wy - cyw) * sc).toFloat()
+        cv.save(); cv.clipRect(0f, 0f, W, MB)
+        // 조각 깔기 (어두운 화면이라 위에 검은 막을 얇게)
+        val ts = 256 * sc; var drawn = 0; var need = 0
+        val tx0 = Math.floor((cxw - cx / sc) / 256).toInt(); val tx1 = Math.floor((cxw + cx / sc) / 256).toInt()
+        val ty0 = Math.floor((cyw - cy / sc) / 256).toInt(); val ty1 = Math.floor((cyw + (MB - cy) / sc) / 256).toInt()
+        for (ty in ty0..ty1) for (tx in tx0..tx1) { need++
+            val b = Tiles.get(context, z, tx, ty) ?: continue; drawn++
+            val l = sx(tx * 256.0); val t = sy(ty * 256.0)
+            cv.drawBitmap(b, null, RectF(l, t, l + ts, t + ts), paint(Color.WHITE).apply { isFilterBitmap = true }) }
+        if (drawn > 0) cv.drawRect(0f, 0f, W, MB, paint(Color.argb(0x50, 0, 0, 0)))
+        else cv.drawRect(0f, 0f, W, MB, paint(SURF))
+        // 다닌 길(산호) + 출발 점
+        if (Run.pts.size >= 2) { val path = Path()
+            Run.pts.forEachIndexed { i, q -> val x = sx(Tiles.px(q.lng, z)); val y = sy(Tiles.py(q.lat, z)); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
+            paint(Color.argb(0x90, 0, 0, 0)); p.style = Paint.Style.STROKE; p.strokeWidth = 2.0f * u; p.strokeJoin = Paint.Join.ROUND; p.strokeCap = Paint.Cap.ROUND; cv.drawPath(path, p)
+            paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeJoin = Paint.Join.ROUND; p.strokeCap = Paint.Cap.ROUND; cv.drawPath(path, p)
+            val s0 = Run.pts[0]; val x0 = sx(Tiles.px(s0.lng, z)); val y0 = sy(Tiles.py(s0.lat, z))
+            cv.drawCircle(x0, y0, 1.6f * u, paint(Color.WHITE)); cv.drawCircle(x0, y0, 1.0f * u, paint(CORAL)) }
+        // 지금 위치: 오차 원 + 흰 테 파란 점
+        val mpp = 156543.03 * cos(Math.toRadians(lat)) / (1 shl z) / sc   // 화면 1픽셀이 몇 m
+        if (Run.lastAcc > 0) { val r = (Run.lastAcc / mpp).toFloat().coerceIn(2f * u, 30f * u); cv.drawCircle(cx, cy, r, paint(alpha(BLUE, 0x38))) }
+        cv.drawCircle(cx, cy, 2.6f * u, paint(Color.WHITE)); cv.drawCircle(cx, cy, 1.8f * u, paint(if (has && now - Run.fixT < 15000) BLUE else MUTED))
+        if (drawn == 0) text(cv, if (need > 0 && now - Tiles.lastFail < 70000) "지도를 못 받았어요 · 길만 보여요" else "지도 받는 중…", cx, MB - 4 * u, 3.6f * u, MUTED, true)
+        cv.restore()
+        cv.drawRect(0f, MB, W, MB + .25f * u, paint(LINE))
+        cv.drawRoundRect(RectF(cx - 21 * u, 5.6f * u, cx + 21 * u, 11.2f * u), 2.8f * u, 2.8f * u, paint(Color.argb(0xB0, 0, 0, 0)))
+        text(cv, "확대 $z · 누르면 바꿔요", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
+        // 위도·경도·해발 고도
+        fun deg(v: Double, pos: String, neg: String) = String.format("%.5f° %s", Math.abs(v), if (v >= 0) pos else neg)
+        text(cv, "위도  " + deg(lat, "N", "S"), cx, 70.5f * u, 4.6f * u, Color.WHITE, true, true)
+        text(cv, "경도  " + deg(lng, "E", "W"), cx, 77f * u, 4.6f * u, Color.WHITE, true, true)
+        val ga = Run.fixAlt; val g = Run.geoid
+        val altS = when { ga == null -> "고도 --"; g != null -> "해발 ${(ga - g).roundToInt()}m"; else -> "GPS 높이 ${ga.roundToInt()}m (해발 아님)" }
+        val accS = if (Run.lastAcc > 0) " · 오차 ${Run.lastAcc.roundToInt()}m" else ""
+        text(cv, altS + accS, cx, 84f * u, 4.2f * u, ALTC, true, true)
+        if (!has || now - Run.fixT > 15000) text(cv, "GPS 신호가 끊겼어요 · 마지막 위치", cx, 90f * u, 3.4f * u, LATE, true)
     }
 
     // 오른 높이(m): gainOf(Report.kt, 휴대폰 elevStats와 같은 셈)
@@ -430,6 +494,8 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                 if (abs(dx) > width * 0.16f && abs(dx) > abs(e.y - downY)) { val ps = pages(); val i = ps.indexOf(page).coerceAtLeast(0)
                     page = ps[(i + (if (dx < 0) 1 else -1) + ps.size) % ps.size]; if (page != P_CTL) Store.setPage(context, page); invalidate(); return true }
                 if (wasHold) { invalidate(); return true }
+                if (e.actionMasked == MotionEvent.ACTION_UP && page == P_MAP && hypot(dx, e.y - downY) < 8 * uu && e.y < 63 * uu) {
+                    mapZ = if (mapZ >= 17) 14 else mapZ + 1; invalidate(); return true }
                 if (e.actionMasked == MotionEvent.ACTION_UP && page == P_CTL && hypot(dx, e.y - downY) < 8 * uu) {
                     val L = btnL()
                     if (hypot(e.x - L[0], e.y - L[1]) < L[2] * 1.15f) { Run.setPause(!Run.manualPause); performClick() }

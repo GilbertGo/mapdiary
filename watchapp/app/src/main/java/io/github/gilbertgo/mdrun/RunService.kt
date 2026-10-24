@@ -139,7 +139,22 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         if (l.hasSpeed()) Run.onSpeed(l.speed, if (l.hasAccuracy()) l.accuracy else 99f, t)
         val added = Run.addPoint(l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else 99f, if (l.hasAltitude()) l.altitude else null, t)
         Run.fixT = now
+        geoidCheck(l)
         if (added && Run.pts.size % 10 == 0) Store.saveCurrent(this)
+    }
+    // 지도 화면의 '해발 고도'용: GPS 높이(타원체) − 해발을 한 번 셈. 땅 모양 자료를 읽느라 느려서 따로 돌려요(안드로이드 14+, 3번까지)
+    @Volatile private var geoBusy = false; private var geoTry = 0
+    private fun geoidCheck(l: Location) {
+        if (Build.VERSION.SDK_INT < 34 || Run.geoid != null || geoBusy || geoTry >= 3 || !l.hasAltitude()) return
+        geoBusy = true; geoTry++
+        val c = Location(l)
+        Thread {
+            try {
+                android.location.altitude.AltitudeConverter().addMslAltitudeToLocation(this, c)
+                if (c.hasMslAltitude()) { val g = c.altitude - c.mslAltitudeMeters; h.post { Run.geoid = g } }
+            } catch (e: Exception) {}
+            geoBusy = false
+        }.start()
     }
     @Deprecated("old API") override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
     override fun onProviderEnabled(provider: String) {}
