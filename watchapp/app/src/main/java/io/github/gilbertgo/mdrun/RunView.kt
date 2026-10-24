@@ -375,6 +375,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         if (drawn == 0) text(cv, if (need > 0 && now - Tiles.lastFail < 70000) "지도를 못 받았어요 · 길만 보여요" else "지도 받는 중…", cx, MB - 4 * u, 3.6f * u, MUTED, true)
         cv.restore()
         cv.drawRect(0f, MB, W, MB + .25f * u, paint(LINE))
+        cv.drawRoundRect(RectF(cx - 21 * u, 5.6f * u, cx + 21 * u, 11.2f * u), 2.8f * u, 2.8f * u, paint(Color.argb(0xB0, 0, 0, 0)))
         text(cv, "확대 $z · 누르면 바꿔요", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
         // 위도·경도·해발 고도
         fun deg(v: Double, pos: String, neg: String) = String.format("%.5f° %s", Math.abs(v), if (v >= 0) pos else neg)
