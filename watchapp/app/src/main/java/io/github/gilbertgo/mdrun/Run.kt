@@ -132,6 +132,7 @@ object Run {
         lastAcc = acc; gpsOn = true; fixT = now
         if (id == null || manualPause || acc > TRACK_MAX_ACC) return false
         val last = pts.lastOrNull()
+        if (last != null && now < last.t) return false   // 차례가 뒤바뀌어 온 점은 버려요
         if (last != null && dist(last.lat, last.lng, lat, lng) < TRACK_MIN_M) return false
         if (last != null && !brk) {
             val dt = (now - last.t) / 1000.0; val d = dist(last.lat, last.lng, lat, lng); val v = if (dt > 0) d / dt else 0.0

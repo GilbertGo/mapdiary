@@ -95,7 +95,14 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         listening = true
         wake = (getSystemService(POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "mdrun:run").apply { acquire(6 * 3600 * 1000L) }
         lm = getSystemService(LOCATION_SERVICE) as LocationManager
-        if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) try { lm?.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper()) } catch (e: Exception) {}
+        // 2026-10-24: 시계가 화면이 어두워지면 위치를 모아 한꺼번에 보내(묶음) 'GPS 신호가 끊겼어요'·페이스 '--'가 났음
+        //   → 안드로이드 12+는 '모아 보내기 금지'(maxUpdateDelay 0)·정확도 높게로 1초마다 바로 받기
+        if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) try {
+            if (Build.VERSION.SDK_INT >= 31) lm?.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                android.location.LocationRequest.Builder(1000L).setQuality(android.location.LocationRequest.QUALITY_HIGH_ACCURACY)
+                    .setMinUpdateIntervalMillis(1000L).setMaxUpdateDelayMillis(0L).build(), mainExecutor, this)
+            else lm?.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper())
+        } catch (e: Exception) {}
         sm = getSystemService(SENSOR_SERVICE) as SensorManager
         hrListen()
         if (Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACTIVITY_RECOGNITION)) sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let { sm?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
@@ -126,8 +133,12 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     }
 
     override fun onLocationChanged(l: Location) {
-        if (l.hasSpeed()) Run.onSpeed(l.speed, if (l.hasAccuracy()) l.accuracy else 99f, System.currentTimeMillis())
-        val added = Run.addPoint(l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else 99f, if (l.hasAltitude()) l.altitude else null, System.currentTimeMillis())
+        // 시각은 받은 때가 아니라 GPS가 잰 때(l.time): 묶음으로 한꺼번에 와도 점마다 제 시각이라 거리·페이스가 맞아요
+        val now = System.currentTimeMillis()
+        val t = if (l.time in (now - 120000)..now) l.time else now
+        if (l.hasSpeed()) Run.onSpeed(l.speed, if (l.hasAccuracy()) l.accuracy else 99f, t)
+        val added = Run.addPoint(l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else 99f, if (l.hasAltitude()) l.altitude else null, t)
+        Run.fixT = now
         if (added && Run.pts.size % 10 == 0) Store.saveCurrent(this)
     }
     @Deprecated("old API") override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
