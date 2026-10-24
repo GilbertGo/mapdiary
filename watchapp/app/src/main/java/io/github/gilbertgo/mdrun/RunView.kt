@@ -349,7 +349,8 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         }
         val z = mapZ; val sc = W / 400f   // 조각 하나 = 256 × sc 화면 픽셀
         val cxw = Tiles.px(lng, z); val cyw = Tiles.py(lat, z); val cy = MB * .52f
-        fun sx(wx: Double) = (cx + (wx - cxw) * sc).toFloat(); fun sy(wy: Double) = (cy + (wy - cyw) * sc).toFloat()
+        fun sx(wx: Double) = (cx + (wx - cxw) * sc).toFloat()
+        fun sy(wy: Double) = (cy + (wy - cyw) * sc).toFloat()
         cv.save(); cv.clipRect(0f, 0f, W, MB)
         // 조각 깔기 (어두운 화면이라 위에 검은 막을 얇게)
         val ts = 256 * sc; var drawn = 0; var need = 0
