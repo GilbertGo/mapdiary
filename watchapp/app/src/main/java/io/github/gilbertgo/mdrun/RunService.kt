@@ -126,6 +126,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     }
 
     override fun onLocationChanged(l: Location) {
+        if (l.hasSpeed()) Run.onSpeed(l.speed, if (l.hasAccuracy()) l.accuracy else 99f, System.currentTimeMillis())
         val added = Run.addPoint(l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else 99f, if (l.hasAltitude()) l.altitude else null, System.currentTimeMillis())
         if (added && Run.pts.size % 10 == 0) Store.saveCurrent(this)
     }
