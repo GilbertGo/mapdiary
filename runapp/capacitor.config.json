@@ -1,6 +1,6 @@
 {
   "appId": "io.github.gilbertgo.mdrun",
-  "appName": "MD Run",
+  "appName": "MPD Run",
   "webDir": "www",
   "android": {
     "useLegacyBridge": true

@@ -16,7 +16,7 @@ if (Capacitor.isNativePlatform()) {
   window.MD_WEB_BASE = 'https://gilbertgo.github.io/mapdiary/';
 
   // 처음 열면 바로 그 앱의 시작 화면 (MD Run = 러닝, MD 파크골프 = 파크골프, Map Diary = 첫 화면). build.mjs가 window.MD_APP을 넣어요
-  const APP = window.MD_APP || { mode: 'run', name: 'MD Run', noti: '달린 길' };
+  const APP = window.MD_APP || { mode: 'run', name: 'MPD Run', noti: '달린 길' };
   // 새 화면으로 바꾸며 다시 열렸으면, 보던 곳(주소 ? 뒤)으로 돌아가요
   try { const back = sessionStorage.getItem('mdBack'); if (back != null) { sessionStorage.removeItem('mdBack'); if (back && !location.search) location.replace(location.pathname + back); } } catch {}
   // 앱을 처음 켤 때 한 번만 넘겨요 (그 뒤 '처음으로'를 누르면 첫 화면에서 내 MD 등을 볼 수 있게)

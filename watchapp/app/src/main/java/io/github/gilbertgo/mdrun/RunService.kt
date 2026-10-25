@@ -80,7 +80,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         if (Build.VERSION.SDK_INT >= 26) nm?.createNotificationChannel(NotificationChannel(CH, "러닝 기록", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
         val n = (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CH) else Notification.Builder(this))
-            .setContentTitle("MD Run 기록 중").setContentText("누르면 기록 화면으로 돌아가요")
+            .setContentTitle("MPD Run 기록 중").setContentText("누르면 기록 화면으로 돌아가요")
             .setSmallIcon(R.drawable.ic_run).setOngoing(true).setContentIntent(open).setCategory(Notification.CATEGORY_WORKOUT).build()
         if (Build.VERSION.SDK_INT >= 29) {
             // 위치는 꼭, 심박·걸음 권한이 있으면 '건강'도 (권한 없이 건강을 넣으면 안드로이드가 막아요)
