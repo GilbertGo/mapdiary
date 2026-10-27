@@ -2023,9 +2023,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '\'공유하기\'를 누르면 카카오톡 · 문자·메일·다른 앱 · 링크만 · 사진 저장 중에서 골라요 · 문자·메일로는 카드 사진과 링크가 함께 가요 · 새 앱 판에서는 앱 안에서도 카카오톡으로 보내기가 돼요 · 카드 바로 아래에서 큰 사진을 골라요';
+const UI_NOTES = '카카오톡으로 보내기가 안 될 때 노란 단추 바로 아래에 까닭이 보여요 · \'공유하기\'를 누르면 카카오톡 · 문자·메일·다른 앱 · 링크만 · 사진 저장 중에서 골라요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2209,33 +2209,46 @@ function bragView(img, getOpts) {
   let kBusy = false, kPrep = null;
   const kBtn = kakaoBtn(() => kakaoShare(), '카카오톡으로 보내기'); kBtn.classList.add('big');   // 카카오 노란 단추(로그인 단추와 같은 모양)
   const kSet = (t, busy) => { kBtn.lastChild.textContent = ' ' + t; kBtn.style.opacity = busy ? '.75' : ''; };
+  // 카톡 단추 바로 아래 상태 줄 (2026-10-27 사용자 '카톡으로 보내기 기능 안됨': 어디서 멈췄는지 화면에 남겨요)
+  const kNote = el('div', { class: 'sub', style: 'margin:0 4px;font-size:13px', text: '카드 그림과 "지도·사진 보기" 단추가 메시지 하나로 가요' });
+  const kSay = (t, bad) => { kNote.textContent = t; kNote.style.color = bad ? '#C2410C' : ''; kNote.style.fontWeight = bad ? '600' : ''; };
+  const kWhere = () => `${IN_NATIVE ? '앱' : '웹'} · ${IN_NATIVE ? 'https://localhost' : location.origin}${IN_NATIVE ? (window.MD_INTENT ? ' · 새 판' : ' · 예전 판') : ''}`;
   const kSend = p => {
     const o = p.o, lines = linkText(o, '', '').split('\n');
-    Kakao.Share.sendDefault({ objectType: 'feed',
+    kSay('카카오톡을 여는 중…');
+    let left = false; const onHide = () => { if (document.visibilityState === 'hidden') { left = true; kSay('✅ 카카오톡을 열었어요'); } };
+    document.addEventListener('visibilitychange', onHide);
+    setTimeout(() => { document.removeEventListener('visibilitychange', onHide);
+      if (!left && document.visibilityState === 'visible') kSay(`⚠ 카카오톡이 열리지 않았어요 (${kWhere()}). 아래 '문자 · 메일 · 다른 앱'에서 카카오톡을 고르면 사진은 가요`, true); }, 4000);
+    const r = Kakao.Share.sendDefault({ objectType: 'feed',
       content: { title: o.name, description: lines.slice(1, 3).filter(Boolean).join('\n'), imageUrl: p.img, imageWidth: p.w, imageHeight: p.h, link: { mobileWebUrl: p.url, webUrl: p.url } },
       buttons: [{ title: (o.photoRecs || []).length ? '지도·사진 보기' : '지도에서 보기', link: { mobileWebUrl: p.url, webUrl: p.url } }] });
+    if (r && r.catch) r.catch(e => { left = true; kFail(e); });
   };
   const kakaoShare = async () => {
     if (kBusy || !cardCv) return;
     const o = getOpts(); if (!o) return;
     if (kPrep && kPrep.o === o) { try { kSend(kPrep); } catch (e) { kFail(e); } return; }
-    kBusy = true; kSet('링크 만드는 중…', true);
+    kBusy = true; kSet('링크 만드는 중…', true); kSay('링크를 만들고 있어요…');
     try {
       const url = await shortLink(o, (i, n) => kSet(`사진 올리는 중 ${i}/${n}`, true));
-      kSet('카드 그림 올리는 중…', true);
+      kSet('카드 그림 올리는 중…', true); kSay('카드 그림을 카카오에 올리는 중…');
       const jpg = await new Promise(r => cardCv.toBlob(r, 'image/jpeg', .88)), f = new File([jpg], 'mpd_card.jpg', { type: 'image/jpeg' });
       let files = [f]; try { const dt = new DataTransfer(); dt.items.add(f); files = dt.files; } catch {}
       const up = await Kakao.Share.uploadImage({ file: files });
       kPrep = { o, url, img: up.infos.original.url, w: up.infos.original.width || 1080, h: up.infos.original.height || 1350 };
       if (shortCodes[url]) { showCode(shortCodes[url]); codeNote(shortCodes[url]); }
-      if (navigator.userActivation && !navigator.userActivation.isActive) { kSet('✓ 눌러서 카톡 보내기'); toast('준비됐어요. 단추를 한 번 더 눌러 주세요'); return; }
+      if (navigator.userActivation && !navigator.userActivation.isActive) { kSet('✓ 눌러서 카톡 보내기'); kSay('준비됐어요. 노란 단추를 한 번 더 눌러 주세요'); toast('준비됐어요. 단추를 한 번 더 눌러 주세요'); return; }
       kSet('카카오톡으로 보내기'); kSend(kPrep);
     } catch (e) { kSet('카카오톡으로 보내기'); kFail(e); }
     finally { kBusy = false; }
   };
   const kFail = e => { console.warn('kakao share', e);
-    const m = String(e && (e.message || e.msg || JSON.stringify(e)) || '');
-    toast(/domain|도메인|4011|-401|not.?allowed|KOE/i.test(m) ? `카카오 설정(도메인 ${IN_NATIVE ? 'https://localhost' : location.origin} 등록)이 아직 안 끝났어요. 아래 \'공유하기\'로 보내 주세요` : '카카오톡으로 보내지 못했어요. 아래 \'공유하기\'로 보내 주세요'); };
+    let m = ''; try { m = e && (e.msg || e.message || JSON.stringify(e)) || String(e); } catch { m = String(e); }
+    const dom = /domain|도메인|4011|-401|origin|not.?allowed|KOE|unauthorized|-4\b/i.test(m);
+    const why = dom ? `카카오 설정에 이 주소(${IN_NATIVE ? 'https://localhost' : location.origin})가 등록되지 않았어요` : '카카오가 받지 않았어요';
+    kSay(`⚠ ${why} · ${kWhere()} · ${String(m).slice(0, 120)}`, true);
+    toast(why + '. 아래 \'문자 · 메일 · 다른 앱\'으로 보내 주세요'); };
   // 카톡 안 → 기본 브라우저로 사진 저장하러 갈 때는 비밀코드 없이 (보내는 사람 본인이 보는 화면이라)
   const openOther = async () => { const o = getOpts(); if (o) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(await shortLink(Object.assign({}, o, { secret: false })), '&c=1')); };
   if (IN_KAKAO) shBtn.onclick = () => openOther();
@@ -2249,7 +2262,7 @@ function bragView(img, getOpts) {
   const openChooser = () => {
     const cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
     cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '어디로 보낼까요?' }, el('h2', { text: '어디로 보낼까요?' }),
-      kakaoOK() ? opt(kBtn, '카드 그림과 "지도·사진 보기" 단추가 메시지 하나로 가요') : null,
+      kakaoOK() ? el('div', { style: 'display:flex;flex-direction:column;gap:3px' }, kBtn, kNote) : null,
       opt(shBtn, kakaoOK() ? '문자·메일·밴드 등: 카드 사진과 링크를 함께 보내요' : '카톡·문자·메일 등: 카드 사진과 링크를 함께 보내요 (카톡은 링크를 복사해 두니 붙여넣기)'),
       opt(linkBtn, '사진 없이 글과 링크만 보내요'),
       IN_KAKAO ? null : opt(saveBtn, '휴대폰에 그림으로 저장해요'),
