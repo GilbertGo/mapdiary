@@ -1938,7 +1938,7 @@ function openBrag(info, t, count, allDone, room) {
       golf: golf && golfTot(golf, 0).played ? (({ cur, ...g }) => g)(golf) : undefined,
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
-    const cov = coverOf(t, phs.recs); cardOpts.cover = cov || undefined; coverBtn.style.display = phs.recs.length ? '' : 'none';
+    const cov = coverOf(t, phs.recs); cardOpts.cover = cov || undefined; fillCover();
     if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh;
       if (usePh) { const k = cov ? cov.id : ''; if (!phs.strip[k]) phs.strip[k] = k ? await cardStrip(phs.recs, k) : phs.pick; cardOpts.photos = phs.strip[k].map(noLoc); } }
     cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
@@ -1947,24 +1947,27 @@ function openBrag(info, t, count, allDone, room) {
     await card.draw(cardOpts);
   }
   let cardOpts = null;
-  // 카드 맨 위 그림을 이 MPD 사진으로 (walkCover:{ID} = 사진 id, 없으면 바닷가 풍경)
-  const coverBtn = el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0;display:none', text: '🖼 맨 위 사진 고르기', onclick: () => {
-    const cur = (coverOf(t, phs.recs) || {}).id || null, cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
-    const pick = v => { ls.set('walkCover:' + t, v || 'none'); cb.remove(); draw(); toast(v ? '맨 위에 사진을 넣었어요' : '맨 위를 풍경 그림으로 돌렸어요'); };
-    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '맨 위 사진 고르기' }, el('h2', { text: '맨 위 사진 고르기' }),
-      el('p', { class: 'sub', style: 'margin:0', text: '카드 맨 위(제목 뒤)에 크게 들어갈 사진을 골라요.' }),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto' },
-        el('button', { style: `aspect-ratio:1;border-radius:12px;border:${cur ? '1px solid var(--line)' : '3px solid var(--accent)'};background:linear-gradient(#A9DCFF,#EEF8FF 60%,#4FB3E8 61%);font-weight:700;color:#102A43`, text: '풍경 그림', onclick: () => pick(null) }),
-        ...phs.recs.map(r => el('button', { 'aria-label': '이 사진', style: `aspect-ratio:1;border-radius:12px;padding:0;overflow:hidden;border:${r.id === cur ? '3px solid var(--accent)' : '1px solid var(--line)'};background:#ddd center/cover url(${r.thumb})`, onclick: () => pick(r.id) }))),
-      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
-    document.body.append(cb);
-  } });
+  // 카드 맨 위 큰 사진 고르기 (walkCover:{ID} = 사진 id, 'none'이면 풍경 그림)
+  // 2026-10-27 사용자 '메인 큰사진 고르게 해': 예전엔 작은 밑줄 글자 → 창이라 못 찾았음. 카드 바로 아래에 사진 줄을 펼쳐 두고 누르면 바로 바뀌어요
+  const coverBox = el('div', { style: 'display:none' });
+  const fillCover = () => {
+    if (!phs || !phs.recs.length) { coverBox.style.display = 'none'; return; }
+    coverBox.style.display = '';
+    const cur = (coverOf(t, phs.recs) || {}).id || null;
+    const pick = v => { if ((v || null) === cur) return; ls.set('walkCover:' + t, v || 'none'); draw(); toast(v ? '큰 사진을 바꿨어요' : '맨 위를 풍경 그림으로 바꿨어요'); };
+    const cell = (on, extra) => `flex:0 0 64px;height:64px;border-radius:12px;padding:0;overflow:hidden;cursor:pointer;border:${on ? '3px solid var(--accent)' : '1px solid var(--line)'};${extra}`;
+    coverBox.replaceChildren(
+      el('div', { style: 'font-weight:700;font-size:15px;margin:2px 0 6px' }, '🖼 큰 사진 고르기 ', el('span', { class: 'sub', style: 'font-weight:500;font-size:13px', text: '· 누르면 바로 바뀌어요' })),
+      el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch' },
+        ...phs.recs.map(r => el('button', { 'aria-label': '이 사진을 큰 사진으로', style: cell(r.id === cur, `background:#ddd center/cover url(${r.thumb})`), onclick: () => pick(r.id) })),
+        el('button', { 'aria-label': '풍경 그림', style: cell(!cur, 'background:linear-gradient(#A9DCFF,#EEF8FF 60%,#4FB3E8 61%);font-size:12px;font-weight:700;color:#102A43'), text: '풍경 그림', onclick: () => pick(null) })));
+  };
   const card = bragView(img, () => cardOpts);
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 공유하기' },
     el('h2', { text: 'MPD 공유하기' }),
     el('p', { class: 'sub', style: 'margin:0', text: '사진 한 장이나 지도 링크로 보내요. 그림을 누르면 지도로 크게 볼 수 있어요.' + (count ? ' 참여자 이름과 위치는 들어가지 않아요.' : '') }),
-    img, opts, coverBtn,
+    img, coverBox, opts,
     // 제목 바꾸기: 내 기록·여행은 저장된 이름도 바꾸고, 단체 나들이는 카드 제목만 바꿔요
     el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '제목 바꾸기', onclick: () => {
       const iN = el('input', { type: 'text', id: 'bn', maxlength: 40, value: info.name });
@@ -2020,9 +2023,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '공유하기에 노란 \'카카오톡으로 보내기\' 단추가 생겼어요 · 카톡 메시지 하나에 카드 그림과 \'지도·사진 보기\' 단추가 같이 가요 · 사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요';
+const UI_NOTES = '공유하기 카드 바로 아래에서 큰 사진을 골라요(누르면 바로 바뀌어요) · 노란 \'카카오톡으로 보내기\'로 카드 그림과 \'지도·사진 보기\' 단추가 한 메시지로 가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
