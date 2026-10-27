@@ -2023,9 +2023,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '\'사진 보내기\'가 \'공유하기\'로 바뀌어 카드 사진과 링크를 함께 보내요(카톡은 링크를 복사해 두니 붙여넣기) · 새 앱 판에서는 앱 안에서도 노란 \'카카오톡으로 보내기\'가 돼요 · 카드 바로 아래에서 큰 사진을 골라요';
+const UI_NOTES = '\'공유하기\'를 누르면 카카오톡 · 문자·메일·다른 앱 · 링크만 · 사진 저장 중에서 골라요 · 문자·메일로는 카드 사진과 링크가 함께 가요 · 새 앱 판에서는 앱 안에서도 카카오톡으로 보내기가 돼요 · 카드 바로 아래에서 큰 사진을 골라요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2149,7 +2149,7 @@ function bragView(img, getOpts) {
   // 링크 만들기가 오래 걸려 휴대폰이 공유 창을 막으면 '✓ 눌러서 공유하기'로 한 번 더 누르게 해요
   let shBusy = false, shPrep = null;
   const shBtn = el('button', { class: 'btn primary', text: '공유하기', onclick: () => share() });
-  const setSh = (t, busy) => { shBtn.textContent = t; shBtn.style.opacity = busy ? '.75' : ''; };
+  let setSh = (t, busy) => { shBtn.textContent = t; shBtn.style.opacity = busy ? '.75' : ''; };
   const share = async () => {
     if (!blob || shBusy) return;
     const o = getOpts(); if (!o) return;
@@ -2196,7 +2196,7 @@ function bragView(img, getOpts) {
   };
   // 버튼 아래에 남는 비밀코드 줄
   const codeBox = el('div', { class: 'banner info', style: 'display:none' });
-  const codeNote = code => {
+  let codeNote = code => {
     codeBox.style.display = '';
     codeBox.replaceChildren(el('div', { class: 'row', style: 'justify-content:space-between;gap:10px' },
       el('div', {}, el('div', { class: 'sub', style: 'color:inherit', text: '보낸 링크의 비밀코드' }),
@@ -2239,12 +2239,28 @@ function bragView(img, getOpts) {
   // 카톡 안 → 기본 브라우저로 사진 저장하러 갈 때는 비밀코드 없이 (보내는 사람 본인이 보는 화면이라)
   const openOther = async () => { const o = getOpts(); if (o) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(await shortLink(Object.assign({}, o, { secret: false })), '&c=1')); };
   if (IN_KAKAO) shBtn.onclick = () => openOther();
-  const two = el('div', { class: 'two' }, shBtn, linkBtn);
-  if (kakaoOK()) {
-    shBtn.className = 'btn line';
-    hint.textContent = '카톡으로 보내면 카드 그림과 "지도·사진 보기" 단추가 메시지 하나로 가요. 다른 앱(문자·밴드 등)은 공유하기로 사진과 링크를 함께 보내요.';
-  }
-  const actions = kakaoOK() ? [kBtn, two, codeBox, hint] : [two, codeBox, hint];
+  // 공유하기 하나만 크게 → 누르면 어디로 보낼지 고르는 창 (2026-10-27 사용자 '공유하기 누르면 카톡·메시지·메일 등 선택할 수 있게')
+  // 고르는 창 안 단추를 누르는 것도 '누름'이라 카톡·공유 창이 막히지 않아요. 진행 글('링크 만드는 중…')은 그 단추에 보여요
+  const saveBtn = el('button', { class: 'btn line', text: '⬇ 카드 사진만 저장', onclick: () => save() });
+  shBtn.className = linkBtn.className = 'btn line';
+  shBtn.textContent = '📱 문자 · 메일 · 다른 앱'; setSh = (t, busy) => { shBtn.textContent = t === '공유하기' ? '📱 문자 · 메일 · 다른 앱' : t; shBtn.style.opacity = busy ? '.75' : ''; };
+  linkBtn.textContent = '🔗 링크만 보내기';
+  const opt = (b, sub) => el('div', { style: 'display:flex;flex-direction:column;gap:3px' }, b, sub ? el('div', { class: 'sub', style: 'margin:0 4px;font-size:13px', text: sub }) : null);
+  const openChooser = () => {
+    const cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+    cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '어디로 보낼까요?' }, el('h2', { text: '어디로 보낼까요?' }),
+      kakaoOK() ? opt(kBtn, '카드 그림과 "지도·사진 보기" 단추가 메시지 하나로 가요') : null,
+      opt(shBtn, kakaoOK() ? '문자·메일·밴드 등: 카드 사진과 링크를 함께 보내요' : '카톡·문자·메일 등: 카드 사진과 링크를 함께 보내요 (카톡은 링크를 복사해 두니 붙여넣기)'),
+      opt(linkBtn, '사진 없이 글과 링크만 보내요'),
+      IN_KAKAO ? null : opt(saveBtn, '휴대폰에 그림으로 저장해요'),
+      codeBox,
+      el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
+    document.body.append(cb);
+  };
+  const mainBtn = el('button', { class: 'btn primary full big', onclick: openChooser }, '공유하기');
+  hint.textContent = IN_KAKAO ? '카카오톡 안에서는 사진 공유가 막혀 있어, 사진은 휴대폰의 기본 브라우저에서 보내요.' : '카톡 · 문자 · 메일 등 보낼 곳을 골라요. 사진만 저장하려면 카드 그림을 길게 누르세요.';
+  const codeNote0 = codeNote; codeNote = c => { codeNote0(c); if (!codeBox.isConnected) toast('비밀코드: ' + c); };
+  const actions = [mainBtn, hint];
   let cardCv = null;
   return {
     actions,
