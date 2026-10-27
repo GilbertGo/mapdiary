@@ -124,6 +124,27 @@ public class MdAppPlugin extends Plugin {
         JSObject r = new JSObject(); r.put("items", items); call.resolve(r);
     }
 
+    // 웹 화면이 intent:// 주소로 다른 앱을 열려고 할 때 (2026-10-27 사용자 '앱 안에서도 카톡 보내기 되게 해')
+    // 카카오톡 공유(Kakao JS SDK)·네이버지도 길찾기가 intent:// 로 앱을 여는데, Capacitor 기본은 그냥 VIEW로 열어 아무 일도 안 일어났어요.
+    // 여기서 Intent.parseUri로 풀어 열고, 그 앱이 없으면 browser_fallback_url(웹) → 그것도 없으면 플레이 스토어로
+    @Override
+    public Boolean shouldOverrideLoad(Uri url) {
+        String sc = url.getScheme();
+        if (sc == null || !sc.equals("intent")) return null;
+        Intent it;
+        try { it = Intent.parseUri(url.toString(), Intent.URI_INTENT_SCHEME); }
+        catch (Exception e) { return true; }
+        it.addCategory(Intent.CATEGORY_BROWSABLE); it.setComponent(null); it.setSelector(null);
+        it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try { getContext().startActivity(it); return true; } catch (Exception e) { }
+        String fb = it.getStringExtra("browser_fallback_url");
+        try {
+            if (fb != null && !fb.isEmpty()) { getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fb)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+            else if (it.getPackage() != null) { getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + it.getPackage())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+        } catch (Exception e) { }
+        return true;
+    }
+
     // 새 판(APK)을 앱 안에서 받아 바로 설치 (2026-10-19 사용자가 다른 앱의 '새 버전이 있어요 · 받는 중 100%' 창을 보여 줌)
     // 받는 동안 'updProgress' {p} 를 알려 주고, 다 받으면 안드로이드 설치 확인 창(MdUpdateReceiver)을 띄워요. 같은 열쇠라 덮어 설치(기록 그대로)
     @PluginMethod

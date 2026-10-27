@@ -12,6 +12,7 @@ import { SpeechRecognition as NSR } from '@capacitor-community/speech-recognitio
 
 if (Capacitor.isNativePlatform()) {
   window.MD_NATIVE = true;
+  window.MD_INTENT = 1;   // 이 판부터 웹 화면의 intent:// (카카오톡 공유·네이버지도)를 앱이 열어 줘요 (MdAppPlugin.shouldOverrideLoad)
   // 남에게 보내는 링크(짧은 지도 링크·모임방)는 앱 안 주소(https://localhost)가 아니라 웹 주소로
   window.MD_WEB_BASE = 'https://gilbertgo.github.io/mapdiary/';
 

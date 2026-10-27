@@ -2023,15 +2023,15 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '공유하기 카드 바로 아래에서 큰 사진을 골라요(누르면 바로 바뀌어요) · 노란 \'카카오톡으로 보내기\'로 카드 그림과 \'지도·사진 보기\' 단추가 한 메시지로 가요';
+const UI_NOTES = '새 앱 판에서는 앱 안에서도 노란 \'카카오톡으로 보내기\'가 돼요 · 공유하기 카드 바로 아래에서 큰 사진을 골라요(누르면 바로 바뀌어요)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
 function kakaoOK() {
   try {
-    if (!window.Kakao || KAKAO_JS_KEY === 'YOUR_KAKAO_JS_KEY' || IN_NATIVE) return false;   // 앱(https://localhost) 안에서는 카톡을 못 불러서 예전 단추로
+    if (!window.Kakao || KAKAO_JS_KEY === 'YOUR_KAKAO_JS_KEY' || (IN_NATIVE && !window.MD_INTENT)) return false;   // 앱은 intent://를 열 줄 아는 새 판(MD_INTENT, 2026-10-27)부터. 예전 판 앱은 예전 단추로
     if (!Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY);
     return true;
   } catch { return false; }
@@ -2217,7 +2217,7 @@ function bragView(img, getOpts) {
   };
   const kFail = e => { console.warn('kakao share', e);
     const m = String(e && (e.message || e.msg || JSON.stringify(e)) || '');
-    toast(/domain|도메인|4011|-401|not.?allowed|KOE/i.test(m) ? '카카오 설정(도메인 등록)이 아직 안 끝났어요. 아래 \'링크 보내기\'로 보내 주세요' : '카카오톡으로 보내지 못했어요. 아래 \'링크 보내기\'로 보내 주세요'); };
+    toast(/domain|도메인|4011|-401|not.?allowed|KOE/i.test(m) ? `카카오 설정(도메인 ${IN_NATIVE ? 'https://localhost' : location.origin} 등록)이 아직 안 끝났어요. 아래 \'링크 보내기\'로 보내 주세요` : '카카오톡으로 보내지 못했어요. 아래 \'링크 보내기\'로 보내 주세요'); };
   // 카톡 안 → 기본 브라우저로 사진 저장하러 갈 때는 비밀코드 없이 (보내는 사람 본인이 보는 화면이라)
   const openOther = async () => { const o = getOpts(); if (o) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(await shortLink(Object.assign({}, o, { secret: false })), '&c=1')); };
   const two = el('div', { class: 'two' },
