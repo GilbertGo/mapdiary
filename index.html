@@ -610,7 +610,7 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 // 누구나 쓰는 공개 서버라 보안이 약해요. 정식 출시 때는 Firebase 버전으로 바꾸세요.
 const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
 // 카카오 개발자 사이트(developers.kakao.com)에서 받은 JavaScript 키를 넣으면 카카오톡 공유가 켜져요.
-const KAKAO_JS_KEY = 'YOUR_KAKAO_JS_KEY';
+const KAKAO_JS_KEY = '614fd36557449619fc75653f9f5e5d6c';   // 2026-10-27 카카오 앱 'Map Photo Diary'(1616089) JavaScript 키 (공개해도 되는 값, 쓰는 곳은 등록한 도메인만)
 
 const app = document.getElementById('app');
 const qs = new URLSearchParams(location.search);
@@ -2020,15 +2020,15 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '링크 보내기 글에 제목·날짜·거리·사진 수가 먼저 보여요 · 카톡 링크 미리보기에 지도와 사진 그림이 떠요 · 사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요';
+const UI_NOTES = '공유하기에 노란 \'카카오톡으로 보내기\' 단추가 생겼어요 · 카톡 메시지 하나에 카드 그림과 \'지도·사진 보기\' 단추가 같이 가요 · 사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
 function kakaoOK() {
   try {
-    if (!window.Kakao || KAKAO_JS_KEY === 'YOUR_KAKAO_JS_KEY') return false;
+    if (!window.Kakao || KAKAO_JS_KEY === 'YOUR_KAKAO_JS_KEY' || IN_NATIVE) return false;   // 앱(https://localhost) 안에서는 카톡을 못 불러서 예전 단추로
     if (!Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY);
     return true;
   } catch { return false; }
@@ -2183,33 +2183,53 @@ function bragView(img, getOpts) {
       el('button', { class: 'btn line small', text: '복사', onclick: () => navigator.clipboard.writeText(code).then(() => toast('비밀코드를 복사했어요'), () => {}) })));
   };
   const hint = el('p', { class: 'sub center', style: 'margin:0', text: IN_KAKAO ? '카카오톡 안에서는 사진을 보낼 수 없어서, 사진 보내기는 휴대폰의 기본 브라우저에서 열어요.' : '사진만 저장하려면 카드 그림을 길게 누르세요.' });
-  // 카카오 키가 있으면: 사진 + '지도에서 보기' 버튼이 붙은 카톡 메시지 하나로 한꺼번에 보내요
-  const kakaoShare = async () => {
-    const o = getOpts(); if (!o || !blob) return;
-    try {
-      const url = await shortLink(o);
-      const up = await Kakao.Share.uploadImage({ file: [new File([blob], 'card.png', { type: 'image/png' })] });
-      Kakao.Share.sendDefault({ objectType: 'feed',
-        content: { title: o.name, description: linkText(o, '', '').split('\n').slice(1, 3).join('\n'), imageUrl: up.infos.original.url, imageWidth: 1080, imageHeight: 1350, link: { mobileWebUrl: url, webUrl: url } },
-        buttons: [{ title: '지도에서 보기', link: { mobileWebUrl: url, webUrl: url } }] });
-      if (shortCodes[url]) { showCode(shortCodes[url]); codeNote(shortCodes[url]); }
-    } catch { toast('카카오톡으로 보내지 못했어요. 잠시 뒤 다시 해 주세요'); }
+  // 카카오 키가 있으면: 카드 그림 + '지도에서 보기' 단추가 붙은 카톡 메시지 하나로 보내요 (2026-10-27 '링크를 안 누르는 사람이 있어')
+  // 링크 만들기·그림 올리기가 몇 초 걸려서, 그새 휴대폰이 '누른 지 오래됐다'며 카톡 열기를 막으면 단추를 '✓ 눌러서 카톡 보내기'로 바꿔 한 번 더 누르게 해요
+  let kBusy = false, kPrep = null;
+  const kBtn = kakaoBtn(() => kakaoShare(), '카카오톡으로 보내기'); kBtn.classList.add('big');   // 카카오 노란 단추(로그인 단추와 같은 모양)
+  const kSet = (t, busy) => { kBtn.lastChild.textContent = ' ' + t; kBtn.style.opacity = busy ? '.75' : ''; };
+  const kSend = p => {
+    const o = p.o, lines = linkText(o, '', '').split('\n');
+    Kakao.Share.sendDefault({ objectType: 'feed',
+      content: { title: o.name, description: lines.slice(1, 3).filter(Boolean).join('\n'), imageUrl: p.img, imageWidth: p.w, imageHeight: p.h, link: { mobileWebUrl: p.url, webUrl: p.url } },
+      buttons: [{ title: (o.photoRecs || []).length ? '지도·사진 보기' : '지도에서 보기', link: { mobileWebUrl: p.url, webUrl: p.url } }] });
   };
+  const kakaoShare = async () => {
+    if (kBusy || !cardCv) return;
+    const o = getOpts(); if (!o) return;
+    if (kPrep && kPrep.o === o) { try { kSend(kPrep); } catch (e) { kFail(e); } return; }
+    kBusy = true; kSet('링크 만드는 중…', true);
+    try {
+      const url = await shortLink(o, (i, n) => kSet(`사진 올리는 중 ${i}/${n}`, true));
+      kSet('카드 그림 올리는 중…', true);
+      const jpg = await new Promise(r => cardCv.toBlob(r, 'image/jpeg', .88)), f = new File([jpg], 'mpd_card.jpg', { type: 'image/jpeg' });
+      let files = [f]; try { const dt = new DataTransfer(); dt.items.add(f); files = dt.files; } catch {}
+      const up = await Kakao.Share.uploadImage({ file: files });
+      kPrep = { o, url, img: up.infos.original.url, w: up.infos.original.width || 1080, h: up.infos.original.height || 1350 };
+      if (shortCodes[url]) { showCode(shortCodes[url]); codeNote(shortCodes[url]); }
+      if (navigator.userActivation && !navigator.userActivation.isActive) { kSet('✓ 눌러서 카톡 보내기'); toast('준비됐어요. 단추를 한 번 더 눌러 주세요'); return; }
+      kSet('카카오톡으로 보내기'); kSend(kPrep);
+    } catch (e) { kSet('카카오톡으로 보내기'); kFail(e); }
+    finally { kBusy = false; }
+  };
+  const kFail = e => { console.warn('kakao share', e);
+    const m = String(e && (e.message || e.msg || JSON.stringify(e)) || '');
+    toast(/domain|도메인|4011|-401|not.?allowed|KOE/i.test(m) ? '카카오 설정(도메인 등록)이 아직 안 끝났어요. 아래 \'링크 보내기\'로 보내 주세요' : '카카오톡으로 보내지 못했어요. 아래 \'링크 보내기\'로 보내 주세요'); };
   // 카톡 안 → 기본 브라우저로 사진 저장하러 갈 때는 비밀코드 없이 (보내는 사람 본인이 보는 화면이라)
   const openOther = async () => { const o = getOpts(); if (o) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(await shortLink(Object.assign({}, o, { secret: false })), '&c=1')); };
-  let actions;
+  const two = el('div', { class: 'two' },
+    el('button', { class: kakaoOK() ? 'btn line' : 'btn primary', text: '사진 보내기', onclick: IN_KAKAO ? () => openOther() : share }),
+    linkBtn);
   if (kakaoOK()) {
-    hint.textContent = '카드 사진과 "지도에서 보기" 버튼이 메시지 하나로 가요. 사진만 저장하려면 카드 그림을 길게 누르세요.';
-    actions = [el('button', { class: 'btn primary full big', text: '카카오톡으로 보내기', onclick: kakaoShare }), hint];
-  } else actions = [
-    el('div', { class: 'two' },
-      el('button', { class: 'btn primary', text: '사진 보내기', onclick: IN_KAKAO ? () => openOther() : share }),
-      linkBtn),
-    codeBox, hint];
+    linkBtn.className = 'btn line';
+    hint.textContent = '카톡으로 보내면 카드 그림과 "지도·사진 보기" 단추가 메시지 하나로 가요. 다른 앱으로는 아래 단추로 보내요.';
+  }
+  const actions = kakaoOK() ? [kBtn, two, codeBox, hint] : [two, codeBox, hint];
+  let cardCv = null;
   return {
     actions,
     async draw(o) {
-      const cv = await drawBragCard(o);
+      const cv = await drawBragCard(o); cardCv = cv; kPrep = null; kSet && kSet('카카오톡으로 보내기');
       img.src = cv.toDataURL('image/png');
       blob = await new Promise(r => cv.toBlob(r, 'image/png'));
     }
