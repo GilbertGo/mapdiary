@@ -9,9 +9,11 @@
 <meta name="description" content="다녀온 길과 사진을 지도 위에서 보세요">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Map Photo Diary">
-<meta property="og:title" content="Map Photo Diary · 다녀온 길과 사진">
+<meta property="og:title" content="다녀온 길과 사진이 도착했어요">
 <meta property="og:description" content="누르면 지도 위에 다닌 길과 찍은 사진이 펼쳐져요">
-<meta property="og:image" content="https://gilbertgo.github.io/mapdiary/icon-512.png">
+<meta property="og:image" content="https://gilbertgo.github.io/mapdiary/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <!-- 예전 이름 Map Diary: 이미 깐 안드로이드 앱이 새 화면을 받을 때 이 글자로 확인해요(native.js liveUpdate). 지우지 말 것 -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -2018,9 +2020,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요(공유 창에서 바꾸기·풍경 그림 가능) · 카드 아래에 출발·도착 시각과 거리·높이·들른 곳·걸린 시간이 모두 들어가요 · 카톡에 보낸 링크에 미리보기 글이 떠요';
+const UI_NOTES = '링크 보내기 글에 제목·날짜·거리·사진 수가 먼저 보여요 · 카톡 링크 미리보기에 지도와 사진 그림이 떠요 · 사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2112,6 +2114,14 @@ function showCode(code) {
       el('button', { class: 'btn primary small grow', text: '확인', onclick: () => bg.remove() }))));
   document.body.append(bg);
 }
+// 링크 보내기 글(2026-10-27 '링크를 안 누르는 사람이 있어, 궁금할 정도로'): 제목·날짜·숫자·사진 수를 먼저 보여 주고 '눌러서 보기'
+function linkText(o, url, code) {
+  const ic = { hike: '⛰', trek: '🥾', run: '🏃', bike: '🚴', camp: '⛺', backpack: '🎒', travel: '✈️', date: '💕', daily: '☕', pgolf: '⛳' }[o.modeK] || '📍';
+  const nums = (o.stats || []).filter(x => x && x !== '진행 중' && !/^전체 이동/.test(x)).slice(0, 3), nPh = (o.photoRecs || []).length;
+  return [`${ic} ${o.name}`, `${o.dateText}${o.modeLabel ? ' · ' + o.modeLabel : ''}${(o.stats || []).includes('진행 중') ? ' · 지금 가는 중' : ''}`,
+    [...nums, nPh ? `사진 ${nPh}장` : ''].filter(Boolean).join(' · '), '',
+    `👉 눌러서 다닌 길${nPh ? '과 사진' : ''} 보기${code ? ' (비밀코드는 따로 알려 드릴게요)' : ''}`, url].filter((x, i) => x || i === 3).join('\n');
+}
 // 링크 뒤에 &c=1 같은 것을 붙일 때 # 앞에 붙여요
 const addQuery = (url, q) => { const i = url.indexOf('#'); return i < 0 ? url + q : url.slice(0, i) + q + url.slice(i); };
 function bragLink(o) {
@@ -2151,7 +2161,7 @@ function bragView(img, getOpts) {
     let url; try { url = await shortLink(o, (i, n) => setLink(`사진 올리는 중 ${i}/${n}`, true)); }
     catch { return toast('비밀코드 링크를 만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
     finally { linkBusy = false; setLink('링크 보내기'); }
-    const code = shortCodes[url], text = `[Map Photo Diary] ${o.name} 경로 지도${code ? ' (비밀코드는 따로 알려 드릴게요)' : ''}\n${url}`;
+    const code = shortCodes[url], text = linkText(o, url, code);
     // 비밀코드는 공유 창을 열기 전에 먼저 보여주고, 버튼 아래에도 계속 남겨 둬요
     // (공유가 끝나도 '취소됨'으로 알려 오는 휴대폰이 있어서요)
     if (code) { showCode(code); codeNote(code); }
@@ -2180,7 +2190,7 @@ function bragView(img, getOpts) {
       const url = await shortLink(o);
       const up = await Kakao.Share.uploadImage({ file: [new File([blob], 'card.png', { type: 'image/png' })] });
       Kakao.Share.sendDefault({ objectType: 'feed',
-        content: { title: o.name, description: `${o.dateText} · ${o.startPlace} → ${o.endPlace}`, imageUrl: up.infos.original.url, imageWidth: 1080, imageHeight: 1350, link: { mobileWebUrl: url, webUrl: url } },
+        content: { title: o.name, description: linkText(o, '', '').split('\n').slice(1, 3).join('\n'), imageUrl: up.infos.original.url, imageWidth: 1080, imageHeight: 1350, link: { mobileWebUrl: url, webUrl: url } },
         buttons: [{ title: '지도에서 보기', link: { mobileWebUrl: url, webUrl: url } }] });
       if (shortCodes[url]) { showCode(shortCodes[url]); codeNote(shortCodes[url]); }
     } catch { toast('카카오톡으로 보내지 못했어요. 잠시 뒤 다시 해 주세요'); }
