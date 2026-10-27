@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1E3B2F">
 <title>Map Photo Diary</title>
+<!-- 카톡·문자에 링크를 보내면 보이는 미리보기 (2026-10-27: 없어서 '여기를 눌러 링크를 확인하세요'만 떴음) -->
+<meta name="description" content="다녀온 길과 사진을 지도 위에서 보세요">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Map Photo Diary">
+<meta property="og:title" content="Map Photo Diary · 다녀온 길과 사진">
+<meta property="og:description" content="누르면 지도 위에 다닌 길과 찍은 사진이 펼쳐져요">
+<meta property="og:image" content="https://gilbertgo.github.io/mapdiary/icon-512.png">
 <!-- 예전 이름 Map Diary: 이미 깐 안드로이드 앱이 새 화면을 받을 때 이 글자로 확인해요(native.js liveUpdate). 지우지 말 것 -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -966,8 +973,16 @@ async function cardPhotos(t) {
   const idx = recs.length <= 3 ? recs.map((_, i) => i) : [0, Math.floor((recs.length - 1) / 2), recs.length - 1];
   const pick = [];
   for (const i of idx) { try { pick.push({ lat: recs[i].lat, lng: recs[i].lng, img: await createImageBitmap(recs[i].blob) }); } catch {} }
-  return { recs, pick };
+  return { recs, pick, strip: {} };
 }
+// 카드 아래 사진 줄: 맨 위(표지)에 쓴 사진은 빼고 처음·가운데·끝 3장
+async function cardStrip(recs, skip) {
+  const rs = recs.filter(r => r.id !== skip), idx = rs.length <= 3 ? rs.map((_, i) => i) : [0, Math.floor((rs.length - 1) / 2), rs.length - 1], out = [];
+  for (const i of idx) { try { out.push({ lat: rs[i].lat, lng: rs[i].lng, img: await createImageBitmap(rs[i].blob) }); } catch {} }
+  return out;
+}
+// 카드 맨 위 사진: 고른 것(walkCover:{ID}), 'none'이면 풍경 그림, 안 골랐으면 가운데쯤 사진을 저절로 (2026-10-27 '지금은 영 보고 싶은 마음이 안 들 거야')
+const coverOf = (t, recs) => { const cid = ls.get('walkCover:' + t, null); if (cid === 'none' || !recs.length) return null; return (cid && recs.find(r => r.id === cid)) || recs[Math.floor((recs.length - 1) / 2)]; };
 // 지도에 사진 동그라미를 놓아요. 누르면 크게 보여줘요.
 function photoMarkers(map, layer, photos) {
   photos.filter(p => p.lat != null).forEach(p => {
@@ -1704,9 +1719,17 @@ async function drawBragCard(o) {
   // 파크골프 점수표: 출발·도착 줄 바로 위에. 그만큼 지도(와 사진)를 위로 올려요 (3명 넘으면 카드에 사진은 빼요)
   const GF = o.golf ? golfClean(o.golf) : null, gOn = GF && golfTot(GF, 0).played > 0;
   const PH = (o.photos || []).slice(0, gOn && GF.p.length > 2 ? 0 : 3);   // 사진이 있으면 지도를 줄이고 아래에 사진 3장
-  const gh = gOn ? 70 + GF.p.length * 46 : 0, gy = 1062 - gh;
-  const sh = gOn ? 120 : 150, sy = gOn ? gy - 18 - sh : 890;
-  const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : 1040) - py);
+  // 아래 판(2026-10-27 사용자 '사진 보내기 하면 이 정도는 보내자'): 받은 사람 화면처럼 출발 ─ 도착 시각 줄 + 숫자 칸(2×2 / 3칸). 예전 한 줄 칩은 넘치면 잘렸어요
+  const live = (o.stats || []).includes('진행 중');
+  const tiles = (o.stats || []).filter(x => x && x !== '진행 중').slice(0, 6).map(x => {
+    if (x.startsWith('✓')) { const m = x.match(/(\d+명)/); return { k: '모두 도착', v: m ? m[1] : x.slice(1).trim() }; }
+    const m = x.match(/^(\D*?)\s*(\d.*)$/); return m ? { k: m[1] || '걸린 시간', v: m[2] } : { k: '', v: x }; });
+  const nT = tiles.length, cols = nT === 4 ? 2 : Math.min(3, nT), rows = cols ? Math.ceil(nT / cols) : 0;
+  const realPlace = s => s && !/^(출발|도착)( 지점| 집결지)?$|^도착지$|^지금 여기$|^마지막 위치$/.test(s), plOn = realPlace(o.startPlace) || realPlace(o.endPlace);
+  const timeH = plOn ? 116 : 92, cellH = 112, panelH = 24 + timeH + rows * cellH + (rows ? 24 : 0), T = 1300 - panelH;
+  const gh = gOn ? 70 + GF.p.length * 46 : 0, gy = T - 18 - gh;
+  const sh = gOn ? 120 : 140, sy = gOn ? gy - 18 - sh : T - 20 - sh;
+  const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : T - 20) - py);
   rr(px, py, pw, ph, 48); g.fillStyle = PINE; g.fill();
   g.save(); rr(px, py, pw, ph, 48); g.clip();
   if (contour) for (let cx = px - 60; cx < px + pw; cx += 260) for (let cy = py - 40; cy < py + ph; cy += 220) g.drawImage(contour, cx, cy, 260, 220);
@@ -1821,16 +1844,36 @@ async function drawBragCard(o) {
     });
     g.textBaseline = 'alphabetic';
   }
-  // 출발 / 도착
-  const col = (x, lbl, time, place) => {
-    font(600, 28); g.fillStyle = P.muted; g.fillText(`${lbl} ${time}`, x, 1100);
-    font(700, 38); g.fillStyle = P.ink; g.fillText(fit(place, pw / 2 - 24), x, 1150);
-  };
-  col(72, '출발', o.startTime, o.startPlace); col(72 + pw / 2 + 12, '도착', o.endTime, o.endPlace);
-  // 숫자 칩
-  let cx = 72; font(700, 30);
-  o.stats.forEach(s => { const w = g.measureText(s).width + 44; if (cx + w > W - 60) return; rr(cx, 1196, w, 60, 30); g.fillStyle = s.startsWith('✓') ? '#E1EEE4' : P.chip; g.fill(); g.fillStyle = s.startsWith('✓') ? '#1B4332' : P.ink; g.textBaseline = 'middle'; g.fillText(s, cx + 22, 1227); g.textBaseline = 'alphabetic'; cx += w + 12; });
-  font(500, 26); g.fillStyle = P.foot; g.textAlign = 'center'; g.fillText('Map Photo Diary', W / 2, 1310); g.textAlign = 'left';
+  // 아래 판: ○ 08:59 출발 ┄┄┄ 도착 12:45 ● + 숫자 칸
+  const dark = P.bg === '#0F1B2D', VAL = cov ? P.ink : document.documentElement.dataset.theme === 'mt' ? PINE : '#0277BD';
+  rr(px, T, pw, panelH, 40); g.fillStyle = dark ? '#1F3049' : '#FFFDF8'; g.fill();
+  { const ty = T + 24 + 38, lx = px + 34, rx = px + pw - 34;
+    g.beginPath(); g.arc(lx + 12, ty - 12, 12, 0, Math.PI * 2); g.lineWidth = 5; g.strokeStyle = VAL; g.stroke();
+    g.beginPath(); g.arc(rx - 12, ty - 12, 13, 0, Math.PI * 2); g.fillStyle = ACC; g.fill();
+    font(700, 42); g.fillStyle = P.ink; g.fillText(o.startTime || '', lx + 38, ty);
+    const lw = g.measureText(o.startTime || '').width; g.textAlign = 'right';
+    const et = live ? '지금' : (o.endTime || ''); g.fillText(et, rx - 38, ty); const rw = g.measureText(et).width;
+    font(500, 28); g.fillStyle = P.muted;
+    const sub = (lbl, pl, w) => fit(realPlace(pl) ? `${lbl} · ${pl}` : lbl, w);
+    g.textAlign = 'left'; g.fillText(sub('출발', o.startPlace, pw / 2 - 90), lx + 38, ty + 40);
+    g.textAlign = 'right'; g.fillText(sub(live ? '진행 중' : '도착', o.endPlace, pw / 2 - 90), rx - 38, ty + 40); g.textAlign = 'left';
+    const a = lx + 38 + lw + 24, b = rx - 38 - rw - 24;
+    if (b > a) { g.beginPath(); g.moveTo(a, ty - 13); g.lineTo(b, ty - 13); g.setLineDash([10, 8]); g.lineWidth = 3; g.strokeStyle = ACC; g.stroke(); g.setLineDash([]); } }
+  if (rows) {
+    const gx = px + 24, gw = pw - 48, gy0 = T + 24 + timeH;
+    rr(gx, gy0, gw, rows * cellH, 28); g.fillStyle = dark ? '#16253A' : cov ? P.chip : '#F4F0E6'; g.fill();
+    g.strokeStyle = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)'; g.lineWidth = 2;
+    for (let r = 1; r < rows; r++) { g.beginPath(); g.moveTo(gx + 14, gy0 + r * cellH); g.lineTo(gx + gw - 14, gy0 + r * cellH); g.stroke(); }
+    g.textAlign = 'center';
+    tiles.forEach((s, i) => {
+      const r = Math.floor(i / cols), inRow = Math.min(cols, nT - r * cols), c = i % cols, w2 = gw / inRow, cx = gx + c * w2 + w2 / 2, cy = gy0 + r * cellH;
+      if (c) { g.beginPath(); g.moveTo(gx + c * w2, cy + 14); g.lineTo(gx + c * w2, cy + cellH - 14); g.stroke(); }
+      font(800, cols === 3 ? 40 : 46); g.fillStyle = VAL; g.fillText(fit(s.v, w2 - 24), cx, cy + 58);
+      font(500, 26); g.fillStyle = P.muted; g.fillText(fit(s.k, w2 - 24), cx, cy + 96);
+    });
+    g.textAlign = 'left';
+  }
+  font(500, 22); g.fillStyle = P.foot; g.textAlign = 'center'; g.fillText('Map Photo Diary', W / 2, 1334); g.textAlign = 'left';
   return cv;
 }
 // info: 나들이 계획, t: 나들이 ID, count: 참여 인원, allDone: 모두 도착했는지
@@ -1893,8 +1936,9 @@ function openBrag(info, t, count, allDone, room) {
       golf: golf && golfTot(golf, 0).played ? (({ cur, ...g }) => g)(golf) : undefined,
       modeLabel: ls.get('walkMode:' + t, null) ? M.label : '', modeK: ls.get('walkMode:' + t, null) ? M.k : '' };
     if (phs === null) { phs = await cardPhotos(t); if (phs.recs.length) { phBox.style.display = ''; shBox.style.display = ''; } }
-    if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh; if (usePh) cardOpts.photos = phs.pick.map(noLoc); }
-    { const cid = ls.get('walkCover:' + t, null); cardOpts.cover = cid ? phs.recs.find(r => r.id === cid) : undefined; coverBtn.style.display = phs.recs.length ? '' : 'none'; }
+    const cov = coverOf(t, phs.recs); cardOpts.cover = cov || undefined; coverBtn.style.display = phs.recs.length ? '' : 'none';
+    if (phs.recs.length) { cardOpts.photoRecs = phs.recs.map(noLoc); cardOpts.sharePhotos = sharePh;
+      if (usePh) { const k = cov ? cov.id : ''; if (!phs.strip[k]) phs.strip[k] = k ? await cardStrip(phs.recs, k) : phs.pick; cardOpts.photos = phs.strip[k].map(noLoc); } }
     cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
     if (cardOpts.golf && zone.length) cardOpts.golf = Object.assign({}, cardOpts.golf, { h: cardOpts.golf.h.map(q => q && inZone({ lat: q[0], lng: q[1] }) ? null : q) });
     cardOpts.secret = secretOn;
@@ -1903,8 +1947,8 @@ function openBrag(info, t, count, allDone, room) {
   let cardOpts = null;
   // 카드 맨 위 그림을 이 MPD 사진으로 (walkCover:{ID} = 사진 id, 없으면 바닷가 풍경)
   const coverBtn = el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0;display:none', text: '🖼 맨 위 사진 고르기', onclick: () => {
-    const cur = ls.get('walkCover:' + t, null), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
-    const pick = v => { ls.set('walkCover:' + t, v); cb.remove(); draw(); toast(v ? '맨 위에 사진을 넣었어요' : '맨 위를 풍경 그림으로 돌렸어요'); };
+    const cur = (coverOf(t, phs.recs) || {}).id || null, cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
+    const pick = v => { ls.set('walkCover:' + t, v || 'none'); cb.remove(); draw(); toast(v ? '맨 위에 사진을 넣었어요' : '맨 위를 풍경 그림으로 돌렸어요'); };
     cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '맨 위 사진 고르기' }, el('h2', { text: '맨 위 사진 고르기' }),
       el('p', { class: 'sub', style: 'margin:0', text: '카드 맨 위(제목 뒤)에 크게 들어갈 사진을 골라요.' }),
       el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto' },
@@ -1974,9 +2018,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.26-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '앱 이름을 MPD Run · MPD 파크골프로 맞췄어요';
+const UI_NOTES = '사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요(공유 창에서 바꾸기·풍경 그림 가능) · 카드 아래에 출발·도착 시각과 거리·높이·들른 곳·걸린 시간이 모두 들어가요 · 카톡에 보낸 링크에 미리보기 글이 떠요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
