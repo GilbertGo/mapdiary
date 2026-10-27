@@ -610,7 +610,7 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 // 누구나 쓰는 공개 서버라 보안이 약해요. 정식 출시 때는 Firebase 버전으로 바꾸세요.
 const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
 // 카카오 개발자 사이트(developers.kakao.com)에서 받은 JavaScript 키를 넣으면 카카오톡 공유가 켜져요.
-const KAKAO_JS_KEY = '614fd36557449619fc75653f9f5e5d6c';   // 2026-10-27 카카오 앱 'Map Photo Diary'(1616089) JavaScript 키 (공개해도 되는 값, 쓰는 곳은 등록한 도메인만)
+const KAKAO_JS_KEY = 'e4b8d1e0ff74836b51247c87ae6aeb98';   // 2026-10-27 카카오 앱 'Map Photo Diary'(1616089) JavaScript 키 (공개해도 되는 값, 쓰는 곳은 등록한 도메인만)
 
 const app = document.getElementById('app');
 const qs = new URLSearchParams(location.search);
@@ -2020,7 +2020,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.27-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '공유하기에 노란 \'카카오톡으로 보내기\' 단추가 생겼어요 · 카톡 메시지 하나에 카드 그림과 \'지도·사진 보기\' 단추가 같이 가요 · 사진 보내기 카드 맨 위에 찍은 사진이 크게 들어가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
