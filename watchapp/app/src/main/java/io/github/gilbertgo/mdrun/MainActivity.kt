@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
         if (PERMS.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) requestPermissions(PERMS, 1)
         // 기록 중이면(앱이 정리됐다 다시 켜진 경우 포함) 바로 달리는 화면으로
         if (Run.id == null) Store.loadCurrent(this)?.let { try { Run.restore(it) } catch (e: Exception) {} }
-        if (Run.id != null) { RunService.warm(this); showRun() } else showStart()
+        if (Run.id != null) { RunService.warm(this); showRun() } else { Run.sport = Store.sport(this); showStart() }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -127,7 +127,9 @@ class MainActivity : ComponentActivity() {
         val g = Store.goal(this)
         val u0 = upd
         val install = { if (u0 != null) showUpdate(u0) }
-        val hv = HomeView(this, HomeView.Act({ showSetup() }, { showGoal() }, if (u0 != null) install else null, { showGuide() })).apply {
+        val setSport = { sp: String -> if (Run.id == null) { Store.setSport(this, sp); Run.sport = sp; showStart() } }
+        val hv = HomeView(this, HomeView.Act({ showSetup() }, { showGoal() }, if (u0 != null) install else null, { showGuide() }, setSport)).apply {
+            sport = Run.sport
             guideOn = Cadence.kind != Cadence.OFF; guideTxt = if (guideOn) "♩ ${Cadence.spm}" else "♩ 끔"
             week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
         gpsText = null
@@ -139,9 +141,10 @@ class MainActivity : ComponentActivity() {
         val sections = listOf(
             // 2026-10-20 휴대폰 ⚙ 설정과 같이 '화면' 묶음: 바탕 사진은 휴대폰에서 골라 보내요(시계엔 사진첩이 없어서)
             "화면" to listOf(row("바탕 사진", if (Link.hasBg(this)) "휴대폰에서 고른 사진" else "기본 사진") { showBg() }),
-            "오늘 달리기" to listOfNotNull(
+            (if (Run.hike) "오늘 등산" else "오늘 달리기") to listOfNotNull(
+                row("운동 종류", if (Run.hike) "등산 · 누르면 러닝으로" else "러닝 · 누르면 등산으로") { setSport(if (Run.hike) "run" else "hike") },
                 row("목표", g.label()) { showGoal() }, tgt,
-                row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
+                if (Run.hike) null else row("케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
                 row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() }),
             "심박 존" to listOf(
                 row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
@@ -395,7 +398,8 @@ class MainActivity : ComponentActivity() {
     }
     private fun begin() {
         val c = Calendar.getInstance()
-        Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 러닝")
+        val sp = Store.sport(this)
+        Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 " + (if (sp == "hike") "등산" else "러닝"), sp)
         Store.saveCurrent(this)
         showRun()
         h.postDelayed({ Run.say(Run.startLine()) }, 1200)   // 목표 말하기는 시작한 뒤에
@@ -408,8 +412,11 @@ class MainActivity : ComponentActivity() {
         show(v); runView = v
     }
     private fun finishRun() {
+        val now = System.currentTimeMillis(); val hrEnd = Run.hrNow(now)
         val id = Store.finish(this)
-        RunService.stop(this)
+        // 운동 뒤 심박 회복: 심박이 재지고 있으면 2분 더 심박만 재요(그동안 다른 센서는 꺼요)
+        if (id != null && Run.hrPerm) { Recover.id = id; Recover.t0 = now; Recover.end = hrEnd; Recover.h1 = 0; Recover.h2 = 0; Recover.done = false; RunService.recover(this) }
+        else RunService.stop(this)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (id == null) { show(page(tv("거리가 거의 없어서 저장하지 않았어요", 13f), btn("처음으로", RunView.CORAL, RunView.INK) { showStart() })); return }
         Wear.pushAll(this); Link.pushAll(this)
@@ -429,7 +436,7 @@ class MainActivity : ComponentActivity() {
             LinearLayout(this).apply { orientation = LinearLayout.VERTICAL
                 background = GradientDrawable().apply { cornerRadius = 6 * u; setColor(RunView.SURF) }
                 setPadding((4 * u).toInt(), (2.5f * u).toInt(), (4 * u).toInt(), (2.5f * u).toInt())
-                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 13f, RunView.MUTED))
+                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (if (o.optString("sport") == "hike") "등산 " else "") + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 13f, RunView.MUTED))
                 addView(tv(summaryLine(o), 13f, Color.WHITE, true))
                 setOnClickListener { showDetail(o.optString("id"), false) } }
         }

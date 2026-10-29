@@ -11,8 +11,12 @@ object Store {
     private fun cur(c: Context) = File(c.filesDir, "current.json")
     // 설정 (목표·목소리)
     private fun prefs(c: Context) = c.getSharedPreferences("mdrun", Context.MODE_PRIVATE)
-    fun goal(c: Context): Goal = try { Goal.from(JSONObject(prefs(c).getString("goal", "{}") ?: "{}")) } catch (e: Exception) { Goal() }
-    fun setGoal(c: Context, g: Goal) = prefs(c).edit().putString("goal", g.toJson().toString()).apply()
+    // 운동 종류(러닝/등산)와 목표는 종류마다 따로 (등산 목표는 'goalHike')
+    fun sport(c: Context) = if (prefs(c).getString("sport", "run") == "hike") "hike" else "run"
+    fun setSport(c: Context, s: String) = prefs(c).edit().putString("sport", s).apply()
+    private fun goalKey(c: Context) = if (sport(c) == "hike") "goalHike" else "goal"
+    fun goal(c: Context): Goal = try { Goal.from(JSONObject(prefs(c).getString(goalKey(c), "{}") ?: "{}")) } catch (e: Exception) { Goal() }
+    fun setGoal(c: Context, g: Goal) = prefs(c).edit().putString(goalKey(c), g.toJson().toString()).apply()
     fun voice(c: Context) = prefs(c).getBoolean("voice", true)
     fun setVoice(c: Context, on: Boolean) = prefs(c).edit().putBoolean("voice", on).apply()
     fun weekGoal(c: Context) = prefs(c).getInt("weekGoal", 20)
@@ -46,4 +50,6 @@ object Store {
         .mapNotNull { try { JSONObject(it.readText()) } catch (e: Exception) { null } }.sortedByDescending { it.optLong("at") }
     fun get(c: Context, id: String): JSONObject? = try { JSONObject(File(dir(c), "$id.json").readText()) } catch (e: Exception) { null }
     fun delete(c: Context, id: String) { File(dir(c), "$id.json").delete() }
+    // 끝낸 기록 고쳐 쓰기(운동 뒤 심박 회복을 넣을 때)
+    fun put(c: Context, o: JSONObject) { val id = o.optString("id"); val f = File(dir(c), "$id.json"); if (id.isNotEmpty() && f.exists()) try { write(f, o.toString()) } catch (e: Exception) {} }
 }

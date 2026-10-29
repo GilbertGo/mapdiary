@@ -29,7 +29,7 @@ data class Goal(val k: String = "free", val v: Double = 0.0, val t: Int = 0, val
     fun label(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프" else if (v == 42.195) "풀코스" else "${num(v)}km"
         "time" -> minLabel(v.toInt())
-        else -> "자유 달리기"
+        else -> if (Run.hike) "자유 등산" else "자유 달리기"
     }
     fun say(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프 코스" else if (v == 42.195) "풀코스" else "${num(v)}킬로미터"
@@ -78,8 +78,22 @@ fun sayKm(m: Double): String = if (m < 1000) "${max(10, (m / 10).roundToInt() * 
 class Judge(val pred: Double, val diff: Double?, val near: Double, val need: Double, val cur: Double,
             val rem: Double = 0.0, val target: Double = 0.0, val tLeft: Double = 0.0, val remD: Double = 0.0)
 
+// 운동 뒤 심박 회복 (2026-10-29, 2단계): 끝낸 때 심박 → 1분 뒤 → 2분 뒤. RunService가 2분 동안 심박만 계속 재요
+//   1분에 20 넘게 떨어지면 좋음, 12 아래면 느림(피로·컨디션 신호). 끝나면 기록 파일의 sum(hrEnd·hr1·hr2)에 넣고 휴대폰으로 다시 보내요
+object Recover {
+    @Volatile var id: String? = null; var t0 = 0L; var end = 0; var h1 = 0; var h2 = 0; @Volatile var done = false
+    fun active(rid: String) = id == rid && !done
+}
+
 object Run {
     var id: String? = null
+    // 운동 종류 (2026-10-29 2단계 '시계 앱 등산 모드'): run 러닝 / hike 등산. 등산은 페이스 코치·케이던스 가이드·자세 화면이 없고
+    //   1km 안내에 다닌 시간·오른 높이, 차로 보는 빠르기 15km/h(휴대폰 걷는 모드와 같게), 천천히 오르는 것(초속 0.3m)도 움직인 시간
+    var sport = "run"
+    val hike get() = sport == "hike"
+    private val carMs get() = if (hike) 15 / 3.6 else CAR_MS
+    private val minV get() = if (hike) 0.3 else 0.7
+    private val pauseMs get() = if (hike) 60000L else PAUSE_MS
     var startAt = 0L
     var name = ""
     val pts = ArrayList<Pt>()
@@ -120,8 +134,8 @@ object Run {
     val running get() = id != null
     val lastT get() = pts.lastOrNull()?.t ?: startAt
 
-    fun begin(now: Long, g: Goal, title: String) {
-        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title
+    fun begin(now: Long, g: Goal, title: String, sp: String = "run") {
+        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike") "hike" else "run"
         pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
         hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
@@ -139,8 +153,8 @@ object Run {
         if (last != null && !brk) {
             val dt = (now - last.t) / 1000.0; val d = dist(last.lat, last.lng, lat, lng); val v = if (dt > 0) d / dt else 0.0
             val gap = dt > 300 && d > 150   // 5분 넘게 끊겼다가 150m 넘게 떨어져 이어진 곳
-            if (!gap && v <= CAR_MS) walk += d
-            if (!gap && dt <= 60 && v >= 0.7 && v <= CAR_MS) moving += now - last.t
+            if (!gap && v <= carMs) walk += d
+            if (!gap && dt <= 60 && v >= minV && v <= carMs) moving += now - last.t
         }
         brk = false
         pts.add(Pt(lat, lng, now, alt))
@@ -182,7 +196,7 @@ object Run {
         val r = spdS.filter { now - it.first <= 15000 }
         if (r.size < 3 || now - r.last().first > 5000) return null
         val v = r.map { it.second.toDouble() }.average()
-        return if (v >= 0.7 && v <= CAR_MS) 1000000.0 / v else null
+        return if (v >= 0.7 && v <= carMs) 1000000.0 / v else null
     }
     fun avgPace(): Double? = if (walk >= 50 && moving > 0) moving / (walk / 1000) else null
     // 달린 시간을 1초마다 흐르게 (마지막 점 뒤 12초까지만, 뒤로 줄지 않게)
@@ -191,7 +205,9 @@ object Run {
         if (!manualPause && pts.size > 1) { val gap = now - lastT; if (gap < 12000) v += gap }
         hold = max(hold, v); return hold
     }
-    fun paused(now: Long) = manualPause || (pts.size > 1 && now - lastT > PAUSE_MS)
+    fun paused(now: Long) = manualPause || (pts.size > 1 && now - lastT > pauseMs)
+    // 지금까지 오른 높이(m): gainOf(휴대폰 elevStats와 같은 셈)
+    fun gain(): Int? { val a = pts.mapNotNull { it.alt }; return if (a.size < 5) null else gainOf(a) }
 
     // ---------- 심박·걸음 ----------
     fun onHr(bpm: Int, now: Long) {
@@ -211,7 +227,7 @@ object Run {
         if (bpm < lo) { if (underSince == 0L) underSince = now } else underSince = 0
         if (now - zSaid < 90000) return
         if (overSince > 0 && now - overSince > 20000) { zSaid = now; buzz(longArrayOf(0, 220, 140, 220)); say("심박 ${bpm}, 존2보다 높아요. 조금 천천히요.") }
-        else if (underSince > 0 && now - underSince > 40000 && now - startAt > 300000) { zSaid = now; buzz(longArrayOf(0, 120)); say("존2보다 낮아요. 조금 더 빠르게 달려도 돼요.") }
+        else if (!hike && underSince > 0 && now - underSince > 40000 && now - startAt > 300000) { zSaid = now; buzz(longArrayOf(0, 120)); say("존2보다 낮아요. 조금 더 빠르게 달려도 돼요.") }
     }
     fun hrNow(now: Long) = if (now - hrT < 10000) hr else 0
     fun hrAvg() = if (hrN > 0) (hrSum / hrN).toInt() else 0
@@ -281,6 +297,14 @@ object Run {
         val hit = g.k == "dist" && left <= 0 && !goalDone
         if (hit) goalDone = true
         val remT = if (g.k == "time") g.v * 60000 - moving else 0.0
+        if (hike) {   // 등산: 다닌 시간·오른 높이 (페이스 코치는 안 해요)
+            val gn = gain()
+            say("${km}킬로미터. 지금까지 ${sayDur((System.currentTimeMillis() - startAt).toDouble())}" + (if (gn != null && gn >= 10) ", 오른 높이 ${gn}미터." else ".") + when {
+                hit -> " 목표 ${g.say()} 달성! 수고했어요."
+                left >= 1 -> " 목표까지 ${num(Math.round(left * 10) / 10.0)}킬로 남았어요."
+                else -> "" })
+            return
+        }
         val co = coachLine(km); val sec = lap / 1000
         say("${km}킬로미터. 이번 1킬로 ${sec / 60}분 ${sec % 60}초." + when {
             hit -> " 목표 ${g.say()} 달성! 수고했어요."
@@ -346,7 +370,7 @@ object Run {
     }
     // 1km 사이 점검: 남은 500m, 남은 5분·1분 (다른 안내를 말하는 중이면 다음에)
     fun coachTick() {
-        val g = goal; if (id == null || g.k == "free" || goalDone || !voice) return
+        val g = goal; if (id == null || hike || g.k == "free" || goalDone || !voice) return
         if (System.currentTimeMillis() - saidAt < 15000 || speaking()) return
         val J = judge() ?: return
         if (g.k == "dist" && g.v >= 1.5 && J.rem > 0 && J.rem <= 500 && !coachSaid.containsKey("m500")) {
@@ -360,6 +384,7 @@ object Run {
     }
     fun startLine(): String {
         val g = goal; val tp = g.tgtPace()
+        if (hike) return "등산을 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 1킬로마다 다닌 시간과 오른 높이를 알려 드릴게요."
         return "달리기를 시작합니다." + if (tp > 0) " 목표는 ${g.say()} " + (if (g.k == "dist") "${sayDur(g.t * 1000.0)} 완주" else "동안 ${sayKm(g.d * 1000)}") + ", 1킬로 ${sayDur(tp)} 페이스예요." else ""
     }
 
@@ -370,13 +395,13 @@ object Run {
         val data = JSONObject()
             .put("track:$id", tr.toString())
             .put("trackName:$id", JSONObject.quote(name))
-            .put("walkMode:$id", "\"run\"")
+            .put("walkMode:$id", if (hike) "\"hike\"" else "\"run\"")
             .put("walkSplits:$id", JSONArray(splits).toString())
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
             .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
         if (goal.k != "free") { data.put("walkGoal:$id", goal.toJson().toString()); data.put("walkGoalDone:$id", goalDone.toString()) }
         val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
-        return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("name", name).put("at", startAt).put("end", lastT)
+        return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("sport", sport).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
             .put("series", JSONArray().apply { series.forEach { s -> put(JSONArray().put(s.t / 1000).put(s.hr).put(s.pace?.roundToLong() ?: 0).put(s.cad ?: 0).put(((s.reg ?: 0.0) * 10).roundToInt()).put(((s.g ?: 0.0) * 100).roundToInt())) } })
     }
@@ -384,7 +409,7 @@ object Run {
     // 기록 도우미가 꺼졌다 다시 켜졌을 때(시계가 앱을 정리한 경우) 이어서 기록해요
     fun restore(o: JSONObject) {
         val i = o.getString("id"); val data = o.getJSONObject("data")
-        begin(o.getLong("at"), Goal.from(o.optJSONObject("goal")), o.optString("name"))
+        begin(o.getLong("at"), Goal.from(o.optJSONObject("goal")), o.optString("name"), o.optString("sport", "run"))
         id = i; goalDone = o.optBoolean("goalDone"); manualPause = o.optBoolean("pause"); brk = true
         val tr = JSONArray(data.optString("track:$i", "[]"))
         for (k in 0 until tr.length()) { val q = tr.getJSONArray(k); pts.add(Pt(q.getDouble(0), q.getDouble(1), q.getLong(2), if (q.length() > 3 && !q.isNull(3)) q.getDouble(3) else null)) }

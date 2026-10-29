@@ -44,7 +44,7 @@ object Cadence {
             while (on) {
                 val now = System.currentTimeMillis()
                 // 2026-10-19 고침: GPS로 짐작한 '멈춰 있어요'(실내·GPS 약함)에는 계속 울리고, 직접 누른 '멈춤'에만 쉬어요
-                val go = kind != OFF && Run.running && !Run.manualPause
+                val go = kind != OFF && Run.running && !Run.manualPause && !Run.hike   // 등산엔 가이드 박자 없음
                 if (!go) { t0 = 0; try { Thread.sleep(250) } catch (e: InterruptedException) {}; continue }
                 if (t0 == 0L || curSpm != spm) { curSpm = spm; t0 = SystemClock.elapsedRealtime() + 150; n = 0 }
                 val at = t0 + n * 60000L / curSpm; n++
