@@ -414,6 +414,19 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-path .dot.end{background:var(--accent)}
 .mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
 .mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
+.vw-big{display:flex;align-items:baseline;gap:4px;line-height:1}.vw-big b{font-size:44px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.vw-big span{font-size:20px;font-weight:800}
+.vw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;padding:16px 18px}
+.vw-t{display:flex;flex-direction:column;gap:2px;min-width:0}.vw-t>span{font-size:13px;color:var(--muted);font-weight:600}
+.vw-t>b{font-size:26px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vw-t small{font-size:14px;margin-left:2px;font-weight:700}
+.vw-card{display:flex;flex-direction:column;gap:8px;padding:14px 16px}.vw-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.vw-h>b{font-size:18px}
+.vw-km{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-columns:30px;gap:6px;align-items:baseline;font-variant-numeric:tabular-nums;padding:5px 0;border-bottom:1px solid var(--line)}
+.vw-km>b{font-size:16px;text-align:right;white-space:nowrap}.vw-km .n{color:var(--muted);font-size:14px}.vw-kmh>span{font-size:12px;color:var(--muted);text-align:right}.vw-kmh>span:first-child{text-align:left}
+.vw-kmb .vw-km:last-child{border-bottom:0}.vw-more{align-self:center;font-size:14px;padding:4px}
+.vw-z{display:grid;grid-template-columns:64px 1fr 68px 74px;gap:8px;align-items:center;font-variant-numeric:tabular-nums}.vw-z>b{font-size:14px}.vw-z .bar{height:10px;background:var(--soft);border-radius:6px}
+.vw-z .bar i{display:block;height:100%;border-radius:6px}.vw-z .t{font-weight:700;font-size:14px;text-align:right}.vw-z .r{font-size:12px;color:var(--muted);text-align:right}
+.vw-det{padding:12px 16px}.vw-det>summary{font-weight:700;cursor:pointer;color:var(--pine)}.vw-det[open]>summary{margin-bottom:10px}
+.vw-ax{display:flex;justify-content:space-between;font-size:12px}
+.vw-leg{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:-4px}.vw-leg i{width:96px;height:8px;border-radius:5px}
 .mdv-stats>div{background:#F8F5EE;padding:10px 6px;text-align:center;min-width:0}
 .mdv-stats b{display:block;font-size:19px;color:var(--pine);letter-spacing:-.02em;white-space:nowrap}
 .mdv-stats span{display:block;font-size:12px;color:#7A7F76;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1169,6 +1182,145 @@ function elevChart(e) {
     <div class="sub" style="display:flex;justify-content:space-between;font-size:13px"><span>출발</span><span>최고 ${e.max}m · 최저 ${e.min}m</span><span>${fmtDist(D)}</span></div>`;
   return box;
 }
+// ---------- 기록 보기 새 모습 (2026-10-29 사용자가 애플워치·아이폰 피트니스 화면을 보여 주며 '보여 주는 방법을 잘 봐, 시인성 좋고 궁금한 건 더 자세히') ----------
+// 위→아래로 갈수록 자세히(큰 지도 → 큰 거리 → 숫자 칸 → 1km 표 → 심박 → 높이), 숫자마다 고정 색(표·그래프·공유 카드도 같은 색), 빠르기로 색칠한 길
+// 등산·자전거 앱도 이 함수들을 그대로 씀(모드 값만 다르게) — 모드마다 따로 짜지 말 것
+const STAT_COL = { time: '#FF6B3D', dist: '#1E88E5', up: '#7C4DFF', pace: '#0097D6', hr: '#E53950', cad: '#5C6BC0' };
+function statColor(label) {
+  const k = String(label || '');
+  return /심박/.test(k) ? STAT_COL.hr : /높이|고도/.test(k) ? STAT_COL.up : /페이스|속도/.test(k) ? STAT_COL.pace : /케이던스|걸음/.test(k) ? STAT_COL.cad
+    : /시간/.test(k) ? STAT_COL.time : /거리|이동|km/.test(k) ? STAT_COL.dist : '';
+}
+const kTime = ts => { const d = new Date(ts), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
+// 숫자 칸: [[이름, 값, 작은 단위], …] → 이름 작게 회색 · 값 크게 그 색
+function statGrid(items) {
+  const L = items.filter(x => x && x[1] != null && x[1] !== '');
+  if (!L.length) return null;
+  return el('div', { class: 'card vw-grid' }, ...L.map(([k, v, u]) => el('div', { class: 'vw-t' }, el('span', { text: k }),
+    el('b', { style: `color:${statColor(k) || 'var(--ink)'}` }, String(v), u ? el('small', { text: u }) : null))));
+}
+// 빠르기 색: 그 기록 안에서 빠른 20%는 짙은 파랑 → 느린 20%는 빨강 (애플처럼 그 기록 기준. 녹색·누런색은 안 씀)
+const PACE_COLS = ['#1565C0', '#42A5F5', '#FFAB91', '#FF7043', '#D32F2F'];
+function speedBins(tr, modes) {
+  const n = tr.length, cum = [0];
+  for (let i = 1; i < n; i++) cum.push(cum[i - 1] + dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]));
+  const sp = new Array(n).fill(null); let a = 0, b = 0;
+  for (let i = 0; i < n; i++) {   // 앞뒤 30초 창의 평균 속도
+    while (tr[i][2] - tr[a][2] > 30000) a++;
+    if (b < i) b = i; while (b + 1 < n && tr[b + 1][2] - tr[i][2] <= 30000) b++;
+    const dt = (tr[b][2] - tr[a][2]) / 1000;
+    if (dt >= 8 && (!modes || modes[i] === 'w')) sp[i] = (cum[b] - cum[a]) / dt;
+  }
+  const v = sp.filter(s => s != null && s > 0.3).sort((x, y) => x - y); if (v.length < 10) return null;
+  const q = f => v[Math.floor(v.length * f)], cut = [q(.8), q(.6), q(.4), q(.2)];
+  return sp.map(s => s == null ? -1 : s >= cut[0] ? 0 : s >= cut[1] ? 1 : s >= cut[2] ? 2 : s >= cut[3] ? 3 : 4);
+}
+function paceOverlay(m, tr, modes) {
+  const bins = speedBins(tr, modes); if (!bins) return false;
+  let cur = null;
+  for (let i = 1; i < tr.length; i++) {
+    const b = bins[i] >= 0 && bins[i - 1] >= 0 ? bins[i] : -1;
+    if (b < 0) { cur = null; continue; }
+    if (!cur || cur.b !== b) { cur = { b, pts: [[tr[i - 1][0], tr[i - 1][1]]] }; cur.line = L.polyline(cur.pts, { color: PACE_COLS[b], weight: 6, opacity: 1, lineCap: 'round', lineJoin: 'round' }).addTo(m); }
+    cur.pts.push([tr[i][0], tr[i][1]]); cur.line.setLatLngs(cur.pts);
+  }
+  return true;
+}
+const paceLegend = () => el('div', { class: 'vw-leg' }, el('span', { text: '빠름' }), el('i', { style: `background:linear-gradient(90deg,${PACE_COLS.join(',')})` }), el('span', { text: '느림' }), el('span', { class: 'sub', style: 'margin-left:auto', text: '길 색 = 그때 빠르기' }));
+// 부드럽게 한 높이(앞뒤 2점 평균). 높이가 없는 점은 null
+function smoothAlt(tr) {
+  return tr.map((q, i) => { if (!Number.isFinite(q[3])) return null; let s = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(tr.length - 1, i + 2); j++) if (Number.isFinite(tr[j][3])) { s += tr[j][3]; n++; } return s / n; });
+}
+// 심박 줄(시계 기록): [[시각 ms, 심박]]. 시계 series는 시작부터 초라서 길 첫 점 시각에 더해요
+function hrLine(t, tr) {
+  const S = ls.get('walkSeries:' + t, []); if (!S.length || !tr.length) return [];
+  const t0 = tr[0][2]; return S.filter(q => q && q[1] > 0).map(q => [t0 + q[0] * 1000, q[1]]);
+}
+// 1km 구간: 걸은 길(w)을 따라 1km마다 닿은 시각(보간). 러닝은 기록할 때 잰 움직인 시간(walkSplits)을 씀
+function kmRows(t, tr, modes, run) {
+  if (tr.length < 2) return [];
+  const alt = smoothAlt(tr), hr = hrLine(t, tr), saved = run ? ls.get('walkSplits:' + t, []) : [], ss = run ? ls.get('walkSplitSteps:' + t, []) : [];
+  const rows = []; let d = 0, k = 1, tPrev = tr[0][2], iPrev = 0, ref = null, up = 0;
+  const close = (tEnd, iEnd, len) => {
+    const sec = hr.filter(h => h[0] >= tPrev && h[0] <= tEnd).map(h => h[1]);
+    const ms = run && saved[rows.length] && len >= 999 ? saved[rows.length] : tEnd - tPrev;
+    const cad = run && ss[rows.length] != null && len >= 999 ? Math.round((ss[rows.length] - (rows.length ? ss[rows.length - 1] : 0)) / (ms / 60000)) : null;
+    rows.push({ n: rows.length + 1, len, ms, up: Math.round(up), hr: sec.length ? Math.round(sec.reduce((a, b) => a + b, 0) / sec.length) : null, cad: cad && cad < 260 ? cad : null });
+    tPrev = tEnd; iPrev = iEnd; up = 0;
+  };
+  for (let i = 1; i < tr.length; i++) {
+    if (alt[i] != null) { if (ref == null) ref = alt[i]; else if (alt[i] - ref > 4) { up += alt[i] - ref; ref = alt[i]; } else if (ref - alt[i] > 4) ref = alt[i]; }
+    if (modes && modes[i] !== 'w') continue;
+    const dd = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
+    while (d + dd >= k * 1000) { const f = dd ? (k * 1000 - d) / dd : 1; close(tr[i - 1][2] + f * (tr[i][2] - tr[i - 1][2]), i, 1000); k++; }
+    d += dd;
+  }
+  const rest = d - (k - 1) * 1000; if (rest >= 150) close(tr[tr.length - 1][2], tr.length - 1, rest);
+  return rows;
+}
+function kmCard(rows, opt) {
+  if (!rows.length || (rows.length === 1 && rows[0].len < 1000)) return null;
+  const hasUp = opt.elev && rows.some(r => r.up > 0), hasHr = rows.some(r => r.hr), hasCad = !hasHr && rows.some(r => r.cad);
+  const cols = ['구간', '시간', '페이스', hasUp ? '오른 높이' : null, hasHr ? '심박' : null, hasCad ? '케이던스' : null].filter(Boolean);
+  const fast = Math.min(...rows.filter(r => r.len >= 999).map(r => r.ms));
+  const line = r => el('div', { class: 'vw-km' }, el('span', { class: 'n', text: r.len >= 999 ? String(r.n) : (r.len / 1000).toFixed(1) }),
+    el('b', { style: `color:${STAT_COL.time}`, text: fmtRunTime(r.ms) }),
+    el('b', { style: `color:${STAT_COL.pace}`, text: (r.ms === fast && rows.length > 2 ? '★' : '') + fmtPace(r.len, r.ms) }),
+    hasUp ? el('b', { style: `color:${STAT_COL.up}`, text: r.up ? `${r.up}m` : '-' }) : null,
+    hasHr ? el('b', { style: `color:${STAT_COL.hr}`, text: r.hr ? String(r.hr) : '-' }) : null,
+    hasCad ? el('b', { style: `color:${STAT_COL.cad}`, text: r.cad ? String(r.cad) : '-' }) : null);
+  const MAXN = 6, body = el('div', { class: 'vw-kmb' }), more = rows.length > MAXN;
+  let open = false;
+  const btn = more ? el('button', { class: 'link vw-more', onclick: () => { open = !open; draw(); } }) : null;
+  const draw = () => { body.replaceChildren(...(open ? rows : rows.slice(0, MAXN)).map(line)); if (btn) btn.textContent = open ? '접기 ︿' : `${rows.length}구간 모두 보기 ›`; };
+  draw();
+  return el('div', { class: 'card vw-card' },
+    el('div', { class: 'vw-h' }, el('b', { text: '1km 구간' }), el('span', { class: 'sub', text: hasHr ? '심박은 시계 평균' : opt.run ? '움직인 시간' : '걸린 시간' })),
+    el('div', { class: 'vw-km vw-kmh' }, ...cols.map(c => el('span', { text: c }))), body, btn);
+}
+// 영역 막대 한 줄 (애플 '영역 1 ━━━ 6:53:21 <122BPM' 모양)
+const zoneRow = (name, col, ms, maxMs, right) => el('div', { class: 'vw-z' }, el('b', { style: `color:${col}`, text: name }),
+  el('div', { class: 'bar' }, el('i', { style: `background:${col};width:${ms ? Math.max(3, ms / Math.max(1, maxMs) * 100) : 0}%` })),
+  el('span', { class: 't', text: fmtRunTime(ms || 0) }), el('span', { class: 'r', text: right || '' }));
+// 높이 카드: 산 그래프(보라) + 오르막·평지·내리막 시간 (애플의 심박 영역 자리를 오르내림으로)
+function elevCard(ev, tr, modes) {
+  if (!ev || ev.prof.length < 5 || ev.max - ev.min < 5) return null;
+  const W = 600, H = 150, pad = 6, P = ev.prof, D = P[P.length - 1][0] || 1, lo = ev.min - 5, hi = ev.max + 5;
+  const xy = P.map(([d, v]) => [pad + (d / D) * (W - pad * 2), H - pad - ((v - lo) / (hi - lo)) * (H - pad * 2 - 20)]);
+  const line = xy.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+  const alt = smoothAlt(tr), T = [0, 0, 0];   // 오르막 · 평지 · 내리막 시간 (움직인 구간만, 기울기 4% 기준)
+  for (let i = 1; i < tr.length; i++) {
+    const dt = tr[i][2] - tr[i - 1][2]; if (dt <= 0 || dt > 120000 || (modes && modes[i] !== 'w') || alt[i] == null || alt[i - 1] == null) continue;
+    const dd = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]); if (dd / (dt / 1000) < 0.3) continue;
+    const g = (alt[i] - alt[i - 1]) / Math.max(dd, 1); T[g > 0.04 ? 0 : g < -0.04 ? 2 : 1] += dt;
+  }
+  const svg = el('div'); svg.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="120" preserveAspectRatio="none" aria-label="높이 그래프 최고 ${ev.max}m 최저 ${ev.min}m"><defs><linearGradient id="vwUp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${STAT_COL.up}" stop-opacity=".38"/><stop offset="1" stop-color="${STAT_COL.up}" stop-opacity=".04"/></linearGradient></defs>
+    <path d="${line} L ${W - pad} ${H - pad} L ${pad} ${H - pad} Z" fill="url(#vwUp)"/><path d="${line}" fill="none" stroke="${STAT_COL.up}" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>`;
+  const mx = Math.max(...T), tot = T[0] + T[1] + T[2];
+  return el('div', { class: 'card vw-card' },
+    el('div', { class: 'vw-h' }, el('b', { text: '높이' }), el('span', { class: 'sub' }, '오른 높이 ', el('b', { style: `color:${STAT_COL.up}`, text: `${ev.gain}m` }), ` · 최고 ${ev.max}m`)),
+    svg, el('div', { class: 'sub vw-ax' }, el('span', { text: '출발' }), el('span', { text: `최저 ${ev.min}m` }), el('span', { text: fmtDist(D) })),
+    tot > 6e4 ? [zoneRow('오르막', STAT_COL.up, T[0], mx, `${Math.round(T[0] * 100 / tot)}%`), zoneRow('평지', '#9AA5B4', T[1], mx, `${Math.round(T[1] * 100 / tot)}%`), zoneRow('내리막', '#42A5F5', T[2], mx, `${Math.round(T[2] * 100 / tot)}%`),
+      el('div', { class: 'sub', style: 'font-size:12px', text: '움직인 동안 기울기 4%보다 가파르면 오르막·내리막으로 셌어요.' })] : null);
+}
+// 심박 카드(시계 기록): 시간 막대마다 그때 최저~최고 심박, 존 색. 아래 영역 시간 (애플 '심박수' 모양)
+function hrCard(t, tr) {
+  const W = typeof watchStats === 'function' ? watchStats(t) : null, hl = hrLine(t, tr); if (!W || hl.length < 6) return null;
+  const t0 = hl[0][0], t1 = hl[hl.length - 1][0], NB = 64, bw = (t1 - t0) / NB || 1, B = [];
+  for (const [ts, h] of hl) { const k = Math.min(NB - 1, Math.floor((ts - t0) / bw)); const b = B[k] || (B[k] = { lo: h, hi: h }); b.lo = Math.min(b.lo, h); b.hi = Math.max(b.hi, h); }
+  const all = hl.map(h => h[1]), lo = Math.min(...all) - 4, hi = Math.max(...all) + 4, HH = W.H || {}, avg = HH.avg || Math.round(all.reduce((a, b) => a + b, 0) / all.length), top = HH.max || Math.max(...all);   // 숫자 칸과 같은 값(시계 요약)
+  const Wd = 600, Ht = 140, y = h => Ht - 4 - (Ht - 8) * (h - lo) / (hi - lo), x = k => 4 + (Wd - 8) * (k + .5) / NB;
+  const bars = B.map((b, k) => b ? `<line x1="${x(k).toFixed(1)}" x2="${x(k).toFixed(1)}" y1="${y(b.hi).toFixed(1)}" y2="${Math.max(y(b.lo), y(b.hi) + 6).toFixed(1)}" stroke="${ZONE_COL[zoneOf(W.mx, b.hi)]}" stroke-width="5" stroke-linecap="round"/>` : '').join('');
+  const svg = el('div'); svg.innerHTML = `<svg viewBox="0 0 ${Wd} ${Ht}" width="100%" height="130" preserveAspectRatio="none" aria-label="심박 그래프 평균 ${avg}"><line x1="4" x2="${Wd - 4}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="${STAT_COL.hr}" stroke-dasharray="4 5" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${bars}</svg>`;
+  let Z = (W.zone || []).slice(0, 5); if (!Z.some(Boolean)) { Z = [0, 0, 0, 0, 0]; for (let i = 1; i < hl.length; i++) { const dt = hl[i][0] - hl[i - 1][0]; if (dt > 0 && dt <= 60000) Z[zoneOf(W.mx, hl[i][1])] += dt; } }
+  const mz = Math.max(...Z), rng = z => z === 0 ? `<${zoneLo(W.mx, 1)}` : z === 4 ? `${zoneLo(W.mx, 4)}+` : `${zoneLo(W.mx, z)}~${zoneLo(W.mx, z + 1) - 1}`;
+  return el('div', { class: 'card vw-card' },
+    el('div', { class: 'vw-h' }, el('b', { text: '심박수' }), el('span', { class: 'sub' }, '최고 ', el('b', { style: `color:${STAT_COL.hr}`, text: String(top) }))),
+    svg, el('div', { class: 'sub vw-ax' }, el('span', { text: kTime(t0) }), el('span', { text: kTime((t0 + t1) / 2) }), el('span', { text: kTime(t1) })),
+    el('div', { style: `color:${STAT_COL.hr};font-weight:800;font-size:15px`, text: `평균 ${avg} BPM` }),
+    [0, 1, 2, 3, 4].map(z => zoneRow(`영역 ${z + 1}`, ZONE_COL[z], Z[z], mz, rng(z))),
+    el('div', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준으로 나눈 영역에 머문 시간이에요(시계에서 바꿀 수 있어요).` }));
+}
 // ---------- 기록 모드 ----------
 // car: 이 속도(km/h)보다 빠르면 차(탈것)로 간 길로 봐요. did: 거리 앞에 붙는 말
 const MODES = [
@@ -1870,7 +2022,7 @@ async function drawBragCard(o) {
     tiles.forEach((s, i) => {
       const r = Math.floor(i / cols), inRow = Math.min(cols, nT - r * cols), c = i % cols, w2 = gw / inRow, cx = gx + c * w2 + w2 / 2, cy = gy0 + r * cellH;
       if (c) { g.beginPath(); g.moveTo(gx + c * w2, cy + 14); g.lineTo(gx + c * w2, cy + cellH - 14); g.stroke(); }
-      font(800, cols === 3 ? 40 : 46); g.fillStyle = VAL; g.fillText(fit(s.v, w2 - 24), cx, cy + 58);
+      font(800, cols === 3 ? 40 : 46); g.fillStyle = dark ? VAL : (statColor(s.k) || VAL); g.fillText(fit(s.v, w2 - 24), cx, cy + 58);
       font(500, 26); g.fillStyle = P.muted; g.fillText(fit(s.k, w2 - 24), cx, cy + 96);
     });
     g.textAlign = 'left';
@@ -2023,9 +2175,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.27-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '카카오톡으로 보내기가 안 될 때 노란 단추 바로 아래에 까닭이 보여요 · \'공유하기\'를 누르면 카카오톡 · 문자·메일·다른 앱 · 링크만 · 사진 저장 중에서 골라요';
+const UI_NOTES = '내 MPD 기록 보기가 새 모습이에요: 큰 지도 → 큰 거리 → 색깔 숫자 칸 → 1km 구간 표 → 심박(시계) → 높이 · 지도의 길이 빠르기에 따라 색칠돼요(파랑 빠름 → 빨강 느림) · 높이 그래프에 오르막·평지·내리막 시간 · 공유 카드 숫자도 같은 색';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2456,7 +2608,7 @@ function viewBragLink(given, feed) {
       el('i', { class: 'dot' }), el('div', { class: 'pt' }, el('b', { text: o.startTime || '출발' }), el('span', { text: o.startPlace && o.startPlace !== '출발 지점' ? o.startPlace : '출발' })),
       el('i', { class: 'ln' }),
       el('div', { class: 'pt', style: 'text-align:right' }, el('b', { text: o.endTime || '도착' }), el('span', { text: o.endPlace && o.endPlace !== '도착 지점' ? o.endPlace : '도착' })), el('i', { class: 'dot end' })) : null,
-    tiles.length ? el('div', { class: 'mdv-stats' + (tiles.length === 4 || tiles.length === 2 ? ' n2' : tiles.length === 1 ? ' n1' : '') }, ...tiles.map(t => el('div', {}, el('b', { text: t.v }), t.k ? el('span', { text: t.k }) : null))) : null);
+    tiles.length ? el('div', { class: 'mdv-stats' + (tiles.length === 4 || tiles.length === 2 ? ' n2' : tiles.length === 1 ? ' n1' : '') }, ...tiles.map(t => el('div', {}, el('b', { text: t.v, style: statColor(t.k) ? `color:${statColor(t.k)}` : '' }), t.k ? el('span', { text: t.k }) : null))) : null);
   app.replaceChildren(el('div', { class: 'stack mdv' },
     roleBar('leader', o.modeLabel || '받은 MPD', o.modeK || null),
     hero,
@@ -4728,7 +4880,7 @@ async function viewMyOne(t) {
   const M = modeOfT(t), tr = trackLoad(t), st = trackStats(tr, M.car), info = x.info, live = t === ls.get('walkNow', null);
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
-  const mapEl = el('div', { class: 'mapbox', style: 'height:50vh;min-height:300px' });
+  const mapEl = el('div', { class: 'mapbox', style: 'height:44vh;min-height:280px' }), legEl = el('div');
   let phAll = [];
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
@@ -4761,9 +4913,25 @@ async function viewMyOne(t) {
   };
   drawGolf();
   const off = officialOf(tr);
-  const nums = [golf && golfSummary(golf) ? `타수 ${golfSummary(golf)}` : '', off ? `🏁 공식 ${fmtDist(st.walk)}${off.ms ? ' · ' + fmtRunTime(off.ms) : ''} (GPS ${fmtDist(st.gps)})` : `${M.did} 거리 ${fmtDist(st.walk)}`, ev && ev.gain >= 10 ? `오른 높이 ${ev.gain}m · 최고 ${ev.max}m` : '', st.d - st.walk > 300 ? `전체 이동 ${fmtDist(st.d)}` : '', x.album ? (info.durText || '') : off && off.ms ? '' : `다닌 시간 ${fmtDur(st.ms)}`,
-    M.k === 'run' ? `페이스 ${fmtPace(st.walk, movingMs(tr, M.car))} /km` : '',
-    M.k === 'run' && (ls.get('walkSteps:' + t, {}).n || 0) > 20 && movingMs(tr, M.car) > 60000 ? `케이던스 ${Math.round(ls.get('walkSteps:' + t, {}).n / (movingMs(tr, M.car) / 60000))} spm · ${ls.get('walkSteps:' + t, {}).n.toLocaleString()}걸음` : '', M.k === 'bike' ? `평균 ${fmtSpeed(st.walk, movingMs(tr, M.car))}` : '', spots.some(s => s.k !== 'stay') ? `별표 ${spots.filter(s => s.k !== 'stay').length}곳` : '', spots.some(s => s.k === 'stay') ? `들른 곳 ${spots.filter(s => s.k === 'stay').length}곳` : ''].filter(Boolean);
+  // 숫자 칸 (2026-10-29 애플 피트니스처럼: 이름 작게 · 값 크게 그 색). 등산·자전거 앱도 같은 칸을 씀
+  const mv = movingMs(tr, M.car), H = ls.get('walkHr:' + t, null), stepN = (ls.get('walkSteps:' + t, {}).n || 0) || (H && H.steps) || 0;
+  const km = st.walk >= 1000 ? [(st.walk / 1000).toFixed(2), 'km'] : [String(Math.round(st.walk)), 'm'];
+  const stays = spots.filter(s => s.k === 'stay').length, stars = spots.length - stays, cad = H && H.cad ? H.cad : M.k === 'run' && stepN > 20 && mv > 60000 ? Math.round(stepN / (mv / 60000)) : 0;
+  const stats = statGrid([
+    golf && golfSummary(golf) ? ['타수', golfSummary(golf)] : null,
+    x.album ? (info.durText ? ['다닌 기간', info.durText] : null) : ['다닌 시간', fmtRunTime(off && off.ms ? off.ms : st.ms)],
+    (M.k === 'run' || M.k === 'bike') && !x.album && !(off && off.ms) && mv > 60000 && st.ms - mv > 120000 ? ['움직인 시간', fmtRunTime(mv)] : null,
+    [`${M.did} 거리`, km[0], km[1]],
+    ev && ev.gain >= 10 ? ['오른 높이', ev.gain.toLocaleString(), 'm'] : null,
+    ev && ev.gain >= 10 ? ['최고 높이', ev.max.toLocaleString(), 'm'] : null,
+    M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
+    H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
+    H && H.max ? ['최고 심박', H.max, 'bpm'] : null,
+    cad ? ['케이던스', cad, 'spm'] : null,
+    st.d - st.walk > 300 ? ['전체 이동', fmtDist(st.d)] : null,
+    stays ? ['들른 곳', stays, '곳'] : null, stars ? ['별표', stars, '곳'] : null]);
+  const kmc = x.album || M.k === 'pgolf' ? null : kmCard(kmRows(t, tr, trackModes(tr, M.car), M.k === 'run'), { elev: ELEV_MODES.includes(M.k) || (ev && ev.gain >= 30), run: M.k === 'run' });
+  const wa = M.k === 'run' ? watchAnalysis(t) : null;
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
     info.name = v.slice(0, 40); title.textContent = info.name;
@@ -4788,13 +4956,17 @@ async function viewMyOne(t) {
     document.body.append(a); a.click(); a.remove(); toast('GPX 파일을 받았어요'); };
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MPD'),
     el('a', { class: 'link', href: './?my=1', style: 'align-self:flex-start;padding:0', text: '← 내 MPD 목록' }),
-    el('div', { class: 'stack', style: 'gap:4px' },
-      el('div', { class: 'sub with-ico' }, dateText, ls.get('walkMode:' + t, null) ? [' · ', ico(M.k, 16), M.label] : null, live ? ' · 기록 중' : ''),
+    // 위→아래로 자세히 (2026-10-29): 큰 지도 → 모드·날짜 · 제목 · 큰 거리 · 시각 → 숫자 칸 → 1km 표 → 심박 → 높이
+    mapEl, legEl,
+    el('div', { class: 'stack', style: 'gap:6px' },
+      el('div', { class: 'sub with-ico', style: 'font-weight:600' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label, ' · '] : null, dateText, live ? ' · 기록 중' : ''),
       el('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, title,
         el('button', { class: 'btn line small', style: 'height:32px;padding:0 10px;white-space:nowrap;flex:none', text: '✎ 바꾸기', onclick: rename })),
-      noteEl,
-      el('div', { style: 'font-size:15px;color:#4A5249;font-weight:600', text: `${wp.start || info.startPlace} ${fmtClock(info.startAt)} → ${wp.end || info.meetPlace} ${fmtClock(info.meetAt)}` }),
-      el('div', { class: 'sub', text: nums.join(' · ') })),
+      el('div', { class: 'vw-big', style: `color:${STAT_COL.dist}` }, el('b', { text: km[0] }), el('span', { text: km[1] })),
+      off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
+      el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600', text: `${kTime(info.startAt)} ~ ${kTime(info.meetAt)}${wp.start || wp.end ? ` · ${wp.start || '출발'} → ${wp.end || '도착'}` : ''}` }),
+      noteEl),
+    stats,
     (() => { const sp = M.k === 'run' && !live && !x.album && !off ? runSpan(tr) : null; if (!sp) return null;
       const run = tr[sp.b][2] - tr[sp.a][2];
       return el('div', { class: 'card', style: 'padding:14px;border:2px solid var(--accent);display:flex;flex-direction:column;gap:8px' },
@@ -4810,7 +4982,9 @@ async function viewMyOne(t) {
           el('span', { text: lbl(o.m) }), el('b', { style: 'font-size:22px;color:var(--pine)', text: fmtRunTime(o.ms) }),
           el('span', { class: 'sub', style: 'font-size:13px', text: sp.length >= o.m / 1000 ? `움직인 시간만 ${fmtRunTime(sp.slice(0, Math.floor(o.m / 1000)).reduce((a, b) => a + b, 0))}` : '' }))),
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
-    golfBox, mapEl, M.k === 'run' ? splitTable(t) : null, M.k === 'run' ? watchAnalysis(t) : null, M.k === 'run' ? formCard(t) : null, elevChart(ev), spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
+    golfBox, kmc, hrCard(t, tr), elevCard(ev, tr, trackModes(tr, M.car)),
+    wa ? el('details', { class: 'card vw-det' }, el('summary', { text: '⌚ 시계 분석 자세히 · 판단 글 · 심박 존 · 자세' }), wa) : null,
+    M.k === 'run' ? formCard(t) : null, spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
     el('button', { class: 'btn primary full', text: 'MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
     live ? null : el('button', { class: 'btn line full', text: '📸 가족 앨범에 올리기', onclick: () => famFromMD(t, info.name) }),
@@ -4822,6 +4996,7 @@ async function viewMyOne(t) {
     M.k === 'run' && !live && !x.album ? el('button', { class: 'link', style: 'align-self:center;font-size:13px;color:var(--muted);padding:4px 0 10px', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
+    if (M.k !== 'pgolf' && paceOverlay(m, tr, trackModes(tr, M.car))) legEl.replaceChildren(paceLegend());   // 빠르기로 색칠한 길
     golfLyr = L.layerGroup().addTo(m); drawGolf();
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
