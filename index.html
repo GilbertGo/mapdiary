@@ -2201,9 +2201,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '시계로 잰 기록에 \'운동 뒤 심박 회복\'이 나와요: 끝낼 때 → 1분 뒤 → 2분 뒤 심박, 1분에 20 넘게 떨어지면 회복이 빨라요 · 시계 앱에서 등산도 기록할 수 있어요(새 시계 판) · 지도 위 가까운 사진은 한 동그라미로 묶여 길이 잘 보여요';
+const UI_NOTES = '내 MPD 지도 오른쪽 위 \'🗺 길만 보기\' 단추로 사진을 숨기고 길만 볼 수 있어요(다시 누르면 \'📷 사진 보기\') · 지도 위 가까운 사진은 한 동그라미로 묶여 +숫자가 붙어요 · 시계로 잰 기록에 운동 뒤 심박 회복이 나와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5030,8 +5030,17 @@ async function viewMyOne(t) {
       const ps = await photoList(t); phAll = ps;
       phBox.style.display = ps.length ? '' : 'none'; phSave.textContent = `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) })));
-      phLyr.clearLayers(); photoMarkers(m, phLyr, ps);
+      phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
+      if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
+    // 사진 켜고 끄기 (2026-10-29 사용자 '경로만 보기 선택 가능하게'): 지도 오른쪽 위 '크게 보기' 아래 단추, 고른 것 기억(ls mapPhotoOff)
+    let phOn = !ls.get('mapPhotoOff', false), phBtn = null;
+    const PC = L.Control.extend({ options: { position: 'topright' }, onAdd() {
+      const bt = phBtn = L.DomUtil.create('button', 'fs-btn'); bt.type = 'button'; bt.style.display = 'none';
+      L.DomEvent.disableClickPropagation(bt);
+      bt.addEventListener('click', () => { phOn = !phOn; ls.set('mapPhotoOff', !phOn); drawPh(); });
+      return bt; } });
+    m.addControl(new PC());
     drawPh(); addEventListener('photo-changed', drawPh);
     addEventListener('spots-changed', () => setTimeout(() => location.reload(), 300));   // 지도 위 별표도 새로
   }, 0);
