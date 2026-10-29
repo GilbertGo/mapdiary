@@ -414,6 +414,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-path .dot.end{background:var(--accent)}
 .mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
 .mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
+.vw-dots{display:flex;gap:6px}.vw-dots i{flex:1;height:8px;border-radius:4px;background:var(--soft)}
 .vw-rec{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;margin:4px 0}
 .vw-big{display:flex;align-items:baseline;gap:4px;line-height:1}.vw-big b{font-size:44px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.vw-big span{font-size:20px;font-weight:800}
 .vw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;padding:16px 18px}
@@ -1208,10 +1209,10 @@ function elevChart(e) {
 // ---------- 기록 보기 새 모습 (2026-10-29 사용자가 애플워치·아이폰 피트니스 화면을 보여 주며 '보여 주는 방법을 잘 봐, 시인성 좋고 궁금한 건 더 자세히') ----------
 // 위→아래로 갈수록 자세히(큰 지도 → 큰 거리 → 숫자 칸 → 1km 표 → 심박 → 높이), 숫자마다 고정 색(표·그래프·공유 카드도 같은 색), 빠르기로 색칠한 길
 // 등산·자전거 앱도 이 함수들을 그대로 씀(모드 값만 다르게) — 모드마다 따로 짜지 말 것
-const STAT_COL = { time: '#FF6B3D', dist: '#1E88E5', up: '#7C4DFF', pace: '#0097D6', hr: '#E53950', cad: '#5C6BC0' };
+const STAT_COL = { time: '#FF6B3D', dist: '#1E88E5', up: '#7C4DFF', pace: '#0097D6', hr: '#E53950', cad: '#5C6BC0', kcal: '#E8457A' };
 function statColor(label) {
   const k = String(label || '');
-  return /심박/.test(k) ? STAT_COL.hr : /높이|고도/.test(k) ? STAT_COL.up : /페이스|속도/.test(k) ? STAT_COL.pace : /케이던스|걸음/.test(k) ? STAT_COL.cad
+  return /칼로리/.test(k) ? STAT_COL.kcal : /심박/.test(k) ? STAT_COL.hr : /높이|고도/.test(k) ? STAT_COL.up : /페이스|속도/.test(k) ? STAT_COL.pace : /케이던스|걸음/.test(k) ? STAT_COL.cad
     : /시간/.test(k) ? STAT_COL.time : /거리|이동|km/.test(k) ? STAT_COL.dist : '';
 }
 const kTime = ts => { const d = new Date(ts), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
@@ -1221,6 +1222,72 @@ function statGrid(items) {
   if (!L.length) return null;
   return el('div', { class: 'card vw-grid' }, ...L.map(([k, v, u]) => el('div', { class: 'vw-t' }, el('span', { text: k }),
     el('b', { style: `color:${statColor(k) || 'var(--ink)'}` }, String(v), u ? el('small', { text: u }) : null))));
+}
+// ---------- 3단계 (2026-10-29 사용자 '진행해'): 난이도 · 칼로리 · 장소 이름 · 날씨 ----------
+// 난이도: '평지로 치면 몇 km' = 걸은 km + 오른 높이 100m마다 1km (등산에서 흔히 쓰는 셈). 4·8·13·20km로 다섯 칸
+const DIFF_NAME = ['아주 쉬움', '쉬움', '보통', '힘듦', '아주 힘듦'], DIFF_COL = ['#42A5F5', '#0277BD', '#7C4DFF', '#FF7043', '#D32F2F'];
+function diffOf(walkM, gain) {
+  const e = walkM / 1000 + (gain || 0) / 100, lv = e < 4 ? 0 : e < 8 ? 1 : e < 13 ? 2 : e < 20 ? 3 : 4;
+  return { e, lv, name: DIFF_NAME[lv], col: DIFF_COL[lv] };
+}
+// 칼로리(대략): 몸무게 × km × (걷기 0.55 · 러닝 1.0 · 자전거 0.3) + 오른 높이 × 몸무게 × 0.0107(자전거 0.006). 몸무게는 ⚙ 설정(ls bodyKg), 없으면 65kg
+const bodyKg = () => { const v = +ls.get('bodyKg', 0); return v >= 25 && v <= 200 ? v : 0; };
+function kcalOf(modeK, walkM, gain) {
+  const kg = bodyKg() || 65, km = walkM / 1000, per = modeK === 'run' ? 1.0 : modeK === 'bike' ? 0.3 : 0.55;
+  return Math.round(kg * km * per + (gain || 0) * kg * (modeK === 'bike' ? 0.006 : 0.0107));
+}
+// 장소 이름·날씨는 출발점(집일 수 있어서) 대신 출발에서 가장 먼 점으로 물어요. 한 번 받으면 기록에 남겨 다시 안 물음
+function farPoint(tr) { let b = tr[0], bd = -1; for (const q of tr) { const d = dist(tr[0][0], tr[0][1], q[0], q[1]); if (d > bd) { bd = d; b = q; } } return b; }
+// 장소 이름: OpenStreetMap Nominatim(1초에 한 번까지라 기록 하나 열 때 한 번만) → walkWhere:{ID}={n}
+async function placeName(t, tr) {
+  const c = ls.get('walkWhere:' + t, null); if (c && c.n) return c.n;
+  if (!navigator.onLine || sessionStorage.getItem('whereFail:' + t)) return '';
+  const q = farPoint(tr);
+  try {
+    const r = await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=ko&lat=${q[0].toFixed(3)}&lon=${q[1].toFixed(3)}`, {}, 12000);
+    const a = (await r.json()).address || {};
+    const parts = [a.province || a.state, a.city || a.county, a.borough, a.town || a.village || a.suburb || a.quarter].filter(Boolean);
+    const n = parts.filter((v, i) => parts.indexOf(v) === i).join(' ').slice(0, 40);
+    if (n) { ls.set('walkWhere:' + t, { n }); return n; }
+  } catch {}
+  sessionStorage.setItem('whereFail:' + t, '1'); return '';
+}
+// 날씨: Open-Meteo(열쇠 없음). 85일 안이면 forecast, 그보다 오래면 archive. 다닌 시간 안의 시간별 값 → walkWx:{ID}={c,lo,hi,w,p}
+function wxName(c) {
+  return c === 0 ? ['☀️', '맑음'] : c <= 2 ? ['🌤', '구름 조금'] : c === 3 ? ['☁️', '흐림'] : c <= 48 ? ['🌫', '안개'] : c <= 57 ? ['🌦', '이슬비'] : c <= 67 ? ['🌧', '비']
+    : c <= 77 ? ['🌨', '눈'] : c <= 82 ? ['🌦', '소나기'] : c <= 86 ? ['🌨', '눈'] : ['⛈', '뇌우'];
+}
+async function trailWeather(t, tr, live) {
+  const c = ls.get('walkWx:' + t, null); if (c && c.c != null) return c;
+  if (live || !navigator.onLine || sessionStorage.getItem('wxFail:' + t)) return null;
+  const q = farPoint(tr), a = tr[0][2], b = tr[tr.length - 1][2], day = ts => new Date(ts).toISOString().slice(0, 10);
+  if (Date.now() - b < 2 * 3600e3) return null;   // 막 끝난 기록은 시간별 값이 아직 덜 나와서 조금 뒤에
+  const old = Date.now() - a > 85 * 864e5;
+  try {
+    const r = await fetchT(`https://${old ? 'archive-api' : 'api'}.open-meteo.com/v1/${old ? 'archive' : 'forecast'}?latitude=${q[0].toFixed(2)}&longitude=${q[1].toFixed(2)}&hourly=temperature_2m,weather_code,wind_speed_10m,precipitation&wind_speed_unit=ms&timezone=GMT&start_date=${day(a)}&end_date=${day(b)}`, {}, 12000);
+    const H = (await r.json()).hourly; if (!H || !H.time) throw 0;
+    const idx = H.time.map((x, i) => [Date.parse(x + 'Z'), i]).filter(([ts]) => ts >= a - 3600e3 && ts <= b).map(([, i]) => i).filter(i => H.temperature_2m[i] != null);
+    if (!idx.length) throw 0;
+    const T = idx.map(i => H.temperature_2m[i]), C = idx.map(i => H.weather_code[i]), wet = C.filter(x => x >= 51);
+    const cnt = {}; C.forEach(x => cnt[x] = (cnt[x] || 0) + 1);
+    const code = wet.length ? Math.max(...wet) : +Object.keys(cnt).sort((p, q2) => cnt[q2] - cnt[p])[0];
+    const wx = { c: code, lo: Math.round(Math.min(...T)), hi: Math.round(Math.max(...T)), w: Math.round(Math.max(...idx.map(i => H.wind_speed_10m[i] || 0))), p: Math.round(idx.reduce((s2, i) => s2 + (H.precipitation[i] || 0), 0) * 10) / 10 };
+    ls.set('walkWx:' + t, wx); return wx;
+  } catch {}
+  sessionStorage.setItem('wxFail:' + t, '1'); return null;
+}
+const wxText = w => { const [e, n] = wxName(w.c); return `${e} ${n} · ${w.lo === w.hi ? w.lo : `${w.lo}~${w.hi}`}°C · 바람 ${w.w}m/s${w.p >= 0.5 ? ` · 비 ${w.p}mm` : ''}`; };
+// 난이도·칼로리 카드 (걷는 모드: 등산·트래킹 등. 러닝·자전거·파크골프는 칼로리만 숫자 칸에)
+function diffCard(modeK, walkM, gain) {
+  if (['run', 'bike', 'pgolf'].includes(modeK) || walkM < 500) return null;
+  const D = diffOf(walkM, gain), kg = bodyKg();
+  return el('div', { class: 'card vw-card' },
+    el('div', { class: 'vw-h' }, el('b', { text: '난이도' }), el('span', { style: `color:${D.col};font-weight:800;font-size:17px`, text: D.name })),
+    el('div', { class: 'vw-dots' }, ...DIFF_NAME.map((_, i) => el('i', { style: i <= D.lv ? `background:${D.col}` : '' }))),
+    el('div', { style: 'font-size:15px;font-weight:600', text: `평지로 치면 ${D.e.toFixed(1)}km를 걸은 셈이에요` }),
+    el('div', { class: 'sub', style: 'font-size:12px;line-height:1.5', text: `걸은 거리 ${(walkM / 1000).toFixed(1)}km${gain ? ` + 오른 높이 ${gain}m(100m마다 평지 1km로 셈)` : ''} · 평지 4km까지 아주 쉬움 · 8km까지 쉬움 · 13km까지 보통 · 20km까지 힘듦 · 그 위 아주 힘듦` }),
+    el('div', { style: `font-size:15px;font-weight:700;color:${STAT_COL.kcal}`, text: `🔥 약 ${kcalOf(modeK, walkM, gain).toLocaleString()} kcal` }),
+    el('div', { class: 'sub', style: 'font-size:12px', text: `몸무게 ${kg || 65}kg로 대략 셈했어요${kg ? '' : ' · ⚙ 설정 → 몸무게에서 바꿔요'}` }));
 }
 // 빠르기 색: 그 기록 안에서 빠른 20%는 짙은 파랑 → 느린 20%는 빨강 (애플처럼 그 기록 기준. 녹색·누런색은 안 씀)
 const PACE_COLS = ['#1565C0', '#42A5F5', '#FFAB91', '#FF7043', '#D32F2F'];
@@ -2210,9 +2277,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '내 MPD 숫자 칸에 \'출발 높이\'가 생겼어요 · 최고·출발 높이는 바다 기준 높이(해발)로 보여요 · 높이 그래프 아래에 오른 높이와 해발이 어떻게 다른지 설명이 있어요 · 지도 오른쪽 위 \'🗺 길만 보기\'로 사진을 숨길 수 있어요';
+const UI_NOTES = '내 MPD 기록에 다녀온 곳 이름(📍)과 그날 날씨(기온·바람·비)가 저절로 나와요 · 걷는 기록엔 난이도 카드(아주 쉬움~아주 힘듦, 평지로 치면 몇 km)가 생겼어요 · 숫자 칸에 칼로리(대략)가 나와요 · ⚙ 설정 → 나 → 몸무게를 적으면 칼로리가 더 맞아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3027,6 +3094,7 @@ function appSettings() {
       head('나'), (() => { const a = cloudAcct();
         return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인한 계정', a ? `${a.via} 계정 · ${a.name}` : '로그인 안 함 · 누르면 카카오·구글로 로그인', () => { location.href = './?my=1'; }); })(),
       row('👤', '내 이름', ls.get('nick', '') || '아직 없어요 · 같이 달리기·모임방에 보여요', () => nickEdit(done)),
+      row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg · 칼로리 셈에 써요` : '정하지 않았어요 · 칼로리를 65kg로 셈해요', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
       head('러닝'),
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '정하지 않았어요', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
       row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
@@ -4381,7 +4449,7 @@ function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거�
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:'];
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
@@ -4921,6 +4989,12 @@ async function viewMyOne(t) {
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
+  // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
+  const whereEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' }), wxEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' });
+  if (tr.length >= 2) {
+    placeName(t, tr).then(n => { if (n) { whereEl.textContent = '📍 ' + n; whereEl.style.display = ''; } });
+    trailWeather(t, tr, live).then(w => { if (w) { wxEl.textContent = wxText(w); wxEl.style.display = ''; } });
+  }
   const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
     el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 메모 고치기' : '📝 이번 MPD 메모 쓰기', onclick: async () => {
       const v = await askLong('📝 이번 MPD 메모', ls.get('walkNote:' + t, ''), '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것…', '첫 줄은 공유 카드에, 전체는 지도 링크에도 보여요. 비우면 지워요.');
@@ -4961,6 +5035,7 @@ async function viewMyOne(t) {
     ev && ev.gain >= 10 ? [`최고 높이 (${elevWhat(ev)})`, elevTxt(ev, 'max'), 'm'] : null,
     ev && ev.gain >= 10 ? [`출발 높이 (${elevWhat(ev)})`, elevTxt(ev, 'start'), 'm'] : null,
     M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
+    st.walk >= 500 && M.k !== 'pgolf' ? ['칼로리 (대략)', '약 ' + kcalOf(M.k, st.walk, ev ? ev.gain : 0).toLocaleString(), 'kcal'] : null,
     H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
     H && H.max ? ['최고 심박', H.max, 'bpm'] : null,
     H && H.hrEnd > 0 && H.hr1 > 0 ? ['운동 뒤 심박 회복', '−' + (H.hrEnd - H.hr1), '/1분'] : null,   // 시계: 끝낸 뒤 1분에 떨어진 심박
@@ -5002,8 +5077,9 @@ async function viewMyOne(t) {
       el('div', { class: 'vw-big', style: `color:${STAT_COL.dist}` }, el('b', { text: km[0] }), el('span', { text: km[1] })),
       off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
       el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600', text: `${kTime(info.startAt)} ~ ${kTime(info.meetAt)}${wp.start || wp.end ? ` · ${wp.start || '출발'} → ${wp.end || '도착'}` : ''}` }),
+      whereEl, wxEl,
       noteEl),
-    stats,
+    stats, diffCard(M.k, st.walk, ev ? ev.gain : 0),
     (() => { const sp = M.k === 'run' && !live && !x.album && !off ? runSpan(tr) : null; if (!sp) return null;
       const run = tr[sp.b][2] - tr[sp.a][2];
       return el('div', { class: 'card', style: 'padding:14px;border:2px solid var(--accent);display:flex;flex-direction:column;gap:8px' },
