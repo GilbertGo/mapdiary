@@ -276,7 +276,7 @@ body.noscroll{overflow:hidden}
 .spot-pin{background:#fff;color:#E0892F;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex!important;align-items:center;justify-content:center;font-size:17px;line-height:1}
 .gallery{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .gallery img{width:96px;height:96px;object-fit:cover;border-radius:14px;flex-shrink:0;cursor:zoom-in;box-shadow:var(--shadow)}
-.ph-pin{background:none;border:none}.ph-pin img{width:44px!important;height:44px!important;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:block}
+.ph-pin{background:none;border:none;position:relative}.ph-n{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#FF8A4C;color:#fff;font:700 11px/20px Pretendard,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}.ph-pin img{width:36px!important;height:36px!important;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:block}
 .goal{background:var(--ink);color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px}
 .goal .lbl{font-size:13px;color:#B3AC9C}
 .goal .place{font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.02em}
@@ -999,11 +999,25 @@ async function cardStrip(recs, skip) {
 // 카드 맨 위 사진: 고른 것(walkCover:{ID}), 'none'이면 풍경 그림, 안 골랐으면 가운데쯤 사진을 저절로 (2026-10-27 '지금은 영 보고 싶은 마음이 안 들 거야')
 const coverOf = (t, recs) => { const cid = ls.get('walkCover:' + t, null); if (cid === 'none' || !recs.length) return null; return (cid && recs.find(r => r.id === cid)) || recs[Math.floor((recs.length - 1) / 2)]; };
 // 지도에 사진 동그라미를 놓아요. 누르면 크게 보여줘요.
+// 2026-10-29 사용자가 화담숲 기록 캡처를 보냄: 사진 동그라미가 겹겹이 길을 덮어 빠르기 색 길이 안 보였음
+//   → 화면에서 가까운(40px 안) 사진은 한 동그라미로 묶고 '+n' 숫자, 확대하면 다시 나뉨. 동그라미도 36px로 작게
 function photoMarkers(map, layer, photos) {
-  photos.filter(p => p.lat != null).forEach(p => {
-    L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'ph-pin', iconSize: [44, 44], iconAnchor: [22, 22], html: `<img src="${p.thumb}" alt="">` }) })
-      .on('click', () => showPhoto(p, photos)).addTo(layer || map);
-  });
+  const ps = photos.filter(p => p.lat != null); if (!ps.length) return;
+  map = map || (layer && layer._map); if (!map) return;
+  const g = L.layerGroup().addTo(layer || map);
+  const draw = () => {
+    g.clearLayers();
+    const groups = [];
+    ps.forEach(p => { const pt = map.latLngToLayerPoint([p.lat, p.lng]);
+      const hit = groups.find(q => Math.abs(q.pt.x - pt.x) < 40 && Math.abs(q.pt.y - pt.y) < 40);
+      if (hit) hit.list.push(p); else groups.push({ pt, list: [p] }); });
+    groups.forEach(q => { const p = q.list[0], n = q.list.length;
+      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'ph-pin', iconSize: [40, 40], iconAnchor: [20, 20], html: `<img src="${p.thumb}" alt="">` + (n > 1 ? `<b class="ph-n">+${n - 1}</b>` : '') }) })
+        .on('click', () => showPhoto(p, photos)).addTo(g); });
+  };
+  // 같은 층을 비우고 다시 그리면(새 사진) 예전 묶음은 떨어져 나가니, 그때는 확대 따라 다시 그리기를 그만둬요
+  const go = () => { if (!map.hasLayer(g)) return map.off('zoomend', go); try { draw(); } catch (e) {} };
+  map.whenReady(() => setTimeout(go, 0)); map.on('zoomend', go);
 }
 // 사진 크게 보기. list를 주면 좌우로 밀거나 ‹ › 를 눌러 앞뒤 사진으로 넘겨요. 사진을 톡 누르면 닫혀요.
 // 사진을 휴대폰에 내려받아요 (다운로드 폴더에 저장되고 갤러리에도 보여요). 여러 장이면 조금씩 띄워서
@@ -2175,9 +2189,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '내 MPD 기록 보기가 새 모습이에요: 큰 지도 → 큰 거리 → 색깔 숫자 칸 → 1km 구간 표 → 심박(시계) → 높이 · 지도의 길이 빠르기에 따라 색칠돼요(파랑 빠름 → 빨강 느림) · 높이 그래프에 오르막·평지·내리막 시간 · 공유 카드 숫자도 같은 색';
+const UI_NOTES = '지도 위 사진 동그라미가 작아졌어요 · 가까이 모인 사진은 한 동그라미로 묶이고 +숫자가 붙어요(확대하면 나뉘어요) · 그래서 빠르기 색 길이 잘 보여요 · 내 MPD 기록 보기는 큰 지도 → 큰 거리 → 색깔 숫자 칸 → 1km 구간 표 → 심박(시계) → 높이 순서예요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
