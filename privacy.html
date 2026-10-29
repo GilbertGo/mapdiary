@@ -32,6 +32,8 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>같이 달리기</b>(러닝, 사용자가 방에 들어갈 때만): 달리는 동안 10초마다 이름·거리·시간·페이스·지금 위치(출발 500m 밖일 때만)를 잠가서 올리고, 같은 방 코드를 아는 친구만 열어 볼 수 있습니다. 방에서 나가면 내 칸을 지웁니다.</li>
 <li><b>시계 → 휴대폰 보내기</b>(MPD Run 워치에서 사용자가 켤 때만): 달린 기록을 연결 코드로 잠가서(AES 암호화) 올리고, 같은 코드를 적은 휴대폰만 받아 열 수 있습니다.</li>
 <li>지도 그림은 OpenStreetMap에서 받으며, 이때 보고 있는 지도 위치가 지도 서버에 전달될 수 있습니다.</li>
+<li>내 기록을 볼 때 다녀온 곳 이름과 그날 날씨를 보여 주려고, 출발점이 아닌 <b>출발에서 가장 먼 점</b>의 대략 위치(약 100m~1km 단위로 줄임)와 날짜만 OpenStreetMap Nominatim(장소 이름)과 Open-Meteo(날씨)에 한 번 물어봅니다. 이름·계정은 보내지 않으며, 받은 결과는 휴대폰에만 남깁니다.</li>
+<li>몸무게(칼로리 셈용, 적었을 때만)는 휴대폰 안에만 저장됩니다.</li>
 </ul>
 
 <h2>3. 보관과 지우기</h2>
@@ -61,6 +63,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>Run together</b> (optional): while you run in a crew, your name, distance, time, pace and current position (only beyond 500 m from the start) are uploaded encrypted every 10 seconds and can be read only by friends who know the crew code. Leaving the crew deletes your entry.</li>
 <li><b>Watch to phone</b> (optional): when turned on in MPD Run for Wear OS, finished runs are uploaded encrypted with a link code; only a phone that enters the same code can read them.</li>
 <li>Map tiles are loaded from OpenStreetMap.</li>
+<li>To show the place name and weather of a saved record, the app sends only a coarse location (rounded to about 100 m–1 km) of the point farthest from the start, plus the date, to OpenStreetMap Nominatim and Open-Meteo once. No name or account is sent; results stay on the device. Body weight (if entered, for calorie estimates) stays on the device.</li>
 <li>You can delete records in the app at any time; uninstalling removes local data. To delete cloud or shared data, email <a href="mailto:seongsikgo69@gmail.com">seongsikgo69@gmail.com</a>.</li>
 <li>The apps are not directed at children.</li>
 </ul>
