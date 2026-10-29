@@ -1111,8 +1111,16 @@ function elevStats(tr) {
   for (const v of h) { if (v - ref > 4) { gain += v - ref; ref = v; } else if (ref - v > 4) { loss += ref - v; ref = v; } }
   // 그래프용: 걸어온 거리(m)와 높이
   let d = 0; const prof = h.map((v, i) => { if (i) d += dist(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]); return [d, v]; });
-  return { gain: Math.round(gain), loss: Math.round(loss), max: Math.round(Math.max(...h)), min: Math.round(Math.min(...h)), prof };
+  // 해발(바다 기준) (2026-10-29 사용자 '출발 높이와 해발도'): 안드로이드 GPS 높이는 지구를 매끈한 공처럼 본 높이라 한국에선 바다 높이보다 25m쯤 높게 나와요
+  //   → 한국 안이면 25m를 빼서 '해발 약'으로, 밖이면 'GPS 높이' 그대로(나라마다 차이가 달라서). max·min·prof는 예전 그대로(GPS 높이)
+  const off = geoidOff(pts[0][0], pts[0][1]), asl = v => off == null ? null : Math.round(v - off);
+  return { gain: Math.round(gain), loss: Math.round(loss), max: Math.round(Math.max(...h)), min: Math.round(Math.min(...h)), prof,
+    start: Math.round(h[0]), maxAsl: asl(Math.max(...h)), minAsl: asl(Math.min(...h)), startAsl: asl(h[0]) };
 }
+function geoidOff(lat, lng) { return lat > 33 && lat < 39 && lng > 124 && lng < 132 ? 25 : null; }
+// 높이 칸 글: 해발이면 '해발 약 326', 아니면 GPS 높이
+function elevTxt(ev, k) { return (ev[k + 'Asl'] != null ? ev[k + 'Asl'] : ev[k]).toLocaleString(); }
+function elevWhat(ev) { return ev.maxAsl != null ? '해발' : 'GPS'; }
 // 높이 그래프 (산 모양 선). 가로는 거리, 세로는 높이
 // 러닝 1km 구간 표: 페이스(막대) + 그 구간 케이던스
 function splitTable(t) {
@@ -1313,8 +1321,9 @@ function elevCard(ev, tr, modes) {
     <path d="${line} L ${W - pad} ${H - pad} L ${pad} ${H - pad} Z" fill="url(#vwUp)"/><path d="${line}" fill="none" stroke="${STAT_COL.up}" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>`;
   const mx = Math.max(...T), tot = T[0] + T[1] + T[2];
   return el('div', { class: 'card vw-card' },
-    el('div', { class: 'vw-h' }, el('b', { text: '높이' }), el('span', { class: 'sub' }, '오른 높이 ', el('b', { style: `color:${STAT_COL.up}`, text: `${ev.gain}m` }), ` · 최고 ${ev.max}m`)),
-    svg, el('div', { class: 'sub vw-ax' }, el('span', { text: '출발' }), el('span', { text: `최저 ${ev.min}m` }), el('span', { text: fmtDist(D) })),
+    el('div', { class: 'vw-h' }, el('b', { text: '높이' }), el('span', { class: 'sub' }, '오른 높이 ', el('b', { style: `color:${STAT_COL.up}`, text: `${ev.gain}m` }), ` · 최고 ${elevWhat(ev)} ${elevTxt(ev, 'max')}m`)),
+    svg, el('div', { class: 'sub vw-ax' }, el('span', { text: `출발 ${elevTxt(ev, 'start')}m` }), el('span', { text: `최저 ${elevTxt(ev, 'min')}m` }), el('span', { text: fmtDist(D) })),
+    el('div', { class: 'sub', style: 'font-size:12px;line-height:1.5', text: `오른 높이는 오르막만 모두 더한 값이에요(내리막은 빼요). 최고·출발 높이는 ${ev.maxAsl != null ? '바다 기준 높이(해발)예요. GPS로 짐작해서 10~20m 다를 수 있어요' : 'GPS가 잰 높이예요(해발과 수십 m 다를 수 있어요)'}.` }),
     tot > 6e4 ? [zoneRow('오르막', STAT_COL.up, T[0], mx, `${Math.round(T[0] * 100 / tot)}%`), zoneRow('평지', '#9AA5B4', T[1], mx, `${Math.round(T[1] * 100 / tot)}%`), zoneRow('내리막', '#42A5F5', T[2], mx, `${Math.round(T[2] * 100 / tot)}%`),
       el('div', { class: 'sub', style: 'font-size:12px', text: '움직인 동안 기울기 4%보다 가파르면 오르막·내리막으로 셌어요.' })] : null);
 }
@@ -2201,9 +2210,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '내 MPD 지도 오른쪽 위 \'🗺 길만 보기\' 단추로 사진을 숨기고 길만 볼 수 있어요(다시 누르면 \'📷 사진 보기\') · 지도 위 가까운 사진은 한 동그라미로 묶여 +숫자가 붙어요 · 시계로 잰 기록에 운동 뒤 심박 회복이 나와요';
+const UI_NOTES = '내 MPD 숫자 칸에 \'출발 높이\'가 생겼어요 · 최고·출발 높이는 바다 기준 높이(해발)로 보여요 · 높이 그래프 아래에 오른 높이와 해발이 어떻게 다른지 설명이 있어요 · 지도 오른쪽 위 \'🗺 길만 보기\'로 사진을 숨길 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4949,7 +4958,8 @@ async function viewMyOne(t) {
     (M.k === 'run' || M.k === 'bike') && !x.album && !(off && off.ms) && mv > 60000 && st.ms - mv > 120000 ? ['움직인 시간', fmtRunTime(mv)] : null,
     [`${M.did} 거리`, km[0], km[1]],
     ev && ev.gain >= 10 ? ['오른 높이', ev.gain.toLocaleString(), 'm'] : null,
-    ev && ev.gain >= 10 ? ['최고 높이', ev.max.toLocaleString(), 'm'] : null,
+    ev && ev.gain >= 10 ? [`최고 높이 (${elevWhat(ev)})`, elevTxt(ev, 'max'), 'm'] : null,
+    ev && ev.gain >= 10 ? [`출발 높이 (${elevWhat(ev)})`, elevTxt(ev, 'start'), 'm'] : null,
     M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
     H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
     H && H.max ? ['최고 심박', H.max, 'bpm'] : null,
