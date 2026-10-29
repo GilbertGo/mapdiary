@@ -35,10 +35,12 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     companion object {
         const val ACTION_WARM = "warm"
         const val ACTION_STOP = "stop"
+        const val ACTION_RECOVER = "recover"   // 끝낸 뒤 2분: 심박만 재요(운동 뒤 심박 회복)
         const val CH = "run"
         var alive = false
         fun warm(c: Context) { val i = Intent(c, RunService::class.java).setAction(ACTION_WARM); if (Build.VERSION.SDK_INT >= 26) c.startForegroundService(i) else c.startService(i) }
         fun stop(c: Context) { c.startService(Intent(c, RunService::class.java).setAction(ACTION_STOP)) }
+        fun recover(c: Context) { c.startService(Intent(c, RunService::class.java).setAction(ACTION_RECOVER)) }
     }
     private var tts: TextToSpeech? = null
     private var ttsOk = false
@@ -68,19 +70,22 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) { shutdown(); return START_NOT_STICKY }
+        if (intent?.action == ACTION_STOP) { if (recovering) recFinish(); shutdown(); return START_NOT_STICKY }
+        if (intent?.action == ACTION_RECOVER) { if (listening && Recover.id != null) startRecover() else shutdown(); return START_NOT_STICKY }
+        // 심박 회복을 재는 중에 새 기록을 시작하면: 잰 데까지 남기고 GPS·센서를 다시 다 켜요
+        if (recovering) { recFinish(); quiet(); listening = false }
         goForeground(); listen()
         return START_STICKY
     }
 
     private fun granted(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED
 
-    private fun goForeground() {
+    private fun goForeground(title: String = if (recovering) "운동 뒤 심박 재는 중" else "MPD Run 기록 중", sub: String = if (recovering) "2분 동안 심박이 얼마나 내려가는지 봐요" else "누르면 기록 화면으로 돌아가요") {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) nm?.createNotificationChannel(NotificationChannel(CH, "러닝 기록", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
         val n = (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CH) else Notification.Builder(this))
-            .setContentTitle("MPD Run 기록 중").setContentText("누르면 기록 화면으로 돌아가요")
+            .setContentTitle(title).setContentText(sub)
             .setSmallIcon(R.drawable.ic_run).setOngoing(true).setContentIntent(open).setCategory(Notification.CATEGORY_WORKOUT).build()
         if (Build.VERSION.SDK_INT >= 29) {
             // 위치는 꼭, 심박·걸음 권한이 있으면 '건강'도 (권한 없이 건강을 넣으면 안드로이드가 막아요)
@@ -128,6 +133,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
             val now = System.currentTimeMillis()
             if (Run.id != null && now - lastSave > 30000) { lastSave = now; Store.saveCurrent(this@RunService) }
             if (now - maxOf(Run.hrEvT, hrReg) > 30000) { if (Run.hrPerm || granted(Manifest.permission.BODY_SENSORS)) goForeground(); hrListen() }
+            if (recovering) recTick(now)
             h.postDelayed(this, 1000)
         }
     }
@@ -179,11 +185,47 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
         } catch (e: Exception) {}
     }
 
-    private fun shutdown() {
-        listening = false; h.removeCallbacks(tick); Cadence.stop()
+    // ---------- 운동 뒤 심박 회복: 끝낸 뒤 2분 동안 심박만 ----------
+    private var recovering = false
+    private fun startRecover() {
+        recovering = true
+        try { lm?.removeUpdates(this) } catch (e: Exception) {}
+        sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let { sm?.unregisterListener(this, it) }
+        sm?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm?.unregisterListener(this, it) }
+        Cadence.stop()
+        goForeground()
+    }
+    private fun recTick(now: Long) {
+        val el = now - Recover.t0; val hr = Run.hrNow(now)
+        if (Recover.end == 0 && hr > 0 && el < 20000) Recover.end = hr
+        if (Recover.h1 == 0 && hr > 0 && el in 60000..90000) Recover.h1 = hr
+        if (Recover.h2 == 0 && hr > 0 && el in 120000..150000) Recover.h2 = hr
+        if (Recover.h2 > 0 || el > 150000) { recFinish(); shutdown() }
+    }
+    // 잰 값을 기록 파일에 넣고(1분 값이 있을 때만) 휴대폰으로 다시 보내요
+    private fun recFinish() {
+        recovering = false; val id = Recover.id ?: return
+        val e = Recover.end; val a = Recover.h1; val b = Recover.h2
+        if (e > 0 && a > 0) Store.get(this, id)?.let { o ->
+            o.optJSONObject("sum")?.put("hrEnd", e)?.put("hr1", a)?.put("hr2", b)
+            Store.put(this, o)
+            val app = applicationContext
+            Wear.pushAll(app); Link.pushAll(app)
+            Handler(Looper.getMainLooper()).postDelayed({ Wear.pushAll(app) }, 20000)   // 끝낼 때 보내던 게 아직이면 한 번 더
+            val d = e - a
+            Run.say("운동 뒤 심박, 1분에 ${d} 내려갔어요." + if (d >= 20) " 회복이 빨라요. 좋아요." else if (d < 12) " 회복이 느린 편이에요. 오늘은 푹 쉬어요." else "")
+        }
+        Recover.done = true
+    }
+    private fun quiet() {
+        h.removeCallbacks(tick); Cadence.stop()
         try { lm?.removeUpdates(this) } catch (e: Exception) {}
         sm?.unregisterListener(this)
         try { wake?.release() } catch (e: Exception) {}
+    }
+
+    private fun shutdown() {
+        listening = false; recovering = false; quiet()
         if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true)
         stopSelf()
     }

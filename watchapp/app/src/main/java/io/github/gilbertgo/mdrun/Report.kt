@@ -46,6 +46,10 @@ class Report(o: JSONObject) {
     val gain: Int? = alts.map { it.second }.let { a -> if (a.size < 5) null else {
         gainOf(a) } }
     fun zoneLo(z: Int) = (hrMaxSet * (.5 + .1 * z)).roundToInt()
+    // 등산 기록인지 · 다닌 시간(시작~끝) · 운동 뒤 심박(끝낼 때 → 1분 뒤 → 2분 뒤)
+    val hike = o.optString("sport") == "hike" || o.optJSONObject("data")?.optString("walkMode:$id") == "\"hike\""
+    val elapsed = maxOf(0L, o.optLong("end") - at)
+    val hrEnd = sum.optInt("hrEnd"); val hr1 = sum.optInt("hr1"); val hr2 = sum.optInt("hr2")
 
     // 심박 드리프트(%): 앞 절반과 뒤 절반의 '속도 ÷ 심박'이 얼마나 떨어졌는지. 처음 10분(몸 푸는 시간)은 빼요
     val drift: Double? = run {
@@ -66,8 +70,15 @@ class Report(o: JSONObject) {
         // 목표
         if (goal.k != "free") out.add(if (goalDone) Note("목표 ${goal.label()} 달성", if (goal.tgtLabel().isNotEmpty()) "목표 ${goal.tgtLabel()}" else "끝까지 해냈어요", GOLD)
             else Note("목표 ${goal.label()}에 못 미쳤어요", "다음엔 목표를 조금 낮춰도 좋아요", CORAL))
+        // 운동 뒤 심박 회복(1분에 몇 떨어졌나)
+        if (hrEnd > 0 && hr1 > 0) { val d = hrEnd - hr1; out.add(when {
+            d >= 20 -> Note("심박 회복 빨라요 · 1분에 −$d", "끝낼 때 $hrEnd → 1분 뒤 $hr1 · 심폐 체력이 좋아요", BLUE)
+            d >= 12 -> Note("심박 회복 보통 · 1분에 −$d", "끝낼 때 $hrEnd → 1분 뒤 $hr1", GOLD)
+            else -> Note("심박 회복 느려요 · 1분에 −$d", "피곤하거나 컨디션이 안 좋을 수 있어요 · 오늘은 푹 쉬어요", CORAL) }) }
+        // 등산: 오른 높이와 1시간에 오른 높이
+        if (hike && gain != null && gain >= 30 && elapsed > 600_000) out.add(Note("오른 높이 ${gain}m", "1시간에 ${(gain / (elapsed / 3_600_000.0)).roundToInt()}m 올랐어요", RunView.ALTC))
         // 페이스 흐름
-        if (splits.size >= 2) {
+        if (!hike && splits.size >= 2) {
             val h = splits.size / 2; val a = splits.subList(0, h).average(); val b = splits.subList(splits.size - h, splits.size).average()
             val d = (b - a) / a * 100; val mean = splits.average(); val cv = sqrt(splits.sumOf { (it - mean) * (it - mean) } / splits.size) / mean * 100
             out.add(when {
@@ -82,8 +93,8 @@ class Report(o: JSONObject) {
         if (zt > 120_000) {
             val z2 = zone[1] * 100 / zt; val hi = (zone[2] + zone[3] + zone[4]) * 100 / zt
             out.add(when {
-                z2 >= 60 -> Note("존2 러닝 잘했어요 · 존2 $z2%", "존2 ${zoneLo(1)}~${zoneLo(2) - 1} 안에서 오래 달렸어요", BLUE)
-                hi >= 50 -> Note("존3 이상이 $hi%예요", "존2로 달리려면 심박 ${zoneLo(2) - 1} 아래로, 더 천천히", CORAL)
+                z2 >= 60 -> Note(if (hike) "존2로 꾸준히 걸었어요 · 존2 $z2%" else "존2 러닝 잘했어요 · 존2 $z2%", "존2 ${zoneLo(1)}~${zoneLo(2) - 1} 안에서 오래 " + (if (hike) "걸었어요" else "달렸어요"), BLUE)
+                hi >= 50 -> Note("존3 이상이 $hi%예요", (if (hike) "오르막에서 쉬어 가며 심박 " else "존2로 달리려면 심박 ") + "${zoneLo(2) - 1} 아래로, 더 천천히", CORAL)
                 else -> Note("존2 $z2% · 존3 이상 $hi%", "존2 비율 60%를 넘겨 보세요", GOLD)
             })
         }
@@ -94,15 +105,15 @@ class Report(o: JSONObject) {
             else -> Note("심박 드리프트 ${String.format("%.1f", d)}%", "후반 심박이 많이 올랐어요 · 더위·피로·속도 확인", CORAL)
         }) }
         // 케이던스
-        if (cad > 0) out.add(when {
+        if (!hike && cad > 0) out.add(when {
             cad >= 170 -> Note("케이던스 $cad 좋아요", "발을 빠르고 가볍게 디뎠어요", BLUE)
             cad >= 160 -> Note("케이던스 $cad 보통", "170을 목표로 보폭을 조금 줄여 보세요", GOLD)
             else -> Note("케이던스 $cad 낮아요", "가이드 소리를 170~175에 맞춰 연습해 보세요", CORAL)
         })
         // 자세
-        regAvg?.let { r -> if (r > 7) out.add(Note("걸음 리듬이 흔들렸어요 ${r.roundToInt()}%", "일정한 박자로 · 케이던스 가이드가 도움 돼요", GOLD)) }
-        gAvg?.let { g -> if (g > 4) out.add(Note("착지 충격이 세요 ${String.format("%.1f", g)}G", "발을 몸 아래에 살짝 내려놓듯", GOLD)) }
-        if (out.isEmpty()) out.add(Note("기록이 짧아요", "1km 넘게 달리면 자세히 분석해 드려요", MUTED))
+        if (!hike) regAvg?.let { r -> if (r > 7) out.add(Note("걸음 리듬이 흔들렸어요 ${r.roundToInt()}%", "일정한 박자로 · 케이던스 가이드가 도움 돼요", GOLD)) }
+        if (!hike) gAvg?.let { g -> if (g > 4) out.add(Note("착지 충격이 세요 ${String.format("%.1f", g)}G", "발을 몸 아래에 살짝 내려놓듯", GOLD)) }
+        if (out.isEmpty()) out.add(Note("기록이 짧아요", if (hike) "1km 넘게 걸으면 자세히 분석해 드려요" else "1km 넘게 달리면 자세히 분석해 드려요", MUTED))
         return out
     }
 }
@@ -235,16 +246,19 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         y += 15 * u
         // ① 색깔 숫자 줄
         val rows = ArrayList<Triple<String, String, Int>>()
-        rows.add(Triple(fmtKm(r.walk), "km", RunView.GOLD)); rows.add(Triple(fmtTime(r.moving), "", BLUE))
-        rows.add(Triple(fmtPace(r.avgPace), "/km", CORAL)); if (r.hrAvg > 0) rows.add(Triple("${r.hrAvg}", "bpm", RED))
+        rows.add(Triple(fmtKm(r.walk), "km", RunView.GOLD))
+        if (r.hike) { rows.add(Triple(fmtTime(r.elapsed), "", BLUE)); r.gain?.let { rows.add(Triple("↑$it", "m", RunView.ALTC)) } }   // 등산: 다닌 시간 · 오른 높이
+        else { rows.add(Triple(fmtTime(r.moving), "", BLUE)); rows.add(Triple(fmtPace(r.avgPace), "/km", CORAL)) }
+        if (r.hrAvg > 0) rows.add(Triple("${r.hrAvg}", "bpm", RED))
         val x0 = L + 17 * u; val top = y - 11 * u
         rows.forEach { (v, unit, col) ->
             if (cv != null) { paint(col); p.typeface = numBold; p.fontFeatureSettings = "tnum"; p.textSize = 13 * u; p.textAlign = Paint.Align.LEFT; cv.drawText(v, x0, y, p)
                 val w = p.measureText(v); p.textSize = 5.6f * u; p.typeface = krBold; if (unit.isNotEmpty()) cv.drawText(unit, x0 + w + 1.2f * u, y, p) }
             y += 14 * u }
         if (cv != null) { paint(RunView.LINE); p.strokeWidth = .4f * u; cv.drawLine(x0 - 4 * u, top, x0 - 4 * u, y - 12 * u, p)
-            text(cv, "RUN", x0 - 9 * u, (top + y - 12 * u) / 2 + 1.6f * u, 4.2f * u, CORAL, true, true) }
+            text(cv, if (r.hike) "HIKE" else "RUN", x0 - 9 * u, (top + y - 12 * u) / 2 + 1.6f * u, 4.2f * u, CORAL, true, true) }
         y += 2 * u; rule(cv, y); y += 12 * u
+        y = recovery(cv, y)
 
         val s = r.series.let { all -> val st = maxOf(1, all.size / 120); all.filterIndexed { i, _ -> i % st == 0 || i == all.size - 1 } }
         val gL = L + 3 * u; val gR = R - 3 * u
@@ -378,6 +392,38 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
             { text(cv, l, cx, y, 4.8f * u, BLUE); y += 6 * u }
         text(cv, if (Wear.sent(context, r.id) || Link.sent(context, r.id)) "휴대폰으로 보냈어요 ✓" else "휴대폰과 이어지면 보내요", cx, y, 4.8f * u, MUTED, true); y += 6 * u
         return y + 6 * u
+    }
+
+    // 운동 뒤 심박 회복: 재는 동안(끝낸 뒤 2분)은 남은 시간·지금 심박, 다 재면 끝낼 때 → 1분 뒤 → 2분 뒤
+    private var recState = ""
+    private fun recovery(cv: Canvas?, y0: Float): Float {
+        val live = Recover.id == r.id
+        val end = if (live) Recover.end else r.hrEnd; val h1 = if (live) Recover.h1 else r.hr1; val h2 = if (live) Recover.h2 else r.hr2
+        val active = Recover.active(r.id)
+        val st = if (active) "a" else if (end > 0 && h1 > 0) "v" else if (live) "x" else ""
+        if (cv != null && st != recState) { recState = st; post { requestLayout() } }
+        if (cv == null) recState = st
+        if (st.isEmpty()) return y0
+        var y = title(cv, "운동 뒤 심박", y0) + 4 * u
+        when (st) {
+            "a" -> {
+                val left = maxOf(0L, 120_000 - (System.currentTimeMillis() - Recover.t0))
+                kv(cv, "재는 중", "${fmtTime(left)} 남음", y); y += 7.5f * u
+                val now = Run.hrNow(System.currentTimeMillis())
+                kv(cv, "지금 심박", if (now > 0) "$now bpm" else "--", y); y += 7.5f * u
+                for (l in wrap("2분 동안 심박이 얼마나 빨리 내려가는지 봐요. 시계를 찬 채 편히 쉬어요.", 4.6f * u, false, R - L - 6 * u)) { text(cv, l, cx, y, 4.6f * u, MUTED); y += 5.6f * u }
+                if (cv != null) postInvalidateDelayed(1000)
+            }
+            "v" -> {
+                kv(cv, "끝낼 때", "$end bpm", y); y += 7.5f * u
+                kv(cv, "1분 뒤", "$h1  −${end - h1}", y); y += 7.5f * u
+                if (h2 > 0) { kv(cv, "2분 뒤", "$h2  −${end - h2}", y); y += 7.5f * u }
+                val d = end - h1
+                text(cv, if (d >= 20) "회복이 빨라요 · 1분에 20 넘게" else if (d >= 12) "회복 보통 · 1분에 12~19" else "회복이 느린 편 · 1분에 12 아래", cx, y, 4.8f * u, if (d >= 20) BLUE else if (d >= 12) RunView.GOLD else CORAL, true); y += 3 * u
+            }
+            else -> { for (l in wrap("심박이 재지지 않아 회복은 못 쟀어요", 4.6f * u, false, R - L - 6 * u)) { text(cv, l, cx, y, 4.6f * u, MUTED); y += 5.6f * u } }
+        }
+        y += 2 * u; rule(cv, y); return y + 12 * u
     }
 
     // 바탕은 존2 띠만(다른 존은 심박 선 색으로 구분). yH는 칸 밖이면 가장자리로 붙여 주는 함수라 그대로 써요

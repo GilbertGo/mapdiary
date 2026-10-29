@@ -92,7 +92,11 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
     // 화면 차례: 달리기 → 목표(목표가 있을 때만) → 몸(심박·케이던스) → 1km 구간 → 멈춤·끝내기
     // 2026-10-19 정리(사용자 '중복되는 내용, 조잡해, 작은 글씨 안 보여'): 한 화면에 한 가지 일만, 같은 숫자는 한 곳에만,
     // 글자는 가장 작아도 화면의 5%(이름표), 색은 화면마다 강조 하나
-    private fun pages(): List<Int> = if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL)
+    // 등산(2026-10-29): 페이스 코치(목표) 화면·달리기 자세 화면은 빼요
+    private fun pages(): List<Int> = if (Run.hike) listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_SPLIT, P_CTL)
+        else if (Run.goal.k == "free") listOf(P_MAIN, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL) else listOf(P_MAIN, P_COACH, P_BODY, P_ZONE, P_GRAPH, P_MAP, P_FORM, P_SPLIT, P_CTL)
+    private var gainN = -1; private var gainV: Int? = null
+    private fun gainNow(): Int? { if (Run.pts.size != gainN) { gainN = Run.pts.size; gainV = Run.gain() }; return gainV }
     private val LAB = 5f   // 이름표 글자 크기(u)
 
     override fun onDraw(cv: Canvas) {
@@ -148,6 +152,13 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
         if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
+        if (Run.hike) {   // 등산: 다닌 시간(시작부터) | 오른 높이
+            text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
+            text(cv, "다닌 시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
+            text(cv, gainNow()?.let { "↑${it}m" } ?: "--", cx + 16 * u, 80 * u, 11 * u, ALTC, true, true, max = 0.3f)
+            text(cv, "오른 높이", cx + 16 * u, 87 * u, LAB * u, MUTED)
+            return
+        }
         text(cv, fmtTime(Run.liveMoving(now)), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
         text(cv, "시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
         text(cv, fmtPace(Run.nowPace(now)), cx + 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
@@ -511,7 +522,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, if (Run.manualPause) "다시" else "멈춤", L[0], 70 * u, 5.4f * u, Color.WHITE, true, max = 0.34f)
         text(cv, "끝내기", R[0], 70 * u, 5.4f * u, Color.WHITE, true)
         text(cv, "1.5초 꾹", R[0], 76 * u, 4.6f * u, MUTED)
-        pill(cv, if (Cadence.kind != Cadence.OFF) "가이드 ${Cadence.spm} 켬" else "가이드 끔", 87 * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, LAB * u)
+        if (!Run.hike) pill(cv, if (Cadence.kind != Cadence.OFF) "가이드 ${Cadence.spm} 켬" else "가이드 끔", 87 * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, LAB * u)
     }
 
     // ---------- 화면이 어두워졌을 때(앰비언트): 선과 글자만, 숫자 크게 ----------
@@ -522,7 +533,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         }
         text(cv, clock(), cx, 20 * u, 5 * u, Color.LTGRAY, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 57 * u, 31 * u, 6 * u, Color.LTGRAY)
-        text(cv, "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
+        text(cv, if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
     }
 
     // ---------- 손가락 ----------
@@ -563,7 +574,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                     val L = btnL()
                     if (hypot(e.x - L[0], e.y - L[1]) < L[2] * 1.15f) { Run.setPause(!Run.manualPause); performClick() }
                     else if (e.y < 30 * uu) { Run.voice = !Run.voice; Store.setVoice(context, Run.voice) }
-                    else if (e.y > 83 * uu) Cadence.set(context, if (Cadence.kind != Cadence.OFF) Cadence.OFF else Cadence.last)
+                    else if (e.y > 83 * uu && !Run.hike) Cadence.set(context, if (Cadence.kind != Cadence.OFF) Cadence.OFF else Cadence.last)
                 }
                 invalidate()
             }

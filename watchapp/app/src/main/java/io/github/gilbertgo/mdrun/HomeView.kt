@@ -23,12 +23,14 @@ import kotlin.math.sin
 // 시작 화면 첫 장: 사진 + 테두리 고리(시안 W1, 아래 onDraw 설명). ▶ 러닝 시작 → 목표 세팅(SetupView).
 // 용두를 돌리거나 위로 밀면 아래에 설정 줄이 이어져요
 class HomeView(c: Context, private val act: Act) : View(c) {
-    class Act(val start: () -> Unit, val goal: () -> Unit, val update: (() -> Unit)?, val guide: () -> Unit = {})
+    class Act(val start: () -> Unit, val goal: () -> Unit, val update: (() -> Unit)?, val guide: () -> Unit = {}, val sport: (String) -> Unit = {})
     class Week(val km: Double, val runs: Int, val days: BooleanArray, val goalKm: Int)
     var week = Week(0.0, 0, BooleanArray(7), 20)
     var gpsAcc = -1f
     var goal = Goal()
     var updName = ""
+    var sport = "run"   // 러닝 / 등산 (2026-10-29 2단계): 요일 점 아래 두 칸 알약으로 바꿔요
+    private var sportBox = RectF()
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val numBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
     private val krBold = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -92,7 +94,7 @@ class HomeView(c: Context, private val act: Act) : View(c) {
             updBox = RectF()
             val day = arrayOf("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")[c.get(Calendar.DAY_OF_WEEK) - 1]
             paint(Color.parseColor("#FFD2B8")); p.textSize = 3.6f * u; p.typeface = Typeface.MONOSPACE; p.letterSpacing = .18f; p.textAlign = Paint.Align.CENTER
-            cv.drawText("$day, YOUR PACE", cx, 19.5f * u, p)
+            cv.drawText(if (sport == "hike") "$day, YOUR TRAIL" else "$day, YOUR PACE", cx, 19.5f * u, p)
         }
         // 2026-10-20 휴대폰과 같이 로고(맨 위, 크게): 'MPD' 산호 + ' Run' 흰색, 아래 묶음은 조금 내려 가운데로
         run { val a1 = "MPD"; val a2 = " Run"; val sz = 5.4f * u; val w1 = measure(a1, sz, false); val w2 = measure(a2, sz, false); val lx0 = cx - (w1 + w2) / 2
@@ -109,21 +111,28 @@ class HomeView(c: Context, private val act: Act) : View(c) {
             if (i == today) { if (week.days[i]) cv.drawCircle(x, y, 1.15f * u, paint(CORAL)); paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .45f * u; cv.drawCircle(x, y, 1.0f * u, p) }
             else cv.drawCircle(x, y, 1.15f * u, paint(if (week.days[i]) CORAL else a(Color.WHITE, 80)))
         }
+        // 러닝 | 등산 두 칸 알약 (고른 쪽 흰 바탕)
+        run { val sw = 32 * u; val sh = 6.6f * u; val sy = 62.2f * u; sportBox = RectF(cx - sw / 2, sy - sh / 2, cx + sw / 2, sy + sh / 2)
+            cv.drawRoundRect(sportBox, sh / 2, sh / 2, paint(Color.argb(110, 0, 0, 0)))
+            val hk = sport == "hike"; val half = RectF(if (hk) cx else sportBox.left, sportBox.top, if (hk) sportBox.right else cx, sportBox.bottom)
+            cv.drawRoundRect(half, sh / 2, sh / 2, paint(Color.WHITE))
+            text(cv, "러닝", cx - sw / 4, sy + 1.5f * u, 4.2f * u, if (hk) a(Color.WHITE, 200) else RunView.INK, true)
+            text(cv, "등산", cx + sw / 4, sy + 1.5f * u, 4.2f * u, if (hk) RunView.INK else a(Color.WHITE, 200), true) }
         // ▶ 러닝 시작 (산호 알약)
-        val gs = "▶  러닝 시작"; val gw = measure(gs, 5.6f * u, false) + 12 * u; val gh = 11.5f * u; val gy = 69f * u
+        val gs = if (sport == "hike") "▶  등산 시작" else "▶  러닝 시작"; val gw = measure(gs, 5.6f * u, false) + 12 * u; val gh = 11f * u; val gy = 72f * u
         goBox = RectF(cx - gw / 2, gy - gh / 2, cx + gw / 2, gy + gh / 2)
         // 2026-10-20 휴대폰과 같이: 투명한 검정 + 가는 흰 테, ▶만 산호
         cv.drawRoundRect(goBox, gh / 2, gh / 2, paint(Color.argb(92, 0, 0, 0)))
         paint(a(Color.WHITE, 95)); p.style = Paint.Style.STROKE; p.strokeWidth = .35f * u; cv.drawRoundRect(goBox, gh / 2, gh / 2, p)
-        val tri = "▶"; val tw0 = measure(tri, 5.6f * u, false); val rest = "  러닝 시작"; val rw = measure(rest, 5.6f * u, false); val tx = cx - (tw0 + rw) / 2
+        val tri = "▶"; val tw0 = measure(tri, 5.6f * u, false); val rest = if (sport == "hike") "  등산 시작" else "  러닝 시작"; val rw = measure(rest, 5.6f * u, false); val tx = cx - (tw0 + rw) / 2
         text(cv, tri, tx, gy + 2f * u, 5.6f * u, CORAL, true, align = Paint.Align.LEFT); text(cv, rest, tx + tw0, gy + 2f * u, 5.6f * u, Color.WHITE, true, align = Paint.Align.LEFT)
         // 아래 한 줄: GPS · 목표
         val ready = gpsAcc in 0f..20f
         val gl = (if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS 준비" else "GPS ${gpsAcc.toInt()}m") + "  ·  🎯 " + goal.label() + (if (goal.tgtLabel().isNotEmpty()) " " + goal.tgtLabel() else "")
-        val lw = measure(gl, 3.8f * u, false); val lx = cx - lw / 2 + 1.6f * u; val ly = 80f * u
+        val lw = measure(gl, 3.8f * u, false); val lx = cx - lw / 2 + 1.6f * u; val ly = 82.5f * u
         cv.drawCircle(lx - 2.8f * u, ly - 1.3f * u, .9f * u, paint(if (ready) BLUE else MUTED))
         text(cv, gl, lx, ly, 3.8f * u, a(Color.WHITE, 220), false, align = Paint.Align.LEFT)
-        text(cv, "︿ 밀어 올리면 기록·설정", cx, 88f * u, 3.4f * u, a(Color.WHITE, 150))   // 2026-10-19 사용자 '용두? 그게 뭐야?' → 쉬운 말로
+        text(cv, "︿ 밀어 올리면 기록·설정", cx, 89.5f * u, 3.4f * u, a(Color.WHITE, 150))   // 2026-10-19 사용자 '용두? 그게 뭐야?' → 쉬운 말로
         postInvalidateDelayed(if (now - born < 60000) 50 else 30000)
     }
 
@@ -135,8 +144,9 @@ class HomeView(c: Context, private val act: Act) : View(c) {
                 if (abs(e.x - dx) > 4 * u || abs(e.y - dy) > 4 * u) return true
                 val x = e.x; val y = e.y
                 if (!updBox.isEmpty && updBox.contains(x, y)) act.update?.invoke()
-                else if (RectF(goBox).apply { inset(-2 * u, -3 * u) }.contains(x, y)) act.start()
-                else if (y > 75 * u && y < 84 * u) act.goal()
+                else if (RectF(sportBox).apply { inset(-2 * u, -1.5f * u) }.contains(x, y)) act.sport(if (x < cx) "run" else "hike")
+                else if (RectF(goBox).apply { inset(-2 * u, -1.5f * u) }.contains(x, y)) act.start()
+                else if (y > 78.5f * u && y < 86 * u) act.goal()
                 return true
             }
         }

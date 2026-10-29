@@ -29,7 +29,8 @@ object Wear {
         val s = o.optJSONObject("sum") ?: JSONObject()
         ls.put("walkHr:$id", JSONObject().put("avg", s.optInt("hrAvg")).put("max", s.optInt("hrMax")).put("zone", s.optJSONArray("zone") ?: JSONArray())
             .put("hrMaxSet", s.optInt("hrMaxSet", 170)).put("cad", s.optInt("cad")).put("steps", s.optInt("steps")).put("moving", s.optLong("moving"))
-            .put("walk", s.optDouble("walk", 0.0)).put("watch", 1).toString())
+            .put("walk", s.optDouble("walk", 0.0)).put("watch", 1)
+            .apply { if (s.optInt("hrEnd") > 0) { put("hrEnd", s.optInt("hrEnd")); put("hr1", s.optInt("hr1")); put("hr2", s.optInt("hr2")) } }.toString())
         o.optJSONArray("series")?.let { ls.put("walkSeries:$id", it.toString()) }
         return JSONObject().put("app", "mapdiary").put("v", 1).put("at", System.currentTimeMillis()).put("ls", ls).put("photos", JSONArray()).toString()
     }

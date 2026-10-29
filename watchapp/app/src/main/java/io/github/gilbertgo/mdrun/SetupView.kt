@@ -20,7 +20,11 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
     private val krBold = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     private val CORAL = RunView.CORAL; private val MUTED = RunView.MUTED; private val SURF = Color.parseColor("#22262D")
     private val photo by lazy { Link.hero(context) }
-    var page = 0
+    var page = 0   // order 안의 차례
+    // 등산은 케이던스 비프 장(2)을 건너뛰어요(음성 안내는 마지막 장에)
+    private val order = if (Run.hike) listOf(0, 1, 3) else listOf(0, 1, 2, 3)
+    private val last get() = order.size - 1
+    private val sportTag get() = if (Run.hike) "HIKE" else "OUTDOOR RUN"
     private var km = 0.0; private var min = 0
     private var W = 0f; private var cx = 0f; private var u = 0f
     private val hits = mutableListOf<Pair<RectF, () -> Unit>>()
@@ -63,13 +67,13 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
     override fun onDraw(cv: Canvas) {
         W = width.toFloat(); cx = W / 2; u = min(W, height.toFloat()) / 100f; hits.clear()
         cv.drawColor(Color.BLACK)
-        when (page) {
+        when (order[page.coerceIn(0, last)]) {
             0 -> {
-                mono(cv, "READY / OUTDOOR RUN", 17f * u)
-                text(cv, "이번 러닝 목표", cx, 25f * u, 5f * u, Color.WHITE, true)
+                mono(cv, "READY / $sportTag", 17f * u)
+                text(cv, if (Run.hike) "이번 등산 목표" else "이번 러닝 목표", cx, 25f * u, 5f * u, Color.WHITE, true)
                 stepper(cv, kmTxt(), if (km > 0) "km" else "거리 없이", 42f * u,
                     { km = if (km <= 1) 0.0 else Math.round((km - 0.5) * 2) / 2.0; save() }, { km = if (km <= 0) 1.0 else minOf(42.195, Math.round((km + 0.5) * 2) / 2.0); save() })
-                val opts = listOf(0.0, 3.0, 5.0, 10.0, 21.0975)
+                val opts = if (Run.hike) listOf(0.0, 3.0, 5.0, 10.0, 15.0) else listOf(0.0, 3.0, 5.0, 10.0, 21.0975)
                 chips(cv, opts.map { (if (it == 0.0) "자유" else if (it == 21.0975) "21.1" else num(it)) to (km == it) }, 66f * u) { km = opts[it]; save() }
             }
             1 -> {
@@ -92,21 +96,22 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
                 photo?.let { bm -> val sc = maxOf(W / bm.width, H / bm.height); val dw = bm.width * sc; val dh = bm.height * sc
                     cv.drawBitmap(bm, null, RectF((W - dw) / 2, (H - dh) * .75f, (W - dw) / 2 + dw, (H - dh) * .75f + dh), paint(Color.WHITE).apply { isFilterBitmap = true }) }
                 cv.drawColor(Color.argb(150, 6, 30, 55))
-                mono(cv, "READY / OUTDOOR RUN", 22f * u)
-                text(cv, "오늘의 리듬으로.", cx, 33f * u, 6.6f * u, Color.WHITE, true)
+                mono(cv, "READY / $sportTag", 22f * u)
+                text(cv, if (Run.hike) "오늘의 길로." else "오늘의 리듬으로.", cx, 33f * u, 6.6f * u, Color.WHITE, true)
                 val g = Store.goal(context)
-                text(cv, "🎯 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""}" + (if (Cadence.kind != Cadence.OFF) " · ♩ ${Cadence.spm}" else ""), cx, 42f * u, 4.2f * u, Color.WHITE)
+                text(cv, "🎯 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""}" + (if (Cadence.kind != Cadence.OFF && !Run.hike) " · ♩ ${Cadence.spm}" else ""), cx, 42f * u, 4.2f * u, Color.WHITE)
                 val gs = "▶  출발"; val gw = measure(gs, 6.6f * u) + 16 * u; val gh = 14f * u; val gy = 58f * u
                 val r = RectF(cx - gw / 2, gy - gh / 2, cx + gw / 2, gy + gh / 2)
                 cv.drawRoundRect(r, gh / 2, gh / 2, paint(CORAL)); text(cv, gs, cx, gy + 2.4f * u, 6.6f * u, Color.WHITE, true)
                 hits.add(RectF(r).apply { inset(-3 * u, -3 * u) } to onGo)
                 val a = Run.lastAcc
                 text(cv, if (a < 0) "GPS 찾는 중 · 하늘이 트인 곳에서" else if (a <= 20) "● GPS 준비됐어요" else "GPS 잡는 중 · ${a.toInt()}m", cx, 73f * u, 3.8f * u, if (a in 0f..20f) RunView.BLUE else Color.WHITE)
+                if (Run.hike) chips(cv, listOf((if (Run.voice) "음성 안내 켜짐" else "음성 안내 꺼짐") to Run.voice), 80.5f * u) { Run.voice = !Run.voice; Store.setVoice(context, Run.voice) }
             }
         }
         // 아래 쪽 점 + 넘기기 안내
-        for (i in 0 until 4) cv.drawCircle(cx + (i - 1.5f) * 3.4f * u, 88f * u, (if (i == page) .95f else .7f) * u, paint(if (i == page) Color.WHITE else Color.parseColor("#555A62")))
-        if (page < 3) { text(cv, "›", 93f * u, 52f * u, 8f * u, MUTED, true); hits.add(RectF(86 * u, 40 * u, 100 * u, 64 * u) to { page++; invalidate() }) }
+        for (i in 0..last) cv.drawCircle(cx + (i - last / 2f) * 3.4f * u, 88f * u, (if (i == page) .95f else .7f) * u, paint(if (i == page) Color.WHITE else Color.parseColor("#555A62")))
+        if (page < last) { text(cv, "›", 93f * u, 52f * u, 8f * u, MUTED, true); hits.add(RectF(86 * u, 40 * u, 100 * u, 64 * u) to { page++; invalidate() }) }
         if (page > 0) { text(cv, "‹", 7f * u, 52f * u, 8f * u, MUTED, true); hits.add(RectF(0f, 40 * u, 14 * u, 64 * u) to { page--; invalidate() }) }
     }
 
@@ -117,7 +122,7 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
             MotionEvent.ACTION_UP -> {
                 val mx = e.x - dx
                 if (abs(mx) > 12 * u && abs(mx) > abs(e.y - dy)) {   // 옆으로 밀기
-                    if (mx < 0 && page < 3) page++ else if (mx > 0) { if (page > 0) page-- else onBack() }
+                    if (mx < 0 && page < last) page++ else if (mx > 0) { if (page > 0) page-- else onBack() }
                     invalidate(); return true
                 }
                 hits.lastOrNull { it.first.contains(e.x, e.y) }?.second?.invoke()

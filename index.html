@@ -414,6 +414,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-path .dot.end{background:var(--accent)}
 .mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
 .mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
+.vw-rec{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;margin:4px 0}
 .vw-big{display:flex;align-items:baseline;gap:4px;line-height:1}.vw-big b{font-size:44px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.vw-big span{font-size:20px;font-weight:800}
 .vw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;padding:16px 18px}
 .vw-t{display:flex;flex-direction:column;gap:2px;min-width:0}.vw-t>span{font-size:13px;color:var(--muted);font-weight:600}
@@ -1317,6 +1318,16 @@ function elevCard(ev, tr, modes) {
     tot > 6e4 ? [zoneRow('오르막', STAT_COL.up, T[0], mx, `${Math.round(T[0] * 100 / tot)}%`), zoneRow('평지', '#9AA5B4', T[1], mx, `${Math.round(T[1] * 100 / tot)}%`), zoneRow('내리막', '#42A5F5', T[2], mx, `${Math.round(T[2] * 100 / tot)}%`),
       el('div', { class: 'sub', style: 'font-size:12px', text: '움직인 동안 기울기 4%보다 가파르면 오르막·내리막으로 셌어요.' })] : null);
 }
+// 운동 뒤 심박 회복(시계가 끝낸 뒤 2분 잼, 2026-10-29): 끝낼 때 → 1분 뒤 → 2분 뒤, 1분에 20 넘게 떨어지면 빠름·12 아래면 느림
+function hrRecRow(H) {
+  if (!H || !(H.hrEnd > 0 && H.hr1 > 0)) return null;
+  const d = H.hrEnd - H.hr1, judge = d >= 20 ? ['회복이 빨라요', STAT_COL.dist] : d >= 12 ? ['회복 보통', STAT_COL.pace] : ['회복이 느린 편 · 푹 쉬어요', STAT_COL.time];
+  return el('div', { class: 'vw-rec' },
+    el('div', { class: 'sub', style: 'font-size:12px;font-weight:700', text: '운동 뒤 심박' }),
+    el('div', { style: 'font-size:15px;font-weight:800' }, `끝낼 때 ${H.hrEnd} → 1분 뒤 ${H.hr1} `, el('span', { style: `color:${STAT_COL.hr}`, text: `(−${d})` }),
+      H.hr2 > 0 ? el('span', {}, ` → 2분 뒤 ${H.hr2} `, el('span', { style: `color:${STAT_COL.hr}`, text: `(−${H.hrEnd - H.hr2})` })) : null),
+    el('div', { style: `color:${judge[1]};font-weight:700;font-size:13px`, text: judge[0] + ' · 1분에 20 넘게 떨어지면 좋아요' }));
+}
 // 심박 카드(시계 기록): 시간 막대마다 그때 최저~최고 심박, 존 색. 아래 영역 시간 (애플 '심박수' 모양)
 function hrCard(t, tr) {
   const W = typeof watchStats === 'function' ? watchStats(t) : null, hl = hrLine(t, tr); if (!W || hl.length < 6) return null;
@@ -1332,6 +1343,7 @@ function hrCard(t, tr) {
     el('div', { class: 'vw-h' }, el('b', { text: '심박수' }), el('span', { class: 'sub' }, '최고 ', el('b', { style: `color:${STAT_COL.hr}`, text: String(top) }))),
     svg, el('div', { class: 'sub vw-ax' }, el('span', { text: kTime(t0) }), el('span', { text: kTime((t0 + t1) / 2) }), el('span', { text: kTime(t1) })),
     el('div', { style: `color:${STAT_COL.hr};font-weight:800;font-size:15px`, text: `평균 ${avg} BPM` }),
+    hrRecRow(HH),
     [0, 1, 2, 3, 4].map(z => zoneRow(`영역 ${z + 1}`, ZONE_COL[z], Z[z], mz, rng(z))),
     el('div', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준으로 나눈 영역에 머문 시간이에요(시계에서 바꿀 수 있어요).` }));
 }
@@ -2189,9 +2201,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '지도 위 사진 동그라미가 작아졌어요 · 가까이 모인 사진은 한 동그라미로 묶이고 +숫자가 붙어요(확대하면 나뉘어요) · 그래서 빠르기 색 길이 잘 보여요 · 내 MPD 기록 보기는 큰 지도 → 큰 거리 → 색깔 숫자 칸 → 1km 구간 표 → 심박(시계) → 높이 순서예요';
+const UI_NOTES = '시계로 잰 기록에 \'운동 뒤 심박 회복\'이 나와요: 끝낼 때 → 1분 뒤 → 2분 뒤 심박, 1분에 20 넘게 떨어지면 회복이 빨라요 · 시계 앱에서 등산도 기록할 수 있어요(새 시계 판) · 지도 위 가까운 사진은 한 동그라미로 묶여 길이 잘 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3575,7 +3587,7 @@ async function watchPull() {
         else if (localStorage.getItem(k) == null) localStorage.setItem(k, val);
       }
       const s = o.sum || {};
-      ls.set('walkHr:' + id, { avg: s.hrAvg || 0, max: s.hrMax || 0, zone: Array.isArray(s.zone) ? s.zone.slice(0, 5) : [], hrMaxSet: s.hrMaxSet || 170, cad: s.cad || 0, steps: s.steps || 0, moving: s.moving || 0, walk: s.walk || 0, watch: 1 });
+      ls.set('walkHr:' + id, { avg: s.hrAvg || 0, max: s.hrMax || 0, zone: Array.isArray(s.zone) ? s.zone.slice(0, 5) : [], hrMaxSet: s.hrMaxSet || 170, cad: s.cad || 0, steps: s.steps || 0, moving: s.moving || 0, walk: s.walk || 0, watch: 1, ...(s.hrEnd > 0 ? { hrEnd: s.hrEnd, hr1: s.hr1 || 0, hr2: s.hr2 || 0 } : {}) });
       if (Array.isArray(o.series)) ls.set('walkSeries:' + id, o.series.filter(Array.isArray).slice(0, 5000));
       got[r.id] = sig; n++;
     } catch {}
@@ -4941,6 +4953,7 @@ async function viewMyOne(t) {
     M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
     H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
     H && H.max ? ['최고 심박', H.max, 'bpm'] : null,
+    H && H.hrEnd > 0 && H.hr1 > 0 ? ['운동 뒤 심박 회복', '−' + (H.hrEnd - H.hr1), '/1분'] : null,   // 시계: 끝낸 뒤 1분에 떨어진 심박
     cad ? ['케이던스', cad, 'spm'] : null,
     st.d - st.walk > 300 ? ['전체 이동', fmtDist(st.d)] : null,
     stays ? ['들른 곳', stays, '곳'] : null, stars ? ['별표', stars, '곳'] : null]);
