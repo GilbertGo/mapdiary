@@ -614,6 +614,38 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 .cw-dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.12)}
 .cw-gap{font-weight:800;font-size:14px;color:var(--muted,#5F7A92);white-space:nowrap}.cw-gap.ahead{color:var(--accent,#FF8A4C)}
 .cw-code{font-weight:800;color:var(--pine);letter-spacing:.04em}
+/* 기록 보기 고급 화면 (2026-10-30 사용자가 애플 피트니스 사진을 보내며 '이렇게 고급스럽게'): 검은 바탕 · 짙은 회색 카드 · 밝은 색 숫자 · 어두운 지도 */
+.vw-mapw{position:relative}.vw-fade{display:none}
+html.vw-page{--ground:#000;--card:#1C1C1E;--ink:#F2F2F7;--muted:#8E8E93;--line:#2C2C2E;--soft:#2C2C2E;--grey-soft:#2C2C2E;--pine:#4DA3FF;--forest:#4DA3FF;--forest-ink:#4DA3FF;--forest-soft:#2C2C2E;--blue-ink:#4DA3FF;--shadow:none;color-scheme:dark;background:#000}
+html.vw-page body{background:#000!important;color:var(--ink)}
+html.vw-page .sky-clouds{display:none!important}
+html.vw-page .role.leader{background:#000!important;color:#fff;padding-bottom:10px}
+html.vw-page .card,html.vw-page details.more{background:#1C1C1E;box-shadow:none}
+html.vw-page h1{color:#fff;font-size:30px;font-weight:800;letter-spacing:-.03em}html.vw-page h2{color:#fff}
+html.vw-page .btn.line{background:#1C1C1E;color:#F2F2F7;box-shadow:none}html.vw-page .card .btn.line,html.vw-page .sheet .btn.line{background:#2C2C2E;color:#F2F2F7}
+html.vw-page .link{color:#4DA3FF}
+html.vw-page input,html.vw-page textarea,html.vw-page select{background:#2C2C2E;color:#fff;border-color:#3A3A3C}
+html.vw-page .sheet{background:#1C1C1E;color:#F2F2F7}
+html.vw-page .vw-mapw{margin:-6px -20px 0}
+html.vw-page .vw-mapw .mapbox{border-radius:0;box-shadow:none}
+html.vw-page .vw-fade{display:block;position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(rgba(0,0,0,0),#000);pointer-events:none;z-index:450}
+html.vw-page .leaflet-container{background:#0E1A24}
+html.vw-page .leaflet-tile-pane{filter:invert(1) hue-rotate(195deg) saturate(.45) brightness(.82) contrast(.92)}
+html.vw-page .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#8E8E93}html.vw-page .leaflet-control-attribution a{color:#AEAEB2}
+html.vw-page .leaflet-bar a{background:rgba(28,28,30,.88);color:#fff;border-color:#3A3A3C}
+html.vw-page .fs-btn{background:rgba(28,28,30,.85);color:#fff;box-shadow:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+html.vw-page .vw-cur{stroke:#fff;stroke-opacity:.6}html.vw-page .vw-base{stroke:#3A3A3C}html.vw-page .vw-dot{box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+html.vw-page .vw-t>span{color:#EBEBF5;opacity:.9;font-size:14px}
+html.vw-page .vw-t>b,html.vw-page .vw-big b,html.vw-page .vw-km>b,html.vw-page .vw-pk-c b{font-family:ui-rounded,'SF Pro Rounded','Pretendard Variable',Pretendard,sans-serif}
+html.vw-page .vw-big b{font-size:48px}
+html.vw-page .vw-h>b{font-size:20px;color:#fff}
+html.vw-page .vw-z .bar{background:#2C2C2E}html.vw-page .vw-rec{background:#2C2C2E}
+html.vw-page .vw-leg{color:#AEAEB2}
+html.vw-page .gallery img{box-shadow:none}
+html.vw-page{--alert-ink:#FF6B6B}html.vw-page .btn.primary{background:#0A84FF;color:#fff}
+html.vw-page .leaflet-tooltip{background:rgba(28,28,30,.92);color:#fff;border-color:#3A3A3C;box-shadow:none;font-weight:700}html.vw-page .leaflet-tooltip-top:before{border-top-color:rgba(28,28,30,.92)}
+html.vw-page .vw-mapw .leaflet-bottom{bottom:40px}
+.vw-wx{display:flex;gap:22px;margin:4px 0 2px}.vw-wx>div{display:flex;flex-direction:column;gap:0;line-height:1.2}.vw-wx b{font-size:19px;font-weight:700;white-space:nowrap}.vw-wx span{font-size:12px;color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -1210,11 +1242,14 @@ function elevChart(e) {
 // ---------- 기록 보기 새 모습 (2026-10-29 사용자가 애플워치·아이폰 피트니스 화면을 보여 주며 '보여 주는 방법을 잘 봐, 시인성 좋고 궁금한 건 더 자세히') ----------
 // 위→아래로 갈수록 자세히(큰 지도 → 큰 거리 → 숫자 칸 → 1km 표 → 심박 → 높이), 숫자마다 고정 색(표·그래프·공유 카드도 같은 색), 빠르기로 색칠한 길
 // 등산·자전거 앱도 이 함수들을 그대로 씀(모드 값만 다르게) — 모드마다 따로 짜지 말 것
-const STAT_COL = { time: '#FF6B3D', dist: '#1E88E5', up: '#7C4DFF', pace: '#0097D6', hr: '#E53950', cad: '#5C6BC0', kcal: '#E8457A' };
-function statColor(label) {
+const STAT_COL = { time: '#FF6B3D', dist: '#1E88E5', up: '#7C4DFF', pace: '#0097D6', hr: '#E53950', cad: '#5C6BC0', kcal: '#E8457A' }, STAT_LT = Object.assign({}, STAT_COL);
+// 기록 보기 검은 화면용 밝은 색 (2026-10-30 '고급스럽게'). viewMyOne이 STAT_COL·PACE_COLS·ZONE_COL을 이 색으로 바꿈(공유 카드 그림은 STAT_LT 그대로)
+const VW_DARK = { stat: { time: '#FF8A5C', dist: '#4DA3FF', up: '#B794FF', pace: '#5AC8FA', hr: '#FF4D6D', cad: '#8C9EFF', kcal: '#FF5E9C' },
+  pace: ['#3D8BFF', '#7CC0FF', '#FFB49A', '#FF7A4D', '#FF3B4A'], zone: ['#8E8E93', '#4DA3FF', '#FFA94D', '#FF7A4D', '#FF3B5C'] };
+function statColor(label, P = STAT_COL) {
   const k = String(label || '');
-  return /칼로리/.test(k) ? STAT_COL.kcal : /심박/.test(k) ? STAT_COL.hr : /높이|고도/.test(k) ? STAT_COL.up : /페이스|속도/.test(k) ? STAT_COL.pace : /케이던스|걸음/.test(k) ? STAT_COL.cad
-    : /시간/.test(k) ? STAT_COL.time : /거리|이동|km/.test(k) ? STAT_COL.dist : '';
+  return /칼로리/.test(k) ? P.kcal : /심박/.test(k) ? P.hr : /높이|고도/.test(k) ? P.up : /페이스|속도/.test(k) ? P.pace : /케이던스|걸음/.test(k) ? P.cad
+    : /시간/.test(k) ? P.time : /거리|이동|km/.test(k) ? P.dist : '';
 }
 const kTime = ts => { const d = new Date(ts), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
 // 숫자 칸: [[이름, 값, 작은 단위], …] → 이름 작게 회색 · 값 크게 그 색
@@ -1453,7 +1488,7 @@ function vwPicker(m, tr, M, t, box, modes, elev) {
       el('span', { text: r.avg ? `평균 ${fmt(mean)}${r.pace ? '' : r.u}` : `${fmt(srt[0])}~${fmt(srt[srt.length - 1])}${r.u}` })));
     const g = el('div'); g.innerHTML = `<svg viewBox="0 0 ${GW} ${GH}" width="100%" height="${GH}" preserveAspectRatio="none" aria-hidden="true" style="overflow:visible">
       <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${r.col}" stop-opacity=".35"/><stop offset="1" stop-color="${r.col}" stop-opacity=".02"/></linearGradient></defs>
-      <line x1="0" x2="${GW}" y1="${GH - .5}" y2="${GH - .5}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <line class="vw-base" x1="0" x2="${GW}" y1="${GH - .5}" y2="${GH - .5}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>
       <path d="${d} L${GW} ${GH} L0 ${GH} Z" fill="url(#${id})"/>
       ${r.avg ? `<line x1="0" x2="${GW}" y1="${yOf(mean).toFixed(1)}" y2="${yOf(mean).toFixed(1)}" stroke="${r.col}" stroke-opacity=".55" stroke-width="1.2" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>` : ''}
       <path d="${d}" fill="none" stroke="${r.col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
@@ -1473,7 +1508,7 @@ function vwPicker(m, tr, M, t, box, modes, elev) {
   const hide = () => { if (mk) { mk.remove(); mk = null; } hint(); markAll(null); };
   const show = i => {
     const q = tr[i], v = spd[i], h = hrs[i], a = alt[i];
-    if (mk) mk.setLatLng([q[0], q[1]]); else mk = L.circleMarker([q[0], q[1]], { radius: 9, color: '#fff', weight: 3, fillColor: '#0277BD', fillOpacity: 1 }).addTo(m);
+    if (mk) mk.setLatLng([q[0], q[1]]); else mk = L.circleMarker([q[0], q[1]], { radius: 9, color: '#fff', weight: 3, fillColor: STAT_COL.dist, fillOpacity: 1 }).addTo(m);
     const cell = (k, val, u, col) => el('div', { class: 'vw-pk-c' }, el('span', { text: k }), el('b', { style: col ? `color:${col}` : '' }, val, u ? el('small', { text: u }) : null));
     const moving = v != null && v >= 0.3;
     head.replaceChildren(
@@ -1513,12 +1548,18 @@ function hrRecRow(H) {
 // 심박 카드(시계 기록): 시간 막대마다 그때 최저~최고 심박, 존 색. 아래 영역 시간 (애플 '심박수' 모양)
 function hrCard(t, tr) {
   const W = typeof watchStats === 'function' ? watchStats(t) : null, hl = hrLine(t, tr); if (!W || hl.length < 6) return null;
-  const t0 = hl[0][0], t1 = hl[hl.length - 1][0], NB = 64, bw = (t1 - t0) / NB || 1, B = [];
+  const t0 = hl[0][0], t1 = hl[hl.length - 1][0], NB = 84, bw = (t1 - t0) / NB || 1, B = [];
   for (const [ts, h] of hl) { const k = Math.min(NB - 1, Math.floor((ts - t0) / bw)); const b = B[k] || (B[k] = { lo: h, hi: h }); b.lo = Math.min(b.lo, h); b.hi = Math.max(b.hi, h); }
   const all = hl.map(h => h[1]), lo = Math.min(...all) - 4, hi = Math.max(...all) + 4, HH = W.H || {}, avg = HH.avg || Math.round(all.reduce((a, b) => a + b, 0) / all.length), top = HH.max || Math.max(...all);   // 숫자 칸과 같은 값(시계 요약)
   const Wd = 600, Ht = 140, y = h => Ht - 4 - (Ht - 8) * (h - lo) / (hi - lo), x = k => 4 + (Wd - 8) * (k + .5) / NB;
-  const bars = B.map((b, k) => b ? `<line x1="${x(k).toFixed(1)}" x2="${x(k).toFixed(1)}" y1="${y(b.hi).toFixed(1)}" y2="${Math.max(y(b.lo), y(b.hi) + 6).toFixed(1)}" stroke="${ZONE_COL[zoneOf(W.mx, b.hi)]}" stroke-width="5" stroke-linecap="round"/>` : '').join('');
-  const svg = el('div'); svg.innerHTML = `<svg viewBox="0 0 ${Wd} ${Ht}" width="100%" height="130" preserveAspectRatio="none" aria-label="심박 그래프 평균 ${avg}"><line x1="4" x2="${Wd - 4}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="${STAT_COL.hr}" stroke-dasharray="4 5" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${bars}</svg>`;
+  // 2026-10-30 '고급스럽게': 애플처럼 가는 막대가 높이에 따라 색이 바뀜(아래 영역1 → 위 영역5, 그라데이션), 시간 눈금 세로선
+  const gy = h => Math.min(1, Math.max(0, y(h) / Ht)).toFixed(3), gid = 'hrg' + Math.random().toString(36).slice(2, 7);
+  const stops = [4, 3, 2, 1].map(z => `<stop offset="${gy(zoneLo(W.mx, z) + 4)}" stop-color="${ZONE_COL[z]}"/><stop offset="${gy(zoneLo(W.mx, z) - 4)}" stop-color="${ZONE_COL[z - 1]}"/>`).join('');
+  const bars = B.map((b, k) => b ? `<line x1="${x(k).toFixed(1)}" x2="${x(k).toFixed(1)}" y1="${y(b.hi).toFixed(1)}" y2="${Math.max(y(b.lo), y(b.hi) + 8).toFixed(1)}" stroke="url(#${gid})" stroke-width="3.4" stroke-linecap="round"/>` : '').join('');
+  const svg = el('div'); svg.innerHTML = `<svg viewBox="0 0 ${Wd} ${Ht}" width="100%" height="140" preserveAspectRatio="none" aria-label="심박 그래프 평균 ${avg}"><defs><linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${Ht}">${stops}</linearGradient></defs>
+    ${[1, 2].map(j => `<line class="vw-base" x1="${Wd * j / 2 - (j === 2 ? 4 : 0)}" x2="${Wd * j / 2 - (j === 2 ? 4 : 0)}" y1="0" y2="${Ht}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('')}<line class="vw-base" x1="4" x2="4" y1="0" y2="${Ht}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>
+    <line class="vw-base" x1="0" x2="${Wd}" y1="${Ht - .5}" y2="${Ht - .5}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>
+    <line x1="4" x2="${Wd - 4}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="${STAT_COL.hr}" stroke-opacity=".7" stroke-dasharray="4 5" stroke-width="1.2" vector-effect="non-scaling-stroke"/>${bars}</svg>`;
   let Z = (W.zone || []).slice(0, 5); if (!Z.some(Boolean)) { Z = [0, 0, 0, 0, 0]; for (let i = 1; i < hl.length; i++) { const dt = hl[i][0] - hl[i - 1][0]; if (dt > 0 && dt <= 60000) Z[zoneOf(W.mx, hl[i][1])] += dt; } }
   const mz = Math.max(...Z), rng = z => z === 0 ? `<${zoneLo(W.mx, 1)}` : z === 4 ? `${zoneLo(W.mx, 4)}+` : `${zoneLo(W.mx, z)}~${zoneLo(W.mx, z + 1) - 1}`;
   return el('div', { class: 'card vw-card' },
@@ -2230,7 +2271,7 @@ async function drawBragCard(o) {
     tiles.forEach((s, i) => {
       const r = Math.floor(i / cols), inRow = Math.min(cols, nT - r * cols), c = i % cols, w2 = gw / inRow, cx = gx + c * w2 + w2 / 2, cy = gy0 + r * cellH;
       if (c) { g.beginPath(); g.moveTo(gx + c * w2, cy + 14); g.lineTo(gx + c * w2, cy + cellH - 14); g.stroke(); }
-      font(800, cols === 3 ? 40 : 46); g.fillStyle = dark ? VAL : (statColor(s.k) || VAL); g.fillText(fit(s.v, w2 - 24), cx, cy + 58);
+      font(800, cols === 3 ? 40 : 46); g.fillStyle = dark ? VAL : (statColor(s.k, STAT_LT) || VAL); g.fillText(fit(s.v, w2 - 24), cx, cy + 58);
       font(500, 26); g.fillStyle = P.muted; g.fillText(fit(s.k, w2 - 24), cx, cy + 96);
     });
     g.textAlign = 'left';
@@ -2383,9 +2424,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.30-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.30-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '지도 아래 해발, 빠르기, 심박 그래프를 애플처럼 다시 그렸어요: 끊김 없는 매끈한 선, 아래 은은한 색 채움, 평균 점선, 고른 곳엔 선마다 동그라미 · 처음 GPS가 튀던 값은 눈금에서 뺐어요 · 지도 길이나 그래프를 누르거나 밀면 모두 같이 움직여요';
+const UI_NOTES = '기록 보기를 애플 피트니스처럼 검은 고급 화면으로 바꿨어요: 어두운 지도, 밝은 색 숫자 · 심박 그래프는 높이에 따라 색이 바뀌는 막대로 · 장소, 큰 제목, 날짜, 날씨 칸 순서로 정리했어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5104,20 +5145,24 @@ function officialEdit(t, guessMs) {
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
   if (!x) { location.replace('./?my=1'); return; }
+  // 고급 검은 화면 (2026-10-30 사용자가 애플 피트니스 사진을 보내며 '이렇게 고급스럽게'): 이 화면에서만 밝은 색 숫자·어두운 지도
+  document.documentElement.classList.add('vw-page'); Object.assign(STAT_COL, VW_DARK.stat); PACE_COLS.splice(0, 5, ...VW_DARK.pace); ZONE_COL.splice(0, 5, ...VW_DARK.zone);
   const M = modeOfT(t), tr = trackLoad(t), st = trackStats(tr, M.car), info = x.info, live = t === ls.get('walkNow', null);
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
-  const mapEl = el('div', { class: 'mapbox', style: 'height:36vh;min-height:230px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
+  const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
   let phAll = [];
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
   // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
-  const whereEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' }), wxEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' });
+  const whereEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' }), wxEl = el('div', { class: 'vw-wx', style: 'display:none' });
   if (tr.length >= 2) {
-    placeName(t, tr).then(n => { if (n) { whereEl.textContent = '📍 ' + n; whereEl.style.display = ''; } });
-    trailWeather(t, tr, live).then(w => { if (w) { wxEl.textContent = wxText(w); wxEl.style.display = ''; } });
+    placeName(t, tr).then(n => { if (n) { whereEl.textContent = '◎ ' + n; whereEl.style.display = ''; } });
+    // 날씨는 애플처럼 작은 칸 셋: 날씨·기온 / 바람 / 비(왔을 때만)
+    trailWeather(t, tr, live).then(w => { if (!w) return; const [e, nm] = wxName(w.c), cell = (v, k) => el('div', {}, el('b', { text: v }), el('span', { text: k }));
+      wxEl.replaceChildren(cell(`${e} ${w.lo === w.hi ? w.lo : `${w.lo}~${w.hi}`}°`, nm), cell(`💨 ${w.w}m/s`, '바람'), ...(w.p >= 0.5 ? [cell(`☔ ${w.p}mm`, '비')] : [])); wxEl.style.display = ''; });
   }
   const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
     el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 메모 고치기' : '📝 이번 MPD 메모 쓰기', onclick: async () => {
@@ -5194,15 +5239,17 @@ async function viewMyOne(t) {
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MPD'),
     el('a', { class: 'link', href: './?my=1', style: 'align-self:flex-start;padding:0', text: '← 내 MPD 목록' }),
     // 위→아래로 자세히 (2026-10-29): 큰 지도 → 모드·날짜 · 제목 · 큰 거리 · 시각 → 숫자 칸 → 1km 표 → 심박 → 높이
-    mapEl, legEl, pickEl,
+    el('div', { class: 'vw-mapw' }, mapEl, el('i', { class: 'vw-fade' })), legEl, pickEl,
+    // 애플처럼: 장소 → 큰 제목 → 큰 거리 → 날짜·시각 → 날씨 칸
     el('div', { class: 'stack', style: 'gap:6px' },
-      el('div', { class: 'sub with-ico', style: 'font-weight:600' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label, ' · '] : null, dateText, live ? ' · 기록 중' : ''),
+      whereEl,
       el('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, title,
         el('button', { class: 'btn line small', style: 'height:32px;padding:0 10px;white-space:nowrap;flex:none', text: '✎ 바꾸기', onclick: rename })),
       el('div', { class: 'vw-big', style: `color:${STAT_COL.dist}` }, el('b', { text: km[0] }), el('span', { text: km[1] })),
       off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
-      el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600', text: `${kTime(info.startAt)} ~ ${kTime(info.meetAt)}${wp.start || wp.end ? ` · ${wp.start || '출발'} → ${wp.end || '도착'}` : ''}` }),
-      whereEl, wxEl,
+      el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600' }, `${dateText} ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}`, live ? ' · 기록 중' : ''),
+      el('div', { class: 'sub with-ico', style: 'font-weight:600;font-size:14px' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label] : null, wp.start || wp.end ? `${ls.get('walkMode:' + t, null) ? ' · ' : ''}${wp.start || '출발'} → ${wp.end || '도착'}` : ''),
+      wxEl,
       noteEl),
     stats, diffCard(M.k, st.walk, ev ? ev.gain : 0),
     (() => { const sp = M.k === 'run' && !live && !x.album && !off ? runSpan(tr) : null; if (!sp) return null;
