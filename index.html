@@ -415,7 +415,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
 .mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
 .vw-dots{display:flex;gap:6px}.vw-dots i{flex:1;height:8px;border-radius:4px;background:var(--soft)}
-.vw-pick{padding:10px 12px;display:flex;flex-direction:column;gap:6px;margin-top:-6px}.vw-pk-hd{min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:6px}.vw-stack{display:flex;flex-direction:column;gap:2px;cursor:crosshair;user-select:none}.vw-sr-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);font-weight:600}.vw-sr-h b{font-size:13px}.vw-sr-ax{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600}.vw-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:4px 8px}.vw-pk-c span{display:block;font-size:12px;color:var(--muted);font-weight:600}.vw-pk-c b{font-size:19px;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.vw-pk-c small{font-size:12px;font-weight:700;margin-left:2px}
+.vw-pick{padding:10px 12px;display:flex;flex-direction:column;gap:6px;margin-top:-6px}.vw-pk-hd{min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:6px}.vw-stack{display:flex;flex-direction:column;gap:2px;cursor:crosshair;user-select:none}.vw-sr-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);font-weight:600}.vw-sr-h b{font-size:13px}.vw-dot{position:absolute;width:11px;height:11px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(16,42,67,.35);transform:translate(-50%,-50%);pointer-events:none}.vw-sr{margin-bottom:4px}.vw-sr-ax{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600}.vw-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:4px 8px}.vw-pk-c span{display:block;font-size:12px;color:var(--muted);font-weight:600}.vw-pk-c b{font-size:19px;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.vw-pk-c small{font-size:12px;font-weight:700;margin-left:2px}
 .vw-rec{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;margin:4px 0}
 .vw-big{display:flex;align-items:baseline;gap:4px;line-height:1}.vw-big b{font-size:44px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.vw-big span{font-size:20px;font-weight:800}
 .vw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;padding:16px 18px}
@@ -1420,33 +1420,55 @@ function vwPicker(m, tr, M, t, box, modes, elev) {
     const c = [hl[hj], hl[hj + 1]].filter(Boolean).sort((x, y) => Math.abs(x[0] - ts) - Math.abs(y[0] - ts))[0]; return c && Math.abs(c[0] - ts) <= 60000 ? c[1] : null; };
   // 한 화면 묶음 (2026-10-29 사용자 '지점 선택 시 다른 그래프도 연동, 지도·심박·높이가 한 화면에'): 지도 바로 아래 작은 그래프를 같은 거리 눈금으로 쌓아요
   const spd = tr.map((_, i) => speedAt(i)), hrs = tr.map(q => hrAt(q[2]));
-  const NB = 160, bin = (arr, ok) => { const S = new Array(NB).fill(0), C = new Array(NB).fill(0);
+  // 2026-10-30 사용자 '그래프 비주얼이 아주 나빠, 애플처럼': 빈 칸 때문에 점선처럼 끊기고 처음 GPS 튐이 컸음
+  //   → 칸 수를 점 개수에 맞추고(20~90칸) 빈 칸은 앞뒤로 이어 채움, 앞뒤 2칸 평균으로 부드럽게, 위아래 3%는 잘라 눈금, 매끈한 곡선 + 아래 그라데이션 + 평균 점선 + 고른 곳 동그라미
+  const NB = Math.max(20, Math.min(90, Math.round(n / 3)));
+  const bin = (arr, ok) => { const S = new Array(NB).fill(0), C = new Array(NB).fill(0);
     for (let i = 0; i < n; i++) { const v = arr[i]; if (v == null || !ok(v)) continue; const k = Math.min(NB - 1, Math.floor(cumAll[i] / D * NB)); S[k] += v; C[k]++; }
-    return S.map((x, k) => C[k] ? x / C[k] : null); };
+    const r = S.map((x, k) => C[k] ? x / C[k] : null), idx = r.map((v, k) => v == null ? -1 : k).filter(k => k >= 0);
+    if (idx.length < 2) return null;
+    for (let k = 0; k < NB; k++) if (r[k] == null) { const a2 = idx.filter(j => j < k).pop(), b2 = idx.find(j => j > k);   // 빈 칸은 앞뒤를 이어요
+      r[k] = a2 == null ? r[b2] : b2 == null ? r[a2] : r[a2] + (r[b2] - r[a2]) * (k - a2) / (b2 - a2); }
+    return r.map((_, k) => { let s2 = 0, c2 = 0; for (let j = Math.max(0, k - 2); j <= Math.min(NB - 1, k + 2); j++) { s2 += r[j]; c2++; } return s2 / c2; }); };
   const rows = [];
-  if (alt.filter(v => v != null).length > 5) rows.push({ k: off != null ? '해발' : '높이', col: STAT_COL.up, v: bin(alt.map(v => v == null ? null : v - (off || 0)), () => true), u: 'm', area: true });
-  if (M.k !== 'pgolf') rows.push(bike ? { k: '속도', col: STAT_COL.pace, v: bin(spd.map(v => v == null ? null : v * 3.6), v => v >= 1), u: 'km/h' }
-    : { k: '빠르기', col: STAT_COL.pace, v: bin(spd.map(v => v == null || v < 0.3 ? null : 1000 / v), () => true), u: '/km', inv: true, pace: true });
-  if (hrs.some(v => v)) rows.push({ k: '심박', col: STAT_COL.hr, v: bin(hrs, v => v > 30), u: 'bpm' });
-  const GW = 600, GH = 40, xOf = k => (k + .5) / NB * GW;
-  const svgs = rows.map(r => {
-    const vs = r.v.filter(v => v != null); if (vs.length < 2) return null;
-    let lo = Math.min(...vs), hi = Math.max(...vs);
-    if (r.pace) { const srt = [...vs].sort((x, y) => x - y); hi = srt[Math.floor(srt.length * .95)]; lo = srt[0]; }   // 빠르기는 멈춤 직전 튀는 값 빼고
-    if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
-    const yOf = v => { const f = Math.min(1, Math.max(0, (v - lo) / (hi - lo))); return 4 + (r.inv ? f : 1 - f) * (GH - 8); };
-    let d = '', on = false; r.v.forEach((v, k) => { if (v == null) { on = false; return; } d += (on ? 'L' : 'M') + xOf(k).toFixed(1) + ' ' + yOf(v).toFixed(1); on = true; });
+  if (alt.filter(v => v != null).length > 5) rows.push({ k: off != null ? '해발' : '높이', col: STAT_COL.up, v: bin(alt.map(v => v == null ? null : v - (off || 0)), () => true), u: 'm' });
+  if (M.k !== 'pgolf') rows.push(bike ? { k: '속도', col: STAT_COL.pace, v: bin(spd.map(v => v == null ? null : v * 3.6), v => v >= 1), u: 'km/h', avg: true }
+    : { k: '빠르기', col: STAT_COL.pace, v: bin(spd.map(v => v == null || v < 0.5 ? null : 1000 / v), v => v < 1800), u: '/km', inv: true, pace: true, avg: true });
+  if (hrs.some(v => v)) rows.push({ k: '심박', col: STAT_COL.hr, v: bin(hrs, v => v > 30), u: 'bpm', avg: true });
+  const GW = 600, GH = 58, xOf = k => (k + .5) / NB * GW;
+  const curve = P => P.length < 2 ? '' : P.map((q, i) => { if (!i) return `M${q[0].toFixed(1)} ${q[1].toFixed(1)}`;   // 매끈한 곡선(Catmull-Rom)
+    const p0 = P[i - 2] || P[i - 1], p1 = P[i - 1], p3 = P[i + 1] || q;
+    return `C${(p1[0] + (q[0] - p0[0]) / 6).toFixed(1)} ${(p1[1] + (q[1] - p0[1]) / 6).toFixed(1)} ${(q[0] - (p3[0] - p1[0]) / 6).toFixed(1)} ${(q[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }).join('');
+  let gid = 0;
+  const svgs = rows.filter(r => r.v).map(r => {
+    const srt = [...r.v].sort((x, y) => x - y); let lo = srt[Math.floor(srt.length * .03)], hi = srt[Math.ceil(srt.length * .97) - 1];
+    if (hi - lo < (r.pace ? 20 : 4)) { const mid = (hi + lo) / 2, h2 = r.pace ? 10 : 2; lo = mid - h2; hi = mid + h2; }
+    const pad = (hi - lo) * .12; lo -= pad; hi += pad;
+    const yOf = v => { const f = Math.min(1, Math.max(0, (v - lo) / (hi - lo))); return 6 + (r.inv ? f : 1 - f) * (GH - 12); };
+    r.yOf = k => yOf(r.v[k]);
+    const P = r.v.map((v, k) => [xOf(k), yOf(v)]), d = curve(P), id = 'vwg' + (++gid) + Math.random().toString(36).slice(2, 6);
+    const mean = r.v.reduce((x, y) => x + y, 0) / r.v.length;
     const fmt = v => r.pace ? fmtPace(1000, v * 1000) : String(Math.round(v));
-    const rng = r.pace ? `${fmt(lo)}~${fmt(hi)}` : `${fmt(lo)}~${fmt(hi)}${r.u}`;
-    const box2 = el('div', { class: 'vw-sr' }, el('div', { class: 'vw-sr-h' }, el('b', { style: `color:${r.col}`, text: r.k }), el('span', { text: rng + (r.inv ? ' · 위가 빠름' : '') })));
-    const g = el('div'); g.innerHTML = `<svg viewBox="0 0 ${GW} ${GH}" width="100%" height="${GH}" preserveAspectRatio="none" aria-hidden="true">${r.area ? `<path d="${d} L ${GW} ${GH} L 0 ${GH} Z" fill="${r.col}" fill-opacity=".12"/>` : ''}<path d="${d}" fill="none" stroke="${r.col}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><line class="vw-cur" x1="0" x2="0" y1="0" y2="${GH}" stroke="#102A43" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none"/></svg>`;
+    const box2 = el('div', { class: 'vw-sr' }, el('div', { class: 'vw-sr-h' }, el('b', { style: `color:${r.col}`, text: r.k }),
+      el('span', { text: r.avg ? `평균 ${fmt(mean)}${r.pace ? '' : r.u}` : `${fmt(srt[0])}~${fmt(srt[srt.length - 1])}${r.u}` })));
+    const g = el('div'); g.innerHTML = `<svg viewBox="0 0 ${GW} ${GH}" width="100%" height="${GH}" preserveAspectRatio="none" aria-hidden="true" style="overflow:visible">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${r.col}" stop-opacity=".35"/><stop offset="1" stop-color="${r.col}" stop-opacity=".02"/></linearGradient></defs>
+      <line x1="0" x2="${GW}" y1="${GH - .5}" y2="${GH - .5}" stroke="#D6E5F1" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <path d="${d} L${GW} ${GH} L0 ${GH} Z" fill="url(#${id})"/>
+      ${r.avg ? `<line x1="0" x2="${GW}" y1="${yOf(mean).toFixed(1)}" y2="${yOf(mean).toFixed(1)}" stroke="${r.col}" stroke-opacity=".55" stroke-width="1.2" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>` : ''}
+      <path d="${d}" fill="none" stroke="${r.col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <line class="vw-cur" x1="0" x2="0" y1="0" y2="${GH}" stroke="#102A43" stroke-opacity=".55" stroke-width="1.2" vector-effect="non-scaling-stroke" style="display:none"/></svg>`;
+    const dot = el('i', { class: 'vw-dot', style: `background:${r.col};display:none` });
+    g.style.position = 'relative'; g.append(dot); r.dot = dot; r.g = g;
     box2.append(g); return box2;
-  }).filter(Boolean);
+  });
   const stack = el('div', { class: 'vw-stack' }, ...svgs, el('div', { class: 'vw-sr-ax' }, el('span', { text: '출발' }), el('span', { text: fmtDist(D / 2) }), el('span', { text: fmtDist(D) })));
   const head = el('div', { class: 'vw-pk-hd' });
   const hint = () => head.replaceChildren(el('div', { class: 'sub', style: 'font-size:13px;font-weight:600', text: '👆 지도의 길이나 아래 그래프를 누르거나 밀면 그 지점이 나와요' }));
   box.replaceChildren(head, svgs.length ? stack : ''); box.style.display = ''; hint();
   const markAll = d => { box.querySelectorAll('.vw-stack .vw-cur').forEach(c => { if (d == null) { c.style.display = 'none'; return; } const x = Math.min(1, d / D) * GW; c.setAttribute('x1', x); c.setAttribute('x2', x); c.style.display = ''; });
+    rows.forEach(r => { if (!r.dot) return; if (d == null) { r.dot.style.display = 'none'; return; } const k = Math.min(NB - 1, Math.floor(Math.min(1, d / D) * NB));
+      r.dot.style.left = (Math.min(1, d / D) * 100) + '%'; r.dot.style.top = (r.yOf(k) / GH * 100) + '%'; r.dot.style.display = ''; });
     if (elev && elev.markAt) elev.markAt(d); };
   const hide = () => { if (mk) { mk.remove(); mk = null; } hint(); markAll(null); };
   const show = i => {
@@ -2361,9 +2383,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.30-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.30-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '내 MPD 지도 바로 아래에 해발·빠르기·심박 그래프가 작게 쌓여 한 화면에 보여요 · 지도 길이나 어느 그래프든 누르거나 옆으로 밀면 모든 그래프에 세로선이 생기고 지도 점이 같이 움직여요 · 그 지점의 시각·거리·해발·빠르기·심박이 그래프 위 칸에 나와요';
+const UI_NOTES = '지도 아래 해발, 빠르기, 심박 그래프를 애플처럼 다시 그렸어요: 끊김 없는 매끈한 선, 아래 은은한 색 채움, 평균 점선, 고른 곳엔 선마다 동그라미 · 처음 GPS가 튀던 값은 눈금에서 뺐어요 · 지도 길이나 그래프를 누르거나 밀면 모두 같이 움직여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
