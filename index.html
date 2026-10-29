@@ -2324,9 +2324,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.29-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '내 MPD 지도에서 길을 누르면 그 지점의 시각·출발 뒤 시간·거리·해발·빠르기·심박이 지도 바로 아래에 나와요 · 높이 그래프를 누르거나 밀면 그 지점이 지도에 파란 점으로 따라 움직여요 · 다녀온 곳 이름·날씨·난이도·칼로리도 나와요';
+const UI_NOTES = '새 판이 나왔는데 기록 중이라 못 바꾸고 있으면 \'기록을 끝내면 바뀌어요\'라고 알려 줘요(⚙ 설정 맨 아래에도) · 내 MPD 지도에서 길을 누르면 그 지점의 시각·거리·해발·빠르기·심박이 나와요 · 높이 그래프를 누르거나 밀면 그 지점이 지도에 따라 움직여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3150,7 +3150,7 @@ function appSettings() {
       row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
       row('☁️', '로그인 · 기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '카카오·구글로 앱·크롬 기록을 하나로';
         const L = ls.get('cloudLast', null), a = cloudAcct(), who = a ? `${a.via} · ${a.name}` : '로그인돼 있어요'; return `${who} · ${!L ? '아직 맞추지 않음' : !L.ok || L.bad ? '⚠ 다시 맞춰 주세요' : `✅ 기록 ${L.n}개 모두 모음`}`; })(), () => { location.href = './?my=1'; }),
-      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}` }));
+      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` }));
   };
   paint();
   cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '앱 설정' }, el('h2', { text: '⚙ 설정' }), body,
@@ -4453,6 +4453,24 @@ async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다
 route();
 cloudWatch();
 setTimeout(uiNewCheck, 1500);
+// 새 판이 기다리고 있는지 알려 줘요 (2026-10-29 사용자가 길 누르기가 안 된다고 했는데, 기록 중이라 앱이 화면을 안 바꾸고 있었음):
+// 서버의 UI_VER가 지금보다 새것이면 → 기록 중이면 '기록을 끝내면 바뀌어요' 알림(판마다 한 번), 웹이면 '새로고침' 알림. ⚙ 설정 맨 아래에도
+let uiLatest = null, uiLatestAt = 0;
+const uiVerKey = v => String(v || '').split(/[.-]/).map(Number);
+const uiNewer = (a, b) => { const x = uiVerKey(a), y = uiVerKey(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0; } return false; };
+async function uiLatestCheck() {
+  if (!navigator.onLine || Date.now() - uiLatestAt < 4 * 60000) return; uiLatestAt = Date.now();
+  try {
+    const r = await fetchT((IN_NATIVE && window.MD_WEB_BASE ? window.MD_WEB_BASE : './') + 'index.html?v=' + Date.now(), { cache: 'no-store' }, 15000);
+    const m = /const UI_VER = '([^']+)'/.exec(await r.text()); if (!m || !uiNewer(m[1], UI_VER)) return;
+    uiLatest = m[1];
+    const key = 'uiWaitSaid:' + uiLatest; if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1');
+    if (ls.get('walkNow', null)) toast(`새 화면(판 ${uiLatest})이 기다리고 있어요 · 지금 기록을 끝내면 바뀌어요`);
+    else if (!IN_NATIVE) toast(`새 화면(판 ${uiLatest})이 있어요 · 화면을 아래로 당겨 새로고침해 주세요`);
+  } catch {}
+}
+setTimeout(uiLatestCheck, 6000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(uiLatestCheck, 2000); });
 if (!IN_NATIVE) { try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => toast(t), 600); } } catch {} }   // 다시 그린 뒤 알림 (앱은 native.js가 해요)
 
 // =====================================================================
