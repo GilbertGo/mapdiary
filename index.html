@@ -415,7 +415,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#EEE8DB;border-radius:16px;overflow:hidden}
 .mdv-stats.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv-stats.n1{grid-template-columns:1fr}
 .vw-dots{display:flex;gap:6px}.vw-dots i{flex:1;height:8px;border-radius:4px;background:var(--soft)}
-.vw-pick{padding:12px 14px;display:flex;flex-direction:column;gap:8px;border:2px solid #0277BD}.vw-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px 10px}.vw-pk-c span{display:block;font-size:12px;color:var(--muted);font-weight:600}.vw-pk-c b{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.vw-pk-c small{font-size:12px;font-weight:700;margin-left:2px}
+.vw-pick{padding:10px 12px;display:flex;flex-direction:column;gap:6px;margin-top:-6px}.vw-pk-hd{min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:6px}.vw-stack{display:flex;flex-direction:column;gap:2px;cursor:crosshair;user-select:none}.vw-sr-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);font-weight:600}.vw-sr-h b{font-size:13px}.vw-sr-ax{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600}.vw-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:4px 8px}.vw-pk-c span{display:block;font-size:12px;color:var(--muted);font-weight:600}.vw-pk-c b{font-size:19px;white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}.vw-pk-c small{font-size:12px;font-weight:700;margin-left:2px}
 .vw-rec{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;margin:4px 0}
 .vw-big{display:flex;align-items:baseline;gap:4px;line-height:1}.vw-big b{font-size:44px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.vw-big span{font-size:20px;font-weight:800}
 .vw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;padding:16px 18px}
@@ -1317,7 +1317,7 @@ function paceOverlay(m, tr, modes) {
   }
   return true;
 }
-const paceLegend = () => el('div', { class: 'vw-leg' }, el('span', { text: '빠름' }), el('i', { style: `background:linear-gradient(90deg,${PACE_COLS.join(',')})` }), el('span', { text: '느림' }), el('span', { class: 'sub', style: 'margin-left:auto', text: '길 색 = 빠르기 · 👆 길을 누르면 자세히' }));
+const paceLegend = () => el('div', { class: 'vw-leg' }, el('span', { text: '빠름' }), el('i', { style: `background:linear-gradient(90deg,${PACE_COLS.join(',')})` }), el('span', { text: '느림' }), el('span', { class: 'sub', style: 'margin-left:auto', text: '길 색 = 그때 빠르기' }));
 // 부드럽게 한 높이(앞뒤 2점 평균). 높이가 없는 점은 null
 function smoothAlt(tr) {
   return tr.map((q, i) => { if (!Number.isFinite(q[3])) return null; let s = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(tr.length - 1, i + 2); j++) if (Number.isFinite(tr[j][3])) { s += tr[j][3]; n++; } return s / n; });
@@ -1411,34 +1411,71 @@ function vwPicker(m, tr, M, t, box, modes, elev) {
   if (!m || tr.length < 2) return null;
   const n = tr.length, cum = [0], cumAll = [0];
   for (let i = 1; i < n; i++) { const d = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]); cumAll.push(cumAll[i - 1] + d); cum.push(cum[i - 1] + (!modes || modes[i] === 'w' ? d : 0)); }
+  const D = cumAll[n - 1] || 1, bike = M.k === 'bike';
   const alt = smoothAlt(tr), hl = hrLine(t, tr), W = typeof watchStats === 'function' ? watchStats(t) : null, off = geoidOff(tr[0][0], tr[0][1]);
   let mk = null;
   const speedAt = i => { let a = i, b = i; while (a > 0 && tr[i][2] - tr[a - 1][2] <= 30000) a--; while (b < n - 1 && tr[b + 1][2] - tr[i][2] <= 30000) b++;
     const dt = (tr[b][2] - tr[a][2]) / 1000; return dt >= 10 ? (cumAll[b] - cumAll[a]) / dt : null; };
-  const hrAt = ts => { let best = null, bd = 60001; for (const [x, h] of hl) { const d = Math.abs(x - ts); if (d < bd) { bd = d; best = h; } } return best; };
-  const hide = () => { if (mk) { mk.remove(); mk = null; } box.replaceChildren(); box.style.display = 'none'; if (elev && elev.markAt) elev.markAt(null); };
+  let hj = 0; const hrAt = ts => { if (!hl.length) return null; while (hj > 0 && hl[hj][0] > ts) hj--; while (hj < hl.length - 1 && hl[hj + 1][0] <= ts) hj++;
+    const c = [hl[hj], hl[hj + 1]].filter(Boolean).sort((x, y) => Math.abs(x[0] - ts) - Math.abs(y[0] - ts))[0]; return c && Math.abs(c[0] - ts) <= 60000 ? c[1] : null; };
+  // 한 화면 묶음 (2026-10-29 사용자 '지점 선택 시 다른 그래프도 연동, 지도·심박·높이가 한 화면에'): 지도 바로 아래 작은 그래프를 같은 거리 눈금으로 쌓아요
+  const spd = tr.map((_, i) => speedAt(i)), hrs = tr.map(q => hrAt(q[2]));
+  const NB = 160, bin = (arr, ok) => { const S = new Array(NB).fill(0), C = new Array(NB).fill(0);
+    for (let i = 0; i < n; i++) { const v = arr[i]; if (v == null || !ok(v)) continue; const k = Math.min(NB - 1, Math.floor(cumAll[i] / D * NB)); S[k] += v; C[k]++; }
+    return S.map((x, k) => C[k] ? x / C[k] : null); };
+  const rows = [];
+  if (alt.filter(v => v != null).length > 5) rows.push({ k: off != null ? '해발' : '높이', col: STAT_COL.up, v: bin(alt.map(v => v == null ? null : v - (off || 0)), () => true), u: 'm', area: true });
+  if (M.k !== 'pgolf') rows.push(bike ? { k: '속도', col: STAT_COL.pace, v: bin(spd.map(v => v == null ? null : v * 3.6), v => v >= 1), u: 'km/h' }
+    : { k: '빠르기', col: STAT_COL.pace, v: bin(spd.map(v => v == null || v < 0.3 ? null : 1000 / v), () => true), u: '/km', inv: true, pace: true });
+  if (hrs.some(v => v)) rows.push({ k: '심박', col: STAT_COL.hr, v: bin(hrs, v => v > 30), u: 'bpm' });
+  const GW = 600, GH = 40, xOf = k => (k + .5) / NB * GW;
+  const svgs = rows.map(r => {
+    const vs = r.v.filter(v => v != null); if (vs.length < 2) return null;
+    let lo = Math.min(...vs), hi = Math.max(...vs);
+    if (r.pace) { const srt = [...vs].sort((x, y) => x - y); hi = srt[Math.floor(srt.length * .95)]; lo = srt[0]; }   // 빠르기는 멈춤 직전 튀는 값 빼고
+    if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
+    const yOf = v => { const f = Math.min(1, Math.max(0, (v - lo) / (hi - lo))); return 4 + (r.inv ? f : 1 - f) * (GH - 8); };
+    let d = '', on = false; r.v.forEach((v, k) => { if (v == null) { on = false; return; } d += (on ? 'L' : 'M') + xOf(k).toFixed(1) + ' ' + yOf(v).toFixed(1); on = true; });
+    const fmt = v => r.pace ? fmtPace(1000, v * 1000) : String(Math.round(v));
+    const rng = r.pace ? `${fmt(lo)}~${fmt(hi)}` : `${fmt(lo)}~${fmt(hi)}${r.u}`;
+    const box2 = el('div', { class: 'vw-sr' }, el('div', { class: 'vw-sr-h' }, el('b', { style: `color:${r.col}`, text: r.k }), el('span', { text: rng + (r.inv ? ' · 위가 빠름' : '') })));
+    const g = el('div'); g.innerHTML = `<svg viewBox="0 0 ${GW} ${GH}" width="100%" height="${GH}" preserveAspectRatio="none" aria-hidden="true">${r.area ? `<path d="${d} L ${GW} ${GH} L 0 ${GH} Z" fill="${r.col}" fill-opacity=".12"/>` : ''}<path d="${d}" fill="none" stroke="${r.col}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><line class="vw-cur" x1="0" x2="0" y1="0" y2="${GH}" stroke="#102A43" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none"/></svg>`;
+    box2.append(g); return box2;
+  }).filter(Boolean);
+  const stack = el('div', { class: 'vw-stack' }, ...svgs, el('div', { class: 'vw-sr-ax' }, el('span', { text: '출발' }), el('span', { text: fmtDist(D / 2) }), el('span', { text: fmtDist(D) })));
+  const head = el('div', { class: 'vw-pk-hd' });
+  const hint = () => head.replaceChildren(el('div', { class: 'sub', style: 'font-size:13px;font-weight:600', text: '👆 지도의 길이나 아래 그래프를 누르거나 밀면 그 지점이 나와요' }));
+  box.replaceChildren(head, svgs.length ? stack : ''); box.style.display = ''; hint();
+  const markAll = d => { box.querySelectorAll('.vw-stack .vw-cur').forEach(c => { if (d == null) { c.style.display = 'none'; return; } const x = Math.min(1, d / D) * GW; c.setAttribute('x1', x); c.setAttribute('x2', x); c.style.display = ''; });
+    if (elev && elev.markAt) elev.markAt(d); };
+  const hide = () => { if (mk) { mk.remove(); mk = null; } hint(); markAll(null); };
   const show = i => {
-    const q = tr[i], v = speedAt(i), h = hl.length ? hrAt(q[2]) : null, a = alt[i];
+    const q = tr[i], v = spd[i], h = hrs[i], a = alt[i];
     if (mk) mk.setLatLng([q[0], q[1]]); else mk = L.circleMarker([q[0], q[1]], { radius: 9, color: '#fff', weight: 3, fillColor: '#0277BD', fillOpacity: 1 }).addTo(m);
     const cell = (k, val, u, col) => el('div', { class: 'vw-pk-c' }, el('span', { text: k }), el('b', { style: col ? `color:${col}` : '' }, val, u ? el('small', { text: u }) : null));
     const moving = v != null && v >= 0.3;
-    box.replaceChildren(
+    head.replaceChildren(
       el('div', { class: 'row', style: 'justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:8px' },
         el('b', { style: 'font-size:15px', text: `📍 ${kTime(q[2])} · 출발 뒤 ${fmtRunTime(q[2] - tr[0][2])}` }),
         el('button', { class: 'link', style: 'padding:0 4px;font-size:18px', 'aria-label': '닫기', text: '✕', onclick: hide })),
       el('div', { class: 'vw-pk' },
         cell(`${M.did} 거리`, (cum[i] / 1000).toFixed(2), 'km', STAT_COL.dist),
         a != null ? cell(off != null ? '해발' : '높이 (GPS)', String(Math.round(a - (off || 0))), 'm', STAT_COL.up) : null,
-        M.k === 'bike' ? cell('속도', moving ? (v * 3.6).toFixed(1) : '멈춤', moving ? 'km/h' : '', STAT_COL.pace)
+        bike ? cell('속도', moving ? (v * 3.6).toFixed(1) : '멈춤', moving ? 'km/h' : '', STAT_COL.pace)
           : cell('빠르기', moving ? fmtPace(1000, 1000 / v * 1000) : '멈춤', moving ? '/km' : '', STAT_COL.pace),
         h ? cell('심박', String(h), W ? ` · 존${zoneOf(W.mx, h) + 1}` : 'bpm', STAT_COL.hr) : null));
-    box.style.display = '';
-    if (elev && elev.markAt) elev.markAt(cumAll[i]);
+    markAll(cumAll[i]);
   };
+  const atDist = d => { let i = 0; while (i < n - 1 && cumAll[i] < d) i++; show(i); };
   const nearest = ll => { const p = m.latLngToLayerPoint(ll); let bi = -1, bd = 36 * 36;
     for (let i = 0; i < n; i++) { const r = m.latLngToLayerPoint([tr[i][0], tr[i][1]]), d = (r.x - p.x) ** 2 + (r.y - p.y) ** 2; if (d < bd) { bd = d; bi = i; } } return bi; };
   m.on('click', e => { const i = nearest(e.latlng); if (i >= 0) show(i); else hide(); });
-  if (elev) elev.onPick = d => { let i = 0; while (i < n - 1 && cumAll[i] < d) i++; show(i); };
+  // 쌓은 그래프: 누르기·옆으로 밀기(세로로 밀면 화면이 내려가요)
+  const pick = e => { const r = stack.getBoundingClientRect(); if (!r.width) return; atDist(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * D); };
+  stack.style.touchAction = 'pan-y';
+  stack.addEventListener('pointerdown', e => { pick(e); stack.setPointerCapture && stack.setPointerCapture(e.pointerId); });
+  stack.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') pick(e); });
+  if (elev) elev.onPick = atDist;
   return { show, hide };
 }
 // 운동 뒤 심박 회복(시계가 끝낸 뒤 2분 잼, 2026-10-29): 끝낼 때 → 1분 뒤 → 2분 뒤, 1분에 20 넘게 떨어지면 빠름·12 아래면 느림
@@ -2324,9 +2361,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.29-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.10.30-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '새 판이 나왔는데 기록 중이라 못 바꾸고 있으면 \'기록을 끝내면 바뀌어요\'라고 알려 줘요(⚙ 설정 맨 아래에도) · 내 MPD 지도에서 길을 누르면 그 지점의 시각·거리·해발·빠르기·심박이 나와요 · 높이 그래프를 누르거나 밀면 그 지점이 지도에 따라 움직여요';
+const UI_NOTES = '내 MPD 지도 바로 아래에 해발·빠르기·심박 그래프가 작게 쌓여 한 화면에 보여요 · 지도 길이나 어느 그래프든 누르거나 옆으로 밀면 모든 그래프에 세로선이 생기고 지도 점이 같이 움직여요 · 그 지점의 시각·거리·해발·빠르기·심박이 그래프 위 칸에 나와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5048,7 +5085,7 @@ async function viewMyOne(t) {
   const M = modeOfT(t), tr = trackLoad(t), st = trackStats(tr, M.car), info = x.info, live = t === ls.get('walkNow', null);
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
-  const mapEl = el('div', { class: 'mapbox', style: 'height:44vh;min-height:280px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
+  const mapEl = el('div', { class: 'mapbox', style: 'height:36vh;min-height:230px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
   let phAll = [];
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
   const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
