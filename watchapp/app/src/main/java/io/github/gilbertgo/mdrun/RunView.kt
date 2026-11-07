@@ -150,7 +150,9 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         else if (hr > 0) { val z = Run.zoneOf(hr); pill(cv, "존${z + 1} · $hr", 18 * u, ZONE[z], 5.4f * u) }
         else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
-        if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
+        val dd = Run.dest
+        if (dd != null) text(cv, if (Run.destHit) "🏁 ${dd.n} 도착!" else "🏁 ${dd.n.take(9)} " + (Run.destLeft()?.let { fmtDist(it) } ?: ""), cx, 64 * u, LAB * u, if (Run.destHit) GOLD else BLUE, true, max = 0.62f)
+        else if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
         if (Run.walkS) {   // 걷기: 다닌 시간 | 걸음 수
             text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
@@ -406,6 +408,11 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             paint(CORAL); p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * u; p.strokeJoin = Paint.Join.ROUND; p.strokeCap = Paint.Cap.ROUND; cv.drawPath(path, p)
             val s0 = Run.pts[0]; val x0 = sx(Tiles.px(s0.lng, z)); val y0 = sy(Tiles.py(s0.lat, z))
             cv.drawCircle(x0, y0, 1.6f * u, paint(Color.WHITE)); cv.drawCircle(x0, y0, 1.0f * u, paint(CORAL)) }
+        // 목표 지점: 지금 위치에서 점선 + 🏁 (길게 누르면 정하고, 깃발을 길게 누르면 지워요)
+        Run.dest?.let { d -> val fx = sx(Tiles.px(d.lng, z)); val fy = sy(Tiles.py(d.lat, z))
+            if (!Run.destHit) { paint(Color.WHITE); p.style = Paint.Style.STROKE; p.strokeWidth = .5f * u; p.pathEffect = android.graphics.DashPathEffect(floatArrayOf(1.2f * u, 1.6f * u), 0f)
+                cv.drawLine(sx(mex), sy(mey), fx, fy, p); p.pathEffect = null }
+            text(cv, "🏁", fx + 1.2f * u, fy, 6f * u, Color.WHITE, false) }
         // 지금 위치: 오차 원 + 흰 테 파란 점
         val mpp = 156543.03 * cos(Math.toRadians(lat)) / (1 shl z) / sc   // 화면 1픽셀이 몇 m
         val mx = sx(mex); val my = sy(mey)
@@ -427,7 +434,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
             cv.drawRoundRect(RectF(cx - 14 * u, 84 * u, cx + 14 * u, 91 * u), 3.5f * u, 3.5f * u, paint(Color.argb(0xD8, 0x10, 0x14, 0x1A)))
             text(cv, "✕ 작게 보기", cx, 88.9f * u, 3.8f * u, Color.WHITE, true)
             cv.drawRoundRect(RectF(cx - 21 * u, 5.6f * u, cx + 21 * u, 11.2f * u), 2.8f * u, 2.8f * u, paint(Color.argb(0xB0, 0, 0, 0)))
-            text(cv, "끌면 옮겨요 · 두 손가락 확대 $z", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
+            text(cv, "끌면 옮겨요 · 길게 누르면 🏁 목표", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
             return
         }
         // 전체 화면 단추(⛶: 네 귀퉁이 꺾쇠)
@@ -543,6 +550,23 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, if (Run.walkS) "${fmtTime(now - Run.startAt)}   ${Run.steps}보" else if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
     }
 
+    // 지도 길게 누르기 → 그 자리를 목표 지점으로 (깃발 근처면 지우기). 화면 → 세계 픽셀 → 위도·경도
+    private fun mapLongPress(x: Float, y: Float, uu: Float) {
+        val has = Run.gpsOn && (Run.fixLat != 0.0 || Run.fixLng != 0.0)
+        val lat0 = if (has) Run.fixLat else Run.pts.lastOrNull()?.lat ?: return
+        val lng0 = if (has) Run.fixLng else Run.pts.lastOrNull()?.lng ?: return
+        val z = mapZ; val sc = width / 400.0 * mapScale; val cyS = mapB(uu) * .52
+        val wx = Tiles.px(lng0, z) + mapOX + (x - width / 2.0) / sc; val wy = Tiles.py(lat0, z) + mapOY + (y - cyS) / sc
+        val n = 256.0 * (1 shl z)
+        val lng = wx / n * 360 - 180; val lat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / n))))
+        val cur = Run.dest
+        if (cur != null && hypot(x - (width / 2.0 + (Tiles.px(cur.lng, z) - Tiles.px(lng0, z) - mapOX) * sc).toFloat(), y - (cyS + (Tiles.py(cur.lat, z) - Tiles.py(lat0, z) - mapOY) * sc).toFloat()) < 7 * uu) {
+            Run.setDest(null); Run.buzz(longArrayOf(0, 60)); Run.say("목표 지점을 지웠어요."); Store.saveCurrent(context); invalidate(); return }
+        Run.setDest(Dest(lat, lng, "고른 곳")); Run.buzz(longArrayOf(0, 80, 60, 80))
+        Run.destLeft()?.let { Run.say("목표 지점을 정했어요. ${if (it >= 1000) "${Math.round(it / 100) / 10.0}킬로" else "${(it / 10).toInt() * 10}미터"} 남았어요.") }
+        Store.saveCurrent(context); invalidate()
+    }
+
     // ---------- 손가락 ----------
     override fun onTouchEvent(e: MotionEvent): Boolean {
         val uu = min(width, height) / 100f
@@ -576,6 +600,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                     if (mapMoved && abs(e.x - width / 2f) < 15 * uu && e.y > rc && e.y < rc + 7 * uu) { mapOX = 0.0; mapOY = 0.0; invalidate(); return true }
                     if (hypot(e.x - 13 * uu, e.y - 38 * uu) < 6 * uu) { zoomBy(2.0); return true }
                     if (hypot(e.x - 13 * uu, e.y - 50 * uu) < 6 * uu) { zoomBy(0.5); return true }
+                    if (System.currentTimeMillis() - downT > 600) { mapLongPress(e.x, e.y, uu); return true }   // 길게 누르기: 목표 지점
                     return true }
                 if (e.actionMasked == MotionEvent.ACTION_UP && page == P_CTL && hypot(dx, e.y - downY) < 8 * uu) {
                     val L = btnL()

@@ -128,6 +128,32 @@ object Link {
             finally { bgBusy = false; Updater.releaseNet(app); if (ch) android.os.Handler(android.os.Looper.getMainLooper()).post(changed) }
         }
     }
+    // 목표 지점 (2026-11-07): 휴대폰 걷기 설정에서 고른 곳을 rooms/{방번호}/x/dest={enc: 잠근 {lat,lng,n}} (지우면 {none:1})로 받아 Store.dest에 둬요
+    @Volatile private var destBusy = false
+    fun pullDest(c: Context, changed: () -> Unit) {
+        if (!on(c) || destBusy) return; destBusy = true
+        val app = c.applicationContext
+        thread {
+            var ch = false
+            try {
+                val (rid, key) = room(app)
+                val (code, txt) = Updater.getText(app, "$FS/rooms/$rid/x/dest?key=$KEY")
+                if (code == 200) {
+                    val fields = JSONObject(txt).getJSONObject("fields"); val t = fields.optJSONObject("t")?.optString("integerValue") ?: ""
+                    if (t != prefs(app).getString("destT", "")) {
+                        val d = JSONObject(fields.getJSONObject("d").getString("stringValue"))
+                        if (d.has("enc")) {
+                            val u = Base64.decode(d.getString("enc"), Base64.DEFAULT)
+                            val ci = Cipher.getInstance("AES/GCM/NoPadding"); ci.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, u, 0, 12))
+                            Store.setDest(app, Dest.from(JSONObject(String(ci.doFinal(u, 12, u.size - 12), Charsets.UTF_8))))
+                        } else Store.setDest(app, null)
+                        prefs(app).edit().putString("destT", t).apply(); ch = true
+                    }
+                }
+            } catch (e: Exception) {}
+            finally { destBusy = false; Updater.releaseNet(app); if (ch) android.os.Handler(android.os.Looper.getMainLooper()).post(changed) }
+        }
+    }
     fun hasBg(c: Context) = bgFile(c).exists()
     // 기본 사진으로: 받은 사진만 지워요(휴대폰이 새 사진을 보내면 다시 받아요)
     fun clearBg(c: Context) { bgFile(c).delete() }
