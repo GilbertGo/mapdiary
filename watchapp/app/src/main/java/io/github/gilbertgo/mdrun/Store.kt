@@ -12,9 +12,9 @@ object Store {
     // 설정 (목표·목소리)
     private fun prefs(c: Context) = c.getSharedPreferences("mdrun", Context.MODE_PRIVATE)
     // 운동 종류(러닝/등산)와 목표는 종류마다 따로 (등산 목표는 'goalHike')
-    fun sport(c: Context) = if (prefs(c).getString("sport", "run") == "hike") "hike" else "run"
+    fun sport(c: Context) = (prefs(c).getString("sport", "run") ?: "run").let { if (it == "hike" || it == "walk") it else "run" }
     fun setSport(c: Context, s: String) = prefs(c).edit().putString("sport", s).apply()
-    private fun goalKey(c: Context) = if (sport(c) == "hike") "goalHike" else "goal"
+    private fun goalKey(c: Context) = when (sport(c)) { "hike" -> "goalHike"; "walk" -> "goalWalk"; else -> "goal" }
     fun goal(c: Context): Goal = try { Goal.from(JSONObject(prefs(c).getString(goalKey(c), "{}") ?: "{}")) } catch (e: Exception) { Goal() }
     fun setGoal(c: Context, g: Goal) = prefs(c).edit().putString(goalKey(c), g.toJson().toString()).apply()
     fun voice(c: Context) = prefs(c).getBoolean("voice", true)
@@ -29,6 +29,8 @@ object Store {
     fun setZ2Alert(c: Context, on: Boolean) = prefs(c).edit().putBoolean("z2Alert", on).apply()
     fun cadKind(c: Context) = prefs(c).getInt("cadKind", 0)
     fun cadSpm(c: Context) = prefs(c).getInt("cadSpm", 180)
+    fun cadSpmWalk(c: Context) = prefs(c).getInt("cadSpmWalk", 120)   // 걷기 박자
+    fun setCadSpmWalk(c: Context, v: Int) = prefs(c).edit().putInt("cadSpmWalk", v).apply()
     fun cadLast(c: Context) = prefs(c).getInt("cadLast", 1)
     fun setCad(c: Context, k: Int, spm: Int, last: Int) = prefs(c).edit().putInt("cadKind", k).putInt("cadSpm", spm).putInt("cadLast", last).apply()
     fun page(c: Context) = prefs(c).getInt("page", 0)

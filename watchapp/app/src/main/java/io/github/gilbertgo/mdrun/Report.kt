@@ -47,7 +47,8 @@ class Report(o: JSONObject) {
         gainOf(a) } }
     fun zoneLo(z: Int) = (hrMaxSet * (.5 + .1 * z)).roundToInt()
     // 등산 기록인지 · 다닌 시간(시작~끝) · 운동 뒤 심박(끝낼 때 → 1분 뒤 → 2분 뒤)
-    val hike = o.optString("sport") == "hike" || o.optJSONObject("data")?.optString("walkMode:$id") == "\"hike\""
+    val walkR = o.optString("sport") == "walk" || o.optJSONObject("data")?.optString("walkMode:$id") == "\"trek\""   // 걷기 (2026-11-07)
+    val hike = walkR || o.optString("sport") == "hike" || o.optJSONObject("data")?.optString("walkMode:$id") == "\"hike\""
     val elapsed = maxOf(0L, o.optLong("end") - at)
     val hrEnd = sum.optInt("hrEnd"); val hr1 = sum.optInt("hr1"); val hr2 = sum.optInt("hr2")
 
@@ -247,7 +248,8 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
         // ① 색깔 숫자 줄
         val rows = ArrayList<Triple<String, String, Int>>()
         rows.add(Triple(fmtKm(r.walk), "km", RunView.GOLD))
-        if (r.hike) { rows.add(Triple(fmtTime(r.elapsed), "", BLUE)); r.gain?.let { rows.add(Triple("↑$it", "m", RunView.ALTC)) } }   // 등산: 다닌 시간 · 오른 높이
+        if (r.walkR) { rows.add(Triple(fmtTime(r.elapsed), "", BLUE)); if (r.steps > 0) rows.add(Triple("${r.steps}", "보", RunView.CADC)) }   // 걷기: 다닌 시간 · 걸음 수
+        else if (r.hike) { rows.add(Triple(fmtTime(r.elapsed), "", BLUE)); r.gain?.let { rows.add(Triple("↑$it", "m", RunView.ALTC)) } }   // 등산: 다닌 시간 · 오른 높이
         else { rows.add(Triple(fmtTime(r.moving), "", BLUE)); rows.add(Triple(fmtPace(r.avgPace), "/km", CORAL)) }
         if (r.hrAvg > 0) rows.add(Triple("${r.hrAvg}", "bpm", RED))
         val x0 = L + 17 * u; val top = y - 11 * u
@@ -256,7 +258,7 @@ class ReportView(c: Context, private val r: Report, private val justDone: Boolea
                 val w = p.measureText(v); p.textSize = 5.6f * u; p.typeface = krBold; if (unit.isNotEmpty()) cv.drawText(unit, x0 + w + 1.2f * u, y, p) }
             y += 14 * u }
         if (cv != null) { paint(RunView.LINE); p.strokeWidth = .4f * u; cv.drawLine(x0 - 4 * u, top, x0 - 4 * u, y - 12 * u, p)
-            text(cv, if (r.hike) "HIKE" else "RUN", x0 - 9 * u, (top + y - 12 * u) / 2 + 1.6f * u, 4.2f * u, CORAL, true, true) }
+            text(cv, if (r.walkR) "WALK" else if (r.hike) "HIKE" else "RUN", x0 - 9 * u, (top + y - 12 * u) / 2 + 1.6f * u, 4.2f * u, CORAL, true, true) }
         y += 2 * u; rule(cv, y); y += 12 * u
         y = recovery(cv, y)
 

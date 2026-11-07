@@ -152,6 +152,13 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
         if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
+        if (Run.walkS) {   // 걷기: 다닌 시간 | 걸음 수
+            text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
+            text(cv, "다닌 시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
+            text(cv, if (Run.steps > 0) "${Run.steps}" else "--", cx + 16 * u, 80 * u, 11 * u, CADC, true, true, max = 0.3f)
+            text(cv, "걸음", cx + 16 * u, 87 * u, LAB * u, MUTED)
+            return
+        }
         if (Run.hike) {   // 등산: 다닌 시간(시작부터) | 오른 높이
             text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
             text(cv, "다닌 시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
@@ -522,7 +529,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, if (Run.manualPause) "다시" else "멈춤", L[0], 70 * u, 5.4f * u, Color.WHITE, true, max = 0.34f)
         text(cv, "끝내기", R[0], 70 * u, 5.4f * u, Color.WHITE, true)
         text(cv, "1.5초 꾹", R[0], 76 * u, 4.6f * u, MUTED)
-        if (!Run.hike) pill(cv, if (Cadence.kind != Cadence.OFF) "가이드 ${Cadence.spm} 켬" else "가이드 끔", 87 * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, LAB * u)
+        if (!Run.hike || Run.walkS) pill(cv, if (Cadence.kind != Cadence.OFF) "가이드 ${Cadence.spm} 켬" else "가이드 끔", 87 * u, if (Cadence.kind != Cadence.OFF) CORAL else MUTED, LAB * u)
     }
 
     // ---------- 화면이 어두워졌을 때(앰비언트): 선과 글자만, 숫자 크게 ----------
@@ -533,7 +540,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         }
         text(cv, clock(), cx, 20 * u, 5 * u, Color.LTGRAY, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 57 * u, 31 * u, 6 * u, Color.LTGRAY)
-        text(cv, if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
+        text(cv, if (Run.walkS) "${fmtTime(now - Run.startAt)}   ${Run.steps}보" else if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
     }
 
     // ---------- 손가락 ----------
@@ -574,7 +581,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
                     val L = btnL()
                     if (hypot(e.x - L[0], e.y - L[1]) < L[2] * 1.15f) { Run.setPause(!Run.manualPause); performClick() }
                     else if (e.y < 30 * uu) { Run.voice = !Run.voice; Store.setVoice(context, Run.voice) }
-                    else if (e.y > 83 * uu && !Run.hike) Cadence.set(context, if (Cadence.kind != Cadence.OFF) Cadence.OFF else Cadence.last)
+                    else if (e.y > 83 * uu && (!Run.hike || Run.walkS)) Cadence.set(context, if (Cadence.kind != Cadence.OFF) Cadence.OFF else Cadence.last)
                 }
                 invalidate()
             }

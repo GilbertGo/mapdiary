@@ -29,7 +29,7 @@ data class Goal(val k: String = "free", val v: Double = 0.0, val t: Int = 0, val
     fun label(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프" else if (v == 42.195) "풀코스" else "${num(v)}km"
         "time" -> minLabel(v.toInt())
-        else -> if (Run.hike) "자유 등산" else "자유 달리기"
+        else -> if (Run.walkS) "자유 걷기" else if (Run.hike) "자유 등산" else "자유 달리기"
     }
     fun say(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프 코스" else if (v == 42.195) "풀코스" else "${num(v)}킬로미터"
@@ -89,8 +89,11 @@ object Run {
     var id: String? = null
     // 운동 종류 (2026-10-29 2단계 '시계 앱 등산 모드'): run 러닝 / hike 등산. 등산은 페이스 코치·케이던스 가이드·자세 화면이 없고
     //   1km 안내에 다닌 시간·오른 높이, 차로 보는 빠르기 15km/h(휴대폰 걷는 모드와 같게), 천천히 오르는 것(초속 0.3m)도 움직인 시간
+    // 2026-11-07 걷기(walk) 더함: 걷기도 등산처럼 페이스 코치·자세 화면이 없고(hike가 참), 대신 1km 안내에 걸린 시간·걸음 수, 박자 가이드는 있어요(걷기 박자 120)
     var sport = "run"
-    val hike get() = sport == "hike"
+    val hike get() = sport != "run"          // 러닝이 아닌 것(등산·걷기)
+    val walkS get() = sport == "walk"
+    val sportKo get() = when (sport) { "walk" -> "걷기"; "hike" -> "등산"; else -> "러닝" }
     private val carMs get() = if (hike) 15 / 3.6 else CAR_MS
     private val minV get() = if (hike) 0.3 else 0.7
     private val pauseMs get() = if (hike) 60000L else PAUSE_MS
@@ -135,7 +138,7 @@ object Run {
     val lastT get() = pts.lastOrNull()?.t ?: startAt
 
     fun begin(now: Long, g: Goal, title: String, sp: String = "run") {
-        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike") "hike" else "run"
+        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike" || sp == "walk") sp else "run"
         pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
         hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
@@ -297,6 +300,15 @@ object Run {
         val hit = g.k == "dist" && left <= 0 && !goalDone
         if (hit) goalDone = true
         val remT = if (g.k == "time") g.v * 60000 - moving else 0.0
+        if (walkS) {   // 걷기: 이번 1km 걸린 시간·걸음 수
+            val mn = max(1L, Math.round(lap / 60000.0))
+            say("${km}킬로 걸었어요. 이번 1킬로 ${mn}분 걸렸어요." + (if (steps > 0) " 지금까지 ${steps}보예요." else "") + when {
+                hit -> " 목표 ${g.say()} 달성! 수고했어요."
+                left >= 1 -> " 목표까지 ${num(Math.round(left * 10) / 10.0)}킬로 남았어요."
+                remT >= 60000 && !goalDone -> " 목표 시간까지 ${(remT / 60000).roundToInt()}분 남았어요."
+                else -> "" })
+            return
+        }
         if (hike) {   // 등산: 다닌 시간·오른 높이 (페이스 코치는 안 해요)
             val gn = gain()
             say("${km}킬로미터. 지금까지 ${sayDur((System.currentTimeMillis() - startAt).toDouble())}" + (if (gn != null && gn >= 10) ", 오른 높이 ${gn}미터." else ".") + when {
@@ -384,6 +396,7 @@ object Run {
     }
     fun startLine(): String {
         val g = goal; val tp = g.tgtPace()
+        if (walkS) return "걷기를 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 1킬로마다 걸린 시간과 걸음 수를 알려 드릴게요."
         if (hike) return "등산을 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 1킬로마다 다닌 시간과 오른 높이를 알려 드릴게요."
         return "달리기를 시작합니다." + if (tp > 0) " 목표는 ${g.say()} " + (if (g.k == "dist") "${sayDur(g.t * 1000.0)} 완주" else "동안 ${sayKm(g.d * 1000)}") + ", 1킬로 ${sayDur(tp)} 페이스예요." else ""
     }
@@ -395,7 +408,7 @@ object Run {
         val data = JSONObject()
             .put("track:$id", tr.toString())
             .put("trackName:$id", JSONObject.quote(name))
-            .put("walkMode:$id", if (hike) "\"hike\"" else "\"run\"")
+            .put("walkMode:$id", if (walkS) "\"trek\"" else if (hike) "\"hike\"" else "\"run\"")
             .put("walkSplits:$id", JSONArray(splits).toString())
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
             .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
