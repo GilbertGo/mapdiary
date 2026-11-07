@@ -1077,7 +1077,7 @@ async function savePhotos(list, base) {
 function showPhoto(p, list) {
   const all = Array.isArray(list) && list.length ? list : [p];
   let i = Math.max(0, all.indexOf(p)), url = null;
-  const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:pan-y;user-select:none;-webkit-user-drag:none' });
+  const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:none;user-select:none;-webkit-user-drag:none;will-change:transform' });
   const cap = el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px' });
   // 한 줄 메모: 사진 위쪽에. 이 휴대폰에 있는 내 사진이면 ✎로 적거나 고칠 수 있어요 (받은 사진은 보기만)
   const memo = el('div', { style: 'position:absolute;top:calc(20px + env(safe-area-inset-top,0px));left:16px;right:16px;text-align:center;color:#fff;font-size:17px;font-weight:600;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap' });
@@ -1092,27 +1092,58 @@ function showPhoto(p, list) {
       e.stopPropagation(); if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
       await photoDel(r.id); all.splice(i, 1); dispatchEvent(new Event('photo-changed')); toast('사진을 지웠어요');
       if (!all.length) close(); else show(i); } }) : ''); };
-  const close = () => { bg.remove(); if (url) URL.revokeObjectURL(url); };
+  const close = () => { clearTimeout(tapT); bg.remove(); if (url) URL.revokeObjectURL(url); };
   const show = n => {
     i = (n + all.length) % all.length; const r = all[i];
-    if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); img.src = url; img.style.transform = '';
-    cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}누르면 닫혀요`;
+    if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); img.src = url; sc = 1; tx = ty = 0; apply(false);
+    cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · 두 번 누르거나 두 손가락으로 벌리면 크게 · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}한 번 누르면 닫혀요`;
     drawMemo();
   };
   const arrow = (side, d) => el('button', { 'aria-label': d < 0 ? '앞 사진' : '다음 사진', text: d < 0 ? '‹' : '›',
     style: `position:absolute;top:50%;${side}:6px;transform:translateY(-50%);width:44px;height:64px;border:none;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:36px;line-height:1`,
     onclick: e => { e.stopPropagation(); show(i + d); } });
-  // 밀기: 손가락이 옆으로 50px 넘게 움직이면 넘기고, 조금만 움직였으면 누른 것으로 봐요
-  let x0 = null, y0 = 0, moved = false;
-  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9)', onclick: () => { if (!moved) close(); moved = false; } }, img, memo, cap,
-    all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
-  bg.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; moved = false; }, { passive: true });
-  bg.addEventListener('touchmove', e => { if (x0 == null || all.length < 2) return; const dx = e.touches[0].clientX - x0; if (Math.abs(dx) > 10) { moved = true; img.style.transform = `translateX(${dx}px)`; } }, { passive: true });
+  // 확대 (2026-11-07 진호 님 '사진 확대해 볼라 했더니 안 됨'): 두 손가락 벌리기·두 번 누르기(2.5배)·확대한 채 끌기, 1~5배
+  // 확대 안 했을 때만: 옆으로 50px 넘게 밀면 다음 사진, 한 번 누르면 닫기(두 번 누르기를 기다려 0.3초 뒤)
+  let sc = 1, tx = 0, ty = 0, g = null, moved = false, lastTap = 0, tapT = null;
+  const mid = () => [innerWidth / 2, innerHeight / 2];
+  const clampXY = () => { const mx = Math.max(0, (img.offsetWidth * sc - innerWidth) / 2 + 40), my = Math.max(0, (img.offsetHeight * sc - innerHeight) / 2 + 40);
+    tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty)); };
+  function apply(anim) { img.style.transition = anim ? 'transform .18s' : 'none'; img.style.transform = sc > 1.01 ? `translate(${tx}px,${ty}px) scale(${sc})` : (tx ? `translateX(${tx}px)` : ''); }
+  const zoomAt = (x, y, ns, s0 = sc, tx0 = tx, ty0 = ty) => { const [cx, cy] = mid(); ns = Math.max(1, Math.min(5, ns));
+    tx = x - cx - (x - cx - tx0) * ns / s0; ty = y - cy - (y - cy - ty0) * ns / s0; sc = ns; if (sc <= 1.01) { sc = 1; tx = ty = 0; } else clampXY(); };
+  const toggleZoom = (x, y) => { if (sc > 1.01) { sc = 1; tx = ty = 0; } else zoomAt(x, y, 2.5); apply(true); };
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9);touch-action:none;overflow:hidden', onclick: e => {
+    if (moved) { moved = false; return; }
+    const now = Date.now();
+    if (now - lastTap < 320) { clearTimeout(tapT); lastTap = 0; toggleZoom(e.clientX, e.clientY); return; }
+    lastTap = now; clearTimeout(tapT); tapT = setTimeout(() => { if (sc === 1) close(); }, 320);
+  } }, img, memo, cap, all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
+  const pt = (t, k) => [t[k].clientX, t[k].clientY];
+  bg.addEventListener('touchstart', e => {
+    const T = e.touches;
+    if (T.length >= 2) { const [a, b] = [pt(T, 0), pt(T, 1)]; g = { pinch: 1, d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: sc, tx0: tx, ty0: ty, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
+    else g = { x0: T[0].clientX, y0: T[0].clientY, tx0: tx, ty0: ty };
+  }, { passive: true });
+  bg.addEventListener('touchmove', e => {
+    if (!g) return; const T = e.touches;
+    if (g.pinch && T.length >= 2) { const [a, b] = [pt(T, 0), pt(T, 1)], d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      zoomAt(g.m[0], g.m[1], g.s0 * d / g.d0, g.s0, g.tx0 + (m[0] - g.m[0]), g.ty0 + (m[1] - g.m[1])); apply(false); return; }
+    if (g.pinch) return;
+    const dx = T[0].clientX - g.x0, dy = T[0].clientY - g.y0;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
+    if (sc > 1) { tx = g.tx0 + dx; ty = g.ty0 + dy; clampXY(); apply(false); }   // 확대한 채 끌어 보기
+    else if (all.length > 1 && Math.abs(dx) > 10) { tx = dx; apply(false); }
+  }, { passive: true });
   bg.addEventListener('touchend', e => {
-    if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (!g) return;
+    if (e.touches.length) { if (g.pinch && e.touches.length === 1) g = { x0: e.touches[0].clientX, y0: e.touches[0].clientY, tx0: tx, ty0: ty, after: 1 }; return; }
+    const was = g; g = null;
+    if (was.pinch || was.after || sc > 1) { if (sc > 1) apply(false); else { tx = ty = 0; apply(true); } return; }
+    const dx = e.changedTouches[0].clientX - was.x0, dy = e.changedTouches[0].clientY - was.y0;
     if (all.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { moved = true; show(i + (dx < 0 ? 1 : -1)); }
-    else img.style.transform = '';
+    else { tx = 0; apply(true); }
   });
+  addEventListener('resize', () => { if (sc > 1) { clampXY(); apply(false); } });
   show(i);
   document.body.append(bg);
 }
@@ -2427,9 +2458,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '공유 카드 맨 위 큰 사진이 이제 다 보여요: 사진 칸을 크게 하고 제목은 사진 아래쪽에 얹었어요 · 그만큼 카드가 조금 길어졌어요';
+const UI_NOTES = '사진 크게 보기에서 확대가 돼요: 두 번 누르거나 두 손가락으로 벌리면 크게, 확대한 채 끌어서 보기 · 링크로 보내는 사진을 더 선명하게(1080px) 올려요 · 공유 카드 맨 위 큰 사진이 다 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2478,7 +2509,7 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
       k = await codeKey(code, x, salt); hash = '#x=' + x;
     }
     if (recs.length) {
-      // 사진은 최대 12장, 고르게 골라서 800px로 줄여 잠가 올려요
+      // 사진은 최대 12장, 고르게 골라서 1080px로 줄여 잠가 올려요
       const step = Math.max(1, recs.length / SHARE_PHOTOS), pick = [];
       for (let i = 0; i < recs.length && pick.length < SHARE_PHOTOS; i += step) pick.push(recs[Math.floor(i)]);
       toast(`사진 ${pick.length}장을 잠가서 올리는 중이에요…`);
@@ -2487,7 +2518,8 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
       for (const r of pick) {
         if (prog) prog(n + 1, pick.length);
         try {
-          const small = await shrinkImage(r.blob, 800, 'blob', 0.72);
+          let small = await shrinkImage(r.blob, 1080, 'blob', 0.78);   // 2026-11-07 받은 사람이 확대해 보게 800 → 1080px (너무 크면 예전 800px)
+          if (small.size > 420000) small = await shrinkImage(r.blob, 800, 'blob', 0.72);
           // 비밀코드를 걸면 사진 위치·시각도 잠가요
           const meta = Object.assign({ lat: r.lat, lng: r.lng, ts: r.ts }, r.m ? { m: r.m } : {});
           await pub(`allhere/v1/share/${id}/p/${n}`, o.secret
