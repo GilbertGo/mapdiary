@@ -1093,8 +1093,8 @@ function savePhotoBlob(blob, name) {
 // 2026-11-07 사용자 '공유받은 사람이 사진 저장할 수 있게': 카톡 안에선 저장이 막혀서 같은 화면을 기본 브라우저로 열고(&sv=1 → 저장 단추를 바로 보여 줌),
 //   아이폰은 '사진 저장'이 되는 공유 창(navigator.share files)으로, 그 밖엔 다운로드 폴더(갤러리 '다운로드' 앨범)로
 async function savePhotos(list, base) {
-  if (IN_KAKAO) {
-    if (!confirm('카카오톡 안에서는 사진을 저장할 수 없어요.\n크롬(사파리) 같은 기본 브라우저로 이 화면을 열까요? 열리면 \'⬇ 사진 모두 저장\'을 눌러 주세요.')) return;
+  if (IN_KAKAO) {   // 묻지 않고 바로 기본 브라우저로 → 거기서 저절로 저장(&sv=1) (2026-11-07 '귀찮게 하는 거 하지 마')
+    toast('기본 브라우저로 열어서 저장할게요…');
     const u = new URL(location.href); u.searchParams.set('sv', '1'); location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(u.href); return;
   }
   const ps = list.filter(r => r && r.blob);
@@ -1118,7 +1118,7 @@ async function savePhotos(list, base) {
   if (!again) {
     savePhotos.last = { key, at: Date.now() };
     ps.forEach((r, k) => savePhotoBlob(r.blob, name(k)));
-    return toast(`${ps.length}개를 저장해요 · '여러 파일 다운로드' 묻는 창이 뜨면 '허용'을 눌러 주세요 · 몇 장 빠졌으면 단추를 한 번 더 눌러요`);
+    return toast(`${ps.length}개를 저장했어요 · ${where}`);
   }
   savePhotos.last = null;
   // 한 장씩 받는 창: 큰 '⬇ 다음 사진 저장 (2/5)' + 사진마다 눌러서 저장, 저장한 건 ✓
@@ -2534,9 +2534,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '사진 모두 저장: 한 번 누르면 다 저장돼요 · 휴대폰이 여러 파일 다운로드를 물으면 허용만 눌러 주세요 · 받은 사람도 사진 저장, 카카오톡 안이면 기본 브라우저로 열려요';
+const UI_NOTES = '사진 저장을 더 간단하게: 한 번 누르면 다 저장 · 카카오톡 안이면 묻지 않고 기본 브라우저로 넘어가서 저절로 저장돼요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2917,8 +2917,8 @@ function viewBragLink(given, feed) {
     phN.textContent = hasKey && feed.recs.length >= o.ph ? `${feed.recs.length}장 · 누르면 크게` : '';
     svAll.style.display = feed.recs.length ? '' : 'none';
     svAll.textContent = IN_KAKAO ? `⬇ 사진 ${feed.recs.length}장 저장하기 (브라우저로 열려요)` : `⬇ 사진 ${feed.recs.length}장 모두 휴대폰에 저장`;
-    if (qs.get('sv') === '1' && !IN_KAKAO && feed.recs.length >= o.ph && !svAll.dataset.hl) {   // 카톡에서 저장하러 넘어왔으면 단추를 바로 보여 줘요
-      svAll.dataset.hl = '1'; svAll.className = 'btn primary full'; setTimeout(() => svAll.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400); toast('⬇ 단추를 누르면 사진이 저장돼요'); }
+    if (qs.get('sv') === '1' && !IN_KAKAO && feed.recs.length >= o.ph && !svAll.dataset.hl) {   // 카톡에서 저장하러 넘어왔으면 다 불러오는 대로 저절로 저장
+      svAll.dataset.hl = '1'; svAll.className = 'btn primary full'; setTimeout(() => { svAll.scrollIntoView({ block: 'center', behavior: 'smooth' }); savePhotos(feed.recs, o.name); }, 300); }
     if (phLayer) { phLayer.clearLayers(); photoMarkers(null, phLayer, feed.recs); }
   };
   if (feed) feed.on.push(refreshPh);
