@@ -2047,7 +2047,7 @@ async function mapTiles(g, R, px, py, pw, ph) {
   return { P: R.map(proj), proj };
 }
 async function drawBragCard(o) {
-  const W = 1080, H = 1350, F = "'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif";
+  const W = 1080, F = "'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif"; let H = 1350;
   try { await Promise.all([document.fonts.load(`700 60px ${F}`), document.fonts.load(`500 30px ${F}`)]); } catch {}
   const [hills, contour] = await Promise.all([cssImg(getComputedStyle(document.body).backgroundImage),
     cssImg(getComputedStyle(document.documentElement).getPropertyValue('--contour'))]);
@@ -2073,6 +2073,9 @@ async function drawBragCard(o) {
   font(700, 76); const tl = wrap(o.name, W - 144, 2);
   const yDate = 330 + (tl.length - 1) * 92 + 64, yEnd = yDate + (o.note ? 56 : 0), topH = Math.max(yEnd + 48, 520) - 28;
   let cov = null; if (o.cover && o.cover.blob) try { cov = await createImageBitmap(o.cover.blob); } catch {}
+  // 맨 위 큰 사진을 다 보이게 (2026-11-07 사용자 '맨 위 큰 사진이 반도 안 보여'): 사진 칸 860px, 제목은 사진 아래쪽에 얹고, 그만큼 카드를 길게
+  const COVH = cov ? 860 : 0, tsh = cov ? Math.max(0, COVH - 120 - yEnd) : 0;
+  if (cov) { H = 1350 + COVH + 20 - 520; cv.height = H; g.fillStyle = '#F4F0E6'; g.fillRect(0, 0, W, H); }
   // 사진 카드 색(2026-10-19 사용자 '아래는 흐려지며 바탕색으로, 바탕색도 어울리게'): 사진 아래쪽 평균 색에서 뽑은 바탕
   const P = { bg: '#F4F0E6', ink: INK, muted: MUTED, chip: '#EFE9DC', foot: '#9A9585' };
   if (cov) {
@@ -2089,15 +2092,15 @@ async function drawBragCard(o) {
       const d = sg.getImageData(0, 0, 24, 8).data; let r = 0, gg = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; } const n = d.length / 4; r /= n; gg /= n; b /= n;
       const mix = (k, t) => '#' + [r, gg, b].map(v => Math.round(v + (t - v) * k).toString(16).padStart(2, '0')).join('');
       Object.assign(P, { bg: mix(.86, 255), chip: mix(.72, 255), ink: mix(.82, 0), muted: mix(.5, 40), foot: mix(.45, 150) }); }
-    const fadeTo = topH + 210, sc = Math.max(W / cov.width, fadeTo / cov.height), dw = cov.width * sc, dh = cov.height * sc;
+    const fadeTo = COVH + 40, sc = Math.max(W / cov.width, fadeTo / cov.height), dw = cov.width * sc, dh = cov.height * sc;
     g.fillStyle = P.bg; g.fillRect(0, 0, W, H);
-    g.save(); g.beginPath(); g.rect(0, 0, W, fadeTo); g.clip(); g.drawImage(cov, (W - dw) / 2, (topH - dh) * 0.5, dw, dh); g.restore();
-    const sh = g.createLinearGradient(0, 0, 0, fadeTo), k = topH / fadeTo;   // 위·글자 둘레만 살짝 어둡게, 아래로 갈수록 0 (경계 줄이 안 생기게)
-    sh.addColorStop(0, 'rgba(0,0,0,.36)'); sh.addColorStop(k * .35, 'rgba(0,0,0,.06)'); sh.addColorStop(k * .72, 'rgba(0,0,0,.28)'); sh.addColorStop(k * .95, 'rgba(0,0,0,.08)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+    g.save(); g.beginPath(); g.rect(0, 0, W, fadeTo); g.clip(); g.drawImage(cov, (W - dw) / 2, (fadeTo - dh) * 0.4, dw, dh); g.restore();
+    const tTop = (330 + tsh - 80) / fadeTo, sh = g.createLinearGradient(0, 0, 0, fadeTo);   // 맨 위 로고 둘레와 아래 제목 둘레만 어둡게, 가운데(얼굴)는 그대로
+    sh.addColorStop(0, 'rgba(0,0,0,.36)'); sh.addColorStop(.17, 'rgba(0,0,0,0)'); sh.addColorStop(Math.max(.2, tTop - .14), 'rgba(0,0,0,0)'); sh.addColorStop(Math.min(.9, tTop + .06), 'rgba(0,0,0,.42)'); sh.addColorStop(1, 'rgba(0,0,0,.3)');
     g.fillStyle = sh; g.fillRect(0, 0, W, fadeTo);
-    const n2 = parseInt(P.bg.slice(1), 16), rgb = `${n2 >> 16},${n2 >> 8 & 255},${n2 & 255}`, fd = g.createLinearGradient(0, topH - 150, 0, fadeTo);
-    fd.addColorStop(0, `rgba(${rgb},0)`); fd.addColorStop(.55, `rgba(${rgb},.75)`); fd.addColorStop(1, `rgba(${rgb},1)`);
-    g.fillStyle = fd; g.fillRect(0, topH - 150, W, fadeTo - topH + 151);
+    const n2 = parseInt(P.bg.slice(1), 16), rgb = `${n2 >> 16},${n2 >> 8 & 255},${n2 & 255}`, fd = g.createLinearGradient(0, COVH - 90, 0, fadeTo);   // 아래는 바탕색으로 녹아듦
+    fd.addColorStop(0, `rgba(${rgb},0)`); fd.addColorStop(.6, `rgba(${rgb},.8)`); fd.addColorStop(1, `rgba(${rgb},1)`);
+    g.fillStyle = fd; g.fillRect(0, COVH - 90, W, fadeTo - COVH + 91);
   } else if (hills) g.drawImage(hills, 0, 0, W, W * 320 / 600);
   const onPh = !!cov, shadow = on => { g.shadowColor = on && onPh ? 'rgba(0,0,0,.45)' : 'transparent'; g.shadowBlur = on && onPh ? 14 : 0; };
   // 로고: 앱 아이콘 그림(동네 지도 위 MPD 길)을 둥근 네모로 (못 불러오면 초록 네모만)
@@ -2107,8 +2110,8 @@ async function drawBragCard(o) {
   // 제목, 날짜
   g.textBaseline = 'alphabetic';
   font(700, 76); g.fillStyle = onPh ? '#FFFFFF' : INK;
-  tl.forEach((s, i) => g.fillText(s, 72, 330 + i * 92));
-  let y = yDate;
+  tl.forEach((s, i) => g.fillText(s, 72, 330 + tsh + i * 92));
+  let y = yDate + tsh;
   font(500, 36); g.fillStyle = onPh ? 'rgba(255,255,255,.92)' : MUTED; g.fillText(o.dateText, 72, y);
   if (o.modeLabel) {   // 날짜 옆: · [모드 아이콘] 모드 이름
     let mx = 72 + g.measureText(o.dateText + '  ·  ').width;
@@ -2129,10 +2132,10 @@ async function drawBragCard(o) {
     const m = x.match(/^(\D*?)\s*(\d.*)$/); return m ? { k: m[1] || '걸린 시간', v: m[2] } : { k: '', v: x }; });
   const nT = tiles.length, cols = nT === 4 ? 2 : Math.min(3, nT), rows = cols ? Math.ceil(nT / cols) : 0;
   const realPlace = s => s && !/^(출발|도착)( 지점| 집결지)?$|^도착지$|^지금 여기$|^마지막 위치$/.test(s), plOn = realPlace(o.startPlace) || realPlace(o.endPlace);
-  const timeH = plOn ? 116 : 92, cellH = 112, panelH = 24 + timeH + rows * cellH + (rows ? 24 : 0), T = 1300 - panelH;
+  const timeH = plOn ? 116 : 92, cellH = 112, panelH = 24 + timeH + rows * cellH + (rows ? 24 : 0), T = H - 50 - panelH;
   const gh = gOn ? 70 + GF.p.length * 46 : 0, gy = T - 18 - gh;
   const sh = gOn ? 120 : 140, sy = gOn ? gy - 18 - sh : T - 20 - sh;
-  const px = 72, py = Math.max(y + 48, 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : T - 20) - py);
+  const px = 72, py = Math.max(y + 48, cov ? COVH + 20 : 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : T - 20) - py);
   rr(px, py, pw, ph, 48); g.fillStyle = PINE; g.fill();
   g.save(); rr(px, py, pw, ph, 48); g.clip();
   if (contour) for (let cx = px - 60; cx < px + pw; cx += 260) for (let cy = py - 40; cy < py + ph; cy += 220) g.drawImage(contour, cx, cy, 260, 220);
@@ -2276,7 +2279,7 @@ async function drawBragCard(o) {
     });
     g.textAlign = 'left';
   }
-  font(500, 22); g.fillStyle = P.foot; g.textAlign = 'center'; g.fillText('Map Photo Diary', W / 2, 1334); g.textAlign = 'left';
+  font(500, 22); g.fillStyle = P.foot; g.textAlign = 'center'; g.fillText('Map Photo Diary', W / 2, H - 16); g.textAlign = 'left';
   return cv;
 }
 // info: 나들이 계획, t: 나들이 ID, count: 참여 인원, allDone: 모두 도착했는지
@@ -2284,7 +2287,7 @@ function openBrag(info, t, count, allDone, room) {
   const plan = hasRoute(info) ? info.route : null;
   const mine = trackLoad(t).length > 1 ? trackLoad(t).map(q => [q[0], q[1]]) : null;
   let which = mine && isGo(info) ? 'mine' : plan ? 'plan' : mine ? 'mine' : 'none', showCount = true;
-  const img = el('img', { alt: 'Map Photo Diary 카드 미리보기', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
+  const img = el('img', { alt: 'Map Photo Diary 카드 미리보기', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:auto 4/5' });
   const opts = el('div', { class: 'mapbar' });
   const cnt = el('input', { type: 'checkbox', id: 'bg-c', checked: true, onchange: () => { showCount = cnt.checked; draw(); } });
   // 이동 중 찍은 사진 (있으면 카드에 3장, 큰 지도에는 전부)
@@ -2424,9 +2427,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.10.30-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '기록 보기를 애플 피트니스처럼 검은 고급 화면으로 바꿨어요: 어두운 지도, 밝은 색 숫자 · 심박 그래프는 높이에 따라 색이 바뀌는 막대로 · 장소, 큰 제목, 날짜, 날씨 칸 순서로 정리했어요';
+const UI_NOTES = '공유 카드 맨 위 큰 사진이 이제 다 보여요: 사진 칸을 크게 하고 제목은 사진 아래쪽에 얹었어요 · 그만큼 카드가 조금 길어졌어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2787,7 +2790,7 @@ function viewBragLink(given, feed) {
     note: s(o.note, 1000), golf: golfClean(o.golf), hid: o.hid === 1 };
   if (o.modes && (!o.route || o.modes.length !== o.route.length)) o.modes = null;
   const R = Array.isArray(o.route) ? o.route.filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])) : [];
-  const img = el('img', { alt: 'Map Photo Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:4/5' });
+  const img = el('img', { alt: 'Map Photo Diary 카드', style: 'width:100%;border-radius:16px;display:block;box-shadow:var(--shadow);background:#EFE9DC;aspect-ratio:auto 4/5' });
   const card = bragView(img, () => o), showCard = qs.get('c') === '1';
   // 링크로 온 사진: 모아 보기 + 지도에 동그라미
   let phLayer = null;
