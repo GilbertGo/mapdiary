@@ -110,6 +110,14 @@
 - **Spark 무료 한도**(2026-10-21 확인): 저장 1GiB · 읽기 하루 5만 · 쓰기 하루 2만 · 지우기 하루 2만 · 내려받기 월 10GiB. 사진 한 장 약 0.5~0.7MB(본 사진+썸네일) → 모든 앨범 합쳐 사진 1,500장 안팎이 한계. 목록은 썸네일만, 본 사진은 크게 볼 때만 읽음(`famPhoto.cache`)
 - 아직: 실제 휴대폰 두 대로 확인(규칙 붙여 넣은 뒤), 열쇠 없는 가족이 댓글 달아도 바로 글귀(Blaze+Cloud Function 필요, 안 함), 회사 팀 앨범(슬랙, 나중)
 
+## 🧪 실험실 · AI 추억 발견 (2026-11-07 Phase 1 MVP, 개발 가지 `lab/memory-p1`, 아직 배포 안 함)
+- 사용자가 ChatGPT와 만든 지시서('MPD AI 추억 발견 실험실 Phase 1') → '둘 다 해(개발 + AI 다듬기). 대신 AI 쓸 때마다 알려줘'. 들어가는 곳: ⚙ 설정 '실험실 · 🧪 AI 추억 발견' → `?lab=mem`(`viewLab`, 라우팅에서 setTimeout). 코드는 index.html 안 한 덩어리(`labDb`…`labPersonEdit`, 모두 function), 기존 함수는 읽기만(`famExif`·`photoPlace`·`pastTrips`·`trackLoad`·`kakaoOK`·`savePhotoBlob`·`TALK_SDK`·`FA_MODEL`)
+- 흐름(`S.step`): home(사진 고르기 20~50장, 소중한 사람, 내가 만든 추억, AI 사용 기록) → link(사진마다 기록/같은 날/기록 없음 딱지, 찍은 시각·위치 몇 장) → cands(최대 3개 `labCands`: 같은 기록(앞뒤 30분 `labMatch` 확실) 또는 같은 날로 묶고 점수, **✔ 확인된 사실 `labFacts`(날짜·활동·시간·거리·장소·날씨·사진 수·함께한 사람·내가 적은 말·n년 전 이맘때)과 ~ 추측을 나눠 보임**, 기록 없는 날은 '이날을 한 줄로'·사람 고르기) → card(`labCard` 1080×1350 캔버스: 사진 1~3장·글·날짜/활동/장소 켜고 끄기, 기본 글 `labMsg`는 사실로만) → share(보내기 전 확인, 직접 눌러야: 카카오톡(Kakao 그림 올리기 + feed, 링크는 앱 주소) / 다른 앱(공유 창 그림+글) / 그림 저장) → idea(새로운 경험 한 가지 `labIdea`: 해 질 녘·이른 아침·새 길·n년 만의 같은 자리 사진·같이 사진 보기, 까닭과 함께, 본 건 `labIdeaSeen`으로 반복 안 함)
+- 사진: 고른 것만(앨범 전체 안 봄). `famExif`로 찍은 시각·GPS, 안드로이드 사진 고르기가 GPS를 지우면 찍은 시각으로 MPD 기록을 찾아 `photoPlace`로 위치(`locSrc` exif/mpd). 찍은 시각 없이 파일 날짜뿐인 사진만의 묶음은 후보에서 뺌. 사본은 새 IndexedDB `mpdLab`(ph·card, 기존 `baldojang`은 안 건드림), '고른 사진 지우기'
+- 사람: `labPeople`=[{id,nick,rel(배우자·가족·친구·동료·그 밖)}] 별명·관계를 직접, `labLinks`={기록ID|'d:날짜': [id]}, 지우면 연결도 풀림. 얼굴로 알아보지 않음. 받침에 맞춰 '여보와 함께'(`labWa`)
+- **AI(누를 때만)**: '✨ AI로 글 다듬기'·'✨ AI에게 다른 생각 물어보기' → `labAi`: 처음 한 번 동의 창(보낼 사실 글 미리 보기, 사진·좌표 안 보냄, 사용료) `labAiOk`, **쓸 때마다 알림 두 번('✨ AI를 써요 · 종류' → '✨ AI 사용 끝 · 입력·출력 토큰')**, `labAiLog`=[{at,kind,inT,outT}] 실험실 첫 화면 'AI 사용 기록 · 이번 달 n번'. 모델 `FA_MODEL`(haiku), 사용자 열쇠 `claudeKey`. 프롬프트: 확인된 사실만, 지어내지 말 것, JSON {text, used}. 답의 숫자가 사실에 없으면 '⚠ 사실에 없는 숫자' 표시
+- 저장: `labMem`=[{id,at,key,title,msg,ph,facts,shared,idea}], `labNote:{key}`. 시험 scratchpad `t/lab_t.js`(23개, 가짜 EXIF 사진 `t/labimg`·가짜 Anthropic SDK)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
