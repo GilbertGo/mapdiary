@@ -142,7 +142,7 @@ class MainActivity : ComponentActivity() {
             // 2026-10-20 휴대폰 ⚙ 설정과 같이 '화면' 묶음: 바탕 사진은 휴대폰에서 골라 보내요(시계엔 사진첩이 없어서)
             "화면" to listOf(row("바탕 사진", if (Link.hasBg(this)) "휴대폰에서 고른 사진" else "기본 사진") { showBg() }),
             "오늘 ${Run.sportKo}" to listOfNotNull(
-                row("운동 종류", Run.sportKo + " · 누르면 " + (when (Run.sport) { "run" -> "걷기"; "walk" -> "등산"; else -> "러닝" }) + "으로") { setSport(when (Run.sport) { "run" -> "walk"; "walk" -> "hike"; else -> "run" }) },
+                row("운동 종류", Run.sportKo + " · 누르면 " + (when (Run.sport) { "run" -> "걷기"; "walk" -> "등산"; "hike" -> "자전거"; else -> "러닝" }) + "으로") { setSport(when (Run.sport) { "run" -> "walk"; "walk" -> "hike"; "hike" -> "bike"; else -> "run" }) },
                 row("목표", g.label()) { showGoal() }, tgt,
                 if (Run.hike && !Run.walkS) null else row(if (Run.walkS) "걷기 박자" else "케이던스 가이드", if (Cadence.kind == Cadence.OFF) "끔" else "${Cadence.label()} · ${Cadence.spm}") { showGuide() },
                 row("목소리 코치", if (Run.voice) "켬" else "끔") { Run.voice = !Run.voice; Store.setVoice(this, Run.voice); showStart() }),
@@ -400,7 +400,7 @@ class MainActivity : ComponentActivity() {
     private fun begin() {
         val c = Calendar.getInstance()
         val sp = Store.sport(this)
-        Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 " + (when (sp) { "hike" -> "등산"; "walk" -> "걷기"; else -> "러닝" }), sp)
+        Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 " + (when (sp) { "hike" -> "등산"; "walk" -> "걷기"; "bike" -> "자전거"; else -> "러닝" }), sp)
         Store.dest(this)?.let { Run.chooseDest(it); Store.setDest(this, null) }   // 목표 지점은 이번 기록에만
         Store.saveCurrent(this)
         showRun()
@@ -438,7 +438,7 @@ class MainActivity : ComponentActivity() {
             LinearLayout(this).apply { orientation = LinearLayout.VERTICAL
                 background = GradientDrawable().apply { cornerRadius = 6 * u; setColor(RunView.SURF) }
                 setPadding((4 * u).toInt(), (2.5f * u).toInt(), (4 * u).toInt(), (2.5f * u).toInt())
-                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (when (o.optString("sport")) { "hike" -> "등산 "; "walk" -> "걷기 "; else -> "" }) + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 13f, RunView.MUTED))
+                addView(tv("${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.DAY_OF_MONTH)} " + (when (o.optString("sport")) { "hike" -> "등산 "; "walk" -> "걷기 "; "bike" -> "자전거 "; else -> "" }) + (if (o.optBoolean("goalDone")) "· 목표 달성" else ""), 13f, RunView.MUTED))
                 addView(tv(summaryLine(o), 13f, Color.WHITE, true))
                 setOnClickListener { showDetail(o.optString("id"), false) } }
         }
