@@ -1104,13 +1104,33 @@ async function savePhotos(list, base) {
     const files = ps.map((r, k) => { const d = new Date(r.ts || Date.now()); return new File([r.blob], `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(k + 1)}.${photoExt(r.blob)}`, { type: r.blob.type || 'image/jpeg' }); });
     if (navigator.canShare({ files })) { try { await navigator.share({ files }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   }
-  for (let k = 0; k < ps.length; k++) {
-    const d = new Date(ps[k].ts || Date.now()), pad = n => String(n).padStart(2, '0');
-    savePhotoBlob(ps[k].blob, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${String(k + 1).padStart(2, '0')}.${photoExt(ps[k].blob)}`);
-    if (k < ps.length - 1) await new Promise(r => setTimeout(r, 450));
+  const pad = n => String(n).padStart(2, '0'), name = k => { const d = new Date(ps[k].ts || Date.now()); return `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(k + 1)}.${photoExt(ps[k].blob)}`; };
+  const what = r => isVid(r) ? '동영상' : '사진', where = "갤러리의 '다운로드' 앨범에 있어요";
+  // 안드로이드 앱은 한꺼번에 (갤러리에 바로)
+  if (window.mdNativeSave || ps.length === 1) {
+    for (let k = 0; k < ps.length; k++) { savePhotoBlob(ps[k].blob, name(k)); if (k < ps.length - 1) await new Promise(r => setTimeout(r, 300)); }
+    return toast(`${ps.length > 1 ? `${ps.length}개를` : what(ps[0]) + '을'} 저장했어요${window.mdNativeSave ? '' : ' · ' + where}`);
   }
-  const w = ps.some(isVid) ? (ps.length > 1 ? `사진·동영상 ${ps.length}개를` : ps[0].v ? '동영상을' : '사진을') : ps.length > 1 ? `사진 ${ps.length}장을` : '사진을';
-  toast(`${w} 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요`);
+  // 휴대폰 브라우저는 한 번 누를 때 한 파일만 받게 해서(두 번째부터는 '여러 파일 다운로드'로 막음, 2026-11-07 '사진 한 장만 저장됐다고 하네'),
+  // 창을 띄워 누를 때마다 한 장씩: 큰 '⬇ 다음 사진 저장 (2/5)' + 사진마다 눌러서 저장, 저장한 건 ✓
+  const done = new Set();
+  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === sb) sb.remove(); } });
+  const big = el('button', { class: 'btn primary full big' }), grid = el('div', { style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:42vh;overflow:auto' });
+  const one = k => { savePhotoBlob(ps[k].blob, name(k)); done.add(k); draw(); };
+  const draw = () => {
+    const next = ps.findIndex((_, k) => !done.has(k));
+    big.textContent = next < 0 ? `✓ ${ps.length}개 모두 저장했어요` : `⬇ 다음 ${what(ps[next])} 저장 (${next + 1}/${ps.length})`;
+    big.onclick = next < 0 ? () => sb.remove() : () => one(next);
+    grid.replaceChildren(...ps.map((r, k) => el('button', { 'aria-label': `${k + 1}번째 ${what(r)} 저장`, onclick: () => one(k),
+      style: `position:relative;aspect-ratio:1;border:none;border-radius:10px;padding:0;background:#ddd center/cover url(${r.thumb});${done.has(k) ? 'opacity:.55' : ''}` },
+      el('span', { style: `position:absolute;right:4px;bottom:4px;min-width:22px;height:22px;border-radius:11px;font:800 13px/22px sans-serif;color:#fff;background:${done.has(k) ? '#0A84FF' : 'rgba(0,0,0,.55)'}`, text: done.has(k) ? '✓' : String(k + 1) }))));
+  };
+  draw();
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진 저장' },
+    el('h2', { text: `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}개 저장` }),
+    el('p', { class: 'sub', style: 'margin:0;font-size:14px', text: `휴대폰 브라우저는 한 번에 한 장씩만 받아요. 아래 파란 단추를 누를 때마다 한 장씩 저장돼요 (사진을 눌러 골라 저장해도 돼요). ${where}.` }),
+    big, grid, el('button', { class: 'btn line full', text: '닫기', onclick: () => sb.remove() })));
+  document.body.append(sb);
 }
 function showPhoto(p, list) {
   const all = Array.isArray(list) && list.length ? list : [p];
@@ -2505,9 +2525,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '받은 사람도 사진을 저장할 수 있어요: 받은 화면 사진 아래 ⬇ 사진 모두 저장 단추 · 카카오톡 안에서 누르면 기본 브라우저로 열려서 거기서 저장돼요 · 아이폰은 사진 앱에 바로 저장 · 동영상도 기록에 넣을 수 있어요(이 휴대폰에만)';
+const UI_NOTES = '사진 모두 저장이 한 장만 되던 것을 고쳤어요: 저장 창에서 파란 단추를 누를 때마다 한 장씩 저장돼요(휴대폰 브라우저는 한 번에 한 장만 받아서) · 받은 사람도 사진 저장 · 카카오톡 안이면 기본 브라우저로 열려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
