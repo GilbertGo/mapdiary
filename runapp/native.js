@@ -38,7 +38,9 @@ if (Capacitor.isNativePlatform()) {
         requestPermissions: true, stale: false, distanceFilter: 0,
       }, (loc, e) => {
         if (e) {
-          if (e.code === 'NOT_AUTHORIZED' && confirm('위치 권한이 필요해요. 설정을 열까요?\n(위치 → "항상 허용" 또는 "앱 사용 중에만 허용")')) BG.openSettings();
+          // 묻지 않고 바로 설정을 열어요(2026-11-07 '귀찮게 하지 마'). 한 번 켜는 동안 한 번만
+          if (e.code === 'NOT_AUTHORIZED' && !window.__mdPermOpened) { window.__mdPermOpened = 1;
+            dispatchEvent(new CustomEvent('md-native-toast', { detail: '위치 권한을 켜 주세요 · 위치 → "앱 사용 중에만 허용" 또는 "항상 허용"' })); BG.openSettings(); }
           if (err) err({ code: e.code === 'NOT_AUTHORIZED' ? 1 : 2, message: e.message || String(e) });
           return;
         }
