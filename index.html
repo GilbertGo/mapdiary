@@ -2602,9 +2602,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-16';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '시계와 MPD Run에서 받은 기록이 다 저장됐는지 다시 확인해요 · 일부를 못 받으면 ⚠ 일부 데이터 미수신으로 보이고, 저장 공간이 생기면 저절로 다시 받아요 · MPD Run만 쓸 때도 운동 뒤 심박 회복이 늦게 와도 들어가요 · 지운 시계 기록은 시계가 다시 보내도 되살아나지 않아요';
+const UI_NOTES = '시계와 MPD Run에서 받은 기록이 다 저장됐는지 다시 확인해요 · 일부를 못 받으면 ⚠ 일부 데이터 미수신으로 보이고, 저장 공간이 생기면 저절로 다시 받아요 · MPD Run만 쓸 때도 운동 뒤 심박 회복이 늦게 와도 들어가요 · 내 MPD에서 지운 시계 기록은 시계가 다시 보내도 되살아나지 않아요 · 예전에 지운 것으로 보이는 기록은 바로 지우지 않고 보류해 두고, 시계 카드에서 다시 가져올 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4007,6 +4007,24 @@ function goneMark(ids) {
   const sg = Object.keys(ls.get('syncGot', {}) || {}), wg = ls.get('watchGot', {}) || {};
   goneAdd(ids.filter(id => /^run_w/.test(id) || id in wg || sg.some(k => k.endsWith('/' + id))));
 }
+// recHeld = { 기록ID: { src, at } }: '예전에 받았는데 지금 길이 없음'은 지운 것 같지만 확정하지 않아요(명시적으로 지운 이력이 없으니까).
+// 가져오지 않고 보류만 해 두고, 시계 카드의 '다시 가져오기'로 언제든 되돌릴 수 있어요. recGone(확정)은 내 MPD에서 직접 지운 것만
+// 이 기록의 칸이 하나라도 남아 있는지: 내 MPD에서 지우면 모든 칸이 지워져요. 길만 없고 다른 칸이 있으면 지운 게 아니라 덜 받은 것(GPS 없는 기록·길 저장 실패·예전 형식)
+function recAny(id) { return MD_KEYS.some(k => localStorage.getItem(k + id) != null); }
+function heldAll() { const h = ls.get('recHeld', {}); return h && typeof h === 'object' && !Array.isArray(h) ? h : {}; }
+function heldAdd(id, src) { const h = heldAll(); if (!h[id]) { h[id] = { src, at: Date.now() }; ls.set('recHeld', h); } }
+async function heldRestore() {   // 보류한 기록을 다시 가져와요: 받음 표시를 지우면 다음 받기에서 새 기록처럼 들어와요
+  const h = heldAll(), ids = Object.keys(h).filter(id => !isGone(id)); if (!ids.length) return 0;
+  const wg = ls.get('watchGot', {}) || {}, sg = ls.get('syncGot', {}) || {}, sc = ls.get('syncChk', {}) || {};
+  for (const id of ids) { delete wg[id]; for (const k of Object.keys(sg)) if (k.endsWith('/' + id)) { delete sg[k]; delete sc[k]; } }
+  ls.set('watchGot', wg); ls.set('syncGot', sg); ls.set('syncChk', sc); ls.set('recHeld', {});
+  const n = (await watchPull()) + 0; if (window.mdNativeSync) await syncPull(); return n || ids.length;
+}
+function heldNote(redraw) {
+  const ids = Object.keys(heldAll()).filter(id => !isGone(id) && !recAny(id)); if (!ids.length) return null;
+  return el('div', { class: 'sub', style: 'font-size:13px' }, `예전에 지운 것으로 보이는 받은 기록 ${ids.length}개는 다시 가져오지 않았어요 · `,
+    el('button', { class: 'link', style: 'padding:0', text: '다시 가져오기', onclick: async e => { e.target.disabled = true; await heldRestore(); toast('보류한 기록을 다시 가져왔어요'); redraw && redraw(); } }));
+}
 const jsonOr = (v, d) => { try { return v == null ? d : JSON.parse(v); } catch { return d; } };
 // 휴대폰에서 고친 길(앞뒤 자르기 trackOrig·대회 기록 walkOfficial)은 받은 것으로 바꾸지 않아요
 const trEdited = id => localStorage.getItem('trackOrig:' + id) != null || localStorage.getItem('walkOfficial:' + id) != null;
@@ -4068,8 +4086,9 @@ async function watchPull() {
   for (const r of rows) {
     // 받음 표시 = 글 길이 + 지문(예전엔 길이만이라 같은 길이로 바뀐 판을 못 알아봤어요). 예전 표시와 다르니 처음 한 번은 모두 다시 열어 빈 칸을 채워요
     const sig = r.d.length + ':' + hash32(r.d); if (got[r.id] === sig) continue;
-    // 지운 기록: recGone에 있거나, 예전에 받았는데(받음 표시는 다 저장했을 때만 해요) 지금 길이 없으면 내가 지운 것
-    if (isGone(r.id) || (r.id in got && localStorage.getItem('track:' + r.id) == null && !rxMiss(r.id))) { goneAdd([r.id]); got[r.id] = sig; ls.set('watchGot', got); continue; }
+    // 지운 기록: recGone(직접 지움)은 건너뛰고, 예전에 받았는데 지금 길이 없으면 '보류'(확정하지 않음)
+    if (isGone(r.id)) { got[r.id] = sig; ls.set('watchGot', got); continue; }   // 내 MPD에서 직접 지운 기록
+    if (r.id in got && !recAny(r.id) && !rxMiss(r.id)) { heldAdd(r.id, 'watch'); continue; }   // 지운 것 같지만 확정하지 않고 보류(받음 표시도 그대로)
     try {
       const v = JSON.parse(r.d); let buf = await openBytes(v.enc, R.key);
       if (v.z) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
@@ -4102,17 +4121,18 @@ function watchCard(redraw) {
     return box.append(el('b', { text: '⌚ 시계 기록은 저절로 와요' }),
       el('div', { class: 'sub', text: "갤럭시워치 MPD Run으로 달리고 끝내면, 이 휴대폰(시계와 짝지은 휴대폰)이 블루투스로 받아 내 MPD에 넣어요. 연결 코드는 필요 없어요." }),
       el('div', { style: 'color:var(--pine);font-weight:700;font-size:15px', text: W ? `✅ 지금까지 시계 기록 ${W.n}개를 받았어요 · 마지막 ${new Date(W.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : '아직 받은 시계 기록이 없어요' }),
-      ...[rxNote()].filter(Boolean),
+      ...[rxNote(), heldNote(redraw)].filter(Boolean),
       el('button', { class: 'link', style: 'align-self:flex-start;padding:2px;color:var(--muted)', text: '안 오면: 연결 코드로 받기', onclick: link })), box; }
   // 2026-10-20 사용자 '코드 넣기를 안 했네, 코드 넣으라는 안내 띄워': 연결 전이면 내 MPD 맨 위에 눈에 띄게(산호 테), '시계 없어요'로 숨김(watchAskHide)
   if (!c) { box.style.border = '2px solid var(--accent)';
     return box.append(el('b', { text: '⌚ 시계 기록을 받으려면 연결 코드를 넣어 주세요' }),
     el('div', { class: 'sub', text: "갤럭시워치 MPD Run에서 첫 화면을 위로 밀어 '휴대폰으로 보내기' → '예전 방식(연결 코드)' → 켜기를 누르면 코드(예: 빠른나무)가 나와요. 그 코드를 한 번만 적으면 그 뒤로는 저절로 받아요." }),
     el('button', { class: 'btn primary full', text: '⌚ 연결 코드 넣기', onclick: link }),
+    ...[heldNote(redraw)].filter(Boolean),
     ls.get('watchAskHide', false) ? null : el('button', { class: 'link', style: 'align-self:center;padding:2px;color:var(--muted)', text: '시계가 없어요 · 이 안내 숨기기', onclick: () => { ls.set('watchAskHide', true); redraw(); } })), box; }
   box.append(el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { text: '⌚ 시계 연결됨' }), el('span', { class: 'sub', text: '코드 ' + c.pretty })),
     el('div', { class: 'sub', text: '시계가 기록을 끝내면 인터넷이 될 때 올리고, 내 MPD를 열 때 저절로 받아요.' }),
-    ...[rxNote()].filter(Boolean),
+    ...[rxNote(), heldNote(redraw)].filter(Boolean),
     el('div', { class: 'two' },
       el('button', { class: 'btn line', text: '지금 받기', onclick: async e => { e.target.disabled = true; const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '새 시계 기록이 없어요'); if (n) redraw(); else e.target.disabled = false; } }),
       el('button', { class: 'btn line', text: '연결 끊기', onclick: () => { if (confirm('시계 연결을 끊을까요? 받은 기록은 그대로 남아요.')) { ls.set('watchLink', null); redraw(); } } })));
@@ -5039,8 +5059,9 @@ async function syncPull() {
       if (same && chk[key] === it.mtime && !rx) continue;
       if (rx && rx.sig === it.mtime && Date.now() - rx.at < 10 * 60000) continue;   // 못 받은 기록은 같은 파일이면 10분에 한 번만 다시
       const exists = localStorage.getItem('track:' + it.id) != null;
-      // 지운 기록: recGone에 있거나, 예전에 받았는데 지금 없으면(받음 표시는 저장한 뒤에만 해요) 다시 가져오지 않아요
-      if (!exists && (isGone(it.id) || (key in got && !rx))) { if (key in got) goneAdd([it.id]); got[key] = it.mtime; chk[key] = it.mtime; ls.set('syncGot', got); ls.set('syncChk', chk); continue; }
+      // 지운 기록: recGone(직접 지움)은 건너뛰고, 예전에 받았는데 지금 없으면 '보류'(가져오지 않지만 확정하지 않음, 다시 가져오기 가능)
+      if (!exists && isGone(it.id)) { got[key] = it.mtime; chk[key] = it.mtime; ls.set('syncGot', got); ls.set('syncChk', chk); continue; }
+      if (!exists && key in got && !rx && !recAny(it.id)) { heldAdd(it.id, it.app); continue; }   // 예전부터 하던 대로 다시 가져오지 않지만, 확정(recGone)하지 않고 보류
       let d; try { d = JSON.parse(await S.read(it.app, it.id)); } catch { continue; }
       if (!d || d.app !== 'mapdiary' || !d.ls || typeof d.ls !== 'object') { got[key] = it.mtime; chk[key] = it.mtime; continue; }
       // 합치는 법: 파일이 바뀌었으면 예전처럼(MPD는 덮어쓰기, MPD Run 혼자면 시계 기록 합치기), 같은 파일을 새로 확인만 할 땐 빈 칸만 채우기
