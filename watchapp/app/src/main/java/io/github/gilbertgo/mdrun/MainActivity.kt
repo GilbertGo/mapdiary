@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
         val hv = HomeView(this, HomeView.Act({ showSetup() }, { showGoal() }, if (u0 != null) install else null, { showGuide() }, setSport)).apply {
             sport = Run.sport
             guideOn = Cadence.kind != Cadence.OFF; guideTxt = if (guideOn) "♩ ${Cadence.spm}" else "♩ 끔"
-            week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc }
+            week = weekSum(); goal = g; updName = u0?.name ?: ""; gpsAcc = Run.lastAcc; destName = Store.dest(this@MainActivity)?.n ?: "" }
         gpsText = null
         val tgt = when (g.k) { "dist" -> row("완주 목표 시간", if (g.t > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
             "time" -> row("목표 거리", if (g.d > 0) g.tgtLabel() else "정하지 않음") { showTarget() }
@@ -168,6 +168,7 @@ class MainActivity : ComponentActivity() {
         Wear.pushAll(this)   // 휴대폰으로 저절로(블루투스): 못 보낸 기록이 있으면 보내요
         Link.pushAll(this)   // 예전 연결 코드 방식(켜 둔 경우만)
         Link.pullBg(this) { home?.reloadPhoto() }   // 휴대폰에서 바탕 사진을 바꿨으면 받아요
+        Link.pullDest(this) { if (Run.id == null) showStart() }   // 휴대폰에서 고른 목표 지점
     }
     private fun startGpsPreview() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { gpsText?.text = "위치 권한을 허용해 주세요"; return }
@@ -400,6 +401,7 @@ class MainActivity : ComponentActivity() {
         val c = Calendar.getInstance()
         val sp = Store.sport(this)
         Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 " + (when (sp) { "hike" -> "등산"; "walk" -> "걷기"; else -> "러닝" }), sp)
+        Store.dest(this)?.let { Run.chooseDest(it); Store.setDest(this, null) }   // 목표 지점은 이번 기록에만
         Store.saveCurrent(this)
         showRun()
         h.postDelayed({ Run.say(Run.startLine()) }, 1200)   // 목표 말하기는 시작한 뒤에

@@ -29,6 +29,9 @@ object Store {
     fun setZ2Alert(c: Context, on: Boolean) = prefs(c).edit().putBoolean("z2Alert", on).apply()
     fun cadKind(c: Context) = prefs(c).getInt("cadKind", 0)
     fun cadSpm(c: Context) = prefs(c).getInt("cadSpm", 180)
+    // 다음 기록의 목표 지점 (휴대폰에서 보내오거나 지도에서 고른 것, 시작하면 그 기록으로 옮기고 지워요)
+    fun dest(c: Context): Dest? = try { Dest.from(JSONObject(prefs(c).getString("dest", "{}") ?: "{}")) } catch (e: Exception) { null }
+    fun setDest(c: Context, d: Dest?) = prefs(c).edit().putString("dest", d?.toJson()?.toString() ?: "{}").apply()
     fun cadSpmWalk(c: Context) = prefs(c).getInt("cadSpmWalk", 120)   // 걷기 박자
     fun setCadSpmWalk(c: Context, v: Int) = prefs(c).edit().putInt("cadSpmWalk", v).apply()
     fun cadLast(c: Context) = prefs(c).getInt("cadLast", 1)

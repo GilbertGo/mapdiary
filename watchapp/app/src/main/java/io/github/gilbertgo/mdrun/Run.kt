@@ -85,8 +85,24 @@ object Recover {
     fun active(rid: String) = id == rid && !done
 }
 
+// 목표 지점 (2026-11-07 '시계에도 목표 지점'): 휴대폰 걷기 설정에서 고르면 시계로 오고(Link.pullDest), 달리는 중 지도를 길게 눌러도 정해요
+data class Dest(val lat: Double, val lng: Double, val n: String) {
+    fun toJson(): JSONObject = JSONObject().put("lat", lat).put("lng", lng).put("n", n)
+    companion object { fun from(o: JSONObject?): Dest? = if (o == null || !o.has("lat")) null else Dest(o.optDouble("lat"), o.optDouble("lng"), o.optString("n", "목표 지점").ifEmpty { "목표 지점" }) }
+}
+
 object Run {
     var id: String? = null
+    var dest: Dest? = null; var destHit = false; var destD0 = 0.0
+    fun destLeft(): Double? = dest?.let { d -> if (fixLat == 0.0 && fixLng == 0.0) null else dist(fixLat, fixLng, d.lat, d.lng) }
+    fun chooseDest(d: Dest?) { dest = d; destHit = false; destD0 = destLeft() ?: 0.0 }
+    private fun destCheck() {
+        val d = dest ?: return; if (destHit || id == null || manualPause) return
+        val l = destLeft() ?: return
+        if (l <= max(40.0, min(80.0, lastAcc.toDouble()))) { destHit = true; buzz(longArrayOf(0, 600, 200, 600)); say("목표 지점 ${d.n}에 도착했어요! 수고했어요.") }
+    }
+    private fun destLine(): String { val d = dest ?: return ""; val l = destLeft() ?: return ""; if (destHit || l < 200) return ""
+        return " ${d.n}까지 " + (if (l >= 1000) "${num(Math.round(l / 100) / 10.0)}킬로" else "${(l / 10).roundToInt() * 10}미터") + " 남았어요." }
     // 운동 종류 (2026-10-29 2단계 '시계 앱 등산 모드'): run 러닝 / hike 등산. 등산은 페이스 코치·케이던스 가이드·자세 화면이 없고
     //   1km 안내에 다닌 시간·오른 높이, 차로 보는 빠르기 15km/h(휴대폰 걷는 모드와 같게), 천천히 오르는 것(초속 0.3m)도 움직인 시간
     // 2026-11-07 걷기(walk) 더함: 걷기도 등산처럼 페이스 코치·자세 화면이 없고(hike가 참), 대신 1km 안내에 걸린 시간·걸음 수, 박자 가이드는 있어요(걷기 박자 120)
@@ -139,7 +155,7 @@ object Run {
 
     fun begin(now: Long, g: Goal, title: String, sp: String = "run") {
         id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike" || sp == "walk") sp else "run"
-        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false
+        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false; dest = null; destHit = false; destD0 = 0.0
         hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
@@ -150,6 +166,7 @@ object Run {
     fun addPoint(lat: Double, lng: Double, acc: Float, alt: Double?, now: Long): Boolean {
         lastAcc = acc; gpsOn = true; fixT = now; fixLat = lat; fixLng = lng; fixAlt = alt
         if (id == null || manualPause || acc > TRACK_MAX_ACC) return false
+        destCheck()
         val last = pts.lastOrNull()
         if (last != null && now < last.t) return false   // 차례가 뒤바뀌어 온 점은 버려요
         if (last != null && dist(last.lat, last.lng, lat, lng) < TRACK_MIN_M) return false
@@ -306,7 +323,7 @@ object Run {
                 hit -> " 목표 ${g.say()} 달성! 수고했어요."
                 left >= 1 -> " 목표까지 ${num(Math.round(left * 10) / 10.0)}킬로 남았어요."
                 remT >= 60000 && !goalDone -> " 목표 시간까지 ${(remT / 60000).roundToInt()}분 남았어요."
-                else -> "" })
+                else -> "" } + destLine())
             return
         }
         if (hike) {   // 등산: 다닌 시간·오른 높이 (페이스 코치는 안 해요)
@@ -413,6 +430,7 @@ object Run {
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
             .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
         if (goal.k != "free") { data.put("walkGoal:$id", goal.toJson().toString()); data.put("walkGoalDone:$id", goalDone.toString()) }
+        dest?.let { d -> data.put("walkTarget:$id", JSONObject().put("dest", d.toJson()).put("d0", destD0.roundToInt()).put("hit", JSONObject().put("dest", if (destHit) 1 else 0)).toString()) }   // 휴대폰 걷기 목표와 같은 모양
         val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("sport", sport).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
@@ -424,6 +442,7 @@ object Run {
         val i = o.getString("id"); val data = o.getJSONObject("data")
         begin(o.getLong("at"), Goal.from(o.optJSONObject("goal")), o.optString("name"), o.optString("sport", "run"))
         id = i; goalDone = o.optBoolean("goalDone"); manualPause = o.optBoolean("pause"); brk = true
+        try { val T = JSONObject(data.optString("walkTarget:$i", "{}")); dest = Dest.from(T.optJSONObject("dest")); destD0 = T.optDouble("d0", 0.0); destHit = T.optJSONObject("hit")?.optInt("dest") == 1 } catch (e: Exception) {}
         val tr = JSONArray(data.optString("track:$i", "[]"))
         for (k in 0 until tr.length()) { val q = tr.getJSONArray(k); pts.add(Pt(q.getDouble(0), q.getDouble(1), q.getLong(2), if (q.length() > 3 && !q.isNull(3)) q.getDouble(3) else null)) }
         val sp = JSONArray(data.optString("walkSplits:$i", "[]")); for (k in 0 until sp.length()) splits.add(sp.getLong(k))

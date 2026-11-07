@@ -28,6 +28,7 @@ class HomeView(c: Context, private val act: Act) : View(c) {
     var week = Week(0.0, 0, BooleanArray(7), 20)
     var gpsAcc = -1f
     var goal = Goal()
+    var destName = ""   // 휴대폰에서 받은 목표 지점
     var updName = ""
     var sport = "run"   // 러닝 / 등산 (2026-10-29 2단계): 요일 점 아래 두 칸 알약으로 바꿔요
     private var sportBox = RectF()
@@ -129,7 +130,7 @@ class HomeView(c: Context, private val act: Act) : View(c) {
         text(cv, tri, tx, gy + 2f * u, 5.6f * u, CORAL, true, align = Paint.Align.LEFT); text(cv, rest, tx + tw0, gy + 2f * u, 5.6f * u, Color.WHITE, true, align = Paint.Align.LEFT)
         // 아래 한 줄: GPS · 목표
         val ready = gpsAcc in 0f..20f
-        val gl = (if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS 준비" else "GPS ${gpsAcc.toInt()}m") + "  ·  🎯 " + goal.label() + (if (goal.tgtLabel().isNotEmpty()) " " + goal.tgtLabel() else "")
+        val gl = (if (gpsAcc < 0) "GPS 찾는 중" else if (ready) "GPS 준비" else "GPS ${gpsAcc.toInt()}m") + "  ·  🎯 " + goal.label() + (if (goal.tgtLabel().isNotEmpty()) " " + goal.tgtLabel() else "") + (if (destName.isNotEmpty()) " · 🏁 ${destName.take(8)}" else "")
         val lw = measure(gl, 3.8f * u, false); val lx = cx - lw / 2 + 1.6f * u; val ly = 82.5f * u
         cv.drawCircle(lx - 2.8f * u, ly - 1.3f * u, .9f * u, paint(if (ready) BLUE else MUTED))
         text(cv, gl, lx, ly, 3.8f * u, a(Color.WHITE, 220), false, align = Paint.Align.LEFT)
