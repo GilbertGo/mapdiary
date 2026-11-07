@@ -22,12 +22,14 @@ import kotlin.math.sin
 object Cadence {
     const val OFF = 0; const val SOUND = 1; const val VIB = 2; const val BOTH = 3
     var kind = OFF           // 0 끔 · 1 소리 · 2 진동 · 3 소리+진동
-    var spm = 180
+    var runSpm = 180; var walkSpm = 120      // 러닝 케이던스 / 걷기 박자 (2026-11-07)
+    var spm: Int get() = if (Run.walkS) walkSpm else runSpm
+        set(v) { if (Run.walkS) walkSpm = v else runSpm = v }
     var last = SOUND         // 켤 때 쓸 방식(달리는 중 '켬/끔'용)
     fun label(k: Int = kind) = when (k) { SOUND -> "소리"; VIB -> "진동"; BOTH -> "소리+진동"; else -> "끔" }
-    fun load(c: Context) { kind = Store.cadKind(c); spm = Store.cadSpm(c); last = Store.cadLast(c) }
-    fun set(c: Context, k: Int) { kind = k; if (k != OFF) last = k; Store.setCad(c, kind, spm, last) }
-    fun setSpm(c: Context, v: Int) { spm = v.coerceIn(120, 220); Store.setCad(c, kind, spm, last) }
+    fun load(c: Context) { kind = Store.cadKind(c); runSpm = Store.cadSpm(c); walkSpm = Store.cadSpmWalk(c); last = Store.cadLast(c) }
+    fun set(c: Context, k: Int) { kind = k; if (k != OFF) last = k; Store.setCad(c, kind, runSpm, last) }
+    fun setSpm(c: Context, v: Int) { spm = if (Run.walkS) v.coerceIn(80, 160) else v.coerceIn(120, 220); Store.setCad(c, kind, runSpm, last); Store.setCadSpmWalk(c, walkSpm) }
 
     @Volatile private var on = false
     private var th: Thread? = null
@@ -44,7 +46,7 @@ object Cadence {
             while (on) {
                 val now = System.currentTimeMillis()
                 // 2026-10-19 고침: GPS로 짐작한 '멈춰 있어요'(실내·GPS 약함)에는 계속 울리고, 직접 누른 '멈춤'에만 쉬어요
-                val go = kind != OFF && Run.running && !Run.manualPause && !Run.hike   // 등산엔 가이드 박자 없음
+                val go = kind != OFF && Run.running && !Run.manualPause && (!Run.hike || Run.walkS)   // 등산엔 가이드 박자 없음 (걷기는 있음)
                 if (!go) { t0 = 0; try { Thread.sleep(250) } catch (e: InterruptedException) {}; continue }
                 if (t0 == 0L || curSpm != spm) { curSpm = spm; t0 = SystemClock.elapsedRealtime() + 150; n = 0 }
                 val at = t0 + n * 60000L / curSpm; n++
