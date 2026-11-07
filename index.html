@@ -2602,9 +2602,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-17';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '자전거 첫 화면이 새로 생겼어요 (이번 주 달린 거리, 한 번에 시작) · 자전거 기록 중 큰 속도계에 지금, 평균, 최고 속도와 오르막 기울기가 보여요 · 자전거는 5km마다 평균 시속을 목소리로 알려 줘요 · 자전거도 목표 거리, 시간, 지점과 해 지기 전 알림이 돼요 · 등산, 걷기, 자전거 첫 화면 바탕은 그 운동의 최근 내 사진이에요';
+const UI_NOTES = '시계와 MPD Run에서 받은 기록이 다 저장됐는지 다시 확인해요 · 일부를 못 받으면 ⚠ 일부 데이터 미수신으로 보이고, 저장 공간이 생기면 저절로 다시 받아요 · MPD Run만 쓸 때도 운동 뒤 심박 회복이 늦게 와도 들어가요 · 내 MPD에서 지운 시계 기록은 시계가 다시 보내도 되살아나지 않아요 · 예전에 지운 것으로 보이는 기록은 바로 지우지 않고 보류해 두고, 시계 카드에서 다시 가져올 수 있어요 · 연결 코드로 받는 시계 기록이 300개가 넘어도 모두 와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3987,52 +3987,201 @@ function cloudCard() {
 // 시계가 끝낸 기록을 '휴대폰 연결 코드'(단어 4글자, 예: 빠른나무)로 잠가 rooms/{방번호}/w/{기록ID}에 올려요({enc, z:1}: 압축 뒤 잠금).
 // 휴대폰은 같은 코드로 받아 내 MPD에 넣어요(백업 파일과 같은 키 + walkHr:·walkSeries:). 자세한 분석은 내 MPD 그 기록의 '⌚ 시계 분석'
 function watchGet() { const c = ls.get('watchLink', null); return c && roomParse(c.code)?.code === c.code ? c : null; }
-async function watchPull() {
+// ---------- 받은 기록 저장 확인 (2026-11-07 보안·데이터 1-A) ----------
+// 시계(연결 코드·블루투스)·MPD Run·파크골프에서 받은 기록을 합친 뒤 '다시 읽어' 확인해요. 하나라도 못 남겼으면 '받음' 표시를 하지 않고
+// recRx = { 기록ID: { miss: ['심박 그래프', …], src, sig, at } } 에 '일부 데이터 미수신'으로 남겨, 다음에 받을 때 다시 채워요(원본은 시계·서버에 그대로)
+// recGone = { 기록ID: 지운 날(1970년부터 날 수) }: 바깥에서 온 기록을 내 MPD에서 지우면 남겨, 시계가 다시 보내도 되살아나지 않게(개수 제한 없음, 백업 파일에도 들어감)
+const RX_NAME = { 'track:': '길(GPS)', 'walkHr:': '심박 요약', 'walkSeries:': '심박 그래프' };
+function rxAll() { const v = ls.get('recRx', {}); return Object.assign({}, rxSet.mem || {}, v && typeof v === 'object' ? v : {}); }   // 저장된 것이 먼저, 못 쓴 것만 메모리에서
+function rxMiss(id) { const r = rxAll()[id]; return r && Array.isArray(r.miss) && r.miss.length ? r : null; }
+function rxSet(id, miss, src, sig) {   // 저장 공간이 꽉 차 recRx도 못 쓰면 이번 실행 동안은 메모리에라도 남겨 화면에 보여요
+  const all = ls.get('recRx', {}) || {}, mem = rxSet.mem || (rxSet.mem = {});
+  if (miss && miss.length) { const v = { miss: [...new Set(miss)], src, sig, at: Date.now() }; all[id] = v; mem[id] = v; } else { delete all[id]; delete mem[id]; }
+  ls.set('recRx', all);
+}
+function goneAll() { const g = ls.get('recGone', {}); return g && typeof g === 'object' && !Array.isArray(g) ? g : {}; }
+function isGone(id) { return Object.prototype.hasOwnProperty.call(goneAll(), id); }
+function goneAdd(ids) { if (!ids.length) return; const g = goneAll(), day = Math.floor(Date.now() / 864e5); ids.forEach(id => { if (!(id in g)) g[id] = day; }); ls.set('recGone', g); }
+// 지우는 기록 중 바깥(시계·다른 앱)에서 온 것만 남겨요. 이 휴대폰에서 만든 기록은 다시 올 곳이 없어서 남길 필요가 없어요
+function goneMark(ids) {
+  const sg = Object.keys(ls.get('syncGot', {}) || {}), wg = ls.get('watchGot', {}) || {};
+  goneAdd(ids.filter(id => /^run_w/.test(id) || id in wg || sg.some(k => k.endsWith('/' + id))));
+}
+// recHeld = { 기록ID: { src, at } }: '예전에 받았는데 지금 길이 없음'은 지운 것 같지만 확정하지 않아요(명시적으로 지운 이력이 없으니까).
+// 가져오지 않고 보류만 해 두고, 시계 카드의 '다시 가져오기'로 언제든 되돌릴 수 있어요. recGone(확정)은 내 MPD에서 직접 지운 것만
+// 이 기록의 칸이 하나라도 남아 있는지: 내 MPD에서 지우면 모든 칸이 지워져요. 길만 없고 다른 칸이 있으면 지운 게 아니라 덜 받은 것(GPS 없는 기록·길 저장 실패·예전 형식)
+function recAny(id) { return MD_KEYS.some(k => localStorage.getItem(k + id) != null); }
+function heldAll() { const h = ls.get('recHeld', {}); return h && typeof h === 'object' && !Array.isArray(h) ? h : {}; }
+function heldAdd(id, src) { const h = heldAll(); if (!h[id]) { h[id] = { src, at: Date.now() }; ls.set('recHeld', h); } }
+async function heldRestore() {   // 보류한 기록을 다시 가져와요: 받음 표시를 지우면 다음 받기에서 새 기록처럼 들어와요
+  const h = heldAll(), ids = Object.keys(h).filter(id => !isGone(id)); if (!ids.length) return 0;
+  const wg = ls.get('watchGot', {}) || {}, sg = ls.get('syncGot', {}) || {}, sc = ls.get('syncChk', {}) || {};
+  for (const id of ids) { delete wg[id]; for (const k of Object.keys(sg)) if (k.endsWith('/' + id)) { delete sg[k]; delete sc[k]; } }
+  ls.set('watchGot', wg); ls.set('syncGot', sg); ls.set('syncChk', sc); ls.set('recHeld', {});
+  const n = await watchPull({ full: true });   // 보류한 건 바뀐 게 없어 '바뀐 것만 읽기'엔 안 나와요 → 모두 읽기
+  if (window.mdNativeSync) await syncPull();
+  return n || ids.length;
+}
+function heldNote(redraw) {
+  const ids = Object.keys(heldAll()).filter(id => !isGone(id) && !recAny(id)); if (!ids.length) return null;
+  return el('div', { class: 'sub', style: 'font-size:13px' }, `예전에 지운 것으로 보이는 받은 기록 ${ids.length}개는 다시 가져오지 않았어요 · `,
+    el('button', { class: 'link', style: 'padding:0', text: '다시 가져오기', onclick: async e => { e.target.disabled = true; await heldRestore(); toast('보류한 기록을 다시 가져왔어요'); redraw && redraw(); } }));
+}
+const jsonOr = (v, d) => { try { return v == null ? d : JSON.parse(v); } catch { return d; } };
+// 휴대폰에서 고친 길(앞뒤 자르기 trackOrig·대회 기록 walkOfficial)은 받은 것으로 바꾸지 않아요
+const trEdited = id => localStorage.getItem('trackOrig:' + id) != null || localStorage.getItem('walkOfficial:' + id) != null;
+const TR_EDIT_KEYS = ['track:', 'trackOrig:', 'walkOfficial:', 'walkSplits:', 'walkSplitSteps:', 'walkForm:'];
+// 받은 줄(a)이 지금 줄(b)을 대신해도 되는지: 길이만 보지 않고 시간 범위를 모두 덮고(처음 ≤, 끝 ≥) 더 자세할 때만. 시각이 없으면 예전처럼 길이로
+function rowsCover(a, b, ti) {
+  if (!Array.isArray(a) || !a.length) return false; if (!Array.isArray(b) || !b.length) return true;
+  const t = q => Array.isArray(q) ? +q[ti] : NaN, a0 = t(a[0]), a1 = t(a[a.length - 1]), b0 = t(b[0]), b1 = t(b[b.length - 1]);
+  if (![a0, a1, b0, b1].every(Number.isFinite)) return a.length > b.length;
+  return a0 <= b0 && a1 >= b1 && (a.length > b.length || a1 > b1);
+}
+// 합치기. how: 'over' = 예전 MPD 동작(받은 칸으로 덮어씀, 단 휴대폰에서 고친 길은 지킴) / 'merge' = 시계 기록(길·그래프는 덮을 때만, 심박 요약은 칸 합치기, 나머지는 없을 때만) / 'fill' = 빈 칸만 채우기
+// 돌려주는 값: want = { 키: 있어야 할 글(정확히) | true(있기만 하면 됨) | {f: 심박 요약 칸들} }, wrote = 실제로 쓴 키
+function recMerge(id, inLs, how) {
+  const want = {}, wrote = [], keepTr = trEdited(id) && !inLs['trackOrig:' + id] && !inLs['walkOfficial:' + id];
+  const put = (k, v) => { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); wrote.push(k); } } catch {} want[k] = v; };
+  for (const [k, v] of Object.entries(inLs)) {
+    if (typeof v !== 'string') continue;
+    const p = MD_KEYS.find(q => k === q + id); if (!p) continue;
+    const cur = localStorage.getItem(k);
+    if (keepTr && TR_EDIT_KEYS.includes(p)) continue;   // 자를 때 일부러 지운 구간 기록도 되살리지 않아요
+    if (how === 'over') { put(k, v); continue; }
+    if (p === 'walkHr:') {
+      const a = jsonOr(v, null); if (!a || typeof a !== 'object') { if (cur == null) put(k, v); else want[k] = true; continue; }
+      const b = jsonOr(cur, null), m = how === 'fill' ? Object.assign({}, a, b || {}) : Object.assign({}, b || {}, a);
+      put(k, JSON.stringify(m)); want[k] = { f: how === 'fill' ? Object.keys(a) : a }; continue;
+    }
+    if (p === 'track:' || p === 'walkSeries:') {
+      if (cur == null) { put(k, v); continue; }
+      if (how === 'merge' && rowsCover(jsonOr(v, null), jsonOr(cur, null), p === 'track:' ? 2 : 0)) put(k, v); else want[k] = true;
+      continue;
+    }
+    if (cur == null) put(k, v); else want[k] = true;
+  }
+  return { want, wrote };
+}
+// 다시 읽어 확인: 못 남긴 것의 이름 목록(없으면 빈 목록). photoIds: 넣었어야 할 사진 id
+async function recVerify(id, want, photoIds) {
+  const miss = [];
+  for (const [k, w] of Object.entries(want)) {
+    const cur = localStorage.getItem(k), name = RX_NAME[k.slice(0, k.indexOf(':') + 1)] || '기타 정보';
+    if (cur == null) { miss.push(name); continue; }
+    if (typeof w === 'string' && cur !== w) miss.push(name);
+    else if (w && typeof w === 'object') {
+      const c = jsonOr(cur, null) || {};
+      if (Array.isArray(w.f) ? w.f.some(f => !(f in c)) : Object.keys(w.f).some(f => JSON.stringify(c[f]) !== JSON.stringify(w.f[f]))) miss.push(name);
+    }
+  }
+  if (photoIds && photoIds.length) { const have = new Set((await photoList(id)).map(p => p.id)), lost = photoIds.filter(p => !have.has(p)).length; if (lost) miss.push(`사진 ${lost}장`); }
+  return [...new Set(miss)];
+}
+function rxNote() {   // 시계 카드·설정에 보이는 한 줄
+  const all = rxAll(), ids = Object.keys(all).filter(id => rxMiss(id) && !isGone(id));
+  return ids.length ? el('div', { style: 'color:var(--alert-ink);font-weight:700;font-size:14px', text: `⚠ 기록 ${ids.length}개는 일부 데이터 미수신 (${[...new Set(ids.flatMap(id => all[id].miss))].join(', ')}) · 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요` }) : null;
+}
+// ---------- 시계 기록 목록 읽기 (2026-11-07, 예전엔 한 번에 300개까지만 읽어 301번째부터 안 왔어요) ----------
+// 모두 읽기 wFsAll: 페이지(300개)를 nextPageToken으로 끝까지 이어 읽어요. 처음·7일마다·'지금 받기'·다시 연결·보류 다시 가져오기
+// 바뀐 것만 wFsSince: 시계가 올릴 때마다 적는 t(올린 시각, 시계 시계)로 t ≥ 기준을 t·이름 순으로 이어 읽어요(같은 t도 빠짐없이: 커서에 이름까지).
+// 기준 = 지난번에 본 가장 늦은 t − 10분(시계 시각이 조금 틀려도 놓치지 않게). 오래된 기록이 나중에 바뀌어도 t가 새로 적혀 잡혀요. 겹쳐 읽은 건 받음 표시(지문)로 건너뛰어요
+const W_OVERLAP = 10 * 60000, W_FULL_EVERY = 7 * 864e5;
+const wDoc = x => ({ id: x.name.split('/').pop(), name: x.name, d: x.fields?.d?.stringValue || '', t: +(x.fields?.t?.integerValue || 0) });
+async function wFetch(url, opt) {   // 끊기면 두 번 더(0.8초·1.6초 쉬고). 끝내 안 되면 throw → 읽은 데까지만 처리하고 다음에 이어서
+  let e; for (let i = 0; i < 3; i++) { try { const r = await fetchT(url, opt, 30000); if (r.ok) return r.json(); e = new Error('fs ' + r.status); if (r.status < 500 && r.status !== 429) break; } catch (x) { e = x; } await new Promise(r => setTimeout(r, 800 * (i + 1))); }
+  throw e;
+}
+async function wFsAll(rid, stat) {
+  const out = []; let tok = '';
+  for (let i = 0; i < 1000; i++) {
+    const j = await wFetch(`${FS_URL}rooms/${rid}/w?pageSize=300${tok ? '&pageToken=' + encodeURIComponent(tok) : ''}&key=${FS_KEY}`);
+    if (stat) { stat.calls++; stat.docs += (j.documents || []).length; }
+    out.push(...(j.documents || []).map(wDoc)); tok = j.nextPageToken || ''; if (!tok) break;
+  }
+  return out;
+}
+async function wFsSince(rid, fromT, stat) {
+  const out = []; let cur = null;
+  for (let i = 0; i < 1000; i++) {
+    const q = { from: [{ collectionId: 'w' }], where: { fieldFilter: { field: { fieldPath: 't' }, op: 'GREATER_THAN_OR_EQUAL', value: { integerValue: String(Math.max(0, Math.floor(fromT))) } } },
+      orderBy: [{ field: { fieldPath: 't' }, direction: 'ASCENDING' }, { field: { fieldPath: '__name__' }, direction: 'ASCENDING' }], limit: 300 };
+    if (cur) q.startAt = { values: [{ integerValue: String(cur.t) }, { referenceValue: cur.name }], before: false };   // 바로 다음부터(같은 t도 이름으로 이어 읽기)
+    const j = await wFetch(`${FS_URL}rooms/${rid}:runQuery?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ structuredQuery: q }) });
+    const docs = (Array.isArray(j) ? j : []).filter(x => x && x.document).map(x => wDoc(x.document));
+    if (stat) { stat.calls++; stat.docs += Math.max(1, docs.length); }   // 빈 결과도 읽기 1번으로 쳐요
+    out.push(...docs); if (docs.length < 300) break; cur = docs[docs.length - 1];
+  }
+  return out;
+}
+let watchBusy = null;
+function watchPull(opt) { return watchBusy || (watchBusy = watchPullRun(opt || {}).finally(() => { watchBusy = null; })); }   // 두 번 눌러도 한 번만
+async function watchPullRun(opt) {
   const c = watchGet(); if (!c) return 0;
-  const R = await roomOf(c.code), rows = await fsList(`rooms/${R.rid}/w`), got = ls.get('watchGot', {}); let n = 0;
+  const R = await roomOf(c.code), got = ls.get('watchGot', {}); let n = 0;
+  // watchQ = { rid, last: 다음에 이어 읽을 기준 t, full: 마지막으로 모두 읽은 때 } (새 키)
+  const Q0 = ls.get('watchQ', null), Q = Q0 && Q0.rid === R.rid ? Q0 : null;
+  // watchQ가 없으면(이 판을 처음 쓰는 휴대폰·새 휴대폰·다시 연결) 한 번은 모두 읽어요: 예전 받음 표시(길이만)도 이때 새 표시로 바뀌어요
+  const full = !!opt.full || !Q || Date.now() - (Q.full || 0) > W_FULL_EVERY;
+  let rows; try { rows = full ? await wFsAll(R.rid, opt.stat) : await wFsSince(R.rid, Q.last - W_OVERLAP, opt.stat); } catch { return 0; }   // 못 읽으면 기준을 그대로 두고 다음에 다시
+  const failT = [];
   for (const r of rows) {
-    const sig = String(r.d.length); if (got[r.id] === sig) continue;
+    // 받음 표시 = 글 길이 + 지문(예전엔 길이만이라 같은 길이로 바뀐 판을 못 알아봤어요). 예전 표시와 다르니 처음 한 번은 모두 다시 열어 빈 칸을 채워요
+    const sig = r.d.length + ':' + hash32(r.d); if (got[r.id] === sig) continue;
+    // 지운 기록: recGone(직접 지움)은 건너뛰고, 예전에 받았는데 지금 길이 없으면 '보류'(확정하지 않음)
+    if (isGone(r.id)) { got[r.id] = sig; ls.set('watchGot', got); continue; }   // 내 MPD에서 직접 지운 기록
+    if (r.id in got && !recAny(r.id) && !rxMiss(r.id)) { heldAdd(r.id, 'watch'); continue; }   // 지운 것 같지만 확정하지 않고 보류(받음 표시도 그대로)
     try {
       const v = JSON.parse(r.d); let buf = await openBytes(v.enc, R.key);
       if (v.z) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
       const o = JSON.parse(new TextDecoder().decode(buf)), id = String(o.id || '');
       if (!/^run_w[a-z0-9]+$/.test(id) || !o.data || typeof o.data !== 'object') continue;
-      for (const [k, val] of Object.entries(o.data)) {
-        if (typeof val !== 'string' || !k.endsWith(':' + id) || !MD_KEYS.some(p => k.startsWith(p))) continue;
-        if (k.startsWith('track:')) { let a; try { a = JSON.parse(val); } catch { continue; } const b = ls.get(k, null); if (Array.isArray(a) && (!Array.isArray(b) || a.length > b.length)) localStorage.setItem(k, val); }
-        else if (localStorage.getItem(k) == null) localStorage.setItem(k, val);
-      }
+      if (isGone(id)) { got[r.id] = sig; ls.set('watchGot', got); continue; }
+      const inLs = {};
+      for (const [k, val] of Object.entries(o.data)) if (typeof val === 'string' && MD_KEYS.some(p => k === p + id)) inLs[k] = val;
       const s = o.sum || {};
-      ls.set('walkHr:' + id, { avg: s.hrAvg || 0, max: s.hrMax || 0, zone: Array.isArray(s.zone) ? s.zone.slice(0, 5) : [], hrMaxSet: s.hrMaxSet || 170, cad: s.cad || 0, steps: s.steps || 0, moving: s.moving || 0, walk: s.walk || 0, watch: 1, ...(s.hrEnd > 0 ? { hrEnd: s.hrEnd, hr1: s.hr1 || 0, hr2: s.hr2 || 0 } : {}) });
-      if (Array.isArray(o.series)) ls.set('walkSeries:' + id, o.series.filter(Array.isArray).slice(0, 5000));
-      got[r.id] = sig; n++;
-    } catch {}
+      inLs['walkHr:' + id] = JSON.stringify({ avg: s.hrAvg || 0, max: s.hrMax || 0, zone: Array.isArray(s.zone) ? s.zone.slice(0, 5) : [], hrMaxSet: s.hrMaxSet || 170, cad: s.cad || 0, steps: s.steps || 0, moving: s.moving || 0, walk: s.walk || 0, watch: 1, ...(s.hrEnd > 0 ? { hrEnd: s.hrEnd, hr1: s.hr1 || 0, hr2: s.hr2 || 0 } : {}) });
+      if (Array.isArray(o.series)) inLs['walkSeries:' + id] = JSON.stringify(o.series.filter(Array.isArray).slice(0, 5000));
+      const had = localStorage.getItem('track:' + id) != null, { want, wrote } = recMerge(id, inLs, 'merge'), miss = await recVerify(id, want);
+      if (miss.length) { rxSet(id, miss, 'watch', sig); failT.push(r.t); continue; }   // 받음 표시를 하지 않아 다음에 다시 받아요(기준 t도 넘기지 않아요)
+      if (rxMiss(id)) rxSet(id, null);
+      got[r.id] = sig; ls.set('watchGot', got);
+      if (!had || wrote.length) n++;
+    } catch { failT.push(r.t); }
   }
-  ls.set('watchGot', got); return n;
+  ls.set('watchGot', got);
+  // 다음 기준: 이번에 본 가장 늦은 t. 못 받은 기록이 있으면 그보다 앞에서 멈춰 다음에 다시 읽어요
+  const maxT = Math.max(Q ? Q.last : 0, ...rows.map(r => r.t || 0));
+  const last = failT.length ? Math.min(maxT, Math.min(...failT.map(t => t || 0)) - 1) : maxT;
+  ls.set('watchQ', { rid: R.rid, last: Math.max(0, last), full: full ? Date.now() : Q.full });
+  return n;
 }
 function watchCard(redraw) {
   const c = watchGet(), box = el('div', { class: 'card stack', style: 'gap:10px;margin-top:8px' });
   const link = async () => {
     const v = await askText('시계 연결', '연결 코드', '', '예: 빠른나무', "시계 MPD Run 시작 화면에서 용두로 내려 '휴대폰 연결'을 누르면 코드가 나와요. 그 코드를 적어 주세요.", 20);
     if (v == null) return; const p = roomParse(v); if (!p) return toast('코드 모양이 아니에요. 시계에 나온 네 글자를 그대로 적어 주세요');
-    ls.set('watchLink', p); ls.set('watchGot', {}); toast('시계 기록을 받는 중…'); const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '받을 시계 기록이 아직 없어요'); redraw();
+    ls.set('watchLink', p); ls.set('watchGot', {}); ls.set('watchQ', null); toast('시계 기록을 받는 중…'); const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '받을 시계 기록이 아직 없어요'); redraw();
   };
   // MPD Run 앱은 블루투스로 코드 없이 받아요(2026-10-21) → 받는 중인 것을 보여 주고, 코드는 안 될 때만
   if (!c && wearSelf()) { const W = ls.get('wearGot', null);
     return box.append(el('b', { text: '⌚ 시계 기록은 저절로 와요' }),
       el('div', { class: 'sub', text: "갤럭시워치 MPD Run으로 달리고 끝내면, 이 휴대폰(시계와 짝지은 휴대폰)이 블루투스로 받아 내 MPD에 넣어요. 연결 코드는 필요 없어요." }),
       el('div', { style: 'color:var(--pine);font-weight:700;font-size:15px', text: W ? `✅ 지금까지 시계 기록 ${W.n}개를 받았어요 · 마지막 ${new Date(W.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : '아직 받은 시계 기록이 없어요' }),
+      ...[rxNote(), heldNote(redraw)].filter(Boolean),
       el('button', { class: 'link', style: 'align-self:flex-start;padding:2px;color:var(--muted)', text: '안 오면: 연결 코드로 받기', onclick: link })), box; }
   // 2026-10-20 사용자 '코드 넣기를 안 했네, 코드 넣으라는 안내 띄워': 연결 전이면 내 MPD 맨 위에 눈에 띄게(산호 테), '시계 없어요'로 숨김(watchAskHide)
   if (!c) { box.style.border = '2px solid var(--accent)';
     return box.append(el('b', { text: '⌚ 시계 기록을 받으려면 연결 코드를 넣어 주세요' }),
     el('div', { class: 'sub', text: "갤럭시워치 MPD Run에서 첫 화면을 위로 밀어 '휴대폰으로 보내기' → '예전 방식(연결 코드)' → 켜기를 누르면 코드(예: 빠른나무)가 나와요. 그 코드를 한 번만 적으면 그 뒤로는 저절로 받아요." }),
     el('button', { class: 'btn primary full', text: '⌚ 연결 코드 넣기', onclick: link }),
-    ls.get('watchAskHide', false) ? null : el('button', { class: 'link', style: 'align-self:center;padding:2px;color:var(--muted)', text: '시계가 없어요 · 이 안내 숨기기', onclick: () => { ls.set('watchAskHide', true); redraw(); } })), box; }
+    ...[heldNote(redraw)].filter(Boolean),
+    ...(ls.get('watchAskHide', false) ? [] : [el('button', { class: 'link', style: 'align-self:center;padding:2px;color:var(--muted)', text: '시계가 없어요 · 이 안내 숨기기', onclick: () => { ls.set('watchAskHide', true); redraw(); } })])), box; }
   box.append(el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { text: '⌚ 시계 연결됨' }), el('span', { class: 'sub', text: '코드 ' + c.pretty })),
     el('div', { class: 'sub', text: '시계가 기록을 끝내면 인터넷이 될 때 올리고, 내 MPD를 열 때 저절로 받아요.' }),
+    ...[rxNote(), heldNote(redraw)].filter(Boolean),
     el('div', { class: 'two' },
-      el('button', { class: 'btn line', text: '지금 받기', onclick: async e => { e.target.disabled = true; const n = await watchPull(); toast(n ? `시계 기록 ${n}개를 받았어요` : '새 시계 기록이 없어요'); if (n) redraw(); else e.target.disabled = false; } }),
+      el('button', { class: 'btn line', text: '지금 받기', onclick: async e => { e.target.disabled = true; const n = await watchPull({ full: true }); toast(n ? `시계 기록 ${n}개를 받았어요` : '새 시계 기록이 없어요'); if (n) redraw(); else e.target.disabled = false; } }),
       el('button', { class: 'btn line', text: '연결 끊기', onclick: () => { if (confirm('시계 연결을 끊을까요? 받은 기록은 그대로 남아요.')) { ls.set('watchLink', null); redraw(); } } })));
   return box;
 }
@@ -4742,6 +4891,7 @@ async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다
   } finally { famCapBusy = false; }
 }
 
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:'];
 route();
 cloudWatch();
 setTimeout(uiNewCheck, 1500);
@@ -4804,10 +4954,10 @@ function openPastTrips() {
 // ---------- 내 MPD 보기: 이 휴대폰에 저장한 기록을 모아 보고, 하나씩 지도·사진으로 봐요 ----------
 function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거리 · 시간
   const M = modeOfT(x.t), tr = trackLoad(x.t), st = trackStats(tr, M.car), d = new Date(x.info.startAt);
-  return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms)].filter(Boolean).join(' · ');
+  return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms), rxMiss(x.t) ? '⚠ 일부 데이터 미수신' : ''].filter(Boolean).join(' · ');
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:'];
+// MD_KEYS는 아래 백업 칸에 있던 것을 route() 앞으로 옮겼어요(2026-11-07): 첫 화면을 그리는 중(시계 카드의 보류 안내 recAny)에도 써서, 뒤에 있으면 아직 준비 안 됨(TDZ) 오류가 나요
 const MD_ONE = ['albums', 'rooms', 'nick', 'myPosts', 'lastMode'];
 const blobUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 function backupIds() {
@@ -4819,6 +4969,7 @@ function backupLs(ids) {
   const out = {};
   for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) out[k + id] = v; }
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
+  const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
   return out;
 }
 const backupPh = async ph => ph.v && ph.blob && ph.blob.size > 60 * 1048576 ? null   // 60MB 넘는 동영상은 백업 파일에서 빼요(파일이 너무 커져서)
@@ -4906,6 +5057,7 @@ async function backupLoad(file) {
       else if (cur == null) localStorage.setItem(k, v);
     } else if (k === 'albums') { const a = parse(v); if (Array.isArray(a)) { const m = albumsLoad(); a.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); } }
     else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
+    else if (k === 'recGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) ls.set('recGone', Object.assign({}, a, goneAll())); }
     else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
@@ -4947,25 +5099,39 @@ async function syncPull() {
   const S = window.mdNativeSync, WEAR_SELF = wearSelf(); if (!S || !window.MD_APP || (window.MD_APP.mode && !WEAR_SELF) || syncBusy) return;
   syncBusy = true; let n = 0, u = 0; const from = new Set();
   try {
-    const got = ls.get('syncGot', {});
+    const got = ls.get('syncGot', {}), chk = ls.get('syncChk', {}) || {};
     for (const it of await S.list()) {
-      const key = it.app + '/' + it.id; if (got[key] === it.mtime) continue;
+      const key = it.app + '/' + it.id, same = got[key] === it.mtime, rx = rxMiss(it.id);
       if (WEAR_SELF && (it.app !== 'io.github.gilbertgo.mdrun' || !/^run_w/.test(it.id))) continue;
+      // 이미 받고 새 확인까지 마친 파일(syncChk = 확인한 파일 시각)은 건너뛰어요. 파일이 바뀌면(시각이 다르면) 다시 확인해요
+      if (same && chk[key] === it.mtime && !rx) continue;
+      if (rx && rx.sig === it.mtime && Date.now() - rx.at < 10 * 60000) continue;   // 못 받은 기록은 같은 파일이면 10분에 한 번만 다시
       const exists = localStorage.getItem('track:' + it.id) != null;
-      if (WEAR_SELF && exists) { got[key] = it.mtime; continue; }   // 이미 있는 건 그대로(이 앱이 내놓느라 다시 쓴 파일)
-      if (key in got && !exists) { got[key] = it.mtime; continue; }
+      // 지운 기록: recGone(직접 지움)은 건너뛰고, 예전에 받았는데 지금 없으면 '보류'(가져오지 않지만 확정하지 않음, 다시 가져오기 가능)
+      if (!exists && isGone(it.id)) { got[key] = it.mtime; chk[key] = it.mtime; ls.set('syncGot', got); ls.set('syncChk', chk); continue; }
+      if (!exists && key in got && !rx && !recAny(it.id)) { heldAdd(it.id, it.app); continue; }   // 예전부터 하던 대로 다시 가져오지 않지만, 확정(recGone)하지 않고 보류
       let d; try { d = JSON.parse(await S.read(it.app, it.id)); } catch { continue; }
-      if (!d || d.app !== 'mapdiary' || !d.ls || typeof d.ls !== 'object') { got[key] = it.mtime; continue; }
-      for (const [k, v] of Object.entries(d.ls)) if (typeof v === 'string' && MD_KEYS.some(p => k === p + it.id)) localStorage.setItem(k, v);
+      if (!d || d.app !== 'mapdiary' || !d.ls || typeof d.ls !== 'object') { got[key] = it.mtime; chk[key] = it.mtime; continue; }
+      // 합치는 법: 파일이 바뀌었으면 예전처럼(MPD는 덮어쓰기, MPD Run 혼자면 시계 기록 합치기), 같은 파일을 새로 확인만 할 땐 빈 칸만 채우기
+      const how = same ? 'fill' : WEAR_SELF ? 'merge' : 'over';
+      const { want, wrote } = recMerge(it.id, d.ls, how), phIds = [], have = new Set((await photoList(it.id)).map(p => p.id)); let phNew = 0;
       for (const ph of Array.isArray(d.photos) ? d.photos : []) {
         try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob)) continue;
+          phIds.push(String(ph.id)); if (same && have.has(String(ph.id))) continue;
           const vid = ph.blob.startsWith('data:video/');
-          await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) }); } catch {}
+          await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) });
+          if (!have.has(String(ph.id))) phNew++; } catch {}
       }
-      if (WEAR_SELF) { const st = ls.get('wearGot', { n: 0 }); ls.set('wearGot', { n: st.n + 1, at: Date.now() }); }
-      got[key] = it.mtime; if (!exists) { n++; from.add(/^run_w/.test(it.id) ? '시계' : SYNC_APPS[it.app] || '다른 앱'); } else u++;   // 시계 기록은 휴대폰 MD Run이 블루투스로 받아 둔 것(2026-10-20)
-      ls.set('syncGot', got);
+      const miss = await recVerify(it.id, want, phIds);
+      if (miss.length) { rxSet(it.id, miss, it.app, it.mtime); continue; }   // 받음 표시를 하지 않아 다음에 다시 받아요
+      if (rx) rxSet(it.id, null);
+      const changed = wrote.length || phNew;
+      if (!exists && WEAR_SELF) { const st = ls.get('wearGot', { n: 0 }); ls.set('wearGot', { n: st.n + 1, at: Date.now() }); }
+      got[key] = it.mtime; chk[key] = it.mtime;
+      if (!exists) { n++; from.add(/^run_w/.test(it.id) ? '시계' : SYNC_APPS[it.app] || '다른 앱'); } else if (changed) u++;   // 시계 기록은 휴대폰 MD Run이 블루투스로 받아 둔 것(2026-10-20)
+      ls.set('syncGot', got); ls.set('syncChk', chk);
     }
+    ls.set('syncChk', chk);
     ls.set('syncGot', got);
   } catch {} finally { syncBusy = false; }
   if (!n && !u) return;
@@ -5556,7 +5722,7 @@ async function viewMyOne(t) {
     if (live) return toast('기록 중인 MPD는 먼저 끝내야 지울 수 있어요');
     if (!confirm(`'${info.name}'${x.album ? ` 여행(${info.days}일치 기록)` : ''}을(를) 이 휴대폰에서 지울까요? 사진과 별표도 함께 지워지고, 되돌릴 수 없어요.\n(이미 보낸 지도 링크나 모임방에 올린 MPD는 그대로 남아요)`)) return;
     const ids = x.album ? (albumGet(t)?.days || []) : [t];
-    cloudForget(ids);
+    cloudForget(ids); goneMark(ids); ids.forEach(id => { if (rxMiss(id)) rxSet(id, null); });   // 시계·다른 앱이 다시 보내도 되살아나지 않게
     for (const id of ids) {
       for (const p of await photoList(id)) await photoDel(p.id);
       MD_KEYS.forEach(k => { try { localStorage.removeItem(k + id); } catch {} });
@@ -5582,7 +5748,8 @@ async function viewMyOne(t) {
       el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600' }, `${dateText} ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}`, live ? ' · 기록 중' : ''),
       el('div', { class: 'sub with-ico', style: 'font-weight:600;font-size:14px' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label] : null, wp.start || wp.end ? `${ls.get('walkMode:' + t, null) ? ' · ' : ''}${wp.start || '출발'} → ${wp.end || '도착'}` : ''),
       wxEl,
-      noteEl),
+      noteEl,
+      ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })()),
     stats, (() => {   // 🏔 오른 정상 (2026-11-07): 기록 중에 남긴 것, 없으면 지도 자료에서 찾아 채움
       const box = el('div', { class: 'card pk-rec', hidden: true });
       const paint = sm => { if (!sm || !sm.length) return; box.hidden = false; box.replaceChildren(el('b', { text: '🏔 오른 정상' }),
