@@ -91,8 +91,33 @@ data class Dest(val lat: Double, val lng: Double, val n: String) {
     companion object { fun from(o: JSONObject?): Dest? = if (o == null || !o.has("lat")) null else Dest(o.optDouble("lat"), o.optDouble("lng"), o.optString("n", "목표 지점").ifEmpty { "목표 지점" }) }
 }
 
+data class Summit(val n: String, val ele: Int, val lat: Double, val lng: Double, val t: Long)
+class SunI(val set: Long, val left: Long, val need: Long) { val spare get() = left - need }
+
 object Run {
     var id: String? = null
+    // 등산 (2026-11-07): 오른 정상 · 해 지기 전 하산 알림 (등산·걷기)
+    val summits = ArrayList<Summit>(); private var sunSaid = 0; private var sunT = 0L
+    fun sunInfo(now: Long = System.currentTimeMillis()): SunI? {
+        if (fixLat == 0.0 && fixLng == 0.0) return null
+        val set = Peaks.sunset(fixLat, fixLng, now) ?: return null
+        val el0 = max(0L, now - startAt); val s0 = pts.firstOrNull() ?: return SunI(set, set - now, 0)
+        val d0 = dist(fixLat, fixLng, s0.lat, s0.lng); val v = if (walk > 300 && el0 > 300000) max(0.0004, walk / el0) else 0.0008
+        return SunI(set, set - now, if (d0 < 300) 0L else min(el0 * 0.8, d0 * 1.5 / v).toLong())   // 내려가는 데: 올라온 시간의 8할 또는 출발점까지 ÷ 빠르기
+    }
+    private fun hikeCheck(now: Long) {
+        if (id == null || !hike || manualPause) return
+        Peaks.cached(fixLat, fixLng)?.let { ps -> for (p in ps) {
+            if (summits.any { it.n == p.n && dist(it.lat, it.lng, p.lat, p.lng) < 300 }) continue
+            if (dist(fixLat, fixLng, p.lat, p.lng) > max(60.0, min(100.0, lastAcc.toDouble()))) continue
+            summits.add(Summit(p.n, p.ele, p.lat, p.lng, now)); buzz(longArrayOf(0, 200, 100, 200, 100, 400))
+            say("${p.n} 정상에 도착했어요!" + (if (p.ele > 0) " 해발 ${p.ele}미터예요." else "")); break } }
+        if (now - sunT < 30000) return; sunT = now
+        val S = sunInfo(now) ?: return; if (S.need == 0L || S.left <= 0) return
+        if (S.spare <= 30 * 60000 && (sunSaid and 1) == 0) { sunSaid = sunSaid or 1; buzz(longArrayOf(0, 300, 150, 300))
+            say("해 지기까지 ${sayDur(S.left.toDouble())} 남았어요. 내려가는 데 ${sayDur(S.need.toDouble())}쯤 걸려요. 지금 내려가기 시작하세요.") }
+        else if (S.left <= 30 * 60000 && (sunSaid and 2) == 0) { sunSaid = sunSaid or 2; buzz(longArrayOf(0, 300)); say("해 지기 30분 전이에요. 어두워지기 전에 헤드랜턴을 준비하세요.") }
+    }
     var dest: Dest? = null; var destHit = false; var destD0 = 0.0
     fun destLeft(): Double? = dest?.let { d -> if (fixLat == 0.0 && fixLng == 0.0) null else dist(fixLat, fixLng, d.lat, d.lng) }
     fun chooseDest(d: Dest?) { dest = d; destHit = false; destD0 = destLeft() ?: 0.0 }
@@ -155,7 +180,7 @@ object Run {
 
     fun begin(now: Long, g: Goal, title: String, sp: String = "run") {
         id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike" || sp == "walk") sp else "run"
-        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false; dest = null; destHit = false; destD0 = 0.0
+        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false; dest = null; destHit = false; destD0 = 0.0; summits.clear(); sunSaid = 0; sunT = 0
         hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
@@ -166,7 +191,7 @@ object Run {
     fun addPoint(lat: Double, lng: Double, acc: Float, alt: Double?, now: Long): Boolean {
         lastAcc = acc; gpsOn = true; fixT = now; fixLat = lat; fixLng = lng; fixAlt = alt
         if (id == null || manualPause || acc > TRACK_MAX_ACC) return false
-        destCheck()
+        destCheck(); hikeCheck(now)
         val last = pts.lastOrNull()
         if (last != null && now < last.t) return false   // 차례가 뒤바뀌어 온 점은 버려요
         if (last != null && dist(last.lat, last.lng, lat, lng) < TRACK_MIN_M) return false
@@ -430,6 +455,7 @@ object Run {
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
             .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
         if (goal.k != "free") { data.put("walkGoal:$id", goal.toJson().toString()); data.put("walkGoalDone:$id", goalDone.toString()) }
+        if (summits.isNotEmpty()) data.put("walkSummits:$id", JSONArray().apply { summits.forEach { s -> put(JSONObject().put("n", s.n).put("ele", s.ele).put("lat", s.lat).put("lng", s.lng).put("t", s.t)) } }.toString())
         dest?.let { d -> data.put("walkTarget:$id", JSONObject().put("dest", d.toJson()).put("d0", destD0.roundToInt()).put("hit", JSONObject().put("dest", if (destHit) 1 else 0)).toString()) }   // 휴대폰 걷기 목표와 같은 모양
         val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("sport", sport).put("name", name).put("at", startAt).put("end", lastT)
@@ -442,6 +468,7 @@ object Run {
         val i = o.getString("id"); val data = o.getJSONObject("data")
         begin(o.getLong("at"), Goal.from(o.optJSONObject("goal")), o.optString("name"), o.optString("sport", "run"))
         id = i; goalDone = o.optBoolean("goalDone"); manualPause = o.optBoolean("pause"); brk = true
+        try { val a = JSONArray(data.optString("walkSummits:$i", "[]")); for (k in 0 until a.length()) { val q = a.getJSONObject(k); summits.add(Summit(q.optString("n"), q.optInt("ele"), q.optDouble("lat"), q.optDouble("lng"), q.optLong("t"))) } } catch (e: Exception) {}
         try { val T = JSONObject(data.optString("walkTarget:$i", "{}")); dest = Dest.from(T.optJSONObject("dest")); destD0 = T.optDouble("d0", 0.0); destHit = T.optJSONObject("hit")?.optInt("dest") == 1 } catch (e: Exception) {}
         val tr = JSONArray(data.optString("track:$i", "[]"))
         for (k in 0 until tr.length()) { val q = tr.getJSONArray(k); pts.add(Pt(q.getDouble(0), q.getDouble(1), q.getLong(2), if (q.length() > 3 && !q.isNull(3)) q.getDouble(3) else null)) }

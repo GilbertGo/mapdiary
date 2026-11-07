@@ -55,7 +55,7 @@ class RunService : Service(), LocationListener, SensorEventListener, TextToSpeec
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
-        super.onCreate(); alive = true
+        super.onCreate(); alive = true; Peaks.app = applicationContext
         tts = TextToSpeech(this, this)
         Run.speak = { text -> if (ttsOk) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "md") else pending.add(text) }
         Run.speaking = { tts?.isSpeaking == true }
