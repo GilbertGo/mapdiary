@@ -149,17 +149,25 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         if (al != null) pill(cv, al.first, 18 * u, al.second, LAB * u)
         else if (hr > 0) { val z = Run.zoneOf(hr); pill(cv, "존${z + 1} · $hr", 18 * u, ZONE[z], 5.4f * u) }
         else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
-        bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
+        if (Run.bikeS) { val v = Run.speedNow(now); bigWithUnit(cv, if (v >= 1) String.format("%.1f", v) else "0", "km/h", 55 * u, 30 * u, 6 * u, CORAL) }   // 자전거: 지금 속도를 크게
+        else bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
         val dd = Run.dest
         val sun = if (Run.hike) Run.sunInfo(now) else null
         val sunWarn = sun != null && sun.need > 0 && sun.left > 0 && sun.spare < 30 * 60000
         fun hm(t: Long) = Calendar.getInstance().apply { timeInMillis = t }.let { "${it.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", it.get(Calendar.MINUTE))}" }
-        if (sunWarn && sun != null) text(cv, "🌇 지금 하산 · 해 ${hm(sun.set)}", cx, 64 * u, LAB * u, LATE, true, max = 0.62f)
+        if (sunWarn && sun != null) text(cv, (if (Run.bikeS) "🌇 지금 돌아가요 · 해 " else "🌇 지금 하산 · 해 ") + hm(sun.set), cx, 64 * u, LAB * u, LATE, true, max = 0.62f)
         else if (dd != null) text(cv, if (Run.destHit) "🏁 ${dd.n} 도착!" else "🏁 ${dd.n.take(9)} " + (Run.destLeft()?.let { fmtDist(it) } ?: ""), cx, 64 * u, LAB * u, if (Run.destHit) GOLD else BLUE, true, max = 0.62f)
         else if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
         else if (Run.summits.isNotEmpty()) text(cv, "🏔 ${Run.summits.last().n}" + (if (Run.summits.last().ele > 0) " ${Run.summits.last().ele}m" else ""), cx, 64 * u, LAB * u, GOLD, true, max = 0.62f)
         else if (sun != null && sun.left > 0) text(cv, "🌇 해 지는 시각 ${hm(sun.set)}", cx, 64 * u, LAB * u, MUTED, true, max = 0.62f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
+        if (Run.bikeS) {   // 자전거: 거리 | 평균 속도 (위 큰 숫자가 지금 속도)
+            text(cv, fmtKm(Run.walk), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
+            text(cv, "km · 최고 ${String.format("%.0f", Run.vmax)}", cx - 16 * u, 87 * u, LAB * u, MUTED)
+            text(cv, if (Run.avgKmh() > 0) String.format("%.1f", Run.avgKmh()) else "--", cx + 16 * u, 80 * u, 11 * u, BLUE, true, true, max = 0.3f)
+            text(cv, "평균 km/h", cx + 16 * u, 87 * u, LAB * u, MUTED)
+            return
+        }
         if (Run.walkS) {   // 걷기: 다닌 시간 | 걸음 수
             text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
             text(cv, "다닌 시간", cx - 16 * u, 87 * u, LAB * u, MUTED)
@@ -556,7 +564,7 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         }
         text(cv, clock(), cx, 20 * u, 5 * u, Color.LTGRAY, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 57 * u, 31 * u, 6 * u, Color.LTGRAY)
-        text(cv, if (Run.walkS) "${fmtTime(now - Run.startAt)}   ${Run.steps}보" else if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
+        text(cv, if (Run.bikeS) "${fmtKm(Run.walk)}km   ${String.format("%.0f", Run.speedNow(now))}km/h" else if (Run.walkS) "${fmtTime(now - Run.startAt)}   ${Run.steps}보" else if (Run.hike) "${fmtTime(now - Run.startAt)}   ${gainNow()?.let { "↑${it}m" } ?: ""}" else "${fmtTime(Run.liveMoving(now))}   ${fmtPace(Run.nowPace(now))}", cx, 76 * u, 9 * u, Color.WHITE, true, true)
     }
 
     // 지도 길게 누르기 → 그 자리를 목표 지점으로 (깃발 근처면 지우기). 화면 → 세계 픽셀 → 위도·경도

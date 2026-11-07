@@ -29,7 +29,7 @@ data class Goal(val k: String = "free", val v: Double = 0.0, val t: Int = 0, val
     fun label(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프" else if (v == 42.195) "풀코스" else "${num(v)}km"
         "time" -> minLabel(v.toInt())
-        else -> if (Run.walkS) "자유 걷기" else if (Run.hike) "자유 등산" else "자유 달리기"
+        else -> if (Run.bikeS) "자유 라이딩" else if (Run.walkS) "자유 걷기" else if (Run.hike) "자유 등산" else "자유 달리기"
     }
     fun say(): String = when (k) {
         "dist" -> if (v == 21.0975) "하프 코스" else if (v == 42.195) "풀코스" else "${num(v)}킬로미터"
@@ -107,7 +107,7 @@ object Run {
     }
     private fun hikeCheck(now: Long) {
         if (id == null || !hike || manualPause) return
-        Peaks.cached(fixLat, fixLng)?.let { ps -> for (p in ps) {
+        if (!bikeS) Peaks.cached(fixLat, fixLng)?.let { ps -> for (p in ps) {
             if (summits.any { it.n == p.n && dist(it.lat, it.lng, p.lat, p.lng) < 300 }) continue
             if (dist(fixLat, fixLng, p.lat, p.lng) > max(60.0, min(100.0, lastAcc.toDouble()))) continue
             summits.add(Summit(p.n, p.ele, p.lat, p.lng, now)); buzz(longArrayOf(0, 200, 100, 200, 100, 400))
@@ -115,8 +115,8 @@ object Run {
         if (now - sunT < 30000) return; sunT = now
         val S = sunInfo(now) ?: return; if (S.need == 0L || S.left <= 0) return
         if (S.spare <= 30 * 60000 && (sunSaid and 1) == 0) { sunSaid = sunSaid or 1; buzz(longArrayOf(0, 300, 150, 300))
-            say("해 지기까지 ${sayDur(S.left.toDouble())} 남았어요. 내려가는 데 ${sayDur(S.need.toDouble())}쯤 걸려요. 지금 내려가기 시작하세요.") }
-        else if (S.left <= 30 * 60000 && (sunSaid and 2) == 0) { sunSaid = sunSaid or 2; buzz(longArrayOf(0, 300)); say("해 지기 30분 전이에요. 어두워지기 전에 헤드랜턴을 준비하세요.") }
+            say("해 지기까지 ${sayDur(S.left.toDouble())} 남았어요. ${if (bikeS) "돌아가는" else "내려가는"} 데 ${sayDur(S.need.toDouble())}쯤 걸려요. 지금 ${if (bikeS) "돌아가기" else "내려가기"} 시작하세요.") }
+        else if (S.left <= 30 * 60000 && (sunSaid and 2) == 0) { sunSaid = sunSaid or 2; buzz(longArrayOf(0, 300)); say(if (bikeS) "해 지기 30분 전이에요. 전조등과 후미등을 켜세요." else "해 지기 30분 전이에요. 어두워지기 전에 헤드랜턴을 준비하세요.") }
     }
     var dest: Dest? = null; var destHit = false; var destD0 = 0.0
     fun destLeft(): Double? = dest?.let { d -> if (fixLat == 0.0 && fixLng == 0.0) null else dist(fixLat, fixLng, d.lat, d.lng) }
@@ -134,10 +134,21 @@ object Run {
     var sport = "run"
     val hike get() = sport != "run"          // 러닝이 아닌 것(등산·걷기)
     val walkS get() = sport == "walk"
-    val sportKo get() = when (sport) { "walk" -> "걷기"; "hike" -> "등산"; else -> "러닝" }
-    private val carMs get() = if (hike) 15 / 3.6 else CAR_MS
-    private val minV get() = if (hike) 0.3 else 0.7
-    private val pauseMs get() = if (hike) 60000L else PAUSE_MS
+    val bikeS get() = sport == "bike"   // 2026-11-07 자전거: 큰 속도계·5km 목소리·최고 속도 (페이스 코치·자세·박자 없음)
+    val sportKo get() = when (sport) { "walk" -> "걷기"; "hike" -> "등산"; "bike" -> "자전거"; else -> "러닝" }
+    private val carMs get() = if (bikeS) 45 / 3.6 else if (hike) 15 / 3.6 else CAR_MS
+    private val minV get() = if (bikeS) 1.0 else if (hike) 0.3 else 0.7
+    private val pauseMs get() = if (bikeS) 30000L else if (hike) 60000L else PAUSE_MS
+    // 자전거 빠르기(km/h): 지금 = 최근 10초 넘는 창(1분 안), 최고 = 그 가운데 가장 큰 값(70 넘는 튐은 뺌)
+    var vmax = 0.0
+    fun speedNow(now: Long): Double { val p = nowPace(now) ?: return 0.0; return if (p > 0) 3600000.0 / p else 0.0 }
+    fun avgKmh(): Double = if (moving > 60000) walk / moving * 3600 else 0.0
+    private fun vmaxCheck() {
+        val n = pts.size - 1; if (n < 1) return; val t = pts[n].t; var d = 0.0
+        for (k in n - 1 downTo 0) { d += dist(pts[k].lat, pts[k].lng, pts[k + 1].lat, pts[k + 1].lng); val dt = t - pts[k].t
+            if (dt > 60000) return
+            if (dt >= 10000) { val v = d / dt * 3600; if (v in vmax..70.0) vmax = v; return } }
+    }
     var startAt = 0L
     var name = ""
     val pts = ArrayList<Pt>()
@@ -179,8 +190,8 @@ object Run {
     val lastT get() = pts.lastOrNull()?.t ?: startAt
 
     fun begin(now: Long, g: Goal, title: String, sp: String = "run") {
-        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike" || sp == "walk") sp else "run"
-        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false; dest = null; destHit = false; destD0 = 0.0; summits.clear(); sunSaid = 0; sunT = 0
+        id = "run_w" + java.lang.Long.toString(now, 36); startAt = now; name = title; sport = if (sp == "hike" || sp == "walk" || sp == "bike") sp else "run"
+        pts.clear(); splits.clear(); walk = 0.0; moving = 0L; goal = g; goalDone = false; manualPause = false; brk = false; dest = null; destHit = false; destD0 = 0.0; summits.clear(); sunSaid = 0; sunT = 0; vmax = 0.0
         hr = 0; hrT = 0; hrSum = 0; hrN = 0; hrMax = 0; zoneMs.fill(0); zT = 0; series.clear(); lastSample = 0; stepIv.clear(); stepG.clear(); lastPk = 0; inPk = false; overSince = 0; underSince = 0; zSaid = 0; stepBase = -1; stepOff = 0; steps = 0; stepS.clear(); spdS.clear(); coachSaid.clear(); hold = 0; saidAt = 0
     }
     fun clear() { id = null; pts.clear(); splits.clear() }
@@ -203,6 +214,7 @@ object Run {
         }
         brk = false
         pts.add(Pt(lat, lng, now, alt))
+        if (bikeS) vmaxCheck()
         splitCheck(); goalCheck(); coachTick()
         return true
     }
@@ -337,11 +349,21 @@ object Run {
         val km = floor(walk / 1000).toInt(); if (km <= splits.size) return
         val n = km - splits.size; val lap = max(1000L, (moving - splits.sum()) / n)
         repeat(n) { splits.add(lap) }
-        buzz(longArrayOf(0, 250, 150, 250))
+        if (!bikeS || km % 5 == 0) buzz(longArrayOf(0, 250, 150, 250))
         val g = goal; val left = if (g.k == "dist") g.v - km else 0.0
         val hit = g.k == "dist" && left <= 0 && !goalDone
         if (hit) goalDone = true
         val remT = if (g.k == "time") g.v * 60000 - moving else 0.0
+        if (bikeS) {   // 자전거: 5km마다만 말해요 (진동은 그때만)
+            if (km % 5 != 0) return
+            val lap5 = splits.takeLast(5).sum(); val mn = max(1L, Math.round(lap5 / 60000.0))
+            say("${km}킬로 왔어요. 평균 시속 ${num(Math.round(avgKmh() * 10) / 10.0)}킬로, 이번 5킬로는 ${mn}분 걸렸어요." + when {
+                hit -> " 목표 ${g.say()} 달성! 수고했어요."
+                left >= 1 -> " 목표까지 ${num(Math.round(left * 10) / 10.0)}킬로 남았어요."
+                remT >= 60000 && !goalDone -> " 목표 시간까지 ${(remT / 60000).roundToInt()}분 남았어요."
+                else -> "" } + destLine())
+            return
+        }
         if (walkS) {   // 걷기: 이번 1km 걸린 시간·걸음 수
             val mn = max(1L, Math.round(lap / 60000.0))
             say("${km}킬로 걸었어요. 이번 1킬로 ${mn}분 걸렸어요." + (if (steps > 0) " 지금까지 ${steps}보예요." else "") + when {
@@ -438,6 +460,7 @@ object Run {
     }
     fun startLine(): String {
         val g = goal; val tp = g.tgtPace()
+        if (bikeS) return "라이딩을 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 5킬로마다 평균 시속을 알려 드릴게요."
         if (walkS) return "걷기를 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 1킬로마다 걸린 시간과 걸음 수를 알려 드릴게요."
         if (hike) return "등산을 시작합니다." + (if (g.k == "dist") " 목표는 ${g.say()}예요." else if (g.k == "time") " 목표는 ${g.say()}이에요." else "") + " 1킬로마다 다닌 시간과 오른 높이를 알려 드릴게요."
         return "달리기를 시작합니다." + if (tp > 0) " 목표는 ${g.say()} " + (if (g.k == "dist") "${sayDur(g.t * 1000.0)} 완주" else "동안 ${sayKm(g.d * 1000)}") + ", 1킬로 ${sayDur(tp)} 페이스예요." else ""
@@ -450,14 +473,14 @@ object Run {
         val data = JSONObject()
             .put("track:$id", tr.toString())
             .put("trackName:$id", JSONObject.quote(name))
-            .put("walkMode:$id", if (walkS) "\"trek\"" else if (hike) "\"hike\"" else "\"run\"")
+            .put("walkMode:$id", if (bikeS) "\"bike\"" else if (walkS) "\"trek\"" else if (hike) "\"hike\"" else "\"run\"")
             .put("walkSplits:$id", JSONArray(splits).toString())
             .put("walkSteps:$id", JSONObject().put("n", steps).toString())
             .put("walkHr:$id", JSONObject().put("avg", hrAvg()).put("max", hrMax).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet).toString())
         if (goal.k != "free") { data.put("walkGoal:$id", goal.toJson().toString()); data.put("walkGoalDone:$id", goalDone.toString()) }
         if (summits.isNotEmpty()) data.put("walkSummits:$id", JSONArray().apply { summits.forEach { s -> put(JSONObject().put("n", s.n).put("ele", s.ele).put("lat", s.lat).put("lng", s.lng).put("t", s.t)) } }.toString())
         dest?.let { d -> data.put("walkTarget:$id", JSONObject().put("dest", d.toJson()).put("d0", destD0.roundToInt()).put("hit", JSONObject().put("dest", if (destHit) 1 else 0)).toString()) }   // 휴대폰 걷기 목표와 같은 모양
-        val sum = JSONObject().put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
+        val sum = JSONObject().put("vmax", Math.round(vmax * 10) / 10.0).put("walk", walk).put("moving", moving).put("hrAvg", hrAvg()).put("hrMax", hrMax).put("steps", steps).put("cad", cadAvg() ?: 0).put("zone", JSONArray(zoneMs.toList())).put("hrMaxSet", hrMaxSet)
         return JSONObject().put("app", "MD Run Watch").put("v", 1).put("id", id).put("sport", sport).put("name", name).put("at", startAt).put("end", lastT)
             .put("goal", goal.toJson()).put("goalDone", goalDone).put("pause", manualPause).put("sum", sum).put("data", data)
             .put("series", JSONArray().apply { series.forEach { s -> put(JSONArray().put(s.t / 1000).put(s.hr).put(s.pace?.roundToLong() ?: 0).put(s.cad ?: 0).put(((s.reg ?: 0.0) * 10).roundToInt()).put(((s.g ?: 0.0) * 100).roundToInt())) } })
@@ -473,7 +496,7 @@ object Run {
         val tr = JSONArray(data.optString("track:$i", "[]"))
         for (k in 0 until tr.length()) { val q = tr.getJSONArray(k); pts.add(Pt(q.getDouble(0), q.getDouble(1), q.getLong(2), if (q.length() > 3 && !q.isNull(3)) q.getDouble(3) else null)) }
         val sp = JSONArray(data.optString("walkSplits:$i", "[]")); for (k in 0 until sp.length()) splits.add(sp.getLong(k))
-        val s = o.optJSONObject("sum"); if (s != null) { walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps
+        val s = o.optJSONObject("sum"); if (s != null) { vmax = s.optDouble("vmax", 0.0); walk = s.optDouble("walk"); moving = s.optLong("moving"); hrMax = s.optInt("hrMax"); steps = s.optInt("steps"); stepOff = steps
             s.optJSONArray("zone")?.let { z -> for (k in 0 until minOf(5, z.length())) zoneMs[k] = z.optLong(k) } }
         o.optJSONArray("series")?.let { a -> for (k in 0 until a.length()) { val q = a.getJSONArray(k); series.add(sampleOf(q)) } }
     }

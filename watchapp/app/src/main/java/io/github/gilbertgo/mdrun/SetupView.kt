@@ -24,7 +24,7 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
     // 등산은 케이던스 비프 장(2)을 건너뛰어요(음성 안내는 마지막 장에)
     private val order = if (Run.hike && !Run.walkS) listOf(0, 1, 3) else listOf(0, 1, 2, 3)   // 걷기는 박자 장이 있어요
     private val last get() = order.size - 1
-    private val sportTag get() = if (Run.walkS) "WALK" else if (Run.hike) "HIKE" else "OUTDOOR RUN"
+    private val sportTag get() = if (Run.bikeS) "RIDE" else if (Run.walkS) "WALK" else if (Run.hike) "HIKE" else "OUTDOOR RUN"
     private var km = 0.0; private var min = 0
     private var W = 0f; private var cx = 0f; private var u = 0f
     private val hits = mutableListOf<Pair<RectF, () -> Unit>>()
@@ -72,8 +72,8 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
                 mono(cv, "READY / $sportTag", 17f * u)
                 text(cv, "이번 ${Run.sportKo} 목표", cx, 25f * u, 5f * u, Color.WHITE, true)
                 stepper(cv, kmTxt(), if (km > 0) "km" else "거리 없이", 42f * u,
-                    { km = if (km <= 1) 0.0 else Math.round((km - 0.5) * 2) / 2.0; save() }, { km = if (km <= 0) 1.0 else minOf(42.195, Math.round((km + 0.5) * 2) / 2.0); save() })
-                val opts = if (Run.walkS) listOf(0.0, 1.0, 3.0, 5.0, 10.0) else if (Run.hike) listOf(0.0, 3.0, 5.0, 10.0, 15.0) else listOf(0.0, 3.0, 5.0, 10.0, 21.0975)
+                    { km = if (km <= 1) 0.0 else Math.round((km - 0.5) * 2) / 2.0; save() }, { km = if (km <= 0) 1.0 else minOf(if (Run.bikeS) 300.0 else 42.195, Math.round((km + (if (Run.bikeS) 5.0 else 0.5)) * 2) / 2.0); save() })
+                val opts = if (Run.bikeS) listOf(0.0, 10.0, 20.0, 30.0, 50.0) else if (Run.walkS) listOf(0.0, 1.0, 3.0, 5.0, 10.0) else if (Run.hike) listOf(0.0, 3.0, 5.0, 10.0, 15.0) else listOf(0.0, 3.0, 5.0, 10.0, 21.0975)
                 chips(cv, opts.map { (if (it == 0.0) "자유" else if (it == 21.0975) "21.1" else num(it)) to (km == it) }, 66f * u) { km = opts[it]; save() }
             }
             1 -> {
@@ -97,7 +97,7 @@ class SetupView(c: Context, private val onGo: () -> Unit, private val onBack: ()
                     cv.drawBitmap(bm, null, RectF((W - dw) / 2, (H - dh) * .75f, (W - dw) / 2 + dw, (H - dh) * .75f + dh), paint(Color.WHITE).apply { isFilterBitmap = true }) }
                 cv.drawColor(Color.argb(150, 6, 30, 55))
                 mono(cv, "READY / $sportTag", 22f * u)
-                text(cv, if (Run.walkS) "오늘의 걸음으로." else if (Run.hike) "오늘의 길로." else "오늘의 리듬으로.", cx, 33f * u, 6.6f * u, Color.WHITE, true)
+                text(cv, if (Run.bikeS) "오늘의 바람으로." else if (Run.walkS) "오늘의 걸음으로." else if (Run.hike) "오늘의 길로." else "오늘의 리듬으로.", cx, 33f * u, 6.6f * u, Color.WHITE, true)
                 val g = Store.goal(context)
                 text(cv, "🎯 ${g.label()}${if (g.tgtLabel().isNotEmpty()) " · " + g.tgtLabel() else ""}" + (if (Cadence.kind != Cadence.OFF && (!Run.hike || Run.walkS)) " · ♩ ${Cadence.spm}" else ""), cx, 42f * u, 4.2f * u, Color.WHITE)
                 val gs = "▶  출발"; val gw = measure(gs, 6.6f * u) + 16 * u; val gh = 14f * u; val gy = 58f * u
