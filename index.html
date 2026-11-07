@@ -552,6 +552,10 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .wk-st{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;border:none;border-radius:18px;background:var(--card);box-shadow:var(--shadow);font:inherit;color:var(--ink);text-align:left;cursor:pointer}
 .wk-st svg{flex:none}.wk-t{display:flex;flex-direction:column;gap:3px;min-width:0}
 .wk-n b{font-size:40px;font-weight:900;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}.wk-n small{font-size:16px;font-weight:700;margin-left:3px;color:var(--muted)}
+.bk-box{display:flex;flex-direction:column;gap:10px;width:100%;padding:14px;border-radius:18px;background:var(--card);box-shadow:var(--shadow)}.bk-box:empty{display:none}
+.bk-now{display:flex;align-items:baseline;gap:6px;justify-content:center}.bk-now b{font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--pine);font-variant-numeric:tabular-nums}.bk-now small{font-size:18px;font-weight:800;color:var(--muted)}
+.bk-g{margin-left:10px;padding:3px 10px;border-radius:99px;background:var(--soft);font-size:13px;font-weight:800;color:var(--muted);align-self:center}.bk-g.up{background:#FFE3D6;color:#D9531E}
+.bk-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}.bk-row span{display:block;font-size:12px;color:var(--muted)}.bk-row b{font-size:19px;font-variant-numeric:tabular-nums}.bk-row small{font-size:11px;color:var(--muted)}
 .hk-box{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px 14px;border-radius:18px;background:var(--card);box-shadow:var(--shadow)}.hk-box:empty{display:none}
 .hk-row{display:flex;gap:10px;align-items:center}.hk-row b{font-size:15px}.hk-row .sub{font-size:12.5px}.hk-i{font-size:20px;width:26px;text-align:center;flex:none}
 .hk-row.warn b{color:#D64545}.hk-row.warn .sub{color:#D64545;font-weight:700}
@@ -1556,11 +1560,11 @@ function kmRows(t, tr, modes, run) {
 function kmCard(rows, opt) {
   if (!rows.length || (rows.length === 1 && rows[0].len < 1000)) return null;
   const hasUp = opt.elev && rows.some(r => r.up > 0), hasHr = rows.some(r => r.hr), hasCad = !hasHr && rows.some(r => r.cad);
-  const cols = ['구간', '시간', '페이스', hasUp ? '오른 높이' : null, hasHr ? '심박' : null, hasCad ? '케이던스' : null].filter(Boolean);
+  const cols = ['구간', '시간', opt.bike ? '속도' : '페이스', hasUp ? '오른 높이' : null, hasHr ? '심박' : null, hasCad ? '케이던스' : null].filter(Boolean);
   const fast = Math.min(...rows.filter(r => r.len >= 999).map(r => r.ms));
   const line = r => el('div', { class: 'vw-km' }, el('span', { class: 'n', text: r.len >= 999 ? String(r.n) : (r.len / 1000).toFixed(1) }),
     el('b', { style: `color:${STAT_COL.time}`, text: fmtRunTime(r.ms) }),
-    el('b', { style: `color:${STAT_COL.pace}`, text: (r.ms === fast && rows.length > 2 ? '★' : '') + fmtPace(r.len, r.ms) }),
+    el('b', { style: `color:${STAT_COL.pace}`, text: (r.ms === fast && rows.length > 2 ? '★' : '') + (opt.bike ? (r.len / r.ms * 3600).toFixed(1) : fmtPace(r.len, r.ms)) }),   // 자전거는 km/h
     hasUp ? el('b', { style: `color:${STAT_COL.up}`, text: r.up ? `${r.up}m` : '-' }) : null,
     hasHr ? el('b', { style: `color:${STAT_COL.hr}`, text: r.hr ? String(r.hr) : '-' }) : null,
     hasCad ? el('b', { style: `color:${STAT_COL.cad}`, text: r.cad ? String(r.cad) : '-' }) : null);
@@ -2598,9 +2602,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-13';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '등산 첫 화면이 새로 생겼어요 (이번 달 오른 높이, 한 번에 시작) · 정상에 닿으면 알려 주고 내 MPD 오른 산에 모여요 · 해 지기 전에 내려가라고 알려 줘요 · 등산 중 국가지점번호와 내 위치 알리기 단추가 보여요';
+const UI_NOTES = '자전거 첫 화면이 새로 생겼어요 (이번 주 달린 거리, 한 번에 시작) · 자전거 기록 중 큰 속도계에 지금, 평균, 최고 속도와 오르막 기울기가 보여요 · 자전거는 5km마다 평균 시속을 목소리로 알려 줘요 · 자전거도 목표 거리, 시간, 지점과 해 지기 전 알림이 돼요 · 등산, 걷기, 자전거 첫 화면 바탕은 그 운동의 최근 내 사진이에요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4989,6 +4993,37 @@ function backupCard(n) {
 }
 // ---------- 내 맛집: 모든 기록에서 맛집으로 표시한 곳(spot.food)을 사진 카드로 모아 봐요 ----------
 // 같은 이름 + 200m 안이면 한 집으로 묶어요(몇 번 갔는지). 별점·메뉴는 가장 최근에 간 것
+// 운동별 첫 화면 사진 (2026-11-07 사용자 '바꿔': 등산 첫 화면에 러닝 사진이 나와서) — 그 운동의 가장 최근 기록 사진(동영상 빼고)을 바탕으로.
+// 따로 고른 첫 화면 사진(homeHero)이 있으면 그걸 그대로 둠. 사진이 없으면 지금 바탕 그대로
+async function modeHeroApply(hero, k) {
+  if (ls.get('homeHero', '')) return;
+  try {
+    for (const x of pastTrips().filter(x => !x.album && ls.get('walkMode:' + x.t, null) === k).slice(0, 8)) {
+      const ps = (await photoList(x.t)).filter(q => !q.v && q.blob);
+      if (!ps.length) continue;
+      const cid = ls.get('walkCover:' + x.t, null), q = (cid && ps.find(r => r.id === cid)) || ps[Math.floor(ps.length / 2)];
+      const u = URL.createObjectURL(q.blob);
+      hero.style.backgroundImage = hero.style.backgroundImage.replace(/url\([^)]*\)\s*$/, `url("${u}")`);
+      return;
+    }
+  } catch {}
+}
+// 자전거 빠르기 (km/h): 10초 넘는 창마다(1분 넘게 끊긴 곳은 빼고) 거리 ÷ 시간. now는 마지막 점이 15초 안일 때, max는 70km/h 넘는 튐은 뺌
+function bikeSpeeds(tr) {
+  if (tr.length < 2) return { now: 0, max: 0, grade: null };
+  const cum = [0]; for (let i = 1; i < tr.length; i++) cum.push(cum[i - 1] + dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]));
+  let j = 0, max = 0, last = 0;
+  for (let i = 1; i < tr.length; i++) {
+    while (j + 1 < i && tr[i][2] - tr[j + 1][2] >= 10000) j++;
+    const dt = tr[i][2] - tr[j][2]; if (dt < 10000 || dt > 60000) continue;
+    const v = (cum[i] - cum[j]) / dt * 3600; if (v <= 70 && v > max) max = v; if (i === tr.length - 1) last = v;
+  }
+  const n = tr.length - 1, now = Date.now() - tr[n][2] < 15000 ? last : 0;
+  // 지금 기울기: 최근 150m 넘는 거리의 높이 차 (높이 있는 점만)
+  let grade = null; const an = typeof tr[n][3] === 'number' ? tr[n][3] : null;
+  if (an != null) for (let k = n - 1; k >= 0; k--) { if (cum[n] - cum[k] >= 150) { if (typeof tr[k][3] === 'number' && cum[n] - cum[k] < 600) grade = (an - tr[k][3]) / (cum[n] - cum[k]) * 100; break; } }
+  return { now, max, grade };
+}
 // ---------- 등산 도우미 (2026-11-07 '등산앱 조사 → 1~4 다 만들어') ----------
 // 해 뜨고 지는 시각 (일출·일몰 공식, 1분 안팎 오차). {rise, set} ms
 function sunTimes(lat, lng, ts = Date.now()) {
@@ -5495,6 +5530,7 @@ async function viewMyOne(t) {
     ev && ev.gain >= 10 ? ['오른 높이', ev.gain.toLocaleString(), 'm'] : null,
     ev && ev.gain >= 10 ? [`최고 높이 (${elevWhat(ev)})`, elevTxt(ev, 'max'), 'm'] : null,
     ev && ev.gain >= 10 ? [`출발 높이 (${elevWhat(ev)})`, elevTxt(ev, 'start'), 'm'] : null,
+    M.k === 'bike' && !x.album ? (() => { const mx = bikeSpeeds(tr).max; return mx >= 3 ? ['최고 속도', mx.toFixed(1), 'km/h'] : null; })() : null,
     M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
     st.walk >= 500 && M.k !== 'pgolf' ? ['칼로리 (대략)', '약 ' + kcalOf(M.k, st.walk, ev ? ev.gain : 0).toLocaleString(), 'kcal'] : null,
     H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
@@ -5508,7 +5544,7 @@ async function viewMyOne(t) {
     !x.album && ['trek', 'hike', 'daily', 'date', 'travel'].includes(M.k) && stepN >= 200 && st.walk / stepN >= .3 && st.walk / stepN <= 2 ? ['평균 보폭', Math.round(st.walk / stepN * 100), 'cm'] : null,
     st.d - st.walk > 300 ? ['전체 이동', fmtDist(st.d)] : null,
     stays ? ['들른 곳', stays, '곳'] : null, stars ? ['별표', stars, '곳'] : null]);
-  const kmc = x.album || M.k === 'pgolf' ? null : kmCard(kmRows(t, tr, trackModes(tr, M.car), M.k === 'run'), { elev: ELEV_MODES.includes(M.k) || (ev && ev.gain >= 30), run: M.k === 'run' });
+  const kmc = x.album || M.k === 'pgolf' ? null : kmCard(kmRows(t, tr, trackModes(tr, M.car), M.k === 'run'), { elev: ELEV_MODES.includes(M.k) || (ev && ev.gain >= 30), run: M.k === 'run', bike: M.k === 'bike' });
   const wa = M.k === 'run' ? watchAnalysis(t) : null;
   const rename = async () => {
     const v = await askText('제목 바꾸기', '제목', info.name, ''); if (!v) return;
@@ -6452,6 +6488,7 @@ function viewWalk() {
   function splitCheck() {
     if (M().k === 'trek') { walkGoalCheck(); return walkKmCheck(); }
     if (M().k === 'hike') { walkGoalCheck(); return; }
+    if (M().k === 'bike') { walkGoalCheck(); return bikeKmCheck(); }
     if (M().k !== 'run') return;
     const tr = trackLoad(id), km = Math.floor(trackStats(tr, M().car).walk / 1000), sp = ls.get('walkSplits:' + id, []);
     if (km <= sp.length) return;
@@ -6474,11 +6511,12 @@ function viewWalk() {
   // 걷기 기록 중 주인공: 걸음 수 + 하루 목표(기본 1만 보) 고리. walkStepGoal = 하루 걸음 목표
   const stepGoal = () => Math.min(50000, Math.max(1000, +ls.get('walkStepGoal', 10000) || 10000));
   const isWalkK = () => (id ? M().k : pick) === 'trek';
-  const footK = () => ['trek', 'hike'].includes(id ? M().k : pick);   // 목표(거리·시간·지점)는 걷기·등산 둘 다
+  const footK = () => ['trek', 'hike', 'bike'].includes(id ? M().k : pick);   // 2026-11-07 자전거도
+  const HK_MODES = [...ELEV_MODES, 'bike'];   // 해 지기 전 알림·국가지점번호·내 위치 알리기 칸   // 목표(거리·시간·지점)는 걷기·등산 둘 다
   const tSteps = el('button', { class: 'wk-st', 'aria-label': '하루 걸음 목표 바꾸기', onclick: () => walkSetup() });
   // 걷기 목표 (2026-11-07 '걷기에 목표거리, 목표시간, 목표지점'): 시작 전엔 walkTargetNext, 기록 중엔 walkTarget:{ID}
   // = { km, min, dest: {lat,lng,n}, d0: 시작할 때 목표 지점까지 거리, hit: {km,min,dest} }
-  const wtNextKey = () => pick === 'hike' ? 'hikeTargetNext' : 'walkTargetNext';
+  const wtNextKey = () => pick === 'hike' ? 'hikeTargetNext' : pick === 'bike' ? 'bikeTargetNext' : 'walkTargetNext';
   const wtGet = () => (id ? ls.get('walkTarget:' + id, null) : ls.get(wtNextKey(), null)) || {};
   const wtSet = o => ls.set(id ? 'walkTarget:' + id : wtNextKey(), o);
   const wtLabel = T => [T.km ? `${T.km}km` : '', T.min ? `${T.min}분` : '', T.dest ? `🏁${T.dest.n}` : ''].filter(Boolean).join(' · ');
@@ -6494,10 +6532,31 @@ function viewWalk() {
     if (T.min) { const left = T.min * 60000 - el0; rows.push(row('⏱', `목표 ${T.min}분`, left > 0 ? `${Math.ceil(left / 60000)}분 남음` : '시간이 됐어요!', el0 / (T.min * 60000), left <= 0)); }
     if (T.dest) {
       const at = lastFix || (tr.length ? { lat: tr[tr.length - 1][0], lng: tr[tr.length - 1][1] } : null), d = at ? dist(at.lat, at.lng, T.dest.lat, T.dest.lng) : null;
-      const sp = el0 > 5 * 60000 && w > 300 ? w / el0 : 4500 / 3600000, mins = d != null ? Math.max(1, Math.round(d / sp / 60000)) : 0;
-      rows.push(row('🏁', T.dest.n, hit.dest ? '도착했어요!' : d == null ? '위치 찾는 중' : `${fmtDist(d)} · 걸어서 약 ${mins}분`, T.d0 && d != null ? 1 - d / T.d0 : 0, !!hit.dest));
+      const sp = el0 > 5 * 60000 && w > 300 ? w / el0 : (M().k === 'bike' ? 15000 : 4500) / 3600000, mins = d != null ? Math.max(1, Math.round(d / sp / 60000)) : 0;
+      rows.push(row('🏁', T.dest.n, hit.dest ? '도착했어요!' : d == null ? '위치 찾는 중' : `${fmtDist(d)} · ${M().k === 'bike' ? '' : '걸어서 '}약 ${mins}분`, T.d0 && d != null ? 1 - d / T.d0 : 0, !!hit.dest));
     }
     tGoalW.replaceChildren(...rows);
+  }
+  // ---------- 자전거 (2026-11-07 '자전거모드도 특수성 반영해'): 큰 속도계 · 평균/최고 속도 · 움직인 시간 · 기울기 · 5km마다 목소리 ----------
+  const tBike = el('div', { class: 'bk-box' });
+  function bikePaint() {
+    if (!id || M().k !== 'bike') return;
+    const tr = trackLoad(id), st = trackStats(tr, M().car), mv = movingMs(tr, M().car), S = bikeSpeeds(tr), avg = mv > 60000 ? st.walk / mv * 3600 : 0;
+    const g = S.grade, gTxt = g == null || Math.abs(g) < 2 ? '평지' : `${g > 0 ? '오르막' : '내리막'} ${Math.abs(g).toFixed(0)}%`;
+    tBike.replaceChildren(
+      el('div', { class: 'bk-now' }, el('b', { text: S.now >= 1 ? S.now.toFixed(1) : '0' }), el('small', { text: 'km/h' }), el('span', { class: 'bk-g' + (g != null && g >= 4 ? ' up' : ''), text: gTxt })),
+      el('div', { class: 'bk-row' }, ...[['평균 속도', avg ? avg.toFixed(1) : '-', 'km/h'], ['최고 속도', S.max ? S.max.toFixed(1) : '-', 'km/h'], ['움직인 시간', fmtRunTime(mv), '']].map(([l, v, u]) =>
+        el('div', {}, el('span', { text: l }), el('b', {}, v, u ? el('small', { text: ' ' + u }) : null)))));
+  }
+  function bikeKmCheck() {   // 5km마다: '10킬로 왔어요. 평균 시속 18.2킬로, 이번 5킬로 16분.'
+    const tr = trackLoad(id), st = trackStats(tr, M().car), km = Math.floor(st.walk / 5000) * 5, ks = ls.get('walkKmSaid:' + id, null) || { km: 0, t: ls.get('walkAt', Date.now()) };
+    if (km <= ks.km || pausedNow) return;
+    const now = Date.now(), lap = Math.round((now - ks.t) / 60000), mv = movingMs(tr, M().car), avg = mv > 60000 ? st.walk / mv * 3600 : 0;
+    ls.set('walkKmSaid:' + id, { km, t: now });
+    beep(); toast(`🚴 ${km}km · 평균 ${avg.toFixed(1)}km/h · 이번 5km ${lap}분`);
+    const T = ls.get('walkTarget:' + id, null) || {}, th = T.hit || {}, kL = T.km && !th.km ? T.km * 1000 - st.walk : 0;
+    const dL = T.dest && !th.dest && lastFix ? dist(lastFix.lat, lastFix.lng, T.dest.lat, T.dest.lng) : 0;
+    say(`${km}킬로 왔어요. 평균 시속 ${avg.toFixed(1)}킬로, 이번 5킬로는 ${lap}분 걸렸어요.` + (kL >= 1000 ? ` 목표까지 ${+(kL / 1000).toFixed(1)}킬로 남았어요.` : dL >= 1000 ? ` ${T.dest.n}까지 ${+(dL / 1000).toFixed(1)}킬로 남았어요.` : ''));
   }
   // ---------- 등산 칸 (2026-11-07): 해 지기 전 하산 · 정상 인증 · 국가지점번호 · 내 위치 알리기 ----------
   const tHike = el('div', { class: 'hk-box' });
@@ -6514,8 +6573,9 @@ function viewWalk() {
     const S = sunInfo(); if (!S || !S.need || S.left <= 0) return;
     const k = 'walkSunSaid:' + id, said = ls.get(k, {});
     if (S.spare <= 30 * 60000 && !said.go) { said.go = 1; ls.set(k, said); beep(); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch {}
-      toast(`🌇 해 지기 ${durS(S.left)} 전 · 내려가는 데 약 ${durS(S.need)} · 지금 내려가세요`); say(`해 지기까지 ${durS(S.left)} 남았어요. 내려가는 데 ${durS(S.need)}쯤 걸려요. 지금 내려가기 시작하세요.`); }
-    else if (S.left <= 30 * 60000 && !said.d30) { said.d30 = 1; ls.set(k, said); beep(); toast('🌇 해 지기 30분 전이에요 · 헤드랜턴을 준비하세요'); say('해 지기 30분 전이에요. 어두워지기 전에 헤드랜턴을 준비하세요.'); }
+      const bk = M().k === 'bike';
+      toast(`🌇 해 지기 ${durS(S.left)} 전 · ${bk ? '돌아가는' : '내려가는'} 데 약 ${durS(S.need)} · 지금 ${bk ? '돌아가세요' : '내려가세요'}`); say(`해 지기까지 ${durS(S.left)} 남았어요. ${bk ? '돌아가는' : '내려가는'} 데 ${durS(S.need)}쯤 걸려요. 지금 ${bk ? '돌아가기' : '내려가기'} 시작하세요.`); }
+    else if (S.left <= 30 * 60000 && !said.d30) { said.d30 = 1; ls.set(k, said); beep(); const lamp = M().k === 'bike' ? '전조등과 후미등을 켜세요' : '헤드랜턴을 준비하세요'; toast(`🌇 해 지기 30분 전이에요 · ${lamp}`); say(`해 지기 30분 전이에요. 어두워지기 전에 ${lamp}.`); }
   }
   function hikeCheck() {
     if (!id || !ELEV_MODES.includes(M().k) || !lastFix) return;
@@ -6534,21 +6594,22 @@ function viewWalk() {
     sunCheck(); hikePaint();
   }
   function hikePaint() {
-    if (!id || !ELEV_MODES.includes(M().k)) return;
+    if (!id || !HK_MODES.includes(M().k)) return;
     const S = sunInfo(), sm = ls.get('walkSummits:' + id, null) || [], at = lastFix || (S && S.at);
     const warn = S && S.need && S.spare < 30 * 60000;
-    tHike.replaceChildren(
+    const down = M().k === 'bike' ? '돌아가는' : '내려가는', downV = M().k === 'bike' ? '돌아가라고' : '내려가라고';
+    tHike.replaceChildren(...[
       S ? el('div', { class: 'hk-row' + (warn ? ' warn' : '') }, el('span', { class: 'hk-i', text: '🌇' }), el('div', { class: 'grow' },
         el('b', { text: S.left > 0 ? `해 지는 시각 ${fmtClock(S.set)} · ${durS(S.left)} 남음` : '해가 졌어요 · 헤드랜턴을 켜세요' }),
-        S.need && S.left > 0 ? el('div', { class: 'sub', text: `내려가는 데 약 ${durS(S.need)} · ${S.spare > 0 ? `여유 ${durS(S.spare)}` : '지금 내려가야 해요'}` }) : el('div', { class: 'sub', text: S.left > 0 ? '해 지기 전에 내려가라고 알려 드려요' : '어두우니 발밑을 조심하세요' }))) : null,
+        S.need && S.left > 0 ? el('div', { class: 'sub', text: `${down} 데 약 ${durS(S.need)} · ${S.spare > 0 ? `여유 ${durS(S.spare)}` : `지금 ${M().k === 'bike' ? '돌아가야' : '내려가야'} 해요`}` }) : el('div', { class: 'sub', text: S.left > 0 ? `해 지기 전에 ${downV} 알려 드려요` : M().k === 'bike' ? '어두우니 전조등·후미등을 켜세요' : '어두우니 발밑을 조심하세요' }))) : null,
       sm.length ? el('div', { class: 'hk-row' }, el('span', { class: 'hk-i', text: '🏔' }), el('div', { class: 'grow' }, el('b', { text: sm.map(q => q.n + (q.ele ? ` ${q.ele.toLocaleString()}m` : '')).join(' · ') }), el('div', { class: 'sub', text: '오른 정상 · 내 MPD에 남았어요' }))) : null,
       at ? el('div', { class: 'hk-row' }, el('span', { class: 'hk-i', text: '📍' }), el('div', { class: 'grow' },
         el('b', { style: 'white-space:nowrap', text: kgrid(at.lat, at.lng) ? `국가지점번호 ${kgrid(at.lat, at.lng)}` : `${at.lat.toFixed(5)}, ${at.lng.toFixed(5)}` }), el('div', { class: 'sub', text: '119 신고 때 불러 주는 번호예요' }))) : null,
-      at ? el('button', { class: 'btn full hk-sos', text: '🆘 내 위치 알리기', onclick: () => { const tr = trackLoad(id), q = tr[tr.length - 1]; sosShare(at.lat, at.lng, q && q.length > 3 && typeof q[3] === 'number' ? q[3] : null); } }) : null);
+      at ? el('button', { class: 'btn full hk-sos', text: '🆘 내 위치 알리기', onclick: () => { const tr = trackLoad(id), q = tr[tr.length - 1]; sosShare(at.lat, at.lng, q && q.length > 3 && typeof q[3] === 'number' ? q[3] : null); } }) : null].filter(Boolean));
   }
   // 목표에 닿으면 한 번씩: 뚝 소리·알림·목소리
   function walkGoalCheck() {
-    if (!id || !['trek', 'hike'].includes(M().k) || pausedNow) return;
+    if (!id || !['trek', 'hike', 'bike'].includes(M().k) || pausedNow) return;
     const T = ls.get('walkTarget:' + id, null); if (!T) return;
     const hit = T.hit || (T.hit = {}), tr = trackLoad(id), w = trackStats(tr, M().car).walk, el0 = Date.now() - ls.get('walkAt', Date.now()) - pauseMs(id), said = [];
     if (T.km && !hit.km && w >= T.km * 1000) { hit.km = 1; said.push(`목표 ${T.km}킬로를 다 걸었어요!`); }
@@ -6750,27 +6811,27 @@ function viewWalk() {
       const T = wtGet(), setT = o => { const n = Object.assign({}, wtGet(), o); if (id && 'dest' in o) { n.d0 = o.dest && lastFix ? Math.round(dist(lastFix.lat, lastFix.lng, o.dest.lat, o.dest.lng)) : 0; n.hit = Object.assign({}, n.hit, { dest: 0 }); } if (id && 'km' in o) n.hit = Object.assign({}, n.hit, { km: 0 }); if (id && 'min' in o) n.hit = Object.assign({}, n.hit, { min: 0 }); wtSet(n); paint(); stepsPaint(); if (id) stats();
         if (!id && 'dest' in o && watchGet()) watchDestSend(o.dest).then(ok => toast(ok ? (o.dest ? '⌚ 시계에도 보냈어요 · 시계 첫 화면을 열면 받아요' : '⌚ 시계 목표 지점도 지웠어요') : '시계로는 못 보냈어요 (인터넷 확인)')); };
       const near = lastFix ? [lastFix.lat, lastFix.lng] : null;
-      const hk = (id ? M().k : pick) === 'hike';
-      body.replaceChildren(el('h2', { text: hk ? '⛰ 등산 목표' : id ? '👣 걷기 목표' : '👣 걷기 설정' }),
+      const hk = (id ? M().k : pick) === 'hike', bk = (id ? M().k : pick) === 'bike';
+      body.replaceChildren(el('h2', { text: bk ? '🚴 자전거 목표' : hk ? '⛰ 등산 목표' : id ? '👣 걷기 목표' : '👣 걷기 설정' }),
         el('b', { text: '🎯 목표 거리' }),
-        el('div', { class: 'rs-chips' }, ...(hk ? [0, 3, 5, 8, 10, 15] : [0, 1, 2, 3, 5, 10]).map(n => el('button', { class: 'rs-chip' + ((T.km || 0) === n ? ' on' : ''), text: n ? n + ' km' : '없음', onclick: () => setT({ km: n }) }))),
+        el('div', { class: 'rs-chips' }, ...(bk ? [0, 10, 20, 30, 50, 100] : hk ? [0, 3, 5, 8, 10, 15] : [0, 1, 2, 3, 5, 10]).map(n => el('button', { class: 'rs-chip' + ((T.km || 0) === n ? ' on' : ''), text: n ? n + ' km' : '없음', onclick: () => setT({ km: n }) }))),
         el('b', { text: '⏱ 목표 시간' }),
-        el('div', { class: 'rs-chips' }, ...(hk ? [0, 60, 120, 180, 240, 300] : [0, 30, 45, 60, 90, 120]).map(n => el('button', { class: 'rs-chip' + ((T.min || 0) === n ? ' on' : ''), text: n ? (n >= 120 ? n / 60 + '시간' : n + '분') : '없음', onclick: () => setT({ min: n }) }))),
+        el('div', { class: 'rs-chips' }, ...(hk || bk ? [0, 60, 120, 180, 240, 300] : [0, 30, 45, 60, 90, 120]).map(n => el('button', { class: 'rs-chip' + ((T.min || 0) === n ? ' on' : ''), text: n ? (n >= 120 ? n / 60 + '시간' : n + '분') : '없음', onclick: () => setT({ min: n }) }))),
         el('b', { text: '🏁 목표 지점' }),
         T.dest ? el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
           el('span', { class: 'grow', style: 'min-width:0', text: `${T.dest.n}${near ? ` · ${fmtDist(dist(near[0], near[1], T.dest.lat, T.dest.lng))}` : ''}` }),
           el('button', { class: 'btn line small', text: '바꾸기', onclick: async () => { const d = await pickDest(T.dest, near); if (d) setT({ dest: d }); } }),
           el('button', { class: 'btn line small', text: '지우기', onclick: () => setT({ dest: null }) }))
           : el('button', { class: 'btn line full', text: '📍 지도에서 고르기 · 이름으로 찾기', onclick: async () => { const d = await pickDest(null, near); if (d) setT({ dest: d }); } }),
-        el('div', { class: 'sub', style: 'font-size:13px;margin-top:-6px', text: `닿으면 소리와 목소리로 알려 줘요. 목표 지점은 이번 ${hk ? '등산' : '걷기'}에만 쓰여요.` + (watchGet() ? ' 연결된 시계로도 보내요.' : '') }),
-        ...(hk ? [el('div', { class: 'sub', style: 'font-size:13px', text: '🏔 정상에 닿으면 저절로 알려 주고, 🌇 해 지기 전에 내려가라고 알려 드려요. 따로 켤 것 없어요.' })] : [
+        el('div', { class: 'sub', style: 'font-size:13px;margin-top:-6px', text: `닿으면 소리와 목소리로 알려 줘요. 목표 지점은 이번 ${bk ? '라이딩' : hk ? '등산' : '걷기'}에만 쓰여요.` + (watchGet() ? ' 연결된 시계로도 보내요.' : '') }),
+        ...(bk ? [el('div', { class: 'sub', style: 'font-size:13px', text: '🚴 5km마다 평균 시속을 알려 주고, 🌇 해 지기 전에 돌아가라고 알려 드려요. 따로 켤 것 없어요.' })] : hk ? [el('div', { class: 'sub', style: 'font-size:13px', text: '🏔 정상에 닿으면 저절로 알려 주고, 🌇 해 지기 전에 내려가라고 알려 드려요. 따로 켤 것 없어요.' })] : [
         el('b', { text: '👣 하루 걸음 목표' }),
         el('div', { class: 'rs-chips' }, ...[5000, 7000, 8000, 10000, 12000, 15000].map(n => el('button', { class: 'rs-chip' + (sg === n ? ' on' : ''), text: n.toLocaleString() + '보', onclick: () => { ls.set('walkStepGoal', n); paint(); stepsPaint(); } }))),
         el('b', { text: '빠르게 걷기 박자' }),
         el('div', { class: 'sub', style: 'font-size:13px;margin-top:-6px', text: '1분에 110~130걸음이 운동이 되는 빠른 걸음이에요. 켜 두면 다음에도 시작할 때 저절로 울려요.' }),
         cgRow()]),
         el('button', { class: 'sw-row', role: 'switch', 'aria-checked': v ? 'true' : 'false', onclick: () => { ls.set('runVoice', !v); paint(); } },
-          el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: hk ? '목소리 안내' : '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: v ? (hk ? '정상 도착·하산 시간·목표를 말로 알려 줘요' : '걸린 시간과 걸음 수를 알려 줘요') : '꺼져 있어요 · 누르면 켜져요' })),
+          el('span', { class: 'grow', style: 'text-align:left' }, el('b', { text: hk ? '목소리 안내' : bk ? '5km마다 목소리 안내' : '1km마다 목소리 안내' }), el('div', { class: 'sub', style: 'font-size:13px', text: v ? (hk ? '정상 도착·하산 시간·목표를 말로 알려 줘요' : bk ? '평균 시속·걸린 시간·남은 거리를 알려 줘요' : '걸린 시간과 걸음 수를 알려 줘요') : '꺼져 있어요 · 누르면 켜져요' })),
           el('span', { class: 'sw' + (v ? ' on' : '') }, el('i'))),
         el('button', { class: 'btn primary full', text: '닫기', onclick: close }));
     };
@@ -6812,6 +6873,7 @@ function viewWalk() {
           el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
             onclick: walkSetup, text: (wtLabel(T) ? `🎯 ${wtLabel(T)}` : '🎯 목표 정하기') + ' ✎' }),
           gpsReady, wherePill(true, true))));
+    modeHeroApply(hero, 'hike');
     const recent = H.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 15), ev = elevStats(tr), d = new Date(x.info.startAt), sm = ls.get('walkSummits:' + x.t, null) || [], th = el('div', { class: 'rh-th' }, ico('hike', 22));
       photoList(x.t).then(ps => { const p = ps.find(q => !q.v && q.thumb); if (p) { th.replaceChildren(); th.style.backgroundImage = `url("${p.thumb}")`; } }).catch(() => {});
       return el('a', { class: 'rh-rr', href: `./?my=1&t=${encodeURIComponent(x.t)}` }, th,
@@ -6826,6 +6888,56 @@ function viewWalk() {
       P.length ? el('a', { class: 'btn line full', href: './?my=1', onclick: () => ls.set('myView', 'peaks') }, `🏔 내가 오른 산 ${P.length}곳 보기`) : null,
       el('div', { class: 'sub', style: 'font-size:13px;text-align:center', text: '🗺 산속은 인터넷이 끊길 수 있어요. 한 번 본 지도는 남으니 출발 전에 갈 곳까지 지도를 움직여 두세요.' }),
       H.runs.length ? el('div', { class: 'rh-wk' }, el('b', { text: '최근 등산' }), el('a', { class: 'link', style: 'padding:0;font-size:13px', href: './?my=1', text: '전체 기록 →' })) : null,
+      ...recent].filter(Boolean);
+  }
+  // ---------- 자전거 첫 화면 (2026-11-07): 이번 주 달린 거리 고리 · '▶ 라이딩 시작하기'(바로 시작) · 평균 시속 ----------
+  function bikeWeek() {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const runs = pastTrips().filter(x => !x.album && ls.get('walkMode:' + x.t, null) === 'bike');
+    let dist0 = 0, mv = 0, n = 0, max = 0; const days = new Set();
+    for (const x of runs) if (x.info.startAt >= +d) { const tr = trackLoad(x.t); dist0 += trackStats(tr, 45).walk; mv += movingMs(tr, 45); n++; days.add((new Date(x.info.startAt).getDay() + 6) % 7); }
+    return { dist: dist0, mv, n, runs, days };
+  }
+  function bikeHome() {
+    const W = bikeWeek(), wg = ls.get('bikeWeekGoal', 0), now = new Date(), T = wtGet();
+    startGps(); drawGpsReady();
+    const setWeekGoal = () => { const v = prompt('이번 주에 몇 km 탈까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('bikeWeekGoal', n > 0 ? Math.min(3000, n) : 0); draw(); };
+    const kmW = W.dist / 1000, C = 2 * Math.PI * 92, pr = wg ? Math.min(1, kmW / wg) : 0;
+    const ring = el('button', { class: 'r3-ring', 'aria-label': '주간 목표 정하기', onclick: setWeekGoal });
+    ring.innerHTML = `<svg viewBox="0 0 210 210" width="210" height="210" aria-hidden="true"><circle cx="105" cy="105" r="92" stroke="rgba(255,255,255,.3)" stroke-width="5" fill="rgba(6,30,55,.14)"/>`
+      + (pr > 0 ? `<circle cx="105" cy="105" r="92" stroke="#FF8A4C" stroke-width="5" fill="none" stroke-dasharray="${(C * pr).toFixed(1)} ${C.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 105 105)"/>` : `<circle cx="105" cy="13" r="4.5" fill="#FF8A4C"/>`)
+      + `<text x="105" y="84" fill="#FFD2B8" font-size="11" text-anchor="middle" letter-spacing="3" font-family="ui-monospace,monospace">THIS WEEK</text>`
+      + `<text x="105" y="126" fill="#fff" font-size="42" font-weight="900" text-anchor="middle" font-family="ui-monospace,monospace">${kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0)}</text>`
+      + `<text x="105" y="150" fill="#fff" font-size="13" text-anchor="middle">${wg ? `/ 주간 목표 ${wg} km` : 'km · 주간 목표 정하기 ✎'}</text></svg>`;
+    const today = (now.getDay() + 6) % 7;
+    const dots = el('div', { class: 'r3-dots' }, ...'월화수목금토일'.split('').map((d, i) => el('span', {}, el('i', { class: (W.days.has(i) ? 'on' : '') + (i === today ? ' td' : '') }), d)));
+    const hero = el('div', { class: 'rh3', style: `background-image:linear-gradient(180deg,rgba(6,30,55,.66),rgba(6,30,55,.18) 40%,rgba(6,30,55,.28) 58%,rgba(6,30,55,.72) 82%,rgba(6,30,55,.92)),url("${homeHeroUrl()}")` },
+      (() => { const bar = roleBar('leader', '내 기록'); bar.classList.add('r3-bar'); return bar; })(),
+      el('div', { class: 'r3-mid' },
+        el('div', { class: 'r3-top' }, el('div', { class: 'r3-ey', text: `${['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][now.getDay()]}, YOUR RIDE` }),
+          el('div', { class: 'r3-hi', role: 'button', title: '눌러서 이름 바꾸기', text: `안녕하세요, ${ls.get('nick', '') || '라이더'}님.`, onclick: () => nickEdit(draw) })),
+        ring, dots,
+        el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'KEEP THE WHEELS TURNING' }),
+          el('div', { class: 'r3-msg', text: '바퀴가 지나간 길이 오늘의 일기가 돼요.' }))),
+      el('div', { class: 'r3-bot' },
+        el('button', { class: 'r3-go', onclick: () => start() }, el('span', { class: 'r3-tri', text: '▶' }), ' 라이딩 시작하기'),
+        el('div', { class: 'rh-info r3-st', style: 'justify-content:center' },
+          el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
+            onclick: walkSetup, text: (wtLabel(T) ? `🎯 ${wtLabel(T)}` : '🎯 목표 정하기') + ' ✎' }),
+          gpsReady, wherePill(true, true))));
+    modeHeroApply(hero, 'bike');
+    const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 45), mv = movingMs(tr, 45), d = new Date(x.info.startAt), th = el('div', { class: 'rh-th' }, ico('bike', 22));
+      photoList(x.t).then(ps => { const p = ps.find(q => !q.v && q.thumb); if (p) { th.replaceChildren(); th.style.backgroundImage = `url("${p.thumb}")`; } }).catch(() => {});
+      return el('a', { class: 'rh-rr', href: `./?my=1&t=${encodeURIComponent(x.t)}` }, th,
+        el('div', { class: 'grow' }, el('b', { text: x.info.name }), el('div', { class: 'sub', style: 'font-size:13px', text: [`${d.getMonth() + 1}월 ${d.getDate()}일`, fmtDist(st.walk), mv > 60000 ? `평균 ${(st.walk / mv * 3600).toFixed(1)}km/h` : ''].filter(Boolean).join(' · ') })), el('span', { text: '›', style: 'color:var(--muted);font-size:20px' })); });
+    return [hero,
+      pending ? el('div', { class: 'banner info' }, el('b', { text: `'${pending.name}' 길을 따라가요` }), el('div', { text: `전체 ${fmtDist(pathLen(pending.route))}. 시작하면 이 길이 지도에 파란 선으로 깔리고, 벗어나면 알려 드려요.` }),
+        el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가지 않기', onclick: () => { pending = null; ls.set('guideNext', null); draw(); } })) : null,
+      IN_KAKAO ? el('div', { class: 'banner alert' }, el('b', { text: '카카오톡 안에서 열었어요' }), el('div', { text: '여기서 기록하면 기록이 카카오톡 안에만 남아요. 평소 쓰는 브라우저에서 기록해 주세요.' }),
+        el('button', { class: 'btn small dark', style: 'align-self:flex-start', text: '기본 브라우저로 열기', onclick: () => { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href); } })) : null,
+      el('div', { class: 'r3-stats' }, ...[['이번 주 거리', kmW < 10 ? kmW.toFixed(1) : kmW.toFixed(0), 'KM'], ['이번 주 라이딩', String(W.n), '번'], ['평균 시속', W.mv > 60000 ? (W.dist / W.mv * 3600).toFixed(1) : '--', 'KM/H']].map(([l, v, u]) => el('div', {}, el('span', { text: l }), el('b', { text: v }), el('small', { text: u })))),
+      el('div', { class: 'sub', style: 'font-size:13px;text-align:center', text: '🚴 큰 속도계로 지금·평균·최고 속도가 보여요 · 5km마다 목소리로 알려 드려요 · 신호 대기처럼 멈춘 시간은 평균에서 빠져요 · 🌇 해 지기 전에 돌아가라고 알려 드려요' }),
+      W.runs.length ? el('div', { class: 'rh-wk' }, el('b', { text: '최근 라이딩' }), el('a', { class: 'link', style: 'padding:0;font-size:13px', href: './?my=1', text: '전체 기록 →' })) : null,
       ...recent].filter(Boolean);
   }
   function walkHome() {
@@ -6855,6 +6967,7 @@ function viewWalk() {
           el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
             onclick: walkSetup, text: (wtLabel(wtGet()) ? `🎯 ${wtLabel(wtGet())} · ` : '🎯 목표 정하기 · ') + `👣 ${sg.toLocaleString()}보` + (ls.get('walkGuideOn', false) ? ` · ♩${cgSpm()}` : '') + ' ✎' }),
           gpsReady, wherePill(true, true))));
+    modeHeroApply(hero, 'trek');
     const recent = W.runs.slice(0, 3).map(x => { const tr = trackLoad(x.t), st = trackStats(tr, 15), d = new Date(x.info.startAt), sn = (ls.get('walkSteps:' + x.t, {}) || {}).n || 0, th = el('div', { class: 'rh-th' }, ico('trek', 22));
       photoList(x.t).then(ps => { const p = ps.find(q => !q.v && q.thumb); if (p) { th.replaceChildren(); th.style.backgroundImage = `url("${p.thumb}")`; } }).catch(() => {});
       return el('a', { class: 'rh-rr', href: `./?my=1&t=${encodeURIComponent(x.t)}` }, th,
@@ -7335,9 +7448,9 @@ function viewWalk() {
     const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null;
     const mv = ['run', 'bike'].includes(m.k) ? movingMs(tr, m.car) : 0, np = m.k === 'run' ? nowPace(tr) : null;
     const gk = m.k === 'run' ? goalKm() : 0, gLeft = gk ? gk * 1000 - st.walk : 0;   // (러닝은 대시보드를 써서 여기는 거의 안 보여요)
-    const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`, gk ? (gLeft > 0 ? `목표 ${gk}km까지 ${fmtDist(gLeft)}` : `목표 ${gk}km 달성`) : ''].filter(Boolean).join(' · ') : m.k === 'bike' ? `평균 속도 ${fmtSpeed(st.walk, mv)} · 움직인 시간 ${fmtRunTime(mv)}` : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
+    const extra = m.k === 'run' ? [`평균 페이스 ${fmtPace(st.walk, mv)}`, np ? `지금 ${np}` : '', `움직인 시간 ${fmtRunTime(mv)}`, gk ? (gLeft > 0 ? `목표 ${gk}km까지 ${fmtDist(gLeft)}` : `목표 ${gk}km 달성`) : ''].filter(Boolean).join(' · ') : m.k === 'bike' ? '' : ev ? `오른 높이 ${ev.gain}m · 지금 ${ev.prof[ev.prof.length - 1][1].toFixed(0)}m` : '';
     tAll.textContent = [extra, st.d - st.walk > 300 ? `차로 이동한 길까지 모두 ${fmtDist(st.d)}` : ''].filter(Boolean).join(' · ');
-    stepsPaint(); walkGoalPaint(); walkGoalCheck(); if (id && ELEV_MODES.includes(m.k)) { sunCheck(); hikePaint(); }
+    stepsPaint(); walkGoalPaint(); walkGoalCheck(); if (id && HK_MODES.includes(m.k)) { sunCheck(); hikePaint(); } bikePaint();
     drawRun();
     if (guide) {
       const at = lastFix || (tr.length ? { lat: tr[tr.length - 1][0], lng: tr[tr.length - 1][1] } : null), w = at && guideWhere(guide.route, at.lat, at.lng, gIdx);
@@ -7494,13 +7607,13 @@ function viewWalk() {
     if (pick === 'run' && ls.get('cgOn', false)) cgStart();   // 러닝 준비 화면에서 켠 케이던스 가이드
     if (pick === 'trek' && ls.get('walkGuideOn', false)) cgStart();   // 걷기 박자 (지난번에 켰으면)
     if (ELEV_MODES.includes(pick) && lastFix) peaksAt(lastFix.lat, lastFix.lng);   // 산 정상 자료를 미리 (산속은 인터넷이 안 될 수 있어서)
-    if (pick === 'trek' || pick === 'hike') {   // 걷기·등산 목표: 거리·시간은 다음에도 그대로, 목표 지점은 이번 한 번만
-      const NK = pick === 'hike' ? 'hikeTargetNext' : 'walkTargetNext', N = ls.get(NK, null) || {};
+    if (pick === 'trek' || pick === 'hike' || pick === 'bike') {   // 걷기·등산·자전거 목표: 거리·시간은 다음에도 그대로, 목표 지점은 이번 한 번만
+      const NK = pick === 'hike' ? 'hikeTargetNext' : pick === 'bike' ? 'bikeTargetNext' : 'walkTargetNext', N = ls.get(NK, null) || {};
       if (N.km || N.min || N.dest) {
         const T = { km: N.km || 0, min: N.min || 0, dest: N.dest || null, hit: {} };
         if (T.dest && lastFix) T.d0 = Math.round(dist(lastFix.lat, lastFix.lng, T.dest.lat, T.dest.lng));
         ls.set('walkTarget:' + id, T); if (N.dest) ls.set(NK, Object.assign({}, N, { dest: null }));
-        setTimeout(() => say(`${pick === 'hike' ? '등산' : '걷기'}를 시작합니다. 목표는 ${[T.km ? `${T.km}킬로` : '', T.min ? `${T.min}분` : '', T.dest ? `${T.dest.n}까지` : ''].filter(Boolean).join(', ')}예요.`), 800);
+        setTimeout(() => say(`${pick === 'hike' ? '등산을' : pick === 'bike' ? '라이딩을' : '걷기를'} 시작합니다. 목표는 ${[T.km ? `${T.km}킬로` : '', T.min ? `${T.min}분` : '', T.dest ? `${T.dest.n}까지` : ''].filter(Boolean).join(', ')}예요.`), 800);
       }
     }
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
@@ -7597,7 +7710,9 @@ function viewWalk() {
     const whOn = !id && pick === 'trek' && !!qs.get('mode'); document.documentElement.classList.toggle('rh-page', rhOn || whOn);
     if (whOn) { root.replaceChildren(...walkHome()); return; }
     const hhOn = !id && pick === 'hike' && !!qs.get('mode'); if (hhOn) document.documentElement.classList.add('rh-page');
-    if (hhOn) { root.replaceChildren(...hikeHome()); return; }   // 등산 첫 화면 (2026-11-07)   // 걷기 첫 화면 (2026-11-07, 러닝 첫 화면과 같은 모양)   // 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게)
+    if (hhOn) { root.replaceChildren(...hikeHome()); return; }
+    const bhOn = !id && pick === 'bike' && !!qs.get('mode'); if (bhOn) document.documentElement.classList.add('rh-page');
+    if (bhOn) { root.replaceChildren(...bikeHome()); return; }   // 자전거 첫 화면 (2026-11-07)   // 등산 첫 화면 (2026-11-07)   // 걷기 첫 화면 (2026-11-07, 러닝 첫 화면과 같은 모양)   // 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게)
     if (!id) {
       root.replaceChildren(...[roleBar('leader', '내 기록'),
         el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
@@ -7713,8 +7828,9 @@ function viewWalk() {
         el('div', { class: 'cnt' }, tDist, tDistLbl)),
       tAll,
       M().k === 'trek' ? tSteps : null,
-      ['trek', 'hike'].includes(M().k) ? tGoalW : null,
-      ELEV_MODES.includes(M().k) ? (hikePaint(), tHike) : null,
+      M().k === 'bike' ? (bikePaint(), tBike) : null,
+      ['trek', 'hike', 'bike'].includes(M().k) ? tGoalW : null,
+      HK_MODES.includes(M().k) ? (hikePaint(), tHike) : null,
       M().k === 'trek' ? cgRow() : null,
       (() => { const G = M().k === 'pgolf' && golfClean(ls.get('walkGolf:' + id, null)); if (M().k !== 'pgolf') return null;
         if (!G) return el('button', { class: 'btn line full', text: '⛳ 점수표 만들기', onclick: () => { ls.set('walkGolf:' + id, golfNew()); draw(); } });
