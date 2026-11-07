@@ -401,7 +401,7 @@ class MainActivity : ComponentActivity() {
         val c = Calendar.getInstance()
         val sp = Store.sport(this)
         Run.begin(System.currentTimeMillis(), Store.goal(this), "${c.get(Calendar.MONTH) + 1}월 ${c.get(Calendar.DAY_OF_MONTH)}일 " + (when (sp) { "hike" -> "등산"; "walk" -> "걷기"; else -> "러닝" }), sp)
-        Store.dest(this)?.let { Run.setDest(it); Store.setDest(this, null) }   // 목표 지점은 이번 기록에만
+        Store.dest(this)?.let { Run.chooseDest(it); Store.setDest(this, null) }   // 목표 지점은 이번 기록에만
         Store.saveCurrent(this)
         showRun()
         h.postDelayed({ Run.say(Run.startLine()) }, 1200)   // 목표 말하기는 시작한 뒤에

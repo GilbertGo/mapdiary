@@ -561,8 +561,8 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         val lng = wx / n * 360 - 180; val lat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / n))))
         val cur = Run.dest
         if (cur != null && hypot(x - (width / 2.0 + (Tiles.px(cur.lng, z) - Tiles.px(lng0, z) - mapOX) * sc).toFloat(), y - (cyS + (Tiles.py(cur.lat, z) - Tiles.py(lat0, z) - mapOY) * sc).toFloat()) < 7 * uu) {
-            Run.setDest(null); Run.buzz(longArrayOf(0, 60)); Run.say("목표 지점을 지웠어요."); Store.saveCurrent(context); invalidate(); return }
-        Run.setDest(Dest(lat, lng, "고른 곳")); Run.buzz(longArrayOf(0, 80, 60, 80))
+            Run.chooseDest(null); Run.buzz(longArrayOf(0, 60)); Run.say("목표 지점을 지웠어요."); Store.saveCurrent(context); invalidate(); return }
+        Run.chooseDest(Dest(lat, lng, "고른 곳")); Run.buzz(longArrayOf(0, 80, 60, 80))
         Run.destLeft()?.let { Run.say("목표 지점을 정했어요. ${if (it >= 1000) "${Math.round(it / 100) / 10.0}킬로" else "${(it / 10).toInt() * 10}미터"} 남았어요.") }
         Store.saveCurrent(context); invalidate()
     }

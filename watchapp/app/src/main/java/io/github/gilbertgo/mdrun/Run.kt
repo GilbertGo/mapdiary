@@ -95,7 +95,7 @@ object Run {
     var id: String? = null
     var dest: Dest? = null; var destHit = false; var destD0 = 0.0
     fun destLeft(): Double? = dest?.let { d -> if (fixLat == 0.0 && fixLng == 0.0) null else dist(fixLat, fixLng, d.lat, d.lng) }
-    fun setDest(d: Dest?) { dest = d; destHit = false; destD0 = destLeft() ?: 0.0 }
+    fun chooseDest(d: Dest?) { dest = d; destHit = false; destD0 = destLeft() ?: 0.0 }
     private fun destCheck() {
         val d = dest ?: return; if (destHit || id == null || manualPause) return
         val l = destLeft() ?: return
