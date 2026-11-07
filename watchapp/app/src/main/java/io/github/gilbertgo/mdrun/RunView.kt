@@ -151,8 +151,14 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         else text(cv, clock(), cx, 20 * u, 6 * u, MUTED, true, true)
         bigWithUnit(cv, fmtKm(Run.walk), "km", 55 * u, 30 * u, 7 * u, CORAL)
         val dd = Run.dest
-        if (dd != null) text(cv, if (Run.destHit) "🏁 ${dd.n} 도착!" else "🏁 ${dd.n.take(9)} " + (Run.destLeft()?.let { fmtDist(it) } ?: ""), cx, 64 * u, LAB * u, if (Run.destHit) GOLD else BLUE, true, max = 0.62f)
+        val sun = if (Run.hike) Run.sunInfo(now) else null
+        val sunWarn = sun != null && sun.need > 0 && sun.left > 0 && sun.spare < 30 * 60000
+        fun hm(t: Long) = Calendar.getInstance().apply { timeInMillis = t }.let { "${it.get(Calendar.HOUR_OF_DAY)}:${String.format("%02d", it.get(Calendar.MINUTE))}" }
+        if (sunWarn && sun != null) text(cv, "🌇 지금 하산 · 해 ${hm(sun.set)}", cx, 64 * u, LAB * u, LATE, true, max = 0.62f)
+        else if (dd != null) text(cv, if (Run.destHit) "🏁 ${dd.n} 도착!" else "🏁 ${dd.n.take(9)} " + (Run.destLeft()?.let { fmtDist(it) } ?: ""), cx, 64 * u, LAB * u, if (Run.destHit) GOLD else BLUE, true, max = 0.62f)
         else if (Run.goal.k != "free") text(cv, if (Run.goalDone) "목표 달성!" else leftText(), cx, 64 * u, LAB * u, if (Run.goalDone) GOLD else MUTED, true, max = 0.6f)
+        else if (Run.summits.isNotEmpty()) text(cv, "🏔 ${Run.summits.last().n}" + (if (Run.summits.last().ele > 0) " ${Run.summits.last().ele}m" else ""), cx, 64 * u, LAB * u, GOLD, true, max = 0.62f)
+        else if (sun != null && sun.left > 0) text(cv, "🌇 해 지는 시각 ${hm(sun.set)}", cx, 64 * u, LAB * u, MUTED, true, max = 0.62f)
         cv.drawRect(cx - .2f * u, 70 * u, cx + .2f * u, 87 * u, paint(LINE))
         if (Run.walkS) {   // 걷기: 다닌 시간 | 걸음 수
             text(cv, fmtTime(now - Run.startAt), cx - 16 * u, 80 * u, 11 * u, Color.WHITE, true, true, max = 0.3f)
@@ -450,8 +456,11 @@ class RunView(c: Context, private val onFinish: () -> Unit) : View(c) {
         text(cv, "끌면 옮겨요 · 두 손가락 확대 $z", cx, 9.5f * u, 3.4f * u, Color.WHITE, true)
         // 위도·경도·해발 고도
         fun deg(v: Double, pos: String, neg: String) = String.format("%.5f° %s", Math.abs(v), if (v >= 0) pos else neg)
-        text(cv, "위도  " + deg(lat, "N", "S"), cx, 70.5f * u, 4.6f * u, Color.WHITE, true, true)
-        text(cv, "경도  " + deg(lng, "E", "W"), cx, 77f * u, 4.6f * u, Color.WHITE, true, true)
+        // 2026-11-07 국가지점번호(119 신고용)를 맨 위에, 위도·경도는 한 줄로
+        val kg = Peaks.kgrid(lat, lng)
+        if (kg.isNotEmpty()) text(cv, "지점번호 $kg", cx, 70.5f * u, 4.8f * u, Color.WHITE, true, true)
+        else text(cv, "위도  " + deg(lat, "N", "S"), cx, 70.5f * u, 4.6f * u, Color.WHITE, true, true)
+        text(cv, if (kg.isNotEmpty()) String.format("%.5f, %.5f", lat, lng) else "경도  " + deg(lng, "E", "W"), cx, 77f * u, if (kg.isNotEmpty()) 4.0f * u else 4.6f * u, if (kg.isNotEmpty()) MUTED else Color.WHITE, true, true)
         val ga = Run.fixAlt; val g = Run.geoid
         val altS = when { ga == null -> "고도 --"; g != null -> "해발 ${(ga - g).roundToInt()}m"; else -> "GPS 높이 ${ga.roundToInt()}m (해발 아님)" }
         val accS = if (Run.lastAcc > 0) " · 오차 ${Run.lastAcc.roundToInt()}m" else ""

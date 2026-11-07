@@ -30,6 +30,7 @@ fun gainOf(a: List<Double>): Int {
 class Report(o: JSONObject) {
     class Note(val title: String, val detail: String, val col: Int)
     val id = o.optString("id"); val name = o.optString("name"); val at = o.optLong("at")
+    private val summitsJ = o.optJSONObject("data")?.optString("walkSummits:${o.optString("id")}", "[]") ?: "[]"   // 오른 정상
     val sum: JSONObject = o.optJSONObject("sum") ?: JSONObject()
     val walk = sum.optDouble("walk", 0.0); val moving = sum.optLong("moving"); val steps = sum.optInt("steps")
     val hrAvg = sum.optInt("hrAvg"); val hrMax = sum.optInt("hrMax"); val cad = sum.optInt("cad")
@@ -76,6 +77,9 @@ class Report(o: JSONObject) {
             d >= 20 -> Note("심박 회복 빨라요 · 1분에 −$d", "끝낼 때 $hrEnd → 1분 뒤 $hr1 · 심폐 체력이 좋아요", BLUE)
             d >= 12 -> Note("심박 회복 보통 · 1분에 −$d", "끝낼 때 $hrEnd → 1분 뒤 $hr1", GOLD)
             else -> Note("심박 회복 느려요 · 1분에 −$d", "피곤하거나 컨디션이 안 좋을 수 있어요 · 오늘은 푹 쉬어요", CORAL) }) }
+        // 오른 정상 (2026-11-07)
+        try { val a = org.json.JSONArray(summitsJ)
+            if (a.length() > 0) { val q = a.getJSONObject(a.length() - 1); out.add(0, Note("🏔 ${(0 until a.length()).joinToString(" · ") { a.getJSONObject(it).optString("n") }} 정상", if (q.optInt("ele") > 0) "해발 ${q.optInt("ele")}m · 휴대폰 내 MPD '오른 산'에 모여요" else "휴대폰 내 MPD '오른 산'에 모여요", GOLD)) } } catch (e: Exception) {}
         // 등산: 오른 높이와 1시간에 오른 높이
         if (hike && gain != null && gain >= 30 && elapsed > 600_000) out.add(Note("오른 높이 ${gain}m", "1시간에 ${(gain / (elapsed / 3_600_000.0)).roundToInt()}m 올랐어요", RunView.ALTC))
         // 페이스 흐름
