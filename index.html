@@ -1090,10 +1090,20 @@ function savePhotoBlob(blob, name) {
   const u = URL.createObjectURL(blob), a = el('a', { href: u, download: name });
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 }
+// 2026-11-07 사용자 '공유받은 사람이 사진 저장할 수 있게': 카톡 안에선 저장이 막혀서 같은 화면을 기본 브라우저로 열고(&sv=1 → 저장 단추를 바로 보여 줌),
+//   아이폰은 '사진 저장'이 되는 공유 창(navigator.share files)으로, 그 밖엔 다운로드 폴더(갤러리 '다운로드' 앨범)로
 async function savePhotos(list, base) {
-  if (IN_KAKAO) return toast('카카오톡 안에서는 저장이 안 돼요. 다른 브라우저로 열어 주세요');
+  if (IN_KAKAO) {
+    if (!confirm('카카오톡 안에서는 사진을 저장할 수 없어요.\n크롬(사파리) 같은 기본 브라우저로 이 화면을 열까요? 열리면 \'⬇ 사진 모두 저장\'을 눌러 주세요.')) return;
+    const u = new URL(location.href); u.searchParams.set('sv', '1'); location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(u.href); return;
+  }
   const ps = list.filter(r => r && r.blob);
   if (!ps.length) return toast('저장할 사진이 없어요');
+  if (IS_IOS && !window.mdNativeSave && navigator.canShare) {   // 아이폰: 공유 창 → '이미지 n개 저장'이면 사진 앱으로
+    const pad = n => String(n).padStart(2, '0');
+    const files = ps.map((r, k) => { const d = new Date(r.ts || Date.now()); return new File([r.blob], `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(k + 1)}.${photoExt(r.blob)}`, { type: r.blob.type || 'image/jpeg' }); });
+    if (navigator.canShare({ files })) { try { await navigator.share({ files }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  }
   for (let k = 0; k < ps.length; k++) {
     const d = new Date(ps[k].ts || Date.now()), pad = n => String(n).padStart(2, '0');
     savePhotoBlob(ps[k].blob, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${String(k + 1).padStart(2, '0')}.${photoExt(ps[k].blob)}`);
@@ -2495,9 +2505,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '동영상도 기록에 넣을 수 있어요: 기록 중 🎬 동영상 찍기, 사진첩에서 사진과 함께 불러오기, 내 MPD 수정하기에서 더하기 · 내 MPD에서 ▶ 표시를 누르면 재생돼요 · 동영상은 이 휴대폰과 백업 파일에만 있고, 지도 링크·공유 카드로는 아직 안 보내져요 · 사진 크게 보기에서 확대가 돼요';
+const UI_NOTES = '받은 사람도 사진을 저장할 수 있어요: 받은 화면 사진 아래 ⬇ 사진 모두 저장 단추 · 카카오톡 안에서 누르면 기본 브라우저로 열려서 거기서 저장돼요 · 아이폰은 사진 앱에 바로 저장 · 동영상도 기록에 넣을 수 있어요(이 휴대폰에만)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2866,7 +2876,8 @@ function viewBragLink(given, feed) {
   if (feed) o.photoRecs = feed.recs;   // 큰 지도에서도 사진이 보이게
   const gal = el('div', { class: 'gallery' }), phCount = el('div', { class: 'sub' });
   const phN = el('span');
-  const phWrap = feed && o.ph ? el('div', { class: 'stack', style: 'gap:10px' }, el('div', { class: 'mdv-sec' }, el('h2', {}, ico('camera', 20), '사진'), phN), gal, phCount) : null;
+  const svAll = el('button', { class: 'btn line full', style: 'display:none', onclick: () => savePhotos(feed.recs, o.name) });
+  const phWrap = feed && o.ph ? el('div', { class: 'stack', style: 'gap:10px' }, el('div', { class: 'mdv-sec' }, el('h2', {}, ico('camera', 20), '사진'), phN), gal, phCount, svAll) : null;
   const hasKey = /[#&][kx]=/.test(location.hash);
   const refreshPh = () => {
     if (!phWrap) return;
@@ -2875,6 +2886,10 @@ function viewBragLink(given, feed) {
       : feed.recs.length < o.ph ? `사진을 불러오는 중이에요… (${feed.recs.length}/${o.ph})` : '';
     phCount.style.display = phCount.textContent ? '' : 'none';
     phN.textContent = hasKey && feed.recs.length >= o.ph ? `${feed.recs.length}장 · 누르면 크게` : '';
+    svAll.style.display = feed.recs.length ? '' : 'none';
+    svAll.textContent = IN_KAKAO ? `⬇ 사진 ${feed.recs.length}장 저장하기 (브라우저로 열려요)` : `⬇ 사진 ${feed.recs.length}장 모두 휴대폰에 저장`;
+    if (qs.get('sv') === '1' && !IN_KAKAO && feed.recs.length >= o.ph && !svAll.dataset.hl) {   // 카톡에서 저장하러 넘어왔으면 단추를 바로 보여 줘요
+      svAll.dataset.hl = '1'; svAll.className = 'btn primary full'; setTimeout(() => svAll.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400); toast('⬇ 단추를 누르면 사진이 저장돼요'); }
     if (phLayer) { phLayer.clearLayers(); photoMarkers(null, phLayer, feed.recs); }
   };
   if (feed) feed.on.push(refreshPh);
