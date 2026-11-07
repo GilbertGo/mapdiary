@@ -1421,7 +1421,7 @@ async function trailWeather(t, tr, live) {
   sessionStorage.setItem('wxFail:' + t, '1'); return null;
 }
 const wxText = w => { const [e, n] = wxName(w.c); return `${e} ${n} · ${w.lo === w.hi ? w.lo : `${w.lo}~${w.hi}`}°C · 바람 ${w.w}m/s${w.p >= 0.5 ? ` · 비 ${w.p}mm` : ''}`; };
-// 난이도·칼로리 카드 (걷는 모드: 등산·트래킹 등. 러닝·자전거·파크골프는 칼로리만 숫자 칸에)
+// 난이도·칼로리 카드 (걷는 모드: 등산·걷기 등. 러닝·자전거·파크골프는 칼로리만 숫자 칸에)
 function diffCard(modeK, walkM, gain) {
   if (['run', 'bike', 'pgolf'].includes(modeK) || walkM < 500) return null;
   const D = diffOf(walkM, gain), kg = bodyKg();
@@ -1682,7 +1682,7 @@ function hrCard(t, tr) {
 // car: 이 속도(km/h)보다 빠르면 차(탈것)로 간 길로 봐요. did: 거리 앞에 붙는 말
 const MODES = [
   { k: 'hike', label: '등산', car: 15, did: '걸은' },
-  { k: 'trek', label: '트래킹', car: 15, did: '걸은' },
+  { k: 'trek', label: '걷기', car: 15, did: '걸은' },   // 2026-11-07 '트래킹' → '걷기'(사용자 '걷기로 바꿔'). 키 trek은 그대로(예전 기록)
   { k: 'bike', label: '자전거', car: 45, did: '탄' },
   { k: 'run', label: '러닝', car: 25, did: '달린' },
   { k: 'camp', label: '캠핑', car: 15, did: '걸은' },
@@ -2535,9 +2535,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '러닝 시작 한 번에: 러닝 시작하기를 누르면 지난번 목표 그대로 바로 출발해요 · 목표를 바꾸려면 아래 🎯 알약 · 덜 귀찮게: 사진 메모 창, 끝내기 확인 창 없앰 · 새 판 알림은 저절로 사라져요';
+const UI_NOTES = '트래킹 모드 이름이 걷기로 바뀌었어요 · 예전 트래킹 기록도 걷기로 보여요 · 러닝 시작하기는 한 번에 출발해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2632,7 +2632,7 @@ function showCode(code) {
 }
 // 링크 보내기 글(2026-10-27 '링크를 안 누르는 사람이 있어, 궁금할 정도로'): 제목·날짜·숫자·사진 수를 먼저 보여 주고 '눌러서 보기'
 function linkText(o, url, code) {
-  const ic = { hike: '⛰', trek: '🥾', run: '🏃', bike: '🚴', camp: '⛺', backpack: '🎒', travel: '✈️', date: '💕', daily: '☕', pgolf: '⛳' }[o.modeK] || '📍';
+  const ic = { hike: '⛰', trek: '🚶', run: '🏃', bike: '🚴', camp: '⛺', backpack: '🎒', travel: '✈️', date: '💕', daily: '☕', pgolf: '⛳' }[o.modeK] || '📍';
   const nums = (o.stats || []).filter(x => x && x !== '진행 중' && !/^전체 이동/.test(x)).slice(0, 3), nPh = (o.photoRecs || []).length;
   return [`${ic} ${o.name}`, `${o.dateText}${o.modeLabel ? ' · ' + o.modeLabel : ''}${(o.stats || []).includes('진행 중') ? ' · 지금 가는 중' : ''}`,
     [...nums, nPh ? `사진 ${nPh}장` : ''].filter(Boolean).join(' · '), '',
@@ -5069,7 +5069,7 @@ function viewMyList() {
     const inMonth = days.filter(x => { const d = new Date(x.info.startAt); return d.getFullYear() === Y && d.getMonth() === Mo; });
     // 이달 합계
     let walk = 0, gain = 0, hikes = 0;
-    inMonth.forEach(x => { const M = modeOfT(x.t), tr = trackLoad(x.t); walk += trackStats(tr, M.car).walk; if (['hike', 'trek'].includes(M.k)) hikes++; const ev = ELEV_MODES.includes(M.k) && elevStats(tr); if (ev) gain += ev.gain; });
+    inMonth.forEach(x => { const M = modeOfT(x.t), tr = trackLoad(x.t); walk += trackStats(tr, M.car).walk; if (M.k === 'hike') hikes++; const ev = ELEV_MODES.includes(M.k) && elevStats(tr); if (ev) gain += ev.gain; });
     const move = n => { const d = new Date(Y, Mo + n, 1); ym = [d.getFullYear(), d.getMonth()]; sel = null; draw(); };
     const today = keyOf(Date.now());
     const cells = [];
