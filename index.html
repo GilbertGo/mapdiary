@@ -2602,9 +2602,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-17';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-18';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '시계와 MPD Run에서 받은 기록이 다 저장됐는지 다시 확인해요 · 일부를 못 받으면 ⚠ 일부 데이터 미수신으로 보이고, 저장 공간이 생기면 저절로 다시 받아요 · MPD Run만 쓸 때도 운동 뒤 심박 회복이 늦게 와도 들어가요 · 내 MPD에서 지운 시계 기록은 시계가 다시 보내도 되살아나지 않아요 · 예전에 지운 것으로 보이는 기록은 바로 지우지 않고 보류해 두고, 시계 카드에서 다시 가져올 수 있어요 · 연결 코드로 받는 시계 기록이 300개가 넘어도 모두 와요';
+const UI_NOTES = '⚙ 설정에 🧪 실험실 · AI 추억 발견이 생겼어요 (시험 중) · 사진을 몇 장 고르면 그날 MPD 기록과 이어 추억 카드를 만들어 보낼 수 있어요 · 고른 사진만 이 휴대폰 안에서 보고, AI는 직접 누를 때만 쓰고 쓸 때마다 알려 드려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3237,6 +3237,7 @@ function route() {
   if (qs.get('game')) return viewGames();
   if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
+  if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
   if (qs.get('album')) return setTimeout(viewAlbum);   // 가족 앨범 (아래쪽 const가 준비된 뒤에)
   if (qs.get('room')) return viewRoom();
   if (qs.get('my')) return qs.get('t') ? viewMyOne(qs.get('t')) : viewMyList();
@@ -3436,6 +3437,8 @@ function appSettings() {
       head('러닝'),
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '정하지 않았어요', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
       row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
+      head('실험실'),
+      row('🧪', 'AI 추억 발견', '사진을 골라 MPD 기록과 이어 추억 카드 만들기 · 시험 중', () => { location.href = './?lab=mem'; }),
       head('연결'),
       row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', () => { location.href = './?album=1'; }),
       row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
@@ -6264,6 +6267,327 @@ async function talkMicAsk() {
   try { const st = await navigator.permissions.query({ name: 'microphone' }); if (st.state === 'granted') return true; } catch {}
   try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); return true; }
   catch (e) { return !(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')); }
+}
+// =====================================================================
+// 🧪 실험실 · AI 추억 발견 (2026-11-07, Phase 1 실험실 MVP, 개발 가지 lab/memory-p1)
+// 사진 고르기 → 기록 연결 → 추억 후보(규칙) → 카드 편집 → 공유(직접 누름) → 새로운 경험 한 가지
+// 원칙: 고른 사진만 이 휴대폰 안에서 봐요(앨범 전체를 훑지 않음) · 사진은 밖으로 안 나감(공유를 누를 때만 카드 그림 한 장)
+//      AI는 사용자가 누를 때만, 사진 없이 '확인된 사실 글'만 보내고, 쓸 때마다 알림 + 사용 기록(labAiLog)
+//      확인된 사실(✔)과 추측(~)을 나눠 보여 줌 · 사람은 직접 고른 것만(얼굴로 알아보지 않음)
+// 저장: labPeople=[{id,nick,rel}] · labLinks={기록ID 또는 'd:날짜': [사람id]} · labMem=[{id,at,key,title,msg,ph:[id],facts,shared,idea}]
+//       labAiOk(AI 사용 동의) · labAiLog=[{at,kind,inT,outT}] · IndexedDB 'mpdLab' > ph {id,ts,tsSrc,lat,lng,locSrc,th,img,at} / card {id,url}
+// 라우팅이 스크립트 중간에 돌아서 모두 function으로(const면 TDZ), 화면은 setTimeout(viewLab)
+// =====================================================================
+function labDb() {
+  return labDb.p || (labDb.p = new Promise((res, rej) => { const r = indexedDB.open('mpdLab', 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore('ph', { keyPath: 'id' }); r.result.createObjectStore('card', { keyPath: 'id' }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+}
+async function labIdb(store, mode, fn) { const db = await labDb(); return new Promise((res, rej) => { const tx = db.transaction(store, mode), s = tx.objectStore(store); let out; const q = fn(s); if (q) q.onsuccess = () => { out = q.result; }; tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); }); }
+const labPhAll = () => labIdb('ph', 'readonly', s => s.getAll()).then(a => (a || []).sort((x, y) => (x.ts || 0) - (y.ts || 0)));
+function labPeople() { const v = ls.get('labPeople', []); return Array.isArray(v) ? v : []; }
+function labLinks() { const v = ls.get('labLinks', {}); return v && typeof v === 'object' ? v : {}; }
+function labMems() { const v = ls.get('labMem', []); return Array.isArray(v) ? v : []; }
+const LAB_REL = ['배우자', '가족', '친구', '동료', '그 밖'];
+const labDay = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const labDate = ts => { const d = new Date(ts); return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; };
+function labSheet(title, ...kids) {
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
+  bg.append(el('div', { class: 'sheet stack', style: 'gap:12px;max-height:88vh;overflow:auto' }, el('h2', { style: 'margin:0', text: title }), ...kids));
+  document.body.append(bg); ovGuard(); return bg;
+}
+// ---------- 하루 기록 찾기: 사진 시각이 기록 시간(앞뒤 30분) 안이면 '확실', 같은 날 기록만 있으면 '같은 날' ----------
+function labDays() {
+  const out = [];
+  for (const x of pastTrips()) {
+    const ids = x.album ? ((albumGet(x.t) || {}).days || []) : [x.t];
+    for (const t of ids) { const tr = trackLoad(t); if (tr.length < 2) continue; out.push({ t, a: tr[0][2], b: tr[tr.length - 1][2], album: x.album ? x.t : null }); }
+  }
+  return out;
+}
+function labMatch(ts, days) {
+  let best = null;
+  for (const d of days) if (ts >= d.a - 30 * 60000 && ts <= d.b + 30 * 60000) { const gap = ts < d.a ? d.a - ts : ts > d.b ? ts - d.b : 0; if (!best || gap < best.gap) best = { t: d.t, gap, sure: true }; }
+  if (best) return best;
+  const day = labDay(ts), same = days.filter(d => labDay(d.a) === day || labDay(d.b) === day);
+  return same.length ? { t: same[0].t, sure: false } : null;
+}
+// ---------- 확인된 사실 모으기 (✔). 지어내지 않게 기록·사진에 있는 것만 ----------
+function labFacts(c) {
+  const f = [], g = [];   // f: 확인된 사실, g: 추측
+  const ts0 = c.ph[0].ts, ts1 = c.ph[c.ph.length - 1].ts;
+  if (c.t) {
+    const M = modeOfT(c.t), tr = trackLoad(c.t), st = trackStats(tr, M.car), wp = ls.get('walkPlaces:' + c.t, {}), wh = ls.get('walkWhere:' + c.t, null), wx = ls.get('walkWx:' + c.t, null);
+    f.push({ k: 'date', x: labDate(tr[0][2]) });
+    f.push({ k: 'act', x: `${ls.get('walkMode:' + c.t, null) ? M.label : '기록'} · ${ls.get('trackName:' + c.t, '') || '이름 없는 기록'}` });
+    f.push({ k: 'time', x: `${kTime(tr[0][2])} ~ ${kTime(tr[tr.length - 1][2])} (${fmtDur(tr[tr.length - 1][2] - tr[0][2])})` });
+    if (st.walk >= 100) f.push({ k: 'dist', x: `${M.did || '다닌'} 거리 ${fmtDist(st.walk)}` });
+    const pl = (wh && wh.n) || [wp.start, wp.end].filter(p => p && !/^(출발|도착) 지점$|^지금 여기$/.test(p)).join(' → ');
+    if (pl) f.push({ k: 'place', x: `장소 ${pl}` });
+    if (wx && typeof wx.c === 'number') { try { f.push({ k: 'wx', x: `날씨 ${wxText(wx)}` }); } catch {} }
+    if (!c.sure) g.push('사진 시각이 기록 시간 밖이에요. 같은 날이라 이 기록과 이어 봤어요');
+  } else {
+    f.push({ k: 'date', x: labDate(ts0) });
+    g.push('이날 MPD 기록은 없어요. 사진만으로 만든 후보예요');
+  }
+  f.push({ k: 'photo', x: `고른 사진 ${c.ph.length}장 · ${kTime(ts0)}${ts1 - ts0 > 60000 ? ' ~ ' + kTime(ts1) : ''}` });
+  const ppl = (labLinks()[c.key] || []).map(id => labPeople().find(p => p.id === id)).filter(Boolean);
+  if (ppl.length) f.push({ k: 'who', x: `함께한 사람 ${ppl.map(p => `${p.nick}(${p.rel})`).join(', ')}` });
+  const note = ls.get('labNote:' + c.key, '');
+  if (note) f.push({ k: 'note', x: `내가 적은 말 "${note}"` });
+  const yrs = new Date().getFullYear() - new Date(ts0).getFullYear(), sameDay = Math.abs(((Date.now() - ts0) / 864e5) % 365.25) < 4 || Math.abs(((Date.now() - ts0) / 864e5) % 365.25) > 361;
+  if (yrs >= 1 && sameDay) f.push({ k: 'ann', x: `${yrs}년 전 이맘때` });
+  if (c.ph.some(p => p.tsSrc === 'file')) g.push('일부 사진은 찍은 시각이 없어 파일 날짜로 셈했어요');
+  return { f, g };
+}
+// ---------- 추억 후보 (최대 3개): 같은 기록(또는 같은 날)으로 묶고, 점수 = 사진 수 + 기록 있음 + 함께한 사람 + 기념일 ----------
+function labCands(phs) {
+  const days = labDays(), groups = new Map();
+  for (const p of phs) {
+    if (!p.ts) continue;
+    const m = labMatch(p.ts, days), key = m ? m.t : 'd:' + labDay(p.ts);
+    if (!groups.has(key)) groups.set(key, { key, t: m ? m.t : null, sure: m ? m.sure : false, ph: [] });
+    const g = groups.get(key); g.ph.push(p); if (m && m.sure) g.sure = true;
+  }
+  // 찍은 시각을 모르는(파일 날짜뿐인) 사진만 있는 묶음은 후보에서 빼요: 그날이 정말 그날인지 알 수 없어서
+  const out = [...groups.values()].filter(c => c.sure || c.ph.some(p => p.tsSrc === 'exif')).map(c => { c.ph.sort((a, b) => a.ts - b.ts); c.facts = labFacts(c);
+    const why = [];
+    if (c.t) why.push(c.sure ? '사진을 찍은 시간에 MPD 기록이 있어요' : '같은 날 MPD 기록이 있어요');
+    if (c.ph.length >= 3) why.push(`이날 사진을 ${c.ph.length}장 고르셨어요`);
+    if ((labLinks()[c.key] || []).length) why.push('소중한 사람과 함께한 날로 표시돼 있어요');
+    if (c.facts.f.some(x => x.k === 'ann')) why.push('지금과 같은 계절의 지난 기억이에요');
+    c.why = why; c.score = c.ph.length + (c.t ? (c.sure ? 6 : 3) : 0) + (labLinks()[c.key] || []).length * 5 + (c.facts.f.some(x => x.k === 'ann') ? 4 : 0);
+    c.title = c.t ? (ls.get('trackName:' + c.t, '') || labDate(c.ph[0].ts)) : labDate(c.ph[0].ts);
+    return c; });
+  return out.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+// 기본 메시지(AI 없이): 확인된 사실로만
+function labMsg(c) {
+  const ppl = (labLinks()[c.key] || []).map(id => labPeople().find(p => p.id === id)).filter(Boolean);
+  const d = new Date(c.ph[0].ts), when = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  const who = ppl.length ? `${ppl.map(p => p.nick).join(', ')}, ` : '';
+  const act = c.t ? (ls.get('trackName:' + c.t, '') || modeOfT(c.t).label) : '';
+  return `${who}${when}${act ? ` ${act}` : ''} 기억나요?\n그날 사진을 다시 보니 좋아서 보내요.`;
+}
+// ---------- AI (사용자가 누를 때만 · 쓸 때마다 알림 · 사용 기록) ----------
+async function labAi(kind, facts, extra) {
+  const key = String(ls.get('claudeKey', '') || '').trim();
+  if (!key) { toast('AI를 쓰려면 ⚙ 설정의 가족 앨범 ✍ Claude 열쇠를 먼저 넣어 주세요'); return null; }
+  if (!ls.get('labAiOk', false)) {
+    const ok = await new Promise(res => { const bg = labSheet('✨ AI로 다듬기 전에',
+      el('div', { class: 'sub', text: '누를 때마다 Claude(Anthropic)에 아래 글만 보내요. 사진·위치 좌표는 보내지 않아요. 넣어 두신 열쇠로 쓰여서 아주 적은 사용료가 들어요. 쓸 때마다 알림이 뜨고, 실험실 맨 아래 \'AI 사용 기록\'에 남아요.' }),
+      el('div', { class: 'card sub', style: 'font-size:13px;white-space:pre-wrap', text: facts.map(x => '· ' + x).join('\n') }),
+      el('button', { class: 'btn primary full', text: '알겠어요, 이번부터 써요', onclick: () => { ls.set('labAiOk', true); bg.remove(); res(true); } }),
+      el('button', { class: 'btn line full', text: '쓰지 않을래요', onclick: () => { bg.remove(); res(false); } })); });
+    if (!ok) return null;
+  }
+  toast(`✨ AI를 써요 · ${kind} · 사진은 보내지 않아요`, true);
+  const sys = '너는 가족 사진 일기의 문장을 돕는다. 아래 "확인된 사실"에 적힌 것만 쓴다. 사실에 없는 사건·장소·감정의 이유·사람 관계·숫자는 절대 지어내지 않는다. 모르는 건 쓰지 않는다. 한국어, 따뜻하지만 과장 없이.';
+  const prompt = `${sys}\n\n확인된 사실:\n${facts.map((x, i) => `${i + 1}. ${x}`).join('\n')}\n\n${extra}\n\n결과는 JSON 하나로만: {"text": "...", "used": [쓴 사실 번호]}`;
+  try {
+    const { default: Anthropic } = await import(TALK_SDK);
+    const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+    const res = await client.messages.create({ model: FA_MODEL, max_tokens: 400, messages: [{ role: 'user', content: prompt }] });
+    const u = res.usage || {}, log = ls.get('labAiLog', []);
+    log.unshift({ at: Date.now(), kind, inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+    toast(`✨ AI 사용 끝 · ${kind} · 글자 단위 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+    const tb = (res.content || []).find(x => x.type === 'text'); if (!tb || res.stop_reason === 'refusal') throw new Error('빈 답');
+    let j; try { j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || [tb.text])[0]); } catch { j = { text: tb.text, used: [] }; }
+    const text = String(j.text || '').trim().slice(0, 400);
+    // 숫자 확인: 사실에 없는 숫자가 나오면 알려요(지어낸 날짜·거리일 수 있어서)
+    const known = new Set(facts.join(' ').match(/\d+(\.\d+)?/g) || []), odd = [...new Set((text.match(/\d+(\.\d+)?/g) || []).filter(n => !known.has(n)))];   // 낱말 단위로 견줘요
+    return { text, used: Array.isArray(j.used) ? j.used : [], odd };
+  } catch (e) {
+    const m = String(e && (e.status || e.message) || e);
+    toast(/401/.test(m) ? '⚠ AI 열쇠를 받지 않아요 · ⚙ 설정에서 열쇠를 다시 넣어 주세요' : '⚠ AI를 쓰지 못했어요 · ' + m.slice(0, 60));
+    return null;
+  }
+}
+// ---------- 카드 그림 (1080 × 1350): 사진 1~3장 + 메시지 + 고른 정보 ----------
+async function labCard(c, opt) {
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  g.fillStyle = '#10161F'; g.fillRect(0, 0, W, H);
+  const imgs = await Promise.all(opt.ph.map(p => new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = p.img; })));
+  const cover = (im, x, y, w, h) => { if (!im) return; const s = Math.max(w / im.width, h / im.height), sw = w / s, sh = h / s; g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.drawImage(im, (im.width - sw) / 2, (im.height - sh) * .4, sw, sh, x, y, w, h); g.restore(); };
+  const P = 860;
+  if (imgs.length <= 1) cover(imgs[0], 0, 0, W, P);
+  else if (imgs.length === 2) { cover(imgs[0], 0, 0, W / 2 - 3, P); cover(imgs[1], W / 2 + 3, 0, W / 2 - 3, P); }
+  else { cover(imgs[0], 0, 0, W * .62 - 3, P); cover(imgs[1], W * .62 + 3, 0, W * .38 - 3, P / 2 - 3); cover(imgs[2], W * .62 + 3, P / 2 + 3, W * .38 - 3, P / 2 - 3); }
+  const gr = g.createLinearGradient(0, P - 260, 0, P + 40); gr.addColorStop(0, 'rgba(16,22,31,0)'); gr.addColorStop(1, 'rgba(16,22,31,1)'); g.fillStyle = gr; g.fillRect(0, P - 260, W, 300);
+  let y = P + 40;
+  g.fillStyle = '#FF8A4C'; g.fillRect(64, y, 56, 6); y += 50;
+  g.fillStyle = '#FFFFFF'; g.font = '700 46px "Gowun Batang", serif';
+  const lines = []; for (const para of String(opt.msg || '').split('\n')) { let cur = ''; for (const ch of para) { if (g.measureText(cur + ch).width > W - 128) { lines.push(cur); cur = ch; } else cur += ch; } lines.push(cur); }
+  for (const ln of lines.slice(0, 5)) { g.fillText(ln, 64, y); y += 64; }
+  const info = [];
+  if (opt.showDate) info.push(labDate(c.ph[0].ts));
+  if (opt.showAct && c.t) info.push((ls.get('walkMode:' + c.t, null) ? modeOfT(c.t).label + ' · ' : '') + (ls.get('trackName:' + c.t, '') || ''));
+  if (opt.showPlace) { const pl = c.facts.f.find(x => x.k === 'place'); if (pl) info.push(pl.x.replace(/^장소 /, '')); }
+  g.fillStyle = 'rgba(255,255,255,.7)'; g.font = '500 30px Pretendard, sans-serif';
+  const iy = Math.max(y + 10, H - 120); info.slice(0, 3).forEach((s, i) => g.fillText(s.slice(0, 40), 64, iy + i * 40 - (info.length - 1) * 40 + 40));
+  g.fillStyle = 'rgba(255,255,255,.45)'; g.font = '600 26px Pretendard, sans-serif'; g.textAlign = 'right'; g.fillText('Map Photo Diary', W - 56, H - 48); g.textAlign = 'left';
+  return cv;
+}
+// ---------- 새로운 경험 한 가지 (규칙): 같은 걸 반복하지 않게 '다른 시간·다른 곳·다른 활동' 중에서 ----------
+// '여보와'·'유진과': 받침이 있으면 '과', 없으면 '와' ('님'을 붙이지 않아요: 별명이 '여보'일 수 있어서)
+function labWa(w) { const ch = String(w).slice(-1).charCodeAt(0); return w + (ch >= 0xAC00 && ch <= 0xD7A3 && (ch - 0xAC00) % 28 ? '과' : '와'); }
+function labIdea(c) {
+  const ppl = (labLinks()[c.key] || []).map(id => labPeople().find(p => p.id === id)).filter(Boolean), who = ppl.length ? labWa(ppl[0].nick) + ' 함께' : '소중한 사람과';
+  const ts = c.ph[0].ts, h = new Date(ts).getHours(), M = c.t ? modeOfT(c.t) : null, tr = c.t ? trackLoad(c.t) : [];
+  const ideas = [];
+  if (tr.length) { const s = sunTimes(tr[0][0], tr[0][1]); if (h < 15 && s) ideas.push({ x: `${who} 그때 그 동네를 해 질 녘에 걸어 보세요 · 오늘 해 지는 시각 ${kTime(s.set)}`, why: `그날은 ${kTime(ts)}쯤이었어요. 같은 곳도 다른 빛에서는 새롭게 보여요` });
+    else if (s) ideas.push({ x: `${who} 그 동네를 이른 아침에 걸어 보세요 · 해 뜨는 시각 ${kTime(s.rise)}`, why: `그날은 ${kTime(ts)}쯤이었어요` }); }
+  if (M && ['hike', 'trek'].includes(M.k)) ideas.push({ x: `${who} 그때보다 조금 짧은 새 길을 골라 30분 걸어 보세요`, why: `그날 ${M.label} 기록이 있어요. 같은 길 대신 처음 가는 길로` });
+  if (M && ['date', 'travel', 'daily'].includes(M.k)) ideas.push({ x: `${who} 그날처럼 한 곳에 들러, 이번엔 서로 사진을 한 장씩 찍어 주세요`, why: `그날 ${M.label} 기록이 있어요` });
+  const yrs = new Date().getFullYear() - new Date(ts).getFullYear();
+  if (yrs >= 1) ideas.push({ x: `${who} 오늘 같은 자리에서 ${yrs}년 만의 사진을 찍어 나란히 놓아 보세요`, why: `${yrs}년 전 사진이에요` });
+  ideas.push({ x: `${who} 오늘 저녁 이 사진을 같이 보며 그날 이야기를 10분 나눠 보세요`, why: '시간이 없어도 할 수 있는 것' });
+  const seen = ls.get('labIdeaSeen', []); const pick = ideas.find(i => !seen.includes(i.x)) || ideas[0];
+  ls.set('labIdeaSeen', [pick.x, ...seen].slice(0, 30)); return pick;
+}
+// ---------- 화면 ----------
+function viewLab() {
+  document.title = 'AI 추억 발견 · 실험실';
+  const S = viewLab.S || (viewLab.S = { step: 'home', phs: [], cands: [], c: null, opt: null });
+  const top = el('div', { class: 'stack', style: 'gap:12px;padding-bottom:40px' });
+  const go = step => { S.step = step; draw(); scrollTo(0, 0); };
+  const head = (t, sub) => [el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('span', { style: 'font-size:12px;font-weight:800;color:#fff;background:#7C4DFF;border-radius:99px;padding:3px 9px', text: '🧪 실험실' }), el('b', { style: 'font-size:20px', text: t })), sub ? el('div', { class: 'sub', text: sub }) : null];
+  const aiLog = () => { const log = ls.get('labAiLog', []); if (!log.length) return el('div', { class: 'sub', style: 'font-size:12px', text: 'AI 사용 기록: 아직 없어요' });
+    const m = log.filter(x => new Date(x.at).getMonth() === new Date().getMonth()).length;
+    return el('details', { class: 'sub', style: 'font-size:12px' }, el('summary', { text: `✨ AI 사용 기록 · 이번 달 ${m}번 · 모두 ${log.length}번` }),
+      ...log.slice(0, 20).map(x => el('div', { text: `${new Date(x.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${x.kind} · 입력 ${x.inT} · 출력 ${x.outT}` }))); };
+  const peopleBox = (key, redraw) => {   // 함께한 사람: 직접 고르기·더하기 (얼굴로 알아보지 않아요)
+    const L = labLinks(), on = new Set(L[key] || []), box = el('div', { class: 'stack', style: 'gap:6px' }, el('b', { style: 'font-size:14px', text: '누구와 함께였나요? (고르지 않아도 돼요)' }));
+    const row = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });
+    for (const p of labPeople()) row.append(el('button', { class: 'btn small ' + (on.has(p.id) ? 'primary' : 'line'), text: `${on.has(p.id) ? '✓ ' : ''}${p.nick} · ${p.rel}`, onclick: () => { const l = labLinks(), s = new Set(l[key] || []); s.has(p.id) ? s.delete(p.id) : s.add(p.id); l[key] = [...s]; if (!l[key].length) delete l[key]; ls.set('labLinks', l); redraw(); } }));
+    row.append(el('button', { class: 'btn small line', text: '＋ 사람 더하기', onclick: () => labPersonEdit(null, redraw) }));
+    box.append(row); return box;
+  };
+  const draw = () => {
+    top.replaceChildren(roleBar('leader', 'AI 추억 발견'));
+    if (S.step === 'home') {
+      const mems = labMems();
+      top.append(...head('AI 추억 발견', '휴대폰 사진 몇 장을 고르면 MPD 기록과 이어 추억 카드를 만들어요. 고른 사진만 이 휴대폰 안에서 보고, 앨범 전체는 보지 않아요.'),
+        el('button', { class: 'btn primary full big', text: '📷 사진 고르기 (20~50장)', onclick: () => pick.click() }),
+        S.phs.length ? el('button', { class: 'btn line full', text: `고른 사진 ${S.phs.length}장으로 이어서 하기`, onclick: () => go('link') }) : null,
+        el('div', { class: 'card stack', style: 'gap:8px' }, el('b', { text: '💞 소중한 사람' }),
+          el('div', { class: 'sub', style: 'font-size:13px', text: '별명과 관계만 적어요. 사진의 얼굴로 알아보지 않아요.' }),
+          ...labPeople().map(p => el('div', { class: 'row', style: 'justify-content:space-between' }, el('span', { text: `${p.nick} · ${p.rel}` }),
+            el('button', { class: 'link', text: '✎ 고치기', onclick: () => labPersonEdit(p, draw) }))),
+          el('button', { class: 'btn small line', style: 'align-self:flex-start', text: '＋ 사람 더하기', onclick: () => labPersonEdit(null, draw) })),
+        mems.length ? el('div', { class: 'stack', style: 'gap:8px' }, el('b', { text: `내가 만든 추억 ${mems.length}` }),
+          ...mems.slice(0, 20).map(m => el('div', { class: 'card stack', style: 'gap:4px' }, el('b', { text: m.title }),
+            el('div', { class: 'sub', style: 'white-space:pre-wrap', text: m.msg }), el('div', { class: 'sub', style: 'font-size:12px', text: `${new Date(m.at).toLocaleDateString('ko-KR')} 만듦 · ${m.shared ? '보냄 ✓' : '아직 안 보냄'}` }),
+            m.idea ? el('div', { class: 'sub', style: 'font-size:13px;color:var(--pine)', text: '🌱 ' + m.idea }) : null))) : null,
+        S.phs.length ? el('button', { class: 'link', style: 'align-self:flex-start;color:var(--muted)', text: '고른 사진 이 휴대폰에서 지우기', onclick: async () => { if (!confirm('실험실에 고른 사진 사본을 지울까요? (휴대폰 앨범 원본은 그대로예요)')) return; await labIdb('ph', 'readwrite', s => s.clear()); S.phs = []; draw(); } }) : null,
+        aiLog());
+    } else if (S.step === 'link') {
+      const days = labDays(), ok = S.phs.filter(p => p.ts), sure = ok.filter(p => (labMatch(p.ts, days) || {}).sure).length;
+      const noTs = S.phs.filter(p => !p.ts || (p.tsSrc === 'file' && !(labMatch(p.ts, days) || {}).sure));
+      top.append(...head('기록과 잇기', `고른 사진 ${S.phs.length}장 · 찍은 시각 있음 ${S.phs.filter(p => p.tsSrc === 'exif').length}장 · MPD 기록 시간과 맞음 ${sure}장 · 사진 속 위치 ${S.phs.filter(p => p.locSrc === 'exif').length}장`),
+        el('div', { class: 'sub', style: 'font-size:13px', text: '휴대폰이 개인정보 보호로 사진의 위치를 지워서 줄 때가 많아요. 그래서 찍은 시각으로 그때의 MPD 기록을 찾고, 기록의 길에서 위치를 알아내요.' }),
+        noTs.length ? el('div', { class: 'card sub', text: `찍은 시각을 모르는 사진 ${noTs.length}장(파일 날짜뿐)은 그날이 맞는지 알 수 없어 후보에서 빠져요.` }) : null,
+        el('div', { style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:4px' }, ...S.phs.slice(0, 50).map(p => { const m = p.ts ? labMatch(p.ts, days) : null;
+          return el('div', { style: 'position:relative' }, el('img', { src: p.th, style: 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block' }),
+            el('span', { style: `position:absolute;left:3px;bottom:3px;font-size:10px;font-weight:700;color:#fff;background:${m ? (m.sure ? '#0277BD' : '#7C4DFF') : '#5F7A92'};border-radius:6px;padding:1px 5px`, text: m ? (m.sure ? '기록' : '같은 날') : (p.ts ? '기록 없음' : '날짜 없음') })); })),
+        el('button', { class: 'btn primary full big', text: '추억 후보 찾기', onclick: () => { S.cands = labCands(S.phs); go('cands'); } }),
+        el('button', { class: 'btn line full', text: '← 처음으로', onclick: () => go('home') }));
+    } else if (S.step === 'cands') {
+      top.append(...head('추억 후보', '확인된 것(✔)과 짐작한 것(~)을 나눠 보여 줘요. 하나를 골라 카드를 만들어요.'));
+      if (!S.cands.length) top.append(el('div', { class: 'card', text: '날짜가 있는 사진이 없어 후보를 못 만들었어요. 다른 사진을 골라 주세요.' }));
+      S.cands.forEach((c, i) => { c.facts = labFacts(c);
+        top.append(el('div', { class: 'card stack', style: 'gap:8px' },
+          el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('b', { style: 'font-size:17px', text: `${i + 1}. ${c.title}` })),
+          el('div', { style: 'display:flex;gap:4px;overflow-x:auto' }, ...c.ph.slice(0, 6).map(p => el('img', { src: p.th, style: 'width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none' }))),
+          el('div', { class: 'sub', style: 'font-size:13px' }, el('b', { text: '고른 까닭 ' }), c.why.join(' · ') || '사진을 고르셨어요'),
+          ...c.facts.f.map(x => el('div', { style: 'font-size:14px', text: '✔ ' + x.x })),
+          ...c.facts.g.map(x => el('div', { class: 'sub', style: 'font-size:13px', text: '~ ' + x })),
+          !c.t || !(labLinks()[c.key] || []).length ? peopleBox(c.key, draw) : null,
+          !c.t && !ls.get('labNote:' + c.key, '') ? el('button', { class: 'btn small line', style: 'align-self:flex-start', text: '✎ 이날을 한 줄로 적기 (선택)', onclick: () => { const v = prompt('이날은 어떤 날이었나요? (한 줄, 적은 그대로 카드 글에 써요)', ''); if (v && v.trim()) { ls.set('labNote:' + c.key, v.trim().slice(0, 80)); draw(); } } }) : null,
+          el('button', { class: 'btn primary full', text: '이 추억으로 카드 만들기', onclick: () => { S.c = c; S.opt = { ph: c.ph.length <= 3 ? c.ph : [c.ph[0], c.ph[Math.floor(c.ph.length / 2)], c.ph[c.ph.length - 1]], msg: labMsg(c), showDate: true, showAct: !!c.t, showPlace: true, ai: null }; go('card'); } }))); });
+      top.append(el('button', { class: 'btn line full', text: '← 사진 다시 보기', onclick: () => go('link') }));
+    } else if (S.step === 'card') {
+      const c = S.c, o = S.opt, img = el('img', { style: 'width:100%;border-radius:14px;display:block;background:#10161F;aspect-ratio:4/5' });
+      const repaint = async () => { const cv = await labCard(c, o); S.cv = cv; img.src = cv.toDataURL('image/jpeg', .9); };
+      const ta = el('textarea', { rows: 4, maxlength: 400, style: 'width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);box-sizing:border-box' }); ta.value = o.msg;
+      let tm = 0; ta.addEventListener('input', () => { o.msg = ta.value; clearTimeout(tm); tm = setTimeout(repaint, 400); });
+      const tog = (k, t) => el('button', { class: 'btn small ' + (o[k] ? 'primary' : 'line'), text: (o[k] ? '✓ ' : '') + t, onclick: () => { o[k] = !o[k]; draw(); } });
+      const aiNote = el('div', { class: 'sub', style: 'font-size:13px' }, o.ai ? (o.ai.odd.length ? `⚠ AI 글에 사실에 없는 숫자(${o.ai.odd.join(', ')})가 있어요. 확인해 주세요` : '✨ AI가 다듬은 글이에요 · 확인된 사실만 쓰게 했어요 · 마음대로 고쳐도 돼요') : '');
+      top.append(...head('카드 만들기', '사진·글·보일 정보를 고르고, 글은 마음대로 고쳐요.'), img,
+        el('div', { style: 'display:flex;gap:6px;overflow-x:auto' }, ...c.ph.map(p => { const sel = o.ph.includes(p);
+          return el('img', { src: p.th, style: `width:60px;height:60px;object-fit:cover;border-radius:8px;flex:none;outline:${sel ? '3px solid #FF8A4C' : 'none'};opacity:${sel ? 1 : .6}`, onclick: () => { if (sel) { if (o.ph.length > 1) o.ph = o.ph.filter(x => x !== p); } else if (o.ph.length < 3) o.ph = [...o.ph, p]; else toast('사진은 3장까지예요'); draw(); } }); })),
+        el('div', { class: 'sub', style: 'font-size:12px', text: '사진을 눌러 1~3장 고르기' }),
+        el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' }, tog('showDate', '날짜'), c.t ? tog('showAct', '활동') : null, tog('showPlace', '장소')),
+        ta, aiNote,
+        ls.get('claudeKey', '') ? el('button', { class: 'btn line full', text: '✨ AI로 글 다듬기', onclick: async e => { e.target.disabled = true; e.target.textContent = '✨ AI가 쓰는 중…';
+          const r = await labAi('추억 카드 글', c.facts.f.map(x => x.x), `위 사실로 함께한 사람에게 보낼 짧은 카드 글(2~3줄, 120자 안)을 써라. 사람 이름은 사실에 있을 때만 쓴다. 지금 글: "${o.msg}"`);
+          if (r && r.text) { o.msg = r.text; o.ai = r; } draw(); } }) : el('div', { class: 'sub', style: 'font-size:12px', text: 'AI로 다듬으려면 ⚙ 설정의 가족 앨범에서 Claude 열쇠를 넣어 주세요 (넣지 않아도 카드는 만들 수 있어요)' }),
+        el('button', { class: 'btn primary full big', text: '다 됐어요 · 보내기 전 확인', onclick: () => go('share') }),
+        el('button', { class: 'btn line full', text: '← 다른 후보 고르기', onclick: () => go('cands') }));
+      repaint();
+    } else if (S.step === 'share') {
+      const c = S.c, o = S.opt, img = el('img', { style: 'width:100%;border-radius:14px;display:block;aspect-ratio:4/5;background:#10161F' });
+      labCard(c, o).then(cv => { S.cv = cv; img.src = cv.toDataURL('image/jpeg', .9); });
+      const save = shared => { const ms = labMems(), id = S.memId || (S.memId = 'm' + rid(8)), cur = ms.find(m => m.id === id);
+        const rec = { id, at: cur ? cur.at : Date.now(), key: c.key, title: c.title, msg: o.msg, ph: o.ph.map(p => p.id), facts: c.facts.f.map(x => x.x), shared: !!(shared || (cur && cur.shared)), idea: cur ? cur.idea : '' };
+        ls.set('labMem', [rec, ...ms.filter(m => m.id !== id)].slice(0, 200)); return rec; };
+      const blob = () => new Promise(r => S.cv.toBlob(r, 'image/jpeg', .9));
+      const done = () => { save(true); go('idea'); };
+      const kak = kakaoOK() ? kakaoBtn(async () => { try { toast('카드 그림을 카카오에 올리는 중…'); const f = new File([await blob()], 'mpd_memory.jpg', { type: 'image/jpeg' }); let files = [f]; try { const dt = new DataTransfer(); dt.items.add(f); files = dt.files; } catch {}
+        const up = await Kakao.Share.uploadImage({ file: files }); const u = APP_BASE;
+        Kakao.Share.sendDefault({ objectType: 'feed', content: { title: c.title, description: o.msg.slice(0, 200), imageUrl: up.infos.original.url, imageWidth: up.infos.original.width || 1080, imageHeight: up.infos.original.height || 1350, link: { mobileWebUrl: u, webUrl: u } }, buttons: [] });
+        setTimeout(done, 1500); } catch (e) { toast('⚠ 카카오톡으로 보내지 못했어요 · 아래 \'다른 앱으로\'에서 카카오톡을 골라 주세요'); } }, '카카오톡으로 보내기') : null;
+      top.append(...head('보내기 전 확인', '받는 사람에게는 이 그림 한 장과 글이 가요. MPD 앱이 없어도 볼 수 있어요. 직접 눌러야 보내져요.'), img,
+        el('div', { class: 'card sub', style: 'white-space:pre-wrap', text: o.msg }),
+        kak,
+        el('button', { class: 'btn primary full', text: '📤 다른 앱으로 보내기 (문자·메일 등)', onclick: async () => { const f = new File([await blob()], 'mpd_memory.jpg', { type: 'image/jpeg' });
+          if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text: o.msg }); done(); } catch (e) { if (!(e && e.name === 'AbortError')) toast('보내지 못했어요'); } } else toast('이 브라우저는 공유 창이 없어요 · 그림으로 저장해 보내 주세요'); } }),
+        el('button', { class: 'btn line full', text: '⬇ 그림으로 저장만', onclick: async () => { savePhotoBlob(await blob(), `MapDiary_memory_${labDay(Date.now()).replace(/-/g, '')}.jpg`); save(false); toast('저장했어요'); } }),
+        el('button', { class: 'btn line full', text: '← 고치기', onclick: () => go('card') }));
+    } else if (S.step === 'idea') {
+      const c = S.c, idea = S.idea || (S.idea = labIdea(c)), ms = labMems(), cur = ms.find(m => m.id === S.memId);
+      if (cur && !cur.idea) { cur.idea = idea.x; ls.set('labMem', ms); }
+      top.append(...head('추억을 남겼어요', '이 기억에서 이어지는 새로운 경험 한 가지예요.'),
+        el('div', { class: 'card stack', style: 'gap:6px' }, el('b', { style: 'font-size:17px', text: '🌱 ' + idea.x }), el('div', { class: 'sub', style: 'font-size:13px', text: '까닭 · ' + idea.why })),
+        ls.get('claudeKey', '') ? el('button', { class: 'btn line full', text: '✨ AI에게 다른 생각 물어보기', onclick: async e => { e.target.disabled = true; e.target.textContent = '✨ AI가 생각하는 중…';
+          const r = await labAi('새로운 경험 제안', c.facts.f.map(x => x.x), `위 기억과 이어지지만 똑같이 반복하지 않는, 오늘 1~2시간 안에 할 수 있는 새로운 경험 한 가지를 한 문장으로 제안하라. 가게 이름·특정 장소 이름은 사실에 있을 때만 쓴다. 지금은 ${new Date().getMonth() + 1}월 ${new Date().getHours()}시.`);
+          if (r && r.text) { S.idea = { x: r.text, why: 'AI 제안 · 확인된 사실만 줬어요' + (r.odd.length ? ` · ⚠ 사실에 없는 숫자 ${r.odd.join(', ')}` : '') }; const m2 = labMems(), c2 = m2.find(m => m.id === S.memId); if (c2) { c2.idea = r.text; ls.set('labMem', m2); } } draw(); } }) : null,
+        el('button', { class: 'btn primary full', text: '실험실 처음으로', onclick: () => { S.c = null; S.idea = null; S.memId = null; go('home'); } }));
+    }
+    app.replaceChildren(top);
+  };
+  const pick = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none', onchange: async () => {
+    const files = [...pick.files].slice(0, 50); pick.value = ''; if (!files.length) return;
+    if (pick.files && pick.files.length > 50) toast('사진은 50장까지만 봐요');
+    const days = labDays(); let n = 0;
+    for (const f of files) {
+      toast(`사진 살펴보는 중 ${++n}/${files.length}`);
+      try {
+        const ex = await famExif(f), ts = ex.ts || (f.lastModified || null), id = 'l' + rid(10);
+        let lat = ex.lat ?? null, lng = ex.lng ?? null, locSrc = lat != null ? 'exif' : null;
+        if (lat == null && ts) { const m = labMatch(ts, days); const at = m && m.sure ? photoPlace(m.t, ts) : null; if (at) { lat = at[0]; lng = at[1]; locSrc = 'mpd'; } }
+        const rec = { id, ts, tsSrc: ex.ts ? 'exif' : (ts ? 'file' : null), lat, lng, locSrc, th: await shrinkImage(f, 240, 'url', .72), img: await shrinkImage(f, 1080, 'url', .82), at: Date.now() };
+        await labIdb('ph', 'readwrite', s => s.put(rec)); S.phs.push(rec);
+      } catch {}
+    }
+    S.phs.sort((a, b) => (a.ts || 0) - (b.ts || 0)); go('link');
+  } });
+  document.body.append(pick);
+  if (!S.loaded) { S.loaded = true; labPhAll().then(a => { S.phs = a; draw(); }).catch(() => draw()); }
+  draw();
+}
+function labPersonEdit(p, after) {
+  const nick = el('input', { type: 'text', maxlength: 20, placeholder: '별명 (예: 여보, 유진)', style: 'font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line)' }); nick.value = p ? p.nick : '';
+  let rel = p ? p.rel : '배우자';
+  const rels = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });
+  const paint = () => rels.replaceChildren(...LAB_REL.map(r => el('button', { class: 'btn small ' + (r === rel ? 'primary' : 'line'), text: r, onclick: () => { rel = r; paint(); } })));
+  paint();
+  const bg = labSheet(p ? '소중한 사람 고치기' : '소중한 사람 더하기', el('div', { class: 'sub', text: '이름 대신 별명을 써도 돼요. 이 휴대폰에만 남아요.' }), nick, rels,
+    el('button', { class: 'btn primary full', text: '저장', onclick: () => { const v = nick.value.trim(); if (!v) return toast('별명을 적어 주세요');
+      const all = labPeople(); if (p) Object.assign(all.find(x => x.id === p.id) || {}, { nick: v, rel }); else all.push({ id: 'p' + rid(6), nick: v, rel }); ls.set('labPeople', all); bg.remove(); after && after(); } }),
+    p ? el('button', { class: 'btn line full', text: '이 사람 지우기 (연결도 함께 풀려요)', onclick: () => { if (!confirm(`${p.nick} 님을 지울까요? 연결된 추억 표시도 풀려요.`)) return;
+      ls.set('labPeople', labPeople().filter(x => x.id !== p.id)); const L = labLinks(); for (const k of Object.keys(L)) { L[k] = L[k].filter(id => id !== p.id); if (!L[k].length) delete L[k]; } ls.set('labLinks', L); bg.remove(); after && after(); } }) : null);
+  setTimeout(() => nick.focus(), 50);
 }
 function viewTalk() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
