@@ -276,7 +276,7 @@ body.noscroll{overflow:hidden}
 .spot-pin{background:#fff;color:#E0892F;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex!important;align-items:center;justify-content:center;font-size:17px;line-height:1}
 .gallery{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .gallery img{width:96px;height:96px;object-fit:cover;border-radius:14px;flex-shrink:0;cursor:zoom-in;box-shadow:var(--shadow)}
-.ph-pin{background:none;border:none;position:relative}.ph-n{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#FF8A4C;color:#fff;font:700 11px/20px Pretendard,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}.ph-pin img{width:36px!important;height:36px!important;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:block}
+.ph-pin{background:none;border:none;position:relative}.ph-v{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;font-style:normal;text-shadow:0 0 4px rgba(0,0,0,.9);pointer-events:none}.gv{position:relative;flex-shrink:0;display:block;cursor:pointer}.gv i{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.62);color:#fff;font:700 12px/1.4 Pretendard,sans-serif;padding:1px 7px;border-radius:9px;font-style:normal;pointer-events:none}.ph-n{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#FF8A4C;color:#fff;font:700 11px/20px Pretendard,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}.ph-pin img{width:36px!important;height:36px!important;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:block}
 .goal{background:var(--ink);color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px}
 .goal .lbl{font-size:13px;color:#B3AC9C}
 .goal .place{font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.02em}
@@ -916,6 +916,28 @@ async function photoList(t) {
     return await new Promise((res, rej) => { const q = db.transaction('photos').objectStore('photos').index('t').getAll(t); q.onsuccess = () => res(q.result.sort((a, b) => a.ts - b.ts)); q.onerror = () => rej(q.error); });
   } catch { return []; }
 }
+// 동영상(2026-11-07 사용자 '동영상 추가도 되게 하자'): 사진과 같은 곳에 { v: 1, dur(초), blob: 원본 동영상, thumb: 첫 장면 그림 }
+// 그림만 다루는 곳(공유 카드·지도 링크·가족 앨범·결산 카드·클라우드 맞추기)은 photoImgs로 동영상을 빼요
+const isVid = r => !!(r && r.v);
+async function photoImgs(t) { return (await photoList(t)).filter(r => !r.v); }
+const VID_MAX = 300 * 1024 * 1024;   // 이보다 큰 동영상은 안 넣어요(휴대폰 저장 공간)
+// 동영상 첫 장면(0.5초쯤)을 그림으로: 목록·지도 동그라미에 써요. 못 읽으면 ▶ 그림
+function videoPoster(file, max) {
+  return new Promise(res => {
+    const v = document.createElement('video'), u = URL.createObjectURL(file); let done = false;
+    const fin = (url, dur) => { if (done) return; done = true; URL.revokeObjectURL(u); v.removeAttribute('src'); v.load(); res({ url, dur }); };
+    const blank = () => { const c = document.createElement('canvas'); c.width = c.height = max; const g = c.getContext('2d'); g.fillStyle = '#1C2B3A'; g.fillRect(0, 0, max, max);
+      g.fillStyle = '#fff'; g.beginPath(); g.moveTo(max * .4, max * .3); g.lineTo(max * .72, max * .5); g.lineTo(max * .4, max * .7); g.closePath(); g.fill(); return c.toDataURL('image/jpeg', .7); };
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onloadeddata = () => { try { v.currentTime = Math.min(0.5, (v.duration || 1) / 2); } catch { fin(blank(), v.duration); } };
+    v.onseeked = () => { try { const s = Math.min(1, max / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(v.videoWidth * s)); c.height = Math.max(1, Math.round(v.videoHeight * s)); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+      fin(c.toDataURL('image/jpeg', .72), v.duration); } catch { fin(blank(), v.duration); } };
+    v.onerror = () => fin(blank(), 0); setTimeout(() => fin(blank(), v.duration || 0), 9000);
+    v.src = u;
+  });
+}
+const fmtVidDur = s => s > 0 ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '';
 async function photoPut(rec) {
   const db = await photoDb();
   return new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(rec); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
@@ -945,7 +967,12 @@ async function addPhotos(t, files, now, later) {
     try {
       const ts = f.lastModified && (later || Math.abs(Date.now() - f.lastModified) < 7 * 864e5) ? f.lastModified : Date.now();
       const at = photoPlace(t, ts, now);
-      const rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob: await shrinkImage(f, 1280, 'blob', 0.82), thumb: await shrinkImage(f, 160, 'url', 0.7) };
+      let rec;
+      if (/^video\//.test(f.type || '') || /\.(mp4|mov|webm|m4v|3gp)$/i.test(f.name || '')) {   // 동영상: 원본 그대로 + 첫 장면 그림
+        if (f.size > VID_MAX) { toast(`동영상이 너무 커요(${Math.round(f.size / 1048576)}MB) · 300MB 아래로 잘라서 넣어 주세요`); continue; }
+        const po = await videoPoster(f, 320);
+        rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob: f.type ? f : new Blob([f], { type: 'video/mp4' }), thumb: po.url, v: 1, dur: Number.isFinite(po.dur) ? Math.round(po.dur) : 0 };
+      } else rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob: await shrinkImage(f, 1280, 'blob', 0.82), thumb: await shrinkImage(f, 160, 'url', 0.7) };
       await photoPut(rec); out.push(rec);
     } catch {}
   }
@@ -987,15 +1014,15 @@ function pickPhotoPlace(rec) {
 }
 // 사진을 찍은 바로 뒤: 방금 찍은 사진을 보여 주고 한 줄 메모를 받아요 (건너뛰어도 돼요)
 function photoMemoPrompt(rec) {
-  const url = URL.createObjectURL(rec.blob);
+  const url = isVid(rec) ? rec.thumb : URL.createObjectURL(rec.blob);
   const iM = el('input', { type: 'text', id: 'pm', maxlength: 80, placeholder: '예: 정상에서 다 같이, 여기 경치 최고' });
   const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) done(); } });
-  const done = () => { sb.remove(); URL.revokeObjectURL(url); };
+  const done = () => { sb.remove(); if (!isVid(rec)) URL.revokeObjectURL(url); };
   const save = async () => { const m = iM.value.trim(); if (m) { rec.m = m; try { await photoPut(rec); } catch {} dispatchEvent(new Event('photo-changed')); toast('사진에 메모를 남겼어요'); } done(); };
   iM.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진 메모' },
     el('img', { src: url, alt: '방금 찍은 사진', style: 'width:100%;max-height:38vh;object-fit:contain;border-radius:14px;background:#EFE9DC' }),
-    el('label', { class: 'f', for: 'pm' }, '📝 이 사진에 한 줄 메모 (선택)', iM),
+    el('label', { class: 'f', for: 'pm' }, isVid(rec) ? '📝 이 동영상에 한 줄 메모 (선택)' : '📝 이 사진에 한 줄 메모 (선택)', iM),
     el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '건너뛰기', onclick: done }), el('button', { class: 'btn primary small grow', text: '남기기', onclick: save }))));
   document.body.append(sb); setTimeout(() => iM.focus(), 80);
 }
@@ -1012,14 +1039,14 @@ function reviewPhotos(recs) {
     el('button', { class: 'btn line small', style: 'height:36px;white-space:nowrap', onclick: async () => { await pickPhotoPlace(r); draw(); } }, ico('pin', 16), '위치'))));
   draw();
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '불러온 사진' },
-    el('h2', { text: `사진 ${recs.length}장을 넣었어요` }),
+    el('h2', { text: recs.some(isVid) ? `사진·동영상 ${recs.length}개를 넣었어요` : `사진 ${recs.length}장을 넣었어요` }),
     el('p', { class: 'sub', style: 'margin:0', text: '사진 찍은 시각에 맞춰 위치를 정했어요. 📝로 메모를 남기고, 다른 곳에서 찍었으면 "위치"를 눌러 바꿔 주세요.' }),
     list, el('button', { class: 'btn primary full', text: '확인', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
 // 자랑 카드용: 사진을 모두 읽고, 그중 3장(처음·가운데·끝)을 그림으로 준비해요
 async function cardPhotos(t) {
-  const recs = await photoList(t);
+  const recs = await photoImgs(t);
   const idx = recs.length <= 3 ? recs.map((_, i) => i) : [0, Math.floor((recs.length - 1) / 2), recs.length - 1];
   const pick = [];
   for (const i of idx) { try { pick.push({ lat: recs[i].lat, lng: recs[i].lng, img: await createImageBitmap(recs[i].blob) }); } catch {} }
@@ -1047,7 +1074,7 @@ function photoMarkers(map, layer, photos) {
       const hit = groups.find(q => Math.abs(q.pt.x - pt.x) < 40 && Math.abs(q.pt.y - pt.y) < 40);
       if (hit) hit.list.push(p); else groups.push({ pt, list: [p] }); });
     groups.forEach(q => { const p = q.list[0], n = q.list.length;
-      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'ph-pin', iconSize: [40, 40], iconAnchor: [20, 20], html: `<img src="${p.thumb}" alt="">` + (n > 1 ? `<b class="ph-n">+${n - 1}</b>` : '') }) })
+      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'ph-pin', iconSize: [40, 40], iconAnchor: [20, 20], html: `<img src="${p.thumb}" alt="">` + (isVid(p) ? '<i class="ph-v">▶</i>' : '') + (n > 1 ? `<b class="ph-n">+${n - 1}</b>` : '') }) })
         .on('click', () => showPhoto(p, photos)).addTo(g); });
   };
   // 같은 층을 비우고 다시 그리면(새 사진) 예전 묶음은 떨어져 나가니, 그때는 확대 따라 다시 그리기를 그만둬요
@@ -1056,7 +1083,7 @@ function photoMarkers(map, layer, photos) {
 }
 // 사진 크게 보기. list를 주면 좌우로 밀거나 ‹ › 를 눌러 앞뒤 사진으로 넘겨요. 사진을 톡 누르면 닫혀요.
 // 사진을 휴대폰에 내려받아요 (다운로드 폴더에 저장되고 갤러리에도 보여요). 여러 장이면 조금씩 띄워서
-const photoExt = b => /png/.test(b && b.type || '') ? 'png' : 'jpg';
+const photoExt = b => { const t = b && b.type || ''; return /png/.test(t) ? 'png' : /quicktime/.test(t) ? 'mov' : /webm/.test(t) ? 'webm' : /3gpp/.test(t) ? '3gp' : /^video/.test(t) ? 'mp4' : 'jpg'; };
 // 파일 이름은 영어·숫자로만 (한글 이름은 일부 브라우저에서 'download'로 바뀌어 찾기 어려워요)
 function savePhotoBlob(blob, name) {
   if (window.mdNativeSave) return window.mdNativeSave(blob, name);   // 안드로이드 앱: 갤러리(사진)·Documents(그 밖) 에 바로
@@ -1072,12 +1099,16 @@ async function savePhotos(list, base) {
     savePhotoBlob(ps[k].blob, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${String(k + 1).padStart(2, '0')}.${photoExt(ps[k].blob)}`);
     if (k < ps.length - 1) await new Promise(r => setTimeout(r, 450));
   }
-  toast(ps.length > 1 ? `사진 ${ps.length}장을 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요` : "사진을 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요");
+  const w = ps.some(isVid) ? (ps.length > 1 ? `사진·동영상 ${ps.length}개를` : ps[0].v ? '동영상을' : '사진을') : ps.length > 1 ? `사진 ${ps.length}장을` : '사진을';
+  toast(`${w} 저장했어요 · 갤러리의 '다운로드' 앨범에 있어요`);
 }
 function showPhoto(p, list) {
   const all = Array.isArray(list) && list.length ? list : [p];
   let i = Math.max(0, all.indexOf(p)), url = null;
   const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:none;user-select:none;-webkit-user-drag:none;will-change:transform' });
+  // 동영상이면 사진 대신 재생 칸(누르면 재생·멈춤 단추가 보여요). 확대·밀기는 사진에만
+  const vid = el('video', { controls: true, playsinline: true, preload: 'metadata', style: 'max-width:100%;max-height:78vh;border-radius:12px;display:none;background:#000', onclick: e => e.stopPropagation() });
+  vid.addEventListener('touchstart', e => e.stopPropagation(), { passive: true }); vid.addEventListener('touchend', e => e.stopPropagation());
   const cap = el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px' });
   // 한 줄 메모: 사진 위쪽에. 이 휴대폰에 있는 내 사진이면 ✎로 적거나 고칠 수 있어요 (받은 사진은 보기만)
   const memo = el('div', { style: 'position:absolute;top:calc(20px + env(safe-area-inset-top,0px));left:16px;right:16px;text-align:center;color:#fff;font-size:17px;font-weight:600;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap' });
@@ -1086,17 +1117,21 @@ function showPhoto(p, list) {
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: r.m ? '✎ 고치기' : '✎ 한 줄 적기', onclick: async e => {
       e.stopPropagation(); const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true);
       if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} drawMemo(); } }) : '',
-    el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '⬇ 저장', 'aria-label': '이 사진을 휴대폰에 저장', onclick: e => { e.stopPropagation(); savePhotos([r], 'MapDiary사진'); } }),
+    el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '⬇ 저장', 'aria-label': isVid(r) ? '이 동영상을 휴대폰에 저장' : '이 사진을 휴대폰에 저장', onclick: e => { e.stopPropagation(); savePhotos([r], 'MapDiary사진'); } }),
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '📍 위치', onclick: async e => { e.stopPropagation(); await pickPhotoPlace(r); } }) : '',
     mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '🗑', 'aria-label': '이 사진 지우기', onclick: async e => {
       e.stopPropagation(); if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
       await photoDel(r.id); all.splice(i, 1); dispatchEvent(new Event('photo-changed')); toast('사진을 지웠어요');
       if (!all.length) close(); else show(i); } }) : ''); };
-  const close = () => { clearTimeout(tapT); bg.remove(); if (url) URL.revokeObjectURL(url); };
+  const close = () => { clearTimeout(tapT); try { vid.pause(); } catch {} bg.remove(); if (url) URL.revokeObjectURL(url); };
   const show = n => {
     i = (n + all.length) % all.length; const r = all[i];
-    if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); img.src = url; sc = 1; tx = ty = 0; apply(false);
-    cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · 두 번 누르거나 두 손가락으로 벌리면 크게 · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}한 번 누르면 닫혀요`;
+    try { vid.pause(); } catch {}
+    if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); sc = 1; tx = ty = 0;
+    if (isVid(r)) { img.style.display = 'none'; img.removeAttribute('src'); vid.style.display = ''; vid.poster = r.thumb || ''; vid.src = url; }
+    else { vid.style.display = 'none'; vid.removeAttribute('src'); img.style.display = ''; img.src = url; apply(false); }
+    cap.textContent = isVid(r) ? `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}🎬 동영상 ${fmtVidDur(r.dur)} · ${fmtClock(r.ts)}${all.length > 1 ? ' · ‹ › 로 넘겨요' : ''} · 바깥을 누르면 닫혀요`
+      : `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · 두 번 누르거나 두 손가락으로 벌리면 크게 · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}한 번 누르면 닫혀요`;
     drawMemo();
   };
   const arrow = (side, d) => el('button', { 'aria-label': d < 0 ? '앞 사진' : '다음 사진', text: d < 0 ? '‹' : '›',
@@ -1111,16 +1146,16 @@ function showPhoto(p, list) {
   function apply(anim) { img.style.transition = anim ? 'transform .18s' : 'none'; img.style.transform = sc > 1.01 ? `translate(${tx}px,${ty}px) scale(${sc})` : (tx ? `translateX(${tx}px)` : ''); }
   const zoomAt = (x, y, ns, s0 = sc, tx0 = tx, ty0 = ty) => { const [cx, cy] = mid(); ns = Math.max(1, Math.min(5, ns));
     tx = x - cx - (x - cx - tx0) * ns / s0; ty = y - cy - (y - cy - ty0) * ns / s0; sc = ns; if (sc <= 1.01) { sc = 1; tx = ty = 0; } else clampXY(); };
-  const toggleZoom = (x, y) => { if (sc > 1.01) { sc = 1; tx = ty = 0; } else zoomAt(x, y, 2.5); apply(true); };
+  const toggleZoom = (x, y) => { if (isVid(all[i])) return; if (sc > 1.01) { sc = 1; tx = ty = 0; } else zoomAt(x, y, 2.5); apply(true); };
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4000;align-items:center;background:rgba(0,0,0,.9);touch-action:none;overflow:hidden', onclick: e => {
     if (moved) { moved = false; return; }
     const now = Date.now();
     if (now - lastTap < 320) { clearTimeout(tapT); lastTap = 0; toggleZoom(e.clientX, e.clientY); return; }
     lastTap = now; clearTimeout(tapT); tapT = setTimeout(() => { if (sc === 1) close(); }, 320);
-  } }, img, memo, cap, all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
+  } }, img, vid, memo, cap, all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
   const pt = (t, k) => [t[k].clientX, t[k].clientY];
   bg.addEventListener('touchstart', e => {
-    const T = e.touches;
+    const T = e.touches; if (isVid(all[i])) { g = { x0: T[0].clientX, y0: T[0].clientY, tx0: 0, ty0: 0, vid: 1 }; return; }
     if (T.length >= 2) { const [a, b] = [pt(T, 0), pt(T, 1)]; g = { pinch: 1, d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: sc, tx0: tx, ty0: ty, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
     else g = { x0: T[0].clientX, y0: T[0].clientY, tx0: tx, ty0: ty };
   }, { passive: true });
@@ -1128,7 +1163,7 @@ function showPhoto(p, list) {
     if (!g) return; const T = e.touches;
     if (g.pinch && T.length >= 2) { const [a, b] = [pt(T, 0), pt(T, 1)], d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       zoomAt(g.m[0], g.m[1], g.s0 * d / g.d0, g.s0, g.tx0 + (m[0] - g.m[0]), g.ty0 + (m[1] - g.m[1])); apply(false); return; }
-    if (g.pinch) return;
+    if (g.pinch || g.vid) return;
     const dx = T[0].clientX - g.x0, dy = T[0].clientY - g.y0;
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
     if (sc > 1) { tx = g.tx0 + dx; ty = g.ty0 + dy; clampXY(); apply(false); }   // 확대한 채 끌어 보기
@@ -1138,6 +1173,8 @@ function showPhoto(p, list) {
     if (!g) return;
     if (e.touches.length) { if (g.pinch && e.touches.length === 1) g = { x0: e.touches[0].clientX, y0: e.touches[0].clientY, tx0: tx, ty0: ty, after: 1 }; return; }
     const was = g; g = null;
+    if (was.vid) { const dx = e.changedTouches[0].clientX - was.x0, dy = e.changedTouches[0].clientY - was.y0;   // 동영상 바깥에서 옆으로 밀면 넘기기
+      if (all.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { moved = true; show(i + (dx < 0 ? 1 : -1)); } return; }
     if (was.pinch || was.after || sc > 1) { if (sc > 1) apply(false); else { tx = ty = 0; apply(true); } return; }
     const dx = e.changedTouches[0].clientX - was.x0, dy = e.changedTouches[0].clientY - was.y0;
     if (all.length > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { moved = true; show(i + (dx < 0 ? 1 : -1)); }
@@ -2458,9 +2495,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.07-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '사진 크게 보기에서 확대가 돼요: 두 번 누르거나 두 손가락으로 벌리면 크게, 확대한 채 끌어서 보기 · 링크로 보내는 사진을 더 선명하게(1080px) 올려요 · 공유 카드 맨 위 큰 사진이 다 보여요';
+const UI_NOTES = '동영상도 기록에 넣을 수 있어요: 기록 중 🎬 동영상 찍기, 사진첩에서 사진과 함께 불러오기, 내 MPD 수정하기에서 더하기 · 내 MPD에서 ▶ 표시를 누르면 재생돼요 · 동영상은 이 휴대폰과 백업 파일에만 있고, 지도 링크·공유 카드로는 아직 안 보내져요 · 사진 크게 보기에서 확대가 돼요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3635,10 +3672,10 @@ async function cloudSync(quiet) {
       if (id === live) continue;
       let d; try { d = JSON.parse(r.d); } catch { continue; }
       if (!d || typeof d.ls !== 'object') continue;
-      const has = local.has(id), mine = has ? recSig(recPack(id), (await photoList(id)).map(p => p.id).sort()) : null;
+      const has = local.has(id), mine = has ? recSig(recPack(id), (await photoImgs(id)).map(p => p.id).sort()) : null;
       if (has && (mine === d.sig || sig[id] !== mine)) continue;   // 같거나, 여기서 고친 게 있으면 올리기 쪽에서
       for (const k of MD_KEYS) { const v = d.ls[k]; if (typeof v === 'string') localStorage.setItem(k + id, v); else localStorage.removeItem(k + id); }
-      const havePh = new Set((await photoList(id)).map(p => p.id));
+      const havePh = new Set((await photoImgs(id)).map(p => p.id));
       for (const pid of Array.isArray(d.ph) ? d.ph : []) {
         if (havePh.has(pid)) continue;
         try { const s = await cGet(`ph/${pid}`); if (!s) continue; const ph = JSON.parse(s); if (typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
@@ -3653,7 +3690,7 @@ async function cloudSync(quiet) {
     for (const id of local) {
       n++; cloudProgSet(`맞추는 중… ${n}/${total}${phUp ? ` · 사진 ${phUp}장` : ''}`);
       if (id === live) continue;
-      const phs = await photoList(id), phIds = phs.map(p => p.id).sort(), pack = recPack(id), s = recSig(pack, phIds);
+      const phs = await photoImgs(id), phIds = phs.map(p => p.id).sort(), pack = recPack(id), s = recSig(pack, phIds);   // 동영상은 커서 클라우드엔 안 올려요(이 휴대폰·백업에만)
       if (sig[id] === s && remote.has(id)) continue;
       if (!pack['track:']) continue;
       for (const ph of phs) { if (phSent[ph.id]) continue;
@@ -4470,7 +4507,7 @@ function famPhoto(S, pid, order) {
 async function famFromMD(t, mdName) {
   if (IN_KAKAO && !cloudUser) return toast('먼저 로그인해 주세요');
   if (!(await famAuthReady())) { toast('가족 앨범은 로그인이 필요해요. 내 MPD 맨 위에서 로그인해 주세요'); location.href = './?album=1'; return; }
-  const recs = await photoList(t); if (!recs.length) return toast('이 MPD에는 사진이 없어요');
+  const recs = await photoImgs(t); if (!recs.length) return toast('이 MPD에는 사진이 없어요 (동영상은 가족 앨범에 아직 못 올려요)');
   const list = (await famMine());
   const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } }), inner = el('div', { class: 'sheet', role: 'dialog', 'aria-label': '가족 앨범에 올리기' });
   sb.append(inner); document.body.append(sb);
@@ -4663,11 +4700,12 @@ function backupLs(ids) {
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
   return out;
 }
-const backupPh = async ph => ({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+const backupPh = async ph => ph.v && ph.blob && ph.blob.size > 60 * 1048576 ? null   // 60MB 넘는 동영상은 백업 파일에서 빼요(파일이 너무 커져서)
+  : ({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob), ...(ph.v ? { v: 1, dur: ph.dur || 0 } : {}) });
 async function backupMake() {
   const ids = backupIds();
   const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: backupLs(ids), photos: [] };
-  for (const id of ids) for (const ph of await photoList(id)) data.photos.push(await backupPh(ph));
+  for (const id of ids) for (const ph of await photoList(id)) { const b = await backupPh(ph); if (b) data.photos.push(b); }
   return { data, n: pastTrips().filter(x => !x.album).length };
 }
 // 저절로 백업 (안드로이드 앱만): 7일마다 '내 파일 > Documents > MapDiary'에 백업 파일을 만들어요. 사진이 많아도 되게 한 장씩 이어 써요
@@ -4679,7 +4717,7 @@ async function autoBackup() {
     const ids = backupIds();
     await B.start(JSON.stringify({ app: 'mapdiary', v: 1, at: Date.now(), auto: 1, ls: backupLs(ids) }).slice(0, -1) + ',"photos":[');
     let first = true;
-    for (const id of ids) for (const ph of await photoList(id)) { await B.add((first ? '' : ',') + JSON.stringify(await backupPh(ph))); first = false; }
+    for (const id of ids) for (const ph of await photoList(id)) { const b = await backupPh(ph); if (!b) continue; await B.add((first ? '' : ',') + JSON.stringify(b)); first = false; }
     const where = await B.end(']}');
     if (!where) return;
     ls.set('lastAutoBackup', Date.now()); ls.set('lastBackup', Date.now());
@@ -4760,10 +4798,11 @@ async function backupLoad(file) {
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
   for (const ph of Array.isArray(data.photos) ? data.photos : []) {
-    try { if (!ph || typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
-      await photoPut({ id: String(ph.id), t: String(ph.t), ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() }); nPh++; } catch {}
+    try { if (!ph || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob)) continue;
+      const vid = ph.blob.startsWith('data:video/');
+      await photoPut({ id: String(ph.id), t: String(ph.t), ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) }); nPh++; } catch {}
   }
-  alert(`백업을 불러왔어요. 새 기록 ${nRec}개, 사진 ${nPh}장`); location.reload();
+  alert(`백업을 불러왔어요. 새 기록 ${nRec}개, 사진·동영상 ${nPh}개`); location.reload();
 }
 // ---------- 앱끼리 기록 넘기기 (안드로이드 앱만): MD Run·MD 파크골프에서 끝낸 기록이 같은 휴대폰의 Map Photo Diary 앱에 저절로 들어가요 ----------
 // 내놓는 쪽(MD Run·파크골프): 기록마다 파일 하나(백업 파일과 같은 모양). 바뀐 것만 다시 써요(syncSent = 기록별 지문)
@@ -4781,7 +4820,7 @@ async function syncPush() {
       const sig = JSON.stringify(lsPart).length + ':' + hash32(JSON.stringify(lsPart) + phs.map(p => [p.id, p.m || '', p.lat, p.lng].join(',')).join(';'));
       keep[x.t] = sig; if (sent[x.t] === sig) continue;
       const data = { app: 'mapdiary', v: 1, at: Date.now(), ls: lsPart, photos: [] };
-      for (const ph of phs) data.photos.push({ id: ph.id, t: ph.t, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) });
+      for (const ph of phs) { const b = await backupPh(ph); if (b) data.photos.push(b); }
       try { await S.put(x.t, JSON.stringify(data)); } catch { delete keep[x.t]; }
     }
     for (const t of Object.keys(sent)) if (!(t in keep)) await S.del(t).catch(() => {});   // 지운 기록은 내놓지 않아요
@@ -4807,8 +4846,9 @@ async function syncPull() {
       if (!d || d.app !== 'mapdiary' || !d.ls || typeof d.ls !== 'object') { got[key] = it.mtime; continue; }
       for (const [k, v] of Object.entries(d.ls)) if (typeof v === 'string' && MD_KEYS.some(p => k === p + it.id)) localStorage.setItem(k, v);
       for (const ph of Array.isArray(d.photos) ? d.photos : []) {
-        try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
-          await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() }); } catch {}
+        try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob)) continue;
+          const vid = ph.blob.startsWith('data:video/');
+          await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) }); } catch {}
       }
       if (WEAR_SELF) { const st = ls.get('wearGot', { n: 0 }); ls.set('wearGot', { n: st.n + 1, at: Date.now() }); }
       got[key] = it.mtime; if (!exists) { n++; from.add(/^run_w/.test(it.id) ? '시계' : SYNC_APPS[it.app] || '다른 앱'); } else u++;   // 시계 기록은 휴대폰 MD Run이 블루투스로 받아 둔 것(2026-10-20)
@@ -4861,7 +4901,7 @@ async function foodPhotos(p) {
   for (const v of p.visits) {
     const s = v.s, a = (s.ts || 0) - 15 * 60000, b = (s.te || s.ts || 0) + 15 * 60000;
     const near = (r, m) => Number.isFinite(r.lat) && dist(r.lat, r.lng, s.lat, s.lng) < m;
-    const list = await photoList(v.t);
+    const list = await photoImgs(v.t);
     got.push(...list.filter(r => (r.ts >= a && r.ts <= b && (!Number.isFinite(r.lat) || near(r, 150))) || near(r, 60)));
   }
   return got;
@@ -5041,9 +5081,9 @@ function editMD(x) {
   const grid = el('div');
   const drawGrid = () => grid.replaceChildren(modeGrid(mode, k => { mode = k; drawGrid(); }));
   drawGrid();
-  const inp = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none', onchange: async () => {
+  const inp = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: async () => {
     const files = [...inp.files]; inp.value = ''; if (!files.length) return;
-    toast('사진을 넣는 중이에요…');
+    toast('사진·동영상을 넣는 중이에요…');
     // 여러 날 여행이면 사진 찍은 날의 기록에 넣어요
     const recs = [];
     for (const f of files) { const ts = f.lastModified || Date.now(); let day = days[days.length - 1];
@@ -5057,7 +5097,7 @@ function editMD(x) {
     el('b', { text: '모드' }), grid,
     el('div', { class: 'two' }, el('label', { class: 'f', for: 'em-s' }, '출발한 곳', iS), el('label', { class: 'f', for: 'em-e' }, '도착한 곳', iE)),
     el('div', { class: 'two' },
-      el('button', { class: 'btn line', onclick: () => inp.click() }, ico('camera', 18), '사진 더하기'),
+      el('button', { class: 'btn line', onclick: () => inp.click() }, ico('camera', 18), '사진·동영상 더하기'),
       x.album ? el('button', { class: 'btn line', disabled: true, text: '경로 자르기(하루치에서)' }) : el('button', { class: 'btn line', text: '✂ 경로 앞뒤 자르기', onclick: () => { sb.remove(); trimTrack(t); } })),
     window.mdNativePhotos ? el('button', { class: 'btn line full', text: '📱 그 시간에 휴대폰으로 찍은 사진 찾기', onclick: async () => { sb.remove(); const recs = await galleryOffer(days, true); if (recs && recs.length) reviewPhotos(recs); } }) : null,
     el('div', { class: 'sub', style: 'font-size:13px', text: '제목과 오늘 한 줄은 화면 위 ✎, 별표는 목록의 ✎ 고치기, 사진 메모·위치·지우기는 사진을 크게 볼 때 할 수 있어요.' }),
@@ -5188,7 +5228,9 @@ async function viewMyOne(t) {
   const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
   let phAll = [];
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
-  const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), '사진'), gal, phSave);
+  const vNote = el('div', { class: 'sub', style: 'font-size:12px;display:none', text: '🎬 동영상은 이 휴대폰(과 백업 파일)에만 있어요 · 지도 링크·공유 카드·클라우드로는 아직 안 보내져요' });
+  const phHd = el('span', { text: '사진' });
+  const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), phHd), gal, vNote, phSave);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
   // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
@@ -5322,8 +5364,9 @@ async function viewMyOne(t) {
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
       const ps = await photoList(t); phAll = ps;
-      phBox.style.display = ps.length ? '' : 'none'; phSave.textContent = `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
-      gal.replaceChildren(...ps.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) })));
+      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = ps.some(isVid) ? '사진·동영상' : '사진'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
+      gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
+        : el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) })));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
       if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
@@ -5908,7 +5951,7 @@ async function recapCard(Y, Mo, recs) {
     const ev = ELEV_MODES.includes(M.k) && elevStats(tr); if (ev) gain += ev.gain;
     modes[M.k] = (modes[M.k] || 0) + 1;
     if (!far || w > far.w) far = { w, name: x.info.name };
-    photos.push(await photoList(x.t));
+    photos.push(await photoImgs(x.t));
   }
   const nPh = photos.reduce((a, p) => a + p.length, 0);
   // 사진 4장: 기록마다 첫 사진부터 고르게
@@ -6853,18 +6896,19 @@ function viewWalk() {
   const onPick = async inp => {
     const files = [...inp.files]; inp.value = ''; if (!files.length) return;
     // 이 앱의 카메라로 찍은 사진은 원본 그대로 휴대폰(다운로드 폴더·갤러리)에도 남겨요 (카메라에 따라 사진첩에 안 남는 경우가 있어서)
-    if (inp === camIn && ls.get('camSave', true) && !IN_KAKAO) files.forEach((f, k) => { const d = new Date(), pad = n => String(n).padStart(2, '0');
+    if ((inp === camIn || inp === vidIn) && ls.get('camSave', true) && !IN_KAKAO) files.forEach((f, k) => { const d = new Date(), pad = n => String(n).padStart(2, '0');
       savePhotoBlob(f, `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}${k ? '_' + k : ''}.${photoExt(f)}`); });
-    toast('사진을 넣는 중이에요…');
-    const recs = await addPhotos(id, files, lastFix), n = recs.length;
-    toast(n ? `사진 ${n}장을 기록에 붙였어요` : '사진을 넣지 못했어요');
+    toast(inp === vidIn ? '동영상을 넣는 중이에요…' : '사진을 넣는 중이에요…');
+    const recs = await addPhotos(id, files, lastFix), n = recs.length, nv = recs.filter(isVid).length;
+    toast(n ? `${n - nv ? `사진 ${n - nv}장` : ''}${n - nv && nv ? ' · ' : ''}${nv ? `동영상 ${nv}개` : ''}를 기록에 붙였어요` : '넣지 못했어요');
     if (inp === galIn) reviewPhotos(recs);   // 사진첩에서 불러온 사진은 위치를 확인·바꿀 수 있게
-    else if (recs.length) photoMemoPrompt(recs[0]);   // 방금 찍은 사진은 바로 한 줄 메모
+    else if (recs.length) photoMemoPrompt(recs[0]);   // 방금 찍은 사진·동영상은 바로 한 줄 메모
     if (wantWake && !wake) lockWake();
     refreshPhotos();
   };
   const camIn = el('input', { type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none', onchange: () => onPick(camIn) });
-  const galIn = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none', onchange: () => onPick(galIn) });
+  const vidIn = el('input', { type: 'file', accept: 'video/*', capture: 'environment', style: 'display:none', onchange: () => onPick(vidIn) });   // 동영상 찍기(휴대폰 카메라)
+  const galIn = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: () => onPick(galIn) });
   // 마음에 드는 곳: 지금 있는 곳에 ⭐와 이름을 남겨요
   // 따라가는 길: 파란 굵은 선(흰 테두리) + 끝 표시 + 그 사람이 남긴 별표
   function drawGuide() {
@@ -7139,10 +7183,11 @@ function viewWalk() {
           ls.get('lockUsed', 0) < 3 ? el('div', { class: 'rd-note', text: '🔒 화면 잠그기: 켠 채로 잘못 눌림을 막아요 · 풀 때 3초 꾹' }) : null),
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
         // 공유는 아래 고정 버튼에 있어서, 여기는 사진첩에서 넣기만
-        el('button', { class: 'btn line full', onclick: () => galIn.click() }, ico('camera', 18), '사진첩에서 사진 넣기'),
+        el('div', { class: 'two' }, el('button', { class: 'btn line', onclick: () => galIn.click() }, ico('camera', 18), '사진첩에서 넣기'),
+          el('button', { class: 'btn line', onclick: () => vidIn.click() }, '🎬 동영상 찍기')),
         el('button', { class: 'link', style: 'align-self:center;padding:2px 0;font-size:14px;color:var(--muted)', onclick: () => { ls.set('camSave', !ls.get('camSave', true)); toast(ls.get('camSave', true) ? '찍은 사진을 휴대폰에도 저장해요' : '찍은 사진은 이 앱에만 남겨요'); draw(); } }, ls.get('camSave', true) ? '📥 찍은 사진 휴대폰에도 저장: 켜짐' : '📥 찍은 사진 휴대폰에도 저장: 꺼짐'),
         guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
-        camIn, galIn,
+        camIn, vidIn, galIn,
         el('a', { class: 'link', href: './', style: 'align-self:center;color:var(--muted)', text: '처음으로 (다시 들어오면 이어서 기록해요)' })].filter(Boolean));
       stats(); drawRun(); fitRunMap();
       return;
@@ -7178,7 +7223,8 @@ function viewWalk() {
       follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
       el('div', { class: 'two' },
         el('button', { class: 'btn line', text: '사진 찍기', onclick: () => camIn.click() }),
-        el('button', { class: 'btn line', text: '사진 불러오기', onclick: () => galIn.click() })),
+        el('button', { class: 'btn line', text: '🎬 동영상 찍기', onclick: () => vidIn.click() })),
+      el('button', { class: 'btn line full', text: '사진·동영상 불러오기', onclick: () => galIn.click() }),
       nPhotos ? el('div', { class: 'sub center', text: `이 기록에 사진 ${nPhotos}장이 붙어 있어요` }) : null,
       el('button', { class: 'link', style: 'align-self:center;padding:2px 0;font-size:14px;color:var(--muted)', onclick: () => { ls.set('camSave', !ls.get('camSave', true)); toast(ls.get('camSave', true) ? '찍은 사진을 휴대폰에도 저장해요' : '찍은 사진은 이 앱에만 남겨요'); draw(); } }, ls.get('camSave', true) ? '📥 찍은 사진 휴대폰에도 저장: 켜짐' : '📥 찍은 사진 휴대폰에도 저장: 꺼짐'),
       el('button', { class: 'btn line full', onclick: addSpot }, ico('star', 20, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; const w = M().k === 'pgolf' ? '기억할 순간 남기기' : '좋은 곳 남기기'; return n ? `${w} (${n}개)` : `${w} (지도에 별표)`; })()),
@@ -7198,7 +7244,7 @@ function viewWalk() {
         } }));
       })(),
       el('button', { class: 'btn primary full big', text: '끝내기', onclick: finish }),
-      camIn, galIn,
+      camIn, vidIn, galIn,
       el('a', { class: 'link', href: './', style: 'align-self:center;color:var(--muted)', text: '처음으로 (다시 들어오면 이어서 기록해요)' })].filter(Boolean));
     stats();
   }
