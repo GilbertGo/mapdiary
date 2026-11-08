@@ -440,6 +440,7 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv .mapbox{border-radius:22px}
 .leaflet-tooltip.nm{font-family:inherit;font-weight:700;font-size:12px;padding:2px 6px;border-radius:8px}
 .leaflet-bar{border:none!important;box-shadow:0 2px 8px rgba(60,45,20,.18)!important;border-radius:12px!important;overflow:hidden}
+.toast.conn-bar{left:0;right:0;margin:0 auto;width:fit-content;max-width:300px;padding:8px 14px;font-size:13px;background:rgba(20,37,59,.86);pointer-events:none;text-align:center;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translateY(8px);opacity:0}}}
 
 /* 러닝 시작 화면 (2026-10-17 시안 A안: 사진 크게) */
@@ -548,6 +549,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .r3-say{margin-top:clamp(18px,5vh,48px);padding:0 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-bot{width:100%;box-sizing:border-box;padding:0 22px 92px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .r3-msg{font-size:17px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.4);margin-bottom:8px}
+.ag-pend{display:flex;align-items:center;gap:8px;max-width:420px;width:100%;box-sizing:border-box;padding:8px 8px 8px 16px;border-radius:999px;background:rgba(10,132,255,.88);color:#fff;font-weight:700;font-size:14px;text-align:left}.ag-pend span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-pend button{flex:none;width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.25);color:#fff;font:inherit;font-size:15px;cursor:pointer}
 .r3-go{width:100%;max-width:420px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff;font:inherit;font-size:19px;font-weight:900;padding:16px;box-shadow:none;text-shadow:0 1px 4px rgba(0,0,0,.35);margin-bottom:6px}
 .wk-st{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;border:none;border-radius:18px;background:var(--card);box-shadow:var(--shadow);font:inherit;color:var(--ink);text-align:left;cursor:pointer}
 .wk-st svg{flex:none}.wk-t{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -665,6 +667,11 @@ html.vw-page .vw-z .bar{background:#2C2C2E}html.vw-page .vw-rec{background:#2C2C
 html.vw-page .vw-leg{color:#AEAEB2}
 html.vw-page .gallery img{box-shadow:none}
 html.vw-page{--alert-ink:#FF6B6B}html.vw-page .btn.primary{background:#0A84FF;color:#fff}
+.ag-flash{animation:agf 1.2s ease-out}@keyframes agf{0%{box-shadow:0 0 0 3px #0A84FF}100%{box-shadow:0 0 0 0 rgba(10,132,255,0)}}
+.ag-box{display:flex;flex-direction:column;gap:8px;padding:14px 16px}.ag-h{font-size:16px}.ag-s{font-size:13px;margin:0}
+.ag-chips{display:flex;flex-wrap:wrap;gap:8px}.ag-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer;max-width:100%}
+.ag-chip span{font-size:15px}html.vw-page .ag-chip{background:#2C2C2E;border-color:#3A3A3C;color:#F2F2F7}
+.ag-box.light{background:#F3F7FA;box-shadow:none}.ag-box.light .ag-chip{background:#fff;border-color:#D6E5F1;color:#14253B}
 html.vw-page .leaflet-tooltip{background:rgba(28,28,30,.92);color:#fff;border-color:#3A3A3C;box-shadow:none;font-weight:700}html.vw-page .leaflet-tooltip-top:before{border-top-color:rgba(28,28,30,.92)}
 html.vw-page .vw-mapw .leaflet-bottom{bottom:40px}
 .vw-wx{display:flex;gap:22px;margin:4px 0 2px}.vw-wx>div{display:flex;flex-direction:column;gap:0;line-height:1.2}.vw-wx b{font-size:19px;font-weight:700;white-space:nowrap}.vw-wx span{font-size:12px;color:var(--muted);font-weight:600}
@@ -744,6 +751,8 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-pin{position:absolute;display:block;border-radius:24px;background:#fff;padding:6px;box-shadow:0 8px 22px rgba(0,0,0,.28);box-sizing:border-box}
 .c-ph-pin::after{content:'';position:absolute;left:50%;bottom:-13px;margin-left:-12px;border:12px solid transparent;border-top:14px solid #fff;border-bottom:0}
 .c-ph-pin i{display:block;width:100%;height:100%;border-radius:19px;background:#ddd center/cover no-repeat}
+.c-ph-pin i.ic{display:flex;align-items:center;justify-content:center;background:#E3EFF8;color:#1D9EC0}
+.c-ph-memtag{position:absolute;left:50%;top:-14px;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-size:12px;font-weight:800;color:#fff;background:#F2665E;border:2px solid #fff;border-radius:999px;padding:3px 10px;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .c-ph-dot{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#2FC6CF;border:3.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3);box-sizing:border-box}
 .c-ph-dt{position:absolute;margin:12px 0 0 -16px;font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:6;width:96px;height:96px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(232,246,252,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(10,40,70,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
@@ -1033,6 +1042,32 @@ function followRoute(g) {
   }
   ls.set('guideNext', Object.assign(guide, { at: Date.now() }));
   location.href = `./?walk=1&mode=${guide.modeK || ls.get('lastMode', 'hike')}`;
+}
+// ---------- 다시 가기 (2026-11-09 사용자 경험 개선 1차 P1): 내 지난 기록·발견에서 '이 길 다시 가기'(followRoute)와 '길찾기'(naverOpen)로 ----------
+// 새 기능이 아니라 받은 사람 화면에 있던 두 기능을 내 기록에도 이어 줘요. 기록은 읽기만 하고 바꾸지 않아요.
+// 길이 없으면 '다시 가기' 단추를 빼고, 위치가 하나도 없으면 칸을 아예 안 그려요.
+function againDests(t) {
+  const out = [], add = (n, lat, lng, ic) => { if (!Number.isFinite(lat) || !Number.isFinite(lng)) return; if (out.some(d => dist(d.lat, d.lng, lat, lng) < 80)) return; out.push({ n: String(n || '').slice(0, 30) || '그곳', lat: +(+lat).toFixed(6), lng: +(+lng).toFixed(6), ic }); };
+  const days = String(t).startsWith('album_') ? ((albumGet(t) || {}).days || []) : [t];
+  for (const d of days) for (const s of ls.get('walkSummits:' + d, []) || []) if (s) add(s.n, s.lat, s.lng, '⛰');
+  for (const s of spotsOf(t) || []) if (s && s.n) add(s.n, s.lat, s.lng, s.food ? '🍽' : s.k === 'stay' ? '📍' : '★');
+  const tr = trackLoad(t);
+  if (tr.length >= 2) { const f = farPoint(tr); if (dist(tr[0][0], tr[0][1], f[0], f[1]) >= 150) add('가장 멀리 간 곳', f[0], f[1], '🚩'); }
+  if (tr.length) { const wp = ls.get('walkPlaces:' + (days[0] || t), {}) || {}; add(wp.start && wp.start !== '출발 지점' ? `출발 · ${wp.start}` : '출발한 곳', tr[0][0], tr[0][1], '○'); }
+  return out.slice(0, 5);
+}
+function againBox(t, opt = {}) {
+  const album = String(t).startsWith('album_'), M = modeOfT(t), tr = trackLoad(t), live = t === ls.get('walkNow', null);
+  const canGo = !album && !live && M.k !== 'pgolf' && tr.length >= 2, dests = live ? [] : againDests(t);
+  if (!canGo && !dests.length) return null;
+  const name = ls.get('trackName:' + t, '') || (opt.name || '지난 길');
+  const go = () => { const r = thinRoute(tr.map(q => [q[0], q[1]]), null, 800).R; followRoute({ name, route: r, spots: (spotsOf(t) || []).filter(s => s && Number.isFinite(s.lat)).slice(0, 10), modeK: M.k }); };
+  return el('div', { class: 'card ag-box' + (opt.light ? ' light' : '') },
+    el('b', { class: 'ag-h', text: '↻ 다시 가기' }),
+    canGo ? el('button', { class: 'btn primary full', onclick: go }, ico(M.k, 20), ` 이 길 그대로 다시 ${M.k === 'run' ? '달리기' : M.k === 'bike' ? '타기' : '가기'}`) : null,
+    canGo ? el('div', { class: 'sub ag-s', text: `이 길(${fmtDist(pathLen(tr))})을 지도에 파란 선으로 깔고 ${M.label} 시작 화면으로 가요. 지난 기록은 그대로예요.` }) : null,
+    dests.length ? el('div', { class: 'sub ag-s', style: 'margin-top:4px', text: '네이버지도로 지금 있는 곳에서 길찾기' }) : null,
+    dests.length ? el('div', { class: 'ag-chips' }, ...dests.map(d => el('button', { type: 'button', class: 'ag-chip', onclick: () => naverOpen(d) }, el('span', { text: d.ic }), d.n))) : null);
 }
 // 따라가는 길 위 어디쯤인지: 가장 가까운 구간, 벗어난 거리(m), 남은 거리(m)
 // from: 지난번 위치의 구간 번호 (되돌아가는 길로 잘못 잡지 않게 뒤쪽 구간은 조금 불리하게 봐요)
@@ -2750,9 +2785,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요) · 첫 화면 말풍선·발견·지도 카드의 사진을 원본으로 보여 줘서 선명해졌어요 · 기록 보기와 받은 링크의 사진 모음도 원본으로 선명하게';
+const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3101,7 +3136,8 @@ function viewShareLink() {
         iC, btn, msg)));
     setTimeout(() => iC.focus(), 100);
   }
-  subTopic = topic + '/#'; if (connected) client.subscribe(subTopic, { qos: 1 });
+  connWait = () => !done;   // 본문을 받은 뒤엔(사진은 Firestore에서) 연결 표시가 필요 없어요
+  subTopic = topic + '/#'; if (connected) client.subscribe(subTopic, { qos: 1 }); else setConn(false);
   setTimeout(() => {
     if (done) return;
     app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '나들이 경로'),
@@ -3342,8 +3378,18 @@ if (!window.mqtt) {
 }
 const client = LAB_QUIET ? { on() {}, subscribe() {}, unsubscribe() {}, publish() {}, end() {} } : mqtt.connect(BROKER, { clientId: 'dwn_' + rid(12), clean: true, connectTimeout: 10000, reconnectPeriod: 3000 });
 let connected = false, subTopic = null;
-const connBar = el('div', { class: 'toast', role: 'status', style: 'bottom:auto;top:calc(12px + env(safe-area-inset-top,0px));background:#B42328', text: '연결 중이에요…' });
-function setConn(on) { connected = on; if (on) connBar.remove(); else if (!connBar.isConnected) document.body.append(connBar); }
+// '연결 중' 표시 (2026-11-09 P2): 공개 MQTT는 이제 예전 링크·모임방을 읽을 때만 써요(저장·공유는 Firestore).
+//   그래서 그 화면(subTopic이 있을 때)에서 3초 넘게 못 붙을 때만, 화면 아래에 작게, 누름은 그대로 통과하게 보여요.
+//   예전엔 모든 화면 맨 위에 빨간 띠로 떠서 새 홈의 로고·🔍·🔔·프로필을 가렸어요.
+const connBar = el('div', { class: 'toast conn-bar', role: 'status', text: '예전 링크·모임방 서버에 연결 중이에요…' });
+let connT = 0, connWait = null;   // connWait: 그 화면이 아직 MQTT를 기다리는지 (없으면 기다림)
+function connShow() {
+  const need = () => !connected && subTopic && (!connWait || connWait());
+  if (!need() || connBar.isConnected) return;
+  document.body.append(connBar);
+  const iv = setInterval(() => { if (!need()) { connBar.remove(); clearInterval(iv); } }, 1500);
+}
+function setConn(on) { connected = on; clearTimeout(connT); if (on) connBar.remove(); else connT = setTimeout(connShow, 3000); }
 setConn(LAB_QUIET);
 client.on('connect', () => { setConn(true); if (subTopic) client.subscribe(subTopic, { qos: 1 }); });
 client.on('close', () => setConn(false));
@@ -3829,7 +3875,7 @@ async function viewRoomOne(p) {
     ls.set('rooms', [local, ...roomsLoad().filter(x => x.code !== code)]);
     toast(`'${local.name}' 모임방에 들어왔어요`); drawTop();
   }
-  subTopic = r.topic + '/#'; if (connected) client.subscribe(subTopic, { qos: 1 });
+  subTopic = r.topic + '/#'; if (connected) client.subscribe(subTopic, { qos: 1 }); else setConn(false);
   drawTop();
   setTimeout(async () => {
     if (gone) return;
@@ -5839,6 +5885,7 @@ async function viewMyOne(t) {
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
   const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
+  const agBox = againBox(t, { name: info.name });
   let phAll = [];
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
   const vNote = el('div', { class: 'sub', style: 'font-size:12px;display:none', text: '🎬 동영상은 이 휴대폰(과 백업 파일)에만 있어요 · 지도 링크·공유 카드·클라우드로는 아직 안 보내져요' });
@@ -5948,6 +5995,7 @@ async function viewMyOne(t) {
       wxEl,
       noteEl,
       ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })()),
+    agBox,   // ↻ 다시 가기 (2026-11-09 P1): 이 길 다시 가기 · 길찾기
     stats, (() => {   // 🏔 오른 정상 (2026-11-07): 기록 중에 남긴 것, 없으면 지도 자료에서 찾아 채움
       const box = el('div', { class: 'card pk-rec', hidden: true });
       const paint = sm => { if (!sm || !sm.length) return; box.hidden = false; box.replaceChildren(el('b', { text: '🏔 오른 정상' }),
@@ -6003,6 +6051,11 @@ async function viewMyOne(t) {
       bt.addEventListener('click', () => { phOn = !phOn; ls.set('mapPhotoOff', !phOn); drawPh(); });
       return bt; } });
     m.addControl(new PC());
+    // 지도 오른쪽 위 '↻ 다시 가기': 첫 화면에서 바로 보이게, 누르면 아래 다시 가기 칸으로 (같은 기능을 두 번 만들지 않고 그 칸으로 데려가요)
+    if (agBox) m.addControl(new (L.Control.extend({ options: { position: 'topright' }, onAdd() {
+      const bt = L.DomUtil.create('button', 'fs-btn'); bt.type = 'button'; bt.textContent = '↻ 다시 가기'; L.DomEvent.disableClickPropagation(bt);
+      bt.addEventListener('click', () => { agBox.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); agBox.classList.remove('ag-flash'); void agBox.offsetWidth; agBox.classList.add('ag-flash'); });
+      return bt; } }))());
     drawPh(); addEventListener('photo-changed', drawPh);
     addEventListener('spots-changed', () => setTimeout(() => location.reload(), 300));   // 지도 위 별표도 새로
   }, 0);
@@ -7209,10 +7262,17 @@ function cTabs(on) {
   const f = document.createDocumentFragment(); f.append(live, nav); return f;
 }
 // 기록하기: 모드를 고르면 그 모드의 기존 기록 시작 화면으로 (기록 흐름은 그대로)
+// 바로 시작할 수 있는 모드: 시작 화면에서 따로 고를 것이 없는 것만 (러닝·여행·백패킹·캠핑·파크골프는 시작 화면을 거쳐요)
+function quickGo(k) { return ['trek', 'hike', 'bike', 'daily', 'date'].includes(k); }   // function: 라우팅이 스크립트 중간에 돌아서(TDZ·var undefined)
 function cRecordSheet() {
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const lm = ls.get('lastMode', ''), lk = quickGo(lm) && MODES.find(m => m.k === lm);
   bg.append(el('div', { class: 'sheet c-ui', role: 'dialog', 'aria-label': '기록하기' },
-    el('h2', { text: '무엇을 기록할까요?' }), el('p', { class: 'sub', style: 'margin:0', text: '고르면 그 기록의 시작 화면으로 가요' }),
+    el('h2', { text: '무엇을 기록할까요?' }),
+    // 지난번 모드 바로 시작(2026-11-09 P3): 홈 '+ 기록하기' → 이 단추 = 2번 만에 기록 시작 (예전 3번). 모드 이름을 단추에 그대로 보여 줘요
+    lk ? el('a', { class: 'btn primary full big', href: `?walk=1&mode=${lm}&go=1`, style: 'display:flex;align-items:center;justify-content:center;gap:8px' }, ico(lm, 22), `${lk.label} 바로 시작`) : null,
+    lk ? el('p', { class: 'sub', style: 'margin:-4px 0 4px;font-size:13px;text-align:center', text: '지난번에 쓴 기록이에요 · 목표는 지난번 그대로' }) : null,
+    el('p', { class: 'sub', style: 'margin:0', text: lk ? '다른 기록은 아래에서 골라요 · 고르면 그 기록의 시작 화면으로 가요' : '고르면 그 기록의 시작 화면으로 가요' }),
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
@@ -7417,7 +7477,9 @@ function cFindDetail(c) {
     el('div', { class: 'c-card', style: 'background:#F3F7FA;box-shadow:none;gap:4px' },
       el('b', { text: `근거 기록 ${c.ids.length || f.n || 0}개${f.trust ? ` · 믿을 만함 ${f.trust}` : ''}` }), f.how ? el('span', { class: 'sub', style: 'font-size:14px', text: `어떻게 셌나: ${f.how}` }) : null),
     c.ids.length ? el('div', { class: 'c-ev' }, ...c.ids.slice(0, 12).map(t => el('a', { href: `./?my=1&t=${encodeURIComponent(t)}` }, el('span', { text: ls.get('trackName:' + t, '기록') }), el('span', { class: 'sub', text: `${lcDay((trackLoad(t)[0] || [])[2] || 0)} ›` })))) : null,
-    c.ids.length ? el('a', { class: 'btn primary full', href: `./?map=1&t=${encodeURIComponent(c.ids[c.ids.length - 1])}` }, cSvg('pin', 20, '#fff'), ' 지도에서 보기') : null,
+    // ↻ 다시 가기 (2026-11-09 P1): 근거 기록 중 가장 최근 것으로 이 길 다시 가기 · 길찾기
+    (() => { const last = c.ids.slice().sort((p, q) => ((trackLoad(q)[0] || [])[2] || 0) - ((trackLoad(p)[0] || [])[2] || 0))[0]; return last ? againBox(last, { light: true }) : null; })(),
+    c.ids.length ? el('a', { class: 'btn line full', href: `./?map=1&t=${encodeURIComponent(c.ids[c.ids.length - 1])}` }, cSvg('pin', 20, '#1D9EC0'), ' 지도에서 보기') : null,
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
@@ -7592,16 +7654,22 @@ function cHomePhoto() {
     const withPh = recs.filter(r => r.first);
     // 배경: 따로 고른 첫 화면 사진이 있으면 그것, 없으면 최근 기록 사진 중 사람이 없는 사진(cHomeBg)
     if (!chosen && withPh[0]) cHomeBg(bg, withPh, C_SPOTS.length);
-    const bub = (chosen ? withPh : withPh.slice(1)).slice(0, C_SPOTS.length);
+    // 1년 전 오늘(2026-11-09 P2): 지난해 같은 무렵 기록이 있으면 첫 말풍선(맨 위 오른쪽)에 '📅 n년 전 오늘' 딱지를 달아 띄워요.
+    //   예전엔 첫 화면 아래(스크롤해야 보이는 곳)에만 있었어요. 새 카드를 얹지 않고 원래 말풍선 자리 하나를 써요(아래 카드도 그대로)
+    const mp = memoryPick(); let memR = null;
+    if (mp) { memR = { t: mp.x.t, name: mp.x.info.name, a: mp.x.info.startAt, M: modeOfT(mp.x.t), mem: mp }; try { await cPhotos(memR); } catch {} }
+    const bub = [...(memR ? [memR] : []), ...(chosen ? withPh : withPh.slice(1)).filter(r => !memR || r.t !== memR.t)].slice(0, C_SPOTS.length);
     if (!bub.length) return;
     const W = box.clientWidth, H = box.clientHeight, pts = [];
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'c-ph-line'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     bub.forEach((r, i) => { const c = C_SPOTS[i], p = r.first, d = new Date(r.a), s = Math.round(c.s * Math.min(1.12, W / 393));
       pts.push([c.dx * W / 100, c.dy * H / 100, r.a]);
-      layer.append(el('a', { class: 'c-ph-pin', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'aria-label': `${r.name} 보기`, style: `left:${c.x}%;top:${c.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` },
-        el('i', { style: `background-image:url('${phSrc(p)}')` })),
+      const mm = r.mem, lab = mm ? `${mm.yr}년 전 ${mm.off ? '이맘때' : '오늘'}` : '';
+      layer.append(el('a', { class: 'c-ph-pin' + (mm ? ' c-mem' : ''), href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'aria-label': mm ? `${lab} · ${r.name} 보기` : `${r.name} 보기`, style: `left:${c.x}%;top:${c.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` },
+        p ? el('i', { style: `background-image:url('${phSrc(p)}')` }) : el('i', { class: 'ic' }, ico(r.M.k, Math.round(s * .45))),
+        mm ? el('em', { class: 'c-ph-memtag', text: `📅 ${lab}` }) : null),
         el('span', { class: 'c-ph-dot', style: `left:${c.dx}%;top:${c.dy}%` }),
-        el('span', { class: 'c-ph-dt', style: `left:${c.dx}%;top:${c.dy}%`, text: `${d.getMonth() + 1}.${d.getDate()}` })); });
+        el('span', { class: 'c-ph-dt', style: `left:${c.dx}%;top:${c.dy}%`, text: mm ? `${String(d.getFullYear()).slice(2)}.${d.getMonth() + 1}.${d.getDate()}` : `${d.getMonth() + 1}.${d.getDate()}` })); });
     // 잇는 선 = 날짜 순서(오래된 것 → 최근). 실제 이동 경로가 아니에요
     const ord = pts.slice().sort((a, b) => a[2] - b[2]);
     if (ord.length > 1) { let dd = `M${ord[0][0]} ${ord[0][1]}`; for (let i = 1; i < ord.length; i++) { const a = ord[i - 1], b = ord[i], mx = (a[0] + b[0]) / 2; dd += ` C${mx} ${a[1]} ${mx} ${b[1]} ${b[0]} ${b[1]}`; }
@@ -7678,6 +7746,8 @@ function viewWalk() {
   let guide = id ? ls.get('walkGuide:' + id, null) : null, gLayer = null, gIdx = 0, gOff = false, gEnd = false;
   let pending = id ? null : ls.get('guideNext', null);
   if (pending && !(Date.now() - pending.at < 864e5 && Array.isArray(pending.route) && pending.route.length > 1)) { pending = null; ls.set('guideNext', null); }
+  const followPill = () => pending ? el('div', { class: 'ag-pend' }, el('span', { text: `↻ '${pending.name}' 길을 따라가요 · ${fmtDist(pathLen(pending.route))}` }),
+    el('button', { type: 'button', 'aria-label': '따라가지 않기', title: '따라가지 않기', text: '✕', onclick: () => { pending = null; ls.set('guideNext', null); draw(); } })) : null;
   const tGuide = el('div', { class: 'banner info', style: 'gap:4px;padding:12px 16px' });
   // 같이 달리기: 초대 링크(#crew=코드)로 들어오면 그 방에 들어가요
   { const ch = /[#&]crew=([^&]+)/.exec(location.hash);
@@ -8112,6 +8182,7 @@ function viewWalk() {
         el('div', { class: 'r3-msg', text: '오늘의 한 걸음이 내일의 페이스가 돼요.' }))),
       el('div', { class: 'r3-bot' },
         // 2026-11-07 '귀찮게 하지 마': 누르면 지난번 목표 그대로 바로 3·2·1 출발(예전엔 준비 화면 → '출발'을 한 번 더). 목표를 바꿀 때만 아래 🎯 알약 → 준비 화면
+        followPill(),   // ↻ 따라가는 길이 걸려 있으면 시작 단추 바로 위에 (2026-11-09: 예전엔 사진 아래라 안 보였음)
         el('button', { class: 'r3-go', onclick: () => countdown() }, el('span', { class: 'r3-tri', text: '▶' }), ' 러닝 시작하기'),
         el('div', { class: 'rh-info r3-st', style: 'justify-content:center' },
           (() => { const g = goalOf(runGoalSaved()); return el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
@@ -8208,6 +8279,7 @@ function viewWalk() {
         el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'THE MOUNTAINS ARE CALLING' }),
           el('div', { class: 'r3-msg', text: '오늘 오른 높이가 내일의 풍경이 돼요.' }))),
       el('div', { class: 'r3-bot' },
+        followPill(),   // ↻ 따라가는 길이 걸려 있으면 시작 단추 바로 위에 (2026-11-09: 예전엔 사진 아래라 안 보였음)
         el('button', { class: 'r3-go', onclick: () => start() }, el('span', { class: 'r3-tri', text: '▶' }), ' 등산 시작하기'),
         el('div', { class: 'rh-info r3-st', style: 'justify-content:center' },
           el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
@@ -8260,6 +8332,7 @@ function viewWalk() {
         el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'KEEP THE WHEELS TURNING' }),
           el('div', { class: 'r3-msg', text: '바퀴가 지나간 길이 오늘의 일기가 돼요.' }))),
       el('div', { class: 'r3-bot' },
+        followPill(),   // ↻ 따라가는 길이 걸려 있으면 시작 단추 바로 위에 (2026-11-09: 예전엔 사진 아래라 안 보였음)
         el('button', { class: 'r3-go', onclick: () => start() }, el('span', { class: 'r3-tri', text: '▶' }), ' 라이딩 시작하기'),
         el('div', { class: 'rh-info r3-st', style: 'justify-content:center' },
           el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
@@ -8302,6 +8375,7 @@ function viewWalk() {
         el('div', { class: 'r3-say' }, el('div', { class: 'r3-ey', style: 'color:#fff', text: 'EVERY STEP COUNTS' }),
           el('div', { class: 'r3-msg', text: '한 걸음 한 걸음이 오늘의 일기가 돼요.' }))),
       el('div', { class: 'r3-bot' },
+        followPill(),   // ↻ 따라가는 길이 걸려 있으면 시작 단추 바로 위에 (2026-11-09: 예전엔 사진 아래라 안 보였음)
         el('button', { class: 'r3-go', onclick: () => start() }, el('span', { class: 'r3-tri', text: '▶' }), ' 걷기 시작하기'),
         el('div', { class: 'rh-info r3-st', style: 'justify-content:center' },
           el('button', { class: 'pill', style: 'border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.28);color:#fff;font:inherit;font-weight:700;cursor:pointer',
@@ -9043,6 +9117,15 @@ function viewWalk() {
         (() => { const aid = ls.get('walkAlbum:' + done, null), ai = aid && albumInfo(aid);
           return ai && ai.days > 1 ? el('button', { class: 'btn line full', text: `'${ai.name}' 여행 전체 공유하기`, onclick: () => openBrag(ai, aid, 0, false) }) : null; })(),
         el('a', { class: 'btn line full', href: './', text: '처음으로' })].filter(Boolean));
+      return;
+    }
+    // 바로 시작(2026-11-09 P3): 기록하기 창의 '지난번처럼 바로 시작'(&go=1) → 시작 화면을 건너뛰고 바로 기록. 한 번만(주소에서 go를 지움)
+    //   러닝(3·2·1 소리)·여러 날 여행(오늘만/이어서 고르기)·파크골프(점수표 준비)는 시작 화면이 꼭 필요해서 빼요
+    if (!id && qs.get('go') === '1' && quickGo(pick)) {
+      qs.delete('go'); try { const u = new URL(location.href); u.searchParams.delete('go'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {}
+      start(); toast(`${modeByK(pick).label} 기록을 시작했어요`);
+      // 페이지를 막 연 참이라 화면 켜두기·박자 소리가 막혔을 수 있어서, 처음 화면을 만질 때 한 번 더 켜요
+      addEventListener('pointerdown', () => { if (id && !wake) { wantWake = true; lockWake(); } try { if (actx && actx.state !== 'running') actx.resume(); } catch {} }, { once: true, capture: true });
       return;
     }
     const rhOn = !id && pick === 'run' && !!qs.get('mode'); document.documentElement.classList.toggle('rh-page', rhOn);
