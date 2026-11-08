@@ -728,14 +728,15 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 /* 홈 = 승인 시안 그대로 (사진 한 장 + 말풍선 + 기록하기) */
 .c-ph{position:relative;margin:-20px -20px 0;height:100svh;min-height:600px;overflow:hidden;color:#fff;isolation:isolate}
 .c-ph-bg{position:absolute;inset:0;background:#2a4256 50% 50%/cover no-repeat;z-index:-2}
-.c-ph::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,20,32,.55),rgba(8,20,32,.18) 34%,rgba(8,20,32,0) 55%,rgba(8,20,32,.22) 85%,rgba(8,20,32,.4))}
+.c-ph::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,20,32,.5),rgba(8,20,32,.2) 30%,rgba(8,20,32,.1) 55%,rgba(8,20,32,.14) 80%,rgba(8,20,32,.2))}
+.c-ph::after{content:'';position:absolute;left:0;right:0;bottom:0;height:70px;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,250,252,0),#F7FAFC)}
 .c-ph-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:6px;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 0;z-index:5}
 .c-ph-logo{display:flex;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
 .c-ph-logo b{display:block;font-size:34px;font-weight:900;letter-spacing:-.02em;line-height:1;color:#fff}.c-ph-logo small{display:block;font-size:13.5px;font-weight:600;color:#fff;margin-top:3px}
 .c-ph-ib{width:46px;height:46px;border-radius:50%;border:none;background:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 1px 4px rgba(0,0,0,.35))}
 .c-ph-av{width:46px;height:46px;border-radius:50%;border:2.5px solid #fff;background:rgba(255,255,255,.18);color:#fff;font-size:19px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;cursor:pointer;font-family:inherit;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 .c-ph-sl{position:absolute;left:24px;right:24px;top:calc(122px + env(safe-area-inset-top,0px));z-index:4}
-.c-ph-sl h1{margin:0;font-size:clamp(28px,8vw,34px);line-height:1.38;font-weight:800;letter-spacing:-.03em;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+.c-ph-sl h1{margin:0;font-size:clamp(26px,7.4vw,31px);line-height:1.42;font-weight:700;letter-spacing:-.03em;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.35)}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
@@ -745,7 +746,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-pin i{display:block;width:100%;height:100%;border-radius:19px;background:#ddd center/cover no-repeat}
 .c-ph-dot{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#2FC6CF;border:3.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3);box-sizing:border-box}
 .c-ph-dt{position:absolute;margin:12px 0 0 -16px;font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:6;width:104px;height:104px;border-radius:50%;border:none;background:rgba(255,255,255,.96);box-shadow:0 0 0 7px rgba(255,255,255,.35),0 10px 26px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+.c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:6;width:96px;height:96px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(232,246,252,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(10,40,70,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
 .c-ph-rec .pl{font-size:46px;line-height:.85;font-weight:300;color:#1D9EC0}
 /* 기록 중: 빨간 띠 + 빨간 큰 단추(시간이 흐름) — 한눈에 티 나게 */
 .c-ph-lvbar{position:absolute;left:0;right:0;top:0;z-index:7;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:#E5383B;color:#fff;font-weight:800;font-size:15px;text-decoration:none;box-shadow:0 3px 14px rgba(0,0,0,.25)}
@@ -754,9 +755,16 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-lv-dot{flex:none;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.8);animation:lvDot 1.4s ease-out infinite}
 @keyframes lvDot{0%{box-shadow:0 0 0 0 rgba(255,255,255,.8)}100%{box-shadow:0 0 0 10px rgba(255,255,255,0)}}
 html.c-home.c-live .c-ph-top{top:calc(44px + env(safe-area-inset-top,0px))}
-.c-ph-rec.live{width:132px;height:132px;background:#E5383B;color:#fff;text-decoration:none;gap:1px;box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3);animation:lvRing 1.6s ease-out infinite}
+.c-ph-rec.live{width:104px;height:104px;border:none;background:#E5383B;-webkit-backdrop-filter:none;backdrop-filter:none;color:#fff;text-decoration:none;gap:1px;box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3);animation:lvRing 1.6s ease-out infinite}
+.c-hm{background:linear-gradient(180deg,#CFC8CA,#E9E9EE)}.c-hm::before{display:none}
+.c-hm-img{position:absolute;left:0;right:0;top:0;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:#cfc8ca 50% 0/100% 100% no-repeat;z-index:1}
+html.c-live .c-hm-img{top:calc(44px + env(safe-area-inset-top,0px))}
+.c-hm-hit{position:absolute;aspect-ratio:1;border-radius:50%;border:none;background:transparent;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.c-hm-hit:active{background:rgba(255,255,255,.22)}
+.c-hm-logo{position:absolute;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.c-hm .c-ph-rec.live{right:auto;bottom:auto;margin:-52px 0 0 -52px}
 .c-ph-rec.live small{font-size:12px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;gap:6px}.c-ph-rec.live small i{width:9px;height:9px;border-radius:50%;background:#fff}
-.c-ph-rec.live b{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
+.c-ph-rec.live b{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
 .c-ph-rec.live em{font-style:normal;font-size:13.5px;font-weight:700;opacity:.95}
 @keyframes lvRing{0%{box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3)}100%{box-shadow:0 0 0 22px rgba(229,56,59,0),0 10px 26px rgba(0,0,0,.3)}}
 .c-tabs-live{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:3001;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:999px;background:#E5383B;color:#fff;font-weight:800;font-size:14.5px;text-decoration:none;box-shadow:0 6px 20px rgba(229,56,59,.4);transition:opacity .2s,transform .2s}
@@ -2749,9 +2757,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-10';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 승인 시안 그림 그대로 바꿨어요(내 사진·길은 쓰지 않아요)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7512,14 +7520,6 @@ function cFindLine() {
   } catch (e) {} }, 0);
   return slot;
 }
-// 홈 = 승인 시안 그대로(2026-11-08 사용자 '시안 그대로 해'): 한 화면 가득 내 사진 한 장 + 하트 로고 + 슬로건 + 최근 기록 사진 말풍선 + '+ 기록하기' + 아래 메뉴.
-//   말풍선은 실제 내 기록의 사진(누르면 그 기록), 잇는 선은 날짜 순서(점 옆에 날짜) — 지도 위치·경로처럼 보이지 않게 지도는 깔지 않아요
-const C_SPOTS = [ // 시안 자리(화면 비율 %): 말풍선 가운데 x, 말풍선 위 y, 크기(px), 점 x·y
-  { x: 61, y: 31, s: 96, dx: 62, dy: 45 },
-  { x: 24, y: 43, s: 112, dx: 21, dy: 59 },
-  { x: 75, y: 49, s: 112, dx: 75, dy: 65 },
-  { x: 46, y: 58, s: 88, dx: 45, dy: 70 }];
-// 아직 없는 기능: 다른 기능으로 바꿔 넣지 않고 '만들 예정' 창을 띄워요 (2026-11-08 사용자 '기능이 아직 없다고 딴걸로 대체하지마')
 function cSoon(title, desc) {
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet c-ui', role: 'dialog', 'aria-label': title },
@@ -7549,59 +7549,34 @@ function cSearch() {
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg); draw(); setTimeout(() => inp.focus(), 50);
 }
+// 홈 = 승인 시안 그림 그대로(2026-11-08 사용자 '내 사진과 경로 쓰지 말고 시안 그대로 이미지를 쓰는 건? ㄱ'):
+//   img/home-mock.jpg(승인 시안 화면에서 휴대폰 위 상태 줄·아래 메뉴를 뺀 부분)를 깔고, 그림 속 로고·🔍·🔔·프로필·기록하기 자리에
+//   누르는 칸만 얹어요(자리 = 그림 안 %). 말풍선 사진·선은 그림 속 장식이라 누르지 않아요(내 기록이 아님)
 function cHomePhoto() {
-  const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
+  const HM = { logo: [6.5, 1.6, 45, 8.4], search: [66.4, 6.1], bell: [78.3, 6.1], av: [91.4, 6.1], rec: [50.2, 92.9] };   // 라우팅이 스크립트 중간에 돌아 함수 안에 둠
+  const box = el('div', { class: 'c-ph c-hm' }), img = el('div', { class: 'c-hm-img', role: 'img', 'aria-label': 'MPD · 일상을 발견하고, 행복을 넓히다.' });
+  img.style.backgroundImage = `url("${IN_NATIVE ? APP_BASE : './'}img/home-mock.jpg")`;
   const wNow = ls.get('walkNow', null);
-  const icBtn = (label, svg, on) => { const b = el(on.href ? 'a' : 'button', Object.assign({ class: 'c-ph-ib', 'aria-label': label, title: label }, on)); b.innerHTML = svg; return b; };
-  const logo = el('div', { class: 'c-ph-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 (예전 'MPD' 딱지와 같음)
+  const hit = (label, [x, y], on, w = 12) => el('button', Object.assign({ class: 'c-hm-hit', type: 'button', 'aria-label': label, title: label, style: `left:${x}%;top:${y}%;width:${w}%;margin:-${w / 2}% 0 0 -${w / 2}%` }, on));
+  const [lx, ly, lw, lh] = HM.logo;
+  const logo = el('div', { class: 'c-hm-logo', role: 'button', 'aria-label': 'MPD · Map Photo Diary', style: `left:${lx}%;top:${ly}%;width:${lw}%;height:${lh}%`, onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 (예전 'MPD' 딱지와 같음)
     const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
     if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
-    if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } },
-    cLogoSvg(), el('span', {}, el('b', { text: 'MPD' }), el('small', { text: 'Map Photo Diary' })));
-  const S = 'viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
-  // 시안 그대로 오른쪽 위: 🔍 검색(cSearch) · 🔔 알림(아직 없음 → 만들 예정 창) · 프로필(누르면 '나' = 설정)
-  const nick = String(ls.get('nick', '') || '').trim();
-  const avatar = el('button', { class: 'c-ph-av', type: 'button', 'aria-label': '나 · 설정', title: '나', onclick: appSettings }, nick ? nick.slice(0, 1) : null);
-  if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
-  const top = el('div', { class: 'c-ph-top' }, logo, el('span', { style: 'flex:1' }),
-    icBtn('검색', `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`, { type: 'button', onclick: cSearch }),
-    icBtn('알림', `<svg ${S}><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`, { type: 'button', onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
-    avatar);
-  const sw = el('span'); sw.innerHTML = '<svg width="230" height="40" viewBox="0 0 230 40" aria-hidden="true"><path d="M4 36C60 14 140 4 226 10" fill="none" stroke="#3FD0D9" stroke-width="4" stroke-linecap="round"/></svg>';
-  const slogan = el('div', { class: 'c-ph-sl' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), sw,
-    null);
-  let rec, bar = null;
-  if (wNow) {   // 기록 중: 위 빨간 띠 + 가운데 빨간 큰 단추(시간이 흘러감), 누르면 기록 화면
+    if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } });
+  img.append(logo,
+    hit('검색', HM.search, { onclick: cSearch }),
+    hit('알림', HM.bell, { onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
+    hit('나 · 설정', HM.av, { onclick: appSettings }, 14));
+  let bar = null;
+  if (wNow) {   // 기록 중: 위 빨간 띠 + 그림 속 기록하기 자리에 빨간 큰 단추(시간이 흘러감), 누르면 기록 화면
     const bt = el('b'), bs = el('span'), tm = el('b');
     bar = el('a', { class: 'c-ph-lvbar', href: '?walk=1', 'aria-label': '기록 중 · 이어서' }, el('i', { class: 'c-lv-dot' }), bt, bs);
-    rec = el('a', { class: 'c-ph-rec live', href: '?walk=1', 'aria-label': '기록 중 · 이어서 보기' }, el('small', {}, el('i'), 'REC'), tm, el('em', { text: '이어서 ›' }));
+    const rec = el('a', { class: 'c-ph-rec live', href: '?walk=1', 'aria-label': '기록 중 · 이어서 보기', style: `left:${HM.rec[0]}%;top:${HM.rec[1]}%` }, el('small', {}, el('i'), 'REC'), tm, el('em', { text: '이어서 ›' }));
     cLiveTick(rec, () => { const v = cLiveTime(wNow); bt.textContent = `기록 중 · ${cLiveName(wNow)}`; bs.textContent = v; tm.textContent = v; });
     try { new IntersectionObserver(es => { const lv = document.querySelector('.c-tabs-live'); if (lv) lv.classList.toggle('hide', es[0].intersectionRatio > .5); }, { threshold: [0, .5, 1] }).observe(rec); } catch {}
-  } else rec = el('button', { class: 'c-ph-rec', type: 'button', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
-  box.append(bg, layer, top, slogan, rec); if (bar) box.append(bar);
-  bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
-  setTimeout(async () => {
-    const recs = cRecs(20); if (!recs.length) return;
-    await Promise.all(recs.map(cPhotos));
-    const chosen = ls.get('homeHero', '');
-    const withPh = recs.filter(r => r.first);
-    // 배경: 따로 고른 첫 화면 사진이 있으면 그것, 없으면 가장 최근 기록의 대표 사진(원본 크기)
-    if (!chosen && withPh[0]) { const p = withPh[0].first; bg.style.backgroundImage = `url("${p.blob ? URL.createObjectURL(p.blob) : p.thumb}")`; }
-    const bub = (chosen ? withPh : withPh.slice(1)).slice(0, C_SPOTS.length);
-    if (!bub.length) return;
-    const W = box.clientWidth, H = box.clientHeight, pts = [];
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'c-ph-line'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    bub.forEach((r, i) => { const c = C_SPOTS[i], p = r.first, d = new Date(r.a), s = Math.round(c.s * Math.min(1.12, W / 393));
-      pts.push([c.dx * W / 100, c.dy * H / 100, r.a]);
-      layer.append(el('a', { class: 'c-ph-pin', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'aria-label': `${r.name} 보기`, style: `left:${c.x}%;top:${c.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` },
-        el('i', { style: `background-image:url('${p.thumb}')` })),
-        el('span', { class: 'c-ph-dot', style: `left:${c.dx}%;top:${c.dy}%` }),
-        el('span', { class: 'c-ph-dt', style: `left:${c.dx}%;top:${c.dy}%`, text: `${d.getMonth() + 1}.${d.getDate()}` })); });
-    // 잇는 선 = 날짜 순서(오래된 것 → 최근). 실제 이동 경로가 아니에요
-    const ord = pts.slice().sort((a, b) => a[2] - b[2]);
-    if (ord.length > 1) { let dd = `M${ord[0][0]} ${ord[0][1]}`; for (let i = 1; i < ord.length; i++) { const a = ord[i - 1], b = ord[i], mx = (a[0] + b[0]) / 2; dd += ` C${mx} ${a[1]} ${mx} ${b[1]} ${b[0]} ${b[1]}`; }
-      svg.innerHTML = `<path d="${dd}" fill="none" stroke="#3FD0D9" stroke-width="3" stroke-linecap="round" opacity=".9"/>`; layer.prepend(svg); }
-  }, 0);
+    img.append(rec);
+  } else img.append(hit('기록하기', HM.rec, { onclick: cRecordSheet }, 22));
+  box.append(img); if (bar) box.append(bar);
   return box;
 }
 function viewLanding() {
