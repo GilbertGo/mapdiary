@@ -747,6 +747,22 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-dt{position:absolute;margin:12px 0 0 -16px;font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:6;width:104px;height:104px;border-radius:50%;border:none;background:rgba(255,255,255,.96);box-shadow:0 0 0 7px rgba(255,255,255,.35),0 10px 26px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
 .c-ph-rec .pl{font-size:46px;line-height:.85;font-weight:300;color:#1D9EC0}
+/* 기록 중: 빨간 띠 + 빨간 큰 단추(시간이 흐름) — 한눈에 티 나게 */
+.c-ph-lvbar{position:absolute;left:0;right:0;top:0;z-index:7;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:#E5383B;color:#fff;font-weight:800;font-size:15px;text-decoration:none;box-shadow:0 3px 14px rgba(0,0,0,.25)}
+.c-ph-lvbar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-ph-lvbar span{flex:none;font-weight:700;font-size:14px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.22)}
+.c-lv-dot{flex:none;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.8);animation:lvDot 1.4s ease-out infinite}
+@keyframes lvDot{0%{box-shadow:0 0 0 0 rgba(255,255,255,.8)}100%{box-shadow:0 0 0 10px rgba(255,255,255,0)}}
+html.c-home.c-live .c-ph-top{top:calc(44px + env(safe-area-inset-top,0px))}
+.c-ph-rec.live{width:132px;height:132px;background:#E5383B;color:#fff;text-decoration:none;gap:1px;box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3);animation:lvRing 1.6s ease-out infinite}
+.c-ph-rec.live small{font-size:12px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;gap:6px}.c-ph-rec.live small i{width:9px;height:9px;border-radius:50%;background:#fff}
+.c-ph-rec.live b{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
+.c-ph-rec.live em{font-style:normal;font-size:13.5px;font-weight:700;opacity:.95}
+@keyframes lvRing{0%{box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3)}100%{box-shadow:0 0 0 22px rgba(229,56,59,0),0 10px 26px rgba(0,0,0,.3)}}
+.c-tabs-live{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:3001;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:999px;background:#E5383B;color:#fff;font-weight:800;font-size:14.5px;text-decoration:none;box-shadow:0 6px 20px rgba(229,56,59,.4);transition:opacity .2s,transform .2s}
+.c-tabs-live b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.c-tabs-live.hide{opacity:0;transform:translateY(10px);pointer-events:none}
+html.c-tabbed.c-live body{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+@media (prefers-reduced-motion:reduce){.c-lv-dot,.c-ph-rec.live{animation:none}}
 html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 /* 나의 이야기 지도 */
 .c-mapv{position:fixed;inset:0;z-index:50;background:#E8F1F6}
@@ -2733,9 +2749,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7173,10 +7189,23 @@ function cSvg(n, s = 22, c = 'currentColor') {
 function cLogoSvg() { const sp = el('span', { 'aria-hidden': 'true', style: 'display:inline-flex' });
   sp.innerHTML = '<svg width="38" height="44" viewBox="0 0 40 46"><path d="M20 45s16-15.5 16-27A16 16 0 0 0 4 18c0 11.5 16 27 16 27z" fill="#F2665E"/><path d="M20 27s-7.2-4.4-7.2-9.4a3.9 3.9 0 0 1 7.2-2.2 3.9 3.9 0 0 1 7.2 2.2c0 5-7.2 9.4-7.2 9.4z" fill="#fff"/></svg>'; return sp; }
 // 아래 메뉴: 홈 · 지도 · 발견 · 이야기(= 내 MPD) · 나(= ⚙ 설정). 새 기능이 아니라 있던 곳으로 가는 길
+// 기록 중 표시: 지난 시간(멈춘 시간 뺌). 하루 넘으면 '26시간'처럼
+function cLiveTime(id) { const ms = Math.max(0, Date.now() - ls.get('walkAt', Date.now()) - pauseMs(id)), s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60;
+  if (h >= 24) return `${h}시간`; const p = n => String(n).padStart(2, '0'); return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`; }
+function cLiveName(id) { return ls.get('trackName:' + id, `${modeOfT(id).label} 기록`); }
+// 1초마다 글자를 바꿈. 화면에서 빠지면 멈춤
+function cLiveTick(node, fn) { fn(); const iv = setInterval(() => { if (!node.isConnected) return clearInterval(iv); fn(); }, 1000); }
 function cTabs(on) {
   document.documentElement.classList.add('c-tabbed');
+  const wNow = ls.get('walkNow', null);
+  document.documentElement.classList.toggle('c-live', !!wNow);
   const it = (k, label, href, click) => el(href ? 'a' : 'button', Object.assign({ class: on === k ? 'on' : null, 'aria-current': on === k ? 'page' : null }, href ? { href } : { type: 'button', onclick: click }), cSvg(k, 24), label);
-  return el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
+  const nav = el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
+  if (!wNow) return nav;
+  // 기록 중이면 아래 메뉴 바로 위에 빨간 띠(홈은 큰 빨간 단추가 화면에 있을 땐 숨김)
+  const b = el('b'), t = el('span'), live = el('a', { class: 'c-tabs-live' + (on === 'home' ? ' hide' : ''), href: '?walk=1', 'aria-label': '기록 중 · 이어서' }, el('i', { class: 'c-lv-dot' }), b, t);
+  cLiveTick(live, () => { b.textContent = `기록 중 · ${cLiveName(wNow)}`; t.textContent = `${cLiveTime(wNow)} · 이어서 ›`; });
+  const f = document.createDocumentFragment(); f.append(live, nav); return f;
 }
 // 기록하기: 모드를 고르면 그 모드의 기존 기록 시작 화면으로 (기록 흐름은 그대로)
 function cRecordSheet() {
@@ -7540,9 +7569,16 @@ function cHomePhoto() {
     avatar);
   const sw = el('span'); sw.innerHTML = '<svg width="230" height="40" viewBox="0 0 230 40" aria-hidden="true"><path d="M4 36C60 14 140 4 226 10" fill="none" stroke="#3FD0D9" stroke-width="4" stroke-linecap="round"/></svg>';
   const slogan = el('div', { class: 'c-ph-sl' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), sw,
-    wNow ? el('a', { class: 'c-ph-live', href: '?walk=1' }, el('i'), `기록 중 · ${ls.get('trackName:' + wNow, `${modeOfT(wNow).label} 기록`)} · 이어서 ›`) : null);
-  const rec = el('button', { class: 'c-ph-rec', type: 'button', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
-  box.append(bg, layer, top, slogan, rec);
+    null);
+  let rec, bar = null;
+  if (wNow) {   // 기록 중: 위 빨간 띠 + 가운데 빨간 큰 단추(시간이 흘러감), 누르면 기록 화면
+    const bt = el('b'), bs = el('span'), tm = el('b');
+    bar = el('a', { class: 'c-ph-lvbar', href: '?walk=1', 'aria-label': '기록 중 · 이어서' }, el('i', { class: 'c-lv-dot' }), bt, bs);
+    rec = el('a', { class: 'c-ph-rec live', href: '?walk=1', 'aria-label': '기록 중 · 이어서 보기' }, el('small', {}, el('i'), 'REC'), tm, el('em', { text: '이어서 ›' }));
+    cLiveTick(rec, () => { const v = cLiveTime(wNow); bt.textContent = `기록 중 · ${cLiveName(wNow)}`; bs.textContent = v; tm.textContent = v; });
+    try { new IntersectionObserver(es => { const lv = document.querySelector('.c-tabs-live'); if (lv) lv.classList.toggle('hide', es[0].intersectionRatio > .5); }, { threshold: [0, .5, 1] }).observe(rec); } catch {}
+  } else rec = el('button', { class: 'c-ph-rec', type: 'button', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
+  box.append(bg, layer, top, slogan, rec); if (bar) box.append(bar);
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   setTimeout(async () => {
     const recs = cRecs(20); if (!recs.length) return;
