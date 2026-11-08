@@ -2750,9 +2750,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-11';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-12';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7588,8 +7588,8 @@ function cHomePhoto() {
     for (let i = 0; i < all.length && got < C_SPOTS.length + 1; i += 6) { const part = all.slice(i, i + 6); await Promise.all(part.map(cPhotos)); recs.push(...part); got = recs.filter(r => r.first).length; }
     const chosen = ls.get('homeHero', '');
     const withPh = recs.filter(r => r.first);
-    // 배경: 따로 고른 첫 화면 사진이 있으면 그것, 없으면 가장 최근 기록의 대표 사진(원본 크기)
-    if (!chosen && withPh[0]) { const p = withPh[0].first; bg.style.backgroundImage = `url("${p.blob ? URL.createObjectURL(p.blob) : p.thumb}")`; }
+    // 배경: 따로 고른 첫 화면 사진이 있으면 그것, 없으면 최근 기록 사진 중 사람이 없는 사진(cHomeBg)
+    if (!chosen && withPh[0]) cHomeBg(bg, withPh, C_SPOTS.length);
     const bub = (chosen ? withPh : withPh.slice(1)).slice(0, C_SPOTS.length);
     if (!bub.length) return;
     const W = box.clientWidth, H = box.clientHeight, pts = [];
@@ -7606,6 +7606,39 @@ function cHomePhoto() {
       svg.innerHTML = `<path d="${dd}" fill="none" stroke="#3FD0D9" stroke-width="3" stroke-linecap="round" opacity=".9"/>`; layer.prepend(svg); }
   }, 0);
   return box;
+}
+// 첫 화면 바탕 = 사람이 없는 사진(2026-11-08 사용자 '대표사진 고를 때 사람 없는 게 좋겠다'):
+//   MediaPipe 물체 찾기(EfficientDet-Lite0, 'person'만)를 이 휴대폰 안에서 돌려 사람이 찍혔는지 봐요. 사진은 밖으로 안 나가요.
+//   한 번 본 사진은 ls phPeople={사진id: 1 있음/0 없음}에 남겨 다시 안 봐요. 처음 한 번 엔진·모델(약 14MB)을 받아요(그 뒤엔 브라우저에 남음).
+//   후보 차례: 가장 최근 기록의 사진들 → 말풍선 기록들의 대표 사진 말고 다른 사진 → 그다음 기록들의 사진(같은 사진이 바탕과 말풍선에 겹치지 않게)
+const MP_VER = '0.10.14';
+function phPeopleDet() {
+  if (phPeopleDet.p) return phPeopleDet.p;
+  const B = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
+  return phPeopleDet.p = (async () => { const V = await import(`${B}/vision_bundle.mjs`), fs = await V.FilesetResolver.forVisionTasks(`${B}/wasm`);
+    return V.ObjectDetector.createFromOptions(fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite' },
+      runningMode: 'IMAGE', scoreThreshold: 0.35, categoryAllowlist: ['person'], maxResults: 5 }); })().catch(e => { phPeopleDet.p = null; throw e; });
+}
+function phPeopleKnown(p) { const c = ls.get('phPeople', {}) || {}; return p && p.id in c ? c[p.id] : null; }
+async function phHasPeople(p) {   // 1 사람 있음 · 0 없음 · null 모름(엔진을 못 받음 등)
+  const k = phPeopleKnown(p); if (k !== null) return k;
+  let url = null;
+  try { const det = await phPeopleDet(); url = p.blob ? URL.createObjectURL(p.blob) : p.thumb; const im = new Image(); im.src = url; await im.decode();
+    const sc = Math.min(1, 640 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement('canvas'); cv.width = Math.round(im.naturalWidth * sc); cv.height = Math.round(im.naturalHeight * sc);
+    cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+    const A = cv.width * cv.height, has = det.detect(cv).detections.some(d => d.boundingBox.width * d.boundingBox.height > A * 0.012) ? 1 : 0;   // 아주 멀리 작게 보이는 사람(1.2% 아래)은 셈에서 뺌
+    const c = ls.get('phPeople', {}) || {}; c[p.id] = has; const ks = Object.keys(c); if (ks.length > 600) ks.slice(0, ks.length - 600).forEach(x => delete c[x]); ls.set('phPeople', c);
+    return has;
+  } catch { return null; } finally { if (url && p.blob) URL.revokeObjectURL(url); }
+}
+async function cHomeBg(bg, withPh, nBub) {
+  const imgs = p => p.v ? null : p, set = p => { const u = p.blob ? URL.createObjectURL(p.blob) : p.thumb; bg.style.backgroundImage = `url("${u}")`; };
+  const head = withPh[0], bubs = withPh.slice(1, 1 + nBub), rest = withPh.slice(1 + nBub);
+  const cand = [head.first, ...head.ph.filter(p => p !== head.first), ...bubs.flatMap(r => r.ph.filter(p => p !== r.first)), ...rest.flatMap(r => r.ph)].filter(p => p && imgs(p)).slice(0, 40);
+  const known0 = cand.find(p => phPeopleKnown(p) === 0);
+  if (known0) return set(known0);                                   // 예전에 사람 없다고 본 사진이 있으면 바로
+  if (phPeopleKnown(head.first) !== 1) set(head.first);             // 모르면 일단 예전처럼(가장 최근 대표 사진), 사람이 있으면 아래에서 바꿈
+  for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) return; if (h === 0) return set(p); }
 }
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
