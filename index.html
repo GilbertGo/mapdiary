@@ -681,6 +681,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-hero{position:relative;height:min(54vh,500px);min-height:380px;border-radius:28px;overflow:hidden;background:#E8F1F6;box-shadow:0 10px 30px rgba(20,37,59,.12);isolation:isolate}
 .c-hero .c-map{position:absolute;inset:0;z-index:0}
 .c-hero .leaflet-container,.c-mapv .leaflet-container{background:#E8F1F6;font-family:inherit}
+.c-hero .leaflet-tile-pane,.c-mapv .leaflet-tile-pane{filter:grayscale(.85) brightness(1.08) contrast(.88)}
 .c-hero .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
 .c-slogan{position:absolute;left:0;right:0;top:0;z-index:500;padding:22px 22px 60px;background:linear-gradient(180deg,rgba(247,250,252,.96),rgba(247,250,252,.82) 55%,rgba(247,250,252,0));pointer-events:none}
 .c-slogan h1{margin:0;font-size:clamp(25px,7vw,30px);line-height:1.32;font-weight:800;letter-spacing:-.03em;color:var(--c-ink)}
@@ -711,6 +712,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-st{flex:none;width:132px;scroll-snap-align:start;text-decoration:none;color:var(--c-ink);display:flex;flex-direction:column;gap:5px}
 .c-st .im{position:relative;display:flex;align-items:center;justify-content:center;width:132px;height:160px;border-radius:20px;background:#E6F2F7 center/cover no-repeat;color:var(--c-ac);transition:box-shadow .2s,transform .2s}
 .c-st.on .im{box-shadow:0 0 0 3px var(--c-ac),0 8px 18px rgba(29,158,192,.25)}
+.c-st .im.rt{background:linear-gradient(160deg,#EEF6FA,#DDEEF5)}.c-st .rtw{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}.c-st .rti{position:absolute;left:9px;top:9px;width:28px;height:28px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(20,37,59,.12)}
 .c-st .cnt{position:absolute;right:8px;bottom:8px;min-width:24px;height:24px;border-radius:12px;background:rgba(20,37,59,.72);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 7px}
 .c-st .dt{font-size:12px;color:var(--c-mu);display:inline-flex;align-items:center;gap:2px}.c-st .dt .ico svg{stroke:var(--c-ac)}
 .c-st b{font-size:14.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -2708,9 +2710,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 새로 꾸몄어요 · 가운데 지도에 최근 90일 동안 다닌 길이 옅게 깔려 내 생활권이 보여요 · 아래 최근 이야기를 옆으로 넘기면 지도가 그 기록의 길을 따라가요 · 내 기록에서 찾은 발견 한 줄을 누르면 발견 화면으로 가요 · 아래 메뉴로 지도와 발견과 이야기에 바로 가요 · 지도 카드의 사진을 누르면 크게 볼 수 있어요';
+const UI_NOTES = '첫 화면 지도를 차분한 색으로 바꿔 내 길과 사진이 잘 보여요 · 처음 열면 사진 핀이 다 보이게 지도를 맞춰요 · 사진이 없는 기록은 빈 칸 대신 다닌 길 모양을 보여 줘요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7405,9 +7407,20 @@ function cHomeHero() {
     drawPins(want && want.t); m.on('zoomend moveend', () => drawPins(want && want.t));
     m.on('click', () => { location.href = './?map=1'; });
     note.textContent = life.length > 1 ? `생활권 · 최근 90일 길 ${life.length}개` : withPh ? '사진을 찍은 곳' : '다녀온 곳'; note.style.display = '';
-    if (want) box.focus(want);
   }, 0);
   return box;
+}
+// 사진이 없는 기록은 그 기록의 실제 길 모양을 작게 (빈 칸 대신, 끊긴 구간은 잇지 않음)
+function cRouteThumb(r) {
+  const segs = cSegs(r), pts = segs.flat(); const sp = el('span', { class: 'rtw', 'aria-hidden': 'true' });
+  if (pts.length < 2) { sp.append(ico(r.M.k, 34)); return sp; }
+  const la = pts.map(q => q[0]), ln = pts.map(q => q[1]), cx = Math.cos(la[0] * Math.PI / 180);
+  const x0 = Math.min(...ln), x1 = Math.max(...ln), y0 = Math.min(...la), y1 = Math.max(...la);
+  const W = 132, H = 160, pad = 22, sx = (x1 - x0) * cx || 1e-6, sy = (y1 - y0) || 1e-6, k = Math.min((W - 2 * pad) / sx, (H - 2 * pad) / sy);
+  const ox = (W - sx * k) / 2, oy = (H - sy * k) / 2, P = q => [(ox + (q[1] - x0) * cx * k).toFixed(1), (oy + (y1 - q[0]) * k).toFixed(1)];
+  const d = segs.map(s => 'M' + s.map(q => P(q).join(' ')).join('L')).join(' '), a = P(pts[0]), b = P(pts[pts.length - 1]);
+  sp.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%"><path d="${d}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#1D9EC0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${a[0]}" cy="${a[1]}" r="4.5" fill="#fff" stroke="#1D9EC0" stroke-width="2.5"/><circle cx="${b[0]}" cy="${b[1]}" r="4.5" fill="#F2665E" stroke="#fff" stroke-width="2"/></svg>`;
+  const ic = el('span', { class: 'rti' }, ico(r.M.k, 16)); sp.append(ic); return sp;
 }
 // 최근 이야기: 사진이 주인공인 가로 줄. 넘기면 위 지도가 따라오고(가운데 온 기록), 누르면 그 기록
 function cStoryStrip(hero) {
@@ -7418,7 +7431,7 @@ function cStoryStrip(hero) {
     const row = el('div', { class: 'c-strip', role: 'list' });
     recs.forEach(r => { const p = r.first, d = new Date(r.a);
       const it = el('a', { class: 'c-st', role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
-        el('i', { class: 'im', style: p ? `background-image:url('${p.thumb}')` : '' }, p ? null : ico(r.M.k, 34), r.ph.length > 1 ? el('b', { class: 'cnt', text: `${r.ph.length}` }) : null),
+        el('i', { class: 'im' + (p ? '' : ' rt'), style: p ? `background-image:url('${p.thumb}')` : '' }, p ? null : cRouteThumb(r), r.ph.length > 1 ? el('b', { class: 'cnt', text: `${r.ph.length}` }) : null),
         el('span', { class: 'dt' }, ico(r.M.k, 13), ` ${d.getMonth() + 1}.${d.getDate()} · ${r.walk >= 50 ? fmtDist(r.walk) : r.M.label}`),
         el('b', { text: r.name }));
       it.rec = r; row.append(it); });
@@ -7428,9 +7441,12 @@ function cStoryStrip(hero) {
       for (const it of row.children) { const dd = Math.abs(it.getBoundingClientRect().left - x0); if (dd < bd) { bd = dd; best = it; } }
       if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 4) best = row.lastChild;
       if (best && best !== last) { last = best; [...row.children].forEach(x => x.classList.toggle('on', x === best)); hero.focus(best.rec); } };
-    row.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(sync); }, { passive: true });
+    // 처음엔 아무것도 고르지 않아요(지도는 사진 핀이 다 보이게). 손으로 넘길 때만 지도가 따라가요
+    let moved = false;
+    row.addEventListener('touchstart', () => { moved = true; }, { passive: true });
+    row.addEventListener('pointerdown', () => { moved = true; }, { passive: true });
+    row.addEventListener('scroll', () => { if (moved && !raf) raf = requestAnimationFrame(sync); }, { passive: true });
     wrap.replaceWith(el('div', { class: 'c-sec' }, el('h2', { text: '최근 이야기' }), el('a', { href: './?my=1' }, '모두 보기 ›')), row);
-    sync();
   }, 0);
   return wrap;
 }
