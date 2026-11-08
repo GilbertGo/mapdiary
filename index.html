@@ -684,6 +684,8 @@ const KAKAO_JS_KEY = 'e4b8d1e0ff74836b51247c87ae6aeb98';   // 2026-10-27 카카�
 
 const app = document.getElementById('app');
 const qs = new URLSearchParams(location.search);
+// 🔎 발견 점검 화면(?lab=check)으로 열면 켜자마자 저절로 하는 일(공개 서버 연결·클라우드 맞추기·새 판 확인·앱끼리 넘기기·저절로 백업)을 쉬어요: 읽기만 하는 화면이라서
+var LAB_QUIET = qs.get('lab') === 'check';
 
 // ---------- 작은 도구들 ----------
 function el(tag, props = {}, ...kids) {
@@ -2602,9 +2604,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.07-19';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면 제목 아래 알약에 🧪 추억 만들기가 생겼어요 · ⚙ 설정에 🧪 실험실 · AI 추억 발견이 생겼어요 (시험 중) · 사진을 몇 장 고르면 그날 MPD 기록과 이어 추억 카드를 만들어 보낼 수 있어요 · 고른 사진만 이 휴대폰 안에서 보고, AI는 직접 누를 때만 쓰고 쓸 때마다 알려 드려요';
+const UI_NOTES = '화면에 바뀐 곳은 없어요 · 시험용 발견 점검 주소를 하나 더했어요 (기록을 읽기만 해요)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3175,16 +3177,16 @@ function setRouteArrows(map, route, soft) {
 
 // ---------- 실시간 연결 ----------
 let uid = ls.get('myId', null);
-if (!uid) { uid = rid(12); ls.set('myId', uid); }
+if (!uid) { uid = rid(12); if (!LAB_QUIET) ls.set('myId', uid); }   // 점검 화면에선 저장하지 않아요
 if (!window.mqtt) {
   app.replaceChildren(el('div', { class: 'banner alert' }, el('b', { text: '연결하지 못했어요' }), el('div', { text: '인터넷 연결을 확인하고 새로고침해 주세요.' })));
   throw new Error('mqtt missing');
 }
-const client = mqtt.connect(BROKER, { clientId: 'dwn_' + rid(12), clean: true, connectTimeout: 10000, reconnectPeriod: 3000 });
+const client = LAB_QUIET ? { on() {}, subscribe() {}, unsubscribe() {}, publish() {}, end() {} } : mqtt.connect(BROKER, { clientId: 'dwn_' + rid(12), clean: true, connectTimeout: 10000, reconnectPeriod: 3000 });
 let connected = false, subTopic = null;
 const connBar = el('div', { class: 'toast', role: 'status', style: 'bottom:auto;top:calc(12px + env(safe-area-inset-top,0px));background:#B42328', text: '연결 중이에요…' });
 function setConn(on) { connected = on; if (on) connBar.remove(); else if (!connBar.isConnected) document.body.append(connBar); }
-setConn(false);
+setConn(LAB_QUIET);
 client.on('connect', () => { setConn(true); if (subTopic) client.subscribe(subTopic, { qos: 1 }); });
 client.on('close', () => setConn(false));
 // ---------- 정식 저장소 Firebase Firestore (2026-10-18, 프로젝트 map-photo-diary, 서울) ----------
@@ -3237,6 +3239,7 @@ function route() {
   if (qs.get('game')) return viewGames();
   if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
+  if (LAB_QUIET) return setTimeout(viewLabCheck);   // 🔎 발견 점검 (읽기만, 2026-11-08)
   if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
   if (qs.get('album')) return setTimeout(viewAlbum);   // 가족 앨범 (아래쪽 const가 준비된 뒤에)
   if (qs.get('room')) return viewRoom();
@@ -3661,7 +3664,7 @@ function naverOpen(d) {
   window.open(web, '_blank', 'noopener');
 }
 let installEv = null, installSlot = null;
-if ('serviceWorker' in navigator && !IN_NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && !IN_NATIVE && !LAB_QUIET) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; drawInstall(); });
 addEventListener('appinstalled', () => { installEv = null; ls.set('installed', true); drawInstall(); toast('바탕화면에 Map Photo Diary를 추가했어요'); });
 function howToInstall() {
@@ -4896,8 +4899,8 @@ async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다
 
 const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:'];
 route();
-cloudWatch();
-setTimeout(uiNewCheck, 1500);
+if (!LAB_QUIET) cloudWatch();
+if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
 setTimeout(() => { try { const m = sessionStorage.getItem('toastNext'); if (m) { sessionStorage.removeItem('toastNext'); toast(m); } } catch {} }, 700);
 // 새 판이 기다리고 있는지 알려 줘요 (2026-10-29 사용자가 길 누르기가 안 된다고 했는데, 기록 중이라 앱이 화면을 안 바꾸고 있었음):
 // 서버의 UI_VER가 지금보다 새것이면 → 기록 중이면 '기록을 끝내면 바뀌어요' 알림(판마다 한 번), 웹이면 '새로고침' 알림. ⚙ 설정 맨 아래에도
@@ -4915,8 +4918,8 @@ async function uiLatestCheck() {
     else if (!IN_NATIVE) toast(`새 화면(판 ${uiLatest})이 있어요 · 화면을 아래로 당겨 새로고침해 주세요`);
   } catch {}
 }
-setTimeout(uiLatestCheck, 6000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(uiLatestCheck, 2000); });
+if (!LAB_QUIET) setTimeout(uiLatestCheck, 6000);
+document.addEventListener('visibilitychange', () => { if (LAB_QUIET) return; if (document.visibilityState === 'visible') setTimeout(uiLatestCheck, 2000); });
 if (!IN_NATIVE) { try { const t = sessionStorage.getItem('mdToast'); if (t) { sessionStorage.removeItem('mdToast'); setTimeout(() => toast(t), 600); } } catch {} }   // 다시 그린 뒤 알림 (앱은 native.js가 해요)
 
 // =====================================================================
@@ -4999,7 +5002,7 @@ async function autoBackup() {
     toast(`기록 ${n}개를 저절로 백업했어요 · 내 파일 > ${where.replace(/\/[^/]+$/, '').split('/').join(' > ')}`);
   } catch {}
 }
-if (window.mdNativeBackup) setTimeout(autoBackup, 20000);
+if (window.mdNativeBackup && !LAB_QUIET) setTimeout(autoBackup, 20000);
 // 갤러리 사진 넣기 (안드로이드 앱만): 기록한 시간에 휴대폰 카메라로 찍은 사진을 찾아, 찍은 시각에 있던 곳에 붙여요
 // days: 기록 ID들(여러 날 여행이면 날마다), manual: 수정하기에서 직접 눌렀을 때(없으면 알려 줘요)
 async function galleryOffer(days, manual) {
@@ -5142,7 +5145,7 @@ async function syncPull() {
   const qs0 = new URLSearchParams(location.search);
   if (!location.search || qs0.get('my')) { try { if (msg) sessionStorage.setItem('mdToast', msg); } catch {} location.reload(); } else if (msg) toast(msg);   // 첫 화면·내 MPD면 다시 그려요
 }
-if (window.mdNativeSync) {
+if (window.mdNativeSync && !LAB_QUIET) {
   setTimeout(() => { syncPush(); syncPull(); }, 1500);
   let lastSync = Date.now();
   document.addEventListener('visibilitychange', () => {   // 다른 앱으로 넘어갈 때 내놓고, 돌아올 때 읽어 가요
@@ -6469,6 +6472,7 @@ function viewLab() {
       const mems = labMems();
       top.append(...head('AI 추억 발견', '휴대폰 사진 몇 장을 고르면 MPD 기록과 이어 추억 카드를 만들어요. 고른 사진만 이 휴대폰 안에서 보고, 앨범 전체는 보지 않아요.'),
         el('button', { class: 'btn primary full big', text: '📷 사진 고르기 (20~50장)', onclick: () => pick.click() }),
+        el('a', { class: 'btn line full', href: './?lab=check', text: '🔎 내 기록에서 몰랐던 사실 찾기 (점검 · 읽기만)' }),
         S.phs.length ? el('button', { class: 'btn line full', text: `고른 사진 ${S.phs.length}장으로 이어서 하기`, onclick: () => go('link') }) : null,
         el('div', { class: 'card stack', style: 'gap:8px' }, el('b', { text: '💞 소중한 사람' }),
           el('div', { class: 'sub', style: 'font-size:13px', text: '별명과 관계만 적어요. 사진의 얼굴로 알아보지 않아요.' }),
@@ -6588,6 +6592,200 @@ function labPersonEdit(p, after) {
     p ? el('button', { class: 'btn line full', text: '이 사람 지우기 (연결도 함께 풀려요)', onclick: () => { if (!confirm(`${p.nick} 님을 지울까요? 연결된 추억 표시도 풀려요.`)) return;
       ls.set('labPeople', labPeople().filter(x => x.id !== p.id)); const L = labLinks(); for (const k of Object.keys(L)) { L[k] = L[k].filter(id => id !== p.id); if (!L[k].length) delete L[k]; } ls.set('labLinks', L); bg.remove(); after && after(); } }) : null);
   setTimeout(() => nick.focus(), 50);
+}
+// =====================================================================
+// 🔎 발견 점검 화면 (?lab=check, 2026-11-08 ChatGPT 검수 지시로 만든 시험 화면)
+// 목적: 이미 있는 기록만으로 '몰랐던 사실'이 나오는지 사용자가 직접 판정해 보는 것. 새 기능 아님
+// 지키는 것: ① 읽기만 해요(localStorage·IndexedDB에 쓰지 않음, 사진 DB는 있을 때만 readonly로 열어요)
+//            ② 이 화면은 인터넷 요청을 하지 않아요(장소 이름도 이미 저장된 것만) · AI도 안 써요
+//            ③ 기록·사진을 복사해 두지 않아요(계산은 메모리에서만) ④ 평가(몰랐네·알았어·틀렸어)는 저장하지 않아요
+//            ⑤ 이 주소로 열면 첫 화면의 저절로 하는 일(클라우드 맞추기·새 판 확인·앱끼리 넘기기·저절로 백업)을 쉬어요(LAB_QUIET)
+// 계산은 lcFind(D) 하나에 모아 두고(가짜 자료로 시험할 수 있게), 기록 읽기는 lcGather()
+// =====================================================================
+function lcCell(lat, lng, m) { const k = m / 111320; return Math.floor(lat / k) + ',' + Math.floor(lng / (k / Math.max(.2, Math.cos(lat * Math.PI / 180)))); }
+// 길 A의 점 중 길 B에서 60m 안인 비율 (같은 코스인지)
+function lcOverlap(A, B) {
+  if (A.length < 2 || B.length < 2) return 0;
+  const g = new Set(); for (const q of B) { const [x, y] = lcCell(q[0], q[1], 60).split(',').map(Number); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) g.add((x + i) + ',' + (y + j)); }
+  const step = Math.max(1, Math.floor(A.length / 300)); let n = 0, hit = 0;
+  for (let i = 0; i < A.length; i += step) { n++; if (g.has(lcCell(A[i][0], A[i][1], 60))) hit++; }
+  return n ? hit / n : 0;
+}
+function lcIe(w) { const ch = String(w).slice(-1).charCodeAt(0); return ch >= 0xAC00 && ch <= 0xD7A3 && (ch - 0xAC00) % 28 ? '이었어요' : '였어요'; }   // 오전이었어요 · 오후였어요
+function lcDay(ts) { const d = new Date(ts); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; }
+function lcRecName(r) { return `${lcDay(r.a)} ${r.label}${r.name ? ' · ' + r.name : ''}`; }
+// 이 휴대폰의 기록을 읽기만 해서 계산에 쓸 모양으로 (아무것도 쓰지 않아요)
+async function lcGather() {
+  const dawatna = new Set([...ls.get('myTrips', []).map(m => m.t), ...Object.keys(ls.get('joined', {})), ...ls.get('plans', []).map(p => p.id)]);
+  const recs = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i); if (!key || !key.startsWith('track:')) continue;
+    const t = key.slice(6); if (dawatna.has(t)) continue;
+    const tr = trackLoad(t); if (!Array.isArray(tr) || tr.length < 2) continue;
+    const M = modeOfT(t), st = trackStats(tr, M.car), el0 = elevStats(tr);
+    recs.push({ t, k: ls.get('walkMode:' + t, null) ? M.k : null, label: ls.get('walkMode:' + t, null) ? M.label : '기록', name: ls.get('trackName:' + t, ''),
+      a: tr[0][2], b: tr[tr.length - 1][2], tr, walk: st.walk, mv: movingMs(tr, M.car), far: farPoint(tr), s: tr[0], e: tr[tr.length - 1],
+      where: (ls.get('walkWhere:' + t, null) || {}).n || '', wx: ls.get('walkWx:' + t, null), spots: ls.get('walkSpots:' + t, []) || [],
+      hr: ls.get('walkHr:' + t, null), gain: el0 ? el0.gain : null, official: !!officialOf(tr) });
+  }
+  recs.sort((x, y) => x.a - y.a);
+  // 사진: 'baldojang' DB가 이미 있을 때만 readonly로 열어 시각·위치만 읽어요 (없으면 열지 않아요: 열면 빈 DB가 새로 생겨서)
+  let photos = [], photoNote = '';
+  try {
+    const have = indexedDB.databases ? (await indexedDB.databases()).some(d => d.name === 'baldojang') : null;
+    if (have === null) photoNote = '이 브라우저는 사진 저장소가 있는지 먼저 확인할 수 없어 사진은 빼고 셈했어요';
+    else if (have) {
+      const db = await new Promise((res, rej) => { const r = indexedDB.open('baldojang'); r.onupgradeneeded = () => { r.transaction.abort(); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      if (db.objectStoreNames.contains('photos')) photos = await new Promise((res, rej) => { const out = [], q = db.transaction('photos', 'readonly').objectStore('photos').openCursor();
+        q.onsuccess = () => { const c = q.result; if (!c) return res(out); const v = c.value || {}; out.push({ t: v.t, ts: v.ts, lat: v.lat, lng: v.lng, v: !!v.v }); c.continue(); }; q.onerror = () => rej(q.error); });
+      db.close();
+    }
+  } catch (e) { photoNote = '사진 정보를 읽지 못해 사진은 빼고 셈했어요'; }
+  return { recs, photos, photoNote, now: Date.now() };
+}
+const LC_PEAKS = [['한라산', 1947], ['지리산', 1915], ['설악산', 1708], ['북한산', 836]];
+const LC_RULES = ['다시 간 곳', '같은 곳, 걸린 시간 변화', '요일·시간대 습관', '같은 달 반복', '쌓인 거리·높이', '오래 머문 곳', "'다시 갈래요' 했는데 아직 안 간 곳", '사진이 몰린 순간', '날씨와 나들이', '시계 러닝 몸 변화'];
+// 계산: D = { recs, photos, now } → { found: [{ rule, title, sub, n, how, trust, ev: [기록 이름] }], none: [{ rule, why }] }
+// 근거가 모자라면 found에 넣지 않고 none에 까닭만 남겨요(억지 발견 금지)
+function lcFind(D) {
+  const R = D.recs || [], P = (D.photos || []).filter(p => !p.v && p.ts), now = D.now || Date.now();
+  const found = [], none = [], add = f => found.push(f), skip = (rule, why) => none.push({ rule, why });
+  // 장소 묶기: 출발에서 가장 먼 점이 300m 안이면 같은 곳. 가장 먼 점이 출발에서 500m도 안 되면(집 근처 한 바퀴) 빼요
+  const far = R.filter(r => r.far && dist(r.s[0], r.s[1], r.far[0], r.far[1]) >= 500);
+  const groups = [];
+  for (const r of far) { const g = groups.find(g => dist(g.lat, g.lng, r.far[0], r.far[1]) <= 300); if (g) g.r.push(r); else groups.push({ lat: r.far[0], lng: r.far[1], r: [r] }); }
+  const pname = g => (g.r.find(r => r.where) || {}).where || (g.r.find(r => r.name) || {}).name || '이름 없는 곳';
+  const multi = groups.map(g => ({ ...g, days: [...new Set(g.r.map(r => lcDay(r.a)))] })).filter(g => g.days.length >= 2).sort((x, y) => y.days.length - x.days.length || (y.r[y.r.length - 1].a - y.r[0].a) - (x.r[x.r.length - 1].a - x.r[0].a));
+  // ① 다시 간 곳
+  if (!far.length) skip(LC_RULES[0], `집 근처(출발에서 500m 안)를 벗어난 기록이 없어요 (기록 ${R.length}개)`);
+  else if (!multi.length) skip(LC_RULES[0], `서로 다른 날 같은 곳(300m 안)에 다시 간 기록이 없어요 (비교한 기록 ${far.length}개)`);
+  else for (const g of multi.slice(0, 3)) {
+    const span = Math.round((g.r[g.r.length - 1].a - g.r[0].a) / 864e5);
+    add({ rule: LC_RULES[0], title: `${pname(g)}에 ${g.days.length}번 갔어요`, sub: `처음 ${g.days[0]} · 마지막 ${g.days[g.days.length - 1]}${span >= 1 ? ` · ${span}일 사이` : ''}`,
+      n: g.r.length, how: '기록마다 출발에서 가장 먼 점이 서로 300m 안이면 같은 곳으로 묶었어요. 출발에서 500m도 안 간 기록(집 근처)은 뺐어요', trust: '높음 · GPS 위치', ev: g.r.map(lcRecName) });
+  }
+  // ② 같은 곳, 걸린 시간 변화: 같은 모드 + 길 60% 넘게 겹침 + 거리 차 20% 안 → 처음 vs 최근 움직인 시간, 10% 넘게 달라야
+  let chg = 0;
+  for (const g of multi) {
+    const byK = {}; for (const r of g.r) if (r.k && r.mv > 5 * 60000) (byK[r.k] = byK[r.k] || []).push(r);
+    for (const k in byK) { const L = byK[k]; if (L.length < 2) continue;
+      const A = L[0], B = L[L.length - 1], ov = Math.min(lcOverlap(A.tr, B.tr), lcOverlap(B.tr, A.tr));
+      if (ov < .6 || Math.abs(A.walk - B.walk) / Math.max(A.walk, B.walk) > .2 || A.official || B.official) continue;
+      const d = (B.mv - A.mv) / A.mv; if (Math.abs(d) < .1) continue;
+      chg++; add({ rule: LC_RULES[1], title: `${pname(g)} ${A.label}: 처음 ${fmtDur(A.mv)} → 최근 ${fmtDur(B.mv)}`, sub: `${fmtDur(Math.abs(B.mv - A.mv))} ${d < 0 ? '줄었어요' : '늘었어요'} · 페이스 ${fmtPace(A.walk, A.mv)} → ${fmtPace(B.walk, B.mv)} · 길 겹침 ${Math.round(ov * 100)}%`,
+        n: 2, how: '같은 곳·같은 모드 기록 중 처음과 가장 최근을 견줬어요. 길이 60% 넘게 겹치고 거리 차가 20% 안일 때만, 움직인 시간이 10% 넘게 달라야 보여요', trust: '중간 · 코스가 조금 다르거나 쉰 시간에 따라 달라져요', ev: [lcRecName(A), lcRecName(B)] }); }
+  }
+  if (!chg) skip(LC_RULES[1], multi.length ? '같은 곳 기록은 있지만 같은 코스(길 60% 겹침·거리 비슷)에서 시간이 10% 넘게 달라진 짝이 없어요' : '같은 곳에 두 번 간 기록이 없어요');
+  // ③ 요일·시간대 습관: 모드별 6개 이상, 한 칸이 60% 넘을 때
+  const DOW = '일월화수목금토', part = h => h < 6 ? '새벽' : h < 12 ? '오전' : h < 18 ? '오후' : '저녁';
+  let hab = 0; const byMode = {}; for (const r of R) if (r.k) (byMode[r.k] = byMode[r.k] || []).push(r);
+  for (const k in byMode) { const L = byMode[k]; if (L.length < 6) continue;
+    const c = {}; for (const r of L) { const d = new Date(r.a), key = `${DOW[d.getDay()]}요일 ${part(d.getHours())}`; c[key] = (c[key] || 0) + 1; }
+    const wk = L.filter(r => [0, 6].includes(new Date(r.a).getDay())).length;
+    const [top, cnt] = Object.entries(c).sort((x, y) => y[1] - x[1])[0];
+    if (cnt / L.length >= .6) { hab++; add({ rule: LC_RULES[2], title: `${L[0].label} ${L.length}번 중 ${cnt}번이 ${top}${lcIe(top)}`, sub: `주말 ${wk}번 · 평일 ${L.length - wk}번`, n: L.length, how: '모드별로 기록을 시작한 요일과 시간대(새벽·오전·오후·저녁)를 셌어요. 6번 넘게 기록한 모드에서 한 칸이 60% 넘을 때만', trust: '높음 · 시작 시각', ev: L.map(lcRecName) }); }
+    else if (wk / L.length >= .8 || wk / L.length <= .2) { hab++; add({ rule: LC_RULES[2], title: `${L[0].label} ${L.length}번 중 ${wk / L.length >= .8 ? wk : L.length - wk}번이 ${wk / L.length >= .8 ? '주말' : '평일'}이었어요`, sub: `가장 많은 때 ${top} ${cnt}번`, n: L.length, how: '모드별로 시작한 날이 주말인지 셌어요. 6번 넘게 기록한 모드에서 80% 넘게 한쪽일 때만', trust: '높음 · 시작 시각', ev: L.map(lcRecName) }); }
+  }
+  if (!hab) skip(LC_RULES[2], Object.values(byMode).some(L => L.length >= 6) ? '6번 넘게 기록한 모드는 있지만 한 요일·시간대로 몰리지 않았어요' : `한 모드로 6번 넘게 기록한 게 없어요 (모드별 ${Object.entries(byMode).map(([k, L]) => `${L[0].label} ${L.length}`).join(' · ') || '없음'})`);
+  // ④ 같은 달 반복 (다른 해, 같은 날짜 ±15일)
+  let rep = 0;
+  for (const g of multi) { const ys = {}; for (const r of g.r) { const d = new Date(r.a), doy = Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 864e5); (ys[d.getFullYear()] = ys[d.getFullYear()] || []).push(doy); }
+    const yl = Object.keys(ys); if (yl.length < 2) continue;
+    const base = ys[yl[0]][0]; const hitY = yl.filter(y => ys[y].some(v => Math.abs(v - base) <= 15));
+    if (hitY.length >= 2) { rep++; add({ rule: LC_RULES[3], title: `${pname(g)}에 ${hitY.length}해 연속 같은 무렵(${new Date(g.r[0].a).getMonth() + 1}월쯤) 갔어요`, sub: hitY.join(' · '), n: g.r.length, how: '같은 곳 방문 중 서로 다른 해에 날짜가 앞뒤 15일 안인 것', trust: '높음 · 날짜', ev: g.r.map(lcRecName) }); } }
+  if (!rep) { const y0 = R.length ? new Date(R[0].a).getFullYear() : null, y1 = R.length ? new Date(R[R.length - 1].a).getFullYear() : null;
+    skip(LC_RULES[3], y0 === y1 ? `기록이 ${y0 || '-'}년 한 해에만 있어요 · 다른 해와 견줄 수 없어요` : '여러 해 기록은 있지만 같은 곳을 같은 무렵에 다시 간 건 없어요'); }
+  // ⑤ 쌓인 거리·높이: 높이 1,000m 넘거나 거리 100km 넘을 때만
+  const tot = R.reduce((s, r) => s + (r.walk || 0), 0), gr = R.filter(r => Number.isFinite(r.gain)), gain = gr.reduce((s, r) => s + r.gain, 0);
+  const since = R.length ? lcDay(R[0].a) : '';
+  if (gain >= 1000) { const pk = LC_PEAKS.find(p => gain >= p[1]) || LC_PEAKS[LC_PEAKS.length - 1];
+    add({ rule: LC_RULES[4], title: `${since}부터 오른 높이를 모두 합치면 ${gain.toLocaleString()}m`, sub: `${pk[0]}(${pk[1].toLocaleString()}m)을 ${(gain / pk[1]).toFixed(1)}번 오른 높이예요`, n: gr.length, how: '높이가 기록된 기록마다 오른 높이(5점 평균, 4m 넘게 오를 때만 더함)를 합쳤어요. 산 높이는 고정 표', trust: '중간 · GPS 높이는 흔들려요. 높이 없는 기록은 빠졌어요', ev: gr.map(lcRecName) }); }
+  if (tot >= 100000) add({ rule: LC_RULES[4], title: `${since}부터 걷고 달리고 탄 거리를 모두 합치면 ${Math.round(tot / 1000).toLocaleString()}km`, sub: tot >= 325000 ? `서울에서 부산까지 곧장 가는 거리(약 325km)의 ${(tot / 325000).toFixed(1)}배예요` : `서울에서 대전까지 곧장 가는 거리(약 140km)의 ${(tot / 140000).toFixed(1)}배예요`, n: R.length, how: '기록마다 차로 간 구간을 뺀 거리(걸은·달린·탄 거리)를 합쳤어요', trust: '높음 · GPS 거리', ev: R.map(lcRecName) });
+  if (gain < 1000 && tot < 100000) skip(LC_RULES[4], `합계가 아직 작아요 · 거리 ${fmtDist(tot)}(100km부터), 오른 높이 ${gain}m(1,000m부터, 높이 있는 기록 ${gr.length}개)`);
+  // ⑥ 오래 머문 곳: 들른 곳(k:'stay')을 80m 안끼리 묶어 2번 넘게 또는 머문 시간 합 60분 넘게
+  const stays = R.flatMap(r => (r.spots || []).filter(s => s && s.k === 'stay' && Number.isFinite(s.lat)).map(s => ({ ...s, r })));
+  const sg = []; for (const s of stays) { const g = sg.find(g => dist(g.lat, g.lng, s.lat, s.lng) <= 80); if (g) g.s.push(s); else sg.push({ lat: s.lat, lng: s.lng, s: [s] }); }
+  const stayMs = s => s.te && s.ts ? Math.max(0, s.te - s.ts) : 0;
+  const sgo = sg.map(g => ({ ...g, ms: g.s.reduce((a, s) => a + stayMs(s), 0), days: new Set(g.s.map(s => lcDay(s.r.a))).size })).filter(g => g.days >= 2 || g.ms >= 60 * 60000).sort((x, y) => y.ms - x.ms || y.days - x.days);
+  if (sgo.length) { const g = sgo[0], nm = (g.s.find(s => s.n && !/^\d{1,2}:\d{2} 들른 곳$/.test(s.n)) || g.s[0]).n || '이름 없는 들른 곳';
+    add({ rule: LC_RULES[5], title: `가장 오래 머문 곳은 ${nm}`, sub: `${g.days}번${g.ms ? ` · 모두 ${fmtDur(g.ms)}` : ''}`, n: new Set(g.s.map(s => s.r.t)).size, how: '기록 중 저절로 남은 들른 곳(10분 넘게 머문 곳)을 80m 안끼리 묶어, 2번 넘게 들렀거나 머문 시간 합이 60분 넘는 곳 중 가장 오래 머문 곳', trust: '중간 · 들른 곳은 일상·데이트·여행·걷기·등산 기록에서만 저절로 남아요', ev: [...new Set(g.s.map(s => lcRecName(s.r)))] }); }
+  else skip(LC_RULES[5], stays.length ? `들른 곳 ${stays.length}곳이 있지만 같은 곳에 두 번 들르거나 60분 넘게 머문 곳은 없어요` : '저절로 남은 들른 곳이 없어요');
+  // ⑦ '다시 갈래요' 맛집 중 그 뒤로 200m 안을 지나간 기록이 없고 14일 넘은 곳
+  const foods = R.flatMap(r => (r.spots || []).filter(s => s && s.food && s.food.again === 1 && Number.isFinite(s.lat)).map(s => ({ ...s, r })));
+  const notYet = foods.filter(f => { const at = f.ts || f.r.a; return now - at > 14 * 864e5 && !R.some(r => r.a > at + 864e5 && r.tr.some(q => dist(q[0], q[1], f.lat, f.lng) <= 200)); });
+  if (notYet.length) add({ rule: LC_RULES[6], title: `다시 가고 싶다고 한 곳 ${foods.length}곳 중 ${notYet.length}곳은 아직 다시 안 갔어요`, sub: notYet.slice(0, 3).map(f => `${f.n || '이름 없음'} (${Math.round((now - (f.ts || f.r.a)) / 864e5)}일째)`).join(' · '), n: new Set(notYet.map(f => f.r.t)).size, how: "맛집으로 표시하며 '다시 갈래요'를 고른 곳 중, 그 뒤 기록의 길이 200m 안을 지나간 적이 없는 곳(14일 지난 것만)", trust: '높음 · 직접 적은 값', ev: notYet.map(f => `${f.n || '이름 없음'} · ${lcRecName(f.r)}`) });
+  else skip(LC_RULES[6], foods.length ? `'다시 갈래요' ${foods.length}곳은 모두 다시 갔거나 14일이 안 지났어요` : "'다시 갈래요'로 표시한 맛집이 없어요");
+  // ⑧ 사진이 몰린 순간: 사진 10장 넘고 1시간 넘는 기록에서 10분 사이에 40% 넘게
+  let burst = 0; const byT = {}; for (const p of P) (byT[p.t] = byT[p.t] || []).push(p);
+  const cands8 = [];
+  for (const r of R) { const L = (byT[r.t] || []).sort((a, b) => a.ts - b.ts); if (L.length < 10 || r.b - r.a < 3600000) continue;
+    let best = 0, at = 0; for (let i = 0, j = 0; i < L.length; i++) { while (L[i].ts - L[j].ts > 600000) j++; if (i - j + 1 > best) { best = i - j + 1; at = L[j].ts; } }
+    if (best / L.length >= .4) cands8.push({ r, best, n: L.length, at }); }
+  for (const c of cands8.sort((x, y) => y.best / y.n - x.best / x.n).slice(0, 2)) { burst++;
+    add({ rule: LC_RULES[7], title: `${c.r.name || c.r.label} 사진 ${c.n}장 중 ${c.best}장을 10분 사이에 찍었어요`, sub: `${kTime(c.at)}부터 · 출발 ${fmtDur(c.at - c.r.a)} 뒤`, n: 1, how: '사진 10장 넘고 1시간 넘는 기록에서, 찍은 시각으로 10분 창을 밀어 가장 많이 몰린 곳(40% 넘을 때만)', trust: '높음 · 찍은 시각', ev: [lcRecName(c.r)] }); }
+  if (!burst) skip(LC_RULES[7], D.photoNote || (P.length ? `사진 ${P.length}장 · 10장 넘고 1시간 넘는 기록에서 한 순간에 40% 넘게 몰린 곳이 없어요` : '이 휴대폰에 기록과 이어진 사진이 없어요'));
+  // ⑨ 날씨: 날씨가 저장된 기록 6개 이상
+  const wx = R.filter(r => r.wx && typeof r.wx.c === 'number');
+  if (wx.length >= 6) { const wet = wx.filter(r => r.wx.c >= 51 || (r.wx.p || 0) >= 1), clear = wx.filter(r => r.wx.c <= 1), cold = wx.reduce((a, r) => (a == null || r.wx.lo < a.wx.lo ? r : a), null);
+    const t1 = wet.length === 0 ? `날씨를 아는 ${wx.length}번 모두 비·눈이 없었어요` : clear.length / wx.length >= .7 ? `날씨를 아는 ${wx.length}번 중 ${clear.length}번이 맑은 날이었어요` : null;
+    if (t1) add({ rule: LC_RULES[9 - 1], title: t1, sub: cold ? `가장 추운 날 ${lcDay(cold.a)} · ${Math.round(cold.wx.lo)}°C` : '', n: wx.length, how: '기록 보기에서 저장된 날씨(Open-Meteo 시간별)로 비·눈 코드와 맑음(코드 0~1)을 셌어요', trust: '중간 · 날씨는 그 기록을 한 번 열어 봤을 때만 저장돼 일부 기록만 있어요', ev: wx.map(lcRecName) });
+    else skip(LC_RULES[8], `날씨 있는 기록 ${wx.length}개 · 한쪽으로 몰리지 않았어요`); }
+  else skip(LC_RULES[8], `날씨가 저장된 기록이 ${wx.length}개뿐이에요 (6개부터)`);
+  // ⑩ 시계 러닝: 시계 심박이 있는 러닝 3개 이상 → 같은 심박에서 빠르기(속도÷평균 심박) 처음 2개 평균 vs 최근 2개 평균, 10% 넘게
+  const hr = R.filter(r => r.k === 'run' && r.hr && r.hr.avg > 60 && r.mv > 10 * 60000 && r.walk > 1000);
+  if (hr.length >= 3) { const eff = r => (r.walk / (r.mv / 60000)) / r.hr.avg, a = hr.slice(0, 2), b = hr.slice(-2), ea = (eff(a[0]) + eff(a[1])) / 2, eb = (eff(b[0]) + eff(b[1])) / 2, d = (eb - ea) / ea;
+    if (Math.abs(d) >= .1) add({ rule: LC_RULES[9], title: `같은 심박에서 ${d > 0 ? '더 빨리' : '더 느리게'} 달려요 · ${Math.round(Math.abs(d) * 100)}%`, sub: `처음 두 번 분당 ${Math.round(ea * 10) / 10}m/심박 → 최근 두 번 ${Math.round(eb * 10) / 10}m/심박`, n: hr.length, how: '시계 심박이 있는 러닝에서 움직인 동안 1분에 간 거리 ÷ 평균 심박을 처음 두 번과 최근 두 번 평균으로 견줬어요(10% 넘게 달라야)', trust: '중간 · 손목 심박·날씨·코스에 따라 흔들려요', ev: hr.map(lcRecName) });
+    else skip(LC_RULES[9], `시계 러닝 ${hr.length}개 · 같은 심박에서 빠르기 변화가 10% 안이에요`); }
+  else skip(LC_RULES[9], `시계 심박이 있는 러닝이 ${hr.length}개뿐이에요 (3개부터)`);
+  return { found, none };
+}
+function lcSummary(D) {
+  const R = D.recs, by = {}; for (const r of R) by[r.label] = (by[r.label] || 0) + 1;
+  const P = D.photos.filter(p => !p.v);
+  return [
+    ['기록', R.length ? `${R.length}개 · ${lcDay(R[0].a)} ~ ${lcDay(R[R.length - 1].a)}` : '없음'],
+    ['모드별', Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ') || '-'],
+    ['높이 있는 기록', `${R.filter(r => Number.isFinite(r.gain)).length}개`],
+    ['장소 이름 있는 기록', `${R.filter(r => r.where).length}개`],
+    ['날씨 있는 기록', `${R.filter(r => r.wx && typeof r.wx.c === 'number').length}개`],
+    ['시계 심박 있는 기록', `${R.filter(r => r.hr && r.hr.avg).length}개`],
+    ['들른 곳 · 맛집', `${R.reduce((s, r) => s + r.spots.filter(x => x && x.k === 'stay').length, 0)}곳 · ${R.reduce((s, r) => s + r.spots.filter(x => x && x.food).length, 0)}곳`],
+    ['사진', D.photoNote || `${P.length}장 (위치 있는 것 ${P.filter(p => Number.isFinite(p.lat)).length}장)${D.photos.length - P.length ? ` · 동영상 ${D.photos.length - P.length}개는 뺌` : ''}`]
+  ];
+}
+function viewLabCheck() {
+  document.title = '발견 점검 · 실험실';
+  const box = el('div', { class: 'stack', style: 'gap:12px;padding-bottom:40px' });
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '발견 점검'), el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }), box));
+  box.append(el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('span', { style: 'font-size:12px;font-weight:800;color:#fff;background:#7C4DFF;border-radius:99px;padding:3px 9px', text: '🧪 점검' }), el('b', { style: 'font-size:20px', text: '내 기록에서 몰랐던 사실 찾기' })),
+    el('div', { class: 'card sub', style: 'font-size:13px;line-height:1.55', text: '이 휴대폰에 있는 기록을 읽기만 해서 셈해요. 아무것도 바꾸거나 저장하지 않고, 인터넷으로 보내지 않고, AI도 쓰지 않아요. 근거가 모자란 건 보여 주지 않아요. 맞는지 하나씩 \'몰랐네 · 알았어 · 틀렸어\'로 골라 주세요(고른 것은 저장되지 않아요).' }),
+    el('div', { class: 'sub center', id: 'lc-wait', text: '기록을 읽는 중…' }));
+  const rate = {};   // 메모리에만 (저장 안 함)
+  setTimeout(async () => {
+    let D; try { D = await lcGather(); } catch (e) { box.querySelector('#lc-wait').textContent = '기록을 읽지 못했어요 · ' + String(e && e.message || e).slice(0, 80); return; }
+    const res = lcFind(D), w = whereNow();
+    const tally = el('div', { class: 'card sub', style: 'font-size:13px' });
+    const paintTally = () => { const c = { 몰랐네: 0, 알았어: 0, 틀렸어: 0 }; Object.values(rate).forEach(v => c[v]++); tally.textContent = `이번 평가 · 몰랐네 ${c.몰랐네} · 알았어 ${c.알았어} · 틀렸어 ${c.틀렸어} / 발견 ${res.found.length}개 (저장되지 않아요 · 화면을 닫으면 사라져요)`; };
+    box.querySelector('#lc-wait').remove();
+    box.append(el('div', { class: 'card stack', style: 'gap:4px;font-size:13px' }, el('b', { text: `읽은 곳: ${w.t}` }),
+      ...lcSummary(D).map(([k, v]) => el('div', { class: 'row', style: 'justify-content:space-between;gap:10px' }, el('span', { class: 'sub', text: k }), el('span', { style: 'text-align:right', text: v })))));
+    box.append(el('h2', { style: 'margin:6px 0 0', text: res.found.length ? `찾은 것 ${res.found.length}개` : '근거가 충분한 발견이 아직 없어요' }));
+    if (!res.found.length) box.append(el('div', { class: 'sub', text: '기록이 더 쌓이면 다시 열어 보세요. 아래에 무엇이 모자랐는지 적어 두었어요.' }));
+    res.found.forEach((f, i) => {
+      const btns = ['몰랐네', '알았어', '틀렸어'].map(v => el('button', { class: 'btn line small', style: 'flex:1', text: v, onclick: () => { rate[i] = v; btns.forEach(b => { const on = b.textContent === v; b.className = 'btn small ' + (on ? 'primary' : 'line'); b.setAttribute('aria-pressed', on); }); paintTally(); } }));
+      box.append(el('div', { class: 'card stack lc-f', style: 'gap:6px' },
+        el('div', { class: 'sub', style: 'font-size:12px;font-weight:800', text: f.rule }),
+        el('b', { style: 'font-size:17px;line-height:1.4', text: f.title }), f.sub ? el('div', { text: f.sub }) : null,
+        el('div', { class: 'sub', style: 'font-size:12px', text: `근거 기록 ${f.n}개 · 신뢰도 ${f.trust}` }),
+        el('details', {}, el('summary', { class: 'sub', style: 'font-size:12px', text: '계산 기준 · 근거 기록 보기' }),
+          el('div', { class: 'sub', style: 'font-size:12px;margin:6px 0', text: f.how }),
+          el('div', { class: 'sub', style: 'font-size:12px;white-space:pre-wrap', text: f.ev.slice(0, 30).map(x => '· ' + x).join('\n') + (f.ev.length > 30 ? `\n… 외 ${f.ev.length - 30}개` : '') })),
+        el('div', { class: 'row', style: 'gap:6px' }, ...btns)));
+    });
+    if (res.found.length) { paintTally(); box.append(tally); }
+    box.append(el('details', { class: 'card' }, el('summary', { style: 'font-weight:700', text: `근거가 모자라 보여 주지 않은 후보 ${res.none.length}개` }),
+      el('div', { class: 'stack', style: 'gap:6px;margin-top:8px' }, ...res.none.map(x => el('div', { style: 'font-size:13px' }, el('b', { text: x.rule }), el('div', { class: 'sub', text: x.why }))))));
+  }, 50);
 }
 function viewTalk() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

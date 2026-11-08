@@ -118,6 +118,13 @@
 - **AI(누를 때만)**: '✨ AI로 글 다듬기'·'✨ AI에게 다른 생각 물어보기' → `labAi`: 처음 한 번 동의 창(보낼 사실 글 미리 보기, 사진·좌표 안 보냄, 사용료) `labAiOk`, **쓸 때마다 알림 두 번('✨ AI를 써요 · 종류' → '✨ AI 사용 끝 · 입력·출력 토큰')**, `labAiLog`=[{at,kind,inT,outT}] 실험실 첫 화면 'AI 사용 기록 · 이번 달 n번'. 모델 `FA_MODEL`(haiku), 사용자 열쇠 `claudeKey`. 프롬프트: 확인된 사실만, 지어내지 말 것, JSON {text, used}. 답의 숫자가 사실에 없으면 '⚠ 사실에 없는 숫자' 표시
 - 저장: `labMem`=[{id,at,key,title,msg,ph,facts,shared,idea}], `labNote:{key}`. 시험 scratchpad `t/lab_t.js`(23개, 가짜 EXIF 사진 `t/labimg`·가짜 Anthropic SDK)
 
+## 🔎 발견 점검 화면 (2026-11-08, 개발 가지 `lab/check`, 아직 배포 안 함)
+- ChatGPT 검수 지시('실제 기록 기반 발견 품질 검증', 사용자 승인): 기존 기록만으로 '몰랐던 사실'이 나오는지 사용자가 판정해 보는 시험 화면. 새 기능 아님
+- 들어가는 곳: 실험실 첫 화면(`?lab=mem`) '🔎 내 기록에서 몰랐던 사실 찾기 (점검 · 읽기만)' 또는 주소 `?lab=check`(`viewLabCheck`)
+- **읽기만**: `lcGather`가 localStorage `track:` 등을 읽고, 사진 DB `baldojang`은 `indexedDB.databases()`로 있을 때만 readonly 커서(시각·위치만). 쓰기·fetch 0. `LAB_QUIET`(맨 위 qs 바로 아래 var)면 켜자마자 하는 일을 쉼: MQTT 연결(가짜 client), myId 저장, 서비스워커 등록, cloudWatch, uiNewCheck, uiLatestCheck, syncPush/syncPull, autoBackup. 앱 native.js의 liveUpdate·checkBinary는 index.html 밖이라 그대로
+- 계산 `lcFind(D)`(순수 함수): ① 다시 간 곳(출발에서 가장 먼 점 300m 묶기, 500m 안 기록 빼기, 다른 날 2번+) ② 같은 곳 시간 변화(같은 모드·길 60% 겹침 `lcOverlap`·거리 차 20% 안·10% 넘게) ③ 요일·시간대(모드별 6개+, 60%+ 또는 주말/평일 80%+) ④ 다른 해 같은 무렵(±15일) ⑤ 합계(높이 1,000m+ 산 비유 `LC_PEAKS`, 거리 100km+) ⑥ 머문 곳(stay 80m, 2번+ 또는 60분+) ⑦ '다시 갈래요' 맛집 그 뒤 200m 안 안 감(14일+) ⑧ 사진 10분 몰림(10장+·1시간+·40%+, 동영상 뺌) ⑨ 날씨(6개+, 비·눈 0 또는 맑음 70%+) ⑩ 시계 러닝(3개+, 1분 거리÷평균 심박 처음 2·최근 2 견줘 10%+). 모자라면 보여 주지 않고 '보여 주지 않은 후보'에 까닭만
+- 카드마다 근거 기록 수·신뢰도·계산 기준·근거 기록 목록, '몰랐네·알았어·틀렸어'는 메모리에만(저장 안 함). 시험 scratchpad `t/lc_t.js`(34개, [가짜] 자료·쓰기/요청 감시), `t/lc_entry.js`
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
