@@ -1345,7 +1345,7 @@ async function savePhotos(list, base) {
     big.textContent = next < 0 ? `✓ ${ps.length}개 모두 저장했어요` : `⬇ 다음 ${what(ps[next])} 저장 (${next + 1}/${ps.length})`;
     big.onclick = next < 0 ? () => sb.remove() : () => one(next);
     grid.replaceChildren(...ps.map((r, k) => el('button', { 'aria-label': `${k + 1}번째 ${what(r)} 저장`, onclick: () => one(k),
-      style: `position:relative;aspect-ratio:1;border:none;border-radius:10px;padding:0;background:#ddd center/cover url(${r.thumb});${done.has(k) ? 'opacity:.55' : ''}` },
+      style: `position:relative;aspect-ratio:1;border:none;border-radius:10px;padding:0;background:#ddd center/cover url(${phSrc(r)});${done.has(k) ? 'opacity:.55' : ''}` },
       el('span', { style: `position:absolute;right:4px;bottom:4px;min-width:22px;height:22px;border-radius:11px;font:800 13px/22px sans-serif;color:#fff;background:${done.has(k) ? '#0A84FF' : 'rgba(0,0,0,.55)'}`, text: done.has(k) ? '✓' : String(k + 1) }))));
   };
   draw();
@@ -2750,9 +2750,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-13';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-14';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요) · 첫 화면 말풍선·발견·지도 카드의 사진을 원본으로 보여 줘서 선명해졌어요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요) · 첫 화면 말풍선·발견·지도 카드의 사진을 원본으로 보여 줘서 선명해졌어요 · 기록 보기와 받은 링크의 사진 모음도 원본으로 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3138,7 +3138,7 @@ function viewBragLink(given, feed) {
   const hasKey = /[#&][kx]=/.test(location.hash);
   const refreshPh = () => {
     if (!phWrap) return;
-    gal.replaceChildren(...feed.recs.map(r => el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, feed.recs) })));
+    gal.replaceChildren(...feed.recs.map(r => el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, feed.recs) })));
     phCount.textContent = !hasKey ? '사진을 보려면 받은 링크를 끝까지 그대로 열어야 해요.'
       : feed.recs.length < o.ph ? `사진을 불러오는 중이에요… (${feed.recs.length}/${o.ph})` : '';
     phCount.style.display = phCount.textContent ? '' : 'none';
@@ -5991,7 +5991,7 @@ async function viewMyOne(t) {
       const ps = await photoList(t); phAll = ps;
       phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = ps.some(isVid) ? '사진·동영상' : '사진'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
-        : el('img', { src: r.thumb, alt: '사진', onclick: () => showPhoto(r, ps) })));
+        : el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps) })));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
       if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
