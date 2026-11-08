@@ -728,14 +728,15 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 /* 홈 = 승인 시안 그대로 (사진 한 장 + 말풍선 + 기록하기) */
 .c-ph{position:relative;margin:-20px -20px 0;height:100svh;min-height:600px;overflow:hidden;color:#fff;isolation:isolate}
 .c-ph-bg{position:absolute;inset:0;background:#2a4256 50% 50%/cover no-repeat;z-index:-2}
-.c-ph::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,20,32,.55),rgba(8,20,32,.18) 34%,rgba(8,20,32,0) 55%,rgba(8,20,32,.22) 85%,rgba(8,20,32,.4))}
+.c-ph::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,20,32,.5),rgba(8,20,32,.2) 30%,rgba(8,20,32,.1) 55%,rgba(8,20,32,.14) 80%,rgba(8,20,32,.2))}
+.c-ph::after{content:'';position:absolute;left:0;right:0;bottom:0;height:70px;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,250,252,0),#F7FAFC)}
 .c-ph-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:6px;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 0;z-index:5}
 .c-ph-logo{display:flex;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
 .c-ph-logo b{display:block;font-size:34px;font-weight:900;letter-spacing:-.02em;line-height:1;color:#fff}.c-ph-logo small{display:block;font-size:13.5px;font-weight:600;color:#fff;margin-top:3px}
 .c-ph-ib{width:46px;height:46px;border-radius:50%;border:none;background:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 1px 4px rgba(0,0,0,.35))}
 .c-ph-av{width:46px;height:46px;border-radius:50%;border:2.5px solid #fff;background:rgba(255,255,255,.18);color:#fff;font-size:19px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;cursor:pointer;font-family:inherit;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 .c-ph-sl{position:absolute;left:24px;right:24px;top:calc(122px + env(safe-area-inset-top,0px));z-index:4}
-.c-ph-sl h1{margin:0;font-size:clamp(28px,8vw,34px);line-height:1.38;font-weight:800;letter-spacing:-.03em;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+.c-ph-sl h1{margin:0;font-size:clamp(26px,7.4vw,31px);line-height:1.42;font-weight:700;letter-spacing:-.03em;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.35)}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
@@ -745,7 +746,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-pin i{display:block;width:100%;height:100%;border-radius:19px;background:#ddd center/cover no-repeat}
 .c-ph-dot{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#2FC6CF;border:3.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3);box-sizing:border-box}
 .c-ph-dt{position:absolute;margin:12px 0 0 -16px;font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:6;width:104px;height:104px;border-radius:50%;border:none;background:rgba(255,255,255,.96);box-shadow:0 0 0 7px rgba(255,255,255,.35),0 10px 26px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+.c-ph-rec{position:absolute;left:0;right:0;margin:0 auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:6;width:96px;height:96px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(232,246,252,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(10,40,70,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#14253B;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
 .c-ph-rec .pl{font-size:46px;line-height:.85;font-weight:300;color:#1D9EC0}
 /* 기록 중: 빨간 띠 + 빨간 큰 단추(시간이 흐름) — 한눈에 티 나게 */
 .c-ph-lvbar{position:absolute;left:0;right:0;top:0;z-index:7;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:#E5383B;color:#fff;font-weight:800;font-size:15px;text-decoration:none;box-shadow:0 3px 14px rgba(0,0,0,.25)}
@@ -754,9 +755,9 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-lv-dot{flex:none;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.8);animation:lvDot 1.4s ease-out infinite}
 @keyframes lvDot{0%{box-shadow:0 0 0 0 rgba(255,255,255,.8)}100%{box-shadow:0 0 0 10px rgba(255,255,255,0)}}
 html.c-home.c-live .c-ph-top{top:calc(44px + env(safe-area-inset-top,0px))}
-.c-ph-rec.live{width:132px;height:132px;background:#E5383B;color:#fff;text-decoration:none;gap:1px;box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3);animation:lvRing 1.6s ease-out infinite}
+.c-ph-rec.live{width:104px;height:104px;border:none;background:#E5383B;-webkit-backdrop-filter:none;backdrop-filter:none;color:#fff;text-decoration:none;gap:1px;box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3);animation:lvRing 1.6s ease-out infinite}
 .c-ph-rec.live small{font-size:12px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;gap:6px}.c-ph-rec.live small i{width:9px;height:9px;border-radius:50%;background:#fff}
-.c-ph-rec.live b{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
+.c-ph-rec.live b{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.15}
 .c-ph-rec.live em{font-style:normal;font-size:13.5px;font-weight:700;opacity:.95}
 @keyframes lvRing{0%{box-shadow:0 0 0 0 rgba(229,56,59,.55),0 10px 26px rgba(0,0,0,.3)}100%{box-shadow:0 0 0 22px rgba(229,56,59,0),0 10px 26px rgba(0,0,0,.3)}}
 .c-tabs-live{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:3001;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:999px;background:#E5383B;color:#fff;font-weight:800;font-size:14.5px;text-decoration:none;box-shadow:0 6px 20px rgba(229,56,59,.4);transition:opacity .2s,transform .2s}
@@ -2749,9 +2750,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-8';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-9';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7518,7 +7519,7 @@ const C_SPOTS = [ // 시안 자리(화면 비율 %): 말풍선 가운데 x, 말�
   { x: 61, y: 31, s: 96, dx: 62, dy: 45 },
   { x: 24, y: 43, s: 112, dx: 21, dy: 59 },
   { x: 75, y: 49, s: 112, dx: 75, dy: 65 },
-  { x: 46, y: 58, s: 88, dx: 45, dy: 70 }];
+  { x: 46, y: 59, s: 88, dx: 45, dy: 74 }];
 // 아직 없는 기능: 다른 기능으로 바꿔 넣지 않고 '만들 예정' 창을 띄워요 (2026-11-08 사용자 '기능이 아직 없다고 딴걸로 대체하지마')
 function cSoon(title, desc) {
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -7581,8 +7582,10 @@ function cHomePhoto() {
   box.append(bg, layer, top, slogan, rec); if (bar) box.append(bar);
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   setTimeout(async () => {
-    const recs = cRecs(20); if (!recs.length) return;
-    await Promise.all(recs.map(cPhotos));
+    // 사진 있는 기록이 말풍선 수만큼 모일 때까지 최근 것부터 차례로 봄(사진 없는 기록이 많아도 4개 채우게)
+    const all = cRecs(80); if (!all.length) return;
+    const recs = []; let got = 0;
+    for (let i = 0; i < all.length && got < C_SPOTS.length + 1; i += 6) { const part = all.slice(i, i + 6); await Promise.all(part.map(cPhotos)); recs.push(...part); got = recs.filter(r => r.first).length; }
     const chosen = ls.get('homeHero', '');
     const withPh = recs.filter(r => r.first);
     // 배경: 따로 고른 첫 화면 사진이 있으면 그것, 없으면 가장 최근 기록의 대표 사진(원본 크기)
