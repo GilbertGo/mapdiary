@@ -2750,9 +2750,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-12';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-13';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요)';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요 · 기록 중이면 맨 위 빨간 띠와 가운데 빨간 단추에 지난 시간이 흘러가요, 누르면 기록 화면으로 가요 · 첫 화면을 시안에 더 가깝게 다듬었어요(사진 말풍선 4개까지, 기록하기 단추를 아래로) · 시안 그림 첫 화면은 되돌리고 다시 내 사진 첫 화면으로 했어요 · 첫 화면 바탕은 사람이 없는 사진으로 저절로 골라요(처음 한 번 사진 살피는 도구를 받아요) · 첫 화면 말풍선·발견·지도 카드의 사진을 원본으로 보여 줘서 선명해졌어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7243,6 +7243,8 @@ function cSegs(r) {
   if (cur.length > 1) segs.push(cur);
   return segs.map(s => s.length > 400 ? s.filter((_, i) => i % Math.ceil(s.length / 400) === 0 || i === s.length - 1) : s);
 }
+// 큰 칸에 쓰는 사진은 원본(blob, 약 1280px)으로 — 미리보기(thumb 160px)를 늘리면 흐려서(2026-11-08 사용자 '사진 해상도가 너무 안 좋다'). 사진마다 주소 하나만 만들어 다시 씀
+function phSrc(p) { if (!p) return ''; if (!p.blob) return p.thumb || ''; const m = phSrc.m || (phSrc.m = new Map()); let u = m.get(p.id); if (!u) { u = URL.createObjectURL(p.blob); m.set(p.id, u); } return u; }
 function cPinIcon(thumb, opt = {}) {
   const inner = thumb ? `<div class="ph" style="background-image:url('${thumb}')"></div>` : `<div class="ic">${icoSvg(opt.k || 'pin', opt.sm ? 22 : 30)}</div>`;
   const W = opt.sm ? 48 : 66, H = opt.sm ? 60 : 80;
@@ -7277,7 +7279,7 @@ async function viewStoryMap() {
   const foods = foodPlaces();
   const items = recs.map(r => ({ kind: 'rec', r, k: r.M.k, at: r.cover ? [r.cover.lat, r.cover.lng] : (q => [q[0], q[1]])(farPoint(r.tr)), thumb: r.cover ? r.cover.thumb : null, ts: r.a }))
     .concat(foods.map(p => ({ kind: 'food', p, k: 'food', at: [p.lat, p.lng], thumb: null, ts: p.last })));
-  await Promise.all(items.filter(i => i.kind === 'food').map(async i => { const ph = (await foodPhotos(i.p))[0]; if (ph) i.thumb = ph.thumb; }));
+  await Promise.all(items.filter(i => i.kind === 'food').map(async i => { const ph = (await foodPhotos(i.p))[0]; if (ph) { i.thumb = ph.thumb; i.big = phSrc(ph); } }));
   items.sort((a, b) => b.ts - a.ts);
   if (!items.length) {
     root.append(el('div', { class: 'c-mempty' }, el('b', { style: 'font-size:18px', text: '아직 지도에 올릴 기록이 없어요' }),
@@ -7315,16 +7317,16 @@ async function viewStoryMap() {
       const ph = r.ph || [], noLoc = ph.filter(p => !Number.isFinite(p.lat)).length, th = r.cover || r.first;
       const href = `./?my=1&t=${encodeURIComponent(r.t)}`;
       sheet.replaceChildren(el('div', { class: 'grab' }),
-        el('a', { class: 'hd', href }, el('span', { class: 'th', style: th ? `background-image:url('${th.thumb}')` : '' }, th ? null : ico(r.M.k, 34)),
+        el('a', { class: 'hd', href }, el('span', { class: 'th', style: th ? `background-image:url('${phSrc(th)}')` : '' }, th ? null : ico(r.M.k, 34)),
           el('div', { style: 'min-width:0;flex:1' }, el('h3', { text: r.name }), el('div', { class: 'dt', text: cDate(r.a) }),
             el('div', { class: 'mt' }, el('span', {}, ico(r.M.k, 17), r.walk >= 50 ? fmtDist(r.walk) : r.M.label), r.b - r.a >= 60000 ? el('span', {}, cSvg('clock', 17), fmtDur(r.b - r.a)) : null))),
-        ph.length > 1 ? el('div', { class: 'strip' }, ...ph.slice(0, 3).map(p => el('button', { class: 'ph', type: 'button', 'aria-label': '사진 크게 보기', style: `background-image:url('${p.thumb}')`, onclick: () => showPhoto(p, ph) })), el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' }))
+        ph.length > 1 ? el('div', { class: 'strip' }, ...ph.slice(0, 3).map(p => el('button', { class: 'ph', type: 'button', 'aria-label': '사진 크게 보기', style: `background-image:url('${phSrc(p)}')`, onclick: () => showPhoto(p, ph) })), el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' }))
           : el('div', { class: 'strip' }, el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' })),
         el('div', { class: 'ft', text: r.cover ? `핀은 사진을 찍은 곳 · 파란 선은 실제로 다닌 길${noLoc ? ` · 위치 없는 사진 ${noLoc}장은 지도에 안 올렸어요` : ''}` : '사진 위치가 없어 다녀온 곳(출발에서 가장 먼 곳)에 표시했어요 · 파란 선은 실제로 다닌 길' }));
     } else {
       const p = it.p, f = p.food || {}, v = p.visits[0], href = `./?my=1&t=${encodeURIComponent(v.t)}`;
       sheet.replaceChildren(el('div', { class: 'grab' }),
-        el('a', { class: 'hd', href }, el('span', { class: 'th', style: it.thumb ? `background-image:url('${it.thumb}')` : 'font-size:34px' }, it.thumb ? null : '🍽'),
+        el('a', { class: 'hd', href }, el('span', { class: 'th', style: it.thumb ? `background-image:url('${it.big || it.thumb}')` : 'font-size:34px' }, it.thumb ? null : '🍽'),
           el('div', { style: 'min-width:0;flex:1' }, el('h3', { text: p.n }), el('div', { class: 'dt', text: `${cDate(p.last)}${p.visits.length > 1 ? ` · ${p.visits.length}번 갔어요` : ''}` }),
             el('div', { class: 'mt' }, f.r ? el('span', { text: '★'.repeat(f.r) }) : null, f.menu ? el('span', { text: f.menu }) : null, f.again === 1 ? el('span', { text: '😋 다시 갈래요' }) : null))),
         el('div', { class: 'strip' }, el('span', { class: 'sub', style: 'font-size:13px', text: '그날 기록 보기' }), el('a', { class: 'go', href, 'aria-label': '그날 기록 보기', text: '›' })));
@@ -7383,11 +7385,11 @@ async function viewDiscover() {
     el('div', {}, cSvg('cam', 28, '#7B61FF'), el('span', { text: '기록한 사진' }), el('b', {}, String(nPh), el('small', { text: '장' }))));
   // 다시 가고 싶은 곳: 내가 직접 고른 것만 (맛집 '😋 다시 갈래요' · ★ 좋은 곳)
   const want = [];
-  for (const p of foodPlaces()) if (p.food && p.food.again === 1) want.push({ n: p.n, sub: `😋 다시 갈래요${p.visits.length > 1 ? ` · ${p.visits.length}번` : ''}`, t: p.visits[0].t, ts: p.last, ph: async () => ((await foodPhotos(p))[0] || {}).thumb });
+  for (const p of foodPlaces()) if (p.food && p.food.again === 1) want.push({ n: p.n, sub: `😋 다시 갈래요${p.visits.length > 1 ? ` · ${p.visits.length}번` : ''}`, t: p.visits[0].t, ts: p.last, ph: async () => phSrc((await foodPhotos(p))[0]) });
   for (const x of pastTrips()) { if (x.album) continue;
     for (const s of ls.get('walkSpots:' + x.t, []) || []) { if (!s || s.food || s.k === 'stay' || !Number.isFinite(s.lat)) continue;
       want.push({ n: s.n || '좋은 곳', sub: `★ 좋은 곳 · ${mdOfTs(s.ts || x.info.startAt)}`, t: x.t, ts: s.ts || x.info.startAt,
-        ph: async () => { const ps = await photoImgs(x.t); const q = ps.find(r => Number.isFinite(r.lat) && dist(r.lat, r.lng, s.lat, s.lng) < 60) || ps.find(r => Math.abs((r.ts || 0) - (s.ts || 0)) < 10 * 60000); return q && q.thumb; } }); } }
+        ph: async () => { const ps = await photoImgs(x.t); const q = ps.find(r => Number.isFinite(r.lat) && dist(r.lat, r.lng, s.lat, s.lng) < 60) || ps.find(r => Math.abs((r.ts || 0) - (s.ts || 0)) < 10 * 60000); return q && phSrc(q); } }); } }
   want.sort((a, b) => b.ts - a.ts);
   const placeEl = async w => { const u = await w.ph(); return el('a', { class: 'c-place', href: `./?my=1&t=${encodeURIComponent(w.t)}` }, el('i', { style: u ? `background-image:url('${u}')` : '' }, u ? null : (w.sub.startsWith('😋') ? '🍽' : '★')), el('b', { text: w.n }), el('span', { text: w.sub })); };
   const row = el('div', { class: 'c-row' }); for (const w of want.slice(0, 10)) row.append(await placeEl(w));
@@ -7597,7 +7599,7 @@ function cHomePhoto() {
     bub.forEach((r, i) => { const c = C_SPOTS[i], p = r.first, d = new Date(r.a), s = Math.round(c.s * Math.min(1.12, W / 393));
       pts.push([c.dx * W / 100, c.dy * H / 100, r.a]);
       layer.append(el('a', { class: 'c-ph-pin', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'aria-label': `${r.name} 보기`, style: `left:${c.x}%;top:${c.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` },
-        el('i', { style: `background-image:url('${p.thumb}')` })),
+        el('i', { style: `background-image:url('${phSrc(p)}')` })),
         el('span', { class: 'c-ph-dot', style: `left:${c.dx}%;top:${c.dy}%` }),
         el('span', { class: 'c-ph-dt', style: `left:${c.dx}%;top:${c.dy}%`, text: `${d.getMonth() + 1}.${d.getDate()}` })); });
     // 잇는 선 = 날짜 순서(오래된 것 → 최근). 실제 이동 경로가 아니에요
