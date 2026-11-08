@@ -733,6 +733,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-logo{display:flex;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
 .c-ph-logo b{display:block;font-size:34px;font-weight:900;letter-spacing:-.02em;line-height:1;color:#fff}.c-ph-logo small{display:block;font-size:13.5px;font-weight:600;color:#fff;margin-top:3px}
 .c-ph-ib{width:46px;height:46px;border-radius:50%;border:none;background:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 1px 4px rgba(0,0,0,.35))}
+.c-ph-av{width:46px;height:46px;border-radius:50%;border:2.5px solid #fff;background:rgba(255,255,255,.18);color:#fff;font-size:19px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;cursor:pointer;font-family:inherit;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 .c-ph-sl{position:absolute;left:24px;right:24px;top:calc(122px + env(safe-area-inset-top,0px));z-index:4}
 .c-ph-sl h1{margin:0;font-size:clamp(28px,8vw,34px);line-height:1.38;font-weight:800;letter-spacing:-.03em;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.35)}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
@@ -2732,9 +2733,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-6';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-7';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 지도는 색을 차분하게 바꿔 내 길과 사진이 잘 보여요';
+const UI_NOTES = '첫 화면을 승인된 시안 그대로 바꿨어요 · 내 사진 한 장이 화면 가득 깔리고 최근 기록 사진이 말풍선으로 떠요 · 말풍선을 누르면 그 기록이 열리고 가운데 기록하기로 바로 시작해요 · 오른쪽 위 돋보기로 내 기록을 이름과 장소와 메모로 찾을 수 있어요 · 알림은 만들 예정이에요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7489,6 +7490,36 @@ const C_SPOTS = [ // 시안 자리(화면 비율 %): 말풍선 가운데 x, 말�
   { x: 24, y: 43, s: 112, dx: 21, dy: 59 },
   { x: 75, y: 49, s: 112, dx: 75, dy: 65 },
   { x: 46, y: 58, s: 88, dx: 45, dy: 70 }];
+// 아직 없는 기능: 다른 기능으로 바꿔 넣지 않고 '만들 예정' 창을 띄워요 (2026-11-08 사용자 '기능이 아직 없다고 딴걸로 대체하지마')
+function cSoon(title, desc) {
+  const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  bg.append(el('div', { class: 'sheet c-ui', role: 'dialog', 'aria-label': title },
+    el('div', { style: 'font-size:13px;font-weight:700;color:#1D9EC0', text: '만들 예정이에요' }),
+    el('h2', { text: title }), el('p', { class: 'sub', style: 'margin:0', text: desc }),
+    el('button', { class: 'btn primary full', text: '확인', onclick: () => bg.remove() })));
+  document.body.append(bg);
+}
+// 🔍 기록 찾기: 이름·출발/도착·메모·장소 이름·좋은 곳·들른 곳 이름·모드·날짜로 이 휴대폰의 기록을 찾아요(읽기만)
+function cSearch() {
+  const all = pastTrips().map(x => { const t = x.t, wp = ls.get('walkPlaces:' + t, {}) || {}, d = new Date(x.info.startAt);
+    const spots = (x.album ? [] : spotsOf(t)).map(s => s && s.n).filter(Boolean).join(' ');
+    return { x, d, text: [x.info.name, wp.start, wp.end, ls.get('walkNote:' + t, ''), (ls.get('walkWhere:' + t, null) || {}).n, spots, modeOfT(t).label,
+      `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${d.getMonth() + 1}월 ${d.getDate()}일`].filter(Boolean).join(' ').toLowerCase() }; });
+  const inp = el('input', { type: 'search', placeholder: '기록 이름, 장소, 메모, 날짜(예: 10월)', style: 'width:100%', 'aria-label': '기록 찾기' });
+  const list = el('div', { class: 'c-ev', style: 'max-height:60vh;overflow:auto' }), cnt = el('div', { class: 'sub', style: 'font-size:13px' });
+  const draw = () => { const q = inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const hit = all.filter(r => q.every(w => r.text.includes(w)));
+    cnt.textContent = q.length ? `찾은 기록 ${hit.length}개` : `전체 ${all.length}개 · 최근 순`;
+    list.replaceChildren(...(hit.length ? hit.slice(0, 50).map(r => el('a', { href: `./?my=1&t=${encodeURIComponent(r.x.t)}` },
+      el('span', { style: 'display:flex;align-items:center;gap:8px;min-width:0' }, ico(modeOfT(r.x.t).k, 18), el('span', { style: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap', text: r.x.info.name })),
+      el('span', { class: 'sub', style: 'flex:none', text: `${r.d.getFullYear()}.${r.d.getMonth() + 1}.${r.d.getDate()} ›` })))
+      : [el('div', { class: 'sub', style: 'padding:14px 4px', text: all.length ? '찾는 기록이 없어요. 다른 낱말로 찾아보세요.' : '아직 기록이 없어요.' })])); };
+  inp.addEventListener('input', draw);
+  const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  bg.append(el('div', { class: 'sheet c-ui', role: 'dialog', 'aria-label': '기록 찾기' }, el('h2', { text: '🔍 기록 찾기' }), inp, cnt, list,
+    el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
+  document.body.append(bg); draw(); setTimeout(() => inp.focus(), 50);
+}
 function cHomePhoto() {
   const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
   const wNow = ls.get('walkNow', null);
@@ -7499,9 +7530,14 @@ function cHomePhoto() {
     if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } },
     cLogoSvg(), el('span', {}, el('b', { text: 'MPD' }), el('small', { text: 'Map Photo Diary' })));
   const S = 'viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  // 시안 그대로 오른쪽 위: 🔍 검색(cSearch) · 🔔 알림(아직 없음 → 만들 예정 창) · 프로필(누르면 '나' = 설정)
+  const nick = String(ls.get('nick', '') || '').trim();
+  const avatar = el('button', { class: 'c-ph-av', type: 'button', 'aria-label': '나 · 설정', title: '나', onclick: appSettings }, nick ? nick.slice(0, 1) : null);
+  if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
   const top = el('div', { class: 'c-ph-top' }, logo, el('span', { style: 'flex:1' }),
-    icBtn('가족 앨범', `<svg ${S}><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>`, { href: './?album=1' }),
-    icBtn('설정', `<svg ${S}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`, { type: 'button', onclick: appSettings }));
+    icBtn('검색', `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`, { type: 'button', onclick: cSearch }),
+    icBtn('알림', `<svg ${S}><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`, { type: 'button', onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
+    avatar);
   const sw = el('span'); sw.innerHTML = '<svg width="230" height="40" viewBox="0 0 230 40" aria-hidden="true"><path d="M4 36C60 14 140 4 226 10" fill="none" stroke="#3FD0D9" stroke-width="4" stroke-linecap="round"/></svg>';
   const slogan = el('div', { class: 'c-ph-sl' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), sw,
     wNow ? el('a', { class: 'c-ph-live', href: '?walk=1' }, el('i'), `기록 중 · ${ls.get('trackName:' + wNow, `${modeOfT(wNow).label} 기록`)} · 이어서 ›`) : null);
