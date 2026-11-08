@@ -1,6 +1,8 @@
 rules_version = '2';
 // Map Photo Diary (map-photo-diary) Firestore 규칙 — 콘솔 Firestore → 규칙(Rules)에 통째로 붙여 넣고 게시(Publish)
 // 2026-10-18: shares·rooms·users / 2026-10-21: albums(가족 앨범) 더함
+// 2026-11-08 P0 보안 1차(넘어가는 규칙): rooms 문서에 주인 표시 칸 o를 허용만 함. 나머지는 그대로라 예전 앱도 그대로 동작
+//   2차(최종) 규칙은 firestore.rules.p0-final — 새 화면이 퍼진 뒤에 게시
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -22,7 +24,7 @@ service cloud.firestore {
     // ---------- 모임방·같이 달리기·시계 연결 등 (내용은 휴대폰에서 잠가서 올림) ----------
     match /rooms/{rid}/{col}/{doc} {
       allow read, delete: if true;
-      allow create, update: if request.resource.data.keys().hasOnly(['d', 't'])
+      allow create, update: if request.resource.data.keys().hasOnly(['d', 't', 'o'])
         && request.resource.data.d is string && request.resource.data.d.size() < 200000;
     }
 

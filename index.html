@@ -2604,9 +2604,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-1';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '화면에 바뀐 곳은 없어요 · 시험용 발견 점검 주소를 하나 더했어요 (기록을 읽기만 해요)';
+const UI_NOTES = '보내는 링크를 더 안전하게 바꿨어요 · 이제 일반 링크도 제목·길·사진 위치까지 모두 잠가서 보내요 · 링크를 못 만들면 내용을 그대로 담은 긴 링크 대신 다시 눌러 달라고 알려 드려요 · 예전에 보낸 링크는 그대로 열려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -2641,50 +2641,44 @@ async function codeKey(code, x, salt) {
 }
 const shortCodes = {};   // 링크 → 비밀코드 (보내는 사람에게 보여주려고)
 async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리는지
+  // 🔐 P0 보안(2026-11-08): 일반 공유도 본문(제목·경로·장소·메모)과 사진 정보(위치·시각·메모)를 모두 잠가요(v3).
+  //   열쇠는 링크의 # 뒤(#k=)에만 있어 서버로 가지 않아요. 저장에 실패하면 예전처럼 평문 긴 링크로 바꾸지 않고 오류를 내요
   const recs = o.sharePhotos !== false && Array.isArray(o.photoRecs) ? o.photoRecs : [];
-  const long = bragLink(o), key = long + '|' + recs.map(r => r.id).join(',') + (o.secret ? '|secret' : '');
+  const payload = bragSmall(o), key = JSON.stringify(payload) + '|' + recs.map(r => r.id).join(',') + (o.secret ? '|secret' : '');
   if (shortCache[key]) return shortCache[key];
-  try {
-    for (let i = 0; i < 15 && !connected; i++) await new Promise(r => setTimeout(r, 100));   // MQTT는 잠깐만 기다려요(Firestore가 주 저장소)
-    const id = rid(8), payload = JSON.parse(unb64u(new URL(long).searchParams.get('brag')));
-    let hash = '', k = null, code = null, salt = null;
-    if (o.secret) {
-      code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
-      const x = b64url(crypto.getRandomValues(new Uint8Array(16)));
-      salt = crypto.getRandomValues(new Uint8Array(16));
-      k = await codeKey(code, x, salt); hash = '#x=' + x;
+  const id = rid(8), seal = obj => sealBytes(new TextEncoder().encode(JSON.stringify(obj)), k);
+  let hash = '', k = null, code = null, salt = null;
+  if (o.secret) {
+    code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+    const x = b64url(crypto.getRandomValues(new Uint8Array(16)));
+    salt = crypto.getRandomValues(new Uint8Array(16));
+    k = await codeKey(code, x, salt); hash = '#x=' + x;
+  } else {
+    k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
+    hash = '#k=' + b64url(new Uint8Array(await crypto.subtle.exportKey('raw', k)));
+  }
+  if (recs.length) {
+    // 사진은 최대 12장, 고르게 골라서 1080px로 줄여 잠가 올려요. 위치·시각·메모(m)도 늘 잠가요
+    const step = Math.max(1, recs.length / SHARE_PHOTOS), pick = [];
+    for (let i = 0; i < recs.length && pick.length < SHARE_PHOTOS; i += step) pick.push(recs[Math.floor(i)]);
+    toast(`사진 ${pick.length}장을 잠가서 올리는 중이에요…`);
+    let n = 0;
+    for (const r of pick) {
+      if (prog) prog(n + 1, pick.length);
+      try {
+        let small = await shrinkImage(r.blob, 1080, 'blob', 0.78);   // 2026-11-07 받은 사람이 확대해 보게 800 → 1080px (너무 크면 예전 800px)
+        if (small.size > 420000) small = await shrinkImage(r.blob, 800, 'blob', 0.72);
+        const meta = Object.assign({ lat: r.lat, lng: r.lng, ts: r.ts }, r.m ? { m: r.m } : {});
+        await pub(`allhere/v1/share/${id}/p/${n}`, { d: await sealBytes(await small.arrayBuffer(), k), m: await seal(meta) });
+        n++;
+      } catch {}
     }
-    if (recs.length) {
-      // 사진은 최대 12장, 고르게 골라서 1080px로 줄여 잠가 올려요
-      const step = Math.max(1, recs.length / SHARE_PHOTOS), pick = [];
-      for (let i = 0; i < recs.length && pick.length < SHARE_PHOTOS; i += step) pick.push(recs[Math.floor(i)]);
-      toast(`사진 ${pick.length}장을 잠가서 올리는 중이에요…`);
-      if (!k) k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
-      let n = 0;
-      for (const r of pick) {
-        if (prog) prog(n + 1, pick.length);
-        try {
-          let small = await shrinkImage(r.blob, 1080, 'blob', 0.78);   // 2026-11-07 받은 사람이 확대해 보게 800 → 1080px (너무 크면 예전 800px)
-          if (small.size > 420000) small = await shrinkImage(r.blob, 800, 'blob', 0.72);
-          // 비밀코드를 걸면 사진 위치·시각도 잠가요
-          const meta = Object.assign({ lat: r.lat, lng: r.lng, ts: r.ts }, r.m ? { m: r.m } : {});
-          await pub(`allhere/v1/share/${id}/p/${n}`, o.secret
-            ? { d: await sealBytes(await small.arrayBuffer(), k), m: await sealBytes(new TextEncoder().encode(JSON.stringify(meta)), k) }
-            : { d: await sealBytes(await small.arrayBuffer(), k), ...meta });
-          n++;
-        } catch {}
-      }
-      payload.ph = n;
-      if (n && !o.secret) hash = '#k=' + b64url(new Uint8Array(await crypto.subtle.exportKey('raw', k)));
-    }
-    // 비밀코드를 걸면 제목·경로·장소까지 모두 잠가서 올려요
-    await pub(`allhere/v1/share/${id}`, o.secret
-      ? { v: 2, salt: u8b64(salt), enc: await sealBytes(new TextEncoder().encode(JSON.stringify(payload)), k) }
-      : payload);
-    const url = `${APP_BASE}?s=${id}${hash}`;
-    if (code) shortCodes[url] = code;
-    return (shortCache[key] = url);
-  } catch (e) { if (o.secret) throw e; return long; }
+    payload.ph = n;
+  }
+  await pub(`allhere/v1/share/${id}`, o.secret ? { v: 2, salt: u8b64(salt), enc: await seal(payload) } : { v: 3, enc: await seal(payload) });
+  const url = `${APP_BASE}?s=${id}${hash}`;
+  if (code) shortCodes[url] = code;
+  return (shortCache[key] = url);
 }
 // 보내는 사람에게 비밀코드를 보여줘요
 function showCode(code) {
@@ -2709,11 +2703,11 @@ function linkText(o, url, code) {
 }
 // 링크 뒤에 &c=1 같은 것을 붙일 때 # 앞에 붙여요
 const addQuery = (url, q) => { const i = url.indexOf('#'); return i < 0 ? url + q : url.slice(0, i) + q + url.slice(i); };
-function bragLink(o) {
+// 링크에 담을 카드 내용(경로는 150점·소수 4자리로 줄이고 사진은 뺌). 예전엔 이걸 ?brag= 긴 링크로도 썼지만(평문) 이제 만들지 않아요(받기는 그대로)
+function bragSmall(o) {
   const th = o.route ? thinRoute(o.route, typeof o.modes === 'string' && o.modes.length === o.route.length ? o.modes : null, 150) : { R: null, modes: null };
   const r = th.R;
-  const small = Object.assign({}, o, { route: r ? r.map(q => [+q[0].toFixed(4), +q[1].toFixed(4)]) : null, modes: th.modes && /[cg]/.test(th.modes) ? th.modes : undefined, photos: undefined, photoRecs: undefined });   // 사진은 링크에 넣지 않아요
-  return `${APP_BASE}?brag=${b64u(JSON.stringify(small))}`;
+  return JSON.parse(JSON.stringify(Object.assign({}, o, { route: r ? r.map(q => [+q[0].toFixed(4), +q[1].toFixed(4)]) : null, modes: th.modes && /[cg]/.test(th.modes) ? th.modes : undefined, photos: undefined, photoRecs: undefined, secret: undefined, sharePhotos: undefined })));
 }
 // 미리보기 그림 + 저장/공유 버튼 묶음. draw(opts)로 카드를 다시 그려요.
 function bragView(img, getOpts) {
@@ -2739,6 +2733,7 @@ function bragView(img, getOpts) {
       shBusy = true; setSh('링크 만드는 중…', true);
       let url = null; try { url = await shortLink(o, (i, n) => setSh(`사진 올리는 중 ${i}/${n}`, true)); } catch {}
       finally { shBusy = false; setSh('공유하기'); }
+      if (!url) { setSh('다시 눌러 공유하기'); return toast('링크를 만들지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'); }   // 평문 긴 링크로 바꾸지 않아요(P0 보안)
       shPrep = { o, text: url ? linkText(o, url, shortCodes[url]) : '' };
       if (url && shortCodes[url]) { showCode(shortCodes[url]); codeNote(shortCodes[url]); }
       if (!IN_NATIVE && navigator.userActivation && !navigator.userActivation.isActive) { setSh('✓ 눌러서 공유하기'); toast('준비됐어요. 단추를 한 번 더 눌러 주세요'); return; }
@@ -2762,7 +2757,7 @@ function bragView(img, getOpts) {
     const o = getOpts(); if (!o) return;
     linkBusy = true; setLink('링크 만드는 중…', true);
     let url; try { url = await shortLink(o, (i, n) => setLink(`사진 올리는 중 ${i}/${n}`, true)); }
-    catch { return toast('비밀코드 링크를 만들지 못했어요. 인터넷 연결을 확인해 주세요'); }
+    catch { return toast('링크를 만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요'); }
     finally { linkBusy = false; setLink('링크만 보내기'); }
     const code = shortCodes[url], text = linkText(o, url, code);
     // 비밀코드는 공유 창을 열기 전에 먼저 보여주고, 버튼 아래에도 계속 남겨 둬요
@@ -2813,7 +2808,8 @@ function bragView(img, getOpts) {
     if (kPrep && kPrep.o === o) { try { kSend(kPrep); } catch (e) { kFail(e); } return; }
     kBusy = true; kSet('링크 만드는 중…', true); kSay('링크를 만들고 있어요…');
     try {
-      const url = await shortLink(o, (i, n) => kSet(`사진 올리는 중 ${i}/${n}`, true));
+      let url; try { url = await shortLink(o, (i, n) => kSet(`사진 올리는 중 ${i}/${n}`, true)); }
+      catch { kSet('카카오톡으로 보내기'); kSay('⚠ 링크를 만들지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'); return; }
       kSet('카드 그림 올리는 중…', true); kSay('카드 그림을 카카오에 올리는 중…');
       const jpg = await new Promise(r => cardCv.toBlob(r, 'image/jpeg', .88)), f = new File([jpg], 'mpd_card.jpg', { type: 'image/jpeg' });
       let files = [f]; try { const dt = new DataTransfer(); dt.items.add(f); files = dt.files; } catch {}
@@ -2832,7 +2828,8 @@ function bragView(img, getOpts) {
     kSay(`⚠ ${why} · ${kWhere()} · ${String(m).slice(0, 120)}`, true);
     toast(why + '. 아래 \'문자 · 메일 · 다른 앱\'으로 보내 주세요'); };
   // 카톡 안 → 기본 브라우저로 사진 저장하러 갈 때는 비밀코드 없이 (보내는 사람 본인이 보는 화면이라)
-  const openOther = async () => { const o = getOpts(); if (o) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(await shortLink(Object.assign({}, o, { secret: false })), '&c=1')); };
+  const openOther = async () => { const o = getOpts(); if (!o) return; let u; try { u = await shortLink(Object.assign({}, o, { secret: false })); } catch { return toast('링크를 만들지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'); }
+    location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(addQuery(u, '&c=1')); };
   if (IN_KAKAO) shBtn.onclick = () => openOther();
   // 공유하기 하나만 크게 → 누르면 어디로 보낼지 고르는 창 (2026-10-27 사용자 '공유하기 누르면 카톡·메시지·메일 등 선택할 수 있게')
   // 고르는 창 안 단추를 누르는 것도 '누름'이라 카톡·공유 창이 막히지 않아요. 진행 글('링크 만드는 중…')은 그 단추에 보여요
@@ -2880,23 +2877,32 @@ function viewShareLink() {
   // 열쇠: #k= 가 있으면 바로, 비밀코드 링크(#x=)면 코드를 맞게 넣은 뒤에 생겨요
   let resolveKey; const keyP = new Promise(r => { resolveKey = r; });
   const km = /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash), xm = /[#&]x=([A-Za-z0-9_-]+)/.exec(location.hash);
-  if (km) crypto.subtle.importKey('raw', urlb64(km[1]), 'AES-GCM', false, ['decrypt']).then(resolveKey, () => {});
+  if (km) { try { crypto.subtle.importKey('raw', urlb64(km[1]), 'AES-GCM', false, ['decrypt']).then(resolveKey, () => resolveKey(null)); } catch { resolveKey(null); } }
+  let phFail = 0;
   const onMsg = async (t, buf) => {
     if (t.startsWith(topic + '/p/')) {
       if (feed.recs.some(r => r.id === t)) return;   // Firestore와 MQTT 양쪽에서 같은 사진이 와요
       const key = await keyP;
+      if (!key) return;
       try {
         const v = JSON.parse(buf.toString());
         const meta = v.m ? JSON.parse(new TextDecoder().decode(await openBytes(v.m, key))) : v;
         const blob = new Blob([await openBytes(v.d, key)], { type: 'image/jpeg' });
         const rec = { id: t, ts: num(meta.ts) || 0, lat: num(meta.lat), lng: num(meta.lng), m: typeof meta.m === 'string' ? meta.m.slice(0, 80) : '', blob, thumb: await shrinkImage(blob, 160, 'url', 0.7) };
         feed.recs.push(rec); feed.recs.sort((a, b) => a.ts - b.ts); feed.on.forEach(fn => fn(rec));
-      } catch {}
+      } catch { if (++phFail === 1) toast('사진을 열지 못했어요 · 받은 링크를 끝까지 그대로 열어 주세요'); }
       return;
     }
     if (t !== topic || done) return;
     let v = null; try { v = JSON.parse(buf.toString()); } catch {}
     if (v && v.v === 2 && typeof v.enc === 'string') { done = true; askCode(v); return; }   // 비밀코드 링크
+    if (v && v.v === 3 && typeof v.enc === 'string') {   // 잠긴 일반 링크(2026-11-08~): 링크 # 뒤 열쇠로 풀어요
+      done = true;
+      const k = km ? await keyP : null;
+      try { if (!k) throw 0; viewBragLink(JSON.parse(new TextDecoder().decode(await openBytes(v.enc, k))), feed); }
+      catch { linkBroken(); }
+      return;
+    }
     if (!v || typeof v.name !== 'string') return;
     done = true; viewBragLink(v, feed);
   };
@@ -2908,6 +2914,12 @@ function viewShareLink() {
     try { await onMsg(topic, { toString: () => d }); } catch (e) { console.error('fsShare', e); }
     for (let n = 0; n < 12; n++) { const p = await fsGet(`shares/${id}/p/${n}`); if (typeof p !== 'string') break; if (!feed.recs.some(r => r.id === `${topic}/p/${n}`)) onMsg(`${topic}/p/${n}`, { toString: () => p }); }
   })();
+  // 링크 끝(#k=)이 잘렸거나 틀렸을 때
+  function linkBroken() {
+    app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '나들이 경로'), el('div', { class: 'banner info', style: 'margin-top:24px' },
+      el('b', { text: '받은 링크를 끝까지 그대로 열어 주세요' }), el('div', { text: '링크 뒤쪽이 잘렸거나 바뀌어서 열 수 없어요. 보낸 사람에게 링크를 다시 받아 보세요.' })),
+      el('a', { class: 'btn primary full', href: './', text: 'Map Photo Diary 시작하기' })));
+  }
   // 비밀코드 넣는 화면
   function askCode(v) {
     const bar = roleBar('leader', '나들이 경로');
@@ -3203,12 +3215,46 @@ function fsPath(topic) {
   if (m) return `rooms/${m[1]}/` + (m[2] === 'info' ? 'x/info' : m[2]);
   return null;
 }
+// 🔐 rooms(모임방·같이 달리기·시계 바탕/목표·앱 로그인 쪽지) 쓰기는 이 휴대폰의 익명 번호로 '주인 표시(o)'를 달아요 (P0 보안, 2026-11-08)
+//   규칙이 주인만 고치고 지울 수 있게 바뀌어도 내 글은 내가 다루게. 익명 번호를 못 받거나(콘솔에서 익명 로그인이 꺼짐)
+//   예전 규칙이 o 칸을 막으면(403) 예전처럼 표시 없이 한 번 더 써요. 시계 기록(w)은 시계 앱이 쓰는 곳이라 휴대폰은 쓰지 않아요
+let fsAnonTok = null, fsAnonExp = 0, fsAnonBusy = null;
+async function fsAnon() {   // { uid, tok } 또는 null
+  if (fsAnonTok && Date.now() < fsAnonExp) return { uid: ls.get('fsAnon', {}).uid, tok: fsAnonTok };
+  return fsAnonBusy || (fsAnonBusy = (async () => {
+    try {
+      let a = ls.get('fsAnon', null), j;
+      if (a && a.rt) {
+        const r = await fetchT(`https://securetoken.googleapis.com/v1/token?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(a.rt) }, 15000);
+        if (r.ok) { const k = await r.json(); j = { idToken: k.id_token, expiresIn: k.expires_in, refreshToken: k.refresh_token || a.rt, localId: k.user_id || a.uid }; }
+        else if (r.status !== 400 && r.status !== 401) return null;   // 인터넷 문제면 이번엔 표시 없이
+      }
+      if (!j) {   // 처음이거나 예전 번호가 막혔으면 새 익명 번호
+        const r = await fetchT(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ returnSecureToken: true }) }, 15000);
+        if (!r.ok) return null;
+        j = await r.json();
+      }
+      if (!j.idToken || !j.localId) return null;
+      ls.set('fsAnon', { rt: j.refreshToken, uid: j.localId });
+      fsAnonTok = j.idToken; fsAnonExp = Date.now() + ((+j.expiresIn || 3600) - 120) * 1000;
+      return { uid: j.localId, tok: fsAnonTok };
+    } catch { return null; } finally { fsAnonBusy = null; }
+  })());
+}
 async function fsPut(path, str) {
-  const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'PATCH', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fields: { d: { stringValue: str }, t: { integerValue: String(Date.now()) } } }) });
+  const fields = { d: { stringValue: str }, t: { integerValue: String(Date.now()) } };
+  const send = (f, tok) => fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'PATCH', headers: Object.assign({ 'content-type': 'application/json' }, tok ? { Authorization: 'Bearer ' + tok } : {}), body: JSON.stringify({ fields: f }) });
+  const a = path.startsWith('rooms/') ? await fsAnon() : null;
+  let r = await send(a ? Object.assign({ o: { stringValue: a.uid } }, fields) : fields, a && a.tok);
+  if (a && r.status === 403) r = await send(fields, null);   // 예전 규칙(o 칸 없음)
   if (!r.ok) throw new Error('fs ' + r.status);
 }
-async function fsDel(path) { const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'DELETE' }); if (!r.ok && r.status !== 404) throw new Error('fs ' + r.status); }
+async function fsDel(path) {
+  const a = path.startsWith('rooms/') ? await fsAnon() : null;
+  let r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'DELETE', headers: a ? { Authorization: 'Bearer ' + a.tok } : {} });
+  if (a && r.status === 403) r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`, { method: 'DELETE' });
+  if (!r.ok && r.status !== 404) throw new Error('fs ' + r.status);
+}
 async function fsGet(path, tries = 3) {   // 없으면 null, 안 되면(인터넷·차단) undefined. 끊기면 잠깐 쉬고 다시
   for (let i = 0; i < tries; i++) {
     try { const r = await fetch(`${FS_URL}${path}?key=${FS_KEY}`); if (r.status === 404) return null; if (r.ok) return (await r.json()).fields?.d?.stringValue ?? null; } catch {}
@@ -3220,14 +3266,12 @@ async function fsList(path) {   // [{ id, d }]
   try { const r = await fetch(`${FS_URL}${path}?pageSize=300&key=${FS_KEY}`); if (!r.ok) return []; const j = await r.json();
     return (j.documents || []).map(x => ({ id: x.name.split('/').pop(), d: x.fields?.d?.stringValue || '' })); } catch { return []; }
 }
-const mqttPub = (topic, obj) => new Promise((res, rej) => { if (!connected) return rej(new Error('offline'));
-  const tm = setTimeout(() => rej(new Error('timeout')), 8000);
-  client.publish(topic, obj == null ? '' : JSON.stringify(obj), { qos: 1, retain: true }, e => { clearTimeout(tm); e ? rej(e) : res(); }); });
-// 둘 중 하나라도 되면 성공. Firestore 자리가 없는 주제는 MQTT로만
+// 올리기 = Firestore에만 (P0 보안, 2026-11-08): 예전엔 공개 MQTT 브로커에도 남겨 두고(retain) 둘 중 하나만 돼도 성공으로 쳤어요.
+// 이제 Firestore에 저장돼야만 성공이고, 공개 브로커에는 올리지 않아요. MQTT는 예전 링크·모임방을 읽을 때만 써요
 function pub(topic, obj) {
-  const path = fsPath(topic), jobs = [mqttPub(topic, obj)];
-  if (path) jobs.unshift(obj == null ? fsDel(path) : fsPut(path, JSON.stringify(obj)));
-  return Promise.any(jobs);
+  const path = fsPath(topic);
+  if (!path) return Promise.reject(new Error('no store'));
+  return obj == null ? fsDel(path) : fsPut(path, JSON.stringify(obj));
 }
 const base = t => `allhere/v1/${t}`;
 const num = v => (typeof v === 'number' && Number.isFinite(v)) ? v : null;
@@ -3504,7 +3548,7 @@ function viewRoomList() {
   const rooms = roomsLoad();
   const create = async () => {
     const name = await askText('모임방 만들기', '모임방 이름', '', '예: 우리 가족, 토요 산악회', '만들면 "빠른나무"처럼 외우기 쉬운 코드가 생겨요. 코드를 알려 준 사람만 들어올 수 있어요.'); if (!name) return;
-    if (!connected) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
+    if (!navigator.onLine) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
     // 조합이 많지 않아서, 누가 이미 쓰는 코드면 다른 코드로 다시 뽑아요
     toast('모임방을 만드는 중이에요…');
     let p, r;
@@ -3546,9 +3590,9 @@ async function viewRoomOne(p) {
   const delRoom = async () => {
     const name = info?.name || local?.name || '모임방';
     if (!confirm(`'${name}' 모임방을 없앨까요?\n올라온 MPD ${Object.keys(posts).length}개도 모두 지워지고, 들어온 사람 모두 더는 볼 수 없어요. 되돌릴 수 없어요.`)) return;
-    if (!connected) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
+    if (!navigator.onLine) return toast('인터넷에 연결되지 않았어요. 잠시 뒤 다시 해 주세요');
     try {
-      await Promise.all(Object.keys(posts).map(pid => pub(`${r.topic}/md/${pid}`, null)));
+      await Promise.allSettled(Object.keys(posts).map(pid => pub(`${r.topic}/md/${pid}`, null)));   // 남이 올린 글은 규칙상 못 지울 수 있어요(방은 아래 '없앰' 표시로 닫혀요)
       await pub(r.topic + '/info', await roomSeal(r.key, { deleted: true, at: Date.now() }));
     } catch { return toast('없애지 못했어요. 잠시 뒤 다시 해 주세요'); }
     leaveLocal(); toastLater(`'${name}' 모임방을 없앴어요`); location.href = './?room=1';
@@ -3641,7 +3685,7 @@ async function viewRoomOne(p) {
   drawTop();
   setTimeout(async () => {
     if (gone) return;
-    if (!info && local && connected) { try { await pub(r.topic + '/info', await roomSeal(r.key, Object.assign({ name: local.name, at: Date.now() }, local.mine ? { owner: devId() } : {}))); } catch {} }   // 방 이름이 사라졌으면 다시 올려요
+    if (!info && local && navigator.onLine) { try { await pub(r.topic + '/info', await roomSeal(r.key, Object.assign({ name: local.name, at: Date.now() }, local.mine ? { owner: devId() } : {}))); } catch {} }   // 방 이름이 사라졌으면 다시 올려요
     if (!local && !Object.keys(posts).length) note.textContent = '모임방을 찾지 못했어요. 코드를 다시 확인해 주세요.';
     else drawList();
   }, 8000);
