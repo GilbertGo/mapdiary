@@ -678,7 +678,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-logo{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--c-ink);user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
 .c-logo b{display:block;font-size:26px;font-weight:900;letter-spacing:-.02em;line-height:1}.c-logo small{display:block;font-size:12px;font-weight:600;color:var(--c-mu);margin-top:3px}
 .c-ibtn{width:44px;height:44px;border-radius:50%;border:none;background:var(--c-sf);box-shadow:0 2px 10px rgba(20,37,59,.08);display:inline-flex;align-items:center;justify-content:center;color:var(--c-ink);text-decoration:none;font-size:18px;flex:none;cursor:pointer}
-.c-hero{position:relative;height:min(64vh,560px);min-height:400px;border-radius:28px;overflow:hidden;background:#E8F1F6;box-shadow:0 10px 30px rgba(20,37,59,.12);isolation:isolate}
+.c-hero{position:relative;height:min(54vh,500px);min-height:380px;border-radius:28px;overflow:hidden;background:#E8F1F6;box-shadow:0 10px 30px rgba(20,37,59,.12);isolation:isolate}
 .c-hero .c-map{position:absolute;inset:0;z-index:0}
 .c-hero .leaflet-container,.c-mapv .leaflet-container{background:#E8F1F6;font-family:inherit}
 .c-hero .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
@@ -707,6 +707,22 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-tabs .on{color:var(--c-ac)}.c-tabs .on svg{stroke:var(--c-ac)}
 .c-ui .gm-pills{justify-content:center;margin-top:2px}.c-ui .gm-pill{background:#fff;box-shadow:0 2px 10px rgba(20,37,59,.07);color:var(--c-ink);border:1px solid var(--c-ln)}
 .c-ui .mem{border-color:#CFE7EF}
+.c-strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;margin:-2px -16px 0;padding:4px 16px 6px;scrollbar-width:none}.c-strip::-webkit-scrollbar{display:none}
+.c-st{flex:none;width:132px;scroll-snap-align:start;text-decoration:none;color:var(--c-ink);display:flex;flex-direction:column;gap:5px}
+.c-st .im{position:relative;display:flex;align-items:center;justify-content:center;width:132px;height:160px;border-radius:20px;background:#E6F2F7 center/cover no-repeat;color:var(--c-ac);transition:box-shadow .2s,transform .2s}
+.c-st.on .im{box-shadow:0 0 0 3px var(--c-ac),0 8px 18px rgba(29,158,192,.25)}
+.c-st .cnt{position:absolute;right:8px;bottom:8px;min-width:24px;height:24px;border-radius:12px;background:rgba(20,37,59,.72);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 7px}
+.c-st .dt{font-size:12px;color:var(--c-mu);display:inline-flex;align-items:center;gap:2px}.c-st .dt .ico svg{stroke:var(--c-ac)}
+.c-st b{font-size:14.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.c-findline{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;background:#fff;box-shadow:0 4px 16px rgba(20,37,59,.06);text-decoration:none;color:var(--c-ink);border:1px solid #FFE3D3}
+.c-findline .sp{width:44px;height:44px;border-radius:14px;background:#FFF1E8;display:flex;align-items:center;justify-content:center;flex:none}
+.c-findline .tx{flex:1;min-width:0;display:flex;flex-direction:column}.c-findline small{font-size:12.5px;color:var(--c-mu)}.c-findline b{font-size:16px;line-height:1.35}
+.c-findline .go,.c-li .go{font-size:22px;color:var(--c-mu);flex:none}
+.c-list{background:#fff;border-radius:22px;box-shadow:0 4px 16px rgba(20,37,59,.06);overflow:hidden}
+.c-li{display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;min-height:60px;text-decoration:none;color:var(--c-ink);background:none;border:none;border-top:1px solid var(--c-ln);font-family:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.c-li:first-child{border-top:none}.c-li .ic{width:38px;height:38px;border-radius:12px;background:#F0F6FA;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.c-li .tx{flex:1;min-width:0;display:flex;flex-direction:column}.c-li b{font-size:15.5px}.c-li small{font-size:12.5px;color:var(--c-mu)}
+.c-msheet .strip button.ph{flex:1;aspect-ratio:4/3;border-radius:12px;background:#E8F1F6 center/cover no-repeat;max-width:30%;border:none;padding:0;cursor:pointer}
 /* 나의 이야기 지도 */
 .c-mapv{position:fixed;inset:0;z-index:50;background:#E8F1F6}
 .c-mapv .c-map{position:absolute;inset:0}
@@ -2692,9 +2708,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.08-4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면을 새로 꾸몄어요 · 가운데 지도에 최근 기록에서 사진을 찍은 곳이 보여요 · 아래 메뉴로 지도와 발견과 이야기에 바로 가요 · 나의 이야기 지도에서 종류별로 골라 보고 사진을 누르면 그 기록이 열려요 · 발견에는 내 기록으로 셀 수 있는 것만 보여 드려요';
+const UI_NOTES = '첫 화면을 새로 꾸몄어요 · 가운데 지도에 최근 90일 동안 다닌 길이 옅게 깔려 내 생활권이 보여요 · 아래 최근 이야기를 옆으로 넘기면 지도가 그 기록의 길을 따라가요 · 내 기록에서 찾은 발견 한 줄을 누르면 발견 화면으로 가요 · 아래 메뉴로 지도와 발견과 이야기에 바로 가요 · 지도 카드의 사진을 누르면 크게 볼 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7185,38 +7201,6 @@ function cCluster(map, items, px) {
     if (g) g.list.push(it); else groups.push({ pt, list: [it] }); }
   return groups;
 }
-// 홈 한가운데: 최근 기록의 실제 사진 위치를 실제 지도 위에 (보기 전용 지도. 누르면 나의 이야기 지도로)
-function cHomeHero() {
-  const box = el('div', { class: 'c-hero' }), mapEl = el('div', { class: 'c-map' });
-  const wNow = ls.get('walkNow', null);
-  const rec = wNow ? el('button', { class: 'c-rec live', onclick: () => { location.href = '?walk=1'; } }, el('span', { class: 'pl', text: '●' }),
-      `기록 중 · ${ls.get('trackName:' + wNow, `${modeOfT(wNow).label} 기록`)} · ${fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))}째`)
-    : el('button', { class: 'c-rec', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
-  const swoosh = el('span'); swoosh.innerHTML = '<svg width="170" height="16" viewBox="0 0 170 16" aria-hidden="true"><path d="M3 13C50 3 110 2 167 6" fill="none" stroke="#4FBBC6" stroke-width="3.5" stroke-linecap="round"/></svg>';
-  box.append(mapEl, el('div', { class: 'c-slogan' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), swoosh), rec);
-  setTimeout(async () => {
-    const recs = cRecs(14);
-    if (!recs.length) { mapEl.append(el('div', { class: 'c-empty-hero' }, cSvg('route', 40, '#1D9EC0'), el('b', { text: '아직 기록이 없어요' }),
-      el('span', { text: '아래 기록하기를 누르고 다니면, 다닌 길과 사진을 찍은 곳이 이 지도 위에 모여요.' }))); return; }
-    await Promise.all(recs.map(cPhotos));
-    let pins = recs.filter(r => r.cover).slice(0, 6), withPh = true;
-    if (!pins.length) { pins = recs.slice(0, 5); withPh = false; }
-    const items = pins.map(r => ({ r, at: withPh ? [r.cover.lat, r.cover.lng] : (q => [q[0], q[1]])(farPoint(r.tr)) }));
-    const m = L.map(mapEl, { zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false });
-    mdTileLayer().addTo(m);
-    const b = L.latLngBounds(items.map(i => i.at));
-    pins.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3.5, opacity: .55, interactive: false }).addTo(m); }));
-    m.fitBounds(b.pad(.08), { paddingTopLeft: [46, 170], paddingBottomRight: [46, 128], maxZoom: 15 });
-    const lay = L.layerGroup().addTo(m);
-    const draw = () => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0];
-      L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length }), keyboard: false, title: it.r.name })
-        .on('click', e => { L.DomEvent.stopPropagation(e); location.href = g.list.length > 1 ? './?map=1' : `./?my=1&t=${encodeURIComponent(it.r.t)}`; }).addTo(lay); }); };
-    draw(); m.on('zoomend', draw);
-    m.on('click', () => { location.href = './?map=1'; });
-    box.append(el('div', { class: 'c-hero-note', text: withPh ? `최근 기록 ${pins.length}개 · 사진을 찍은 곳` : `최근 기록 ${pins.length}개 · 다녀온 곳 (사진 위치 없음)` }));
-  }, 0);
-  return box;
-}
 // ---------- 나의 이야기 지도 (?map=1, &t=기록ID면 그 기록을 골라서) ----------
 async function viewStoryMap() {
   document.documentElement.classList.add('c-page'); document.documentElement.classList.remove('c-tabbed');
@@ -7279,7 +7263,7 @@ async function viewStoryMap() {
         el('a', { class: 'hd', href }, el('span', { class: 'th', style: th ? `background-image:url('${th.thumb}')` : '' }, th ? null : ico(r.M.k, 34)),
           el('div', { style: 'min-width:0;flex:1' }, el('h3', { text: r.name }), el('div', { class: 'dt', text: cDate(r.a) }),
             el('div', { class: 'mt' }, el('span', {}, ico(r.M.k, 17), r.walk >= 50 ? fmtDist(r.walk) : r.M.label), r.b - r.a >= 60000 ? el('span', {}, cSvg('clock', 17), fmtDur(r.b - r.a)) : null))),
-        ph.length > 1 ? el('div', { class: 'strip' }, ...ph.slice(0, 3).map(p => el('i', { style: `background-image:url('${p.thumb}')` })), el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' }))
+        ph.length > 1 ? el('div', { class: 'strip' }, ...ph.slice(0, 3).map(p => el('button', { class: 'ph', type: 'button', 'aria-label': '사진 크게 보기', style: `background-image:url('${p.thumb}')`, onclick: () => showPhoto(p, ph) })), el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' }))
           : el('div', { class: 'strip' }, el('a', { class: 'go', href, 'aria-label': '이 기록 보기', text: '›' })),
         el('div', { class: 'ft', text: r.cover ? `핀은 사진을 찍은 곳 · 파란 선은 실제로 다닌 길${noLoc ? ` · 위치 없는 사진 ${noLoc}장은 지도에 안 올렸어요` : ''}` : '사진 위치가 없어 다녀온 곳(출발에서 가장 먼 곳)에 표시했어요 · 파란 선은 실제로 다닌 길' }));
     } else {
@@ -7380,6 +7364,86 @@ function cFindDetail(c) {
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
+// 홈 한가운데 '생활권 지도'(2026-11-08 1차 개발 지시): 최근 90일 실제 GPS 길을 옅게 겹쳐 내가 사는 동네가 드러나게 + 최근 기록의 위치 있는 대표 사진 핀.
+//   보기 전용 지도. 아래 '최근 이야기' 줄을 옆으로 넘기면 가운데 온 기록의 길이 지도에서 짙어져요(box.focus). 위치·길은 실제 기록만
+function cHomeHero() {
+  const box = el('div', { class: 'c-hero' }), mapEl = el('div', { class: 'c-map' });
+  const wNow = ls.get('walkNow', null);
+  const rec = wNow ? el('button', { class: 'c-rec live', onclick: () => { location.href = '?walk=1'; } }, el('span', { class: 'pl', text: '●' }),
+      `기록 중 · ${ls.get('trackName:' + wNow, `${modeOfT(wNow).label} 기록`)} · ${fmtDur(Math.max(0, Date.now() - ls.get('walkAt', Date.now())))}째`)
+    : el('button', { class: 'c-rec', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
+  const swoosh = el('span'); swoosh.innerHTML = '<svg width="170" height="16" viewBox="0 0 170 16" aria-hidden="true"><path d="M3 13C50 3 110 2 167 6" fill="none" stroke="#4FBBC6" stroke-width="3.5" stroke-linecap="round"/></svg>';
+  const note = el('div', { class: 'c-hero-note', style: 'display:none' });
+  box.append(mapEl, el('div', { class: 'c-slogan' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), swoosh), note, rec);
+  let m = null, focusLay = null, want = null, pinsById = {}, drawPins = null;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  box.focus = r => { want = r; if (!m || !r) return;
+    focusLay.clearLayers();
+    cSegs(r).forEach(s => { L.polyline(s, { color: '#fff', weight: 7, opacity: .95, interactive: false }).addTo(focusLay); L.polyline(s, { color: '#1D9EC0', weight: 4, opacity: 1, interactive: false }).addTo(focusLay); });
+    const bb = L.latLngBounds(r.tr.map(q => [q[0], q[1]])); if (r.cover) bb.extend([r.cover.lat, r.cover.lng]);
+    if (!m.getBounds().pad(-.12).contains(bb)) m.flyToBounds(bb.pad(.1), { paddingTopLeft: [40, 160], paddingBottomRight: [40, 120], maxZoom: 15, animate: !reduce, duration: .6 });
+    if (drawPins) drawPins(r.t); };
+  setTimeout(async () => {
+    const recs = cRecs(40);
+    if (!recs.length) { mapEl.append(el('div', { class: 'c-empty-hero' }, cSvg('route', 40, '#1D9EC0'), el('b', { text: '아직 기록이 없어요' }),
+      el('span', { text: '아래 기록하기를 누르고 다니면, 다닌 길과 사진을 찍은 곳이 이 지도 위에 모여요.' }))); return; }
+    const recent = recs.slice(0, 14); await Promise.all(recent.map(cPhotos));
+    let pins = recent.filter(r => r.cover).slice(0, 6), withPh = true;
+    if (!pins.length) { pins = recent.slice(0, 5); withPh = false; }
+    const items = pins.map(r => ({ r, at: withPh ? [r.cover.lat, r.cover.lng] : (q => [q[0], q[1]])(farPoint(r.tr)) }));
+    m = L.map(mapEl, { zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false });
+    mdTileLayer().addTo(m);
+    // 생활권: 최근 90일 기록의 실제 길을 옅게
+    const d90 = Date.now() - 90 * 864e5, life = recs.filter(r => r.a >= d90);
+    life.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3, opacity: .28, interactive: false }).addTo(m); }));
+    focusLay = L.layerGroup().addTo(m);
+    m.fitBounds(L.latLngBounds(items.map(i => i.at)).pad(.08), { paddingTopLeft: [46, 170], paddingBottomRight: [46, 128], maxZoom: 15, animate: false });
+    const lay = L.layerGroup().addTo(m);
+    drawPins = on => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0], isOn = g.list.some(x => x.r.t === on);
+      L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length, on: isOn }), keyboard: false, title: it.r.name, zIndexOffset: isOn ? 1000 : 0 })
+        .on('click', e => { L.DomEvent.stopPropagation(e); location.href = g.list.length > 1 ? './?map=1' : `./?my=1&t=${encodeURIComponent(it.r.t)}`; }).addTo(lay); }); };
+    drawPins(want && want.t); m.on('zoomend moveend', () => drawPins(want && want.t));
+    m.on('click', () => { location.href = './?map=1'; });
+    note.textContent = life.length > 1 ? `생활권 · 최근 90일 길 ${life.length}개` : withPh ? '사진을 찍은 곳' : '다녀온 곳'; note.style.display = '';
+    if (want) box.focus(want);
+  }, 0);
+  return box;
+}
+// 최근 이야기: 사진이 주인공인 가로 줄. 넘기면 위 지도가 따라오고(가운데 온 기록), 누르면 그 기록
+function cStoryStrip(hero) {
+  const wrap = el('div', { style: 'display:contents' });
+  setTimeout(async () => {
+    const recs = cRecs(12); if (!recs.length) return;
+    await Promise.all(recs.map(cPhotos));
+    const row = el('div', { class: 'c-strip', role: 'list' });
+    recs.forEach(r => { const p = r.first, d = new Date(r.a);
+      const it = el('a', { class: 'c-st', role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
+        el('i', { class: 'im', style: p ? `background-image:url('${p.thumb}')` : '' }, p ? null : ico(r.M.k, 34), r.ph.length > 1 ? el('b', { class: 'cnt', text: `${r.ph.length}` }) : null),
+        el('span', { class: 'dt' }, ico(r.M.k, 13), ` ${d.getMonth() + 1}.${d.getDate()} · ${r.walk >= 50 ? fmtDist(r.walk) : r.M.label}`),
+        el('b', { text: r.name }));
+      it.rec = r; row.append(it); });
+    let raf = 0, last = null;
+    // 맨 왼쪽에 붙은(넘김이 멈추는 자리) 기록을 골라요
+    const sync = () => { raf = 0; const c = row.getBoundingClientRect(), x0 = c.left + 16; let best = null, bd = 1e9;
+      for (const it of row.children) { const dd = Math.abs(it.getBoundingClientRect().left - x0); if (dd < bd) { bd = dd; best = it; } }
+      if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 4) best = row.lastChild;
+      if (best && best !== last) { last = best; [...row.children].forEach(x => x.classList.toggle('on', x === best)); hero.focus(best.rec); } };
+    row.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(sync); }, { passive: true });
+    wrap.replaceWith(el('div', { class: 'c-sec' }, el('h2', { text: '최근 이야기' }), el('a', { href: './?my=1' }, '모두 보기 ›')), row);
+    sync();
+  }, 0);
+  return wrap;
+}
+// 홈 → 발견 이어 주기: 근거 있는 발견 한 줄(발견 점검 계산, 읽기만). 없으면 안 보임
+function cFindLine() {
+  const slot = el('div', { style: 'display:contents' });
+  setTimeout(async () => { try {
+    const D = await lcGather(); if (!D.recs.length) return; const f = lcFind(D).found[0]; if (!f) return;
+    slot.replaceWith(el('a', { class: 'c-findline', href: './?find=1' }, el('span', { class: 'sp' }, cSvg('spark', 22, '#FF8A4C')),
+      el('span', { class: 'tx' }, el('small', { text: '내 기록에서 발견' }), el('b', { text: f.title })), el('span', { class: 'go', text: '›' })));
+  } catch (e) {} }, 0);
+  return slot;
+}
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
@@ -7387,9 +7451,6 @@ function viewLanding() {
   installSlot = el('div'); drawInstall();
   const memSlot = el('div', { style: 'display:contents' }); drawMemory(memSlot);
   document.documentElement.classList.add('c-page'); document.title = 'Map Photo Diary';
-  const bigBtn = (title, desc, onclick) => el('button', { class: 'card', style: 'border:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:20px;cursor:pointer;background:#fff;box-shadow:0 4px 16px rgba(20,37,59,.06)', onclick },
-    el('b', { class: 'with-ico', style: 'gap:8px;font-size:19px;letter-spacing:-.02em;color:var(--c-ink)' }, title),
-    el('span', { style: 'font-size:14.5px;color:var(--c-mu)', text: desc }));
   // 맨 위: MPD (5번 빨리 누르면 개발자 보기 켜기/끄기, 예전 'MPD' 딱지와 같은 동작) · 📸 가족 앨범 · ⚙ 설정
   const logo = el('div', { class: 'c-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary', onpointerdown: () => {
     const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
@@ -7399,18 +7460,23 @@ function viewLanding() {
   const top = el('div', { class: 'c-top' }, logo, el('span', { style: 'flex:1' }),
     el('a', { class: 'c-ibtn', href: './?album=1', 'aria-label': '가족 앨범', title: '가족 앨범', text: '📸' }),
     el('button', { class: 'c-ibtn', type: 'button', 'aria-label': '설정', title: '설정', onclick: appSettings }, cSvg('gear', 21)));
+  // 그 밖의 기능은 카드 대시보드 대신 한 줄씩 (예전 첫 화면에 있던 들어가는 길 그대로)
+  const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
+    el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), el('small', { text: sub })), el('span', { class: 'go', text: '›' }));
+  const hero = cHomeHero();
   app.replaceChildren(el('div', { class: 'stack c-ui', style: 'gap:16px' },
-    top,
-    cHomeHero(),
-    // 게임 · 대화 정리 · 실험실 · 가족 앨범 (예전 첫 화면 알약 그대로) + 지금 연 곳
-    el('div', { class: 'gm-pills' }, el('a', { class: 'gm-pill', href: './?album=1' }, '📸 가족 앨범'), el('a', { class: 'gm-pill', href: './?lab=mem' }, '🧪 추억 만들기'), el('a', { class: 'gm-pill', href: './?game=1' }, '🎮 게임'), el('a', { class: 'gm-pill', href: './?talk=1' }, '🎙 대화 정리'), wherePill(false, true)),
-    memSlot,
-    bigBtn('내 MPD 보기', '저장한 기록을 지도와 사진으로 다시 봐요', () => { location.href = './?my=1'; }),
-    bigBtn('MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로 보내요', openPastTrips),
-    bigBtn('모임방', '코드를 아는 사람끼리 MPD를 모아 보고, 마음에 드는 길을 따라가 봐요', () => { location.href = './?room=1'; }),
+    top, hero, cStoryStrip(hero), cFindLine(), memSlot,
+    el('div', { class: 'c-list' },
+      row('📤', 'MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', null, openPastTrips),
+      row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
+      row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
+      row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
+      row('🎮', '게임', '밥값 내기 · 2048 · 오목', './?game=1'),
+      row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1')),
     installSlot,
-    // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
-    el('div', { class: 'sub center', style: 'font-size:12px;opacity:.7;margin-top:-6px', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` })),
+    el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-4px' }, wherePill(false, true),
+      // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
+      el('span', { text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }))),
     cTabs('home'));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Photo Diary로 남아요 (이 휴대폰에만 저장)
