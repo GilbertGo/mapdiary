@@ -823,6 +823,40 @@ html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 .c-place b{font-size:14.5px;line-height:1.3}.c-place span{font-size:12.5px;color:var(--c-mu);margin-top:-4px}
 .c-card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(20,37,59,.06);display:flex;flex-direction:column;gap:8px}
 .c-ev{display:flex;flex-direction:column;gap:6px}.c-ev a{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:12px;background:#F3F7FA;text-decoration:none;color:var(--c-ink);font-size:14.5px}
+
+/* MPD HOME REVAMP — preserve existing real photo and GPS logic */
+html.c-home body{background:#f7fafb}
+.md-home-v4{position:relative;margin:-20px -20px 0;isolation:isolate}
+.md-cover-v4{position:relative;isolation:isolate;height:clamp(285px,38vh,350px);overflow:hidden;background:#244752;color:#fff}
+.md-cover-v4-bg{position:absolute;inset:0;z-index:-2;background:#244752 center/cover no-repeat}
+.md-cover-v4:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,32,42,.72) 0%,rgba(12,32,42,.21) 54%,rgba(12,32,42,.48) 100%)}
+.md-head-v4{display:flex;gap:9px;align-items:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px 0}
+.md-head-v4 .md-brand{display:flex;align-items:center;gap:9px;min-width:0}
+.md-head-v4 .md-brand svg{width:35px;height:44px;flex:none}
+.md-head-v4 .md-brand b{display:block;font-size:29px;line-height:1;letter-spacing:-.05em}
+.md-head-v4 .md-brand small{display:block;font-size:12px;margin-top:3px}
+.md-head-v4 .md-grow{flex:1}
+.md-head-v4 .md-ctrl{display:inline-grid;place-items:center;width:41px;height:41px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(12,38,47,.24);color:#fff;backdrop-filter:blur(7px)}
+.md-head-v4 .md-ctrl svg{width:21px;height:21px;stroke:currentColor}
+.md-cover-v4 h1{position:absolute;left:22px;right:20px;top:calc(124px + env(safe-area-inset-top,0px));font-weight:800;font-size:clamp(27px,7.3vw,34px);line-height:1.38;letter-spacing:-.052em;margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.17)}
+.md-map-v4{position:relative;margin:-26px 15px 0;z-index:2}
+.md-map-v4 .c-hero{height:clamp(345px,49vh,460px);min-height:345px;border-radius:26px;box-shadow:0 8px 25px rgba(17,64,72,.16);background:#e7f0ef}
+.md-map-v4 .c-slogan{display:none}
+.md-map-v4 .c-hero-note{top:76px;bottom:auto;left:15px;font-size:11px;max-width:calc(100% - 30px)}
+.md-map-v4 .c-rec{right:14px;left:auto;bottom:14px;margin:0;width:75px;height:75px;font-size:12px;box-shadow:0 5px 18px rgba(0,86,97,.2),0 0 0 3px #fff}
+.md-map-v4 .c-rec .pl{font-size:31px}
+.md-map-v4 .c-rec.live{width:auto;height:auto;min-height:62px;max-width:calc(100% - 28px);border-radius:18px;padding:8px 13px}
+.md-map-label-v4{position:absolute;top:14px;left:14px;z-index:700;max-width:calc(100% - 28px);display:flex;flex-direction:column;gap:3px;padding:12px 16px;text-decoration:none;border-radius:17px;background:rgba(255,255,255,.96);box-shadow:0 3px 15px rgba(18,51,58,.1);color:#1b424b}
+.md-map-label-v4 b{font-size:15px;font-weight:800}.md-map-label-v4 small{font-size:11px;color:#667f89}
+.md-more-v4{border:1px solid #e1eaec;border-radius:17px;overflow:hidden;background:#fff}
+.md-more-v4>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;padding:17px 18px;font-size:15px;font-weight:800;color:#27545f}
+.md-more-v4>summary::-webkit-details-marker{display:none}.md-more-v4>summary:after{content:"⌄"}
+.md-more-v4[open]>summary:after{transform:rotate(180deg)}
+.md-more-v4 .c-list{box-shadow:none;border-radius:0;border-top:1px solid #edf1f2}
+html.c-home .c-st{width:148px}html.c-home .c-findline{border-color:#d7edea;background:linear-gradient(110deg,#eefaf7,#fff);box-shadow:none}
+@media(max-width:350px){.md-head-v4{padding-left:14px;padding-right:14px;gap:5px}.md-head-v4 .md-brand b{font-size:25px}.md-head-v4 .md-ctrl{width:36px;height:36px}.md-map-v4{margin-left:10px;margin-right:10px}.md-cover-v4 h1{left:18px}}
+/* END MPD HOME REVAMP */
+
 </style>
 </head>
 <body>
@@ -2785,7 +2819,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-15';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.09-16-home';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -7710,6 +7744,41 @@ async function cHomeBg(bg, withPh, nBub) {
   if (phPeopleKnown(head.first) !== 1) set(head.first);             // 모르면 일단 예전처럼(가장 최근 대표 사진), 사람이 있으면 아래에서 바꿈
   for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) return; if (h === 0) return set(p); }
 }
+
+/* MPD home uses real user photos and the existing GPS-based, read-only Leaflet map. */
+function cHomeV4(){
+  const root=el('div',{class:'md-home-v4'});
+  const cover=el('section',{class:'md-cover-v4','aria-label':'MPD · 나의 일상'});
+  const bg=el('div',{class:'md-cover-v4-bg'});
+  bg.style.backgroundImage=`url("${homeHeroUrl()}")`;
+  const control=(title,body,fn)=>{
+    const b=el('button',{class:'md-ctrl',type:'button','aria-label':title,onclick:fn});
+    b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+    return b;
+  };
+  const brand=el('div',{class:'md-brand'},cLogoSvg(),el('span',{},el('b',{text:'MPD'}),el('small',{text:'Map Photo Diary'})));
+  const top=el('div',{class:'md-head-v4'},brand,el('span',{class:'md-grow'}),
+    control('기록 검색','<circle cx="11" cy="11" r="7"/><path d="m20 20-4.5-4.5"/>',cSearch),
+    control('내 설정','<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/>',appSettings));
+  cover.append(bg,top,el('h1',{},'일상을 발견하고,',el('br'),'행복을 넓히다.'));
+  const hero=cHomeHero();
+  const map=el('section',{class:'md-map-v4','aria-label':'사진과 실제 GPS 기록 지도'},hero,
+    el('a',{class:'md-map-label-v4',href:'./?map=1'},
+      el('b',{text:'나의 이야기 지도 ↗'}),
+      el('small',{text:'내 사진 · 장소 · 실제 이동 경로'})));
+  root.append(cover,map);
+  if(!ls.get('homeHero','')) setTimeout(async()=>{
+    try{
+      const a=cRecs(15);
+      for(let i=0;i<a.length;i+=5) await Promise.all(a.slice(i,i+5).map(cPhotos));
+      const selected=a.filter(r=>r.first);
+      if(selected.length && bg.isConnected) await cHomeBg(bg,selected,3);
+    }catch(e){}
+  },0);
+  root.focus=r=>hero.focus(r);
+  return root;
+}
+
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
@@ -7720,16 +7789,17 @@ function viewLanding() {
   // 시안 한 화면 아래(스크롤): 예전 첫 화면에 있던 들어가는 길은 그대로 한 줄씩
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), el('small', { text: sub })), el('span', { class: 'go', text: '›' }));
-  app.replaceChildren(cHomePhoto(),
+  const homeV4 = cHomeV4();
+  app.replaceChildren(homeV4,
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
-      memSlot,
-      el('div', { class: 'c-list' },
+      cStoryStrip(homeV4), cFindLine(), memSlot,
+      el('details', { class: 'md-more-v4' }, el('summary', { text: '다른 기능 보기' }), el('div', { class: 'c-list' },
         row('📤', 'MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', null, openPastTrips),
         row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
         row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
         row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
         row('🎮', '게임', '밥값 내기 · 2048 · 오목', './?game=1'),
-        row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1')),
+        row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1'))),
       installSlot,
       el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' }, wherePill(false, true),
         // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
