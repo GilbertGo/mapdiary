@@ -667,6 +667,14 @@ html.vw-page .vw-z .bar{background:#2C2C2E}html.vw-page .vw-rec{background:#2C2C
 html.vw-page .vw-leg{color:#AEAEB2}
 html.vw-page .gallery img{box-shadow:none}
 html.vw-page{--alert-ink:#FF6B6B}html.vw-page .btn.primary{background:#0A84FF;color:#fff}
+.sp-cmp{display:flex;flex-direction:column;gap:8px}.sp-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sp-f{margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}.sp-img{aspect-ratio:3/4;width:100%;border:0;border-radius:14px;background:#E3EFF8 center/cover no-repeat;cursor:zoom-in;padding:0;display:flex;align-items:center;justify-content:center}
+.sp-f figcaption{display:flex;flex-direction:column;gap:1px;font-size:13px;min-width:0}.sp-f figcaption b{font-size:14px;color:#14253B}.sp-f figcaption span{color:#61758B}
+.sp-f figcaption a{color:#1D9EC0;font-weight:700;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}.sp-strip::-webkit-scrollbar{display:none}
+.sp-th{flex:none;width:58px;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit}
+.sp-th i{display:block;width:58px;height:58px;border-radius:12px;background:#E3EFF8 center/cover no-repeat;border:2.5px solid transparent;box-sizing:border-box}
+.sp-th.on i{border-color:#F2665E}.sp-th small{font-size:11px;color:#61758B}.sp-th.gone i{opacity:.35}
 .ag-flash{animation:agf 1.2s ease-out}@keyframes agf{0%{box-shadow:0 0 0 3px #0A84FF}100%{box-shadow:0 0 0 0 rgba(10,132,255,0)}}
 .ag-box{display:flex;flex-direction:column;gap:8px;padding:14px 16px}.ag-h{font-size:16px}.ag-s{font-size:13px;margin:0}
 .ag-chips{display:flex;flex-wrap:wrap;gap:8px}.ag-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer;max-width:100%}
@@ -2788,9 +2796,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.08-16';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.09-17';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '하루 넘게 켜진 채 쉬고 있는 기록이 있으면 첫 화면과 기록 화면에서 물어봐요 · 그때 끝난 걸로 저장: 마지막 위치 시각에 끝내고 길·사진·메모는 그대로 · 계속 기록: 그대로 이어서(하루 동안 다시 안 물어요) · 저절로 끝내거나 지우지 않아요';
+const UI_NOTES = '발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 날짜 사진을 누르면 비교가 바뀌고, 큰 사진을 누르면 원본으로 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6885,14 +6893,60 @@ async function lcGather() {
     else if (have) {
       const db = await new Promise((res, rej) => { const r = indexedDB.open('baldojang'); r.onupgradeneeded = () => { r.transaction.abort(); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
       if (db.objectStoreNames.contains('photos')) photos = await new Promise((res, rej) => { const out = [], q = db.transaction('photos', 'readonly').objectStore('photos').openCursor();
-        q.onsuccess = () => { const c = q.result; if (!c) return res(out); const v = c.value || {}; out.push({ t: v.t, ts: v.ts, lat: v.lat, lng: v.lng, v: !!v.v }); c.continue(); }; q.onerror = () => rej(q.error); });
+        q.onsuccess = () => { const c = q.result; if (!c) return res(out); const v = c.value || {}; out.push({ id: v.id, t: v.t, ts: v.ts, lat: v.lat, lng: v.lng, v: !!v.v }); c.continue(); }; q.onerror = () => rej(q.error); });
       db.close();
     }
   } catch (e) { photoNote = '사진 정보를 읽지 못해 사진은 빼고 셈했어요'; }
   return { recs, photos, photoNote, now: Date.now() };
 }
 const LC_PEAKS = [['한라산', 1947], ['지리산', 1915], ['설악산', 1708], ['북한산', 836]];
-const LC_RULES = ['다시 간 곳', '같은 곳, 걸린 시간 변화', '요일·시간대 습관', '같은 달 반복', '쌓인 거리·높이', '오래 머문 곳', "'다시 갈래요' 했는데 아직 안 간 곳", '사진이 몰린 순간', '날씨와 나들이', '시계 러닝 몸 변화'];
+const LC_RULES = ['다시 간 곳', '같은 곳, 걸린 시간 변화', '요일·시간대 습관', '같은 달 반복', '쌓인 거리·높이', '오래 머문 곳', "'다시 갈래요' 했는데 아직 안 간 곳", '사진이 몰린 순간', '날씨와 나들이', '시계 러닝 몸 변화', '같은 곳, 다른 시간 사진'];
+// ⑪ 같은 곳, 다른 시간 사진 (2026-11-09 발견 엔진): 사진의 위치·찍은 날만으로 '같은 자리에서 다른 날 찍은 사진'을 묶어요. 순수 함수(읽기만)
+// 지키는 것: 위치 없는·(0,0)·동영상 사진 뺌 / 기록이 지워진(목록에 없는) 사진 뺌 / 같은 사진이 두 번 들어간 것(찍은 시각 2초·5m 안)은 하나로 /
+//           같은 날 여러 장은 가운데에 가장 가까운 한 장 / 사진 위치는 GPS·찍은 시각으로 짐작한 값이라 반경 LC_SP_M(50m)로 묶음 /
+//           집처럼 기록의 출발·끝 점이 3번 넘게 모인 곳(200m 안)은 빼요(집 사진이 '발견'으로 뜨지 않게)
+var LC_SP_M = 50;   // var: 라우팅이 스크립트 중간에 돌아도 lcFind는 나중에 불려서 괜찮지만 TDZ를 피하려고
+function lcSamePlace(D) {
+  const recs = D.recs || [], byT = {}; for (const r of recs) byT[r.t] = r;
+  const ok = p => p && !p.v && p.ts && byT[p.t] && Number.isFinite(p.lat) && Number.isFinite(p.lng) && (Math.abs(p.lat) > .001 || Math.abs(p.lng) > .001) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+  const all = (D.photos || []).filter(p => p && !p.v);
+  const P0 = all.filter(ok);
+  const stat = { photos: all.length, located: P0.length, orphan: all.filter(p => p.ts && !byT[p.t]).length, dup: 0, home: 0 };
+  // 같은 사진 두 번(같은 id, 또는 찍은 시각 2초·5m 안) → 하나로
+  const P = [], seen = new Set();
+  for (const p of P0.slice().sort((a, b) => a.ts - b.ts)) {
+    if (p.id != null && seen.has(p.id)) { stat.dup++; continue; }
+    const tw = P.slice(-8).find(q => Math.abs(q.ts - p.ts) <= 2000 && dist(q.lat, q.lng, p.lat, p.lng) <= 5);
+    if (tw) { stat.dup++; continue; }
+    if (p.id != null) seen.add(p.id); P.push(p);
+  }
+  // 집 같은 곳: 기록의 출발·끝 점을 200m 안끼리 묶어 3번 넘게 모인 곳(기록 두 개 넘게)
+  const ends = []; for (const r of recs) for (const q of [r.s, r.e]) if (q) { const g = ends.find(g => dist(g.lat, g.lng, q[0], q[1]) <= 200); if (g) g.n++; else ends.push({ lat: q[0], lng: q[1], n: 1 }); }
+  const homes = ends.filter(g => g.n >= 3);
+  // 50m 안끼리 묶기 (가운데는 평균으로 옮겨 가며)
+  const cl = [];
+  for (const p of P.slice().sort((a, b) => a.lat - b.lat || a.lng - b.lng)) {
+    const g = cl.find(g => dist(g.lat, g.lng, p.lat, p.lng) <= LC_SP_M);
+    if (g) { g.p.push(p); g.lat += (p.lat - g.lat) / g.p.length; g.lng += (p.lng - g.lng) / g.p.length; } else cl.push({ lat: p.lat, lng: p.lng, p: [p] });
+  }
+  const out = [];
+  for (const g of cl) {
+    const byDay = {}; for (const p of g.p) (byDay[lcDay(p.ts)] = byDay[lcDay(p.ts)] || []).push(p);
+    const dayKeys = Object.keys(byDay).sort(); if (dayKeys.length < 2) continue;
+    if (homes.some(h => dist(h.lat, h.lng, g.lat, g.lng) <= 200)) { stat.home++; continue; }
+    const days = dayKeys.map(d => { const best = byDay[d].slice().sort((a, b) => dist(a.lat, a.lng, g.lat, g.lng) - dist(b.lat, b.lng, g.lat, g.lng) || a.ts - b.ts)[0];
+      return { day: d, n: byDay[d].length, photo: { id: best.id, t: best.t, ts: best.ts, lat: best.lat, lng: best.lng }, rec: { t: best.t, name: byT[best.t].name, label: byT[best.t].label, ev: lcRecName(byT[best.t]) } }; });
+    const spread = Math.max(...g.p.map(p => dist(p.lat, p.lng, g.lat, g.lng)));
+    // 이름: 80m 안 이름 있는 좋은 곳·들른 곳 → 그 기록의 장소 이름 → 기록 이름
+    let name = '';
+    for (const r of recs) for (const s of r.spots || []) if (!name && s && s.n && Number.isFinite(s.lat) && !/^\d{1,2}:\d{2} 들른 곳$/.test(s.n) && dist(s.lat, s.lng, g.lat, g.lng) <= 80) name = s.n;
+    if (!name) name = (days.map(d => byT[d.photo.t].where).find(Boolean)) || days[days.length - 1].rec.name || '같은 자리';
+    out.push({ lat: +g.lat.toFixed(6), lng: +g.lng.toFixed(6), name, days, span: days[days.length - 1].photo.ts - days[0].photo.ts, n: g.p.length, spread: Math.round(spread) });
+  }
+  out.sort((a, b) => b.days.length - a.days.length || b.span - a.span);
+  return { list: out, stat };
+}
+function lcSpan(ms) { const d = Math.round(ms / 864e5); if (d >= 365) { const y = Math.floor(d / 365), mo = Math.round((d - y * 365) / 30.4); return `${y}년${mo ? ` ${mo}개월` : ''}`; } if (d >= 45) return `${Math.round(d / 30.4)}개월`; return `${d}일`; }
 // 계산: D = { recs, photos, now } → { found: [{ rule, title, sub, n, how, trust, ev: [기록 이름] }], none: [{ rule, why }] }
 // 근거가 모자라면 found에 넣지 않고 none에 까닭만 남겨요(억지 발견 금지)
 function lcFind(D) {
@@ -6985,6 +7039,15 @@ function lcFind(D) {
     if (Math.abs(d) >= .1) add({ rule: LC_RULES[9], title: `같은 심박에서 ${d > 0 ? '더 빨리' : '더 느리게'} 달려요 · ${Math.round(Math.abs(d) * 100)}%`, sub: `처음 두 번 분당 ${Math.round(ea * 10) / 10}m/심박 → 최근 두 번 ${Math.round(eb * 10) / 10}m/심박`, n: hr.length, how: '시계 심박이 있는 러닝에서 움직인 동안 1분에 간 거리 ÷ 평균 심박을 처음 두 번과 최근 두 번 평균으로 견줬어요(10% 넘게 달라야)', trust: '중간 · 손목 심박·날씨·코스에 따라 흔들려요', ev: hr.map(lcRecName) });
     else skip(LC_RULES[9], `시계 러닝 ${hr.length}개 · 같은 심박에서 빠르기 변화가 10% 안이에요`); }
   else skip(LC_RULES[9], `시계 심박이 있는 러닝이 ${hr.length}개뿐이에요 (3개부터)`);
+  // ⑪ 같은 곳, 다른 시간 사진: 사진 위치가 50m 안이고 찍은 날이 다른 사진 묶음(최대 3곳)
+  const SP = lcSamePlace(D);
+  for (const g of SP.list.slice(0, 3)) {
+    const a = g.days[0], z = g.days[g.days.length - 1];
+    add({ rule: LC_RULES[10], title: `${g.name}, 같은 자리에서 ${g.days.length}번`, sub: `${a.day} → ${z.day} · ${lcSpan(g.span)} 사이 · 사진 ${g.n}장`,
+      n: new Set(g.days.map(d => d.rec.t)).size, how: `사진의 위치가 서로 ${LC_SP_M}m 안이고 찍은 날이 다른 사진을 묶었어요. 같은 날 여러 장은 가운데에 가장 가까운 한 장만, 같은 사진이 두 번 들어간 건 하나로 셌어요. 집처럼 출발·도착이 자주 모인 곳(200m 안)은 뺐어요`,
+      trust: `중간 · 사진 위치는 휴대폰 GPS나 찍은 시각으로 짐작한 값이라 수십 m 다를 수 있어요 (이 묶음은 가운데에서 ${g.spread}m 안)`, ev: [...new Set(g.days.map(d => d.rec.ev))], sp: g });
+  }
+  if (!SP.list.length) skip(LC_RULES[10], D.photoNote || (SP.stat.located ? `위치 있는 사진 ${SP.stat.located}장 중 ${LC_SP_M}m 안에서 다른 날 찍은 사진이 없어요${SP.stat.home ? ` (집 근처 ${SP.stat.home}곳은 뺐어요)` : ''}` : `위치가 있는 사진이 없어요 (사진 ${SP.stat.photos}장${SP.stat.orphan ? ` · 지운 기록의 사진 ${SP.stat.orphan}장 뺌` : ''})`));
   return { found, none };
 }
 function lcSummary(D) {
@@ -7393,10 +7456,10 @@ async function viewStoryMap() {
   // 필터: 이 휴대폰에 실제로 있는 종류만 (많은 순) + 맛집(맛집으로 표시한 곳이 있을 때)
   const byK = {}; recs.forEach(r => { byK[r.M.k] = (byK[r.M.k] || 0) + 1; });
   let filt = 'all', sel = null, allRoutes = false;
-  const drawChips = () => chips.replaceChildren(
+  const drawChips = () => chips.replaceChildren(...[
     el('button', { class: 'c-chip' + (filt === 'all' ? ' on' : ''), 'aria-pressed': String(filt === 'all'), onclick: () => setF('all') }, '전체'),
     ...Object.keys(byK).sort((a, b) => byK[b] - byK[a]).map(k => el('button', { class: 'c-chip' + (filt === k ? ' on' : ''), 'aria-pressed': String(filt === k), onclick: () => setF(k) }, ico(k, 17), modeByK(k).label)),
-    foods.length ? el('button', { class: 'c-chip' + (filt === 'food' ? ' on' : ''), 'aria-pressed': String(filt === 'food'), onclick: () => setF('food') }, '🍽 맛집') : null);
+    foods.length ? el('button', { class: 'c-chip' + (filt === 'food' ? ' on' : ''), 'aria-pressed': String(filt === 'food'), onclick: () => setF('food') }, '🍽 맛집') : null].filter(Boolean));   // null은 'null' 글자로 들어가서 빼요
   const shown = () => items.filter(i => filt === 'all' || i.k === filt);
   const lay = L.layerGroup().addTo(m), routeLay = L.layerGroup().addTo(m), allLay = L.layerGroup().addTo(m);
   const draw = () => {
@@ -7450,6 +7513,14 @@ async function viewStoryMap() {
   m.on('zoomend', draw);
   drawChips(); draw();
   const want = qs.get('t'), first = want && items.find(i => i.kind === 'rec' && i.r.t === want);
+  // &at=위도,경도 (발견 '같은 곳, 다른 시간'에서): 그 자리를 산호 동그라미로 보이고 가까이
+  const atM = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(qs.get('at') || ''), at = atM && [+atM[1], +atM[2]];
+  if (at && Math.abs(at[0]) <= 90 && Math.abs(at[1]) <= 180) {
+    if (first) pick(first);
+    L.circle(at, { radius: LC_SP_M || 50, color: '#F2665E', weight: 3, fillColor: '#F2665E', fillOpacity: .15, interactive: false }).addTo(m);
+    L.circleMarker(at, { radius: 6, color: '#fff', weight: 3, fillColor: '#F2665E', fillOpacity: 1, interactive: false }).addTo(m);
+    m.setView(at, 17); return;
+  }
   if (first) pick(first); else m.fitBounds(L.latLngBounds(items.map(i => i.at)).pad(.15), { paddingTopLeft: [30, 150], paddingBottomRight: [30, 60], maxZoom: 15 });
 }
 // ---------- 발견 (?find=1): 발견 점검(lcGather·lcFind, 읽기만)의 근거 있는 발견을 사진과 함께 ----------
@@ -7462,14 +7533,16 @@ async function viewDiscover() {
   const D = await lcGather(), F = lcFind(D);
   const byName = {}; D.recs.forEach(r => { (byName[lcRecName(r)] = byName[lcRecName(r)] || []).push(r.t); });
   const cards = F.found.map(f => ({ title: f.title, sub: f.sub, ids: [...new Set((f.ev || []).flatMap(n => byName[n] || []))], f }));
+  { const i = cards.findIndex(c => c.f && c.f.sp); if (i > 0) cards.unshift(cards.splice(i, 1)[0]); }   // 같은 곳, 다른 시간 사진을 맨 앞에 (2026-11-09)
   const mem = memoryPick();
   if (mem) cards.splice(1, 0, { title: `${mem.yr}년 전 ${mem.off ? '이맘때' : '오늘'} · ${mem.x.info.name}`, sub: `${lcDay(mem.x.info.startAt)} · ${modeOfT(mem.x.t).label}`, ids: [mem.x.t],
     f: { how: '해마다 같은 날(앞뒤 3일)에 남긴 기록이에요', trust: '높음 · 기록 날짜', n: 1 } });
-  const cover = async ids => { for (const t of ids) { const ps = await photoImgs(t); if (ps.length) { const cid = ls.get('walkCover:' + t, null); const p = (cid && ps.find(x => x.id === cid)) || ps[Math.floor(ps.length / 2)]; return p.blob ? URL.createObjectURL(p.blob) : p.thumb; } } return null; };
+  const cover = async (ids, c) => { if (c && c.f && c.f.sp) { const p = await lcPhotoGet(c.f.sp.days[c.f.sp.days.length - 1].photo); if (p) return phSrc(p); }
+    for (const t of ids) { const ps = await photoImgs(t); if (ps.length) { const cid = ls.get('walkCover:' + t, null); const p = (cid && ps.find(x => x.id === cid)) || ps[Math.floor(ps.length / 2)]; return p.blob ? URL.createObjectURL(p.blob) : p.thumb; } } return null; };
   const car = el('div', { class: 'c-car' }), dots = el('div', { class: 'c-dots', 'aria-hidden': 'true' });
   const top = cards.slice(0, 5);
   for (const c of top) {
-    const u = await cover(c.ids), k = c.ids[0] ? modeOfT(c.ids[0]).k : 'pin';
+    const u = await cover(c.ids, c), k = c.ids[0] ? modeOfT(c.ids[0]).k : 'pin';
     car.append(el('button', { class: 'c-hero-card', style: u ? `background-image:url('${u}')` : '', onclick: () => cFindDetail(c) },
       u ? null : el('span', { class: 'big' }, ico(k, 90)),
       el('div', { class: 'in' }, el('span', { class: 'tag', text: '내 기록에서 발견한 이야기' }), el('b', { text: c.title }), c.sub ? el('small', { text: c.sub }) : null),
@@ -7511,18 +7584,44 @@ async function viewDiscover() {
     want.length ? row : el('div', { class: 'c-card' }, el('span', { class: 'sub', text: "맛집에 '😋 다시 갈래요'를 고르거나 기록 중 ★ 좋은 곳을 남기면 여기에 모여요." })),
     el('a', { class: 'link', href: './?lab=check', style: 'align-self:center;color:var(--c-mu);font-size:14px;padding:10px 0', text: `🔎 발견의 근거 자세히 보기 (점검 화면)${F.none.length ? ` · 보여 주지 않은 후보 ${F.none.length}개` : ''}` })].filter(Boolean));
 }
+// 사진 하나를 id로 (그 기록의 사진 목록에서, 읽기만). 지워졌으면 null
+async function lcPhotoGet(ph) { try { const ps = await photoImgs(ph.t); return ps.find(x => x.id === ph.id) || null; } catch { return null; } }
+// 같은 곳, 다른 시간 비교 칸: 위 큰 두 칸(처음 | 최근, 아래 화살표로 다른 날로 바꿈) · 아래 날마다 한 장 줄(누르면 원본 크게 보기) · 날마다 '그날 기록'
+function spCompare(g) {
+  const box = el('div', { class: 'sp-cmp' }), pair = el('div', { class: 'sp-pair' }), strip = el('div', { class: 'sp-strip', role: 'list' }), note = el('div', { class: 'sub', style: 'font-size:12px' });
+  let L = 0, R = g.days.length - 1, got = [];
+  const side = (i, lab) => { const d = g.days[i], p = got[i];
+    return el('figure', { class: 'sp-f' },
+      el('button', { type: 'button', class: 'sp-img', 'aria-label': `${d.day} 사진 원본 크게 보기`, style: p ? `background-image:url('${phSrc(p)}')` : '', onclick: () => p && showPhoto(p, got.filter(Boolean)) }, p ? null : el('span', { class: 'sub', text: '사진을 찾지 못했어요' })),
+      el('figcaption', {}, el('b', { text: lab }), el('span', { text: d.day.replace(/\./g, '. ') }),
+        el('a', { href: `./?my=1&t=${encodeURIComponent(d.rec.t)}`, text: `${d.rec.name || d.rec.label} ›` }))); };
+  const paint = () => { pair.replaceChildren(side(L, L === 0 ? '처음' : '그때'), side(R, R === g.days.length - 1 ? '최근' : '그때'));
+    [...strip.children].forEach((b, i) => { b.classList.toggle('on', i === L || i === R); }); };
+  const pick = i => { if (i === L || i === R) { if (got[i]) showPhoto(got[i], got.filter(Boolean)); return; }   // 이미 고른 사진이면 원본 크게
+    if (i < R) L = i; else R = i; paint(); };
+  g.days.forEach((d, i) => strip.append(el('button', { type: 'button', class: 'sp-th', role: 'listitem', 'aria-label': `${d.day} 사진`, onclick: () => pick(i) }, el('i'), el('small', { text: d.day.slice(2).replace(/\./g, '.') }))));
+  box.append(pair, g.days.length > 2 ? el('div', { class: 'sub', style: 'font-size:12px;margin:2px 0 0', text: '아래 날짜 사진을 누르면 위 비교가 바뀌어요 · 큰 사진을 누르면 원본' }) : null, strip, note);
+  paint();
+  (async () => { got = await Promise.all(g.days.map(d => lcPhotoGet(d.photo)));
+    [...strip.children].forEach((b, i) => { const p = got[i]; if (p) b.firstChild.style.backgroundImage = `url('${p.thumb || phSrc(p)}')`; else b.classList.add('gone'); });
+    const miss = got.filter(x => !x).length; note.textContent = `이 자리 가운데에서 ${g.spread}m 안 · 사진 ${g.n}장 중 날마다 한 장${miss ? ` · 지금 찾을 수 없는 사진 ${miss}장` : ''}`;
+    paint(); })();
+  return box;
+}
 // 발견 카드를 누르면: 무엇을 어떻게 셌는지 · 근거 기록 · 지도에서 보기
 function cFindDetail(c) {
   const f = c.f || {};
   const bg = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet c-ui', role: 'dialog', 'aria-label': c.title },
     el('h2', { text: c.title }), c.sub ? el('p', { class: 'sub', style: 'margin:0', text: c.sub }) : null,
+    f.sp ? spCompare(f.sp) : null,   // 같은 곳, 다른 시간: 처음·최근 나란히 + 날마다 한 장 (2026-11-09)
     el('div', { class: 'c-card', style: 'background:#F3F7FA;box-shadow:none;gap:4px' },
       el('b', { text: `근거 기록 ${c.ids.length || f.n || 0}개${f.trust ? ` · 믿을 만함 ${f.trust}` : ''}` }), f.how ? el('span', { class: 'sub', style: 'font-size:14px', text: `어떻게 셌나: ${f.how}` }) : null),
     c.ids.length ? el('div', { class: 'c-ev' }, ...c.ids.slice(0, 12).map(t => el('a', { href: `./?my=1&t=${encodeURIComponent(t)}` }, el('span', { text: ls.get('trackName:' + t, '기록') }), el('span', { class: 'sub', text: `${lcDay((trackLoad(t)[0] || [])[2] || 0)} ›` })))) : null,
     // ↻ 다시 가기 (2026-11-09 P1): 근거 기록 중 가장 최근 것으로 이 길 다시 가기 · 길찾기
     (() => { const last = c.ids.slice().sort((p, q) => ((trackLoad(q)[0] || [])[2] || 0) - ((trackLoad(p)[0] || [])[2] || 0))[0]; return last ? againBox(last, { light: true }) : null; })(),
-    c.ids.length ? el('a', { class: 'btn line full', href: `./?map=1&t=${encodeURIComponent(c.ids[c.ids.length - 1])}` }, cSvg('pin', 20, '#1D9EC0'), ' 지도에서 보기') : null,
+    f.sp ? el('a', { class: 'btn line full', href: `./?map=1&t=${encodeURIComponent(f.sp.days[f.sp.days.length - 1].photo.t)}&at=${f.sp.lat},${f.sp.lng}` }, cSvg('pin', 20, '#1D9EC0'), ' 지도에서 이 자리 보기')
+      : c.ids.length ? el('a', { class: 'btn line full', href: `./?map=1&t=${encodeURIComponent(c.ids[c.ids.length - 1])}` }, cSvg('pin', 20, '#1D9EC0'), ' 지도에서 보기') : null,
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
