@@ -823,6 +823,51 @@ html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 .c-place b{font-size:14.5px;line-height:1.3}.c-place span{font-size:12.5px;color:var(--c-mu);margin-top:-4px}
 .c-card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(20,37,59,.06);display:flex;flex-direction:column;gap:8px}
 .c-ev{display:flex;flex-direction:column;gap:6px}.c-ev a{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:12px;background:#F3F7FA;text-decoration:none;color:var(--c-ink);font-size:14.5px}
+
+/* MPD REAL MAP CONCEPT: opt-in ?design=1, original home unchanged */
+.md-real-concept{min-height:90vh;background:#f6faf8;padding-bottom:15px;color:#193f43;overflow:hidden}
+.md-real-concept .md-rc-photo{height:370px;margin:12px 12px 0;border-radius:26px;position:relative;overflow:hidden;background:#3b645e center/cover no-repeat}
+.md-real-concept .md-rc-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,43,42,.5),rgba(5,36,35,.08) 32%,rgba(8,36,35,.18) 52%,rgba(7,37,38,.85) 100%);pointer-events:none}
+.md-rc-top{position:absolute;z-index:2;left:20px;right:16px;top:20px;display:flex;align-items:center;gap:8px;color:white}
+.md-rc-brand{display:flex;gap:7px;align-items:center;font-weight:850;font-size:25px;letter-spacing:-1.5px}
+.md-rc-brand svg{width:33px;height:41px}
+.md-rc-brand small{font-size:10px;font-weight:500;letter-spacing:0;display:block}
+.md-rc-top .md-rc-spacer{flex:1}
+.md-rc-top button{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#ffffff23;border:1px solid #ffffff81;color:white;font-size:20px}
+.md-rc-photo-copy{z-index:2;position:absolute;left:23px;right:20px;bottom:96px;color:#fff}
+.md-rc-photo-copy em{font-size:10px;font-weight:800;letter-spacing:.12em;color:#b6ffea;font-style:normal}
+.md-rc-photo-copy h1{margin:10px 0 9px;font-size:clamp(25px,7.6vw,34px);line-height:1.26;letter-spacing:-.075em;font-weight:820}
+.md-rc-photo-copy p{font-size:12px;line-height:1.5;margin:0;color:#ffffffde}
+.md-rc-photo-foot{position:absolute;bottom:0;left:0;right:0;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:14px 19px;min-height:70px;background:#0c383852;border-top:1px solid #ffffff51;backdrop-filter:blur(10px);color:#fff}
+.md-rc-photo-foot b{display:block;font-size:13px}
+.md-rc-photo-foot small{font-size:10px;color:#d9f8f3}
+.md-rc-photo-foot a{width:40px;height:40px;border-radius:50%;border:1px solid #ffffff88;display:grid;place-items:center;color:white;font-size:20px;text-decoration:none}
+.md-rc-mapcard{position:relative;z-index:3;margin:-24px 22px 15px;background:#fff;border-radius:23px;overflow:hidden;box-shadow:0 10px 30px #234f4625;border:1px solid #e0eeea}
+.md-rc-mhead{padding:17px 15px 12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.md-rc-mhead span{display:block;color:#6b8b87;font-size:10px;font-weight:650;letter-spacing:.04em}
+.md-rc-mhead h2{font-size:18px;margin:3px 0 0;letter-spacing:-.05em;color:#174b49}
+.md-rc-mhead a{font-size:11px;font-weight:800;color:#138b87;text-decoration:none;border-radius:25px;background:#e9f8f3;padding:9px 11px;white-space:nowrap}
+.md-rc-mapcard .c-hero{height:210px;min-height:210px;border-radius:0;margin:0;box-shadow:none;background:#e5efe8}
+.md-rc-mapcard .c-map{height:100%;width:100%;min-height:210px}
+.md-rc-mapcard .c-slogan{display:none!important}
+.md-rc-mapcard .c-hero-note{left:9px;top:8px;bottom:auto;max-width:calc(100% - 18px);right:auto;font-size:10px;z-index:550;padding:6px 9px;pointer-events:none}
+.md-rc-mapcard .c-rec{width:55px;height:55px;right:12px;bottom:11px;left:auto;top:auto;box-shadow:0 4px 14px #205d5640}
+.md-rc-mapcard .c-rec .pl{font-size:20px}
+.md-rc-mapcard .c-rec.live{width:auto}
+.md-rc-mapcard .leaflet-tile-pane{filter:saturate(.76) brightness(1.04)}
+.md-rc-mapfoot{padding:11px 15px;color:#597d78;font-size:11px;line-height:1.55;background:#fff}
+.md-rc-mapfoot strong{color:#207d7c;font-weight:800}
+.md-rc-section{padding:2px 16px}
+.md-rc-section .c-sec{margin:7px 1px 9px}
+.md-rc-section .c-sec h2{font-size:22px;letter-spacing:-.05em}
+.md-rc-section .c-strip{padding:0 0 12px;scroll-snap-type:x mandatory}
+.md-rc-section .c-st{scroll-snap-align:start}
+.md-rc-find{padding:10px 16px 16px}
+.md-rc-find .c-findline{margin:0}
+.md-rc-label{font-size:10px;font-weight:800;color:#43aaa4;letter-spacing:.1em;margin:10px 0 2px 4px}
+@media(max-width:360px){.md-real-concept .md-rc-photo{height:343px;margin:8px 8px 0}.md-rc-mapcard{margin-left:15px;margin-right:15px}.md-rc-photo-copy h1{font-size:27px}.md-rc-mapcard .c-hero{height:195px;min-height:195px}}
+/* END MPD REAL MAP CONCEPT */
+
 </style>
 </head>
 <body>
@@ -2785,7 +2830,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.10-21-claude-home';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.10-22-real-map-concept-branch';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '메인화면을 Claude가 만든 사진·말풍선 디자인으로 복원했어요 · 기존 기록·지도·발견·공유 기능은 그대로예요'
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -7710,7 +7755,53 @@ async function cHomeBg(bg, withPh, nBub) {
   if (phPeopleKnown(head.first) !== 1) set(head.first);             // 모르면 일단 예전처럼(가장 최근 대표 사진), 사람이 있으면 아래에서 바꿈
   for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) return; if (h === 0) return set(p); }
 }
+
+/* Independent design experiment with REAL MPD photos/locations/routes.
+ * Opt-in via ?design=1. Uses existing read APIs; never seeds mock history. */
+function viewRealMapConcept() {
+  installSlot=el('div'); drawInstall();
+  const memories=el('div',{style:'display:contents'});drawMemory(memories);
+  document.documentElement.classList.add('c-page','c-home');
+  document.title='MPD · 실제 기록 연결 디자인 실험';
+  const hero=el('div',{class:'md-rc-photo'});
+  hero.style.backgroundImage=`url("${homeHeroUrl()}")`;
+  const logo=el('div',{class:'md-rc-brand'},cLogoSvg(),el('span',{},'MPD',el('small',{text:'Map Photo Diary'})));
+  const head=el('div',{class:'md-rc-top'},logo,el('span',{class:'md-rc-spacer'}),
+    el('button',{type:'button','aria-label':'검색',onclick:cSearch,text:'⌕'}),
+    el('button',{type:'button','aria-label':'나',onclick:appSettings,text:'♙'}));
+  const copy=el('div',{class:'md-rc-photo-copy'},
+    el('em',{text:'YOUR DAYS · YOUR PLACES'}),
+    el('h1',{},'일상의 장면이,',el('br'),'나의 지도가 되다.'),
+    el('p',{text:'사진에서 장소로, 장소에서 또 하나의 이야기로.'}));
+  const photoFoot=el('div',{class:'md-rc-photo-foot'},
+    el('div',{},el('b',{text:'내 사진으로 이어지는 이야기'}),el('small',{text:'기록이 있는 날의 순간을 다시 만나보세요'})),
+    el('a',{href:'./?my=1','aria-label':'내 기록 보기',text:'↗'}));
+  hero.append(head,copy,photoFoot);
+  const liveMap=cHomeHero();
+  const mapCard=el('section',{class:'md-rc-mapcard','aria-label':'MPD의 실제 GPS 및 사진 지도'},
+    el('div',{class:'md-rc-mhead'},el('div',{},el('span',{text:'A PLACE FOR EVERY MOMENT'}),el('h2',{text:'나의 이야기 지도'})),
+      el('a',{href:'./?map=1',text:'지도 펼치기 ↗'})),
+    liveMap,
+    el('div',{class:'md-rc-mapfoot'},el('strong',{text:'실제 기록 연결'}),' · 내 사진 위치와 GPS 이동 경로만 표시합니다'));
+  const story=el('section',{class:'md-rc-section'},el('div',{class:'md-rc-label',text:'MY MOMENTS'}),cStoryStrip(liveMap));
+  const discovery=el('section',{class:'md-rc-find'},cFindLine());
+  const more=el('div',{class:'c-ui stack',style:'gap:12px;margin:5px 16px 24px'},
+    memories,el('a',{class:'c-li',href:'./?my=1',text:'내 기록 전체 보기 ›'}),
+    el('a',{class:'c-li',href:'./?find=1',text:'내 기록에서 발견 보기 ›'}),
+    el('a',{class:'c-li',href:'./',text:'기존 MPD 홈으로 돌아가기 ›'}),
+    installSlot,
+    el('div',{class:'c-foot',text:'실제 지도 연결 디자인 실험 · 운영 홈 변경 없음'}));
+  const root=el('div',{class:'md-real-concept'},hero,mapCard,story,discovery,more);
+  app.replaceChildren(root,cTabs('home'));
+  if(!ls.get('homeHero',''))setTimeout(async()=>{
+    try{const all=cRecs(25);for(let i=0;i<all.length;i+=5)await Promise.all(all.slice(i,i+5).map(cPhotos));
+      const withPh=all.filter(r=>r.first);if(withPh.length && hero.isConnected) await cHomeBg(hero,withPh,3);
+    }catch(e){console.warn('concept cover',e)}
+  },0);
+}
+
 function viewLanding() {
+  if (qs.get('design') === '1') return viewRealMapConcept();
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
   else if (qs.get('install') === '1') { try { const u = new URL(location.href); u.searchParams.delete('install'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} }
