@@ -882,6 +882,22 @@ html.c-home .c-sec{margin-top:3px}
 html.c-home .c-tabs{border:1px solid rgba(222,235,236,.9);box-shadow:0 -3px 24px rgba(40,74,78,.08)}
 @media(max-width:360px){.md-cover-v4{height:240px}.md-map-v4 .c-hero{height:320px}.md-cover-v4 h1{font-size:25px}}
 /* END home visual polish v2 */
+
+/* MPD home layout fix: header/slogan never overlap, even on compact Android displays. */
+.md-cover-v4{display:flex;flex-direction:column;align-items:stretch;height:clamp(260px,34svh,310px)}
+.md-head-v4{position:relative;flex:0 0 auto;min-height:50px;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 0;z-index:2}
+.md-cover-v4 h1{position:relative;top:auto;bottom:auto;left:auto;right:auto;z-index:1;flex:none;margin:clamp(27px,4svh,44px) 20px 0 23px;font-size:clamp(25px,6.5vw,30px);line-height:1.32;letter-spacing:-.045em}
+.md-cover-v4:before{background:linear-gradient(180deg,rgba(7,30,39,.66),rgba(7,30,39,.2) 48%,rgba(7,30,39,.65))}
+.md-map-v4{margin-top:-28px}
+.md-map-v4 .c-hero{height:clamp(300px,40svh,370px);min-height:300px}
+.md-map-label-v4{padding:10px 13px}
+.md-map-label-v4 small{letter-spacing:-.01em}
+html.c-home .c-st .im.rt{background-color:#edf4f2;background-image:radial-gradient(circle at 18% 22%,rgba(118,178,162,.17) 0 24%,transparent 24.5%),linear-gradient(35deg,transparent 47%,rgba(255,255,255,.85) 47.5% 50%,transparent 50.5%),linear-gradient(155deg,transparent 43%,rgba(255,255,255,.9) 43.5% 46%,transparent 46.5%);box-shadow:inset 0 0 0 1px rgba(31,116,117,.07)}
+html.c-home .c-st .rtw svg{filter:drop-shadow(0 2px 3px rgba(24,94,99,.12))}
+@media(max-width:360px){.md-cover-v4{height:270px}.md-head-v4{padding-left:14px;padding-right:14px}.md-cover-v4 h1{margin:26px 16px 0 18px;font-size:25px}.md-map-v4 .c-hero{height:318px}}
+@media(max-height:690px){.md-cover-v4{height:272px}.md-cover-v4 h1{margin-top:23px}.md-map-v4 .c-hero{height:300px}}
+/* END MPD home layout fix */
+
 </style>
 </head>
 <body>
@@ -2844,7 +2860,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.09-17-home-visual';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.09-18-home-layout';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -7585,7 +7601,7 @@ function cHomeHero() {
         .on('click', e => { L.DomEvent.stopPropagation(e); location.href = g.list.length > 1 ? './?map=1' : `./?my=1&t=${encodeURIComponent(it.r.t)}`; }).addTo(lay); }); };
     drawPins(want && want.t); m.on('zoomend moveend', () => drawPins(want && want.t));
     m.on('click', () => { location.href = './?map=1'; });
-    note.textContent = life.length > 1 ? `생활권 · 최근 90일 길 ${life.length}개` : withPh ? '사진을 찍은 곳' : '다녀온 곳'; note.style.display = '';
+    note.textContent = withPh ? `사진 위치 ${pins.length}곳 · 최근 90일 이동 기록 ${life.length}개` : `위치가 연결된 사진 없음 · 실제 이동 기록 ${life.length}개`; note.style.display = '';
   }, 0);
   return box;
 }
