@@ -824,10 +824,13 @@ html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 .c-card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(20,37,59,.06);display:flex;flex-direction:column;gap:8px}
 .c-ev{display:flex;flex-direction:column;gap:6px}.c-ev a{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:12px;background:#F3F7FA;text-decoration:none;color:var(--c-ink);font-size:14.5px}
 
+
+
+
 /* MPD HOME REVAMP — preserve existing real photo and GPS logic */
 html.c-home body{background:#f7fafb}
 .md-home-v4{position:relative;margin:-20px -20px 0;isolation:isolate}
-.md-cover-v4{position:relative;isolation:isolate;height:clamp(285px,38vh,350px);overflow:hidden;background:#244752;color:#fff}
+.md-cover-v4{position:relative;isolation:isolate;height:clamp(235px,30svh,285px);overflow:hidden;background:#244752;color:#fff}
 .md-cover-v4-bg{position:absolute;inset:0;z-index:-2;background:#244752 center/cover no-repeat}
 .md-cover-v4:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,32,42,.72) 0%,rgba(12,32,42,.21) 54%,rgba(12,32,42,.48) 100%)}
 .md-head-v4{display:flex;gap:9px;align-items:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px 0}
@@ -840,7 +843,7 @@ html.c-home body{background:#f7fafb}
 .md-head-v4 .md-ctrl svg{width:21px;height:21px;stroke:currentColor}
 .md-cover-v4 h1{position:absolute;left:22px;right:20px;top:calc(124px + env(safe-area-inset-top,0px));font-weight:800;font-size:clamp(27px,7.3vw,34px);line-height:1.38;letter-spacing:-.052em;margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.17)}
 .md-map-v4{position:relative;margin:-26px 15px 0;z-index:2}
-.md-map-v4 .c-hero{height:clamp(345px,49vh,460px);min-height:345px;border-radius:26px;box-shadow:0 8px 25px rgba(17,64,72,.16);background:#e7f0ef}
+.md-map-v4 .c-hero{height:clamp(320px,41svh,385px);min-height:320px;border-radius:26px;box-shadow:0 8px 25px rgba(17,64,72,.16);background:#e7f0ef}
 .md-map-v4 .c-slogan{display:none}
 .md-map-v4 .c-hero-note{top:76px;bottom:auto;left:15px;font-size:11px;max-width:calc(100% - 30px)}
 .md-map-v4 .c-rec{right:14px;left:auto;bottom:14px;margin:0;width:75px;height:75px;font-size:12px;box-shadow:0 5px 18px rgba(0,86,97,.2),0 0 0 3px #fff}
@@ -857,6 +860,28 @@ html.c-home .c-st{width:148px}html.c-home .c-findline{border-color:#d7edea;backg
 @media(max-width:350px){.md-head-v4{padding-left:14px;padding-right:14px;gap:5px}.md-head-v4 .md-brand b{font-size:25px}.md-head-v4 .md-ctrl{width:36px;height:36px}.md-map-v4{margin-left:10px;margin-right:10px}.md-cover-v4 h1{left:18px}}
 /* END MPD HOME REVAMP */
 
+/* MPD home visual polish v2: the photograph leads into a calm personal map. */
+.md-cover-v4{background:#173b43}
+.md-cover-v4:before{background:linear-gradient(180deg,rgba(7,30,39,.66),rgba(7,30,39,.32) 52%,rgba(7,30,39,.56))}
+.md-cover-v4 h1{top:auto;bottom:calc(43px + env(safe-area-inset-bottom,0px));left:23px;font-size:clamp(25px,6.6vw,30px);line-height:1.36;letter-spacing:-.045em}
+.md-head-v4{padding-top:calc(17px + env(safe-area-inset-top,0px))}
+.md-head-v4 .md-brand b{font-size:28px}
+.md-map-v4{margin-top:-30px}
+.md-map-v4 .c-hero{border:1px solid rgba(255,255,255,.92);box-shadow:0 8px 25px rgba(34,82,84,.11)}
+.md-map-v4 .c-hero .leaflet-tile-pane{filter:saturate(.14) brightness(1.14) contrast(.84) sepia(.06)}
+.md-map-v4 .c-hero .leaflet-overlay-pane{filter:none}
+.md-map-label-v4{top:13px;left:13px;padding:11px 14px;border-radius:16px;box-shadow:0 3px 13px rgba(18,51,58,.06)}
+.md-map-label-v4 b{font-size:15px}
+.md-map-v4 .c-hero-note{top:70px;left:13px;right:auto;border:1px solid rgba(226,236,234,.8);background:rgba(255,255,255,.94);color:#42656c}
+.md-map-v4 .c-rec{width:68px;height:68px;border-color:#fff;background:#fff}
+.md-map-v4 .c-rec .pl{font-size:29px}
+html.c-home .c-strip{gap:13px}
+html.c-home .c-st{width:151px}
+html.c-home .c-st .im{border-radius:17px}
+html.c-home .c-sec{margin-top:3px}
+html.c-home .c-tabs{border:1px solid rgba(222,235,236,.9);box-shadow:0 -3px 24px rgba(40,74,78,.08)}
+@media(max-width:360px){.md-cover-v4{height:240px}.md-map-v4 .c-hero{height:320px}.md-cover-v4 h1{font-size:25px}}
+/* END home visual polish v2 */
 </style>
 </head>
 <body>
@@ -2819,7 +2844,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.09-16-home';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.09-17-home-visual';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -7550,7 +7575,10 @@ function cHomeHero() {
     const d90 = Date.now() - 90 * 864e5, life = recs.filter(r => r.a >= d90);
     life.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3, opacity: .28, interactive: false }).addTo(m); }));
     focusLay = L.layerGroup().addTo(m);
-    m.fitBounds(L.latLngBounds(items.map(i => i.at)).pad(.08), { paddingTopLeft: [46, 170], paddingBottomRight: [46, 128], maxZoom: 15, animate: false });
+    // 홈은 전체 지역을 억지로 한 화면에 넣지 않고, 최근 사진의 생활권에서 시작합니다.
+    // 나머지 장소는 '나의 이야기 지도'에서 모두 볼 수 있으며, 최근 이야기 선택 시 지도 포커스가 이동합니다.
+    const newest = items[0].at;
+    m.setView(newest, 12, { animate: false });
     const lay = L.layerGroup().addTo(m);
     drawPins = on => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0], isOn = g.list.some(x => x.r.t === on);
       L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length, on: isOn }), keyboard: false, title: it.r.name, zIndexOffset: isOn ? 1000 : 0 })
