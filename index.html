@@ -898,6 +898,25 @@ html.c-home .c-st .rtw svg{filter:drop-shadow(0 2px 3px rgba(24,94,99,.12))}
 @media(max-height:690px){.md-cover-v4{height:272px}.md-cover-v4 h1{margin-top:23px}.md-map-v4 .c-hero{height:300px}}
 /* END MPD home layout fix */
 
+
+/* MPD home refinement 19: marker visibility, photo-first stories, readable discoveries. */
+.md-map-v4 .c-hero-note{top:71px;left:13px;right:auto;max-width:calc(100% - 26px);font-size:10.5px}
+.md-map-v4 .c-hero .leaflet-marker-pane{z-index:620}
+html.c-home .c-strip .c-st{width:143px;gap:6px}
+html.c-home .c-strip .c-st .im{width:143px;height:153px;border-radius:17px}
+html.c-home .c-st-photo .im{box-shadow:0 2px 12px rgba(22,70,73,.11)}
+html.c-home .c-st-route .im{background-color:#e9f4f1;background-image:radial-gradient(circle at 10% 10%,rgba(113,176,154,.17) 0 24%,transparent 24.5%),linear-gradient(30deg,transparent 42%,rgba(255,255,255,.8) 42.5% 45%,transparent 45.5%),linear-gradient(140deg,transparent 59%,rgba(255,255,255,.85) 59.5% 62%,transparent 62.5%);}
+html.c-home .c-st .dt{font-size:11.5px;letter-spacing:-.01em}
+html.c-home .c-st b{font-weight:750;font-size:14px;word-break:keep-all}
+html.c-home .c-findline-home{align-items:center;gap:10px;padding:16px 14px;border-radius:20px}
+html.c-home .c-findline-home .sp{width:36px;height:36px;flex:none;border-radius:12px}
+html.c-home .c-findline-home .tx{min-width:0;overflow:hidden;gap:5px}
+html.c-home .c-findline-home .tx small{font-size:11.5px}
+html.c-home .c-findline-home .tx b{font-size:15px;line-height:1.5;letter-spacing:-.02em;word-break:keep-all;overflow-wrap:anywhere}
+html.c-home .c-findline-home .go{font-size:18px}
+@media(max-width:350px){html.c-home .c-findline-home{padding:13px 10px;gap:8px}html.c-home .c-findline-home .tx b{font-size:14px}}
+/* END MPD home refinement 19 */
+
 </style>
 </head>
 <body>
@@ -2860,7 +2879,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.09-18-home-layout';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.10-19-home-story';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -7595,6 +7614,8 @@ function cHomeHero() {
     // 나머지 장소는 '나의 이야기 지도'에서 모두 볼 수 있으며, 최근 이야기 선택 시 지도 포커스가 이동합니다.
     const newest = items[0].at;
     m.setView(newest, 12, { animate: false });
+    // Keep the latest real photo pin below the floating map title and status chip.
+    m.panBy([0, -Math.min(90, Math.round(mapEl.clientHeight * .24))], { animate: false });
     const lay = L.layerGroup().addTo(m);
     drawPins = on => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0], isOn = g.list.some(x => x.r.t === on);
       L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length, on: isOn }), keyboard: false, title: it.r.name, zIndexOffset: isOn ? 1000 : 0 })
@@ -7624,8 +7645,10 @@ function cStoryStrip(hero) {
     const recs = cRecs(12); if (!recs.length) return;
     await Promise.all(recs.map(cPhotos));
     const row = el('div', { class: 'c-strip', role: 'list' });
-    recs.forEach(r => { const p = r.first, d = new Date(r.a);
-      const it = el('a', { class: 'c-st', role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
+    // Keep records honest: photo moments first, then GPS-only records, each in recent-first order.
+    const ordered = [...recs.filter(r => r.first), ...recs.filter(r => !r.first)];
+    ordered.forEach(r => { const p = r.first, d = new Date(r.a);
+      const it = el('a', { class: 'c-st' + (p ? ' c-st-photo' : ' c-st-route'), role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
         el('i', { class: 'im' + (p ? '' : ' rt'), style: p ? `background-image:url('${p.thumb}')` : '' }, p ? null : cRouteThumb(r), r.ph.length > 1 ? el('b', { class: 'cnt', text: `${r.ph.length}` }) : null),
         el('span', { class: 'dt' }, ico(r.M.k, 13), ` ${d.getMonth() + 1}.${d.getDate()} · ${r.walk >= 50 ? fmtDist(r.walk) : r.M.label}`),
         el('b', { text: r.name }));
@@ -7650,7 +7673,7 @@ function cFindLine() {
   const slot = el('div', { style: 'display:contents' });
   setTimeout(async () => { try {
     const D = await lcGather(); if (!D.recs.length) return; const f = lcFind(D).found[0]; if (!f) return;
-    slot.replaceWith(el('a', { class: 'c-findline', href: './?find=1' }, el('span', { class: 'sp' }, cSvg('spark', 22, '#FF8A4C')),
+    slot.replaceWith(el('a', { class: 'c-findline c-findline-home', href: './?find=1' }, el('span', { class: 'sp' }, cSvg('spark', 22, '#FF8A4C')),
       el('span', { class: 'tx' }, el('small', { text: '내 기록에서 발견' }), el('b', { text: f.title })), el('span', { class: 'go', text: '›' })));
   } catch (e) {} }, 0);
   return slot;
