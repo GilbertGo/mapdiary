@@ -2920,7 +2920,7 @@ const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 const IN_NATIVE = !!window.MD_NATIVE;
 const UI_VER = '2026.11.10-20-home-experience';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
+const UI_NOTES = '홈에서 대표 사진과 실제 이야기 지도가 자연스럽게 이어져요 · 최근 이야기를 넘기면 지도에서 해당 기록을 찾아요 · 사진이 있는 기록을 먼저 보여줘요 · 기록과 공유 등 기존 기능은 그대로 사용할 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
