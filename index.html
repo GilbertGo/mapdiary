@@ -917,6 +917,45 @@ html.c-home .c-findline-home .go{font-size:18px}
 @media(max-width:350px){html.c-home .c-findline-home{padding:13px 10px;gap:8px}html.c-home .c-findline-home .tx b{font-size:14px}}
 /* END MPD home refinement 19 */
 
+
+/* MPD experience v20 — a connected photo → map → moments composition. */
+html.c-home body{background:#f7faf9}
+.md-home-v4{margin:-20px -20px 0;background:#f7faf9}
+.md-cover-v4{height:clamp(246px,32svh,294px);background:#203f48}
+.md-cover-v4:before{background:linear-gradient(180deg,rgba(4,20,31,.57) 0%,rgba(4,20,31,.12) 55%,rgba(4,20,31,.52) 100%)}
+.md-head-v4{padding:calc(18px + env(safe-area-inset-top,0px)) 19px 0}
+.md-head-v4 .md-brand{gap:7px}
+.md-head-v4 .md-brand b{font-size:27px;letter-spacing:-.055em}
+.md-head-v4 .md-brand small{font-size:11.5px;opacity:.92}
+.md-head-v4 .md-ctrl{background:rgba(10,32,40,.24);border-color:rgba(255,255,255,.4)}
+.md-cover-v4 h1{font-weight:780;font-size:clamp(25px,6.7vw,30px);margin:clamp(29px,4.5svh,45px) 20px 0 23px;line-height:1.35}
+.md-map-v20{z-index:2;position:relative;margin:-14px 13px 0;padding:18px 12px 12px;background:#fff;border-radius:27px;box-shadow:0 9px 31px rgba(19,75,81,.11);border:1px solid rgba(220,235,234,.9)}
+.md-map-head-v20{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:3px 5px 15px;min-width:0}
+.md-map-head-copy-v20{min-width:0;display:flex;flex-direction:column;gap:3px}
+.md-section-eyebrow-v20{font-size:9px;font-weight:800;letter-spacing:.13em;color:#51a39e}
+.md-map-head-v20 h2{font-size:21px;line-height:1.24;letter-spacing:-.045em;font-weight:850;color:#163e45;margin:1px 0 0}
+.md-focus-text-v20{font-size:11.5px;color:#668389;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.md-map-more-v20{text-decoration:none;color:#216f78;font-size:12px;font-weight:750;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:9px 10px;border-radius:12px;background:#edf7f4}
+.md-map-more-v20 span{font-size:15px}
+.md-map-v20 .c-hero{height:clamp(295px,36svh,355px);min-height:295px;border:0;border-radius:18px;box-shadow:none;background:#eaf2ec}
+.md-map-v20 .c-hero .leaflet-tile-pane{filter:saturate(.25) brightness(1.10) contrast(.88)}
+.md-map-v20 .c-hero-note{top:11px;left:10px;right:10px;width:max-content;max-width:calc(100% - 20px);font-size:10px;letter-spacing:-.015em;box-shadow:0 2px 8px rgba(18,53,58,.06);padding:5px 9px;white-space:normal}
+.md-map-v20 .c-rec{right:14px;bottom:14px;left:auto;width:66px;height:66px;font-size:11.5px;background:#fff;box-shadow:0 3px 13px rgba(15,69,75,.18)}
+.md-map-v20 .c-rec .pl{font-size:27px}
+.md-map-v20 .c-rec.live{width:auto;height:auto;max-width:88%;min-height:53px}
+html.c-home .c-ui.stack{gap:12px!important}
+.md-story-title-v20{margin-top:7px!important;display:flex;align-items:end;justify-content:space-between}
+.md-story-title-v20>div{display:flex;flex-direction:column;gap:4px}
+.md-story-title-v20 h2{font-size:22px;letter-spacing:-.04em;margin:0;line-height:1.2}
+.md-story-title-v20 a{font-size:13px;color:#607a80;text-decoration:none}
+html.c-home .c-strip .c-st{width:148px;gap:6px}
+html.c-home .c-strip .c-st .im{height:147px;width:148px;border-radius:17px}
+html.c-home .c-st b{font-size:14px;line-height:1.4}
+html.c-home .c-findline-home{border-color:#dbece7;background:linear-gradient(110deg,#e8f8f2,#fff);box-shadow:0 2px 11px rgba(44,97,84,.04)}
+html.c-home .md-more-v4{box-shadow:none}
+@media(max-width:360px){.md-cover-v4{height:267px}.md-cover-v4 h1{margin-top:26px}.md-map-v20{margin-left:9px;margin-right:9px;padding:15px 9px 9px}.md-map-head-v20 h2{font-size:19px}.md-focus-text-v20{max-width:170px}.md-map-v20 .c-hero{height:295px}}
+/* END MPD experience v20 */
+
 </style>
 </head>
 <body>
@@ -2879,9 +2918,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.10-19-home-story';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.10-20-home-experience';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '지난 기록과 발견 카드에 ↻ 다시 가기가 생겼어요 · 이 길 그대로 다시 가기, 네이버지도로 그곳까지 길찾기 · 다시 가는 길이 걸려 있으면 시작 단추 바로 위에 보여요 · 1년 전 오늘 기록이 첫 화면 말풍선에 딱지를 달고 떠요 · 빨간 연결 중 띠가 로고와 아이콘을 가리지 않아요(예전 링크·모임방에서만 아래에 작게) · + 기록하기에서 지난번 기록을 바로 시작해요(2번 만에)';
+const UI_NOTES = '홈에서 대표 사진과 실제 이야기 지도가 자연스럽게 이어져요 · 최근 이야기를 넘기면 지도에서 해당 기록을 찾아요 · 사진이 있는 기록을 먼저 보여줘요 · 기록과 공유 등 기존 기능은 그대로 사용할 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7623,6 +7662,7 @@ function cHomeHero() {
     drawPins(want && want.t); m.on('zoomend moveend', () => drawPins(want && want.t));
     m.on('click', () => { location.href = './?map=1'; });
     note.textContent = withPh ? `사진 위치 ${pins.length}곳 · 최근 90일 이동 기록 ${life.length}개` : `위치가 연결된 사진 없음 · 실제 이동 기록 ${life.length}개`; note.style.display = '';
+    if (want) box.focus(want);
   }, 0);
   return box;
 }
@@ -7664,7 +7704,9 @@ function cStoryStrip(hero) {
     row.addEventListener('touchstart', () => { moved = true; }, { passive: true });
     row.addEventListener('pointerdown', () => { moved = true; }, { passive: true });
     row.addEventListener('scroll', () => { if (moved && !raf) raf = requestAnimationFrame(sync); }, { passive: true });
-    wrap.replaceWith(el('div', { class: 'c-sec' }, el('h2', { text: '최근 이야기' }), el('a', { href: './?my=1' }, '모두 보기 ›')), row);
+    wrap.replaceWith(el('div', { class: 'c-sec md-story-title-v20' },
+      el('div', {},el('span',{class:'md-section-eyebrow-v20',text:'MOMENTS'}),el('h2', { text: '최근 이야기' })),
+      el('a', { href: './?my=1' }, '모두 보기 ↗')), row);
   }, 0);
   return wrap;
 }
@@ -7829,10 +7871,14 @@ function cHomeV4(){
     control('내 설정','<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/>',appSettings));
   cover.append(bg,top,el('h1',{},'일상을 발견하고,',el('br'),'행복을 넓히다.'));
   const hero=cHomeHero();
-  const map=el('section',{class:'md-map-v4','aria-label':'사진과 실제 GPS 기록 지도'},hero,
-    el('a',{class:'md-map-label-v4',href:'./?map=1'},
-      el('b',{text:'나의 이야기 지도 ↗'}),
-      el('small',{text:'내 사진 · 장소 · 실제 이동 경로'})));
+  const focusText=el('span',{class:'md-focus-text-v20',text:'기록한 순간이 지도 위의 장소로 이어집니다'});
+  const mapTitle=el('div',{class:'md-map-head-v20'},
+    el('div',{class:'md-map-head-copy-v20'},
+      el('span',{class:'md-section-eyebrow-v20',text:'MY LIFE, ON THE MAP'}),
+      el('h2',{text:'나의 이야기 지도'}),
+      focusText),
+    el('a',{class:'md-map-more-v20',href:'./?map=1','aria-label':'나의 전체 이야기 지도 보기'},'전체 지도',el('span',{'aria-hidden':'true',text:'↗'})));
+  const map=el('section',{class:'md-map-v4 md-map-v20','aria-label':'사진과 실제 GPS 기록 지도'},mapTitle,hero);
   root.append(cover,map);
   if(!ls.get('homeHero','')) setTimeout(async()=>{
     try{
@@ -7842,7 +7888,7 @@ function cHomeV4(){
       if(selected.length && bg.isConnected) await cHomeBg(bg,selected,3);
     }catch(e){}
   },0);
-  root.focus=r=>hero.focus(r);
+  root.focus=r=>{ if(r){focusText.textContent=r.name || '선택한 기록';}hero.focus(r); };
   return root;
 }
 
