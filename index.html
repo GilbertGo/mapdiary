@@ -2832,7 +2832,7 @@ const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 const IN_NATIVE = !!window.MD_NATIVE;
 const UI_VER = '2026.11.10-22-real-map-concept-branch';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '메인화면을 Claude가 만든 사진·말풍선 디자인으로 복원했어요 · 기존 기록·지도·발견·공유 기능은 그대로예요'
+const UI_NOTES = 'Claude 홈은 그대로 두고, 디자인 실험에서 실제 MPD 사진·GPS 지도·이동 기록·발견 연결을 확인할 수 있어요'
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
