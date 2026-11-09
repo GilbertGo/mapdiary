@@ -823,139 +823,6 @@ html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 .c-place b{font-size:14.5px;line-height:1.3}.c-place span{font-size:12.5px;color:var(--c-mu);margin-top:-4px}
 .c-card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 4px 16px rgba(20,37,59,.06);display:flex;flex-direction:column;gap:8px}
 .c-ev{display:flex;flex-direction:column;gap:6px}.c-ev a{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:12px;background:#F3F7FA;text-decoration:none;color:var(--c-ink);font-size:14.5px}
-
-
-
-
-/* MPD HOME REVAMP — preserve existing real photo and GPS logic */
-html.c-home body{background:#f7fafb}
-.md-home-v4{position:relative;margin:-20px -20px 0;isolation:isolate}
-.md-cover-v4{position:relative;isolation:isolate;height:clamp(235px,30svh,285px);overflow:hidden;background:#244752;color:#fff}
-.md-cover-v4-bg{position:absolute;inset:0;z-index:-2;background:#244752 center/cover no-repeat}
-.md-cover-v4:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,32,42,.72) 0%,rgba(12,32,42,.21) 54%,rgba(12,32,42,.48) 100%)}
-.md-head-v4{display:flex;gap:9px;align-items:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px 0}
-.md-head-v4 .md-brand{display:flex;align-items:center;gap:9px;min-width:0}
-.md-head-v4 .md-brand svg{width:35px;height:44px;flex:none}
-.md-head-v4 .md-brand b{display:block;font-size:29px;line-height:1;letter-spacing:-.05em}
-.md-head-v4 .md-brand small{display:block;font-size:12px;margin-top:3px}
-.md-head-v4 .md-grow{flex:1}
-.md-head-v4 .md-ctrl{display:inline-grid;place-items:center;width:41px;height:41px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(12,38,47,.24);color:#fff;backdrop-filter:blur(7px)}
-.md-head-v4 .md-ctrl svg{width:21px;height:21px;stroke:currentColor}
-.md-cover-v4 h1{position:absolute;left:22px;right:20px;top:calc(124px + env(safe-area-inset-top,0px));font-weight:800;font-size:clamp(27px,7.3vw,34px);line-height:1.38;letter-spacing:-.052em;margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.17)}
-.md-map-v4{position:relative;margin:-26px 15px 0;z-index:2}
-.md-map-v4 .c-hero{height:clamp(320px,41svh,385px);min-height:320px;border-radius:26px;box-shadow:0 8px 25px rgba(17,64,72,.16);background:#e7f0ef}
-.md-map-v4 .c-slogan{display:none}
-.md-map-v4 .c-hero-note{top:76px;bottom:auto;left:15px;font-size:11px;max-width:calc(100% - 30px)}
-.md-map-v4 .c-rec{right:14px;left:auto;bottom:14px;margin:0;width:75px;height:75px;font-size:12px;box-shadow:0 5px 18px rgba(0,86,97,.2),0 0 0 3px #fff}
-.md-map-v4 .c-rec .pl{font-size:31px}
-.md-map-v4 .c-rec.live{width:auto;height:auto;min-height:62px;max-width:calc(100% - 28px);border-radius:18px;padding:8px 13px}
-.md-map-label-v4{position:absolute;top:14px;left:14px;z-index:700;max-width:calc(100% - 28px);display:flex;flex-direction:column;gap:3px;padding:12px 16px;text-decoration:none;border-radius:17px;background:rgba(255,255,255,.96);box-shadow:0 3px 15px rgba(18,51,58,.1);color:#1b424b}
-.md-map-label-v4 b{font-size:15px;font-weight:800}.md-map-label-v4 small{font-size:11px;color:#667f89}
-.md-more-v4{border:1px solid #e1eaec;border-radius:17px;overflow:hidden;background:#fff}
-.md-more-v4>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;padding:17px 18px;font-size:15px;font-weight:800;color:#27545f}
-.md-more-v4>summary::-webkit-details-marker{display:none}.md-more-v4>summary:after{content:"⌄"}
-.md-more-v4[open]>summary:after{transform:rotate(180deg)}
-.md-more-v4 .c-list{box-shadow:none;border-radius:0;border-top:1px solid #edf1f2}
-html.c-home .c-st{width:148px}html.c-home .c-findline{border-color:#d7edea;background:linear-gradient(110deg,#eefaf7,#fff);box-shadow:none}
-@media(max-width:350px){.md-head-v4{padding-left:14px;padding-right:14px;gap:5px}.md-head-v4 .md-brand b{font-size:25px}.md-head-v4 .md-ctrl{width:36px;height:36px}.md-map-v4{margin-left:10px;margin-right:10px}.md-cover-v4 h1{left:18px}}
-/* END MPD HOME REVAMP */
-
-/* MPD home visual polish v2: the photograph leads into a calm personal map. */
-.md-cover-v4{background:#173b43}
-.md-cover-v4:before{background:linear-gradient(180deg,rgba(7,30,39,.66),rgba(7,30,39,.32) 52%,rgba(7,30,39,.56))}
-.md-cover-v4 h1{top:auto;bottom:calc(43px + env(safe-area-inset-bottom,0px));left:23px;font-size:clamp(25px,6.6vw,30px);line-height:1.36;letter-spacing:-.045em}
-.md-head-v4{padding-top:calc(17px + env(safe-area-inset-top,0px))}
-.md-head-v4 .md-brand b{font-size:28px}
-.md-map-v4{margin-top:-30px}
-.md-map-v4 .c-hero{border:1px solid rgba(255,255,255,.92);box-shadow:0 8px 25px rgba(34,82,84,.11)}
-.md-map-v4 .c-hero .leaflet-tile-pane{filter:saturate(.14) brightness(1.14) contrast(.84) sepia(.06)}
-.md-map-v4 .c-hero .leaflet-overlay-pane{filter:none}
-.md-map-label-v4{top:13px;left:13px;padding:11px 14px;border-radius:16px;box-shadow:0 3px 13px rgba(18,51,58,.06)}
-.md-map-label-v4 b{font-size:15px}
-.md-map-v4 .c-hero-note{top:70px;left:13px;right:auto;border:1px solid rgba(226,236,234,.8);background:rgba(255,255,255,.94);color:#42656c}
-.md-map-v4 .c-rec{width:68px;height:68px;border-color:#fff;background:#fff}
-.md-map-v4 .c-rec .pl{font-size:29px}
-html.c-home .c-strip{gap:13px}
-html.c-home .c-st{width:151px}
-html.c-home .c-st .im{border-radius:17px}
-html.c-home .c-sec{margin-top:3px}
-html.c-home .c-tabs{border:1px solid rgba(222,235,236,.9);box-shadow:0 -3px 24px rgba(40,74,78,.08)}
-@media(max-width:360px){.md-cover-v4{height:240px}.md-map-v4 .c-hero{height:320px}.md-cover-v4 h1{font-size:25px}}
-/* END home visual polish v2 */
-
-/* MPD home layout fix: header/slogan never overlap, even on compact Android displays. */
-.md-cover-v4{display:flex;flex-direction:column;align-items:stretch;height:clamp(260px,34svh,310px)}
-.md-head-v4{position:relative;flex:0 0 auto;min-height:50px;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 0;z-index:2}
-.md-cover-v4 h1{position:relative;top:auto;bottom:auto;left:auto;right:auto;z-index:1;flex:none;margin:clamp(27px,4svh,44px) 20px 0 23px;font-size:clamp(25px,6.5vw,30px);line-height:1.32;letter-spacing:-.045em}
-.md-cover-v4:before{background:linear-gradient(180deg,rgba(7,30,39,.66),rgba(7,30,39,.2) 48%,rgba(7,30,39,.65))}
-.md-map-v4{margin-top:-28px}
-.md-map-v4 .c-hero{height:clamp(300px,40svh,370px);min-height:300px}
-.md-map-label-v4{padding:10px 13px}
-.md-map-label-v4 small{letter-spacing:-.01em}
-html.c-home .c-st .im.rt{background-color:#edf4f2;background-image:radial-gradient(circle at 18% 22%,rgba(118,178,162,.17) 0 24%,transparent 24.5%),linear-gradient(35deg,transparent 47%,rgba(255,255,255,.85) 47.5% 50%,transparent 50.5%),linear-gradient(155deg,transparent 43%,rgba(255,255,255,.9) 43.5% 46%,transparent 46.5%);box-shadow:inset 0 0 0 1px rgba(31,116,117,.07)}
-html.c-home .c-st .rtw svg{filter:drop-shadow(0 2px 3px rgba(24,94,99,.12))}
-@media(max-width:360px){.md-cover-v4{height:270px}.md-head-v4{padding-left:14px;padding-right:14px}.md-cover-v4 h1{margin:26px 16px 0 18px;font-size:25px}.md-map-v4 .c-hero{height:318px}}
-@media(max-height:690px){.md-cover-v4{height:272px}.md-cover-v4 h1{margin-top:23px}.md-map-v4 .c-hero{height:300px}}
-/* END MPD home layout fix */
-
-
-/* MPD home refinement 19: marker visibility, photo-first stories, readable discoveries. */
-.md-map-v4 .c-hero-note{top:71px;left:13px;right:auto;max-width:calc(100% - 26px);font-size:10.5px}
-.md-map-v4 .c-hero .leaflet-marker-pane{z-index:620}
-html.c-home .c-strip .c-st{width:143px;gap:6px}
-html.c-home .c-strip .c-st .im{width:143px;height:153px;border-radius:17px}
-html.c-home .c-st-photo .im{box-shadow:0 2px 12px rgba(22,70,73,.11)}
-html.c-home .c-st-route .im{background-color:#e9f4f1;background-image:radial-gradient(circle at 10% 10%,rgba(113,176,154,.17) 0 24%,transparent 24.5%),linear-gradient(30deg,transparent 42%,rgba(255,255,255,.8) 42.5% 45%,transparent 45.5%),linear-gradient(140deg,transparent 59%,rgba(255,255,255,.85) 59.5% 62%,transparent 62.5%);}
-html.c-home .c-st .dt{font-size:11.5px;letter-spacing:-.01em}
-html.c-home .c-st b{font-weight:750;font-size:14px;word-break:keep-all}
-html.c-home .c-findline-home{align-items:center;gap:10px;padding:16px 14px;border-radius:20px}
-html.c-home .c-findline-home .sp{width:36px;height:36px;flex:none;border-radius:12px}
-html.c-home .c-findline-home .tx{min-width:0;overflow:hidden;gap:5px}
-html.c-home .c-findline-home .tx small{font-size:11.5px}
-html.c-home .c-findline-home .tx b{font-size:15px;line-height:1.5;letter-spacing:-.02em;word-break:keep-all;overflow-wrap:anywhere}
-html.c-home .c-findline-home .go{font-size:18px}
-@media(max-width:350px){html.c-home .c-findline-home{padding:13px 10px;gap:8px}html.c-home .c-findline-home .tx b{font-size:14px}}
-/* END MPD home refinement 19 */
-
-
-/* MPD experience v20 — a connected photo → map → moments composition. */
-html.c-home body{background:#f7faf9}
-.md-home-v4{margin:-20px -20px 0;background:#f7faf9}
-.md-cover-v4{height:clamp(246px,32svh,294px);background:#203f48}
-.md-cover-v4:before{background:linear-gradient(180deg,rgba(4,20,31,.57) 0%,rgba(4,20,31,.12) 55%,rgba(4,20,31,.52) 100%)}
-.md-head-v4{padding:calc(18px + env(safe-area-inset-top,0px)) 19px 0}
-.md-head-v4 .md-brand{gap:7px}
-.md-head-v4 .md-brand b{font-size:27px;letter-spacing:-.055em}
-.md-head-v4 .md-brand small{font-size:11.5px;opacity:.92}
-.md-head-v4 .md-ctrl{background:rgba(10,32,40,.24);border-color:rgba(255,255,255,.4)}
-.md-cover-v4 h1{font-weight:780;font-size:clamp(25px,6.7vw,30px);margin:clamp(29px,4.5svh,45px) 20px 0 23px;line-height:1.35}
-.md-map-v20{z-index:2;position:relative;margin:-14px 13px 0;padding:18px 12px 12px;background:#fff;border-radius:27px;box-shadow:0 9px 31px rgba(19,75,81,.11);border:1px solid rgba(220,235,234,.9)}
-.md-map-head-v20{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:3px 5px 15px;min-width:0}
-.md-map-head-copy-v20{min-width:0;display:flex;flex-direction:column;gap:3px}
-.md-section-eyebrow-v20{font-size:9px;font-weight:800;letter-spacing:.13em;color:#51a39e}
-.md-map-head-v20 h2{font-size:21px;line-height:1.24;letter-spacing:-.045em;font-weight:850;color:#163e45;margin:1px 0 0}
-.md-focus-text-v20{font-size:11.5px;color:#668389;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
-.md-map-more-v20{text-decoration:none;color:#216f78;font-size:12px;font-weight:750;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:9px 10px;border-radius:12px;background:#edf7f4}
-.md-map-more-v20 span{font-size:15px}
-.md-map-v20 .c-hero{height:clamp(295px,36svh,355px);min-height:295px;border:0;border-radius:18px;box-shadow:none;background:#eaf2ec}
-.md-map-v20 .c-hero .leaflet-tile-pane{filter:saturate(.25) brightness(1.10) contrast(.88)}
-.md-map-v20 .c-hero-note{top:11px;left:10px;right:10px;width:max-content;max-width:calc(100% - 20px);font-size:10px;letter-spacing:-.015em;box-shadow:0 2px 8px rgba(18,53,58,.06);padding:5px 9px;white-space:normal}
-.md-map-v20 .c-rec{right:14px;bottom:14px;left:auto;width:66px;height:66px;font-size:11.5px;background:#fff;box-shadow:0 3px 13px rgba(15,69,75,.18)}
-.md-map-v20 .c-rec .pl{font-size:27px}
-.md-map-v20 .c-rec.live{width:auto;height:auto;max-width:88%;min-height:53px}
-html.c-home .c-ui.stack{gap:12px!important}
-.md-story-title-v20{margin-top:7px!important;display:flex;align-items:end;justify-content:space-between}
-.md-story-title-v20>div{display:flex;flex-direction:column;gap:4px}
-.md-story-title-v20 h2{font-size:22px;letter-spacing:-.04em;margin:0;line-height:1.2}
-.md-story-title-v20 a{font-size:13px;color:#607a80;text-decoration:none}
-html.c-home .c-strip .c-st{width:148px;gap:6px}
-html.c-home .c-strip .c-st .im{height:147px;width:148px;border-radius:17px}
-html.c-home .c-st b{font-size:14px;line-height:1.4}
-html.c-home .c-findline-home{border-color:#dbece7;background:linear-gradient(110deg,#e8f8f2,#fff);box-shadow:0 2px 11px rgba(44,97,84,.04)}
-html.c-home .md-more-v4{box-shadow:none}
-@media(max-width:360px){.md-cover-v4{height:267px}.md-cover-v4 h1{margin-top:26px}.md-map-v20{margin-left:9px;margin-right:9px;padding:15px 9px 9px}.md-map-head-v20 h2{font-size:19px}.md-focus-text-v20{max-width:170px}.md-map-v20 .c-hero{height:295px}}
-/* END MPD experience v20 */
-
 </style>
 </head>
 <body>
@@ -2918,9 +2785,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.10-20-home-experience';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.10-21-claude-home';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '홈에서 대표 사진과 실제 이야기 지도가 자연스럽게 이어져요 · 최근 이야기를 넘기면 지도에서 해당 기록을 찾아요 · 사진이 있는 기록을 먼저 보여줘요 · 기록과 공유 등 기존 기능은 그대로 사용할 수 있어요';
+const UI_NOTES = '메인화면을 Claude가 만든 사진·말풍선 디자인으로 복원했어요 · 기존 기록·지도·발견·공유 기능은 그대로예요'
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7649,20 +7516,14 @@ function cHomeHero() {
     const d90 = Date.now() - 90 * 864e5, life = recs.filter(r => r.a >= d90);
     life.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3, opacity: .28, interactive: false }).addTo(m); }));
     focusLay = L.layerGroup().addTo(m);
-    // 홈은 전체 지역을 억지로 한 화면에 넣지 않고, 최근 사진의 생활권에서 시작합니다.
-    // 나머지 장소는 '나의 이야기 지도'에서 모두 볼 수 있으며, 최근 이야기 선택 시 지도 포커스가 이동합니다.
-    const newest = items[0].at;
-    m.setView(newest, 12, { animate: false });
-    // Keep the latest real photo pin below the floating map title and status chip.
-    m.panBy([0, -Math.min(90, Math.round(mapEl.clientHeight * .24))], { animate: false });
+    m.fitBounds(L.latLngBounds(items.map(i => i.at)).pad(.08), { paddingTopLeft: [46, 170], paddingBottomRight: [46, 128], maxZoom: 15, animate: false });
     const lay = L.layerGroup().addTo(m);
     drawPins = on => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0], isOn = g.list.some(x => x.r.t === on);
       L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length, on: isOn }), keyboard: false, title: it.r.name, zIndexOffset: isOn ? 1000 : 0 })
         .on('click', e => { L.DomEvent.stopPropagation(e); location.href = g.list.length > 1 ? './?map=1' : `./?my=1&t=${encodeURIComponent(it.r.t)}`; }).addTo(lay); }); };
     drawPins(want && want.t); m.on('zoomend moveend', () => drawPins(want && want.t));
     m.on('click', () => { location.href = './?map=1'; });
-    note.textContent = withPh ? `사진 위치 ${pins.length}곳 · 최근 90일 이동 기록 ${life.length}개` : `위치가 연결된 사진 없음 · 실제 이동 기록 ${life.length}개`; note.style.display = '';
-    if (want) box.focus(want);
+    note.textContent = life.length > 1 ? `생활권 · 최근 90일 길 ${life.length}개` : withPh ? '사진을 찍은 곳' : '다녀온 곳'; note.style.display = '';
   }, 0);
   return box;
 }
@@ -7685,10 +7546,8 @@ function cStoryStrip(hero) {
     const recs = cRecs(12); if (!recs.length) return;
     await Promise.all(recs.map(cPhotos));
     const row = el('div', { class: 'c-strip', role: 'list' });
-    // Keep records honest: photo moments first, then GPS-only records, each in recent-first order.
-    const ordered = [...recs.filter(r => r.first), ...recs.filter(r => !r.first)];
-    ordered.forEach(r => { const p = r.first, d = new Date(r.a);
-      const it = el('a', { class: 'c-st' + (p ? ' c-st-photo' : ' c-st-route'), role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
+    recs.forEach(r => { const p = r.first, d = new Date(r.a);
+      const it = el('a', { class: 'c-st', role: 'listitem', href: `./?my=1&t=${encodeURIComponent(r.t)}`, 'data-t': r.t },
         el('i', { class: 'im' + (p ? '' : ' rt'), style: p ? `background-image:url('${p.thumb}')` : '' }, p ? null : cRouteThumb(r), r.ph.length > 1 ? el('b', { class: 'cnt', text: `${r.ph.length}` }) : null),
         el('span', { class: 'dt' }, ico(r.M.k, 13), ` ${d.getMonth() + 1}.${d.getDate()} · ${r.walk >= 50 ? fmtDist(r.walk) : r.M.label}`),
         el('b', { text: r.name }));
@@ -7704,9 +7563,7 @@ function cStoryStrip(hero) {
     row.addEventListener('touchstart', () => { moved = true; }, { passive: true });
     row.addEventListener('pointerdown', () => { moved = true; }, { passive: true });
     row.addEventListener('scroll', () => { if (moved && !raf) raf = requestAnimationFrame(sync); }, { passive: true });
-    wrap.replaceWith(el('div', { class: 'c-sec md-story-title-v20' },
-      el('div', {},el('span',{class:'md-section-eyebrow-v20',text:'MOMENTS'}),el('h2', { text: '최근 이야기' })),
-      el('a', { href: './?my=1' }, '모두 보기 ↗')), row);
+    wrap.replaceWith(el('div', { class: 'c-sec' }, el('h2', { text: '최근 이야기' }), el('a', { href: './?my=1' }, '모두 보기 ›')), row);
   }, 0);
   return wrap;
 }
@@ -7715,7 +7572,7 @@ function cFindLine() {
   const slot = el('div', { style: 'display:contents' });
   setTimeout(async () => { try {
     const D = await lcGather(); if (!D.recs.length) return; const f = lcFind(D).found[0]; if (!f) return;
-    slot.replaceWith(el('a', { class: 'c-findline c-findline-home', href: './?find=1' }, el('span', { class: 'sp' }, cSvg('spark', 22, '#FF8A4C')),
+    slot.replaceWith(el('a', { class: 'c-findline', href: './?find=1' }, el('span', { class: 'sp' }, cSvg('spark', 22, '#FF8A4C')),
       el('span', { class: 'tx' }, el('small', { text: '내 기록에서 발견' }), el('b', { text: f.title })), el('span', { class: 'go', text: '›' })));
   } catch (e) {} }, 0);
   return slot;
@@ -7853,45 +7710,6 @@ async function cHomeBg(bg, withPh, nBub) {
   if (phPeopleKnown(head.first) !== 1) set(head.first);             // 모르면 일단 예전처럼(가장 최근 대표 사진), 사람이 있으면 아래에서 바꿈
   for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) return; if (h === 0) return set(p); }
 }
-
-/* MPD home uses real user photos and the existing GPS-based, read-only Leaflet map. */
-function cHomeV4(){
-  const root=el('div',{class:'md-home-v4'});
-  const cover=el('section',{class:'md-cover-v4','aria-label':'MPD · 나의 일상'});
-  const bg=el('div',{class:'md-cover-v4-bg'});
-  bg.style.backgroundImage=`url("${homeHeroUrl()}")`;
-  const control=(title,body,fn)=>{
-    const b=el('button',{class:'md-ctrl',type:'button','aria-label':title,onclick:fn});
-    b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
-    return b;
-  };
-  const brand=el('div',{class:'md-brand'},cLogoSvg(),el('span',{},el('b',{text:'MPD'}),el('small',{text:'Map Photo Diary'})));
-  const top=el('div',{class:'md-head-v4'},brand,el('span',{class:'md-grow'}),
-    control('기록 검색','<circle cx="11" cy="11" r="7"/><path d="m20 20-4.5-4.5"/>',cSearch),
-    control('내 설정','<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/>',appSettings));
-  cover.append(bg,top,el('h1',{},'일상을 발견하고,',el('br'),'행복을 넓히다.'));
-  const hero=cHomeHero();
-  const focusText=el('span',{class:'md-focus-text-v20',text:'기록한 순간이 지도 위의 장소로 이어집니다'});
-  const mapTitle=el('div',{class:'md-map-head-v20'},
-    el('div',{class:'md-map-head-copy-v20'},
-      el('span',{class:'md-section-eyebrow-v20',text:'MY LIFE, ON THE MAP'}),
-      el('h2',{text:'나의 이야기 지도'}),
-      focusText),
-    el('a',{class:'md-map-more-v20',href:'./?map=1','aria-label':'나의 전체 이야기 지도 보기'},'전체 지도',el('span',{'aria-hidden':'true',text:'↗'})));
-  const map=el('section',{class:'md-map-v4 md-map-v20','aria-label':'사진과 실제 GPS 기록 지도'},mapTitle,hero);
-  root.append(cover,map);
-  if(!ls.get('homeHero','')) setTimeout(async()=>{
-    try{
-      const a=cRecs(15);
-      for(let i=0;i<a.length;i+=5) await Promise.all(a.slice(i,i+5).map(cPhotos));
-      const selected=a.filter(r=>r.first);
-      if(selected.length && bg.isConnected) await cHomeBg(bg,selected,3);
-    }catch(e){}
-  },0);
-  root.focus=r=>{ if(r){focusText.textContent=r.name || '선택한 기록';}hero.focus(r); };
-  return root;
-}
-
 function viewLanding() {
   // 카톡 안에서 첫 화면을 열면 기록이 카톡 안에만 남고 설치도 안 돼서, 바로 기본 브라우저로 넘겨요 (한 번만, '카톡에서 계속 보기'를 누르면 안 넘겨요)
   if (IN_KAKAO && !IS_APP) { let stay = false; try { stay = sessionStorage.getItem('kakaoStay') === '1'; } catch {} if (!stay) { try { sessionStorage.setItem('kakaoStay', '1'); } catch {} setTimeout(kakaoOut, 300); } }
@@ -7902,17 +7720,16 @@ function viewLanding() {
   // 시안 한 화면 아래(스크롤): 예전 첫 화면에 있던 들어가는 길은 그대로 한 줄씩
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), el('small', { text: sub })), el('span', { class: 'go', text: '›' }));
-  const homeV4 = cHomeV4();
-  app.replaceChildren(homeV4,
+  app.replaceChildren(cHomePhoto(),
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
-      cStoryStrip(homeV4), cFindLine(), memSlot,
-      el('details', { class: 'md-more-v4' }, el('summary', { text: '다른 기능 보기' }), el('div', { class: 'c-list' },
+      memSlot,
+      el('div', { class: 'c-list' },
         row('📤', 'MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', null, openPastTrips),
         row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
         row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
         row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
         row('🎮', '게임', '밥값 내기 · 2048 · 오목', './?game=1'),
-        row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1'))),
+        row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1')),
       installSlot,
       el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' }, wherePill(false, true),
         // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
