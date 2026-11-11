@@ -2385,7 +2385,14 @@ function gpxSave(title, rows, ts) {
   const d = new Date(ts || (Number.isFinite(rows[0][2]) ? rows[0][2] : Date.now())), pad = n => String(n).padStart(2, '0');
   const fname = `MapDiary_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.gpx`;
   const blob = new Blob([gpx], { type: 'application/gpx+xml' });
-  if (window.mdNativeSave) return window.mdNativeSave(blob, fname);   // 앱: 저장하고 결과를 알려 줘요('내 파일 > Documents > MapDiary' 또는 못 한 까닭)
+  // 앱 (2026-11-11 사용자 'GPX 저장 아직 안되'): Documents에 저장만 하면 어디 있는지 못 찾아요 →
+  //   저장하고 바로 휴대폰 공유 창도 띄워요(트랭글·램블러·드라이브·카톡·내 파일로 바로 보내기). 공유 창이 안 뜨면 저장 결과만 알려요
+  if (window.mdNativeSave) {
+    return (async () => {
+      try { await window.mdNativeSave(blob, fname); } catch {}
+      try { await navigator.share({ files: [new File([blob], fname, { type: 'application/gpx+xml' })], title: fname }); } catch (e) { if (!/cancel/i.test(String(e && e.message))) toast('공유 창을 열지 못했어요 · 내 파일 > Documents > MapDiary 폴더에서 ' + fname + ' 파일을 찾아 주세요'); }
+    })();
+  }
   if (IN_KAKAO) return toast('카카오톡 안에서는 파일 저장이 막혀 있어요. 오른쪽 위 ⋮ → 다른 브라우저로 열기 뒤 다시 눌러 주세요');
   if (IS_IOS && navigator.share) { try { const f = new File([blob], fname, { type: 'application/gpx+xml' }); if (!navigator.canShare || navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: fname }).catch(() => {}); return; } } catch {} }
   const u = URL.createObjectURL(blob), a = el('a', { href: u, download: fname });
@@ -2850,9 +2857,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.10-23';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.11-24';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = 'GPX 받기를 고쳤어요(앱에서는 내 파일 Documents MapDiary 폴더에, 웹은 다운로드 폴더에 영어 이름으로) · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = 'GPX 받기를 누르면 앱에서는 저장하고 바로 공유 창이 떠요(트랭글, 램블러, 드라이브, 카톡으로 바로 보내기) · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
