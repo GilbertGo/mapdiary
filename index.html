@@ -2391,20 +2391,26 @@ function gpxSave(title, rows, ts) {
   //   저장하고 바로 휴대폰 공유 창도 띄워요(트랭글·램블러·드라이브·카톡·내 파일로 바로 보내기). 공유 창이 안 뜨면 저장 결과만 알려요
   if (window.mdNativeSave) {
     return (async () => {
-      // 2026-11-11 사용자 다운로드 폴더 캡처 '여기도 없어': 받은 파일은 늘 다운로드 폴더에서 찾으니 앱도 '다운로드' 폴더에 써요
-      //   (index.html에서 Filesystem 플러그인을 바로 불러 써서 새 APK가 필요 없어요). 정말 생겼는지 stat으로 확인하고 그 자리를 알려요. 못 쓰면 예전처럼 Documents/MapDiary
-      let put = false;
-      try {
-        const C = window.Capacitor, FS = C && (C.Plugins && C.Plugins.Filesystem || (C.registerPlugin && C.registerPlugin('Filesystem')));
-        if (FS) {
-          const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
-          await FS.writeFile({ path: 'Download/' + fname, data: b64, directory: 'EXTERNAL_STORAGE', recursive: true });
-          const st = await FS.stat({ path: 'Download/' + fname, directory: 'EXTERNAL_STORAGE' });
-          if (st && st.size > 0) { put = true; toast(`다운로드 폴더에 ${fname}(으)로 저장했어요 · 내 파일 > 다운로드`); }
+      // 2026-11-11 사용자 다운로드 폴더 캡처 '여기도 없어' → 'MapDiary 폴더도 없는데': 예전 Documents 저장은 실패해도 알림이 공유 창에 가려 몰랐어요.
+      //   다운로드 폴더 → (안 되면) Documents/MapDiary 순서로 Filesystem 플러그인을 바로 써서 쓰고(새 APK 필요 없음), stat으로 정말 생겼는지 확인해요.
+      //   결과(어디에 저장했는지 / 못 한 까닭)는 공유 창이 닫힌 뒤에 알려요(공유 창에 가리지 않게)
+      let msg = '';
+      const C = window.Capacitor, FS = C && (C.Plugins && C.Plugins.Filesystem || (C.registerPlugin && C.registerPlugin('Filesystem')));
+      if (FS) {
+        let b64 = '', why = '';
+        try { b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); }); } catch (e) { why = String(e && e.message || e); }
+        for (const [path, dir, where] of [['Download/' + fname, 'EXTERNAL_STORAGE', '내 파일 > 다운로드'], ['MapDiary/' + fname, 'DOCUMENTS', '내 파일 > 문서(Documents) > MapDiary']]) {
+          if (msg || !b64) break;
+          try {
+            await FS.writeFile({ path, data: b64, directory: dir, recursive: true });
+            const st = await FS.stat({ path, directory: dir });
+            if (st && st.size > 0) msg = `✅ ${fname} 저장했어요 · ${where}`; else why = '파일이 생기지 않았어요';
+          } catch (e) { why = String(e && e.message || e); }
         }
-      } catch {}
-      if (!put) { try { await window.mdNativeSave(blob, fname); } catch {} }
-      try { await navigator.share({ files: [new File([blob], fname, { type: 'application/gpx+xml' })], title: fname }); } catch (e) { if (!/cancel/i.test(String(e && e.message))) toast('공유 창을 열지 못했어요 · 내 파일 > Documents > MapDiary 폴더에서 ' + fname + ' 파일을 찾아 주세요'); }
+        if (!msg) msg = `⚠ GPX 파일을 휴대폰에 저장하지 못했어요 (${why || '까닭 모름'}) · 공유 창에서 등산 앱·메일·드라이브로 보내 주세요`;
+      } else { try { await window.mdNativeSave(blob, fname); } catch {} }
+      try { await navigator.share({ files: [new File([blob], fname, { type: 'application/gpx+xml' })], title: fname }); } catch (e) {}
+      if (msg) toast(msg);
     })();
   }
   if (IN_KAKAO) return toast('카카오톡 안에서는 파일 저장이 막혀 있어요. 오른쪽 위 ⋮ → 다른 브라우저로 열기 뒤 다시 눌러 주세요');
@@ -2871,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.11-27';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.11-28';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = 'GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장돼요(내 파일 다운로드에서 찾으세요) · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = 'GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
