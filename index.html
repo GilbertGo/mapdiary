@@ -2857,9 +2857,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.11-24';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.11-25';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = 'GPX 받기를 누르면 앱에서는 저장하고 바로 공유 창이 떠요(트랭글, 램블러, 드라이브, 카톡으로 바로 보내기) · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요(공유하기는 그 아래) · GPX 받기를 누르면 앱에서는 저장하고 바로 공유 창이 떠요(트랭글, 램블러, 드라이브, 카톡으로 바로 보내기) · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7965,6 +7965,8 @@ function viewLanding() {
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
       memSlot,
       el('div', { class: 'c-list' },
+        // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?': 맨 위는 내 기록 보기, 공유하기는 그 아래로
+        row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `지금까지 남긴 기록 ${n}개 · 목록과 달력` : '남긴 기록을 목록과 달력으로'; })(), './?my=1'),
         row('📤', 'MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', null, openPastTrips),
         row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
         row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
