@@ -164,11 +164,12 @@
 - 발견 화면: 같은 곳 카드를 맨 앞(1년 전 오늘은 두 번째 그대로), 표지는 최근 날 사진 원본(`lcPhotoGet` → `phSrc`). 상세 `cFindDetail` 맨 위 `spCompare(g)`: 처음|최근 두 칸(누르면 원본 `showPhoto`), 아래 날마다 한 장 줄(누르면 그 날로 비교 바꿈, 고른 칸을 다시 누르면 원본), 칸마다 '그날 기록 ›', 사진을 못 찾으면(지워짐) 그 칸만 흐리게·'찾을 수 없는 사진 n장'. '지도에서 이 자리 보기' → `?map=1&t=최근기록&at=위도,경도`: `viewStoryMap`이 그 기록 카드 + 그 자리 산호 동그라미(50m)·확대 17. 같이 고침: 지도 필터 칩에 맛집이 없으면 'null' 글자가 보이던 것
 - 시험 scratchpad `sp/sp_t.js` 28/28(계산 14: 위치 오차 45m 묶음·80m 안 묶음, 중복, 하루 한 장, 지운 기록, 사진 없는 기록, 동영상·(0,0), 집 근처, 이름, 예전 판 lcFind와 다른 발견 똑같음 / 화면 14: 카드·비교·원본 900×1200·지도 &at·기록·사진 DB 그대로·사진·기록 지운 뒤 다시 셈·자료 보내는 요청 0), `t/lc_t.js` 34/34(후보 11개로 바꿈), `uj/stale.js` 17/17, 여정 `uj/run16.js` 6개 성공
 
-## GPX 받기 고침 (2026-11-10, 사용자 기록 보기 캡처 'GPX 잘 안 받아지는 듯', 개발 가지 `main-jethsj` · Draft PR #263에 함께, 판 -23)
+## GPX 받기 고침 (2026-11-10, 사용자 기록 보기 캡처 'GPX 잘 안 받아지는 듯', PR #263으로 배포, 판 -23 → -24)
 - 까닭: GPX 세 곳(내 MPD 하나 보기 `downloadTrack`·여러 날 여행·받은 링크 `toGpx`)이 모두 `<a download>`만 써서 ① 앱(웹뷰)에서는 아무것도 안 받아지는데 '저장했어요' 알림이 떴고 ② 파일 이름에 한글 제목이 들어가 일부 브라우저가 'download'로 바꿈
 - `gpxSave(title, rows, ts)` 하나로 모음: 앱은 `mdNativeSave`(내 파일 > Documents > MapDiary, 결과는 앱이 알림), 카톡 안은 막혀서 안내만, 아이폰은 공유 창(파일), 그 밖은 다운로드 폴더 + '다운로드 폴더에 MapDiary_날짜_시각.gpx(으)로 받았어요'. 이름은 영어·숫자만 `MapDiary_YYYYMMDD_HHMM.gpx`
 - 같은 날 main에 다른 곳에서 올라온 홈 디자인 커밋 7개(판 -22 'real-map-concept')를 이 가지에 합침(겹친 곳은 UI_VER 줄 하나뿐 → -23)
-- 시험 scratchpad `gpx/gpx_t.js` 8/8(웹·앱·카톡·아이폰), `sp/sp_t.js` 28/28, `uj/stale.js` 17/17, 여정 6개 성공
+- **판 -24(2026-11-11 사용자 'GPX 저장 아직 안되')**: 앱은 Documents에 저장한 뒤 바로 휴대폰 공유 창(`navigator.share` files → native.js Capacitor Share)도 띄움(트랭글·램블러·드라이브·카톡·내 파일로). 공유 창을 못 열면 Documents 위치 알림. 배포됨
+- 시험 scratchpad `gpx/gpx_t.js` 9/9(웹·앱 저장+공유 창·카톡·아이폰), `sp/sp_t.js` 28/28, `uj/stale.js` 17/17, 여정 6개 성공
 
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
