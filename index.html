@@ -642,6 +642,8 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 .vw-mapw{position:relative}.vw-fade{display:none}
 html.vw-page{--ground:#000;--card:#1C1C1E;--ink:#F2F2F7;--muted:#8E8E93;--line:#2C2C2E;--soft:#2C2C2E;--grey-soft:#2C2C2E;--pine:#4DA3FF;--forest:#4DA3FF;--forest-ink:#4DA3FF;--forest-soft:#2C2C2E;--blue-ink:#4DA3FF;--shadow:none;color-scheme:dark;background:#000}
 html.vw-page body{background:#000!important;color:var(--ink)}
+.vw-share{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:1200;display:flex;align-items:center;gap:6px;padding:0 20px;height:52px;border:none;border-radius:26px;background:#0A84FF;color:#fff;font:800 16px 'Pretendard Variable',Pretendard,-apple-system,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer}
+html.vw-page body{padding-bottom:84px}
 html.vw-page .sky-clouds{display:none!important}
 html.vw-page .role.leader{background:#000!important;color:#fff;padding-bottom:10px}
 html.vw-page .card,html.vw-page details.more{background:#1C1C1E;box-shadow:none}
@@ -2857,9 +2859,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.11-25';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.11-26';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요(공유하기는 그 아래) · GPX 받기를 누르면 앱에서는 저장하고 바로 공유 창이 떠요(트랭글, 램블러, 드라이브, 카톡으로 바로 보내기) · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · GPX 받기를 누르면 앱에서는 저장하고 바로 공유 창이 떠요(트랭글, 램블러, 드라이브, 카톡으로 바로 보내기) · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6084,7 +6086,8 @@ async function viewMyOne(t) {
     wa ? el('details', { class: 'card vw-det' }, el('summary', { text: '⌚ 시계 분석 자세히 · 판단 글 · 심박 존 · 자세' }), wa) : null,
     M.k === 'run' ? formCard(t) : null, spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
-    el('button', { class: 'btn primary full', text: 'MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }),
+    // 보다가 바로 공유 (2026-11-11 사용자 '보기에 들어가서 보다가 공유하게 해'): 화면 오른쪽 아래에 늘 떠 있는 단추
+    el('button', { class: 'vw-share', type: 'button', 'aria-label': '이 MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }, el('span', { 'aria-hidden': 'true', text: '📤' }), ' 공유하기'),
     live ? null : el('button', { class: 'btn line full', text: '📸 가족 앨범에 올리기', onclick: () => famFromMD(t, info.name) }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
     el('div', { class: 'two' },
@@ -7965,9 +7968,8 @@ function viewLanding() {
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
       memSlot,
       el('div', { class: 'c-list' },
-        // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?': 맨 위는 내 기록 보기, 공유하기는 그 아래로
+        // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
         row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `지금까지 남긴 기록 ${n}개 · 목록과 달력` : '남긴 기록을 목록과 달력으로'; })(), './?my=1'),
-        row('📤', 'MPD 공유하기', '다녀온 길을 사진 한 장이나 지도 링크로', null, openPastTrips),
         row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
         row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
         row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
@@ -9356,7 +9358,7 @@ function viewWalk() {
       const wp = ls.get('walkPlaces:' + done, {});
       const info = { name: ls.get('trackName:' + done, defName()), startPlace: wp.start || '출발 지점', meetPlace: wp.end || '도착 지점', startAt: tr[0][2], meetAt: tr[tr.length - 1][2], route: null, phase: 'go' };
       root.replaceChildren(...[roleBar('leader', '내 기록'),
-        el('div', { class: 'banner ok', style: 'margin-top:12px' }, el('b', { text: `"${info.name}" Map Photo Diary에 남겼어요!` }), el('div', { text: `${M().did} 거리 ${fmtDist(st.walk)} · ${fmtDur(st.ms)}. 첫 화면 'MPD 공유하기'에도 남아 있어요.` })),
+        el('div', { class: 'banner ok', style: 'margin-top:12px' }, el('b', { text: `"${info.name}" Map Photo Diary에 남겼어요!` }), el('div', { text: `${M().did} 거리 ${fmtDist(st.walk)} · ${fmtDur(st.ms)}. 첫 화면 '내 MPD 보기'에도 남아 있어요.` })),
         el('button', { class: 'btn primary full big', text: 'MPD 공유하기', onclick: () => openBrag(info, done, 0, false) }),
         (() => { const aid = ls.get('walkAlbum:' + done, null), ai = aid && albumInfo(aid);
           return ai && ai.days > 1 ? el('button', { class: 'btn line full', text: `'${ai.name}' 여행 전체 공유하기`, onclick: () => openBrag(ai, aid, 0, false) }) : null; })(),
