@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.12-29-film';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-32';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5266,12 +5266,14 @@ function filmPath(rows, hide) {
   // 5m 안 겹친 점은 하나로(카메라 방향이 흔들리지 않게)
   const Q = []; for (const p of P) { const l = Q[Q.length - 1]; if (!l || dist(l.lat, l.lng, p.lat, p.lng) >= 5) Q.push(p); }
   P = cum(Q); if (P.length < 2) return null;
-  let D = P[P.length - 1].d;
+  let D = P[P.length - 1].d, off = 0;
+  const Dfull = D;
   if (hide && D > 300) {
     const cut = Math.min(500, D / 3), a = P.findIndex(p => p.d >= cut), b = P.length - 1 - [...P].reverse().findIndex(p => D - p.d >= cut);
-    if (a > 0 && b > a + 1) { P = cum(P.slice(a, b + 1).map(p => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt }))); D = P[P.length - 1].d; }
+    if (a > 0 && b > a + 1) { off = P[a].d; P = cum(P.slice(a, b + 1).map(p => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt }))); D = P[P.length - 1].d; }
   }
-  return { P, D };
+  // off: 가린 앞부분 길이, Dfull: 가리기 전 전체 길이 (화면 거리 숫자는 이걸로 셈, 2026-11-13 '10km인데 9km로 나와')
+  return { P, D, off, Dfull };
 }
 function filmAt(P, d) {   // 길 위 거리 d 자리 (보간)
   if (d <= 0) return Object.assign({ i: 0 }, P[0]);
@@ -5417,29 +5419,33 @@ function viewFilm() {
   filmPoster(S, opt, cv);
 }
 function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, start, end}
-  if (S.gpx) return { rows: S.gpx.rows, name: S.gpx.name, mode: 'trek', t: null };
+  if (S.gpx) { const r = S.gpx.rows; return { rows: r, name: S.gpx.name, mode: 'trek', t: null, t0: r.length ? r[0][2] : null, ms: r.length > 1 ? r[r.length - 1][2] - r[0][2] : null }; }
   if (!S.rec) return null;
   const wp = ls.get('walkPlaces:' + S.rec, {});
-  return { rows: trackLoad(S.rec), name: ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end };
+  const rows = trackLoad(S.rec); let total = null, ms = null;
+  try { const st = trackStats(rows, modeOfT(S.rec).car); total = st.walk; ms = st.ms; } catch {}
+  return { rows, name: ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end, total, ms, t0: rows.length ? rows[0][2] : null };
 }
 function filmPoster(S, opt, cv) {   // 만들기 전 첫 장(제목 카드) 미리 보기
   const src = filmSrc(S), c = cv.getContext('2d');
   c.fillStyle = '#0B1220'; c.fillRect(0, 0, FILM_W, FILM_H);
   if (!src) return;
   const path = filmPath(src.rows, opt.hide); if (!path) return;
-  const { P, D } = path, b = P.reduce((a, p) => ({ n: Math.max(a.n, p.lat), s: Math.min(a.s, p.lat), e: Math.max(a.e, p.lng), w: Math.min(a.w, p.lng) }), { n: -90, s: 90, e: -180, w: 180 });
+  const { P } = path, D = filmTotal(src, path), b = P.reduce((a, p) => ({ n: Math.max(a.n, p.lat), s: Math.min(a.s, p.lat), e: Math.max(a.e, p.lng), w: Math.min(a.w, p.lng) }), { n: -90, s: 90, e: -180, w: 180 });
   const k = Math.cos((b.n + b.s) / 2 * Math.PI / 180), sx = (b.e - b.w) * k || 1e-6, sy = (b.n - b.s) || 1e-6, sc = Math.min(560 / sx, 720 / sy);
   c.strokeStyle = FILM_COL[src.mode] || '#4FC3F7'; c.lineWidth = 8; c.lineJoin = c.lineCap = 'round'; c.beginPath();
   P.forEach((p, i) => { const x = 360 + ((p.lng - (b.e + b.w) / 2) * k) * sc, y = 700 - (p.lat - (b.n + b.s) / 2) * sc; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke();
   filmCardText(c, src, D, P, opt, 1);
 }
+function filmKm(m) { return m >= 1000 ? `${(m / 1000).toFixed(2)}km` : `${Math.round(m)}m`; }
+function filmTotal(src, path) { return src.total > 0 ? src.total : path.Dfull; }   // 영상에 쓰는 '총 거리' = 기록 보기와 같은 거리 (GPX는 그 길 전체)
 function filmCardText(c, src, D, P, opt, a) {   // 제목 카드(처음) 글자
   c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18;
   const F = (w, s) => `${w} ${s}px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif`;
   let y = 250;
   if (opt.title) { c.font = F(800, 58); const L = filmWrap(c, src.name, 600); L.slice(0, 2).forEach(l => { c.fillText(l, 360, y); y += 70; }); }
   if (opt.date && P[0].ts) { c.font = F(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), 360, y + 6); y += 50; }
-  if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#4FC3F7'; c.fillText(fmtDist(D), 360, y + 20); }
+  if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#4FC3F7'; c.fillText(filmKm(D), 360, y + 20); }
   c.restore();
 }
 function filmWrap(c, s, w) { const out = []; let line = ''; for (const ch of String(s)) { if (c.measureText(line + ch).width > w && line) { out.push(line); line = ch; } else line += ch; } if (line) out.push(line); return out; }
@@ -5460,6 +5466,8 @@ async function filmMake(S, opt, U) {
     for (const c of ['avc1.4d0028', 'avc1.42001f']) { try { if ((await VideoEncoder.isConfigSupported({ codec: c, width: FILM_W, height: FILM_H, bitrate: 6e6, framerate: FILM_FPS })).supported) { vcodec = c; break; } } catch {} }
     if (!vcodec) throw new Error('이 휴대폰은 H.264 영상 만들기를 지원하지 않아요');
     const { P, D } = path, T = opt.sec, N = Math.round(T * FILM_FPS), col = FILM_COL[src.mode] || '#4FC3F7';
+    // 화면 숫자는 0에서 시작해 끝에서 기록 보기와 같은 총 거리(TOT)가 되게 길 위 비율로 셈 (집 가리기로 앞뒤를 잘라도 끝 숫자는 총 거리, 2026-11-13 '10km인데 9km')
+    const TOT = filmTotal(src, path), shownAt = dh => Math.min(TOT, TOT * dh / D);
     const tIn = Math.min(2, T * 0.1), tOut = Math.min(2.5, T * 0.12), tRun = T - tIn - tOut;
     // 사진 → 길 위 거리
     let photos = [];
@@ -5486,8 +5494,8 @@ async function filmMake(S, opt, U) {
     }
     // 거리 표시(마라톤·러닝·자전거): 1km 또는 5km마다
     const kmStep = src.mode === 'run' || src.mode === 'bike' ? (D >= 15000 ? 5000 : 1000) : 0;
-    const marks = []; if (kmStep) for (let m = kmStep; m < D - 50; m += kmStep) { const a = filmAt(P, m); marks.push({ lat: a.lat, lng: a.lng, d: m, n: `${m / 1000}km` }); }
-    const marathon = src.mode === 'run' && D >= 20000;
+    const marks = []; if (kmStep) for (let m = kmStep; m < TOT - 50; m += kmStep) { const dd = m * D / TOT; if (dd <= 0 || dd >= D) continue; const a = filmAt(P, dd); marks.push({ lat: a.lat, lng: a.lng, d: dd, n: `${m / 1000}km` }); }
+    const marathon = src.mode === 'run' && TOT >= 20000;
     // 지도 준비 (보이지 않는 곳에 영상 크기 그대로)
     say('위성 지도를 준비하는 중…');
     mapEl = el('div', { class: 'fm-mapbox' }); document.body.append(mapEl);
@@ -5514,11 +5522,18 @@ async function filmMake(S, opt, U) {
     await new Promise((res, rej) => { map.once('load', res); map.once('error', e => rej(new Error('지도를 불러오지 못했어요 · ' + ((e && e.error && e.error.message) || '')))); setTimeout(res, 20000); });
     try { map.setSky && map.setSky({ 'sky-color': '#7FB6E6', 'horizon-color': '#E3EEF8', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.4, 'fog-color': '#DCE8F2', 'fog-ground-blend': 0.6 }); } catch {}
     // 카메라: 길 길이에 맞춘 확대, 진행 방향이 화면 위로
-    const zRun = Math.max(12.4, Math.min(16.3, 16.2 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
+    // 2026-11-13 사용자 '카메라 앵글이 너무 위에서 본 듯' → 기울기 58°→67°, 높이는 약 60%로(확대 +0.75)
+    const FILM_PITCH = 67, zRun = Math.max(13.1, Math.min(17, 16.95 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
     const bounds = coords.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
     const over = map.cameraForBounds(bounds, { padding: { top: 260, bottom: 300, left: 70, right: 70 } }) || { center: bounds.getCenter(), zoom: 12 };
-    const look = Math.max(60, Math.min(600, D * 0.035));
-    const camAt = d => { const a = filmAt(P, d), b = filmAt(P, Math.min(D, d + look)), z = filmAt(P, Math.max(0, d - look * 0.4)); return { a, br: filmBear(z, b.d - z.d < 5 ? filmAt(P, D) : b) }; };
+    // 2026-11-13 사용자 '카메라 구도가 너무 자주 바뀌니 어지럽다': 방향은 넓게(뒤 절반~앞 한 칸, 길 8% · 250m~2.5km) 보고 아주 천천히(1초에 최대 12°) 돌고,
+    //   카메라 가운데도 앞뒤 자리를 평균 내 GPS 흔들림을 걸러요 (지금 자리 점은 실제 길 위에 그대로)
+    const look = Math.max(250, Math.min(2500, D * 0.08));
+    const camAt = d => {
+      const a = filmAt(P, d), b = filmAt(P, Math.min(D, d + look)), z = filmAt(P, Math.max(0, d - look * 0.5));
+      let lat = 0, lng = 0; for (let k = -2; k <= 2; k++) { const q = filmAt(P, Math.max(0, Math.min(D, d + k * look * 0.12))); lat += q.lat / 5; lng += q.lng / 5; }
+      return { a: { lat, lng }, br: filmBear(z, b.d - z.d < 5 ? filmAt(P, D) : b) };
+    };
     let bear = camAt(0).br;
     // 영상 굳히기 (조각은 모아 두었다가 ①영상만 ②음악 넣은 판 두 번 묶어요)
     const chunks = []; let encErr = null;
@@ -5535,15 +5550,15 @@ async function filmMake(S, opt, U) {
       let cam, dh;
       if (tt < tIn) {   // 처음: 전체 길이 보이다가 출발점으로 내려앉음
         const e = filmEase(tt / tIn), s = camAt(0); dh = 0; bear = s.br;
-        cam = { center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zRun - over.zoom) * e, pitch: 58 * e, bearing: bear * e };
+        cam = { center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zRun - over.zoom) * e, pitch: FILM_PITCH * e, bearing: bear * e };
       } else if (tt < tIn + tRun) {   // 길 따라가기 (앞쪽 방향을 부드럽게 따라 돎)
         const lin = Math.min(1, (tt - tIn) / tRun);
         dh = D * (0.15 * lin + 0.85 * filmEase(lin)); const s = camAt(dh);
-        bear = (bear + filmAng(bear, s.br) * 0.07 + 360) % 360;
-        cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: 58, bearing: bear };
+        const turn = filmAng(bear, s.br) * 0.03, MAXT = 12 / FILM_FPS; bear = (bear + Math.max(-MAXT, Math.min(MAXT, turn)) + 360) % 360;
+        cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: FILM_PITCH, bearing: bear };
       } else {   // 끝: 다시 하늘로 올라가 전체 길
         const e = filmEase((tt - tIn - tRun) / tOut), s = filmAt(P, D); dh = D;
-        cam = { center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: zRun + (over.zoom - zRun) * e, pitch: 58 - 28 * e, bearing: bear + filmAng(bear, 0) * e };
+        cam = { center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: zRun + (over.zoom - zRun) * e, pitch: FILM_PITCH - 37 * e, bearing: bear + filmAng(bear, 0) * e };
       }
       map.jumpTo(cam);
       const cur = filmAt(P, dh), doneC = coords.slice(0, cur.i + 1).concat([[cur.lng, cur.lat]]);
@@ -5562,7 +5577,7 @@ async function filmMake(S, opt, U) {
         for (const l of labels) { if (l.d < dh - look * 2 || l.d > dh + look * 8) continue; const p = onScreen(l); if (p) pill(p.x, p.y, l.n, 'rgba(20,37,59,.86)', '#fff', 26); }
       }
       // 처음 제목 카드
-      if (tt < tIn + 0.8) filmCardText(c, src, D, P, opt, Math.max(0, Math.min(1, 1 - (tt - tIn + 0.4) / 1.2)));
+      if (tt < tIn + 0.8) filmCardText(c, src, TOT, P, opt, Math.max(0, Math.min(1, 1 - (tt - tIn + 0.4) / 1.2)));
       // 위: 작은 제목·날짜 (따라가는 동안)
       if (tt >= tIn) {
         c.save(); c.textAlign = 'left'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 10;
@@ -5573,9 +5588,10 @@ async function filmMake(S, opt, U) {
       // 아래: 거리·지난 시간
       if (opt.stats && tt >= tIn) {
         c.save(); c.textAlign = 'left'; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 12; c.fillStyle = '#fff';
-        c.font = F(800, 92); c.fillText((dh / 1000).toFixed(dh < 10000 ? 2 : 1), 40, FILM_H - 92); const w = c.measureText((dh / 1000).toFixed(dh < 10000 ? 2 : 1)).width;
+        const sd = shownAt(dh), sTxt = (sd / 1000).toFixed(sd < 10000 ? 2 : 1);
+        c.font = F(800, 92); c.fillText(sTxt, 40, FILM_H - 92); const w = c.measureText(sTxt).width;
         c.font = F(700, 36); c.fillStyle = col; c.fillText('km', 50 + w, FILM_H - 94);
-        if (P[0].ts && cur.ts > P[0].ts) { c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = F(700, 34); c.fillText(filmDur(cur.ts - P[0].ts), FILM_W - 40, FILM_H - 96); }
+        { const pT = P[P.length - 1].ts - P[0].ts, tot = src.ms > 0 ? src.ms : pT; if (pT > 0 && tot > 0) { c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = F(700, 34); c.fillText(filmDur(Math.max(0, Math.min(tot, tot * (cur.ts - P[0].ts) / pT))), FILM_W - 40, FILM_H - 96); } }   // 시간도 0에서 기록 보기 시간까지
         c.restore();
       }
       // 사진: 그 자리를 지날 때 2초쯤 떠올랐다 사라짐
@@ -5583,9 +5599,12 @@ async function filmMake(S, opt, U) {
         const span = D * (2.4 / tRun), ph = photos.filter(q => dh >= q.d && dh < q.d + span).pop();
         if (ph) {
           const k = (dh - ph.d) / span, a = Math.min(1, k / 0.15, (1 - k) / 0.15), sc = 0.92 + 0.08 * Math.min(1, k / 0.2);
-          const bw = 440 * sc, bh = 550 * sc, x = (FILM_W - bw) / 2, y = 300;
-          c.save(); c.globalAlpha = Math.max(0, a); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 30; c.fillStyle = '#fff'; c.beginPath(); c.roundRect(x - 10, y - 10, bw + 20, bh + 20, 26); c.fill(); c.shadowBlur = 0;
-          c.beginPath(); c.roundRect(x, y, bw, bh, 18); c.clip();
+          // 2026-11-13 사용자 '사진 띄운 거 좋은데 지도를 너무 많이 가린다': 가운데 큰 카드(440×550) → 오른쪽 위 작은 카드(240×300),
+          //   제목 아래·지금 자리(화면 가운데)와 아래 거리 글자를 가리지 않게. 오른쪽에서 살짝 밀려 들어오고 조금 기울임
+          const bw = 240 * sc, bh = 300 * sc, slide = (1 - Math.min(1, k / 0.15)) * 40, x = FILM_W - bw - 34 + slide, y = 175;
+          c.save(); c.globalAlpha = Math.max(0, a); c.translate(x + bw / 2, y + bh / 2); c.rotate(0.035); c.translate(-(x + bw / 2), -(y + bh / 2));
+          c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 22; c.fillStyle = '#fff'; c.beginPath(); c.roundRect(x - 7, y - 7, bw + 14, bh + 14, 18); c.fill(); c.shadowBlur = 0;
+          c.beginPath(); c.roundRect(x, y, bw, bh, 12); c.clip();
           const im = ph.img, r = Math.max(bw / im.width, bh / im.height); c.drawImage(im, x + (bw - im.width * r) / 2, y + (bh - im.height * r) / 2, im.width * r, im.height * r);
           c.restore();
         }
@@ -5595,7 +5614,7 @@ async function filmMake(S, opt, U) {
         const e = Math.min(1, (tt - tIn - tRun) / 0.6);
         c.save(); c.globalAlpha = e; c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18;
         c.font = F(900, marathon ? 76 : 60); c.fillText(marathon ? '🏁 FINISH' : '도착', 360, 300);
-        if (opt.stats) { c.font = F(800, 50); c.fillStyle = col; c.fillText(fmtDist(D), 360, 380); if (P[0].ts && P[P.length - 1].ts > P[0].ts) { c.font = F(700, 34); c.fillStyle = '#fff'; c.fillText(filmDur(P[P.length - 1].ts - P[0].ts), 360, 432); } }
+        if (opt.stats) { c.font = F(800, 50); c.fillStyle = col; c.fillText(filmKm(TOT), 360, 380); if (src.ms > 0) { c.font = F(700, 34); c.fillStyle = '#fff'; c.fillText(filmDur(src.ms), 360, 432); } }
         c.font = F(700, 24); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('Map Photo Diary', 360, FILM_H - 60);
         c.restore();
       }
