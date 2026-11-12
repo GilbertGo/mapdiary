@@ -5524,7 +5524,7 @@ async function filmMake(S, opt, U) {
       Object.assign(style.sources, ours.sources);
       // 건물: 이미 3D(fill-extrusion)면 그대로, 아니면 납작한 건물 칸을 높이대로 세움
       const hasExt = style.layers.some(l => l.type === 'fill-extrusion');
-      if (!hasExt) style.layers = style.layers.map(l => l.type === 'fill' && /building/i.test(l.id) && l.source ? { id: l.id + '-3d', type: 'fill-extrusion', source: l.source, 'source-layer': l['source-layer'], minzoom: 13, paint: { 'fill-extrusion-color': '#D9D2C7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.9 } } : l);
+      if (!hasExt) style.layers = style.layers.map(l => l.type === 'fill' && /building/i.test(l.id) && l.source ? Object.assign({ id: l.id + '-3d', type: 'fill-extrusion', source: l.source }, l['source-layer'] ? { 'source-layer': l['source-layer'] } : {}, l.filter ? { filter: l.filter } : {}, { minzoom: 13, paint: { 'fill-extrusion-color': '#D9D2C7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.9 } }) : l);
       style.layers = style.layers.concat(ours.layers); style.terrain = { source: 'dem', exaggeration: 1.4 };
     } else {
       style = { version: 8,
