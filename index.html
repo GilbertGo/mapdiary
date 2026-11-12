@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-36';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-37';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5473,26 +5473,47 @@ async function filmMake(S, opt, U) {
     const tIn = Math.min(2, T * 0.1), tOut = Math.min(2.5, T * 0.12), tRun = T - tIn - tOut;
     // 사진 → 길 위 거리
     // 사진: 모두 넣어요(빼지 않음). 자리는 찍은 위치(길에서 가장 가까운 곳) → 없으면 찍은 시각 → 그것도 없으면 찍은 차례대로 고르게.
-    //   길을 따라가다 그 자리에 오면 차례로 한 장씩(앞 사진이 떠 있으면 끝난 뒤 바로), 한 장 길이 = (따라가기+끝 장면 시간)÷장 수 (0.5~2.4초)
     let photos = [];
     if (opt.photos && src.t) {
       say('사진을 고르는 중…');
       const L = await filmPhotos(src.t), n = L.length;
-      const got = L.map((p, i) => {
-        let pd = null;
-        if (Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0)) { let best = 1e18; for (const q of P) { const dd = (q.lat - p.lat) ** 2 + ((q.lng - p.lng) * 0.8) ** 2; if (dd < best) { best = dd; pd = q.d; } } }
-        if (pd == null && p.ts && P[0].ts) { if (p.ts <= P[0].ts) pd = 0; else if (p.ts >= P[P.length - 1].ts) pd = D; else { const j = P.findIndex(q => q.ts >= p.ts); pd = P[Math.max(0, j)].d; } }
-        if (pd == null) pd = D * (i + 0.5) / n;
-        return { d: pd, p, ts: p.ts || 0 };
-      }).sort((a, b) => a.d - b.d || a.ts - b.ts);
+      // 2026-11-13 사용자 '사진 찍은 위치가 다르게 나오니 별로다': 예전엔 같은 자리 사진이 줄을 서서 뒤로 밀려 엉뚱한 곳에서 떴고,
+      //   집 가리기로 잘린 출발·도착 근처 사진이 맨 처음에 몰렸어요 → 이제 ① 찍은 자리에 닿을 때만 뜨고(뒤로 밀지 않음), 같은 자리 사진은
+      //   그 자리에서 빠르게 넘겨 보여 줘요 ② 길 밖(150m 넘게)·출발 전·도착 뒤 사진은 처음/끝 장면에서 ③ 지도 위 찍은 곳에 점 + 카드까지 가는 선
+      const intro = [], outro = [], route = [];
+      L.forEach((p, i) => {
+        const g = { p, ts: p.ts || 0, pin: null, d: null };
+        const hasLoc = Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);
+        if (hasLoc) {
+          let best = 1e18, j = 0; for (let k = 0; k < P.length; k++) { const dd = dist(P[k].lat, P[k].lng, p.lat, p.lng); if (dd < best) { best = dd; j = k; } }
+          if (best <= 150) { g.d = P[j].d; g.pin = [p.lng, p.lat]; }
+          else if (j === 0 || (p.ts && P[0].ts && p.ts <= P[0].ts)) return intro.push(g);
+          else if (j === P.length - 1 || (p.ts && p.ts >= P[P.length - 1].ts)) return outro.push(g);
+          else { g.d = P[j].d; g.pin = [p.lng, p.lat]; }
+        } else if (p.ts && P[0].ts) {
+          if (p.ts <= P[0].ts) return intro.push(g);
+          if (p.ts >= P[P.length - 1].ts) return outro.push(g);
+          const j = P.findIndex(q => q.ts >= p.ts); g.d = P[Math.max(0, j)].d;
+        } else g.d = D * (i + 0.5) / n;
+        route.push(g);
+      });
       const dAt = lin => D * (0.15 * lin + 0.85 * filmEase(lin));
       const tAt = d => { let lo = 0, hi = 1; for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (dAt(m) < d) lo = m; else hi = m; } return tIn + lo * tRun; };
-      const dur = Math.max(0.5, Math.min(2.4, (tRun + tOut * 0.8) * 0.97 / Math.max(1, got.length)));
-      let end = tIn;
-      for (const g of got) { g.s = Math.max(tAt(g.d), end); g.e = g.s + dur; end = g.e; }
-      photos = got.filter(g => g.s < T - 0.3);   // 아주 끝에 넘치면(장 수가 아주 많을 때) 끝 0.3초 안은 못 보여요
-      if (photos.length < got.length) photos = got.map((g, i) => Object.assign(g, { s: tIn + i * (T - 0.3 - tIn) / got.length, e: tIn + (i + 1) * (T - 0.3 - tIn) / got.length }));   // 그래도 모두: 시간을 똑같이 나눠요
-      say(`사진 ${photos.length}장을 모두 넣어요 · 한 장에 약 ${(photos[0] ? photos[0].e - photos[0].s : 0).toFixed(1)}초`);
+      route.sort((a, b) => a.d - b.d || a.ts - b.ts);
+      // 같은 자리 묶기: 닿는 때가 0.6초 안이면 한 묶음
+      const groups = []; for (const g of route) { g.t0 = tAt(g.d); const last = groups[groups.length - 1]; if (last && g.t0 - last[0].t0 < 0.6) last.push(g); else groups.push([g]); }
+      let prevEnd = 0;
+      groups.forEach((gr, gi) => {
+        const want = Math.max(2.4, gr.length * 0.9), next = groups[gi + 1] ? groups[gi + 1][0].t0 : tIn + tRun + tOut * 0.5;
+        let s = Math.max(gr[0].t0, prevEnd), w = Math.min(want, Math.max(gr.length * 0.35, next - s - 0.05));
+        gr.forEach((g, k) => { g.s = s + k * w / gr.length; g.e = s + (k + 1) * w / gr.length; });
+        prevEnd = s + w;
+      });
+      const spread = (list, a0, a1) => list.sort((a, b) => a.ts - b.ts).forEach((g, k) => { g.s = a0 + k * (a1 - a0) / list.length; g.e = a0 + (k + 1) * (a1 - a0) / list.length; });
+      spread(intro, 0.15, tIn + 0.6); spread(outro, tIn + tRun + 0.3, T - 0.15);
+      photos = intro.concat(route, outro).filter(g => g.s < T).sort((a, b) => a.s - b.s);
+      photos.forEach(g => { if (g.e > T - 0.05) g.e = T - 0.05; });
+      say(`사진 ${photos.length}장을 모두 넣어요 · 찍은 자리에서 떠요`);
     }
     // 장소 이름: 좋은 곳·들른 곳·정상 (+ 집 가리기가 꺼져 있으면 출발·도착 이름)
     let labels = [];
@@ -5654,6 +5675,15 @@ async function filmMake(S, opt, U) {
           const im = ph.img, r = Math.max(bw / im.width, bh / im.height); c.drawImage(im, x + (bw - im.width * r) / 2, y + (bh - im.height * r) / 2, im.width * r, im.height * r);
           if (ph.p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
           c.restore();
+          if (ph.pin && tt >= tIn && tt < tIn + tRun) {   // 지도 위 찍은 곳: 점 + 카드 아래 귀퉁이까지 가는 선
+            const q = map.project(ph.pin);
+            if (q.x > -20 && q.x < FILM_W + 20 && q.y > 150 && q.y < FILM_H - 150) {
+              c.save(); c.globalAlpha = Math.max(0, a); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2.5; c.setLineDash([6, 5]);
+              c.beginPath(); c.moveTo(x + 24, y + bh + 6); c.lineTo(q.x, q.y); c.stroke(); c.setLineDash([]);
+              c.beginPath(); c.arc(q.x, q.y, 11, 0, 7); c.fillStyle = '#fff'; c.fill(); c.beginPath(); c.arc(q.x, q.y, 7, 0, 7); c.fillStyle = col; c.fill();
+              c.restore();
+            }
+          }
           if (photos.length > 1) { c.save(); c.font = F(700, 20); c.fillStyle = 'rgba(255,255,255,.9)'; c.textAlign = 'right'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 8; c.fillText(`${photos.indexOf(ph) + 1} / ${photos.length}`, FILM_W - 40, y + bh + 40); c.restore(); }
         }
       }
