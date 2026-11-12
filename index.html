@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-31';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-32';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5522,7 +5522,8 @@ async function filmMake(S, opt, U) {
     await new Promise((res, rej) => { map.once('load', res); map.once('error', e => rej(new Error('지도를 불러오지 못했어요 · ' + ((e && e.error && e.error.message) || '')))); setTimeout(res, 20000); });
     try { map.setSky && map.setSky({ 'sky-color': '#7FB6E6', 'horizon-color': '#E3EEF8', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.4, 'fog-color': '#DCE8F2', 'fog-ground-blend': 0.6 }); } catch {}
     // 카메라: 길 길이에 맞춘 확대, 진행 방향이 화면 위로
-    const zRun = Math.max(12.4, Math.min(16.3, 16.2 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
+    // 2026-11-13 사용자 '카메라 앵글이 너무 위에서 본 듯' → 기울기 58°→67°, 높이는 약 60%로(확대 +0.75)
+    const FILM_PITCH = 67, zRun = Math.max(13.1, Math.min(17, 16.95 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
     const bounds = coords.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
     const over = map.cameraForBounds(bounds, { padding: { top: 260, bottom: 300, left: 70, right: 70 } }) || { center: bounds.getCenter(), zoom: 12 };
     // 2026-11-13 사용자 '카메라 구도가 너무 자주 바뀌니 어지럽다': 방향은 넓게(뒤 절반~앞 한 칸, 길 8% · 250m~2.5km) 보고 아주 천천히(1초에 최대 12°) 돌고,
@@ -5549,15 +5550,15 @@ async function filmMake(S, opt, U) {
       let cam, dh;
       if (tt < tIn) {   // 처음: 전체 길이 보이다가 출발점으로 내려앉음
         const e = filmEase(tt / tIn), s = camAt(0); dh = 0; bear = s.br;
-        cam = { center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zRun - over.zoom) * e, pitch: 58 * e, bearing: bear * e };
+        cam = { center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zRun - over.zoom) * e, pitch: FILM_PITCH * e, bearing: bear * e };
       } else if (tt < tIn + tRun) {   // 길 따라가기 (앞쪽 방향을 부드럽게 따라 돎)
         const lin = Math.min(1, (tt - tIn) / tRun);
         dh = D * (0.15 * lin + 0.85 * filmEase(lin)); const s = camAt(dh);
         const turn = filmAng(bear, s.br) * 0.03, MAXT = 12 / FILM_FPS; bear = (bear + Math.max(-MAXT, Math.min(MAXT, turn)) + 360) % 360;
-        cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: 58, bearing: bear };
+        cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: FILM_PITCH, bearing: bear };
       } else {   // 끝: 다시 하늘로 올라가 전체 길
         const e = filmEase((tt - tIn - tRun) / tOut), s = filmAt(P, D); dh = D;
-        cam = { center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: zRun + (over.zoom - zRun) * e, pitch: 58 - 28 * e, bearing: bear + filmAng(bear, 0) * e };
+        cam = { center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: zRun + (over.zoom - zRun) * e, pitch: FILM_PITCH - 37 * e, bearing: bear + filmAng(bear, 0) * e };
       }
       map.jumpTo(cam);
       const cur = filmAt(P, dh), doneC = coords.slice(0, cur.i + 1).concat([[cur.lng, cur.lat]]);
