@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-32';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-35';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5231,7 +5231,7 @@ const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:
 //   검사(filmCheck)는 MP4 상자를 직접 읽어 실제 길이·장 수·코덱·소리 트랙을 확인하고, 브라우저 <video>로도 길이를 한 번 더 확인해요. 실패면 '성공'이라고 하지 않아요.
 // 지도: 위성 Esri World Imagery(+지명 Esri Reference), 높이 AWS Terrain Tiles(terrarium), 라이브러리 MapLibre GL 4.7.1·mp4-muxer 5.1.3(jsdelivr, 처음 열 때만 받음)
 var FILM_W = 720, FILM_H = 1280, FILM_FPS = 30;
-var FILM_LIB = { gl: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js', css: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css', mux: 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js' };
+var FILM_LIB = { osm: 'https://tiles.openfreemap.org/styles/liberty', gl: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js', css: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css', mux: 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js' };
 var FILM_COL = { run: '#FF6B4A', bike: '#4FC3F7', hike: '#B49CFF', trek: '#B49CFF', backpack: '#B49CFF', camp: '#B49CFF', pgolf: '#4FC3F7', travel: '#FF7AA8', date: '#FF7AA8', daily: '#FF7AA8' };
 function filmLoad(src, css) {
   return new Promise((res, rej) => {
@@ -5291,8 +5291,8 @@ function filmDur(ms) { const s = Math.round(ms / 1000), h = Math.floor(s / 3600)
 async function filmPhotos(t) {
   try {
     if (indexedDB.databases) { const L = await indexedDB.databases(); if (!L.some(d => d.name === 'baldojang')) return []; }
-    const L = (await photoList(t)).filter(p => !p.v && p.blob);
-    return L.slice(0, 40);
+    // 2026-11-13 사용자 '찍은 사진을 모두 보여 줘, 생략하지 말고': 개수 제한 없음, 동영상은 첫 장면 그림으로
+    return (await photoList(t)).filter(p => p.v ? p.thumb : p.blob);
   } catch { return []; }
 }
 // 음악: MPD가 직접 만든 소리(저작권 걱정 없음) 두 가지 · 또는 휴대폰의 내 음악 파일
@@ -5387,10 +5387,10 @@ function viewFilm() {
 .fm-ck{font-size:14px;line-height:1.7}.fm-ck .bad{color:#FF6B6B}.fm-ck .good{color:#7FD1FF}
 .fm-mapbox{position:fixed;left:-20000px;top:0;width:${FILM_W}px;height:${FILM_H}px;pointer-events:none}
 .fm label.ck{display:flex;gap:10px;align-items:center;font-size:14.5px}` }));
-  const opt = Object.assign({ sec: 30, music: 'calm', vol: 70, title: true, date: true, stats: true, places: true, photos: true, hide: ls.get('hideEnds', true) }, ls.get('filmOpt', {}));
+  const opt = Object.assign({ map: 'sat', sec: 30, music: 'calm', vol: 70, title: true, date: true, stats: true, places: true, photos: true, hide: ls.get('hideEnds', true) }, ls.get('filmOpt', {}));
   const S = { rec: qs.get('t') || '', gpx: null, file: null, busy: false, stop: false };
   const recs = filmRecs(); if (!S.rec && recs.length) S.rec = recs[0].t;
-  const save = () => ls.set('filmOpt', { sec: opt.sec, music: opt.music === 'file' ? 'calm' : opt.music, vol: opt.vol, title: opt.title, date: opt.date, stats: opt.stats, places: opt.places, photos: opt.photos });
+  const save = () => ls.set('filmOpt', { map: opt.map, sec: opt.sec, music: opt.music === 'file' ? 'calm' : opt.music, vol: opt.vol, title: opt.title, date: opt.date, stats: opt.stats, places: opt.places, photos: opt.photos });
   const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); } })));
   const ck = (k, txt) => el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt[k] ? true : null, onchange: e => { opt[k] = e.target.checked; save(); } }), txt);
   const cv = el('canvas', { width: FILM_W, height: FILM_H }), stage = el('div', { class: 'fm-stage' }, cv);
@@ -5408,6 +5408,8 @@ function viewFilm() {
     stage,
     el('div', { class: 'fm-card' }, el('h2', { text: '어떤 길로' }), recs.length ? recSel : el('div', { class: 'sub', text: '이 휴대폰에 기록이 없어요. GPX 파일을 가져오세요.' }),
       el('div', { class: 'sub', text: '또는 GPX 파일 가져오기' }), gpxIn),
+    el('div', { class: 'fm-card' }, el('h2', { text: '지도 모양' }), chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도 (3D 건물)']], () => opt.map, v => { opt.map = v; }),
+      el('div', { class: 'sub', text: '일반 지도는 도로·건물·이름이 그려진 지도를 입체로 세워 보여 줘요(OpenStreetMap 자료).' })),
     el('div', { class: 'fm-card' }, el('h2', { text: '영상 길이' }), chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분']], () => opt.sec, v => { opt.sec = v; })),
     el('div', { class: 'fm-card' }, el('h2', { text: '보여 줄 것' }), ck('title', '제목'), ck('date', '날짜'), ck('stats', '거리·시간'), ck('places', '장소 이름(좋은 곳·들른 곳·정상)'), ck('photos', '그 자리에서 찍은 사진'),
       ck('hide', '🏠 출발·도착 근처 500m 가리기 (집 위치가 드러나지 않게)')),
@@ -5470,19 +5472,27 @@ async function filmMake(S, opt, U) {
     const TOT = filmTotal(src, path), shownAt = dh => Math.min(TOT, TOT * dh / D);
     const tIn = Math.min(2, T * 0.1), tOut = Math.min(2.5, T * 0.12), tRun = T - tIn - tOut;
     // 사진 → 길 위 거리
+    // 사진: 모두 넣어요(빼지 않음). 자리는 찍은 위치(길에서 가장 가까운 곳) → 없으면 찍은 시각 → 그것도 없으면 찍은 차례대로 고르게.
+    //   길을 따라가다 그 자리에 오면 차례로 한 장씩(앞 사진이 떠 있으면 끝난 뒤 바로), 한 장 길이 = (따라가기+끝 장면 시간)÷장 수 (0.5~2.4초)
     let photos = [];
     if (opt.photos && src.t) {
       say('사진을 고르는 중…');
-      const L = await filmPhotos(src.t), span = D * (2.4 / tRun), got = [];
-      for (const p of L) {
+      const L = await filmPhotos(src.t), n = L.length;
+      const got = L.map((p, i) => {
         let pd = null;
-        if (Number.isFinite(p.lat) && Number.isFinite(p.lng)) { let best = 1e18; for (const q of P) { const dd = dist(q.lat, q.lng, p.lat, p.lng); if (dd < best) { best = dd; pd = q.d; } } if (best > 300) pd = null; }
-        if (pd == null && p.ts && P[0].ts && p.ts >= P[0].ts && p.ts <= P[P.length - 1].ts) { const j = P.findIndex(q => q.ts >= p.ts); pd = P[Math.max(0, j)].d; }
-        if (pd == null || got.some(g => Math.abs(g.d - pd) < span)) continue;
-        got.push({ d: pd, p }); if (got.length >= 10) break;
-      }
-      for (const g of got) { try { g.img = await createImageBitmap(g.p.blob, { resizeWidth: 640, resizeQuality: 'high' }); } catch {} }
-      photos = got.filter(g => g.img).sort((a, b) => a.d - b.d);
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0)) { let best = 1e18; for (const q of P) { const dd = (q.lat - p.lat) ** 2 + ((q.lng - p.lng) * 0.8) ** 2; if (dd < best) { best = dd; pd = q.d; } } }
+        if (pd == null && p.ts && P[0].ts) { if (p.ts <= P[0].ts) pd = 0; else if (p.ts >= P[P.length - 1].ts) pd = D; else { const j = P.findIndex(q => q.ts >= p.ts); pd = P[Math.max(0, j)].d; } }
+        if (pd == null) pd = D * (i + 0.5) / n;
+        return { d: pd, p, ts: p.ts || 0 };
+      }).sort((a, b) => a.d - b.d || a.ts - b.ts);
+      const dAt = lin => D * (0.15 * lin + 0.85 * filmEase(lin));
+      const tAt = d => { let lo = 0, hi = 1; for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (dAt(m) < d) lo = m; else hi = m; } return tIn + lo * tRun; };
+      const dur = Math.max(0.5, Math.min(2.4, (tRun + tOut * 0.8) * 0.97 / Math.max(1, got.length)));
+      let end = tIn;
+      for (const g of got) { g.s = Math.max(tAt(g.d), end); g.e = g.s + dur; end = g.e; }
+      photos = got.filter(g => g.s < T - 0.3);   // 아주 끝에 넘치면(장 수가 아주 많을 때) 끝 0.3초 안은 못 보여요
+      if (photos.length < got.length) photos = got.map((g, i) => Object.assign(g, { s: tIn + i * (T - 0.3 - tIn) / got.length, e: tIn + (i + 1) * (T - 0.3 - tIn) / got.length }));   // 그래도 모두: 시간을 똑같이 나눠요
+      say(`사진 ${photos.length}장을 모두 넣어요 · 한 장에 약 ${(photos[0] ? photos[0].e - photos[0].s : 0).toFixed(1)}초`);
     }
     // 장소 이름: 좋은 곳·들른 곳·정상 (+ 집 가리기가 꺼져 있으면 출발·도착 이름)
     let labels = [];
@@ -5497,28 +5507,44 @@ async function filmMake(S, opt, U) {
     const marks = []; if (kmStep) for (let m = kmStep; m < TOT - 50; m += kmStep) { const dd = m * D / TOT; if (dd <= 0 || dd >= D) continue; const a = filmAt(P, dd); marks.push({ lat: a.lat, lng: a.lng, d: dd, n: `${m / 1000}km` }); }
     const marathon = src.mode === 'run' && TOT >= 20000;
     // 지도 준비 (보이지 않는 곳에 영상 크기 그대로)
-    say('위성 지도를 준비하는 중…');
+    // 지도 모양 (2026-11-13 사용자 '지도 타입을 고르게, 일반 지도 3D도'): 'sat' 위성 사진(Esri) / 'map' 일반 지도(OpenFreeMap liberty, OpenStreetMap 자료·열쇠 없음, 건물을 높이대로 세움)
+    const mtype = opt.map === 'map' ? 'map' : 'sat';
+    say(mtype === 'map' ? '일반 지도를 준비하는 중…' : '위성 지도를 준비하는 중…');
     mapEl = el('div', { class: 'fm-mapbox' }); document.body.append(mapEl);
     const coords = P.map(p => [p.lng, p.lat]);
-    map = new maplibregl.Map({
-      container: mapEl, interactive: false, attributionControl: false, fadeDuration: 0, pixelRatio: 1, preserveDrawingBuffer: true, maxPitch: 75,
-      style: { version: 8,
-        sources: {
+    const ours = {
+      sources: {
+        dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' },
+        all: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } },
+        done: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords.slice(0, 2) } } },
+        head: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } } } },
+      layers: [
+        { id: 'all', type: 'line', source: 'all', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': mtype === 'map' ? '#14253B' : '#ffffff', 'line-opacity': mtype === 'map' ? 0.3 : 0.45, 'line-width': 5 } },
+        { id: 'done-glow', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-opacity': 0.35, 'line-width': 18, 'line-blur': 6 } },
+        { id: 'done', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-width': 8 } },
+        { id: 'head', type: 'circle', source: 'head', paint: { 'circle-radius': 11, 'circle-color': col, 'circle-stroke-color': '#fff', 'circle-stroke-width': 4 } }] };
+    let style;
+    if (mtype === 'map') {
+      try {
+        const r = await fetch(FILM_LIB.osm); if (!r.ok) throw new Error('HTTP ' + r.status);
+        style = await r.json(); if (!style || !style.sources || !Array.isArray(style.layers)) throw new Error('모양 파일이 이상해요');
+      } catch (e) { throw new Error('일반 지도를 불러오지 못했어요(' + (e && e.message || e) + ') · 위성 사진으로 만들어 주세요'); }
+      Object.assign(style.sources, ours.sources);
+      // 건물: 이미 3D(fill-extrusion)면 그대로, 아니면 납작한 건물 칸을 높이대로 세움
+      const hasExt = style.layers.some(l => l.type === 'fill-extrusion');
+      if (!hasExt) style.layers = style.layers.map(l => l.type === 'fill' && /building/i.test(l.id) && l.source ? Object.assign({ id: l.id + '-3d', type: 'fill-extrusion', source: l.source }, l['source-layer'] ? { 'source-layer': l['source-layer'] } : {}, l.filter ? { filter: l.filter } : {}, { minzoom: 13, paint: { 'fill-extrusion-color': '#D9D2C7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.9 } }) : l);
+      style.layers = style.layers.concat(ours.layers); style.terrain = { source: 'dem', exaggeration: 1.4 };
+    } else {
+      style = { version: 8,
+        sources: Object.assign({
           sat: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18 },
-          lbl: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18 },
-          dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' },
-          all: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } },
-          done: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords.slice(0, 2) } } },
-          head: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } } } },
+          lbl: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18 } }, ours.sources),
         layers: [
           { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-saturation': 0.05, 'raster-contrast': 0.05 } },
-          { id: 'lbl', type: 'raster', source: 'lbl', paint: { 'raster-opacity': opt.places ? 0.85 : 0 } },
-          { id: 'all', type: 'line', source: 'all', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 5 } },
-          { id: 'done-glow', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-opacity': 0.35, 'line-width': 18, 'line-blur': 6 } },
-          { id: 'done', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-width': 8 } },
-          { id: 'head', type: 'circle', source: 'head', paint: { 'circle-radius': 11, 'circle-color': col, 'circle-stroke-color': '#fff', 'circle-stroke-width': 4 } }],
-        terrain: { source: 'dem', exaggeration: 1.4 } },
-      center: coords[0], zoom: 13, pitch: 0 });
+          { id: 'lbl', type: 'raster', source: 'lbl', paint: { 'raster-opacity': opt.places ? 0.85 : 0 } }].concat(ours.layers),
+        terrain: { source: 'dem', exaggeration: 1.4 } };
+    }
+    map = new maplibregl.Map({ container: mapEl, interactive: false, attributionControl: false, fadeDuration: 0, pixelRatio: 1, preserveDrawingBuffer: true, maxPitch: 75, style, center: coords[0], zoom: 13, pitch: 0 });
     await new Promise((res, rej) => { map.once('load', res); map.once('error', e => rej(new Error('지도를 불러오지 못했어요 · ' + ((e && e.error && e.error.message) || '')))); setTimeout(res, 20000); });
     try { map.setSky && map.setSky({ 'sky-color': '#7FB6E6', 'horizon-color': '#E3EEF8', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.4, 'fog-color': '#DCE8F2', 'fog-ground-blend': 0.6 }); } catch {}
     // 카메라: 길 길이에 맞춘 확대, 진행 방향이 화면 위로
@@ -5554,7 +5580,8 @@ async function filmMake(S, opt, U) {
       } else if (tt < tIn + tRun) {   // 길 따라가기 (앞쪽 방향을 부드럽게 따라 돎)
         const lin = Math.min(1, (tt - tIn) / tRun);
         dh = D * (0.15 * lin + 0.85 * filmEase(lin)); const s = camAt(dh);
-        const turn = filmAng(bear, s.br) * 0.03, MAXT = 12 / FILM_FPS; bear = (bear + Math.max(-MAXT, Math.min(MAXT, turn)) + 360) % 360;
+        const turn = filmAng(bear, s.br) * 0.035, MAXT = 18 / FILM_FPS;   // 1초에 최대 18° (12°는 굽은 길에서 너무 늦게 따라가서)
+        bear = (bear + Math.max(-MAXT, Math.min(MAXT, turn)) + 360) % 360;
         cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: FILM_PITCH, bearing: bear };
       } else {   // 끝: 다시 하늘로 올라가 전체 길
         const e = filmEase((tt - tIn - tRun) / tOut), s = filmAt(P, D); dh = D;
@@ -5565,6 +5592,7 @@ async function filmMake(S, opt, U) {
       map.getSource('done').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: doneC.length > 1 ? doneC : coords.slice(0, 2) } });
       map.getSource('head').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [cur.lng, cur.lat] } });
       await waitMap();
+      { const sk = c.createLinearGradient(0, 0, 0, FILM_H * 0.45); sk.addColorStop(0, '#5E9BD6'); sk.addColorStop(1, '#DCEAF6'); c.fillStyle = sk; c.fillRect(0, 0, FILM_W, FILM_H); }   // 하늘 (카메라를 낮추면 지평선 위가 검게 비어서, 2026-11-13)
       c.drawImage(map.getCanvas(), 0, 0, FILM_W, FILM_H);
       // 위·아래 어둡게 (글자 잘 보이게)
       let g = c.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, FILM_W, 260);
@@ -5594,19 +5622,22 @@ async function filmMake(S, opt, U) {
         { const pT = P[P.length - 1].ts - P[0].ts, tot = src.ms > 0 ? src.ms : pT; if (pT > 0 && tot > 0) { c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = F(700, 34); c.fillText(filmDur(Math.max(0, Math.min(tot, tot * (cur.ts - P[0].ts) / pT))), FILM_W - 40, FILM_H - 96); } }   // 시간도 0에서 기록 보기 시간까지
         c.restore();
       }
-      // 사진: 그 자리를 지날 때 2초쯤 떠올랐다 사라짐
-      if (photos.length && tt >= tIn && tt < tIn + tRun) {
-        const span = D * (2.4 / tRun), ph = photos.filter(q => dh >= q.d && dh < q.d + span).pop();
-        if (ph) {
-          const k = (dh - ph.d) / span, a = Math.min(1, k / 0.15, (1 - k) / 0.15), sc = 0.92 + 0.08 * Math.min(1, k / 0.2);
-          // 2026-11-13 사용자 '사진 띄운 거 좋은데 지도를 너무 많이 가린다': 가운데 큰 카드(440×550) → 오른쪽 위 작은 카드(240×300),
-          //   제목 아래·지금 자리(화면 가운데)와 아래 거리 글자를 가리지 않게. 오른쪽에서 살짝 밀려 들어오고 조금 기울임
-          const bw = 240 * sc, bh = 300 * sc, slide = (1 - Math.min(1, k / 0.15)) * 40, x = FILM_W - bw - 34 + slide, y = 175;
+      // 사진: 차례가 된 사진을 오른쪽 위 작은 카드로 (그림은 그때그때 풀고 지난 건 닫아 메모리를 아껴요)
+      if (photos.length) {
+        const ph = photos.find(q => tt >= q.s && tt < q.e);
+        for (const q of photos) if (q.img && q !== ph && tt >= q.e) { try { q.img.close(); } catch {} q.img = null; q.done = true; }
+        if (ph && !ph.img && !ph.bad) { try { ph.img = await createImageBitmap(ph.p.v ? ph.p.thumb : ph.p.blob, { resizeWidth: 520, resizeQuality: 'high' }); } catch { ph.bad = true; } }
+        if (ph && ph.img) {
+          const k = (tt - ph.s) / (ph.e - ph.s), fe = Math.min(0.15, 0.25 / (ph.e - ph.s)), a = Math.min(1, k / fe, (1 - k) / fe), sc = 0.92 + 0.08 * Math.min(1, k / 0.2);
+          // 2026-11-13 사용자 '사진 띄운 거 좋은데 지도를 너무 많이 가린다': 오른쪽 위 작은 카드(240×300), 오른쪽에서 살짝 밀려 들어오고 조금 기울임
+          const bw = 240 * sc, bh = 300 * sc, slide = (1 - Math.min(1, k / fe)) * 40, x = FILM_W - bw - 34 + slide, y = 175;
           c.save(); c.globalAlpha = Math.max(0, a); c.translate(x + bw / 2, y + bh / 2); c.rotate(0.035); c.translate(-(x + bw / 2), -(y + bh / 2));
           c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 22; c.fillStyle = '#fff'; c.beginPath(); c.roundRect(x - 7, y - 7, bw + 14, bh + 14, 18); c.fill(); c.shadowBlur = 0;
           c.beginPath(); c.roundRect(x, y, bw, bh, 12); c.clip();
           const im = ph.img, r = Math.max(bw / im.width, bh / im.height); c.drawImage(im, x + (bw - im.width * r) / 2, y + (bh - im.height * r) / 2, im.width * r, im.height * r);
+          if (ph.p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
           c.restore();
+          if (photos.length > 1) { c.save(); c.font = F(700, 20); c.fillStyle = 'rgba(255,255,255,.9)'; c.textAlign = 'right'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 8; c.fillText(`${photos.indexOf(ph) + 1} / ${photos.length}`, FILM_W - 40, y + bh + 40); c.restore(); }
         }
       }
       // 끝: 결승·도착 카드
@@ -5618,7 +5649,7 @@ async function filmMake(S, opt, U) {
         c.font = F(700, 24); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('Map Photo Diary', 360, FILM_H - 60);
         c.restore();
       }
-      c.save(); c.font = F(500, 15); c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'right'; c.fillText('지도 Esri · 지형 AWS Terrain Tiles', FILM_W - 16, FILM_H - 16); c.restore();
+      c.save(); c.font = F(500, 15); c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'right'; c.fillText(mtype === 'map' ? '지도 © OpenStreetMap · OpenFreeMap · 지형 AWS' : '지도 Esri · 지형 AWS Terrain Tiles', FILM_W - 16, FILM_H - 16); c.restore();
       const vf = new VideoFrame(U.cv, { timestamp: Math.round(f * 1e6 / FILM_FPS), duration: Math.round(1e6 / FILM_FPS) });
       enc.encode(vf, { keyFrame: f % (FILM_FPS * 2) === 0 }); vf.close();
       while (enc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 10));
