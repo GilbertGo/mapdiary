@@ -2877,7 +2877,7 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-39-dev';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-40-dev';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '이동 영상에 연출 스타일 네 가지가 생겼어요, 시네마틱, 스포츠, 추억, 여행 · 사진과 장소에서 카메라가 천천히 지나가고 음악이 하이라이트에서 가장 커져요 · 강조할 사진에 별을 달면 더 크고 길게 보여요 · 가로 16:9 영상도 만들 수 있어요 · 사진은 원래 비율 그대로 보여요 · 이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -5578,7 +5578,7 @@ function viewFilm() {
   const KEEP = ['style', 'ratio', 'map', 'sec', 'vol', 'title', 'date', 'stats', 'places', 'photos', 'rhythm', 'height', 'phTime', 'info'];
   const save = () => { const o = {}; KEEP.forEach(k => { o[k] = opt[k]; }); o.music = opt.music === 'file' ? 'auto' : opt.music; ls.set('filmOpt', o); };
   const cv = el('canvas', { width: FILM_W, height: FILM_H }), stage = el('div', { class: 'fm-stage' + (FILM_W > FILM_H ? ' land' : '') }, cv);
-  const board = el('canvas', { class: 'fm-board', width: 960, height: 250 });
+  const board = el('canvas', { class: 'fm-board', width: 640, height: 250 });
   const redraw = () => { filmDims(opt); stage.classList.toggle('land', FILM_W > FILM_H); if (!S.busy) { if (!stage.contains(cv)) stage.replaceChildren(cv); cv.width = FILM_W; cv.height = FILM_H; filmPoster(S, opt, cv); } filmBoard(S, opt, board); };
   const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); redraw(); } })));
   const ck = (k, txt) => el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt[k] ? true : null, onchange: e => { opt[k] = e.target.checked; save(); redraw(); } }), txt);
@@ -5645,15 +5645,15 @@ async function filmBoard(S, opt, cv) {
   const labels = filmLabels(src, P, D, opt, st), marks = filmMarks(src, P, D, TOT);
   const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st) }), photos = filmPhotoTimes(F, plan, st, adv, T);
   const x0 = 24, x1 = Wd - 24, X = t => x0 + (x1 - x0) * t / T, F2 = (w, s) => `${w} ${s}px Pretendard, 'Noto Sans KR', sans-serif`;
-  c.fillStyle = '#fff'; c.font = F2(800, 26); c.textAlign = 'left'; c.fillText(`${st.name} · ${T}초`, x0, 36);
-  c.font = F2(600, 20); c.fillStyle = '#AEAEB2'; c.textAlign = 'right'; c.fillText(`사진 ${photos.length}장 · 장소 ${labels.length}곳`, x1, 36);
+  c.fillStyle = '#fff'; c.font = F2(800, 28); c.textAlign = 'left'; c.fillText(`${st.name} · ${T}초`, x0, 36);
+  c.font = F2(600, 22); c.fillStyle = '#AEAEB2'; c.textAlign = 'right'; c.fillText(`사진 ${photos.length} · 장소 ${labels.length}`, x1, 36);
   const runEnd = plan.tIn + plan.tRun, hl0 = Math.max(plan.tIn, plan.tPeak - Math.min(3.5, T * 0.12)), hl1 = Math.min(runEnd, plan.tPeak + Math.min(3.5, T * 0.12));
-  const seg = (a, b, col, txt) => { if (b - a <= 0.05) return; c.fillStyle = col; c.beginPath(); c.roundRect(X(a) + 1, 60, X(b) - X(a) - 2, 46, 8); c.fill(); c.fillStyle = '#fff'; c.font = F2(700, 18); c.textAlign = 'center'; if (X(b) - X(a) > c.measureText(txt).width + 8) c.fillText(txt, (X(a) + X(b)) / 2, 90); };
+  const seg = (a, b, col, txt) => { if (b - a <= 0.05) return; c.fillStyle = col; c.beginPath(); c.roundRect(X(a) + 1, 60, X(b) - X(a) - 2, 46, 8); c.fill(); c.fillStyle = '#fff'; c.font = F2(700, 21); c.textAlign = 'center'; if (X(b) - X(a) > c.measureText(txt).width + 8) c.fillText(txt, (X(a) + X(b)) / 2, 91); };
   seg(0, plan.tIn, '#2E6F8E', '처음'); seg(plan.tIn, hl0, '#1D9EC0', '따라가기'); seg(hl0, hl1, '#F2665E', '하이라이트'); seg(hl1, runEnd, '#1D9EC0', '따라가기'); seg(runEnd, T, '#7B61FF', '끝');
   // 카메라 빠르기 (위가 빠름)
-  const yb = 210, hh = 70; c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 2.5; c.beginPath();
+  const yb = 205, hh = 62; c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 2.5; c.beginPath();
   for (let i = 0; i <= 120; i++) { const t = plan.tIn + plan.tRun * i / 120, d1 = plan.dOfT(t), d2 = plan.dOfT(Math.min(runEnd, t + plan.tRun / 120)), v = (d2 - d1) / (D / 120); const y = yb - Math.min(1, v / 2.2) * hh; i ? c.lineTo(X(t), y) : c.moveTo(X(t), y); }
-  c.stroke(); c.fillStyle = '#8E8E93'; c.font = F2(600, 16); c.textAlign = 'left'; c.fillText('카메라 빠르기 (낮을수록 천천히)', x0, yb + 26);
+  c.stroke(); c.fillStyle = '#AEAEB2'; c.font = F2(600, 21); c.textAlign = 'left'; c.fillText('선: 카메라 빠르기 (낮으면 천천히)', x0, yb + 30);
   for (const l of labels) { const x = X(plan.tOfD(l.d)); c.fillStyle = '#4FC3F7'; c.beginPath(); c.moveTo(x, 118); c.lineTo(x - 7, 132); c.lineTo(x + 7, 132); c.fill(); }
   for (const g of photos) { const x = X(g.s); c.fillStyle = g.star ? '#FF8A4C' : '#fff'; c.beginPath(); c.arc(x, 124, g.star ? 7 : 4.5, 0, 7); c.fill(); }
 }
@@ -5828,11 +5828,12 @@ async function filmMake(S, opt, U) {
         box = { x: W - w2 - 34 + slide, y, w: w2, h: h2, a, k, capH };
       }
       // 지도 위 이름표: 거리 표시·장소 (화면 안, 사진 카드와 겹치지 않게, 글자 길이를 재서 칸을 만듦)
-      const hit = (x, y, w, h) => box && x < box.x + box.w + 14 && x + w > box.x - 14 && y < box.y + box.h + box.capH + 50 && y + h > box.y - 14;
+      const used = box ? [{ x: box.x - 14, y: box.y - 14, w: box.w + 28, h: box.h + box.capH + 64 }] : [];   // 사진 카드 + 이미 그린 이름표 (서로 겹치지 않게)
+      const hit = (x, y, w, h) => used.some(r => x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y);
       const pill = (x, y, txt, bg, fg, sz) => {
         c.font = FN(800, sz); txt = filmFit(c, txt, W * 0.6); const w = c.measureText(txt).width + 26, h = sz + 18;
         let bx = Math.max(16, Math.min(W - 16 - w, x - w / 2)); const by = y - h - 14;
-        if (hit(bx, by, w, h)) return;
+        if (hit(bx - 4, by - 4, w + 8, h + 18)) return; used.push({ x: bx - 4, y: by - 4, w: w + 8, h: h + 18 });
         c.fillStyle = bg; c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textAlign = 'center'; c.fillText(txt, bx + w / 2, by + h / 2 + sz * 0.36);
         c.beginPath(); c.moveTo(x - 7, y - 15); c.lineTo(x + 7, y - 15); c.lineTo(x, y - 4); c.fill();
       };
@@ -5911,7 +5912,11 @@ async function filmMake(S, opt, U) {
       const tE = plan.tEnd || runEnd;
       if (tt >= tE) {
         const e = Math.min(1, (tt - tE) / 0.6), yb = Math.round(H * (LAND ? 0.24 : 0.234));
-        c.save(); c.globalAlpha = e; c.textAlign = 'center'; c.fillStyle = '#fff'; shadow(18);
+        c.save(); c.globalAlpha = e; c.textAlign = 'center';
+        { const nTrip = st.k === 'trip' ? Math.min(5, new Set(labels.map(l => l.name).filter(Boolean)).size) : 0, nMemo = st.k === 'memo' ? Math.min(4, photos.length) : 0, szM = LAND ? 170 : 220;
+          const top = yb - (st.k === 'memo' ? 92 : 78), bot = st.k === 'trip' ? yb + 96 + nTrip * 44 : st.k === 'memo' ? yb + 50 + Math.ceil(nMemo / 2) * (szM + 14) + 52 : yb + (st.k === 'sport' ? 200 : 150);
+          c.fillStyle = 'rgba(12,20,34,.5)'; c.beginPath(); c.roundRect(40, top, W - 80, bot - top, 28); c.fill(); }
+        c.fillStyle = '#fff'; shadow(18);
         if (st.k === 'trip') {
           const names = []; for (const l of labels) if (l.name && !names.includes(l.name)) names.push(l.name);
           c.font = FN(900, 52); c.fillText(names.length ? '다녀온 곳' : '도착', CX, yb - 10);
