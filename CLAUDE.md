@@ -174,6 +174,12 @@
 - **판 -28(사용자 'MapDiary 폴더도 없는데')**: 예전 Documents 저장은 실패해도 알림이 공유 창에 가려 몰랐음(Documents/MapDiary를 확인 없이 안내했던 것). 이제 다운로드 → Documents/MapDiary 순으로 Filesystem 직접 쓰기 + stat 확인, 결과('✅ 저장했어요 · 내 파일 > 다운로드' / '⚠ 못 했어요 (까닭)')는 **공유 창이 닫힌 뒤** 알림. 실제 휴대폰에서 아직 확인 못 함
 - 시험 scratchpad `gpx/gpx_t.js` 11/11(웹·앱 저장+공유 창·카톡·아이폰), `sp/sp_t.js` 28/28, `uj/stale.js` 17/17, 여정 6개 성공
 
+## 🎬 이동 기록 영상 만들기 (2026-11-12 'MPD × RouteFly 통합 개발 지시서' 1차, 사용자 '올려'로 배포, 판 -29-film)
+- RouteFly 코드는 저장소·받은 파일에 없어서 MPD 안에 새로 짬(0.8.3을 받으면 연출 비교). 주소 `?film=1&t=기록ID`(`viewFilm`, 라우팅 setTimeout), 내 MPD 하나 보기 '🎬 이동 영상 만들기 (실험)'(여러 날 여행·기록 중엔 안 보임). 코드는 `route();` 바로 앞 한 덩어리(`film…` function, `var FILM_*`)
+- 3D: MapLibre GL 4.7.1 + 위성 Esri World Imagery(+지명 Reference) + 지형 AWS terrarium(누를 때만 jsdelivr에서 받음). 드론 카메라(진행 방향 위, 앞 3.5% 보기·부드럽게 돎, 처음 하늘→출발, 끝 다시 위로). 글자·사진(지날 때 2.4초)·거리 표시(러닝·자전거 1km/15km 넘으면 5km)·장소 이름표·마라톤 '🏁 FINISH', 집 가리기 500m(기본 켬)
+- **녹화(MediaRecorder) 안 씀**: 한 장씩 그려(지도 idle 기다림) WebCodecs H.264 → mp4-muxer 5.1.3. ① 영상만 MP4 + 검사 → ② 음악(MPD가 만든 소리 잔잔/경쾌 또는 내 파일, AAC 우선·없으면 Opus)을 따로 굳혀 다시 묶고 검사, 실패면 ① 그대로 + 까닭. `filmCheck`가 MP4 상자를 읽어 길이·장 수·avc1·소리 트랙 확인 + 재생기 길이. 저장은 앱 다운로드 폴더(확인)·웹 다운로드, 공유 창. GPX 가져오기 `filmGpx`. 저장 설정 `filmOpt`만 씀
+- 보고서 scratchpad `rf/MPD_RouteFly_1차보고.md`, 시험 `rf/t.js`(가짜 타일·사진)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 

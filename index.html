@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.11-28';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.12-29-film';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = 'GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3562,6 +3562,7 @@ function route() {
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
   if (LAB_QUIET) return setTimeout(viewLabCheck);   // 🔎 발견 점검 (읽기만, 2026-11-08)
   if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
+  if (qs.get('film')) return setTimeout(viewFilm);   // 🎬 이동 기록 영상 만들기 (실험, 2026-11-12)
   if (qs.get('album')) return setTimeout(viewAlbum);   // 가족 앨범 (아래쪽 const가 준비된 뒤에)
   if (qs.get('room')) return viewRoom();
   if (qs.get('map')) return setTimeout(viewStoryMap);   // 나의 이야기 지도 (C안 디자인, 2026-11-08)
@@ -5221,6 +5222,475 @@ async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다
 }
 
 const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:'];
+// ---------- 🎬 이동 기록 영상 만들기 (?film=1&t=기록ID, 2026-11-12 'MPD × RouteFly 통합 개발 지시서' 1차 · 실험) ----------
+// 내 MPD 기록(또는 GPX 파일)의 길을 위성 지도 + 지형(3D) 위로 드론처럼 따라가는 세로 영상(720×1280, 30fps)을 만들어 MP4로 저장·공유해요.
+// RouteFly 코드는 이 저장소에 없어서(받지 못함) 처음부터 새로 짰어요. 기존 화면·자료는 읽기만 해요(쓰는 건 고른 설정 filmOpt 하나).
+// 영상이 4초로 잘리던 RouteFly 문제를 피하려고 '실시간 녹화(MediaRecorder)'를 쓰지 않아요:
+//   한 장씩 지도를 그려(타일이 다 올 때까지 기다림) WebCodecs VideoEncoder(H.264)로 직접 굳히고 mp4-muxer로 묶어요 → 길이 = 장 수 ÷ 30 그대로.
+//   ① 영상만 먼저 MP4로 완성·검사 → ② 음악은 따로 굳혀(AAC) 같은 영상 조각과 다시 묶어 검사 → 음악판이 검사에 실패하면 ①을 그대로 드려요.
+//   검사(filmCheck)는 MP4 상자를 직접 읽어 실제 길이·장 수·코덱·소리 트랙을 확인하고, 브라우저 <video>로도 길이를 한 번 더 확인해요. 실패면 '성공'이라고 하지 않아요.
+// 지도: 위성 Esri World Imagery(+지명 Esri Reference), 높이 AWS Terrain Tiles(terrarium), 라이브러리 MapLibre GL 4.7.1·mp4-muxer 5.1.3(jsdelivr, 처음 열 때만 받음)
+var FILM_W = 720, FILM_H = 1280, FILM_FPS = 30;
+var FILM_LIB = { gl: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js', css: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css', mux: 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js' };
+var FILM_COL = { run: '#FF6B4A', bike: '#4FC3F7', hike: '#B49CFF', trek: '#B49CFF', backpack: '#B49CFF', camp: '#B49CFF', pgolf: '#4FC3F7', travel: '#FF7AA8', date: '#FF7AA8', daily: '#FF7AA8' };
+function filmLoad(src, css) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`[data-film="${src}"]`)) return res();
+    const e = css ? el('link', { rel: 'stylesheet', href: src, 'data-film': src }) : el('script', { src, 'data-film': src });
+    e.onload = () => res(); e.onerror = () => rej(new Error('불러오지 못함: ' + src.split('/').slice(-1)[0])); document.head.append(e);
+  });
+}
+// 기록 고르기용 목록: 하루 기록만(여러 날 여행 전체는 아직 안 함)
+function filmRecs() {
+  let L = []; try { L = pastTrips().filter(x => !x.album); } catch {}
+  return L.map(x => ({ t: x.t, name: x.info.name, at: x.info.startAt, mode: ls.get('walkMode:' + x.t, 'trek') }));
+}
+// GPX 읽기: trkpt / rtept (lat, lon, ele, time)
+function filmGpx(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml'), rows = [];
+  const pts = [...doc.getElementsByTagName('trkpt'), ...doc.getElementsByTagName('rtept')];
+  let t0 = Date.now();
+  pts.forEach((p, i) => {
+    const lat = +p.getAttribute('lat'), lng = +p.getAttribute('lon'); if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const e = p.getElementsByTagName('ele')[0], tm = p.getElementsByTagName('time')[0];
+    const ts = tm ? Date.parse(tm.textContent) : NaN;
+    rows.push([lat, lng, Number.isFinite(ts) ? ts : t0 + i * 5000, e ? +e.textContent : null]);
+  });
+  const nm = doc.getElementsByTagName('name')[0];
+  return { rows, name: (nm && nm.textContent.trim()) || 'GPX 경로' };
+}
+// 길 준비: 점 정리 → 누적 거리 → 집 가리기(앞뒤 500m, 짧으면 1/3)
+function filmPath(rows, hide) {
+  let P = rows.filter(q => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(q => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null }));
+  const cum = P => { let d = 0; return P.map((p, i) => (d += i ? dist(P[i - 1].lat, P[i - 1].lng, p.lat, p.lng) : 0, Object.assign(p, { d }))); };
+  // 5m 안 겹친 점은 하나로(카메라 방향이 흔들리지 않게)
+  const Q = []; for (const p of P) { const l = Q[Q.length - 1]; if (!l || dist(l.lat, l.lng, p.lat, p.lng) >= 5) Q.push(p); }
+  P = cum(Q); if (P.length < 2) return null;
+  let D = P[P.length - 1].d;
+  if (hide && D > 300) {
+    const cut = Math.min(500, D / 3), a = P.findIndex(p => p.d >= cut), b = P.length - 1 - [...P].reverse().findIndex(p => D - p.d >= cut);
+    if (a > 0 && b > a + 1) { P = cum(P.slice(a, b + 1).map(p => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt }))); D = P[P.length - 1].d; }
+  }
+  return { P, D };
+}
+function filmAt(P, d) {   // 길 위 거리 d 자리 (보간)
+  if (d <= 0) return Object.assign({ i: 0 }, P[0]);
+  let lo = 0, hi = P.length - 1;
+  if (d >= P[hi].d) return Object.assign({ i: hi }, P[hi]);
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P[m].d <= d) lo = m; else hi = m; }
+  const a = P[lo], b = P[hi], f = (d - a.d) / ((b.d - a.d) || 1);
+  return { i: lo, lat: a.lat + (b.lat - a.lat) * f, lng: a.lng + (b.lng - a.lng) * f, ts: a.ts + (b.ts - a.ts) * f, d };
+}
+function filmBear(a, b) { const r = x => x * Math.PI / 180, y = Math.sin(r(b.lng - a.lng)) * Math.cos(r(b.lat)), x = Math.cos(r(a.lat)) * Math.sin(r(b.lat)) - Math.sin(r(a.lat)) * Math.cos(r(b.lat)) * Math.cos(r(b.lng - a.lng)); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; }
+function filmAng(a, b) { return ((b - a + 540) % 360) - 180; }   // a에서 b로 가장 짧게 도는 각
+function filmEase(x) { return x <= 0 ? 0 : x >= 1 ? 1 : -(Math.cos(Math.PI * x) - 1) / 2; }
+function filmDur(ms) { const s = Math.round(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}시간 ${m}분` : `${m}분 ${String(s % 60).padStart(2, '0')}초`; }
+// 사진: 이 휴대폰 사진 DB(baldojang)가 있을 때만 읽기(없으면 새로 만들지 않아요), 그림만(동영상 빼고), 최대 12장
+async function filmPhotos(t) {
+  try {
+    if (indexedDB.databases) { const L = await indexedDB.databases(); if (!L.some(d => d.name === 'baldojang')) return []; }
+    const L = (await photoList(t)).filter(p => !p.v && p.blob);
+    return L.slice(0, 40);
+  } catch { return []; }
+}
+// 음악: MPD가 직접 만든 소리(저작권 걱정 없음) 두 가지 · 또는 휴대폰의 내 음악 파일
+async function filmMusic(kind, sec, file) {
+  const SR = 48000, N = Math.ceil(sec * SR);
+  if (kind === 'file' && file) {
+    const ab = await file.arrayBuffer(), dec = await new OfflineAudioContext(2, SR, SR).decodeAudioData(ab);
+    const ctx = new OfflineAudioContext(2, N, SR), s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = dec; s.loop = dec.duration < sec;
+    g.gain.setValueAtTime(0, 0); g.gain.linearRampToValueAtTime(1, 0.4); g.gain.setValueAtTime(1, Math.max(0.5, sec - 2.2)); g.gain.linearRampToValueAtTime(0, sec);
+    s.connect(g).connect(ctx.destination); s.start(0); return ctx.startRendering();
+  }
+  const ctx = new OfflineAudioContext(2, N, SR), out = ctx.createGain(), comp = ctx.createDynamicsCompressor();
+  out.connect(comp).connect(ctx.destination);
+  out.gain.setValueAtTime(0, 0); out.gain.linearRampToValueAtTime(0.9, 0.8); out.gain.setValueAtTime(0.9, Math.max(1, sec - 2.5)); out.gain.linearRampToValueAtTime(0, sec);
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const note = (type, f, t0, len, vol, cut) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter(); o.type = type; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = cut || 2400;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + Math.min(0.05, len / 4)); g.gain.exponentialRampToValueAtTime(0.0008, t0 + len);
+    o.connect(lp).connect(g).connect(out); o.start(t0); o.stop(t0 + len + 0.05);
+  };
+  const up = kind === 'up', bpm = up ? 116 : 84, beat = 60 / bpm, bar = beat * 4;
+  const prog = up ? [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]] : [[48, 52, 55, 59], [45, 48, 52, 55], [41, 45, 48, 52], [43, 47, 50, 53]];
+  let noise = null;
+  if (up) { noise = ctx.createBuffer(1, SR / 4, SR); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  for (let b = 0, t = 0; t < sec; b++, t += bar) {
+    const ch = prog[b % 4];
+    ch.forEach((m, k) => { note('sawtooth', hz(m + 12), t, bar * 1.05, 0.022, 900); note('triangle', hz(m + 12) * 1.003, t, bar * 1.05, 0.03, 1600); });
+    for (let i = 0; i < 8; i++) { const tt = t + i * beat / 2; if (tt >= sec) break; note('triangle', hz(ch[(i * 3 + b) % 4] + 24), tt, beat * 0.9, up ? 0.05 : 0.06, 3200); }
+    if (up) for (let i = 0; i < 4; i++) {
+      const tt = t + i * beat; if (tt >= sec) break;
+      const k = ctx.createOscillator(), kg = ctx.createGain(); k.frequency.setValueAtTime(130, tt); k.frequency.exponentialRampToValueAtTime(42, tt + 0.16);
+      kg.gain.setValueAtTime(0.5, tt); kg.gain.exponentialRampToValueAtTime(0.001, tt + 0.22); k.connect(kg).connect(out); k.start(tt); k.stop(tt + 0.25);
+      note('triangle', hz(ch[0] - 12), tt, beat * 0.8, 0.12, 700);
+      const h = ctx.createBufferSource(), hf = ctx.createBiquadFilter(), hg = ctx.createGain(); h.buffer = noise; hf.type = 'highpass'; hf.frequency.value = 7000;
+      hg.gain.setValueAtTime(0.06, tt + beat / 2); hg.gain.exponentialRampToValueAtTime(0.001, tt + beat / 2 + 0.06); h.connect(hf).connect(hg).connect(out); h.start(tt + beat / 2); h.stop(tt + beat / 2 + 0.08);
+    }
+  }
+  return ctx.startRendering();
+}
+// MP4 검사: 상자(box)를 직접 읽어 실제 길이·장 수·코덱·소리 트랙을 확인
+function filmCheck(buf, expectSec, wantAudio) {
+  const v = new DataView(buf), u8 = new Uint8Array(buf), str = (o, n) => String.fromCharCode(...u8.subarray(o, o + n));
+  const boxes = (s, e) => { const L = []; for (let o = s; o + 8 <= e;) { let n = v.getUint32(o); const ty = str(o + 4, 4); let h = 8; if (n === 1) { n = Number(v.getBigUint64(o + 8)); h = 16; } else if (n === 0) n = e - o; if (n < h || o + n > e) break; L.push({ ty, s: o + h, e: o + n }); o += n; } return L; };
+  const find = (L, ty) => L.find(b => b.ty === ty);
+  const R = { ok: false, size: buf.byteLength, tracks: [], why: [] };
+  const moov = find(boxes(0, buf.byteLength), 'moov'); if (!moov) { R.why.push('MP4 안에 moov가 없어요'); return R; }
+  const mv = boxes(moov.s, moov.e), mvhd = find(mv, 'mvhd');
+  if (mvhd) { const ver = u8[mvhd.s]; R.sec = ver ? Number(v.getBigUint64(mvhd.s + 24)) / v.getUint32(mvhd.s + 20) : v.getUint32(mvhd.s + 16) / v.getUint32(mvhd.s + 12); }
+  for (const tk of mv.filter(b => b.ty === 'trak')) {
+    const mdia = find(boxes(tk.s, tk.e), 'mdia'); if (!mdia) continue;
+    const md = boxes(mdia.s, mdia.e), mdhd = find(md, 'mdhd'), hdlr = find(md, 'hdlr'), minf = find(md, 'minf');
+    const ver = u8[mdhd.s], ts = ver ? v.getUint32(mdhd.s + 20) : v.getUint32(mdhd.s + 12), du = ver ? Number(v.getBigUint64(mdhd.s + 24)) : v.getUint32(mdhd.s + 16);
+    const stbl = minf && find(boxes(minf.s, minf.e), 'stbl'), sb = stbl ? boxes(stbl.s, stbl.e) : [], stsd = find(sb, 'stsd'), stsz = find(sb, 'stsz');
+    R.tracks.push({ kind: str(hdlr.s + 8, 4), sec: du / ts, codec: stsd ? str(stsd.s + 12, 4) : '?', n: stsz ? v.getUint32(stsz.s + 8) : 0 });
+  }
+  const vt = R.tracks.find(t => t.kind === 'vide'), at = R.tracks.find(t => t.kind === 'soun');
+  R.v = vt; R.a = at;
+  if (!vt) R.why.push('영상 트랙이 없어요');
+  else {
+    if (vt.codec !== 'avc1') R.why.push(`영상 코덱이 H.264가 아니에요(${vt.codec})`);
+    if (Math.abs(vt.sec - expectSec) > 0.25) R.why.push(`영상 길이가 ${vt.sec.toFixed(1)}초예요(만든 길이 ${expectSec.toFixed(1)}초)`);
+    if (Math.abs(vt.n - Math.round(expectSec * FILM_FPS)) > 1) R.why.push(`장 수가 ${vt.n}장이에요(만든 장 ${Math.round(expectSec * FILM_FPS)}장)`);
+  }
+  if (wantAudio) {
+    if (!at) R.why.push('음악 트랙이 없어요');
+    else if (at.sec < expectSec - 0.3) R.why.push(`음악이 ${at.sec.toFixed(1)}초에서 끊겨요`);
+  }
+  if (Number.isFinite(R.sec) && Math.abs(R.sec - expectSec) > 0.3) R.why.push(`전체 길이 표시가 ${R.sec.toFixed(1)}초예요`);
+  R.ok = !R.why.length; return R;
+}
+function filmPlayLen(blob) {   // 브라우저가 실제로 읽은 길이 (못 읽으면 null)
+  return new Promise(res => { const u = URL.createObjectURL(blob), vd = document.createElement('video'); let done = false;
+    const fin = x => { if (done) return; done = true; URL.revokeObjectURL(u); res(x); };
+    vd.preload = 'metadata'; vd.muted = true; vd.onloadedmetadata = () => fin(Number.isFinite(vd.duration) ? vd.duration : null); vd.onerror = () => fin(null); setTimeout(() => fin(null), 8000); vd.src = u; });
+}
+// 화면
+function viewFilm() {
+  document.title = '이동 기록 영상 · MPD'; document.documentElement.classList.add('vw-page');
+  if (!document.getElementById('film-css')) document.head.append(el('style', { id: 'film-css', text: `
+.fm{max-width:520px;margin:0 auto;padding:12px 16px 120px;color:#F2F2F7;display:flex;flex-direction:column;gap:14px}
+.fm h1{font-size:22px;margin:4px 0 0}.fm .sub{color:#8E8E93;font-size:13.5px;line-height:1.5}
+.fm-card{background:#1C1C1E;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.fm-card h2{font-size:15px;margin:0;color:#fff}
+.fm-chips{display:flex;flex-wrap:wrap;gap:8px}.fm-chip{border:1px solid #3A3A3C;background:none;color:#E5E5EA;border-radius:999px;padding:8px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer}
+.fm-chip.on{background:#0A84FF;border-color:#0A84FF;color:#fff}
+.fm select,.fm input[type=file]{width:100%;background:#2C2C2E;color:#fff;border:none;border-radius:12px;padding:12px;font:15px inherit;font-family:inherit}
+.fm-stage{position:relative;align-self:center;width:min(100%,300px);aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:#000}
+.fm-stage canvas,.fm-stage video{width:100%;height:100%;display:block;object-fit:cover}
+.fm-go{background:#0A84FF;color:#fff;border:none;border-radius:16px;padding:16px;font:800 17px inherit;font-family:inherit;cursor:pointer}
+.fm-go[disabled]{opacity:.5}.fm-line{background:none;border:1px solid #3A3A3C;color:#E5E5EA;border-radius:14px;padding:13px;font:700 15px inherit;font-family:inherit;cursor:pointer}
+.fm-bar{height:8px;background:#2C2C2E;border-radius:4px;overflow:hidden}.fm-bar i{display:block;height:100%;width:0;background:#0A84FF;transition:width .2s}
+.fm-ck{font-size:14px;line-height:1.7}.fm-ck .bad{color:#FF6B6B}.fm-ck .good{color:#7FD1FF}
+.fm-mapbox{position:fixed;left:-20000px;top:0;width:${FILM_W}px;height:${FILM_H}px;pointer-events:none}
+.fm label.ck{display:flex;gap:10px;align-items:center;font-size:14.5px}` }));
+  const opt = Object.assign({ sec: 30, music: 'calm', vol: 70, title: true, date: true, stats: true, places: true, photos: true, hide: ls.get('hideEnds', true) }, ls.get('filmOpt', {}));
+  const S = { rec: qs.get('t') || '', gpx: null, file: null, busy: false, stop: false };
+  const recs = filmRecs(); if (!S.rec && recs.length) S.rec = recs[0].t;
+  const save = () => ls.set('filmOpt', { sec: opt.sec, music: opt.music === 'file' ? 'calm' : opt.music, vol: opt.vol, title: opt.title, date: opt.date, stats: opt.stats, places: opt.places, photos: opt.photos });
+  const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); } })));
+  const ck = (k, txt) => el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt[k] ? true : null, onchange: e => { opt[k] = e.target.checked; save(); } }), txt);
+  const cv = el('canvas', { width: FILM_W, height: FILM_H }), stage = el('div', { class: 'fm-stage' }, cv);
+  const bar = el('i'), prog = el('div', { class: 'sub', text: '' }), result = el('div', { class: 'fm-card', style: 'display:none' });
+  const go = el('button', { class: 'fm-go', type: 'button', text: '🎬 영상 만들기', onclick: () => filmMake(S, opt, { cv, bar, prog, result, go, stage }) });
+  const recSel = el('select', { onchange: e => { S.rec = e.target.value; S.gpx = null; filmPoster(S, opt, cv); } },
+    recs.map(r => el('option', { value: r.t, selected: r.t === S.rec ? true : null, text: `${new Date(r.at).toLocaleDateString('ko-KR')} · ${r.name}` })));
+  const gpxIn = el('input', { type: 'file', accept: '.gpx,application/gpx+xml,application/xml,text/xml', onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const g = filmGpx(await f.text()); if (g.rows.length < 2) throw new Error('점이 없어요'); S.gpx = g; toast(`GPX를 읽었어요 · 점 ${g.rows.length}개`); filmPoster(S, opt, cv); } catch (err) { toast('GPX를 읽지 못했어요 · ' + err.message); } } });
+  const musIn = el('input', { type: 'file', accept: 'audio/*', style: 'display:none', onchange: e => { S.file = e.target.files[0] || null; if (S.file) { opt.music = 'file'; toast('음악 파일: ' + S.file.name); } } });
+  const back = qs.get('t') ? './?my=1&t=' + encodeURIComponent(qs.get('t')) : './?my=1';
+  app.replaceChildren(el('div', { class: 'fm' },
+    el('a', { href: back, style: 'color:#4DA3FF;text-decoration:none;font-weight:700', text: '‹ 내 MPD' }),
+    el('h1', { text: '🎬 이동 기록 영상 만들기' }),
+    el('div', { class: 'sub', text: '다닌 길을 위성 지도와 지형 위로 드론처럼 따라가는 세로 영상(MP4)을 만들어요. 실험 중인 기능이에요. 영상은 이 휴대폰에서 만들고, 기록은 바꾸지 않아요.' }),
+    stage,
+    el('div', { class: 'fm-card' }, el('h2', { text: '어떤 길로' }), recs.length ? recSel : el('div', { class: 'sub', text: '이 휴대폰에 기록이 없어요. GPX 파일을 가져오세요.' }),
+      el('div', { class: 'sub', text: '또는 GPX 파일 가져오기' }), gpxIn),
+    el('div', { class: 'fm-card' }, el('h2', { text: '영상 길이' }), chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분']], () => opt.sec, v => { opt.sec = v; })),
+    el('div', { class: 'fm-card' }, el('h2', { text: '보여 줄 것' }), ck('title', '제목'), ck('date', '날짜'), ck('stats', '거리·시간'), ck('places', '장소 이름(좋은 곳·들른 곳·정상)'), ck('photos', '그 자리에서 찍은 사진'),
+      ck('hide', '🏠 출발·도착 근처 500m 가리기 (집 위치가 드러나지 않게)')),
+    el('div', { class: 'fm-card' }, el('h2', { text: '음악' }),
+      chips([['none', '없음'], ['calm', '잔잔하게'], ['up', '경쾌하게'], ['file', '내 음악 파일']], () => opt.music, v => { opt.music = v; if (v === 'file') musIn.click(); }), musIn,
+      el('label', { class: 'ck' }, '음량', el('input', { type: 'range', min: 0, max: 100, value: opt.vol, style: 'flex:1', oninput: e => { opt.vol = +e.target.value; save(); } })),
+      el('div', { class: 'sub', text: '잔잔하게·경쾌하게는 MPD가 직접 만든 소리라 어디에 올려도 괜찮아요. 내 음악 파일은 저작권을 꼭 확인하세요.' })),
+    go, el('div', { class: 'fm-bar' }, bar), prog, result));
+  filmPoster(S, opt, cv);
+}
+function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, start, end}
+  if (S.gpx) return { rows: S.gpx.rows, name: S.gpx.name, mode: 'trek', t: null };
+  if (!S.rec) return null;
+  const wp = ls.get('walkPlaces:' + S.rec, {});
+  return { rows: trackLoad(S.rec), name: ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end };
+}
+function filmPoster(S, opt, cv) {   // 만들기 전 첫 장(제목 카드) 미리 보기
+  const src = filmSrc(S), c = cv.getContext('2d');
+  c.fillStyle = '#0B1220'; c.fillRect(0, 0, FILM_W, FILM_H);
+  if (!src) return;
+  const path = filmPath(src.rows, opt.hide); if (!path) return;
+  const { P, D } = path, b = P.reduce((a, p) => ({ n: Math.max(a.n, p.lat), s: Math.min(a.s, p.lat), e: Math.max(a.e, p.lng), w: Math.min(a.w, p.lng) }), { n: -90, s: 90, e: -180, w: 180 });
+  const k = Math.cos((b.n + b.s) / 2 * Math.PI / 180), sx = (b.e - b.w) * k || 1e-6, sy = (b.n - b.s) || 1e-6, sc = Math.min(560 / sx, 720 / sy);
+  c.strokeStyle = FILM_COL[src.mode] || '#4FC3F7'; c.lineWidth = 8; c.lineJoin = c.lineCap = 'round'; c.beginPath();
+  P.forEach((p, i) => { const x = 360 + ((p.lng - (b.e + b.w) / 2) * k) * sc, y = 700 - (p.lat - (b.n + b.s) / 2) * sc; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke();
+  filmCardText(c, src, D, P, opt, 1);
+}
+function filmCardText(c, src, D, P, opt, a) {   // 제목 카드(처음) 글자
+  c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18;
+  const F = (w, s) => `${w} ${s}px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif`;
+  let y = 250;
+  if (opt.title) { c.font = F(800, 58); const L = filmWrap(c, src.name, 600); L.slice(0, 2).forEach(l => { c.fillText(l, 360, y); y += 70; }); }
+  if (opt.date && P[0].ts) { c.font = F(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), 360, y + 6); y += 50; }
+  if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#4FC3F7'; c.fillText(fmtDist(D), 360, y + 20); }
+  c.restore();
+}
+function filmWrap(c, s, w) { const out = []; let line = ''; for (const ch of String(s)) { if (c.measureText(line + ch).width > w && line) { out.push(line); line = ch; } else line += ch; } if (line) out.push(line); return out; }
+async function filmMake(S, opt, U) {
+  if (S.busy) { S.stop = true; U.go.textContent = '멈추는 중…'; return; }
+  const src = filmSrc(S); if (!src) return toast('기록이나 GPX 파일을 골라 주세요');
+  const path = filmPath(src.rows, opt.hide); if (!path || path.D < 50) return toast('길이 너무 짧아서 영상을 만들 수 없어요');
+  if (typeof VideoEncoder === 'undefined') return toast('이 브라우저는 영상 만들기(WebCodecs)를 지원하지 않아요 · 크롬이나 MPD 앱에서 열어 주세요');
+  S.busy = true; S.stop = false; U.go.textContent = '■ 그만 만들기'; U.result.style.display = 'none';
+  const say = (t, p) => { U.prog.textContent = t; if (p != null) U.bar.style.width = (p * 100).toFixed(1) + '%'; };
+  let wake = null; try { wake = await navigator.wakeLock.request('screen'); } catch {}
+  let mapEl = null, map = null;
+  try {
+    say('지도 도구를 불러오는 중…', 0);
+    await filmLoad(FILM_LIB.css, true); await filmLoad(FILM_LIB.gl); await filmLoad(FILM_LIB.mux);
+    // 코덱: H.264 (Main → Baseline 차례), 안 되면 멈춤
+    let vcodec = null;
+    for (const c of ['avc1.4d0028', 'avc1.42001f']) { try { if ((await VideoEncoder.isConfigSupported({ codec: c, width: FILM_W, height: FILM_H, bitrate: 6e6, framerate: FILM_FPS })).supported) { vcodec = c; break; } } catch {} }
+    if (!vcodec) throw new Error('이 휴대폰은 H.264 영상 만들기를 지원하지 않아요');
+    const { P, D } = path, T = opt.sec, N = Math.round(T * FILM_FPS), col = FILM_COL[src.mode] || '#4FC3F7';
+    const tIn = Math.min(2, T * 0.1), tOut = Math.min(2.5, T * 0.12), tRun = T - tIn - tOut;
+    // 사진 → 길 위 거리
+    let photos = [];
+    if (opt.photos && src.t) {
+      say('사진을 고르는 중…');
+      const L = await filmPhotos(src.t), span = D * (2.4 / tRun), got = [];
+      for (const p of L) {
+        let pd = null;
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lng)) { let best = 1e18; for (const q of P) { const dd = dist(q.lat, q.lng, p.lat, p.lng); if (dd < best) { best = dd; pd = q.d; } } if (best > 300) pd = null; }
+        if (pd == null && p.ts && P[0].ts && p.ts >= P[0].ts && p.ts <= P[P.length - 1].ts) { const j = P.findIndex(q => q.ts >= p.ts); pd = P[Math.max(0, j)].d; }
+        if (pd == null || got.some(g => Math.abs(g.d - pd) < span)) continue;
+        got.push({ d: pd, p }); if (got.length >= 10) break;
+      }
+      for (const g of got) { try { g.img = await createImageBitmap(g.p.blob, { resizeWidth: 640, resizeQuality: 'high' }); } catch {} }
+      photos = got.filter(g => g.img).sort((a, b) => a.d - b.d);
+    }
+    // 장소 이름: 좋은 곳·들른 곳·정상 (+ 집 가리기가 꺼져 있으면 출발·도착 이름)
+    let labels = [];
+    if (opt.places && src.t) {
+      const near = (lat, lng) => { let best = 1e18, d = null; for (const q of P) { const dd = dist(q.lat, q.lng, lat, lng); if (dd < best) { best = dd; d = q.d; } } return best < 250 ? d : null; };
+      for (const s of (ls.get('walkSpots:' + src.t, []) || [])) if (s && s.n && Number.isFinite(s.lat)) { const d = near(s.lat, s.lng); if (d != null) labels.push({ lat: s.lat, lng: s.lng, d, n: (s.k === 'stay' ? '📍 ' : '★ ') + s.n }); }
+      for (const s of (ls.get('walkSummits:' + src.t, []) || [])) if (s && s.n && Number.isFinite(s.lat)) { const d = near(s.lat, s.lng); if (d != null) labels.push({ lat: s.lat, lng: s.lng, d, n: '⛰ ' + s.n + (s.ele ? ` ${Math.round(s.ele)}m` : '') }); }
+      if (!opt.hide) { if (src.start && !/지점$/.test(src.start)) labels.push({ lat: P[0].lat, lng: P[0].lng, d: 0, n: '출발 · ' + src.start }); if (src.end && !/지점$/.test(src.end)) labels.push({ lat: P[P.length - 1].lat, lng: P[P.length - 1].lng, d: D, n: '도착 · ' + src.end }); }
+    }
+    // 거리 표시(마라톤·러닝·자전거): 1km 또는 5km마다
+    const kmStep = src.mode === 'run' || src.mode === 'bike' ? (D >= 15000 ? 5000 : 1000) : 0;
+    const marks = []; if (kmStep) for (let m = kmStep; m < D - 50; m += kmStep) { const a = filmAt(P, m); marks.push({ lat: a.lat, lng: a.lng, d: m, n: `${m / 1000}km` }); }
+    const marathon = src.mode === 'run' && D >= 20000;
+    // 지도 준비 (보이지 않는 곳에 영상 크기 그대로)
+    say('위성 지도를 준비하는 중…');
+    mapEl = el('div', { class: 'fm-mapbox' }); document.body.append(mapEl);
+    const coords = P.map(p => [p.lng, p.lat]);
+    map = new maplibregl.Map({
+      container: mapEl, interactive: false, attributionControl: false, fadeDuration: 0, pixelRatio: 1, preserveDrawingBuffer: true, maxPitch: 75,
+      style: { version: 8,
+        sources: {
+          sat: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18 },
+          lbl: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 18 },
+          dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' },
+          all: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } },
+          done: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords.slice(0, 2) } } },
+          head: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } } } },
+        layers: [
+          { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-saturation': 0.05, 'raster-contrast': 0.05 } },
+          { id: 'lbl', type: 'raster', source: 'lbl', paint: { 'raster-opacity': opt.places ? 0.85 : 0 } },
+          { id: 'all', type: 'line', source: 'all', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 5 } },
+          { id: 'done-glow', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-opacity': 0.35, 'line-width': 18, 'line-blur': 6 } },
+          { id: 'done', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-width': 8 } },
+          { id: 'head', type: 'circle', source: 'head', paint: { 'circle-radius': 11, 'circle-color': col, 'circle-stroke-color': '#fff', 'circle-stroke-width': 4 } }],
+        terrain: { source: 'dem', exaggeration: 1.4 } },
+      center: coords[0], zoom: 13, pitch: 0 });
+    await new Promise((res, rej) => { map.once('load', res); map.once('error', e => rej(new Error('지도를 불러오지 못했어요 · ' + ((e && e.error && e.error.message) || '')))); setTimeout(res, 20000); });
+    try { map.setSky && map.setSky({ 'sky-color': '#7FB6E6', 'horizon-color': '#E3EEF8', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.4, 'fog-color': '#DCE8F2', 'fog-ground-blend': 0.6 }); } catch {}
+    // 카메라: 길 길이에 맞춘 확대, 진행 방향이 화면 위로
+    const zRun = Math.max(12.4, Math.min(16.3, 16.2 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
+    const bounds = coords.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+    const over = map.cameraForBounds(bounds, { padding: { top: 260, bottom: 300, left: 70, right: 70 } }) || { center: bounds.getCenter(), zoom: 12 };
+    const look = Math.max(60, Math.min(600, D * 0.035));
+    const camAt = d => { const a = filmAt(P, d), b = filmAt(P, Math.min(D, d + look)), z = filmAt(P, Math.max(0, d - look * 0.4)); return { a, br: filmBear(z, b.d - z.d < 5 ? filmAt(P, D) : b) }; };
+    let bear = camAt(0).br;
+    // 영상 굳히기 (조각은 모아 두었다가 ①영상만 ②음악 넣은 판 두 번 묶어요)
+    const chunks = []; let encErr = null;
+    const enc = new VideoEncoder({ output: (ch, meta) => chunks.push({ ch, meta }), error: e => { encErr = e; } });
+    enc.configure({ codec: vcodec, width: FILM_W, height: FILM_H, bitrate: 6e6, framerate: FILM_FPS, avc: { format: 'avc' }, latencyMode: 'quality' });
+    const c = U.cv.getContext('2d'), F = (w, s) => `${w} ${s}px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif`;
+    const waitMap = () => new Promise(res => { let ok = false; const fin = () => { if (!ok) { ok = true; res(); } };
+      map.once('idle', fin); setTimeout(fin, 6000); map.triggerRepaint(); });
+    const t0 = performance.now();
+    for (let f = 0; f < N; f++) {
+      if (S.stop) throw new Error('멈췄어요');
+      if (encErr) throw encErr;
+      const tt = f / FILM_FPS;
+      let cam, dh;
+      if (tt < tIn) {   // 처음: 전체 길이 보이다가 출발점으로 내려앉음
+        const e = filmEase(tt / tIn), s = camAt(0); dh = 0; bear = s.br;
+        cam = { center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zRun - over.zoom) * e, pitch: 58 * e, bearing: bear * e };
+      } else if (tt < tIn + tRun) {   // 길 따라가기 (앞쪽 방향을 부드럽게 따라 돎)
+        const lin = Math.min(1, (tt - tIn) / tRun);
+        dh = D * (0.15 * lin + 0.85 * filmEase(lin)); const s = camAt(dh);
+        bear = (bear + filmAng(bear, s.br) * 0.07 + 360) % 360;
+        cam = { center: [s.a.lng, s.a.lat], zoom: zRun, pitch: 58, bearing: bear };
+      } else {   // 끝: 다시 하늘로 올라가 전체 길
+        const e = filmEase((tt - tIn - tRun) / tOut), s = filmAt(P, D); dh = D;
+        cam = { center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: zRun + (over.zoom - zRun) * e, pitch: 58 - 28 * e, bearing: bear + filmAng(bear, 0) * e };
+      }
+      map.jumpTo(cam);
+      const cur = filmAt(P, dh), doneC = coords.slice(0, cur.i + 1).concat([[cur.lng, cur.lat]]);
+      map.getSource('done').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: doneC.length > 1 ? doneC : coords.slice(0, 2) } });
+      map.getSource('head').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [cur.lng, cur.lat] } });
+      await waitMap();
+      c.drawImage(map.getCanvas(), 0, 0, FILM_W, FILM_H);
+      // 위·아래 어둡게 (글자 잘 보이게)
+      let g = c.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, FILM_W, 260);
+      g = c.createLinearGradient(0, FILM_H - 330, 0, FILM_H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.65)'); c.fillStyle = g; c.fillRect(0, FILM_H - 330, FILM_W, 330);
+      // 지도 위 이름표: 거리 표시·장소 (지금 자리 가까운 것, 화면 안)
+      const pill = (x, y, txt, bg, fg, sz) => { c.font = F(800, sz); const w = c.measureText(txt).width + 26, h = sz + 18; c.fillStyle = bg; c.beginPath(); c.roundRect(x - w / 2, y - h - 14, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textAlign = 'center'; c.fillText(txt, x, y - 14 - h / 2 + sz * 0.36); c.beginPath(); c.moveTo(x - 7, y - 15); c.lineTo(x + 7, y - 15); c.lineTo(x, y - 4); c.fill(); };
+      const onScreen = q => { const p = map.project([q.lng, q.lat]); return p.x > 30 && p.x < FILM_W - 30 && p.y > 200 && p.y < FILM_H - 260 ? p : null; };
+      if (tt >= tIn) {
+        for (const m of marks) { if (Math.abs(m.d - dh) > look * 6) continue; const p = onScreen(m); if (p) pill(p.x, p.y, m.n, 'rgba(255,255,255,.92)', '#14253B', 26); }
+        for (const l of labels) { if (l.d < dh - look * 2 || l.d > dh + look * 8) continue; const p = onScreen(l); if (p) pill(p.x, p.y, l.n, 'rgba(20,37,59,.86)', '#fff', 26); }
+      }
+      // 처음 제목 카드
+      if (tt < tIn + 0.8) filmCardText(c, src, D, P, opt, Math.max(0, Math.min(1, 1 - (tt - tIn + 0.4) / 1.2)));
+      // 위: 작은 제목·날짜 (따라가는 동안)
+      if (tt >= tIn) {
+        c.save(); c.textAlign = 'left'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 10;
+        if (opt.title) { c.font = F(800, 34); c.fillText(filmWrap(c, src.name, 640)[0], 40, 92); }
+        if (opt.date && P[0].ts) { c.font = F(600, 24); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }), 40, 132); }
+        c.restore();
+      }
+      // 아래: 거리·지난 시간
+      if (opt.stats && tt >= tIn) {
+        c.save(); c.textAlign = 'left'; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 12; c.fillStyle = '#fff';
+        c.font = F(800, 92); c.fillText((dh / 1000).toFixed(dh < 10000 ? 2 : 1), 40, FILM_H - 92); const w = c.measureText((dh / 1000).toFixed(dh < 10000 ? 2 : 1)).width;
+        c.font = F(700, 36); c.fillStyle = col; c.fillText('km', 50 + w, FILM_H - 94);
+        if (P[0].ts && cur.ts > P[0].ts) { c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = F(700, 34); c.fillText(filmDur(cur.ts - P[0].ts), FILM_W - 40, FILM_H - 96); }
+        c.restore();
+      }
+      // 사진: 그 자리를 지날 때 2초쯤 떠올랐다 사라짐
+      if (photos.length && tt >= tIn && tt < tIn + tRun) {
+        const span = D * (2.4 / tRun), ph = photos.filter(q => dh >= q.d && dh < q.d + span).pop();
+        if (ph) {
+          const k = (dh - ph.d) / span, a = Math.min(1, k / 0.15, (1 - k) / 0.15), sc = 0.92 + 0.08 * Math.min(1, k / 0.2);
+          const bw = 440 * sc, bh = 550 * sc, x = (FILM_W - bw) / 2, y = 300;
+          c.save(); c.globalAlpha = Math.max(0, a); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 30; c.fillStyle = '#fff'; c.beginPath(); c.roundRect(x - 10, y - 10, bw + 20, bh + 20, 26); c.fill(); c.shadowBlur = 0;
+          c.beginPath(); c.roundRect(x, y, bw, bh, 18); c.clip();
+          const im = ph.img, r = Math.max(bw / im.width, bh / im.height); c.drawImage(im, x + (bw - im.width * r) / 2, y + (bh - im.height * r) / 2, im.width * r, im.height * r);
+          c.restore();
+        }
+      }
+      // 끝: 결승·도착 카드
+      if (tt >= tIn + tRun) {
+        const e = Math.min(1, (tt - tIn - tRun) / 0.6);
+        c.save(); c.globalAlpha = e; c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18;
+        c.font = F(900, marathon ? 76 : 60); c.fillText(marathon ? '🏁 FINISH' : '도착', 360, 300);
+        if (opt.stats) { c.font = F(800, 50); c.fillStyle = col; c.fillText(fmtDist(D), 360, 380); if (P[0].ts && P[P.length - 1].ts > P[0].ts) { c.font = F(700, 34); c.fillStyle = '#fff'; c.fillText(filmDur(P[P.length - 1].ts - P[0].ts), 360, 432); } }
+        c.font = F(700, 24); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('Map Photo Diary', 360, FILM_H - 60);
+        c.restore();
+      }
+      c.save(); c.font = F(500, 15); c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'right'; c.fillText('지도 Esri · 지형 AWS Terrain Tiles', FILM_W - 16, FILM_H - 16); c.restore();
+      const vf = new VideoFrame(U.cv, { timestamp: Math.round(f * 1e6 / FILM_FPS), duration: Math.round(1e6 / FILM_FPS) });
+      enc.encode(vf, { keyFrame: f % (FILM_FPS * 2) === 0 }); vf.close();
+      while (enc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 10));
+      const el_ = (performance.now() - t0) / 1000, left = el_ / (f + 1) * (N - f - 1);
+      say(`지도를 한 장씩 그리는 중… ${f + 1}/${N}장 · 남은 시간 약 ${left < 60 ? Math.ceil(left) + '초' : Math.ceil(left / 60) + '분'}`, (f + 1) / N * 0.85);
+    }
+    await enc.flush(); enc.close(); if (encErr) throw encErr;
+    // ① 영상만 MP4
+    const mux = (audio) => { const tg = new Mp4Muxer.ArrayBufferTarget(); const m = new Mp4Muxer.Muxer({ target: tg, video: { codec: 'avc', width: FILM_W, height: FILM_H, frameRate: FILM_FPS }, audio: audio ? { codec: audio.codec, numberOfChannels: 2, sampleRate: 48000 } : undefined, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+      for (const x of chunks) m.addVideoChunk(x.ch, x.meta);
+      if (audio) for (const x of audio.chunks) m.addAudioChunk(x.ch, x.meta);
+      m.finalize(); return tg.buffer; };
+    say('영상을 묶고 검사하는 중…', 0.88);
+    const vBuf = mux(null), vChk = filmCheck(vBuf, T, false);
+    if (!vChk.ok) throw new Error('영상 검사에서 걸렸어요 · ' + vChk.why.join(' · '));
+    let out = { buf: vBuf, chk: vChk, music: null, mNote: '' };
+    // ② 음악 넣은 판 (따로 굳혀 묶고 검사, 실패하면 ①을 그대로)
+    if (opt.music !== 'none' && !(opt.music === 'file' && !S.file)) {
+      try {
+        say('음악을 만드는 중…', 0.9);
+        const ab = await filmMusic(opt.music, T, S.file), vol = opt.vol / 100;
+        let acodec = null;
+        for (const [c2, cn] of [['mp4a.40.2', 'aac'], ['opus', 'opus']]) { try { if ((await AudioEncoder.isConfigSupported({ codec: c2, sampleRate: 48000, numberOfChannels: 2, bitrate: 160000 })).supported) { acodec = [c2, cn]; break; } } catch {} }
+        if (!acodec) throw new Error('이 휴대폰은 음악 굳히기(AudioEncoder)를 지원하지 않아요');
+        const ach = []; let aErr = null;
+        const ae = new AudioEncoder({ output: (ch, meta) => ach.push({ ch, meta }), error: e => { aErr = e; } });
+        ae.configure({ codec: acodec[0], sampleRate: 48000, numberOfChannels: 2, bitrate: 160000 });
+        const L0 = ab.getChannelData(0), L1 = ab.numberOfChannels > 1 ? ab.getChannelData(1) : L0, step = 1024;
+        for (let i = 0; i < ab.length; i += step) {
+          const n = Math.min(step, ab.length - i), buf = new Float32Array(n * 2);
+          for (let j = 0; j < n; j++) { buf[j] = L0[i + j] * vol; buf[n + j] = L1[i + j] * vol; }
+          const ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i * 1e6 / 48000), data: buf });
+          ae.encode(ad); ad.close();
+          if (ae.encodeQueueSize > 20) await new Promise(r => setTimeout(r, 5));
+        }
+        await ae.flush(); ae.close(); if (aErr) throw aErr;
+        say('음악을 넣고 다시 검사하는 중…', 0.95);
+        const mBuf = mux({ codec: acodec[1], chunks: ach }), mChk = filmCheck(mBuf, T, true);
+        if (!mChk.ok) throw new Error(mChk.why.join(' · '));
+        out = { buf: mBuf, chk: mChk, music: acodec[1], mNote: acodec[1] === 'opus' ? '이 휴대폰은 AAC를 못 만들어 Opus 소리로 넣었어요 · 카카오톡·아이폰에서 소리가 안 날 수 있어요' : '' };
+      } catch (e) { out.mNote = '⚠ 음악을 넣지 못해 소리 없는 영상으로 드려요 · ' + (e && e.message || e); }
+    }
+    const blob = new Blob([out.buf], { type: 'video/mp4' }), playSec = await filmPlayLen(blob);
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    const fname = `MapDiary_film_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.mp4`;
+    say(`다 만들었어요 · ${(blob.size / 1048576).toFixed(1)}MB`, 1);
+    filmResult(U, blob, fname, out, T, playSec);
+  } catch (e) {
+    say('⚠ 영상을 만들지 못했어요 · ' + (e && e.message || e), 0);
+  } finally {
+    try { map && map.remove(); } catch {} if (mapEl) mapEl.remove();
+    try { wake && wake.release(); } catch {}
+    S.busy = false; U.go.textContent = '🎬 영상 만들기';
+  }
+}
+function filmResult(U, blob, fname, out, T, playSec) {
+  const u = URL.createObjectURL(blob), v = out.chk.v, a = out.chk.a;
+  const vid = el('video', { src: u, controls: true, playsinline: true });
+  U.stage.replaceChildren(vid);
+  const line = (ok, txt) => el('div', { class: ok ? 'good' : 'bad', text: (ok ? '✅ ' : '⚠ ') + txt });
+  const file = new File([blob], fname, { type: 'video/mp4' });
+  U.result.style.display = '';
+  U.result.replaceChildren(el('h2', { text: '검사 결과' }),
+    el('div', { class: 'fm-ck' },
+      line(true, `영상 길이 ${v.sec.toFixed(1)}초 · ${v.n}장 (만든 길이 ${T}초)`),
+      line(true, '영상 H.264 · 세로 720×1280 · 1초 30장'),
+      playSec == null ? line(false, '이 브라우저로 길이를 다시 읽지는 못했어요(파일은 검사 통과)') : line(Math.abs(playSec - T) < 0.4, `재생기로 다시 읽은 길이 ${playSec.toFixed(1)}초`),
+      a ? line(true, `음악 ${out.music === 'aac' ? 'AAC' : 'Opus'} ${a.sec.toFixed(1)}초`) : el('div', { class: 'sub', text: '음악 없음' }),
+      out.mNote ? el('div', { class: /⚠/.test(out.mNote) ? 'bad' : 'sub', text: out.mNote }) : null,
+      el('div', { class: 'sub', text: `파일 ${fname} · ${(blob.size / 1048576).toFixed(1)}MB` })),
+    el('button', { class: 'fm-go', type: 'button', text: '📤 공유하기 (카톡·인스타 등)', onclick: async () => {
+      try { if (navigator.canShare && !navigator.canShare({ files: [file] })) throw new Error('no'); await navigator.share({ files: [file], title: fname }); }
+      catch (e) { if (!/abort|cancel/i.test(String(e && (e.name + e.message)))) toast('공유 창을 열지 못했어요 · 아래 휴대폰에 저장을 눌러 주세요'); } } }),
+    el('button', { class: 'fm-line', type: 'button', text: '⬇ 휴대폰에 저장', onclick: () => filmSave(blob, fname) }));
+}
+async function filmSave(blob, fname) {
+  const C = window.Capacitor, FS = window.mdNativeSave && C && (C.Plugins && C.Plugins.Filesystem || (C.registerPlugin && C.registerPlugin('Filesystem')));
+  if (FS) {   // 앱: 다운로드 폴더에 쓰고 확인
+    try {
+      const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+      await FS.writeFile({ path: 'Download/' + fname, data: b64, directory: 'EXTERNAL_STORAGE', recursive: true });
+      const st = await FS.stat({ path: 'Download/' + fname, directory: 'EXTERNAL_STORAGE' });
+      if (st && st.size > 0) return toast(`✅ ${fname} 저장했어요 · 내 파일 > 다운로드`);
+      throw new Error('파일이 생기지 않았어요');
+    } catch (e) { return toast('⚠ 저장하지 못했어요 (' + (e && e.message || e) + ') · 공유하기로 보내 주세요'); }
+  }
+  if (IN_KAKAO) return toast('카카오톡 안에서는 파일 저장이 막혀 있어요. 오른쪽 위 ⋮ → 다른 브라우저로 열기 뒤 다시 눌러 주세요');
+  const u = URL.createObjectURL(blob), a = el('a', { href: u, download: fname }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 30000);
+  toast(`다운로드 폴더에 ${fname}(으)로 받았어요`);
+}
+
 route();
 if (!LAB_QUIET) cloudWatch();
 if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
@@ -6107,6 +6577,7 @@ async function viewMyOne(t) {
     // 보다가 바로 공유 (2026-11-11 사용자 '보기에 들어가서 보다가 공유하게 해'): 화면 오른쪽 아래에 늘 떠 있는 단추
     el('button', { class: 'vw-share', type: 'button', 'aria-label': '이 MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }, el('span', { 'aria-hidden': 'true', text: '📤' }), ' 공유하기'),
     live ? null : el('button', { class: 'btn line full', text: '📸 가족 앨범에 올리기', onclick: () => famFromMD(t, info.name) }),
+    live || x.album ? null : el('a', { class: 'btn line full', href: './?film=1&t=' + encodeURIComponent(t), text: '🎬 이동 영상 만들기 (실험)' }),
     live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
     el('div', { class: 'two' },
       el('button', { class: 'btn line', text: 'GPX 받기', onclick: gpx }),
