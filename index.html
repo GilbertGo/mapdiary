@@ -2877,9 +2877,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-37';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-38';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5554,6 +5554,7 @@ async function filmMake(S, opt, U) {
       // 건물: 이미 3D(fill-extrusion)면 그대로, 아니면 납작한 건물 칸을 높이대로 세움
       const hasExt = style.layers.some(l => l.type === 'fill-extrusion');
       if (!hasExt) style.layers = style.layers.map(l => l.type === 'fill' && /building/i.test(l.id) && l.source ? Object.assign({ id: l.id + '-3d', type: 'fill-extrusion', source: l.source }, l['source-layer'] ? { 'source-layer': l['source-layer'] } : {}, l.filter ? { filter: l.filter } : {}, { minzoom: 13, paint: { 'fill-extrusion-color': '#D9D2C7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.9 } }) : l);
+      filmMapLook(style);
       style.layers = style.layers.concat(ours.layers); style.terrain = { source: 'dem', exaggeration: 1.4 };
     } else {
       style = { version: 8,
@@ -5570,7 +5571,8 @@ async function filmMake(S, opt, U) {
     try { map.setSky && map.setSky({ 'sky-color': '#7FB6E6', 'horizon-color': '#E3EEF8', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.4, 'fog-color': '#DCE8F2', 'fog-ground-blend': 0.6 }); } catch {}
     // 카메라: 길 길이에 맞춘 확대, 진행 방향이 화면 위로
     // 2026-11-13 사용자 '카메라 앵글이 너무 위에서 본 듯' → 기울기 58°→67°, 높이는 약 60%로(확대 +0.75)
-    const FILM_PITCH = 67, zRun = Math.max(13.1, Math.min(17, 16.95 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
+    // 2026-11-13 일반 지도는 하늘이 덜 보이게 60°
+    const FILM_PITCH = mtype === 'map' ? 60 : 67, zRun = Math.max(13.1, Math.min(17, 16.95 - Math.log2(Math.max(D, 500) / 1000) * 0.62));
     const bounds = coords.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
     const over = map.cameraForBounds(bounds, { padding: { top: 260, bottom: 300, left: 70, right: 70 } }) || { center: bounds.getCenter(), zoom: 12 };
     // 2026-11-13 사용자 '카메라 구도가 너무 자주 바뀌니 어지럽다': 방향은 넓게(뒤 절반~앞 한 칸, 길 8% · 250m~2.5km) 보고 아주 천천히(1초에 최대 12°) 돌고,
@@ -5786,6 +5788,55 @@ async function filmSave(blob, fname) {
   if (IN_KAKAO) return toast('카카오톡 안에서는 파일 저장이 막혀 있어요. 오른쪽 위 ⋮ → 다른 브라우저로 열기 뒤 다시 눌러 주세요');
   const u = URL.createObjectURL(blob), a = el('a', { href: u, download: fname }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 30000);
   toast(`다운로드 폴더에 ${fname}(으)로 받았어요`);
+}
+
+// 일반 지도 다듬기 (2026-11-13 사용자 '지도가 좀 별로다, 더 이쁘게'): 차분한 하늘빛 회색 바탕·흰 길·푸른 물·흰 점토 건물·산 그림자,
+//   이름은 한글 하나로, 가게·번지·도로 번호 같은 잔글씨는 뺌 (녹색·누런색 안 씀)
+function filmMapLook(style) {
+  const C = { bg: '#EDF1F5', land: '#E4EAF0', park: '#DCE5EC', water: '#A7CDE8', road: '#FFFFFF', casing: '#D2DAE3', rail: '#C3CCD6', bld: '#F7F9FB', txt: '#44566A', place: '#22344A' };
+  const hide = l => { l.layout = Object.assign({}, l.layout, { visibility: 'none' }); };
+  const P = (l, o) => { l.paint = Object.assign({}, l.paint, o); };
+  const firstUp = []; // 산 그림자를 넣을 자리 (길·건물 아래)
+  style.layers.forEach((l, i) => {
+    const sl = (l['source-layer'] || '').toLowerCase(), id = (l.id || '').toLowerCase(), key = sl + ' ' + id;
+    const isWater = /water|ocean|river|lake/.test(key) && !/name|label/.test(key);
+    const isRoad = /transportation|road|highway|street|path|bridge|tunnel|motorway|trunk|primary|secondary|tertiary|minor|service/.test(key) && !/name|label|shield/.test(key);
+    if (l.type === 'background') P(l, { 'background-color': C.bg });
+    else if (l.type === 'raster') hide(l);
+    else if (l.type === 'fill') {
+      if (l.paint && l.paint['fill-pattern']) { hide(l); return; }
+      if (isWater) P(l, { 'fill-color': C.water, 'fill-opacity': 1, 'fill-outline-color': C.water });
+      else if (/building/.test(key)) P(l, { 'fill-color': '#E6EBF0', 'fill-outline-color': '#D5DDE5' });
+      else if (/park|wood|forest|grass|landcover|landuse|green|garden|pitch|cemetery|golf|farm|meadow|scrub|national/.test(key)) P(l, { 'fill-color': /park|wood|forest|national/.test(key) ? C.park : C.land, 'fill-opacity': 0.7, 'fill-outline-color': 'rgba(0,0,0,0)' });
+      else if (/aeroway|airport/.test(key)) P(l, { 'fill-color': '#E2E7EC' });
+      else P(l, { 'fill-color': C.land, 'fill-opacity': 0.6 });
+      if (isRoad && firstUp.length === 0) firstUp.push(i);
+    } else if (l.type === 'line') {
+      if (isWater) P(l, { 'line-color': C.water });
+      else if (/boundary|admin/.test(key)) P(l, { 'line-color': '#AEB9C5', 'line-opacity': 0.45 });
+      else if (/rail|transit|subway/.test(key)) P(l, { 'line-color': C.rail });
+      else if (/park|landuse|landcover|outline/.test(key)) hide(l);
+      else if (isRoad || /aeroway/.test(key)) P(l, { 'line-color': /casing|case|outline/.test(id) ? C.casing : C.road });
+      if ((isRoad || /rail/.test(key)) && firstUp.length === 0) firstUp.push(i);
+    } else if (l.type === 'fill-extrusion') {
+      P(l, { 'fill-extrusion-color': C.bld, 'fill-extrusion-opacity': 0.92, 'fill-extrusion-vertical-gradient': true });
+      if (firstUp.length === 0) firstUp.push(i);
+    } else if (l.type === 'symbol') {
+      if (/poi|housenumber|shield|aerodrome|mountain_peak|peak|transit|station|ref/.test(key) || (l.layout && l.layout['icon-image'] && /shield|road/.test(JSON.stringify(l.layout['icon-image'])))) { hide(l); return; }
+      const big = /place|city|town|state|country|continent/.test(key);
+      const lay = Object.assign({}, l.layout);
+      if (lay['text-field'] != null) lay['text-field'] = ['coalesce', ['get', 'name:ko'], ['get', 'name_ko'], ['get', 'name:latin'], ['get', 'name']];
+      delete lay['icon-image']; l.layout = lay;
+      P(l, { 'text-color': big ? C.place : (isWater || /water/.test(key) ? '#4F82A8' : C.txt), 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.6, 'text-halo-blur': 0.4 });
+    }
+  });
+  // 산·언덕 그림자: 지형(dem)과 따로 같은 자료를 한 번 더 (같은 자료를 지형과 그림자에 함께 쓰면 MapLibre가 경고)
+  style.sources.dem2 = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' };
+  const hill = { id: 'film-hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': 0.4, 'hillshade-shadow-color': '#5C7189', 'hillshade-highlight-color': '#FFFFFF', 'hillshade-accent-color': '#8A9DB1', 'hillshade-illumination-direction': 315 } };
+  const at = firstUp.length ? firstUp[0] : style.layers.length;
+  style.layers.splice(at, 0, hill);
+  style.light = { anchor: 'viewport', color: '#FFFFFF', intensity: 0.32, position: [1.4, 210, 35] };
+  return style;
 }
 
 route();
