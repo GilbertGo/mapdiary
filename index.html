@@ -543,6 +543,11 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .fa-pk{position:relative;aspect-ratio:1/1;border-radius:10px;border:3px solid transparent;background:var(--soft) center/cover no-repeat;opacity:.45;padding:0}.fa-pk.on{opacity:1;border-color:var(--pine)}
 .fa-pk span{position:absolute;right:4px;top:4px;background:var(--pine);color:#fff;border-radius:50%;width:22px;height:22px;font-size:13px;line-height:22px;text-align:center}.fa-pk:not(.on) span{display:none}
 .kk-btn{background:#FEE500!important;color:#191919!important;border:0!important;font-weight:700;gap:6px}
+.po-box{margin:10px 0}.po-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.po-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line)}.po-n{width:22px;text-align:center;color:var(--muted);font-size:14px}
+.po-th{width:52px;height:52px;border-radius:10px;flex:none;background:#DCE8F2 center/cover no-repeat;display:grid;place-items:center;color:#fff;text-shadow:0 1px 3px #000}
+.po-tx{flex:1;min-width:0;font-size:14px}.po-tx .sub{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.po-b{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:20px;font-weight:800;color:var(--pine);flex:none}.po-b:disabled{opacity:.3}
 .my-th{width:56px;height:56px;border-radius:12px;flex:none;background:#DCE8F2 center/cover no-repeat;box-shadow:0 1px 4px rgba(16,42,67,.18);margin-left:4px}
 .r3-mid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0 18px}
 .r3-bar .home{font-size:20px}.r3-bar .home .hi{width:22px;height:22px}
@@ -1179,11 +1184,17 @@ function photoDb() {
   }));
 }
 async function photoList(t) {
-  if (String(t).startsWith('album_')) { const a = albumGet(t); return a ? (await Promise.all(a.days.map(photoList))).flat().sort((p, q) => p.ts - q.ts) : []; }   // 여행 전체: 모든 날의 사진
+  if (String(t).startsWith('album_')) { const a = albumGet(t); return a ? (await Promise.all(a.days.map(photoList))).flat() : []; }   // 날마다 순서 그대로 (날은 차례대로)   // 여행 전체: 모든 날의 사진
   try {
     const db = await photoDb();
-    return await new Promise((res, rej) => { const q = db.transaction('photos').objectStore('photos').index('t').getAll(t); q.onsuccess = () => res(q.result.sort((a, b) => a.ts - b.ts)); q.onerror = () => rej(q.error); });
+    return phOrdered(t, await new Promise((res, rej) => { const q = db.transaction('photos').objectStore('photos').index('t').getAll(t); q.onsuccess = () => res(q.result.sort((a, b) => a.ts - b.ts)); q.onerror = () => rej(q.error); }));
   } catch { return []; }
+}
+// 사진 순서(2026-11-13 사용자 '편집화면에 사진 순서 바꾸기'): walkPhOrder:{기록ID} = [사진 id] 차례, 없으면 찍은 시각 순, 나중에 넣은 사진은 맨 뒤
+function phOrdered(t, L) {
+  const o = ls.get('walkPhOrder:' + t, null); if (!Array.isArray(o) || !o.length) return L;
+  const ix = new Map(o.map((id, i) => [String(id), i])), BIG = 1e9;
+  return L.map((p, i) => [p, ix.has(String(p.id)) ? ix.get(String(p.id)) : BIG + i]).sort((a, b) => a[1] - b[1]).map(a => a[0]);
 }
 // 동영상(2026-11-07 사용자 '동영상 추가도 되게 하자'): 사진과 같은 곳에 { v: 1, dur(초), blob: 원본 동영상, thumb: 첫 장면 그림 }
 // 그림만 다루는 곳(공유 카드·지도 링크·가족 앨범·결산 카드·클라우드 맞추기)은 photoImgs로 동영상을 빼요
@@ -2882,9 +2893,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-63-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-64-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 첫 장이 마지막 요약 화면이 됐어요. 갤러리 미리보기와 다 본 뒤 멈춘 화면에 거리·시간·사진이 보여요 · 재생하면 요약이 살짝 사라지며 처음 장면으로 넘어가요';
+const UI_NOTES = '이동 영상에서 찍은 동영상이 그 자리 카드 안에서 3.5초 동안 실제로 움직여요(소리는 빼고 배경 음악만) · 기록 보기 ✎ 수정하기에 사진 순서 바꾸기가 생겼어요. ↑ ↓로 옮기면 바로 저장되고 찍은 시각 순으로 되돌릴 수도 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5227,7 +5238,7 @@ async function famCaptionAuto(S) {   // 앨범을 열면: 댓글이 글귀보다
   } finally { famCapBusy = false; }
 }
 
-const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:'];
+const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:', 'walkPhOrder:'];
 // ---------- 🎬 이동 기록 영상 만들기 (?film=1&t=기록ID, 2026-11-12 'MPD × RouteFly 통합 개발 지시서' 1차 · 실험) ----------
 // 내 MPD 기록(또는 GPX 파일)의 길을 위성 지도 + 지형(3D) 위로 드론처럼 따라가는 세로 영상(720×1280, 30fps)을 만들어 MP4로 저장·공유해요.
 // RouteFly 코드는 이 저장소에 없어서(받지 못함) 처음부터 새로 짰어요. 기존 화면·자료는 읽기만 해요(쓰는 건 고른 설정 filmOpt 하나).
@@ -5417,17 +5428,18 @@ function filmPhotoTimes(F, plan, st, adv, T) {
 }
 // 사진 카드: 한 카드는 적어도 2초 (2026-11-13 사용자 '사진은 최소 2초' → 1번 '같은 자리 사진은 한 카드에 묶기')
 //   몰려 있는 사진은 2~4장(넘치면 6·9장)을 한 카드에 같이 보여 줘요 · 사진은 하나도 빼지 않고 · 영상 길이는 그대로
-var FILM_PH_MIN = 2;
+var FILM_PH_MIN = 2, FILM_VID_MIN = 3.5;   // 동영상은 혼자 한 카드, 3.5초 동안 실제로 움직여요(2026-11-13 사용자 '동영상 추가는 안 되나?' → '고쳐')
 function filmCards(photos, T) {
+  const isV = c => c.ps.length === 1 && c.ps[0].p && c.ps[0].p.v, minOf = c => isV(c) ? FILM_VID_MIN : FILM_PH_MIN;
   const L = photos.slice().sort((a, b) => a.s - b.s), lim = T - 0.05;
   const build = MAXN => {
     const cards = [];
     for (const q of L) { const c = cards[cards.length - 1];
-      if (c && c.ps.length < MAXN && q.s < c.s + FILM_PH_MIN) { c.ps.push(q); c.e = Math.max(c.e, q.e); }
+      if (c && c.ps.length < MAXN && q.s < c.s + FILM_PH_MIN && !(q.p && q.p.v) && !isV(c)) { c.ps.push(q); c.e = Math.max(c.e, q.e); }
       else cards.push({ s: q.s, e: q.e, ps: [q] }); }
     for (let i = 0; i < cards.length; i++) { const c = cards[i], n = cards[i + 1];
-      c.e = Math.max(c.e, c.s + FILM_PH_MIN);
-      if (n) { if (n.s < c.e) n.s = c.e; if (n.s > c.s + FILM_PH_MIN && c.e > n.s) c.e = n.s; } }
+      c.e = Math.max(c.e, c.s + minOf(c));
+      if (n) { if (n.s < c.e) n.s = c.e; if (n.s > c.s + minOf(c) && c.e > n.s) c.e = n.s; } }
     return cards;
   };
   const over = C => C.length && C[C.length - 1].s > lim - FILM_PH_MIN;
@@ -5471,6 +5483,23 @@ function filmCamTrack(o) {
   }
   return out;
 }
+// 동영상 카드: <video>를 소리 없이 열어 장마다 그 시각으로 옮겨 그려요(못 열거나 너무 오래 걸리면 첫 장면 그림 그대로)
+async function filmVidOpen(blob) {
+  const el = document.createElement('video'), url = URL.createObjectURL(blob);
+  el.muted = true; el.playsInline = true; el.preload = 'auto'; el.src = url;
+  const ok = await new Promise(res => { const t = setTimeout(() => res(false), 8000); el.onloadeddata = () => { clearTimeout(t); res(true); }; el.onerror = () => { clearTimeout(t); res(false); }; });
+  if (!ok || !el.videoWidth) { el.removeAttribute('src'); el.load(); URL.revokeObjectURL(url); return null; }
+  return { el, url, at: -1, bad: 0 };
+}
+async function filmVidSeek(v, sec) {
+  if (!v || v.bad > 3) return false;
+  const el = v.el, d = Number.isFinite(el.duration) ? el.duration : 0, t = Math.max(0, Math.min(sec, Math.max(0, d - 0.05)));
+  if (Math.abs(t - v.at) < 0.001 && el.readyState >= 2) return true;
+  const ok = await new Promise(res => { const tm = setTimeout(() => res(false), 2500); el.onseeked = () => { clearTimeout(tm); res(true); }; el.currentTime = t; });
+  if (!ok) { v.bad++; return el.readyState >= 2 && v.at >= 0; }
+  v.at = t; return el.readyState >= 2;
+}
+function filmVidFree(q) { const v = q && q.vid; if (!v) return; q.vid = null; try { v.el.removeAttribute('src'); v.el.load(); } catch {} URL.revokeObjectURL(v.url); }
 function filmFit(c, s, w) { s = String(s); if (c.measureText(s).width <= w) return s; let t = s; while (t.length > 1 && c.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; }
 function filmPace(ms, m, bike) { if (!(ms > 0 && m > 30)) return ''; if (bike) return `${(m / 1000 / (ms / 3600000)).toFixed(1)}km/h`; const s = Math.round(ms / 1000 / (m / 1000)); return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`; }
 // 사진: 이 휴대폰 사진 DB(baldojang)가 있을 때만 읽기(없으면 새로 만들지 않아요), 그림만(동영상 빼고), 최대 12장
@@ -5904,10 +5933,12 @@ async function filmMake(S, opt, U) {
         } }
       // 사진 카드 자리 먼저 셈 (이름표가 카드와 겹치지 않게)
       const ph = tt < (plan.tEnd || runEnd) ? cards.find(q => tt >= q.s && tt < q.e) : null;   // 끝 장면이 시작되면 사진 카드는 내려감
-      for (const q of cards) if (q.imgs && q !== ph && tt >= q.e) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; }
+      for (const q of cards) if (q.imgs && q !== ph && tt >= q.e) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; filmVidFree(q); }
       if (ph && !ph.imgs) { const one = ph.ps.length === 1; ph.imgs = [];
         for (const g of ph.ps) { try { ph.imgs.push(await createImageBitmap(g.p.v ? g.p.thumb : g.p.blob, { resizeWidth: one ? (ph.star || st.k === 'memo' ? 760 : 520) : 380, resizeQuality: 'high' })); } catch { ph.imgs.push(null); } }
-        ph.img = ph.imgs[0] || ph.imgs.find(Boolean) || null; }
+        ph.img = ph.imgs[0] || ph.imgs.find(Boolean) || null;
+        if (one && ph.p.v && ph.p.blob) ph.vid = await filmVidOpen(ph.p.blob); }   // 동영상: 카드 안에서 실제로 움직이게(소리 없이)
+      const vidOk = ph && ph.vid && ph.ps.length === 1 ? await filmVidSeek(ph.vid, tt - ph.s) : false;
       let box = null;
       if (ph && ph.ps.length > 1 && ph.imgs.some(Boolean)) {   // 여러 장 카드: 2·3·4장 → 2칸, 그 이상 3칸, 정사각 칸
         const n = ph.ps.length, cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols), gap = 6, y = LAND ? 96 : 175;
@@ -6019,8 +6050,9 @@ async function filmMake(S, opt, U) {
             if (ph.ps[i].p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(cx0 + grid.cell / 2, cy0 + grid.cell / 2, 18, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(cx0 + grid.cell / 2 - 6, cy0 + grid.cell / 2 - 9); c.lineTo(cx0 + grid.cell / 2 + 10, cy0 + grid.cell / 2); c.lineTo(cx0 + grid.cell / 2 - 6, cy0 + grid.cell / 2 + 9); c.fill(); }
             if (ph.ps[i].star) { c.lineWidth = 4; c.strokeStyle = '#FF8A4C'; c.stroke(); }
             c.restore(); }); c.save(); c.beginPath(); c.rect(0, 0, 0, 0); c.clip(); }
+        else if (vidOk) { const V = ph.vid.el, r = Math.max(bw / V.videoWidth, bh / V.videoHeight), dw = V.videoWidth * r, dhh = V.videoHeight * r; c.drawImage(V, x + (bw - dw) / 2, y + (bh - dhh) / 2, dw, dhh); }
         else { const z = 1 + st.kb * k, dw = bw * z, dhh = bh * z; c.drawImage(im, x + (bw - dw) / 2, y + (bh - dhh) / 2, dw, dhh); }
-        if (!grid && ph.p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
+        if (!grid && ph.p.v && !vidOk) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
         c.restore();
         if (box.capH) {   // 폴라로이드 아래 칸: 사진 메모(한 장일 때) 또는 찍은 날
           const memo = ph.ps.length === 1 && ph.p.m ? ph.p.m : '', ts = ph.p.ts || P[0].ts, dt = ts ? `${new Date(ts).getMonth() + 1}월 ${new Date(ts).getDate()}일` : '';
@@ -6131,7 +6163,7 @@ async function filmMake(S, opt, U) {
       const el_ = (performance.now() - t0) / 1000, left = el_ / (k + 1) * (N - k - 1);
       say(`지도를 한 장씩 그리는 중… ${k + 1}/${N}장 · 남은 시간 약 ${left < 60 ? Math.ceil(left) + '초' : Math.ceil(left / 60) + '분'}`, (k + 1) / N * 0.85);
     }
-    for (const q of cards) if (q.imgs) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; }
+    for (const q of cards) { if (q.imgs) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; } filmVidFree(q); }
     if (endPh) endPh.forEach(im => { try { im.close(); } catch {} });
     if (endPins) endPins.forEach(q => { try { q.im && q.im.close(); } catch {} });
     await enc.flush(); enc.close(); if (encErr) throw encErr;
@@ -6969,6 +7001,7 @@ function editMD(x) {
     el('div', { class: 'two' },
       el('button', { class: 'btn line', onclick: () => inp.click() }, ico('camera', 18), '사진·동영상 더하기'),
       x.album ? el('button', { class: 'btn line', disabled: true, text: '경로 자르기(하루치에서)' }) : el('button', { class: 'btn line', text: '✂ 경로 앞뒤 자르기', onclick: () => { sb.remove(); trimTrack(t); } })),
+    phOrderBox(days),
     window.mdNativePhotos ? el('button', { class: 'btn line full', text: '📱 그 시간에 휴대폰으로 찍은 사진 찾기', onclick: async () => { sb.remove(); const recs = await galleryOffer(days, true); if (recs && recs.length) reviewPhotos(recs); } }) : null,
     el('div', { class: 'sub', style: 'font-size:13px', text: '제목과 오늘 한 줄은 화면 위 ✎, 별표는 목록의 ✎ 고치기, 사진 메모·위치·지우기는 사진을 크게 볼 때 할 수 있어요.' }),
     inp,
@@ -6979,6 +7012,33 @@ function editMD(x) {
         sb.remove(); toast('고쳤어요'); setTimeout(() => location.reload(), 400);
       } }))));
   document.body.append(sb);
+}
+// 사진 순서 바꾸기 (수정하기 창 안): 사진마다 ↑ ↓, 누르는 즉시 저장 · '찍은 시각 순으로'로 되돌림
+function phOrderBox(days) {
+  const box = el('div', { class: 'po-box' }), urls = [];
+  const src = p => { const v = p.thumb || p.blob; if (typeof v === 'string') return v; if (!v) return ''; const u = URL.createObjectURL(v); urls.push(u); return u; };
+  const draw = async () => {
+    const parts = [];
+    for (const d of days) {
+      const L = await photoList(d); if (!L.length) continue;
+      const save = arr => { ls.set('walkPhOrder:' + d, arr.map(p => p.id)); dispatchEvent(new Event('photo-changed')); draw(); };
+      const move = (i, k) => { const a = L.slice(), j = i + k; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; save(a); };
+      if (days.length > 1) parts.push(el('div', { class: 'sub', style: 'margin:8px 0 2px;font-weight:700', text: L[0].ts ? new Date(L[0].ts).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '' }));
+      L.forEach((p, i) => parts.push(el('div', { class: 'po-row' },
+        el('b', { class: 'po-n', text: String(i + 1) }),
+        el('div', { class: 'po-th', style: `background-image:url("${src(p)}")` }, p.v ? el('span', { text: '▶' }) : null),
+        el('div', { class: 'po-tx' }, el('div', { text: (p.v ? '동영상' : '사진') + (p.ts ? ' · ' + new Date(p.ts).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }) : '') }), p.m ? el('div', { class: 'sub', text: p.m }) : null),
+        el('button', { class: 'po-b', 'aria-label': '앞으로', text: '↑', disabled: i === 0, onclick: () => move(i, -1) }),
+        el('button', { class: 'po-b', 'aria-label': '뒤로', text: '↓', disabled: i === L.length - 1, onclick: () => move(i, 1) }))));
+    }
+    urls.splice(0).forEach(u => setTimeout(() => URL.revokeObjectURL(u), 3000));
+    if (!parts.length) { box.replaceChildren(); return; }
+    const any = days.some(d => ls.get('walkPhOrder:' + d, null));
+    box.replaceChildren(el('div', { class: 'po-hd' }, el('b', { text: '사진 순서' }),
+        any ? el('button', { class: 'btn line small', text: '찍은 시각 순으로', onclick: () => { days.forEach(d => localStorage.removeItem('walkPhOrder:' + d)); dispatchEvent(new Event('photo-changed')); draw(); } }) : el('span', { class: 'sub', text: '↑ ↓로 바꾸면 바로 저장돼요' })),
+      ...parts);
+  };
+  draw(); return box;
 }
 // 경로 앞뒤 자르기: 끝내기를 늦게 눌러 더 기록된 부분이나, 처음에 GPS가 튄 부분을 잘라내요. 처음 한 번은 원래 경로를 trackOrig:{ID}에 남겨 되돌릴 수 있어요
 // 러닝에서 실제로 달린 앞뒤 끝 찾기: 1분 평균 속도가 초속 1.6m(10분 25초/km)를 넘은 처음과 마지막 자리. 끝내기를 늦게 눌러 결승 뒤 몇 시간이 더 기록된 걸 잘라내려고
