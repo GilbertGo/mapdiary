@@ -2893,9 +2893,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-67-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-68-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 길 선을 산호색으로 바꾸고 더 가늘게 했어요. 녹색 숲 위에서 또렷하게 보여요';
+const UI_NOTES = '이동 영상의 길 선이 자전거·여행·데이트·일상·파크골프도 모두 산호색이에요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5249,7 +5249,7 @@ const MD_KEYS = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:
 // 지도: 위성 Esri World Imagery(+지명 Esri Reference), 높이 AWS Terrain Tiles(terrarium), 라이브러리 MapLibre GL 4.7.1·mp4-muxer 5.1.3(jsdelivr, 처음 열 때만 받음)
 var FILM_W = 720, FILM_H = 1280, FILM_FPS = 30;
 var FILM_LIB = { osm: 'https://tiles.openfreemap.org/styles/liberty', gl: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js', css: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css', mux: 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js' };
-var FILM_COL = { run: '#FF6B4A', bike: '#4FC3F7', hike: '#FF6B4A', trek: '#FF6B4A', backpack: '#FF6B4A', camp: '#FF6B4A', pgolf: '#4FC3F7', travel: '#FF7AA8', date: '#FF7AA8', daily: '#FF7AA8' };
+var FILM_COL = { run: '#FF6B4A', bike: '#FF6B4A', hike: '#FF6B4A', trek: '#FF6B4A', backpack: '#FF6B4A', camp: '#FF6B4A', pgolf: '#FF6B4A', travel: '#FF6B4A', date: '#FF6B4A', daily: '#FF6B4A' };   // 2026-11-14 사용자 '자전거랑 여행도 산호색으로': 모든 운동 산호
 function filmLoad(src, css) {
   return new Promise((res, rej) => {
     if (document.querySelector(`[data-film="${src}"]`)) return res();
@@ -5748,7 +5748,7 @@ function filmPoster(S, opt, cv) {   // 만들기 전 첫 장(제목 카드) 미�
   const path = filmPath(src.rows, opt.hide); if (!path) return;
   const { P } = path, D = filmTotal(src, path), b = P.reduce((a, p) => ({ n: Math.max(a.n, p.lat), s: Math.min(a.s, p.lat), e: Math.max(a.e, p.lng), w: Math.min(a.w, p.lng) }), { n: -90, s: 90, e: -180, w: 180 });
   const k = Math.cos((b.n + b.s) / 2 * Math.PI / 180), sx = (b.e - b.w) * k || 1e-6, sy = (b.n - b.s) || 1e-6, sc = Math.min(W * 0.78 / sx, H * 0.56 / sy);
-  c.strokeStyle = FILM_COL[src.mode] || '#4FC3F7'; c.lineWidth = 8; c.lineJoin = c.lineCap = 'round'; c.beginPath();
+  c.strokeStyle = FILM_COL[src.mode] || '#FF6B4A'; c.lineWidth = 8; c.lineJoin = c.lineCap = 'round'; c.beginPath();
   P.forEach((p, i) => { const x = W / 2 + ((p.lng - (b.e + b.w) / 2) * k) * sc, y = H * 0.55 - (p.lat - (b.n + b.s) / 2) * sc; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke();
   filmCardText(c, src, D, P, opt, 1);
   const st = FILM_STYLES[opt.style] || FILM_STYLES.cine;
@@ -5770,7 +5770,7 @@ function filmCardText(c, src, D, P, opt, a) {   // 제목 카드(처음) 글자
   const CX = FILM_W / 2; let y = Math.round(FILM_H * (FILM_W > FILM_H ? 0.3 : 0.195));
   if (opt.title) { c.font = F(800, 58); const L = filmWrap(c, src.name, FILM_W - 120); L.slice(0, 2).forEach(l => { c.fillText(l, CX, y); y += 70; }); }
   if (opt.date && P[0].ts) { c.font = F(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), CX, y + 6); y += 50; }
-  if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#4FC3F7'; c.fillText(filmKm(D), CX, y + 20); }
+  if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#FF6B4A'; c.fillText(filmKm(D), CX, y + 20); }
   c.restore();
 }
 function filmWrap(c, s, w) { const out = []; let line = ''; for (const ch of String(s)) { if (c.measureText(line + ch).width > w && line) { out.push(line); line = ch; } else line += ch; } if (line) out.push(line); return out; }
@@ -5792,7 +5792,7 @@ async function filmMake(S, opt, U) {
     let vcodec = null;
     for (const c of ['avc1.4d0028', 'avc1.42001f']) { try { if ((await VideoEncoder.isConfigSupported({ codec: c, width: W, height: H, bitrate: 6e6, framerate: FILM_FPS })).supported) { vcodec = c; break; } } catch {} }
     if (!vcodec) throw new Error('이 휴대폰은 H.264 영상 만들기를 지원하지 않아요');
-    const { P, D } = path, T = opt.sec, N = Math.round(T * FILM_FPS), col = FILM_COL[src.mode] || '#4FC3F7', bike = src.mode === 'bike';
+    const { P, D } = path, T = opt.sec, N = Math.round(T * FILM_FPS), col = FILM_COL[src.mode] || '#FF6B4A', bike = src.mode === 'bike';
     // 화면 숫자는 0에서 시작해 끝에서 기록 보기와 같은 총 거리(TOT)가 되게 길 위 비율로 셈 (집 가리기로 앞뒤를 잘라도 끝 숫자는 총 거리, 2026-11-13 '10km인데 9km')
     const TOT = filmTotal(src, path), shownAt = dh => Math.min(TOT, TOT * dh / D);
     const pT = P[P.length - 1].ts - P[0].ts, totMs = src.ms > 0 ? src.ms : pT, msAt = ts => pT > 0 && totMs > 0 ? Math.max(0, Math.min(totMs, totMs * (ts - P[0].ts) / pT)) : 0;
