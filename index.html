@@ -2882,9 +2882,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-41-test';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-42-test';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 저장·공유 결과가 사라지지 않고 결과 칸에 남아요, 실패해도 영상은 화면에 그대로 있어요 · 이동 영상에 연출 스타일 네 가지가 생겼어요, 시네마틱, 스포츠, 추억, 여행 · 사진과 장소에서 카메라가 천천히 지나가고 음악이 하이라이트에서 가장 커져요 · 강조할 사진에 별을 달면 더 크고 길게 보여요 · 가로 16:9 영상도 만들 수 있어요 · 사진은 원래 비율 그대로 보여요 · 이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '백업에서 불러온 사진도 강조할 사진 칸과 영상에 보여요 · 이동 영상의 저장·공유 결과가 사라지지 않고 결과 칸에 남아요, 실패해도 영상은 화면에 그대로 있어요 · 이동 영상에 연출 스타일 네 가지가 생겼어요, 시네마틱, 스포츠, 추억, 여행 · 사진과 장소에서 카메라가 천천히 지나가고 음악이 하이라이트에서 가장 커져요 · 강조할 사진에 별을 달면 더 크고 길게 보여요 · 가로 16:9 영상도 만들 수 있어요 · 사진은 원래 비율 그대로 보여요 · 이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5602,7 +5602,7 @@ function viewFilm() {
     phCard.style.display = '';
     phCard.replaceChildren(el('h2', { text: `강조할 사진 ★ (${star.size}/${L.length})` }),
       el('div', { class: 'sub', text: '누르면 ★ 강조 사진이 돼요. 영상에서 더 크고 길게 보이고, 그 자리에서 카메라가 천천히 지나가요. 사진은 모두 들어가요.' }),
-      el('div', { class: 'fm-phs' }, L.map(p => { const u = URL.createObjectURL(p.thumb || p.blob); return el('button', { type: 'button', class: star.has(p.id) ? 'on' : '', onclick: e => {
+      el('div', { class: 'fm-phs' }, L.map(p => { const u = typeof p.thumb === 'string' && p.thumb ? p.thumb : URL.createObjectURL(p.thumb instanceof Blob ? p.thumb : p.blob); return el('button', { type: 'button', class: star.has(p.id) ? 'on' : '', onclick: e => {
         if (star.has(p.id)) star.delete(p.id); else star.add(p.id); ls.set('filmStar:' + t, [...star]); e.currentTarget.classList.toggle('on', star.has(p.id)); phCard.querySelector('h2').textContent = `강조할 사진 ★ (${star.size}/${L.length})`; filmBoard(S, opt, board); } },
         el('img', { src: u, alt: '', loading: 'lazy' })); })));
   };
@@ -5723,7 +5723,8 @@ async function filmMake(S, opt, U) {
     // 사진 (모두 넣어요, 2026-11-13 '생략하지 말고') · ★ 강조 사진은 크게·길게
     const stars = new Set((src.t && ls.get('filmStar:' + src.t, [])) || []);
     let F = { intro: [], outro: [], route: [] };
-    if (opt.photos && src.t) { say('사진을 고르는 중…'); F = filmPhotoPlace(await filmPhotos(src.t), P, D); [...F.intro, ...F.route, ...F.outro].forEach(g => { g.star = stars.has(g.p.id); }); }
+    let phAll = null;
+    if (opt.photos && src.t) { say('사진을 고르는 중…'); const PL = await filmPhotos(src.t); phAll = PL.length; F = filmPhotoPlace(PL, P, D); [...F.intro, ...F.route, ...F.outro].forEach(g => { g.star = stars.has(g.p.id); }); }
     const labels = filmLabels(src, P, D, opt, st), marks = filmMarks(src, P, D, TOT), marathon = src.mode === 'run' && TOT >= 20000;
     // 이야기 짜기
     const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st) });
@@ -5996,7 +5997,7 @@ async function filmMake(S, opt, U) {
     const d = new Date(), pad = n => String(n).padStart(2, '0');
     const fname = `MapDiary_film_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.mp4`;
     say(`다 만들었어요 · ${(blob.size / 1048576).toFixed(1)}MB`, 1);
-    const logId = filmTestLog({ style: st.k, sec: T, ratio: W > H ? '16:9' : '9:16', map: mtype, ok: true, vSec: +out.chk.v.sec.toFixed(2), n: out.chk.v.n, music: out.music, mWant: mKind !== 'none', mNote: out.mNote, play: playSec == null ? null : +playSec.toFixed(2), mb: +(blob.size / 1048576).toFixed(1), renderSec: Math.round((Date.now() - tMake) / 1000), photos: photos.length });
+    const logId = filmTestLog({ style: st.k, sec: T, ratio: W > H ? '16:9' : '9:16', map: mtype, ok: true, vSec: +out.chk.v.sec.toFixed(2), n: out.chk.v.n, music: out.music, mWant: mKind !== 'none', mNote: out.mNote, play: playSec == null ? null : +playSec.toFixed(2), mb: +(blob.size / 1048576).toFixed(1), renderSec: Math.round((Date.now() - tMake) / 1000), photos: photos.length, phAll: phAll });
     filmResult(U, blob, fname, out, T, playSec, logId);
   } catch (e) {
     say('⚠ 영상을 만들지 못했어요 · ' + (e && e.message || e), 0);
@@ -6070,7 +6071,7 @@ function filmTestBoard() {
   const box = el('div', { class: 'fm-card', style: 'border:2px solid #FF8A4C' });
   const ST = ['cine', 'sport', 'memo', 'trip'], SEC = [15, 30, 60];
   const mus = x => x.music === 'aac' ? 'AAC' : x.music === 'opus' ? 'Opus⚠' : x.mWant ? '소리없음⚠' : '음악끔';
-  const text = L => [`MPD 영상 2.0 시험 결과 · ${navigator.userAgent.replace(/^.*?\(|\).*$/g, '').slice(0, 60)}`].concat(L.map(x => `${new Date(x.at).toLocaleString('ko-KR')} | ${(FILM_STYLES[x.style] || {}).name || x.style} ${x.sec}초 ${x.ratio} ${x.map === 'map' ? '일반' : '위성'} | ${x.ok ? `✅ ${x.vSec}초 ${x.n}장 재생기 ${x.play == null ? '?' : x.play + '초'} ${mus(x)} ${x.mb}MB 만드는 데 ${x.renderSec}초` : '⚠ 실패 ' + x.why}${x.mNote ? ' (' + x.mNote + ')' : ''}${x.save ? ' | 저장 ' + x.save : ''}${x.share ? ' | 공유 ' + x.share : ''}${x.kakao != null ? ' | 카톡 ' + (x.kakao ? '끝까지 재생됨' : '문제 있음') : ''}`)).join('\n');
+  const text = L => [`MPD 영상 2.0 시험 결과 · ${navigator.userAgent.replace(/^.*?\(|\).*$/g, '').slice(0, 60)}`].concat(L.map(x => `${new Date(x.at).toLocaleString('ko-KR')} | ${(FILM_STYLES[x.style] || {}).name || x.style} ${x.sec}초 ${x.ratio} ${x.map === 'map' ? '일반' : '위성'} | ${x.ok ? `✅ ${x.vSec}초 ${x.n}장 재생기 ${x.play == null ? '?' : x.play + '초'} ${mus(x)} ${x.mb}MB 만드는 데 ${x.renderSec}초 · 넣은 사진 ${x.photos == null ? '?' : x.photos}장(기록에 ${x.phAll == null ? '?' : x.phAll}장)` : '⚠ 실패 ' + x.why}${x.mNote ? ' (' + x.mNote + ')' : ''}${x.save ? ' | 저장 ' + x.save : ''}${x.share ? ' | 공유 ' + x.share : ''}${x.kakao != null ? ' | 카톡 ' + (x.kakao ? '끝까지 재생됨' : '문제 있음') : ''}`)).join('\n');
   const draw = () => {
     const L = ls.get('filmTestLog', []) || [];
     const cell = (k, sec) => { const R = L.filter(x => x.style === k && x.sec === sec); const x = R[R.length - 1]; return el('td', { style: 'padding:6px 4px;text-align:center;font-size:12.5px;border-top:1px solid #333', text: !x ? '·' : x.ok ? `✅ ${mus(x)}${x.kakao === 1 ? ' 💬✓' : x.kakao === 0 ? ' 💬✗' : ''}` : '⚠' }); };
@@ -6082,7 +6083,7 @@ function filmTestBoard() {
       el('div', { class: 'sub', text: '가로 16:9·일반 지도로 만든 것도 아래 목록에 남아요.' }),
       ...L.slice(-8).reverse().map(x => el('div', { style: 'background:#2C2C2E;border-radius:12px;padding:9px 11px;font-size:13px;line-height:1.55' },
         el('div', { style: 'color:#fff;font-weight:700', text: `${(FILM_STYLES[x.style] || {}).name || x.style} · ${x.sec}초 · ${x.ratio} · ${x.map === 'map' ? '일반 지도' : '위성'}` }),
-        el('div', { class: x.ok ? 'sub' : 'bad', style: x.ok ? '' : 'color:#FF6B6B', text: x.ok ? `✅ ${x.vSec}초 · ${x.n}장 · 재생기 ${x.play == null ? '못 읽음' : x.play + '초'} · ${mus(x)} · ${x.mb}MB · 만드는 데 ${Math.floor(x.renderSec / 60)}분 ${x.renderSec % 60}초` : '⚠ 실패 · ' + x.why }),
+        el('div', { class: x.ok ? 'sub' : 'bad', style: x.ok ? '' : 'color:#FF6B6B', text: x.ok ? `✅ ${x.vSec}초 · ${x.n}장 · 재생기 ${x.play == null ? '못 읽음' : x.play + '초'} · ${mus(x)} · ${x.mb}MB · 만드는 데 ${Math.floor(x.renderSec / 60)}분 ${x.renderSec % 60}초 · 사진 ${x.photos == null ? '?' : x.photos}장` : '⚠ 실패 · ' + x.why }),
         x.mNote ? el('div', { class: 'sub', text: x.mNote }) : null,
         x.save || x.share ? el('div', { class: 'sub', text: [x.save && '저장 ' + x.save, x.share && '공유 ' + x.share].filter(Boolean).join(' · ') }) : null,
         x.ok ? el('div', { class: 'fm-chips', style: 'margin-top:6px' },
