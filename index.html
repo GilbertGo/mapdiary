@@ -5864,7 +5864,7 @@ async function filmMake(S, opt, U) {
           const line = (L) => { c.beginPath(); L.forEach((q, i) => i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y)); };
           c.lineJoin = c.lineCap = 'round';
           if (drawK < 1) { line(pts); c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 4; c.stroke(); }
-          if (tt >= runEnd) { c.save(); line(sp); c.shadowColor = col; c.shadowBlur = 34; c.strokeStyle = col; c.globalAlpha = ov * 0.55; c.lineWidth = 22; c.stroke(); c.restore(); }   // 끝 장면: 길 둘레가 은은하게 빛남
+          if (tt >= runEnd) { c.save(); line(sp); c.shadowColor = col; c.shadowBlur = 34; c.strokeStyle = col; c.globalAlpha = ov * 0.35; c.lineWidth = 18; c.stroke(); c.restore(); }   // 끝 장면: 길 둘레가 은은하게 빛남
           line(sp); c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 16; c.stroke();
           line(sp); c.strokeStyle = '#fff'; c.lineWidth = 11; c.stroke();
           line(sp); c.strokeStyle = col; c.lineWidth = 7; c.stroke();
