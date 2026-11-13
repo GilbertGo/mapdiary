@@ -2882,9 +2882,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-61-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-62-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '영상의 일반 지도 색을 비교 그림에서 고르신 차분한 녹색 안으로 되돌렸어요';
+const UI_NOTES = '이동 영상의 지도 모양에 🌙 어두운 지도가 생겼어요. 스트라바 어두운 지도처럼 짙은 바탕에 경로가 또렷하게 빛나요 · 일반 지도와 위성 사진은 그대로예요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5651,7 +5651,7 @@ function viewFilm() {
     phCard,
     el('div', { class: 'fm-card' }, el('h2', { text: '영상 길이 · 화면' }), chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분']], () => opt.sec, v => { opt.sec = v; }),
       chips([['9:16', '📱 세로 9:16'], ['16:9', '🖥 가로 16:9']], () => opt.ratio, v => { opt.ratio = v; })),
-    el('div', { class: 'fm-card' }, el('h2', { text: '지도 모양' }), chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도 (3D 건물)']], () => opt.map, v => { opt.map = v; }),
+    el('div', { class: 'fm-card' }, el('h2', { text: '지도 모양' }), chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도 (3D 건물)'], ['dark', '🌙 어두운 지도']], () => opt.map, v => { opt.map = v; }),
       el('div', { class: 'sub', text: '일반 지도는 도로·건물·이름이 그려진 지도를 입체로 세워 보여 줘요(OpenStreetMap 자료).' })),
     el('div', { class: 'fm-card' }, el('h2', { text: '보여 줄 것' }), ck('title', '제목'), ck('date', '날짜'), ck('stats', '거리·시간'), ck('elev', '⛰ 높이 그림 · 오르막 표시 (높이 기록이 있을 때)'), ck('places', '장소 이름(좋은 곳·들른 곳·정상)'), el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt.photos ? true : null, onchange: e => { opt.photos = e.target.checked; save(); redraw(); drawPhs(); } }), '그 자리에서 찍은 사진'),
       ck('hide', '🏠 출발·도착 근처 500m 가리기 (집 위치가 드러나지 않게)')),
@@ -5767,8 +5767,8 @@ async function filmMake(S, opt, U) {
     labels.forEach(l => { l.t = plan.tOfD(l.d); }); marks.forEach(m => { m.t = plan.tOfD(m.d); m.ms = msAt(filmAt(P, m.d).ts); });
     if (photos.length) say(`사진 ${photos.length}장을 모두 넣어요 · 찍은 자리에서 떠요`);
     // 지도 준비 (보이지 않는 곳에 영상 크기 그대로)
-    const mtype = opt.map === 'map' ? 'map' : 'sat';
-    say(mtype === 'map' ? '일반 지도를 준비하는 중…' : '위성 지도를 준비하는 중…');
+    const dark = opt.map === 'dark', mtype = opt.map === 'map' || dark ? 'map' : 'sat';   // 어두운 지도(2026-11-13 스트라바 어두운 지도 느낌)는 일반 지도와 같은 자료에 색만 다르게
+    say(dark ? '어두운 지도를 준비하는 중…' : mtype === 'map' ? '일반 지도를 준비하는 중…' : '위성 지도를 준비하는 중…');
     mapEl = el('div', { class: 'fm-mapbox', style: `width:${W}px;height:${H}px` }); document.body.append(mapEl);
     const coords = P.map(p => [p.lng, p.lat]);
     const ours = {
@@ -5778,7 +5778,7 @@ async function filmMake(S, opt, U) {
         done: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords.slice(0, 2) } } },
         head: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } } } },
       layers: [
-        { id: 'all', type: 'line', source: 'all', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': mtype === 'map' ? '#14253B' : '#ffffff', 'line-opacity': mtype === 'map' ? 0.3 : 0.45, 'line-width': 5 } },
+        { id: 'all', type: 'line', source: 'all', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': mtype === 'map' && !dark ? '#14253B' : '#ffffff', 'line-opacity': mtype === 'map' && !dark ? 0.3 : 0.45, 'line-width': 5 } },
         { id: 'done-glow', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-opacity': 0.35, 'line-width': 18, 'line-blur': 6 } },
         { id: 'done', type: 'line', source: 'done', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': col, 'line-width': 8 } },
         { id: 'head', type: 'circle', source: 'head', paint: { 'circle-radius': 11, 'circle-color': col, 'circle-stroke-color': '#fff', 'circle-stroke-width': 4 } }] };
@@ -5791,7 +5791,7 @@ async function filmMake(S, opt, U) {
       Object.assign(style.sources, ours.sources);
       const hasExt = style.layers.some(l => l.type === 'fill-extrusion');
       if (!hasExt) style.layers = style.layers.map(l => l.type === 'fill' && /building/i.test(l.id) && l.source ? Object.assign({ id: l.id + '-3d', type: 'fill-extrusion', source: l.source }, l['source-layer'] ? { 'source-layer': l['source-layer'] } : {}, l.filter ? { filter: l.filter } : {}, { minzoom: 13, paint: { 'fill-extrusion-color': '#D9D2C7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.9 } }) : l);
-      filmMapLook(style);
+      filmMapLook(style, dark);
       style.layers = style.layers.concat(ours.layers); style.terrain = { source: 'dem', exaggeration: 1.4 };
     } else {
       style = { version: 8,
@@ -5842,8 +5842,8 @@ async function filmMake(S, opt, U) {
       map.getSource('done').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: doneC.length > 1 ? doneC : coords.slice(0, 2) } });
       map.getSource('head').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [cur.lng, cur.lat] } });
       await waitMap();
-      { const sk = c.createLinearGradient(0, 0, 0, H * 0.45); sk.addColorStop(0, mtype === 'map' ? '#6F8A62' : '#5E9BD6'); sk.addColorStop(1, mtype === 'map' ? '#D4E0CB' : '#DCEAF6'); c.fillStyle = sk; c.fillRect(0, 0, W, H); }   // 하늘 (지평선 위가 검게 비지 않게)
-      if (LOOK === 'cine') c.filter = 'contrast(1.14) saturate(1.12)'; else if (LOOK === 'memo') c.filter = 'saturate(.8) sepia(.22) brightness(1.05) contrast(.95)'; else if (mtype === 'map') c.filter = 'contrast(1.08) saturate(1.22)';
+      { const sk = c.createLinearGradient(0, 0, 0, H * 0.45); sk.addColorStop(0, dark ? '#0B0D10' : mtype === 'map' ? '#6F8A62' : '#5E9BD6'); sk.addColorStop(1, dark ? '#2A2F35' : mtype === 'map' ? '#D4E0CB' : '#DCEAF6'); c.fillStyle = sk; c.fillRect(0, 0, W, H); }   // 하늘 (지평선 위가 검게 비지 않게)
+      if (LOOK === 'cine') c.filter = 'contrast(1.14) saturate(1.12)'; else if (LOOK === 'memo') c.filter = 'saturate(.8) sepia(.22) brightness(1.05) contrast(.95)'; else if (dark) c.filter = 'contrast(1.05)'; else if (mtype === 'map') c.filter = 'contrast(1.08) saturate(1.22)';
       c.drawImage(map.getCanvas(), 0, 0, W, H); c.filter = 'none';
       if (LOOK === 'cine') { c.save(); c.globalCompositeOperation = 'soft-light'; c.fillStyle = 'rgba(0,95,115,.42)'; c.fillRect(0, 0, W, H); c.restore(); }
       if (st.grade === 'warm') { c.save(); c.globalCompositeOperation = 'soft-light'; c.fillStyle = 'rgba(255,170,120,.35)'; c.fillRect(0, 0, W, H); c.restore(); }
@@ -5855,7 +5855,7 @@ async function filmMake(S, opt, U) {
       // 처음·끝 장면(멀리서 전체 길): 경로를 굵게 직접 그려요 (2026-11-13 '종료 영상에 경로가 잘 안 보여')
       { const ov = tt < plan.tIn ? 1 - Math.max(0, (tt - plan.tIn + 0.6) / 0.6) : tt >= runEnd ? Math.min(1, (tt - runEnd) / 0.6) : 0;
         if (ov > 0) {
-          c.save(); c.globalAlpha = ov; c.fillStyle = mtype === 'map' ? 'rgba(12,20,14,.18)' : 'rgba(0,0,0,.28)'; c.fillRect(0, 0, W, H);
+          c.save(); c.globalAlpha = ov; c.fillStyle = dark ? 'rgba(0,0,0,.18)' : mtype === 'map' ? 'rgba(12,20,14,.18)' : 'rgba(0,0,0,.28)'; c.fillRect(0, 0, W, H);
           const step = Math.max(1, Math.floor(coords.length / 600)), pts = [];
           for (let i = 0; i < coords.length; i += step) pts.push(map.project(coords[i]));
           pts.push(map.project(coords[coords.length - 1]));
@@ -6288,9 +6288,10 @@ function filmTestBoard() {
 
 // 일반 지도 다듬기 (2026-11-13 사용자 '지도가 좀 별로다, 더 이쁘게'): 차분한 하늘빛 회색 바탕·흰 길·푸른 물·흰 점토 건물·산 그림자,
 //   이름은 한글 하나로, 가게·번지·도로 번호 같은 잔글씨는 뺌 (녹색·누런색 안 씀)
-function filmMapLook(style) {
+function filmMapLook(style, dark) {
   // 2026-11-13 사용자 '지도가 너무 허여멀건하다' → 진하고 또렷하게: 물 짙은 파랑, 땅·동네·공원 색을 나눔, 큰길은 진한 테두리(길 색과 안 겹치게), 길 테두리·산 그림자 진하게 (누런색 없음)
   const C = { bg: '#C9D8BE', land: '#BFD0B2', urban: '#EADFD8', park: '#6E9F5C', wood: '#47783D', grass: '#8DB57A', water: '#86B6C4', road: '#FFFFFF', majorCase: '#5E6E5A', casing: '#9AA899', rail: '#77826F', bld: '#F4EAE3', txt: '#1C2620', place: '#101A14' };   // 2026-11-13 사용자가 비교 그림에서 고른 안(판 -59 색): 차분한 녹색 바탕·깊은 녹색 공원·숲
+  if (dark) Object.assign(C, { bg: '#1E2022', land: '#222527', urban: '#25282B', park: '#24352A', wood: '#1F3325', grass: '#283A2D', water: '#1B2C3B', road: '#4A4E53', majorCase: '#5A5F66', casing: '#2C2F33', rail: '#3A3E42', bld: '#3A3E43', txt: '#C8CCD0', place: '#E6E8EA' });   // 🌙 어두운 지도: 스트라바 어두운 지도 느낌(짙은 회색 바탕·어두운 초록 공원·짙은 남색 물)
   const hide = l => { l.layout = Object.assign({}, l.layout, { visibility: 'none' }); };
   const P = (l, o) => { l.paint = Object.assign({}, l.paint, o); };
   const firstUp = []; // 산 그림자를 넣을 자리 (길·건물 아래)
@@ -6303,7 +6304,7 @@ function filmMapLook(style) {
     else if (l.type === 'fill') {
       if (l.paint && l.paint['fill-pattern']) { hide(l); return; }
       if (isWater) P(l, { 'fill-color': C.water, 'fill-opacity': 1, 'fill-outline-color': C.water });
-      else if (/building/.test(key)) P(l, { 'fill-color': '#EEE3DB', 'fill-outline-color': '#C8B6AA' });
+      else if (/building/.test(key)) P(l, { 'fill-color': dark ? '#2E3236' : '#EEE3DB', 'fill-outline-color': dark ? '#3E4348' : '#C8B6AA' });
       else if (/wood|forest/.test(key)) P(l, { 'fill-color': C.wood, 'fill-opacity': 0.95, 'fill-outline-color': 'rgba(0,0,0,0)' });
       else if (/park|national|nature/.test(key)) P(l, { 'fill-color': C.park, 'fill-opacity': 0.95, 'fill-outline-color': 'rgba(0,0,0,0)' });
       else if (/grass|green|garden|pitch|cemetery|golf|farm|meadow|scrub/.test(key)) P(l, { 'fill-color': C.grass, 'fill-opacity': 0.9, 'fill-outline-color': 'rgba(0,0,0,0)' });
@@ -6328,15 +6329,15 @@ function filmMapLook(style) {
       const lay = Object.assign({}, l.layout);
       if (lay['text-field'] != null) lay['text-field'] = ['coalesce', ['get', 'name:ko'], ['get', 'name_ko'], ['get', 'name:latin'], ['get', 'name']];
       delete lay['icon-image']; l.layout = lay;
-      P(l, { 'text-color': big ? C.place : (isWater || /water/.test(key) ? '#3E5E70' : C.txt), 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.8, 'text-halo-blur': 0.4 });
+      P(l, { 'text-color': big ? C.place : (isWater || /water/.test(key) ? (dark ? '#7FA6C7' : '#3E5E70') : C.txt), 'text-halo-color': dark ? 'rgba(20,22,24,0.9)' : 'rgba(255,255,255,0.95)', 'text-halo-width': 1.8, 'text-halo-blur': 0.4 });
     }
   });
   // 산·언덕 그림자: 지형(dem)과 따로 같은 자료를 한 번 더 (같은 자료를 지형과 그림자에 함께 쓰면 MapLibre가 경고)
   style.sources.dem2 = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' };
-  const hill = { id: 'film-hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': 0.6, 'hillshade-shadow-color': '#24361F', 'hillshade-highlight-color': '#F2F6EE', 'hillshade-accent-color': '#3E5A35', 'hillshade-illumination-direction': 315 } };
+  const hill = { id: 'film-hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': dark ? 0.5 : 0.6, 'hillshade-shadow-color': dark ? '#000000' : '#24361F', 'hillshade-highlight-color': dark ? '#3A4048' : '#F2F6EE', 'hillshade-accent-color': dark ? '#111418' : '#3E5A35', 'hillshade-illumination-direction': 315 } };
   const at = firstUp.length ? firstUp[0] : style.layers.length;
   style.layers.splice(at, 0, hill);
-  style.light = { anchor: 'viewport', color: '#FFFFFF', intensity: 0.5, position: [1.4, 210, 35] };
+  style.light = { anchor: 'viewport', color: '#FFFFFF', intensity: dark ? 0.25 : 0.5, position: [1.4, 210, 35] };
   return style;
 }
 
