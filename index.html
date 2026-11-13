@@ -2882,9 +2882,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-46-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-47-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 일반 지도에서 아래 거리 숫자와 높이 그림이 잘 보이게 뒤를 더 어둡게 했어요 · 평지 길은 높이 그림도 평평하게 보여요 · 이동 영상에 연출 스타일 네 가지가 생겼어요, 시네마틱, 스포츠, 추억, 여행 · 이동 영상 아래에 높이 그림이 생겼어요, 지금 자리와 해발, 언덕을 오를 때는 오르막 표시 · 영상 끝 화면에 얼마나 올랐는지 나와요 · 사진과 장소에서 카메라가 천천히 지나가고 음악이 하이라이트에서 가장 커져요 · 강조할 사진에 별을 달면 더 크고 길게 보여요 · 영상 만들 기록을 고를 때 기록마다 사진이 몇 장인지 보여요 · 영상 저장과 공유 결과가 사라지지 않고 결과 칸에 남아요, 실패해도 영상은 화면에 그대로 있어요 · 가로 16:9 영상도 만들 수 있어요 · 사진은 원래 비율 그대로 보여요 · 이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
+const UI_NOTES = '이동 영상의 사진 카드는 적어도 2초씩 보여 줘요 · 같은 자리에서 찍은 사진이 많으면 한 카드에 2~4장씩 같이 보여 줘요, 사진은 하나도 빠지지 않아요 · 이동 영상의 일반 지도에서 아래 거리 숫자와 높이 그림이 잘 보이게 뒤를 더 어둡게 했어요 · 평지 길은 높이 그림도 평평하게 보여요 · 이동 영상에 연출 스타일 네 가지가 생겼어요, 시네마틱, 스포츠, 추억, 여행 · 이동 영상 아래에 높이 그림이 생겼어요, 지금 자리와 해발, 언덕을 오를 때는 오르막 표시 · 영상 끝 화면에 얼마나 올랐는지 나와요 · 사진과 장소에서 카메라가 천천히 지나가고 음악이 하이라이트에서 가장 커져요 · 강조할 사진에 별을 달면 더 크고 길게 보여요 · 영상 만들 기록을 고를 때 기록마다 사진이 몇 장인지 보여요 · 영상 저장과 공유 결과가 사라지지 않고 결과 칸에 남아요, 실패해도 영상은 화면에 그대로 있어요 · 가로 16:9 영상도 만들 수 있어요 · 사진은 원래 비율 그대로 보여요 · 이동 영상의 일반 지도가 더 깔끔해졌어요, 차분한 하늘빛 바탕에 흰 길, 푸른 물, 흰 건물, 산 그림자 · 일반 지도 이름은 한글로만, 가게와 도로 번호 같은 잔글씨는 빼요 · 일반 지도일 때 카메라를 조금 덜 눕혀 하늘이 줄고 땅이 넓게 보여요 · 이동 영상에서 사진이 찍은 자리에 닿을 때 떠요, 지도 위 찍은 곳에 점과 선으로 이어 보여 줘요 · 출발 전, 도착 뒤 사진은 처음과 끝 장면에 나와요 · 이동 영상의 처음과 끝 장면에서 다닌 길이 굵고 또렷하게 보여요 · 이동 영상에 그 기록의 사진을 하나도 빼지 않고 모두 차례로 보여 줘요(사진이 많으면 한 장이 짧게 지나가요, 영상을 길게 고르면 더 오래 보여요) · 이동 영상에서 지도 모양을 고를 수 있어요, 위성 사진 또는 건물이 솟은 일반 지도(3D) · 이동 영상의 지평선 위가 검게 보이던 것을 하늘색으로 고쳤어요 · 굽은 길에서 카메라가 조금 더 빨리 따라가요 · 이동 영상의 카메라가 더 낮게, 앞을 바라보듯 기울어져 길과 산이 입체적으로 보여요 · 이동 영상의 카메라가 천천히 부드럽게 돌아서 덜 어지러워요 · 이동 영상의 총 거리와 시간이 기록 보기와 똑같이 나와요(집 가리기로 앞뒤를 가려도 거리는 그대로) · 영상 속 사진은 오른쪽 위에 작게 떠서 지도를 덜 가려요 · 기록 보기에 이동 영상 만들기(실험)가 생겼어요, 다닌 길을 위성 지도 위로 따라가는 세로 MP4 영상이에요 · GPX 받기를 누르면 앱에서도 다운로드 폴더에 저장되고, 공유 창을 닫으면 어디에 저장했는지(또는 못 한 까닭) 알려 줘요 · 카톡은 GPX 파일을 받아 주지 않아요, 등산 앱이나 메일, 드라이브로 보내세요 · 첫 화면 목록 맨 위에 내 MPD 보기가 생겼어요 · 공유는 기록을 보다가 오른쪽 아래 떠 있는 공유하기 단추로 해요 · 웹은 다운로드 폴더에 영어 이름으로 받아요 · 발견에 같은 곳, 다른 시간 사진이 생겼어요 · 같은 자리에서 다른 날 찍은 사진을 처음과 최근으로 나란히 견줘 봐요 · 지도에서 이 자리 보기로 그 자리에 바로 가요 · 하루 넘게 켜진 채 쉬는 기록은 첫 화면에서 그때 끝난 걸로 저장할지 물어봐요(길, 사진, 메모는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5415,6 +5415,31 @@ function filmPhotoTimes(F, plan, st, adv, T) {
   photos.forEach(g => { if (g.e > T - 0.05) g.e = T - 0.05; });
   return photos;
 }
+// 사진 카드: 한 카드는 적어도 2초 (2026-11-13 사용자 '사진은 최소 2초' → 1번 '같은 자리 사진은 한 카드에 묶기')
+//   몰려 있는 사진은 2~4장(넘치면 6·9장)을 한 카드에 같이 보여 줘요 · 사진은 하나도 빼지 않고 · 영상 길이는 그대로
+var FILM_PH_MIN = 2;
+function filmCards(photos, T) {
+  const L = photos.slice().sort((a, b) => a.s - b.s), lim = T - 0.05;
+  const build = MAXN => {
+    const cards = [];
+    for (const q of L) { const c = cards[cards.length - 1];
+      if (c && c.ps.length < MAXN && q.s < c.s + FILM_PH_MIN) { c.ps.push(q); c.e = Math.max(c.e, q.e); }
+      else cards.push({ s: q.s, e: q.e, ps: [q] }); }
+    for (let i = 0; i < cards.length; i++) { const c = cards[i], n = cards[i + 1];
+      c.e = Math.max(c.e, c.s + FILM_PH_MIN);
+      if (n) { if (n.s < c.e) n.s = c.e; if (n.s > c.s + FILM_PH_MIN && c.e > n.s) c.e = n.s; } }
+    return cards;
+  };
+  const over = C => C.length && C[C.length - 1].s > lim - FILM_PH_MIN;
+  let cards = build(4); for (const m of [6, 9]) { if (!over(cards)) break; cards = build(m); }
+  if (over(cards)) {   // 그래도 넘치면: 남은 시간을 2초 카드로 똑같이 나누고 사진을 차례대로 고르게 담아요(빼지 않음)
+    const t0 = Math.min(L[0].s, lim - FILM_PH_MIN), K = Math.max(1, Math.floor((lim - t0) / FILM_PH_MIN)), per = Math.ceil(L.length / K), len = (lim - t0) / Math.ceil(L.length / per);
+    cards = []; for (let i = 0; i < L.length; i += per) { const s0 = t0 + cards.length * len; cards.push({ s: s0, e: s0 + len, ps: L.slice(i, i + per) }); }
+  }
+  cards.forEach(c => { c.e = Math.min(c.e, lim); c.star = c.ps.some(q => q.star); c.p = c.ps[0].p; c.pin = (c.ps.find(q => q.pin) || {}).pin; c.pins = c.ps.filter(q => q.pin).map(q => q.pin); c.n0 = 0; });
+  let k = 0; cards.forEach(c => { c.n0 = k; k += c.ps.length; });
+  return cards;
+}
 // 카메라: 모든 장의 카메라를 그리기 전에 미리 계산 (진행 방향이 화면 위, 앞을 넓게 보고 천천히 돎, 급한 회전·확대 제한)
 function filmCamTrack(o) {
   const { P, D, plan, st, adv, over, zRun, pitch, N, look } = o, out = [];
@@ -5738,7 +5763,7 @@ async function filmMake(S, opt, U) {
     const labels = filmLabels(src, P, D, opt, st), marks = filmMarks(src, P, D, TOT), marathon = src.mode === 'run' && TOT >= 20000;
     // 이야기 짜기
     const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st) });
-    const photos = filmPhotoTimes(F, plan, st, adv, T), runEnd = plan.tIn + plan.tRun;
+    const photos = filmPhotoTimes(F, plan, st, adv, T), cards = filmCards(photos, T), runEnd = plan.tIn + plan.tRun;
     labels.forEach(l => { l.t = plan.tOfD(l.d); }); marks.forEach(m => { m.t = plan.tOfD(m.d); m.ms = msAt(filmAt(P, m.d).ts); });
     if (photos.length) say(`사진 ${photos.length}장을 모두 넣어요 · 찍은 자리에서 떠요`);
     // 지도 준비 (보이지 않는 곳에 영상 크기 그대로)
@@ -5833,11 +5858,19 @@ async function filmMake(S, opt, U) {
           c.restore();
         } }
       // 사진 카드 자리 먼저 셈 (이름표가 카드와 겹치지 않게)
-      const ph = photos.find(q => tt >= q.s && tt < q.e);
-      for (const q of photos) if (q.img && q !== ph && tt >= q.e) { try { q.img.close(); } catch {} q.img = null; }
-      if (ph && !ph.img && !ph.bad) { try { ph.img = await createImageBitmap(ph.p.v ? ph.p.thumb : ph.p.blob, { resizeWidth: ph.star || st.k === 'memo' ? 760 : 520, resizeQuality: 'high' }); } catch { ph.bad = true; } }
+      const ph = cards.find(q => tt >= q.s && tt < q.e);
+      for (const q of cards) if (q.imgs && q !== ph && tt >= q.e) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; }
+      if (ph && !ph.imgs) { const one = ph.ps.length === 1; ph.imgs = [];
+        for (const g of ph.ps) { try { ph.imgs.push(await createImageBitmap(g.p.v ? g.p.thumb : g.p.blob, { resizeWidth: one ? (ph.star || st.k === 'memo' ? 760 : 520) : 380, resizeQuality: 'high' })); } catch { ph.imgs.push(null); } }
+        ph.img = ph.imgs[0] || ph.imgs.find(Boolean) || null; }
       let box = null;
-      if (ph && ph.img) {
+      if (ph && ph.ps.length > 1 && ph.imgs.some(Boolean)) {   // 여러 장 카드: 2·3·4장 → 2칸, 그 이상 3칸, 정사각 칸
+        const n = ph.ps.length, cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols), gap = 6, y = LAND ? 96 : 175;
+        let bw = Math.min(W * (LAND ? 0.36 : 0.6), st.card[0] * 1.55 * (ph.star ? 1.15 : 1)), cell = (bw - gap * (cols - 1)) / cols, bh = rows * cell + gap * (rows - 1);
+        const maxH = H - y - (info >= 1 ? (elevOn ? 330 : 250) : 120); if (bh > maxH) { const f = maxH / bh; bw *= f; bh = maxH; cell *= f; }
+        const k = (tt - ph.s) / (ph.e - ph.s), fe = Math.min(0.4, st.fade / (ph.e - ph.s)), a = Math.max(0, Math.min(1, k / fe, (1 - k) / fe)), sc = 0.92 + 0.08 * Math.min(1, k / 0.2);
+        box = { x: W - bw * sc - 34 + (1 - Math.min(1, k / fe)) * 40, y, w: bw * sc, h: bh * sc, a, k, capH: 0, grid: { cols, gap: gap * sc, cell: cell * sc } };
+      } else if (ph && ph.img) {
         const im = ph.img, r = im.width / im.height, base = (LAND ? 0.8 : 1) * (ph.star ? 1.3 : 1), [cw, ch] = st.card, y = LAND ? 96 : 175;
         let bw, bh; if (r >= 1) { bw = Math.min(W * 0.62, cw * 1.3 * base); bh = bw / r; } else { bh = ch * base; bw = Math.min(bh * r, cw * 1.3 * base); bh = bw / r; }   // 사진 원래 비율 그대로
         const capH = ph.p.m && st.k === 'memo' ? 64 : 0, maxH = H - y - (info >= 1 ? (elevOn ? 330 : 250) : 120) - capH;
@@ -5921,17 +5954,24 @@ async function filmMake(S, opt, U) {
       }
       // 사진 카드 (원래 비율, 천천히 다가가는 움직임, 찍은 곳에 점과 선)
       if (box) {
-        const im = ph.img, { x, y, w: bw, h: bh, a, k } = box;
+        const im = ph.img, { x, y, w: bw, h: bh, a, k, grid } = box;
         c.save(); c.globalAlpha = a; c.translate(x + bw / 2, y + bh / 2); c.rotate(st.k === 'sport' ? 0 : 0.035); c.translate(-(x + bw / 2), -(y + bh / 2));
         shadow(22); c.fillStyle = '#fff'; c.beginPath(); c.roundRect(x - 7, y - 7, bw + 14, bh + 14 + box.capH, 18); c.fill(); c.shadowBlur = 0;
         if (ph.star) { c.strokeStyle = '#FF8A4C'; c.lineWidth = 5; c.beginPath(); c.roundRect(x - 7, y - 7, bw + 14, bh + 14 + box.capH, 18); c.stroke(); }
         c.save(); c.beginPath(); c.roundRect(x, y, bw, bh, 12); c.clip();
-        const z = 1 + st.kb * k, dw = bw * z, dhh = bh * z; c.drawImage(im, x + (bw - dw) / 2, y + (bh - dhh) / 2, dw, dhh);
-        if (ph.p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
+        if (grid) { c.restore(); ph.imgs.forEach((g, i) => { const cx0 = x + (i % grid.cols) * (grid.cell + grid.gap), cy0 = y + Math.floor(i / grid.cols) * (grid.cell + grid.gap);
+            c.save(); c.beginPath(); c.roundRect(cx0, cy0, grid.cell, grid.cell, 8); c.clip();
+            if (g) { const r = Math.max(grid.cell / g.width, grid.cell / g.height) * (1 + st.kb * k); c.drawImage(g, cx0 + (grid.cell - g.width * r) / 2, cy0 + (grid.cell - g.height * r) / 2, g.width * r, g.height * r); } else { c.fillStyle = '#DDE5EE'; c.fillRect(cx0, cy0, grid.cell, grid.cell); }
+            if (ph.ps[i].p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(cx0 + grid.cell / 2, cy0 + grid.cell / 2, 18, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(cx0 + grid.cell / 2 - 6, cy0 + grid.cell / 2 - 9); c.lineTo(cx0 + grid.cell / 2 + 10, cy0 + grid.cell / 2); c.lineTo(cx0 + grid.cell / 2 - 6, cy0 + grid.cell / 2 + 9); c.fill(); }
+            if (ph.ps[i].star) { c.lineWidth = 4; c.strokeStyle = '#FF8A4C'; c.stroke(); }
+            c.restore(); }); c.save(); c.beginPath(); c.rect(0, 0, 0, 0); c.clip(); }
+        else { const z = 1 + st.kb * k, dw = bw * z, dhh = bh * z; c.drawImage(im, x + (bw - dw) / 2, y + (bh - dhh) / 2, dw, dhh); }
+        if (!grid && ph.p.v) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x + bw / 2, y + bh / 2, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x + bw / 2 - 9, y + bh / 2 - 14); c.lineTo(x + bw / 2 + 15, y + bh / 2); c.lineTo(x + bw / 2 - 9, y + bh / 2 + 14); c.fill(); }
         c.restore();
         if (box.capH) { c.font = FN(600, 22); c.fillStyle = '#22344A'; c.textAlign = 'left'; filmWrap(c, ph.p.m, bw - 8).slice(0, 2).forEach((l, i, L) => c.fillText(i === 1 && L.length > 2 ? filmFit(c, l, bw - 8) : l, x + 4, y + bh + 30 + i * 28)); }
         c.restore();
         if (ph.pin && tt >= plan.tIn && tt < runEnd) {   // 지도 위 찍은 곳: 점 + 카드 아래 귀퉁이까지 가는 선
+          for (const pp of (ph.pins.length > 1 ? ph.pins.slice(1) : [])) { const q2 = map.project(pp); if (q2.x > -20 && q2.x < W + 20 && q2.y > 150 && q2.y < H - 150) { c.save(); c.globalAlpha = a; c.beginPath(); c.arc(q2.x, q2.y, 9, 0, 7); c.fillStyle = '#fff'; c.fill(); c.beginPath(); c.arc(q2.x, q2.y, 5.5, 0, 7); c.fillStyle = col; c.fill(); c.restore(); } }
           const q = map.project(ph.pin);
           if (q.x > -20 && q.x < W + 20 && q.y > 150 && q.y < H - 150) {
             c.save(); c.globalAlpha = a; c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2.5; c.setLineDash([6, 5]);
@@ -5940,7 +5980,7 @@ async function filmMake(S, opt, U) {
             c.restore();
           }
         }
-        if (photos.length > 1) { c.save(); c.font = FN(700, 20); c.fillStyle = 'rgba(255,255,255,.9)'; c.textAlign = 'right'; shadow(8); c.fillText(`${photos.indexOf(ph) + 1} / ${photos.length}`, W - 40, y + bh + box.capH + 40); c.restore(); }
+        if (photos.length > 1) { c.save(); c.font = FN(700, 20); c.fillStyle = 'rgba(255,255,255,.9)'; c.textAlign = 'right'; shadow(8); c.fillText(ph.ps.length > 1 ? `${ph.n0 + 1}–${ph.n0 + ph.ps.length} / ${photos.length}` : `${ph.n0 + 1} / ${photos.length}`, W - 40, y + bh + box.capH + 40); c.restore(); }
       }
       // 끝 장면 (스타일마다)
       const tE = plan.tEnd || runEnd;
@@ -5981,7 +6021,7 @@ async function filmMake(S, opt, U) {
       const el_ = (performance.now() - t0) / 1000, left = el_ / (f + 1) * (N - f - 1);
       say(`지도를 한 장씩 그리는 중… ${f + 1}/${N}장 · 남은 시간 약 ${left < 60 ? Math.ceil(left) + '초' : Math.ceil(left / 60) + '분'}`, (f + 1) / N * 0.85);
     }
-    for (const q of photos) if (q.img) { try { q.img.close(); } catch {} q.img = null; }
+    for (const q of cards) if (q.imgs) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; }
     if (endPh) endPh.forEach(im => { try { im.close(); } catch {} });
     await enc.flush(); enc.close(); if (encErr) throw encErr;
     // ① 영상만 MP4
