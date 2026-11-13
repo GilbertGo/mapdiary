@@ -2882,9 +2882,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-60-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-61-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '영상의 일반 지도 색을 새로 골랐어요. 민트빛 땅, 살구빛 건물, 싱그러운 초록 공원, 맑은 청록 물 · 회색과 어두운 녹색은 뺐어요';
+const UI_NOTES = '영상의 일반 지도 색을 비교 그림에서 고르신 차분한 녹색 안으로 되돌렸어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5842,8 +5842,8 @@ async function filmMake(S, opt, U) {
       map.getSource('done').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: doneC.length > 1 ? doneC : coords.slice(0, 2) } });
       map.getSource('head').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [cur.lng, cur.lat] } });
       await waitMap();
-      { const sk = c.createLinearGradient(0, 0, 0, H * 0.45); sk.addColorStop(0, mtype === 'map' ? '#8CCFE0' : '#5E9BD6'); sk.addColorStop(1, mtype === 'map' ? '#EAF6EC' : '#DCEAF6'); c.fillStyle = sk; c.fillRect(0, 0, W, H); }   // 하늘 (지평선 위가 검게 비지 않게)
-      if (LOOK === 'cine') c.filter = 'contrast(1.14) saturate(1.12)'; else if (LOOK === 'memo') c.filter = 'saturate(.8) sepia(.22) brightness(1.05) contrast(.95)'; else if (mtype === 'map') c.filter = 'contrast(1.06) saturate(1.25)';
+      { const sk = c.createLinearGradient(0, 0, 0, H * 0.45); sk.addColorStop(0, mtype === 'map' ? '#6F8A62' : '#5E9BD6'); sk.addColorStop(1, mtype === 'map' ? '#D4E0CB' : '#DCEAF6'); c.fillStyle = sk; c.fillRect(0, 0, W, H); }   // 하늘 (지평선 위가 검게 비지 않게)
+      if (LOOK === 'cine') c.filter = 'contrast(1.14) saturate(1.12)'; else if (LOOK === 'memo') c.filter = 'saturate(.8) sepia(.22) brightness(1.05) contrast(.95)'; else if (mtype === 'map') c.filter = 'contrast(1.08) saturate(1.22)';
       c.drawImage(map.getCanvas(), 0, 0, W, H); c.filter = 'none';
       if (LOOK === 'cine') { c.save(); c.globalCompositeOperation = 'soft-light'; c.fillStyle = 'rgba(0,95,115,.42)'; c.fillRect(0, 0, W, H); c.restore(); }
       if (st.grade === 'warm') { c.save(); c.globalCompositeOperation = 'soft-light'; c.fillStyle = 'rgba(255,170,120,.35)'; c.fillRect(0, 0, W, H); c.restore(); }
@@ -6290,7 +6290,7 @@ function filmTestBoard() {
 //   이름은 한글 하나로, 가게·번지·도로 번호 같은 잔글씨는 뺌 (녹색·누런색 안 씀)
 function filmMapLook(style) {
   // 2026-11-13 사용자 '지도가 너무 허여멀건하다' → 진하고 또렷하게: 물 짙은 파랑, 땅·동네·공원 색을 나눔, 큰길은 진한 테두리(길 색과 안 겹치게), 길 테두리·산 그림자 진하게 (누런색 없음)
-  const C = { bg: '#DDEDD6', land: '#D1E6C8', urban: '#F3E5DC', park: '#78C489', wood: '#3A9A62', grass: '#A3DBA8', water: '#4AB3D4', road: '#FFFFFF', majorCase: '#9FB09B', casing: '#C2D0C0', rail: '#93A08F', bld: '#FFF2EA', txt: '#22342A', place: '#13231A' };   // 2026-11-13 '최대한 이쁜 색감': 실제 지도로 다섯 안을 그려 보고 고른 '파스텔' — 민트 바탕·살구빛 건물·싱그러운 초록·맑은 청록 물
+  const C = { bg: '#C9D8BE', land: '#BFD0B2', urban: '#EADFD8', park: '#6E9F5C', wood: '#47783D', grass: '#8DB57A', water: '#86B6C4', road: '#FFFFFF', majorCase: '#5E6E5A', casing: '#9AA899', rail: '#77826F', bld: '#F4EAE3', txt: '#1C2620', place: '#101A14' };   // 2026-11-13 사용자가 비교 그림에서 고른 안(판 -59 색): 차분한 녹색 바탕·깊은 녹색 공원·숲
   const hide = l => { l.layout = Object.assign({}, l.layout, { visibility: 'none' }); };
   const P = (l, o) => { l.paint = Object.assign({}, l.paint, o); };
   const firstUp = []; // 산 그림자를 넣을 자리 (길·건물 아래)
@@ -6303,7 +6303,7 @@ function filmMapLook(style) {
     else if (l.type === 'fill') {
       if (l.paint && l.paint['fill-pattern']) { hide(l); return; }
       if (isWater) P(l, { 'fill-color': C.water, 'fill-opacity': 1, 'fill-outline-color': C.water });
-      else if (/building/.test(key)) P(l, { 'fill-color': '#F7E6DB', 'fill-outline-color': '#DCC2B0' });
+      else if (/building/.test(key)) P(l, { 'fill-color': '#EEE3DB', 'fill-outline-color': '#C8B6AA' });
       else if (/wood|forest/.test(key)) P(l, { 'fill-color': C.wood, 'fill-opacity': 0.95, 'fill-outline-color': 'rgba(0,0,0,0)' });
       else if (/park|national|nature/.test(key)) P(l, { 'fill-color': C.park, 'fill-opacity': 0.95, 'fill-outline-color': 'rgba(0,0,0,0)' });
       else if (/grass|green|garden|pitch|cemetery|golf|farm|meadow|scrub/.test(key)) P(l, { 'fill-color': C.grass, 'fill-opacity': 0.9, 'fill-outline-color': 'rgba(0,0,0,0)' });
@@ -6328,15 +6328,15 @@ function filmMapLook(style) {
       const lay = Object.assign({}, l.layout);
       if (lay['text-field'] != null) lay['text-field'] = ['coalesce', ['get', 'name:ko'], ['get', 'name_ko'], ['get', 'name:latin'], ['get', 'name']];
       delete lay['icon-image']; l.layout = lay;
-      P(l, { 'text-color': big ? C.place : (isWater || /water/.test(key) ? '#17708F' : C.txt), 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.8, 'text-halo-blur': 0.4 });
+      P(l, { 'text-color': big ? C.place : (isWater || /water/.test(key) ? '#3E5E70' : C.txt), 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.8, 'text-halo-blur': 0.4 });
     }
   });
   // 산·언덕 그림자: 지형(dem)과 따로 같은 자료를 한 번 더 (같은 자료를 지형과 그림자에 함께 쓰면 MapLibre가 경고)
   style.sources.dem2 = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 14, encoding: 'terrarium' };
-  const hill = { id: 'film-hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': 0.45, 'hillshade-shadow-color': '#2C5A3D', 'hillshade-highlight-color': '#FFFFFF', 'hillshade-accent-color': '#4C7E5B', 'hillshade-illumination-direction': 315 } };
+  const hill = { id: 'film-hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': 0.6, 'hillshade-shadow-color': '#24361F', 'hillshade-highlight-color': '#F2F6EE', 'hillshade-accent-color': '#3E5A35', 'hillshade-illumination-direction': 315 } };
   const at = firstUp.length ? firstUp[0] : style.layers.length;
   style.layers.splice(at, 0, hill);
-  style.light = { anchor: 'viewport', color: '#FFF0E2', intensity: 0.32, position: [1.4, 210, 35] };
+  style.light = { anchor: 'viewport', color: '#FFFFFF', intensity: 0.5, position: [1.4, 210, 35] };
   return style;
 }
 
