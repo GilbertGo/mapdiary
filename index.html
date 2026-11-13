@@ -5920,7 +5920,7 @@ async function filmMake(S, opt, U) {
         const e = Math.min(1, (tt - tE) / 0.6), yb = Math.round(H * (LAND ? 0.24 : 0.234));
         c.save(); c.globalAlpha = e; c.textAlign = 'center';
         { const nTrip = st.k === 'trip' ? Math.min(5, new Set(labels.map(l => l.name).filter(Boolean)).size) : 0, nMemo = st.k === 'memo' ? Math.min(4, photos.length) : 0, szM = LAND ? 170 : 220;
-          const top = yb - (st.k === 'memo' ? 92 : 78), bot = st.k === 'trip' ? yb + 96 + nTrip * 44 : st.k === 'memo' ? yb + 50 + Math.ceil(nMemo / 2) * (szM + 14) + 52 : yb + (st.k === 'sport' ? 200 : 150);
+          const top = yb - (st.k === 'memo' ? 92 : 78), bot = st.k === 'trip' ? yb + 96 + nTrip * 44 : st.k === 'memo' ? yb + 50 + Math.ceil(nMemo / 2) * (szM + 14) + 52 : yb + (st.k === 'sport' ? 214 : 150);
           c.fillStyle = 'rgba(12,20,34,.5)'; c.beginPath(); c.roundRect(40, top, W - 80, bot - top, 28); c.fill(); }
         c.fillStyle = '#fff'; shadow(18);
         if (st.k === 'trip') {
