@@ -2893,9 +2893,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-65-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-66-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 사진이 ✎ 수정하기에서 정한 사진 순서대로 나와요. 순서를 안 정했으면 예전처럼 찍은 자리 순서예요';
+const UI_NOTES = '이동 영상의 사진을 찍은 시각에 맞춰 보여 줘요. 출발 전 사진은 처음 장면에만 나와요 · 갔다 돌아오는 길에서 앞으로 지날 km 표시가 미리 보이지 않게 했어요. 지난 표시와 바로 다음 하나만 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5330,9 +5330,20 @@ function filmAdv(opt, st) {   // 고급 설정 → 숫자
 // 사진 자리: 찍은 위치(길 150m 안) → 길 위 / 출발 전·도착 뒤·길 밖 → 처음·끝 장면 / 위치 없으면 찍은 시각 / 그것도 없으면 차례대로
 function filmPhotoPlace(L, P, D) {
   const intro = [], outro = [], route = [], n = L.length;
+  const t0 = P[0].ts, t1 = P[P.length - 1].ts, timed = t0 > 0 && t1 > t0;
   L.forEach((p, i) => {
     const g = { p, ts: p.ts || 0, pin: null, d: null };
     const hasLoc = Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);
+    // 찍은 시각이 있으면 시각으로 길 위 자리를 정해요(2026-11-14 태안마라톤: 갔다 돌아오는 길이라 위치만으로는 돌아오는 쪽에 붙어 출발 전 사진이 달리는 중에 나왔음)
+    //   출발 전에 찍은 건 처음 장면, 끝난 뒤는 끝 장면 · 시각이 가리키는 자리와 찍은 곳이 400m 넘게 떨어지면(시각이 틀린 사진) 예전처럼 위치로
+    if (timed && p.ts) {
+      if (p.ts < t0) { if (hasLoc) g.pin = [p.lng, p.lat]; return intro.push(g); }
+      if (p.ts > t1) { if (hasLoc) g.pin = [p.lng, p.lat]; return outro.push(g); }
+      let j = P.findIndex(q => q.ts >= p.ts); if (j < 0) j = P.length - 1;
+      const a = P[Math.max(0, j - 1)], b = P[j], f = b.ts > a.ts ? (p.ts - a.ts) / (b.ts - a.ts) : 0;
+      const lat = a.lat + (b.lat - a.lat) * f, lng = a.lng + (b.lng - a.lng) * f;
+      if (!hasLoc || dist(lat, lng, p.lat, p.lng) <= 400) { g.d = a.d + (b.d - a.d) * f; g.pin = hasLoc ? [p.lng, p.lat] : null; return route.push(g); }
+    }
     if (hasLoc) {
       let best = 1e18, j = 0; for (let k = 0; k < P.length; k++) { const dd = dist(P[k].lat, P[k].lng, p.lat, p.lng); if (dd < best) { best = dd; j = k; } }
       if (best <= 150) { g.d = P[j].d; g.pin = [p.lng, p.lat]; }
@@ -5424,10 +5435,14 @@ function filmPhotoTimes(F, plan, st, adv, T, order) {
   if (outro.length) spread(outro, oS, Math.max(oS + 0.4, plan.tEnd));
   let photos = intro.concat(route, outro).filter(g => g.s < T).sort((a, b) => a.s - b.s);
   // 사진 순서를 직접 정했으면(✎ 수정하기 '사진 순서', walkPhOrder) 그 차례대로: 시간 자리는 그대로 두고 사진만 정한 순서로 앉힘
+  //   단, 처음 장면·길 따라가기·끝 장면 칸 안에서만 바꿔요(출발 전 사진이 달리는 중에 나오지 않게, 2026-11-14)
   if (Array.isArray(order) && order.length) {
-    const ix = new Map(order.map((id, i) => [String(id), i])), slots = photos.map(g => [g.s, g.e]);
-    const by = photos.map((g, i) => [g, ix.has(String(g.p.id)) ? ix.get(String(g.p.id)) : 1e9 + i]).sort((a, b) => a[1] - b[1]).map(a => a[0]);
-    by.forEach((g, i) => { g.s = slots[i][0]; g.e = slots[i][1]; }); photos = by;
+    const ix = new Map(order.map((id, i) => [String(id), i])), inPh = new Set(photos);
+    for (const ph of [intro, route, outro]) {
+      const L = ph.filter(g => inPh.has(g)).sort((a, b) => a.s - b.s), slots = L.map(g => [g.s, g.e]);
+      L.map((g, i) => [g, ix.has(String(g.p.id)) ? ix.get(String(g.p.id)) : 1e9 + i]).sort((a, b) => a[1] - b[1]).forEach(([g], i) => { g.s = slots[i][0]; g.e = slots[i][1]; });
+    }
+    photos.sort((a, b) => a.s - b.s);
   }
   photos.forEach(g => { if (g.e > T - 0.05) g.e = T - 0.05; });
   return photos;
@@ -5973,8 +5988,10 @@ async function filmMake(S, opt, U) {
       };
       const onScreen = q => { const p = map.project([q.lng, q.lat]); return p.x > 30 && p.x < W - 30 && p.y > 200 && p.y < H - (elevOn && info >= 1 ? 340 : 260) ? p : null; };
       if (tt >= plan.tIn && tt < Math.min(runEnd + 0.4, plan.tEnd || runEnd)) {
-        for (const m of marks) { if (Math.abs(m.d - dh) > look * 6) continue; const p = onScreen(m); if (p) pill(p.x, p.y, m.n, 'rgba(255,255,255,.92)', '#14253B', st.k === 'sport' ? 30 : 26); }
-        for (const l of labels) { if (l.d < dh - look * 2 || l.d > dh + look * 8) continue; const p = onScreen(l); if (p) pill(p.x, p.y, l.n, 'rgba(20,37,59,.86)', '#fff', st.k === 'trip' ? 30 : 26); }
+        const nextM = marks.filter(m => m.d > dh).sort((a, b) => a.d - b.d)[0];
+        for (const m of marks) { if (m.d < dh - look * 1.5 || (m.d > dh && m !== nextM)) continue;   // 지난 표시 + 바로 다음 하나만 (갔다 오는 길에서 돌아올 때 지날 7km가 미리 보여 헷갈렸음)
+ const p = onScreen(m); if (p) pill(p.x, p.y, m.n, 'rgba(255,255,255,.92)', '#14253B', st.k === 'sport' ? 30 : 26); }
+        for (const l of labels) { if (l.d < dh - look * 1.5 || l.d > dh + look * 3) continue; const p = onScreen(l); if (p) pill(p.x, p.y, l.n, 'rgba(20,37,59,.86)', '#fff', st.k === 'trip' ? 30 : 26); }
       }
       // 처음 제목 카드
       if (tt < plan.tTitle + 1.2) {
