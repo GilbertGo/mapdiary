@@ -2882,9 +2882,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.13-62-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.13-63-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 지도 모양에 🌙 어두운 지도가 생겼어요. 스트라바 어두운 지도처럼 짙은 바탕에 경로가 또렷하게 빛나요 · 일반 지도와 위성 사진은 그대로예요';
+const UI_NOTES = '이동 영상의 첫 장이 마지막 요약 화면이 됐어요. 갤러리 미리보기와 다 본 뒤 멈춘 화면에 거리·시간·사진이 보여요 · 재생하면 요약이 살짝 사라지며 처음 장면으로 넘어가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5833,7 +5833,11 @@ async function filmMake(S, opt, U) {
     if (LOOK === 'memo') { try { famFont(); await Promise.race([Promise.all([document.fonts.load('700 40px "Gowun Batang"'), document.fonts.load('400 24px "Gowun Batang"')]), new Promise(r => setTimeout(r, 4000))]); } catch {} }
     let grain = null; if (LOOK === 'memo') { grain = document.createElement('canvas'); grain.width = grain.height = 256; const gx = grain.getContext('2d'), id = gx.createImageData(256, 256); for (let i = 0; i < id.data.length; i += 4) { const v = 128 + (Math.random() - 0.5) * 120; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } gx.putImageData(id, 0, 0); }
     const t0 = performance.now();
-    for (let f = 0; f < N; f++) {
+    // 첫 장 = 끝 장면 (2026-11-13 사용자 '끝 화면이 첫 장이면 좋아': 갤러리·재생기는 다 본 뒤 첫 장으로 돌아가고 미리보기도 첫 장이라)
+    //   맨 처음 한 장은 끝나기 1초 전 모습(시네마틱이 어두워지기 전)을 그리고, 그다음 0.4초 동안 그 그림이 옅어지며 처음 장면으로 넘어가요
+    const coverF = Math.max(1, N - Math.round(FILM_FPS * 1.0)), coverFade = Math.round(FILM_FPS * 0.4); let coverBm = null;
+    for (let k = 0; k < N; k++) {
+      const f = k === 0 ? coverF : k;
       if (S.stop) throw new Error('멈췄어요');
       if (encErr) throw encErr;
       const tt = f / FILM_FPS, cm = cams[f], dh = cm.dh;
@@ -6119,11 +6123,13 @@ async function filmMake(S, opt, U) {
       c.save(); c.font = FN(500, 15); c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'right'; c.fillText(mtype === 'map' ? '지도 © OpenStreetMap · OpenFreeMap · 지형 AWS' : '지도 Esri · 지형 AWS Terrain Tiles', W - 16, H - 16); c.restore();
       if (grain) { c.save(); c.globalCompositeOperation = 'overlay'; c.globalAlpha = 0.16; const ox = Math.floor(Math.random() * 256), oy = Math.floor(Math.random() * 256); c.translate(-ox, -oy); c.fillStyle = c.createPattern(grain, 'repeat'); c.fillRect(0, 0, W + 256, H + 256); c.restore(); }
       if (LOOK === 'cine') { const fa = tt > T - 0.8 ? Math.min(0.85, (tt - (T - 0.8)) / 0.8) : 0; if (fa > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, fa)})`; c.fillRect(0, 0, W, H); } }   // 끝에서 어둡게 닫힘 (처음 장은 갤러리 미리보기라 검게 하지 않음)
-      const vf = new VideoFrame(U.cv, { timestamp: Math.round(f * 1e6 / FILM_FPS), duration: Math.round(1e6 / FILM_FPS) });
-      enc.encode(vf, { keyFrame: f % (FILM_FPS * 2) === 0 }); vf.close();
+      if (k === 0) { try { coverBm = await createImageBitmap(U.cv); } catch {} }
+      else if (coverBm && k <= coverFade) { c.save(); c.globalAlpha = 1 - k / (coverFade + 1); c.drawImage(coverBm, 0, 0, W, H); c.restore(); if (k === coverFade) { try { coverBm.close(); } catch {} coverBm = null; } }
+      const vf = new VideoFrame(U.cv, { timestamp: Math.round(k * 1e6 / FILM_FPS), duration: Math.round(1e6 / FILM_FPS) });
+      enc.encode(vf, { keyFrame: k % (FILM_FPS * 2) === 0 }); vf.close();
       while (enc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 10));
-      const el_ = (performance.now() - t0) / 1000, left = el_ / (f + 1) * (N - f - 1);
-      say(`지도를 한 장씩 그리는 중… ${f + 1}/${N}장 · 남은 시간 약 ${left < 60 ? Math.ceil(left) + '초' : Math.ceil(left / 60) + '분'}`, (f + 1) / N * 0.85);
+      const el_ = (performance.now() - t0) / 1000, left = el_ / (k + 1) * (N - k - 1);
+      say(`지도를 한 장씩 그리는 중… ${k + 1}/${N}장 · 남은 시간 약 ${left < 60 ? Math.ceil(left) + '초' : Math.ceil(left / 60) + '분'}`, (k + 1) / N * 0.85);
     }
     for (const q of cards) if (q.imgs) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; }
     if (endPh) endPh.forEach(im => { try { im.close(); } catch {} });
