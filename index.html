@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-78-north';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-79-food';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상에서 비행기로 날아가는 동안은 북쪽이 위로 고정돼요 · 우리나라 지도가 뒤집혀 보이지 않아요 · 내리면 다시 가는 방향을 따라가요';
+const UI_NOTES = '이동 영상에 맛집 카드가 나와요 · 맛집으로 표시한 곳을 지날 때 가게 이름과 먹은 메뉴와 가격과 별점과 메모 · 비행 중엔 북쪽이 위로 고정돼요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5438,7 +5438,8 @@ function filmLabels(src, P, D, opt, st) {
   for (const s of (spotsOf(src.t) || [])) if (s && s.n && Number.isFinite(s.lat)) {   // 여러 날 여행은 모든 날의 장소
     const d = near(s.lat, s.lng); if (d == null) continue;
     const stay = s.k === 'stay', mins = stay && s.te && s.ts ? Math.round((s.te - s.ts) / 60000) : 0;
-    labels.push({ lat: s.lat, lng: s.lng, d, name: s.n, stay: mins, n: (stay ? '📍 ' : '★ ') + s.n + (mins >= 5 && st && (st.k === 'memo' || st.k === 'trip') ? ` · ${mins}분` : '') });
+    const fd = s.food && (s.food.menu || s.food.price || s.food.r) ? s.food : null;   // 🍽 맛집 표시가 있으면 영상에 정보 카드(메뉴·가격·별점·메모)
+    labels.push({ lat: s.lat, lng: s.lng, d, name: s.n, stay: mins, food: fd, memo: fd && s.m ? String(s.m) : '', n: (fd ? '🍽 ' : stay ? '📍 ' : '★ ') + s.n + (!fd && mins >= 5 && st && (st.k === 'memo' || st.k === 'trip') ? ` · ${mins}분` : '') });
   }
   for (const s of (ls.get('walkSummits:' + src.t, []) || [])) if (s && s.n && Number.isFinite(s.lat)) { const d = near(s.lat, s.lng); if (d != null) labels.push({ lat: s.lat, lng: s.lng, d, name: s.n, peak: 1, n: '⛰ ' + s.n + (s.ele ? ` ${Math.round(s.ele)}m` : '') }); }
   if (!opt.hide) { if (src.start && !/지점$/.test(src.start)) labels.push({ lat: P[0].lat, lng: P[0].lng, d: 0, name: src.start, n: '출발 · ' + src.start }); if (src.end && !/지점$/.test(src.end)) labels.push({ lat: P[P.length - 1].lat, lng: P[P.length - 1].lng, d: D, name: src.end, n: '도착 · ' + src.end }); }
@@ -6160,8 +6161,23 @@ async function filmMake(S, opt, U) {
       }
       // 여행: 장소를 지날 때 아래 이름 띠
       if (st.k === 'trip' && opt.places) {
-        const l = labels.find(q => q.t != null && tt >= q.t - 0.3 && tt < q.t + 2.2 && tt < runEnd);
-        if (l) { const a = Math.max(0, Math.min(1, (tt - l.t + 0.3) / 0.3, (l.t + 2.2 - tt) / 0.4)); c.save(); c.globalAlpha = a; c.font = FN(800, 34); const txt = filmFit(c, l.n, W - 140), w = c.measureText(txt).width + 48, y = H - (info >= 1 ? (info >= 2 ? 300 : 260) + (elevOn ? 100 : 0) : 170);
+        const l = labels.find(q => q.t != null && tt >= q.t - 0.3 && tt < q.t + (q.food ? 3.4 : 2.2) && tt < runEnd);
+        if (l && l.food) {   // 🍽 맛집 카드: 이름 · 메뉴 · 가격 · 별점 · 메모
+          const f = l.food, a = Math.max(0, Math.min(1, (tt - l.t + 0.3) / 0.3, (l.t + 3.4 - tt) / 0.4)), cw = W - 80;
+          c.save(); c.globalAlpha = a; c.font = FN(800, 38); const nm = filmFit(c, l.name, cw - 150);
+          const l2 = [f.menu, f.price].filter(Boolean).join(' · '), stars = f.r > 0 ? '★'.repeat(Math.round(f.r)) + '☆'.repeat(5 - Math.round(f.r)) : '', memo = l.memo;
+          c.font = FN(500, 26); const mL = memo ? filmWrap(c, memo, cw - 60).slice(0, 2) : [];
+          const ch = 112 + (l2 ? 46 : 0) + (stars ? 0 : 0) + mL.length * 36, y = H - (info >= 1 ? (info >= 2 ? 300 : 260) + (elevOn ? 100 : 0) : 170) + 62 - ch, up = (1 - a) * 24;
+          shadow(24); c.fillStyle = 'rgba(255,255,255,.97)'; c.beginPath(); c.roundRect(40, y + up, cw, ch, 22); c.fill(); c.shadowBlur = 0;
+          c.fillStyle = col; c.beginPath(); c.roundRect(40, y + up, cw, 10, [22, 22, 0, 0]); c.fill();
+          c.textAlign = 'left'; c.fillStyle = col; c.font = FN(800, 22); c.fillText('🍽  맛집', 70, y + up + 50);
+          if (stars) { c.textAlign = 'right'; c.fillStyle = '#F2994A'; c.font = FN(700, 26); c.fillText(stars, 40 + cw - 30, y + up + 50); c.textAlign = 'left'; }
+          c.fillStyle = '#14253B'; c.font = FN(800, 38); c.fillText(nm, 70, y + up + 96);
+          let yy = y + up + 96;
+          if (l2) { yy += 46; c.fillStyle = '#C2412D'; c.font = FN(700, 30); c.fillText(filmFit(c, l2, cw - 60), 70, yy); }
+          c.fillStyle = '#4A5D72'; c.font = FN(500, 26); mL.forEach(t => { yy += 36; c.fillText(t, 70, yy); });
+          c.restore();
+        } else if (l) { const a = Math.max(0, Math.min(1, (tt - l.t + 0.3) / 0.3, (l.t + 2.2 - tt) / 0.4)); c.save(); c.globalAlpha = a; c.font = FN(800, 34); const txt = filmFit(c, l.n, W - 140), w = c.measureText(txt).width + 48, y = H - (info >= 1 ? (info >= 2 ? 300 : 260) + (elevOn ? 100 : 0) : 170);
           c.fillStyle = 'rgba(20,37,59,.9)'; c.beginPath(); c.roundRect(40, y, w, 62, 16); c.fill(); c.fillStyle = col; c.fillRect(40, y + 12, 6, 38); c.fillStyle = '#fff'; c.textAlign = 'left'; c.fillText(txt, 64, y + 43); c.restore(); }
       }
       // 사진 카드 (원래 비율, 천천히 다가가는 움직임, 찍은 곳에 점과 선)
