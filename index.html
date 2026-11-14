@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-72-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-73-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여러 날 여행(예: 제주 2박 3일)도 여행 전체를 이동 영상 하나로 만들어요 · 영상 속 시간은 1일차·2일차로 보여요 · 차로 넘은 고개는 오른 높이에 넣지 않아요 · 여행 기록에는 평균 페이스를 안 보여요';
+const UI_NOTES = '여러 날 여행(예: 제주 2박 3일)도 여행 전체를 이동 영상 하나로 만들어요 · 영상 속 시간은 1일차·2일차로 보여요 · 차로 넘은 고개는 오른 높이에 넣지 않아요 · 여행 기록에는 평균 페이스를 안 보여요 · 여행 영상 날짜는 첫날 ~ 끝날로 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5837,6 +5837,12 @@ function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, st
   const days = A ? (A.days || []).map(d => { const tr = trackLoad(d); return tr.length ? tr[0][2] : null; }).filter(Boolean).sort((a, b) => a - b) : null, ai = A ? albumInfo(S.rec) : null;
   return { rows, name: A ? A.name : ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end, total, ms, t0: rows.length ? rows[0][2] : null, days: days && days.length > 1 ? days : null, durText: ai && ai.durText };
 }
+// 영상 날짜 글자: 여러 날 여행이면 '2026년 11월 6일 ~ 8일' (2026-11-14 제주 2박3일 샘플에서 2일차에도 첫날 날짜만 보여서)
+function filmDateTxt(src, P, o) {
+  const s0 = new Date(P[0].ts), one = s0.toLocaleDateString('ko-KR', o); if (!src || !src.days) return one;
+  const e = new Date(P[P.length - 1].ts); if (e.toDateString() === s0.toDateString()) return one;
+  return `${o.year ? s0.getFullYear() + '년 ' : ''}${s0.getMonth() + 1}월 ${s0.getDate()}일 ~ ${e.getMonth() !== s0.getMonth() ? e.getMonth() + 1 + '월 ' : ''}${e.getDate()}일`;
+}
 function filmKm(m) { return m >= 1000 ? `${(m / 1000).toFixed(2)}km` : `${Math.round(m)}m`; }
 function filmTotal(src, path) { return src.total > 0 ? src.total : path.Dfull; }   // 영상에 쓰는 '총 거리' = 기록 보기와 같은 거리 (GPX는 그 길 전체)
 function filmCardText(c, src, D, P, opt, a) {   // 제목 카드(처음) 글자
@@ -5844,7 +5850,7 @@ function filmCardText(c, src, D, P, opt, a) {   // 제목 카드(처음) 글자
   const F = (w, s) => `${w} ${s}px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif`;
   const CX = FILM_W / 2; let y = Math.round(FILM_H * (FILM_W > FILM_H ? 0.3 : 0.195));
   if (opt.title) { c.font = F(800, 58); const L = filmWrap(c, src.name, FILM_W - 120); L.slice(0, 2).forEach(l => { c.fillText(l, CX, y); y += 70; }); }
-  if (opt.date && P[0].ts) { c.font = F(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), CX, y + 6); y += 50; }
+  if (opt.date && P[0].ts) { c.font = F(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(filmDateTxt(src, P, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), CX, y + 6); y += 50; }
   if (opt.stats) { c.font = F(800, 44); c.fillStyle = FILM_COL[src.mode] || '#FF6B4A'; c.fillText(filmKm(D), CX, y + 20); }
   c.restore();
 }
@@ -6077,7 +6083,7 @@ async function filmMake(S, opt, U) {
         if (LOOK === 'memo') { c.font = FS(400, 28); c.fillStyle = 'rgba(255,240,220,.92)'; c.fillText('그날의 기억', CX, y - 64); c.fillStyle = '#fff'; }
         if (LOOK === 'cine') { c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(CX - 90, y - 70); c.lineTo(CX + 90, y - 70); c.stroke(); }
         if (opt.title) { c.font = LOOK === 'memo' ? FS(700, LAND ? 52 : 56) : LOOK === 'cine' ? FN(300, LAND ? 50 : 54) : FN(800, LAND ? 54 : 58); if (LOOK === 'cine') c.letterSpacing = '8px'; filmWrap(c, src.name, LAND ? W * 0.42 : W - 120).slice(0, 2).forEach(l => { c.fillText(l, CX, y); y += 70; }); c.letterSpacing = '0px'; }
-        if (opt.date && P[0].ts) { c.font = FN(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), CX, y + 6); y += 50; }
+        if (opt.date && P[0].ts) { c.font = FN(600, 30); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(filmDateTxt(src, P, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), CX, y + 6); y += 50; }
         if (info >= 0) { c.font = FN(800, 44); c.fillStyle = col; c.fillText(filmKm(TOT), CX, y + 20); }
         c.restore();
       }
@@ -6088,10 +6094,10 @@ async function filmMake(S, opt, U) {
         if (LOOK === 'cine') {}   // 시네마틱 제목은 위 검은 띠 안에 (띠를 그린 뒤)
         else if (LOOK === 'memo') {   // 추억: 위는 폴라로이드 자리라 제목·날짜는 왼쪽 아래 (숫자 칸이 없어서)
           if (opt.title) { c.font = FS(700, 40); c.fillText(filmFit(c, src.name, W - 80), 40, H - (opt.date ? 112 : 76)); }
-          if (opt.date && P[0].ts) { c.font = FS(400, 26); c.fillStyle = 'rgba(255,240,220,.92)'; c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }), 40, H - 70); }
+          if (opt.date && P[0].ts) { c.font = FS(400, 26); c.fillStyle = 'rgba(255,240,220,.92)'; c.fillText(filmDateTxt(src, P, { year: 'numeric', month: 'long', day: 'numeric' }), 40, H - 70); }
         }
         else if (opt.title) { c.font = FN(800, 34); c.fillText(filmFit(c, src.name, tw), 40, 92); }
-        if (!LOOK && opt.date && P[0].ts) { c.font = FN(600, 24); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(filmFit(c, new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }), tw), 40, 132); }
+        if (!LOOK && opt.date && P[0].ts) { c.font = FN(600, 24); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(filmFit(c, filmDateTxt(src, P, { year: 'numeric', month: 'long', day: 'numeric' }), tw), 40, 132); }
         c.restore();
       }
       // 아래: 거리·지난 시간 (+ 스포츠: 페이스·오른 높이)
@@ -6225,7 +6231,7 @@ async function filmMake(S, opt, U) {
           filmWrap(c, src.name, PW).slice(0, 2).forEach(l => { const ty = Math.round(y + (1 - e) * 26); c.fillStyle = '#fff'; c.fillText(l, TX, ty);
             if (sw > 0 && sw < 1) { const x0 = (LAND ? X0 : PC - tw / 2) - 200 + (tw + 400) * sw, gg = c.createLinearGradient(x0 - 120, 0, x0 + 120, 0); gg.addColorStop(0, 'rgba(255,255,255,0)'); gg.addColorStop(0.5, memo ? 'rgba(255,214,170,.95)' : col); gg.addColorStop(1, 'rgba(255,255,255,0)'); c.save(); c.shadowBlur = 0; c.fillStyle = gg; c.fillText(l, TX, ty); c.restore(); }
             y += LAND ? 56 : 66; }); c.letterSpacing = '0px'; }
-        if (opt.date && P[0].ts) { c.fillStyle = 'rgba(255,255,255,.78)'; c.font = memo ? FS(400, 26) : FN(600, 26); c.fillText(new Date(P[0].ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), TX, y - 10); y += 34; }
+        if (opt.date && P[0].ts) { c.fillStyle = 'rgba(255,255,255,.78)'; c.font = memo ? FS(400, 26) : FN(600, 26); c.fillText(filmDateTxt(src, P, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), TX, y - 10); y += 34; }
         // 색 줄 (왼쪽에서 자라남)
         { const lw = (LAND ? PW * 0.5 : 160) * up, lx = LAND ? X0 : PC - (160 * up) / 2; c.shadowBlur = 0; c.fillStyle = col; c.fillRect(lx, y - 6, lw, 4); y += 40; }
         // 여행: 다녀온 곳
