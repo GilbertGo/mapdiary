@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-73-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-74-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여러 날 여행(예: 제주 2박 3일)도 여행 전체를 이동 영상 하나로 만들어요 · 영상 속 시간은 1일차·2일차로 보여요 · 차로 넘은 고개는 오른 높이에 넣지 않아요 · 여행 기록에는 평균 페이스를 안 보여요 · 여행 영상 날짜는 첫날 ~ 끝날로 보여요';
+const UI_NOTES = '여러 날 여행(예: 제주 2박 3일)도 여행 전체를 이동 영상 하나로 만들어요 · 영상 속 시간은 1일차·2일차로 보여요 · 차로 넘은 고개는 오른 높이에 넣지 않아요 · 여행 기록에는 평균 페이스를 안 보여요 · 여행 영상 날짜는 첫날 ~ 끝날로 보여요 · 영상의 오른 높이도 차로 간 오르막은 빼요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5879,7 +5879,8 @@ async function filmMake(S, opt, U) {
     const pT = P[P.length - 1].ts - P[0].ts, totMs = src.ms > 0 ? src.ms : pT, msAt = ts => pT > 0 && totMs > 0 ? Math.max(0, Math.min(totMs, totMs * (ts - P[0].ts) / pT)) : 0;
     const dayTxt = ts => { let n = 0; for (const s0 of src.days) if (ts >= s0 - 60000) n++; return `${Math.max(1, n)}일차`; }, timeTxt = ts => src.days ? dayTxt(ts) : filmDur(msAt(ts));   // 여러 날 여행은 시간 대신 'n일차'
     // 오른 높이 (5점 평균, 4m 넘게 오를 때만)
-    const gain = new Float64Array(P.length); { let base = null, g = 0; for (let i = 0; i < P.length; i++) { let s = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(P.length - 1, i + 2); j++) if (P[j].alt != null) { s += P[j].alt; n++; } if (n) { const a = s / n; if (base == null) base = a; else if (a > base + 4) { g += a - base; base = a; } else if (a < base) base = a; } gain[i] = g; } }
+    const gain = new Float64Array(P.length); { let base = null, g = 0; for (let i = 0; i < P.length; i++) { let s = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(P.length - 1, i + 2); j++) if (P[j].alt != null) { s += P[j].alt; n++; } if (n) { const a = s / n, pa = P[Math.max(0, i - 1)], pb = P[Math.min(P.length - 1, i + 1)], dts = (pb.ts - pa.ts) / 1000, car = dts > 0 && dist(pa.lat, pa.lng, pb.lat, pb.lng) / dts > 7;   // 차로 오른 곳은 빼요(기록 보기와 같게)
+      if (base == null || car) base = a; else if (a > base + 4) { g += a - base; base = a; } else if (a < base) base = a; } gain[i] = g; } }
     // 높이 그림 (2026-11-13 사용자 '고도도 보여주면 더 좋지, 언덕 올라갈 때 힘들었던 추억도'): 7점 평균 높이로 길 전체 산 모양 + 지금 자리 + 오르막 표시
     const altS = P.map((p, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - 3); j <= Math.min(P.length - 1, i + 3); j++) if (P[j].alt != null) { s += P[j].alt; n++; } return n ? s / n : null; });
     let aLo = Infinity, aHi = -Infinity, aN = 0; for (const a of altS) if (a != null) { aN++; if (a < aLo) aLo = a; if (a > aHi) aHi = a; }
