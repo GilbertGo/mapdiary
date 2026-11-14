@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-96-link';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-97-blogfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
+const UI_NOTES = '📝 블로그 글로 계획 만들 때 지금 몇 번째 단계인지·몇 초 지났는지 보여요 · 정상 찾기는 20초 안에 끝나요 · 👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7278,7 +7278,7 @@ async function planBlogBasic(B, hike, say) {
     if (!c) {   // 지도 카드가 없으면 처음 나온 산 이름으로 대략 자리를 찾아 그 둘레 정상 자료를 봐요
       try { const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(peaksSaid[0].n)}`, {}, 10000)).json(); if (j && j[0]) c = { lat: +j[0].lat, lng: +j[0].lon }; } catch {}
     }
-    if (c) { say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…'); pk = (await peaksAt(c.lat, c.lng)) || []; const more = [[.2, 0], [-.2, 0], [0, .2], [0, -.2]]; for (const [a, b] of more) { if (pk.length > 400) break; pk = pk.concat((await peaksAt(c.lat + a, c.lng + b)) || []); } }
+    if (c) { say && say('⛰ 산 정상 자료(OpenStreetMap)에서 정상 자리 찾기 · 20초 안'); pk = await planPeaksNear(c.lat, c.lng); }
     for (const q of c ? peaksSaid : []) {
       const nm = q.n.replace(/\s/g, ''), hit = pk.filter(p => p[0].replace(/\s/g, '') === nm).sort((a, b) => dist(c.lat, c.lng, a[1], a[2]) - dist(c.lat, c.lng, b[1], b[2]))[0];
       if (!hit || dist(c.lat, c.lng, hit[1], hit[2]) > 20000 || it.some(x => x.k === 'peak' && x.n.replace(/\s/g, '').startsWith(nm))) continue;
@@ -7288,12 +7288,23 @@ async function planBlogBasic(B, hike, say) {
   it.sort((a, b) => a.d - b.d || a.li - b.li); it.forEach(x => delete x.li);
   return { nd: maxD + 1, it };
 }
+// 정상 자료를 한 번에·빨리 (2026-11-15 휴대폰에서 '정상 자리를 찾는 중…'에 오래 멈춰 있어서): 15km 둘레 한 번만 묻고 20초 넘으면 건너뜀
+async function planPeaksNear(lat, lng) {
+  const k = lat.toFixed(2) + ',' + lng.toFixed(2); planPeaksNear.m = planPeaksNear.m || {}; if (planPeaksNear.m[k]) return planPeaksNear.m[k];
+  const own = ((() => { try { const c = ls.get('peakCache', {}); return Object.values(c).flatMap(v => v.p || []).filter(q => dist(lat, lng, q[1], q[2]) < 15000); } catch { return []; } })());
+  if (own.length >= 3) return (planPeaksNear.m[k] = own);   // 이미 받아 둔 칸이면 묻지 않음
+  try {
+    const q = `[out:json][timeout:15];node(around:15000,${lat},${lng})["natural"="peak"]["name"];out body 400;`;
+    const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 20000)).json();
+    return (planPeaksNear.m[k] = (j.elements || []).map(o => [String(o.tags['name:ko'] || o.tags.name).slice(0, 30), +o.lat.toFixed(5), +o.lon.toFixed(5), parseInt(o.tags.ele) || 0]));
+  } catch { return own; }
+}
 // 정상(⛰)은 산 정상 자료(OpenStreetMap)에서 같은 이름을 찾아 정확한 자리·해발로 바꿔요 (AI 좌표는 대략이라서)
 async function planPeakFix(p, say) {
   const P = (p.it || []).filter(x => x.k === 'peak'); if (!P.length) return 0;
   const ref = P.find(x => Number.isFinite(x.lat)) || (p.it || []).find(x => Number.isFinite(x.lat)); if (!ref) return 0;
-  say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…');
-  let pk = []; for (const [a, b] of [[0, 0], [.2, 0], [-.2, 0], [0, .2], [0, -.2]]) pk = pk.concat((await peaksAt(ref.lat + a, ref.lng + b)) || []);
+  say && say('⛰ 산 정상 자료(OpenStreetMap)에서 정상 자리 확인 · 20초 안');
+  const pk = await planPeaksNear(ref.lat, ref.lng);
   let n = 0; const base = s => String(s || '').replace(/\s|정상|\(.*?\)|\d+\s*m/g, '');
   for (const x of P) {
     const nm = base(x.n), c = Number.isFinite(x.lat) ? x : ref;
@@ -7392,8 +7403,8 @@ async function planResearch(p, say) {
     // ⑥ 들머리 둘레 (주차장·버스 정류장·화장실) — 블로그에 없으면 OSM에서
     if (s0) { say && say('🅿 들머리 둘레 주차장·버스 정류장·화장실을 찾는 중…');
       try {
-        const q = `[out:json][timeout:20];(node(around:900,${s0.lat},${s0.lng})["amenity"~"^(parking|toilets)$"];way(around:900,${s0.lat},${s0.lng})["amenity"="parking"];node(around:900,${s0.lat},${s0.lng})["highway"="bus_stop"];);out center 60;`;
-        const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 25000)).json();
+        const q = `[out:json][timeout:12];(node(around:900,${s0.lat},${s0.lng})["amenity"~"^(parking|toilets)$"];way(around:900,${s0.lat},${s0.lng})["amenity"="parking"];node(around:900,${s0.lat},${s0.lng})["highway"="bus_stop"];);out center 60;`;
+        const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 15000)).json();
         const near = t => (j.elements || []).filter(o => (o.tags || {}).amenity === t || (t === 'bus' && (o.tags || {}).highway === 'bus_stop')).map(o => ({ n: (o.tags['name:ko'] || o.tags.name || '').slice(0, 30), lat: o.lat ?? (o.center || {}).lat, lng: o.lon ?? (o.center || {}).lon })).filter(o => Number.isFinite(o.lat)).map(o => Object.assign(o, { m: Math.round(dist(s0.lat, s0.lng, o.lat, o.lng)) })).sort((a, b) => a.m - b.m)[0] || null;
         const N = { park: near('parking'), bus: near('bus'), wc: near('toilets') }; p.hike.near = { at: s0.n, ...N };
         add(N.park || N.bus ? 'ok' : 'info', `들머리 '${s0.n}' 둘레: ${[N.park ? `🅿 주차장${N.park.n ? ' ' + N.park.n : ''} ${fmtDist(N.park.m)}` : '주차장 자료 없음', N.bus ? `🚌 정류장${N.bus.n ? ' ' + N.bus.n : ''} ${fmtDist(N.bus.m)}` : '정류장 자료 없음', N.wc ? `🚻 화장실 ${fmtDist(N.wc.m)}` : ''].filter(Boolean).join(' · ')}`, 'OpenStreetMap');
@@ -7462,7 +7473,15 @@ function planImportSheet() {
   const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
   const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
   const hasKey = !!String(ls.get('claudeKey', '') || '').trim();
-  const say = s => { stat.textContent = s; };
+  // 진행 표시 (2026-11-15 사용자 '뭐하고 있는지 인지 곤란'): 지나온 단계는 ✓, 지금 단계는 ⏳ + 지난 초, 맨 위 전체 시간
+  let steps = [], t0 = 0, tick = 0, busy = false;
+  const paint = () => { if (!t0) return; const sec = Math.round((Date.now() - t0) / 1000);
+    stat.replaceChildren(el('div', { style: 'font-weight:800;margin-bottom:4px', text: `⏳ 만드는 중 · ${sec}초 · 다 되면 저절로 계획 화면으로 넘어가요` }),
+      ...steps.map((x, i) => el('div', { style: `font-weight:${i === steps.length - 1 ? 800 : 500};opacity:${i === steps.length - 1 ? 1 : .7}`, text: (i === steps.length - 1 ? `⏳ ${i + 1}. ${x.t} · ${Math.round((Date.now() - x.at) / 1000)}초` : `✓ ${i + 1}. ${x.t}`) }))); };
+  const say = s => { if (!busy) { stat.textContent = s; return; } const t = String(s).replace(/…$/, ''); const last = steps[steps.length - 1]; if (last && last.t.split(/[·…]/)[0].trim() === t.split(/[·…]/)[0].trim()) last.t = t; else steps.push({ t, at: Date.now() }); paint(); };
+  const begin = () => { busy = true; steps = []; t0 = Date.now(); clearInterval(tick); tick = setInterval(paint, 1000); bg.querySelectorAll('button').forEach(b => b.disabled = true); paint(); setTimeout(() => stat.scrollIntoView({ block: 'end', behavior: 'smooth' }), 50); };
+  const end = () => { busy = false; t0 = 0; clearInterval(tick); bg.querySelectorAll('button').forEach(b => b.disabled = false); };
+  const run0 = async ai => { if (busy) return; begin(); try { await run(ai); } finally { end(); } };
   const run = async ai => {
     const text = ta.value.trim();
     if (!text && !file) return say('일정 글을 붙여 넣거나 캡처 사진·PDF를 넣어 주세요');
@@ -7502,8 +7521,8 @@ function planImportSheet() {
     el('div', { class: 'sub', style: 'font-weight:700', text: '📝 블로그 글 주소(네이버·티스토리 등)도 돼요 · 등산 후기면 들머리 → ⛰ 정상 → 하산 차례로 등산 계획이 돼요' + (IN_NATIVE ? '' : ' (웹은 글 읽어 주는 곳 r.jina.ai를 거쳐요 · 주소만 보내요)') }),
     el('div', { class: 'sub', style: 'font-weight:700', text: IN_NATIVE ? '🔗 하나투어 상품 주소만 붙여 넣어도 돼요 · 아래 아무 단추나 누르세요' : '🔗 하나투어 상품 주소로 바로 만들기는 MPD 앱에서만 돼요(웹은 하나투어가 막아 둠)' }),
     ta, el('button', { class: 'btn line small', text: '📎 캡처 사진 · PDF 넣기', onclick: () => fIn.click() }), fIn, fLab,
-    hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
-    el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run(false) }), stat);
+    hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run0(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
+    el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run0(false) }), stat);
 }
 function planNewSheet() {
   const nm = el('input', { type: 'text', placeholder: '예: 장가계 4박 5일', style: 'width:100%;box-sizing:border-box' });
