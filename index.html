@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-93-fill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-94-plan';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 받은 계획 링크를 다시 열면 비어 있던 장소 위치를 채워요 · 🎬 여행 계획도 영상이 돼요 · 🗓 여행 계획 화면의 ‘🎬 미리 보기 영상’ · 일정대로 날마다 장소를 지나가고(비행기는 멀리서, 장소는 가까이) 장소 사진은 위키미디어 공용에서 찾아 넣어요 · 끝에 ‘이 일정 그대로 받기’ · 여행 영상도 첫 3초 대표 사진·화면 가득 큰 사진·30초 짧은 판';
+const UI_NOTES = '🎬 영상을 못 만들 때 까닭을 알려 줘요 · 계획 영상인데 계획을 못 찾으면, 위치 있는 장소가 모자라면, 고른 기록이 너무 짧으면 그렇게 적어요 · 계획 영상이 다른 기록으로 잘못 넘어가지 않게 고쳤어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5872,7 +5872,9 @@ function viewFilm() {
   if (!FILM_STYLES[opt.style]) opt.style = 'cine';
   filmDims(opt);
   const S = { rec: qs.get('t') || '', gpx: null, file: null, busy: false, stop: false, ph: {}, plan: qs.get('plan') ? planGet(qs.get('plan')) : null };
-  const recs = filmRecs(); if (!S.rec && recs.length && !S.plan) S.rec = recs[0].t;
+  const recs = filmRecs(); if (!S.rec && recs.length && !S.plan && !qs.get('plan')) S.rec = recs[0].t;
+  const planMiss = qs.get('plan') && !S.plan;   // 계획 영상 주소인데 이 휴대폰(이 브라우저)에 그 계획이 없을 때 → 기록으로 넘어가지 않게
+  if (planMiss) S.rec = '';
   if (S.plan) { S.rec = ''; const po = ls.get('filmOptPlan', null); if (po) Object.assign(opt, po); else { opt.style = 'trip'; opt.sec = Math.max(opt.sec, 60); } opt.hide = false; }   // 🗓 계획 영상: 처음엔 여행 스타일·1분
   const KEEP = ['style', 'ratio', 'map', 'sec', 'vol', 'title', 'date', 'stats', 'elev', 'places', 'photos', 'rhythm', 'height', 'phTime', 'info'];
   const save = () => { const o = {}; KEEP.forEach(k => { o[k] = opt[k]; }); o.music = opt.music === 'file' ? 'auto' : opt.music; ls.set(S.plan ? 'filmOptPlan' : 'filmOpt', o); };   // 계획 영상 설정은 따로
@@ -5910,6 +5912,8 @@ function viewFilm() {
   app.replaceChildren(el('div', { class: 'fm' },
     FILM_TEST ? filmTestHead() : el('a', { href: back, style: 'color:#4DA3FF;text-decoration:none;font-weight:700', text: S.plan ? '‹ 여행 계획' : '‹ 내 MPD' }),
     el('h1', { text: S.plan ? '🎬 여행 계획 미리 보기 영상' : '🎬 이동 기록 영상 만들기' }),
+    planMiss ? el('div', { class: 'sub', style: 'color:#FF6B6B', text: '⚠ 이 계획을 이 휴대폰(지금 연 앱·브라우저)에서 찾지 못했어요. 계획을 만든 곳(MPD 앱 또는 크롬)에서 🗓 여행 계획 → 🎬 미리 보기 영상을 눌러 주세요.' }) : null,
+    S.plan && !filmSrc(S) ? el('div', { class: 'sub', style: 'color:#FF6B6B', text: `⚠ '${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요. 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요.` }) : null,
     S.plan ? el('div', { class: 'sub', text: `'${S.plan.name}' 일정대로 장소를 날마다 차례로 지나가는 영상이에요. 장소 사이는 실제 길이 아니라 직선(비행은 곡선)이고, 장소 사진은 위키미디어 공용(누구나 쓸 수 있는 사진)에서 찾아 넣고 찍은 사람을 함께 적어요. 위치가 없는 장소는 빠져요.` }) :
     el('div', { class: 'sub', text: '다닌 길을 지도와 지형 위로 드론처럼 따라가는 영상(MP4)을 만들어요. 실험 중인 기능이에요. 영상은 이 휴대폰에서 만들고, 기록은 바꾸지 않아요. 다 만든 영상은 저절로 어디에도 올라가지 않아요.' }),
     stage,
@@ -5989,7 +5993,7 @@ function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, st
 //   장소 사이가 100km 넘으면 ✈(시속 900km 곡선), 1.5km 넘으면 🚌 차(시속 40km), 그 밖은 걸어서 · 구경하는 곳은 둘레를 천천히 한 바퀴(둘러보기)
 //   실제로 다닐 길(도로)은 몰라서 직선으로 이어요. 시각이 적힌 장소는 그 시각에 닿게
 function planFilmSrc(p) {
-  const all = (p.it || []).map((x, i) => [x, i]).filter(([x]) => Number.isFinite(x.lat) && Number.isFinite(x.lng)).sort((a, b) => a[0].d - b[0].d || a[1] - b[1]).map(a => a[0]);
+  const all = (p.it || []).map((x, i) => [Object.assign({}, x, { lat: +x.lat, lng: +x.lng, d: +x.d || 0 }), i]).filter(([x]) => x.lat != null && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !(x.lat === 0 && x.lng === 0)).sort((a, b) => a[0].d - b[0].d || a[1] - b[1]).map(a => a[0]);
   if (all.length < 2) return null;
   const rows = [], days = [], spots = [], base = planDate(p, 0) ? planDate(p, 0).getTime() : Date.now();
   const tOf = x => { const b = planDate(p, x.d); const m = /^(\d{1,2}):(\d{2})$/.exec(x.t || ''); if (!b || !m) return null; b.setHours(+m[1], +m[2], 0, 0); return b.getTime(); };
@@ -6071,8 +6075,12 @@ function filmWrap(c, s, w) {   // 띄어쓰기에서 먼저 줄을 바꿔요('�
 }
 async function filmMake(S, opt, U) {
   if (S.busy) { S.stop = true; U.go.textContent = '멈추는 중…'; return; }
-  const src = filmSrc(S); if (!src) return toast('기록이나 GPX 파일을 골라 주세요');
-  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode)); if (!path || path.D < 50) return toast('길이 너무 짧아서 영상을 만들 수 없어요');
+  const src = filmSrc(S); if (!src) return toast(S.plan ? `'${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요 · 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요` : qs.get('plan') ? '이 계획을 지금 연 앱·브라우저에서 찾지 못했어요 · 계획을 만든 곳에서 열어 주세요' : '기록이나 GPX 파일을 골라 주세요', false, 7000);
+  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode));
+  if (!path || path.D < 50) {   // 까닭을 그대로 보여 줘요 (2026-11-15 사용자 캡처 '길이 너무 짧아서…'만 떠서 무엇이 문제인지 몰랐음)
+    const m = src.plan ? `'${src.plan.name}'에서 위치가 있는 장소가 ${src.spots ? src.spots.length : 0}곳이라 길을 만들 수 없어요 · 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요`
+      : `고른 기록 '${src.name}'의 길이 ${path ? Math.round(path.D) : 0}m뿐이라 영상을 만들 수 없어요 · 위 '어떤 길로'에서 다른 기록을 골라 주세요`;
+    U.prog.textContent = '⚠ ' + m; return toast(m, false, 7000); }
   if (typeof VideoEncoder === 'undefined') return toast('이 브라우저는 영상 만들기(WebCodecs)를 지원하지 않아요 · 크롬이나 MPD 앱에서 열어 주세요');
   filmDims(opt); const W = FILM_W, H = FILM_H, CX = W / 2, LAND = W > H;
   const st = FILM_STYLES[opt.style] || FILM_STYLES.cine, adv = filmAdv(opt, st);
