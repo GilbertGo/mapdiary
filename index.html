@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-93-fill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-94-blog';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 받은 계획 링크를 다시 열면 비어 있던 장소 위치를 채워요 · 🎬 여행 계획도 영상이 돼요 · 🗓 여행 계획 화면의 ‘🎬 미리 보기 영상’ · 일정대로 날마다 장소를 지나가고(비행기는 멀리서, 장소는 가까이) 장소 사진은 위키미디어 공용에서 찾아 넣어요 · 끝에 ‘이 일정 그대로 받기’ · 여행 영상도 첫 3초 대표 사진·화면 가득 큰 사진·30초 짧은 판';
+const UI_NOTES = '📝 블로그 글 주소로 여행·등산 계획 만들기 · 🗓 여행 계획 → 📋 일정·블로그 글로 만들기에 주소를 붙여 넣으면 돼요 · 등산 후기면 들머리 → ⛰ 정상 → 하산 차례로, ▶ 이 코스로 등산 시작 · 🔎 글에 없는 것은 앱이 찾아 채우고(정상 해발·높이·주차장·정류장·화장실·걸리는 시간·해 지는 시각) 글과 어긋나면 ⚠로 알려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6844,7 +6844,7 @@ function filmMapLook(style, dark) {
 
 // ================= 🗓 여행 계획 (2026-11-14, 사용자 '이 앱을 여행 전 일정 계획으로도' + '여행사에서 준 정보를 가지고 만드는 방법도') =================
 // 계획은 이 휴대폰에만(ls tripPlans), 보내기는 링크 안에 넣어서(#pl=, 서버 없이). 함수만 써요(라우팅이 스크립트 중간에 돌아서).
-var PLAN_KINDS = { spot: ['📍', '구경'], food: ['🍽', '식사'], stay: ['🏨', '숙소'], fly: ['✈', '비행'], show: ['🎭', '공연·체험'], move: ['🚌', '이동'] };
+var PLAN_KINDS = { spot: ['📍', '구경'], peak: ['⛰', '정상'], food: ['🍽', '식사'], stay: ['🏨', '숙소'], fly: ['✈', '비행'], show: ['🎭', '공연·체험'], move: ['🚌', '이동'] };
 var PLAN_COLS = ['#0277BD', '#FF6B4A', '#7B61FF', '#E8457A', '#1D9EC0', '#5B6B7F', '#C2412D', '#3D5AFE'];
 function planAll() { const a = ls.get('tripPlans', []); return Array.isArray(a) ? a : []; }
 function planGet(id) { return planAll().find(p => p.id === id) || null; }
@@ -6879,9 +6879,11 @@ function planGo(x) {   // 길찾기: 중국은 네이버지도가 안 돼서 가
   if (planInChina(x.lat, x.lng)) { window.open(`https://uri.amap.com/marker?position=${x.lng},${x.lat}&name=${encodeURIComponent(x.n)}&coordinate=wgs84&callnative=1`, '_blank', 'noopener'); return; }
   naverOpen({ lat: x.lat, lng: x.lng, n: x.n });
 }
-function planGap(a, b) {   // 두 곳 사이: 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
+function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
   const m = dist(a.lat, a.lng, b.lat, b.lng); if (m < 80) return '';
+  if (p && p.hike && p.hike.on && a.k !== 'move' && b.k !== 'move' && m < 15000) { const e = planHikeEst(a, b), h = Math.floor(e.min / 60);
+    return `↓ 등산로 약 ${fmtDist(e.m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : e.dn > 20 ? ` · ↓${Math.round(e.dn)}m` : ''} · 걸어서 약 ${h ? h + '시간 ' : ''}${e.min % 60 || !h ? (e.min % 60) + '분' : ''} (짐작)`; }
   const car = m > 1500, min = Math.max(1, Math.round(m / (car ? 35000 : 4000) * 60));
   return `↓ 직선 ${fmtDist(m)} · ${car ? '차로' : '걸어서'} 약 ${min >= 60 ? Math.floor(min / 60) + '시간 ' + (min % 60 ? (min % 60) + '분' : '') : min + '분'}`;
 }
@@ -6951,7 +6953,7 @@ function planBasicParse(text) {   // AI 없이: 'n일차'·'DAY n'로 날을 나
   }
   return { nd: maxD + 1, it: items };
 }
-async function planAiRead(text, file, say) {   // 넣어 둔 Claude 열쇠로: 글·사진·PDF에서 날마다 갈 곳을 뽑아요
+async function planAiRead(text, file, say, o) {   // o.blog면 블로그 여행·등산 후기로 읽어요   // 넣어 둔 Claude 열쇠로: 글·사진·PDF에서 날마다 갈 곳을 뽑아요
   const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
   say('✨ AI(Claude)에게 일정을 보내 읽는 중…');
   const content = [];
@@ -6961,12 +6963,21 @@ async function planAiRead(text, file, say) {   // 넣어 둔 Claude 열쇠로: �
     else if (/^image\//.test(file.type)) content.push({ type: 'image', source: { type: 'base64', media_type: /png|webp|gif/.test(file.type) ? file.type : 'image/jpeg', data: b } });
     else text = (text ? text + '\n' : '') + await file.text();
   }
-  content.push({ type: 'text', text: `아래는 여행사 여행 일정표예요. 날마다 가는 곳을 차례대로 뽑아 JSON 하나로만 답하세요.
+  if (o && o.blog) content.push({ type: 'text', text: `아래는 블로그${o.hike ? ' 등산 후기' : ' 여행 후기'} 글이에요(제목: ${o.title || ''}). 글쓴이가 다닌 곳을 날마다 다닌 차례대로 뽑아, 이 글을 따라 그대로 ${o.hike ? '등산' : '여행'}할 수 있는 계획 JSON 하나로만 답하세요.
+규칙: 글에 나온 곳만. 지어내지 말 것. n(이름)은 글에 적힌 글자 그대로. 같은 곳을 두 번 쓰지 말 것. 날이 나뉘어 있지 않으면 한 날. 글에 시각이 있으면 HH:MM.
+글 속 [지도 장소 P번호: 이름 · 주소]는 정확한 위치가 있는 곳이에요. 그 곳이면 p에 "P번호"를 쓰세요.
+${o.hike ? 'k: 들머리(출발점·주차장·탐방지원센터)·갈림길·쉼터·약수터·절은 spot, 산 정상·봉우리는 peak(이름은 \'OO산 정상\'·\'OO봉\'처럼), 하산 뒤 식당은 food. 오른 차례 그대로(들머리 → … → 정상 → … → 하산 지점). m에는 글쓴이가 적은 걸린 시간·갈림길 방향·주의할 곳 한 줄.\nhike에는 글쓴이가 적은 전체 코스 거리(km)·걸린 시간(시간)·난이도(쉬움·보통·힘듦 같은 글쓴이 말 그대로)를, 글에 없으면 null.' : 'k: spot|food|stay|fly|show|move. m에는 글쓴이 팁 한 줄(메뉴·가격·시간·주의).'}
+q는 지도에서 찾을 검색어(그 나라 글자 이름이나 영어, 지역 이름 포함), lat/lng는 대략 좌표(모르면 null). name은 짧은 계획 이름(예 '북한산 백운대 코스', '제주 2박 3일').
+형식: {"name":"","days":[{"items":[{"t":"","n":"","k":"","m":"","p":"","q":"","lat":null,"lng":null}]}]${o.hike ? ',"hike":{"km":null,"h":null,"lv":null}' : ''}}
+
+블로그 글:
+${String(text || '').slice(0, 60000)}` });
+  else content.push({ type: 'text', text: `아래는 여행사 여행 일정표예요. 날마다 가는 곳을 차례대로 뽑아 JSON 하나로만 답하세요.
 규칙: 일정표에 적힌 것만. 지어내지 말 것. n(이름)은 일정표에 적힌 글자 그대로(지명 표기·띄어쓰기·용어를 바꾸거나 번역하지 말 것, 예 '장가계'를 '장자제'로 바꾸지 말 것). 관광지·식사(무엇을 먹는지)·숙소·비행·공연/체험·긴 이동을 각각 한 줄로. 같은 곳을 두 번 쓰지 말 것. 시각이 적혀 있으면 HH:MM.
 q는 지도에서 찾을 검색어(영어, 도시 이름 포함, 예 "Tianmen Mountain, Zhangjiajie"), lat/lng는 그 장소의 대략 좌표(모르면 null).
 형식: {"name":"여행 이름","start":"YYYY-MM-DD 또는 빈칸","days":[{"items":[{"t":"","n":"한국어 이름","k":"spot|food|stay|fly|show|move","m":"한 줄 메모(메뉴·특징)","q":"","lat":null,"lng":null}]}]}
 ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
-  toast('✨ AI를 써요 · 여행 일정 읽기 · 넣은 글·사진만 보내요', true);
+  toast(o && o.blog ? '✨ AI를 써요 · 블로그 글 읽기 · 블로그 글만 보내요' : '✨ AI를 써요 · 여행 일정 읽기 · 넣은 글·사진만 보내요', true);
   const { default: Anthropic } = await import(TALK_SDK);
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
   const res = await client.messages.create({ model: FA_MODEL, max_tokens: 8000, messages: [{ role: 'user', content }] });
@@ -6977,9 +6988,11 @@ ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
   const days = Array.isArray(j.days) ? j.days.slice(0, 30) : [], it = [];
   days.forEach((dd, d) => (Array.isArray(dd.items) ? dd.items : []).slice(0, 40).forEach(x => {
     const lat = Number.isFinite(+x.lat) && x.lat !== null ? +x.lat : null, lng = Number.isFinite(+x.lng) && x.lng !== null ? +x.lng : null;
-    it.push({ id: planNewId(), d, t: /^\d{1,2}:\d{2}$/.test(x.t || '') ? x.t : '', n: String(x.n || '').slice(0, 60) || '장소', k: PLAN_KINDS[x.k] ? x.k : 'spot', m: String(x.m || '').slice(0, 300), q: String(x.q || '').slice(0, 100), lat, lng, ap: lat != null ? 1 : 0 });
+    const P = o && o.places && /^P\d+$/.test(x.p || '') ? o.places[+String(x.p).slice(1)] : null;   // 블로그 지도 카드 = 정확한 위치
+    it.push({ id: planNewId(), d, t: /^\d{1,2}:\d{2}$/.test(x.t || '') ? x.t : '', n: String(x.n || '').slice(0, 60) || '장소', k: PLAN_KINDS[x.k] ? x.k : 'spot', m: String(x.m || '').slice(0, 300), q: P ? '' : String(x.q || '').slice(0, 100), lat: P ? P.lat : lat, lng: P ? P.lng : lng, ap: P ? 0 : lat != null ? 1 : 0, ...(P ? { srcL: 'card' } : {}), ...(o && o.blog ? { src: 'ai' } : {}) });
   }));
-  return { name: String(j.name || '').slice(0, 60), start: /^\d{4}-\d{2}-\d{2}$/.test(j.start || '') ? j.start : '', nd: Math.max(1, days.length), it };
+  const hk = j.hike && typeof j.hike === 'object' ? { km: +j.hike.km > 0 ? +(+j.hike.km).toFixed(1) : null, h: +j.hike.h > 0 ? +(+j.hike.h).toFixed(1) : null, lv: j.hike.lv ? String(j.hike.lv).slice(0, 20) : null } : null;
+  return { name: String(j.name || '').slice(0, 60), start: /^\d{4}-\d{2}-\d{2}$/.test(j.start || '') ? j.start : '', nd: Math.max(1, days.length), it, hike: hk };
 }
 async function planGeocode(p, say) {   // 위치를 지도 자료(OSM Nominatim)에서 찾아요 · 1초에 한 번(지도 자료 규칙)
   const todo = (p.it || []).filter(x => x.q && x.k !== 'fly' && (x.lat == null || x.ap));
@@ -7135,8 +7148,273 @@ async function planHanaRun(code, say) {
   toastLater(`🔗 하나투어 일정으로 만들었어요 · ${p.it.length}곳${miss ? ` · 위치 없는 ${miss}곳은 눌러서 📍 정해 주세요` : ''}${ai ? '' : ' · Claude 열쇠가 있으면 위치를 더 찾아요'}`);
   return p;
 }
+// ---------- 📝 블로그 글 주소로 여행·등산 계획 (2026-11-15 사용자 '블로그 글 주소 두면 여행계획 만드는 기능' → '이번엔 등산이야') ----------
+//   글 받기: 앱은 휴대폰 쪽 인터넷(CapacitorHttp)으로 바로 · 웹은 블로그가 막아 둬서(CORS) 글 읽어 주는 곳(r.jina.ai, 주소만 보냄)을 거쳐요
+//   네이버 블로그 지도 카드(data-linkdata)에는 이름·주소·좌표가 들어 있어 그대로 정확한 위치로 씀
+//   등산 글이면(정상·하산·들머리…) 들머리 → 정상(⛰, 산 정상 자료로 정확한 자리·해발) → 하산 차례로, 계획 화면에서 '🥾 이 코스로 등산 시작'
+function planBlogUrl(s) {
+  s = String(s || '').trim(); if (!/^https?:\/\/\S+$/i.test(s) || planHanaCode(s)) return null;
+  try {
+    const u = new URL(s), h = u.hostname.replace(/^www\./, '');
+    if (/(^|\.)blog\.naver\.com$/.test(h)) {   // 네이버: PC 주소는 안쪽 틀(iframe)이라 모바일 글 주소로 바꿔요
+      let id = u.searchParams.get('blogId'), no = u.searchParams.get('logNo');
+      const seg = u.pathname.split('/').filter(Boolean); if (!id && seg.length >= 2 && /^\d{6,}$/.test(seg[1])) { id = seg[0]; no = seg[1]; }
+      if (id && no) return `https://m.blog.naver.com/PostView.naver?blogId=${encodeURIComponent(id)}&logNo=${no}`;
+    }
+    return u.href;
+  } catch { return null; }
+}
+function planXLab(p) { return p && p.src === 'blog' ? '📝 블로그 글' : '📖 여행사 안내'; }
+function planHttp() { const C = window.Capacitor; return IN_NATIVE && C && (C.Plugins && C.Plugins.CapacitorHttp || (C.registerPlugin && C.registerPlugin('CapacitorHttp'))); }
+async function planGetHtml(url, say) {
+  const H = planHttp();
+  if (H) {
+    const r = await H.request({ url, method: 'GET', headers: { 'Accept-Language': 'ko-KR,ko', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36' }, responseType: 'text', connectTimeout: 20000, readTimeout: 40000 });
+    if (r.status >= 400) throw new Error('블로그가 HTTP ' + r.status + '로 답했어요');
+    return { html: typeof r.data === 'string' ? r.data : JSON.stringify(r.data), via: 'app' };
+  }
+  try { const r = await fetchT(url, {}, 12000); if (r.ok) { const t = await r.text(); if (t.length > 500) return { html: t, via: 'web' }; } } catch {}
+  say && say('🔗 웹에선 블로그가 막아 둬서, 글 읽어 주는 곳(r.jina.ai)을 거쳐 받는 중…');
+  try { const r = await fetchT('https://r.jina.ai/' + url, { headers: { 'X-Return-Format': 'html' } }, 50000); if (r.ok) { const t = await r.text(); if (t.length > 300) return { html: t, via: 'jina' }; } } catch {}
+  const r = await fetchT('https://r.jina.ai/' + url, {}, 50000); if (!r.ok) throw new Error('web');   // 글만(지도 카드 좌표 없이)
+  const t = await r.text(); return { html: '<pre>' + t.replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;') + '</pre>', via: 'jina-text' };
+}
+var PLAN_DAYW = { 첫: 1, 둘: 2, 셋: 3, 넷: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9, 열: 10 };
+function planDayOf(line) {   // '2일차'·'DAY 2'·'둘째 날'·'첫날' → 날 번호(0부터), 아니면 -1
+  const m = /^(?:\[|\(|#|■|▶|<|\*)*\s*(?:제\s*)?(\d{1,2})\s*일\s*(?:차|째)|^(?:\[|\(|#|■|▶)*\s*day\s*\.?\s*(\d{1,2})\b/i.exec(line);
+  if (m) return +(m[1] || m[2]) - 1;
+  const w = /^(?:\[|\(|#|■|▶)*\s*(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)\s*(?:째)?\s*날/.exec(line); return w && line.length < 40 ? PLAN_DAYW[w[1]] - 1 : -1;
+}
+function planKindOf(n, c) {
+  const s = n + ' ' + (c || '');
+  return /정상|봉$|봉\s|봉우리/.test(n) && !/식당|카페/.test(s) ? 'peak' : /식당|카페|커피|맛집|국수|국밥|횟집|회센터|베이커리|빵|분식|고기|갈비|치킨|음식|한식|중식|일식|양식|술집|주점|막걸리|다방|칼국수|냉면|해장|순대|두부|밥집|레스토랑|restaurant|cafe/i.test(s) ? 'food'
+    : /호텔|리조트|펜션|게스트하우스|스테이|민박|모텔|숙박|대피소|산장|hotel/i.test(s) ? 'stay' : /공항/.test(s) ? 'fly' : /터미널|역$|정류장|버스|기차/.test(s) ? 'move' : 'spot';
+}
+function planBlogParse(html, url) {   // 글 → {title, text(AI용), places(지도 카드), lines, next(안쪽 글 주소)}
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const fr = doc.querySelector('iframe#mainFrame[src], iframe[src*="PostView"]');
+  if (fr) { try { const nx = new URL(fr.getAttribute('src'), url).href; return { next: planBlogUrl(nx) || nx }; } catch {} }
+  const meta = n => ((doc.querySelector(`meta[property="${n}"]`) || doc.querySelector(`meta[name="${n}"]`) || {}).content || '').trim();
+  const title = (meta('og:title') || (doc.querySelector('.se-title-text, .pcol1, h1, title') || {}).textContent || '').replace(/\s*[:|-]\s*네이버\s*블로그.*$/, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const root = doc.querySelector('.se-main-container') || doc.querySelector('#postViewArea, #viewTypeSelector, .post_ct, .tt_article_useless_p_margin, .entry-content, .article_view, .contents_style, .post-content, article, main, pre') || doc.body;
+  if (!root) return { title, text: '', places: [], lines: [], date: '' };
+  root.querySelectorAll('script, style, noscript, nav, header, footer, aside, form, button, iframe, svg, .se-oglink, .comment, #comment').forEach(x => x.remove());
+  const places = [], seen = new Set();
+  const num = v => { const f = parseFloat(v); return Number.isFinite(f) ? f : null; };
+  root.querySelectorAll('*').forEach(e => {   // 지도 카드: data-…에 이름·좌표가 든 JSON
+    if (!e.isConnected) return;
+    for (const a of Array.from(e.attributes || [])) {
+      if (!/^data-/.test(a.name) || !/lat|longitude|mapx/i.test(a.value) || a.value.length > 20000) continue;
+      let j; try { j = JSON.parse(a.value); } catch { continue; }
+      const L = Array.isArray(j) ? j : [j];
+      const got = [];
+      for (const o of L) {
+        if (!o || typeof o !== 'object') continue;
+        let lat = num(o.latitude ?? o.lat ?? o.y), lng = num(o.longitude ?? o.lng ?? o.lon ?? o.x);
+        if (lat != null && lng != null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
+        const n = String(o.name || o.placeName || o.title || o.placeTitle || '').replace(/<[^>]+>/g, '').trim();
+        if (!n || lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180 || (!lat && !lng)) continue;
+        const key = n + '|' + lat.toFixed(4); if (seen.has(key)) continue; seen.add(key);
+        got.push(places.push({ n: n.slice(0, 60), lat: +lat.toFixed(6), lng: +lng.toFixed(6), a: String(o.address || o.roadAddress || o.addr || '').slice(0, 80), c: String(o.category || o.categoryName || o.type || '').slice(0, 40) }) - 1);
+      }
+      if (got.length) { const box = e.closest('.se-component, .se-module, figure') || e; box.replaceWith(doc.createTextNode('\n' + got.map(i => `⟦P${i}⟧`).join('\n') + '\n')); return; }
+    }
+  });
+  root.querySelectorAll('br').forEach(b => b.replaceWith(doc.createTextNode('\n')));
+  root.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, tr, blockquote, section, .se-text-paragraph').forEach(b => b.append(doc.createTextNode('\n')));
+  const lines = String(root.textContent || '').split('\n').map(s => s.replace(/[​ \s]+/g, ' ').trim()).filter(Boolean)
+    .filter((s, i, a) => !(i && a[i - 1] === s));
+  const text = lines.map(s => s.replace(/⟦P(\d+)⟧/g, (_, i) => { const P = places[+i]; return `[지도 장소 P${i}: ${P.n}${P.a ? ' · ' + P.a : ''}]`; })).join('\n');
+  return { title, text, places, lines, date: planBlogDate(html) };
+}
+function planBlogHikeNums(t) {   // 글에 적힌 코스 거리·걸린 시간·난이도 (AI 없이)
+  t = String(t || ''); const o = {};
+  const k = /(?:총|전체|코스|왕복|거리|산행)[^\n\d]{0,12}?(\d{1,2}(?:\.\d{1,2})?)\s*(?:km|㎞|킬로)/i.exec(t) || /(\d{1,2}(?:\.\d{1,2})?)\s*(?:km|㎞)/i.exec(t); if (k && +k[1] > .3 && +k[1] < 60) o.km = +(+k[1]).toFixed(1);
+  const h = /(\d{1,2})\s*시간\s*(?:(\d{1,2})\s*분)?\s*(?:정도|가량|쯤|남짓)?\s*(?:이\s*)?(?:걸|소요)/.exec(t) || /(?:총|소요|산행)\s*시간[^\n\d]{0,6}(\d{1,2})\s*시간\s*(?:(\d{1,2})\s*분)?/.exec(t); if (h && +h[1] < 24) o.h = +(+h[1] + (+h[2] || 0) / 60).toFixed(1);
+  const l = /난이도\s*(?:는|:|은)?\s*(아주 쉬움|쉬움|쉬운|보통|중간|어려움|어려운|힘듦|힘든|상|중|하|초급|중급|상급)/.exec(t); if (l) o.lv = l[1];
+  return o;
+}
+function planIsHike(t) { return ((String(t).match(/등산|산행|정상|하산|들머리|날머리|등산로|능선|탐방로|봉우리|해발/g) || []).length) >= 3; }
+// AI 없이: 지도 카드를 글 차례대로, 'n일차'로 날을 나누고, 등산 글이면 글에 나온 'OO산 정상·OO봉'을 산 정상 자료에서 찾아 그 자리에 넣어요
+async function planBlogBasic(B, hike, say) {
+  const it = []; let d = 0, maxD = 0, buf = [];
+  const peaksSaid = [];
+  B.lines.forEach((s, li) => {
+    const k = planDayOf(s); if (k >= 0 && k < 30) { d = k; maxD = Math.max(maxD, d); buf = []; return; }
+    const pm = /⟦P(\d+)⟧/.exec(s);
+    if (pm) { const P = B.places[+pm[1]]; it.push({ id: planNewId(), d, t: '', n: P.n, k: planKindOf(P.n, P.c), m: P.a || '', x: buf.join('\n').slice(-700), lat: P.lat, lng: P.lng, ap: 0, li, srcL: 'card' }); buf = []; return; }
+    buf.push(s); if (buf.length > 12) buf.shift();
+    if (hike) for (const m of s.matchAll(/([가-힣]{1,8}(?:산|봉|대|덕|령))\s*(?:정상|\(\s*\d{2,4}\s*m\s*\))|([가-힣]{1,8}봉)(?=[\s,.(]|$)/g)) { const nm = m[1] || m[2]; if (nm && !peaksSaid.some(q => q.n === nm)) peaksSaid.push({ n: nm, d, li }); }
+  });
+  if (hike && peaksSaid.length) {
+    let c = it.find(x => Number.isFinite(x.lat)), pk = [];
+    if (!c) {   // 지도 카드가 없으면 처음 나온 산 이름으로 대략 자리를 찾아 그 둘레 정상 자료를 봐요
+      try { const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(peaksSaid[0].n)}`, {}, 10000)).json(); if (j && j[0]) c = { lat: +j[0].lat, lng: +j[0].lon }; } catch {}
+    }
+    if (c) { say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…'); pk = (await peaksAt(c.lat, c.lng)) || []; const more = [[.2, 0], [-.2, 0], [0, .2], [0, -.2]]; for (const [a, b] of more) { if (pk.length > 400) break; pk = pk.concat((await peaksAt(c.lat + a, c.lng + b)) || []); } }
+    for (const q of c ? peaksSaid : []) {
+      const nm = q.n.replace(/\s/g, ''), hit = pk.filter(p => p[0].replace(/\s/g, '') === nm).sort((a, b) => dist(c.lat, c.lng, a[1], a[2]) - dist(c.lat, c.lng, b[1], b[2]))[0];
+      if (!hit || dist(c.lat, c.lng, hit[1], hit[2]) > 20000 || it.some(x => x.k === 'peak' && x.n.replace(/\s/g, '').startsWith(nm))) continue;
+      it.push({ id: planNewId(), d: q.d, t: '', n: `${hit[0]} 정상`, k: 'peak', m: hit[3] ? `해발 ${hit[3]}m` : '', lat: hit[1], lng: hit[2], ap: 0, li: q.li, ele: hit[3] || null });
+    }
+  }
+  it.sort((a, b) => a.d - b.d || a.li - b.li); it.forEach(x => delete x.li);
+  return { nd: maxD + 1, it };
+}
+// 정상(⛰)은 산 정상 자료(OpenStreetMap)에서 같은 이름을 찾아 정확한 자리·해발로 바꿔요 (AI 좌표는 대략이라서)
+async function planPeakFix(p, say) {
+  const P = (p.it || []).filter(x => x.k === 'peak'); if (!P.length) return 0;
+  const ref = P.find(x => Number.isFinite(x.lat)) || (p.it || []).find(x => Number.isFinite(x.lat)); if (!ref) return 0;
+  say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…');
+  let pk = []; for (const [a, b] of [[0, 0], [.2, 0], [-.2, 0], [0, .2], [0, -.2]]) pk = pk.concat((await peaksAt(ref.lat + a, ref.lng + b)) || []);
+  let n = 0; const base = s => String(s || '').replace(/\s|정상|\(.*?\)|\d+\s*m/g, '');
+  for (const x of P) {
+    const nm = base(x.n), c = Number.isFinite(x.lat) ? x : ref;
+    const hit = pk.filter(q => base(q[0]) === nm || (nm.length >= 2 && base(q[0]).startsWith(nm)) || (base(q[0]).length >= 2 && nm.startsWith(base(q[0])))).sort((a, b) => dist(c.lat, c.lng, a[1], a[2]) - dist(c.lat, c.lng, b[1], b[2]))[0];
+    if (!hit || dist(c.lat, c.lng, hit[1], hit[2]) > 15000) continue;
+    x.lat = hit[1]; x.lng = hit[2]; x.ap = 0; delete x.near; if (hit[3]) { x.ele = hit[3]; if (!/해발/.test(x.m || '')) x.m = [`해발 ${hit[3]}m`, x.m].filter(Boolean).join(' · ').slice(0, 300); } n++;
+  }
+  return n;
+}
+async function planBlogRun(url, ai, say) {
+  say('🔗 블로그 글 받는 중…');
+  let g; try { g = await planGetHtml(url, say); } catch (e) { throw new Error(!IN_NATIVE && String(e && e.message) === 'web' ? 'web' : '블로그 글을 받지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); }
+  let B = planBlogParse(g.html, url);
+  if (B.next) { say('🔗 블로그 글 안쪽을 받는 중…'); g = await planGetHtml(B.next, say); B = planBlogParse(g.html, B.next); }
+  if (!B.text || B.text.length < 40) throw new Error('글을 읽지 못했어요 · 비공개 글이거나 글이 비어 있어요');
+  const hike = planIsHike(B.title + '\n' + B.text);
+  let r;
+  if (ai) r = await planAiRead(B.text, null, say, { blog: 1, hike, title: B.title, places: B.places });
+  else { r = await planBlogBasic(B, hike, say); if (!r.it.length) throw new Error(B.places.length ? '장소를 찾지 못했어요' : 'nomap'); }
+  const p = { id: planNewId(), name: (r.name || B.title || (hike ? '등산 계획' : '블로그 여행 계획')).slice(0, 80), start: '', nd: r.nd, it: r.it, at: Date.now(), src: 'blog', blog: { url, t: B.title.slice(0, 80), date: B.date || '' } };
+  if (hike) { const n = planBlogHikeNums(B.text), a = r.hike || {}; p.hike = { on: 1, km: a.km || n.km || null, h: a.h || n.h || null, lv: a.lv || n.lv || null }; }
+  if (ai) { await planGeocode(p, say); }
+  if (hike) await planPeakFix(p, say);
+  planNeighborFill(p); planTermFix(p); planBlogEles(p, B.text);
+  try { await planResearch(p, say); } catch {}
+  planSave(p);
+  const miss = p.it.filter(x => x.lat == null && x.k !== 'move').length, peaks = p.it.filter(x => x.k === 'peak').length;
+  toastLater(`📝 블로그 글로 ${hike ? '등산' : '여행'} 계획을 만들고 정보를 확인했어요${p.chk && p.chk.L.some(z => z.lv === 'warn') ? ' (⚠ 살펴볼 것은 🔎 칸에)' : ''} · ${p.it.length}곳${B.places.length ? ` (지도 카드 ${B.places.length}곳은 정확한 위치)` : ''}${hike && peaks ? ` · ⛰ 정상 ${peaks}곳` : ''}${miss ? ` · 위치 없는 ${miss}곳은 눌러서 📍` : ''}${!p.start ? ' · ✎ 이름·날짜에서 갈 날을 정해 주세요' : ''}`);
+  return p;
+}
+// ---------- 🔎 블로그 기준 + 앱이 조사해서 채우고 확인 (2026-11-15 사용자 '블로그 글을 기준으로, 부족한 정보는 앱이 조사해서 채우고, 정보 검증도') ----------
+//   블로그에 적힌 것이 먼저 · 없는 것만 공개 자료로 채우고(출처를 적음) · 서로 어긋나면 ⚠로 알려요 · AI 짐작은 '확인 필요'
+//   자료: 높이 Open-Meteo elevation · 정상 이름·해발 / 주차장·버스 정류장·화장실 OpenStreetMap(Overpass) · 해 지는 시각 계산
+//   p.chk = { at, L: [{ lv: 'ok'|'warn'|'info', t, src }] } · 장소마다 x.ele2(지형 높이) · x.bEle(글에 적힌 해발) · x.vf(확인 글)
+function planBlogDate(html) {
+  const m = /article:published_time"\s+content="(\d{4})-(\d{2})-(\d{2})/.exec(html) || /(?:publishDate|se_date|blog_date|date)[^>]*>\s*(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./.exec(html) || /"(?:addDate|datePublished)"\s*:\s*"?(\d{4})[-.](\d{1,2})[-.](\d{1,2})/.exec(html);
+  if (!m) return ''; const y = +m[1], mo = +m[2], d = +m[3]; if (y < 2000 || y > 2100 || mo > 12 || d > 31) return '';
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function planBlogEles(p, text) {   // 글에 적힌 정상 해발 '백운대(836m)', '해발 836m' → x.bEle
+  for (const x of (p.it || []).filter(x => x.k === 'peak')) {
+    const nm = x.n.replace(/\s*정상$/, '').replace(/[.*+?^${}()|[\]\\]/g, ''); if (!nm) continue;
+    const m = new RegExp(nm + '[^\\n\\d]{0,14}?(\\d{3,4}(?:\\.\\d)?)\\s*(?:m|미터|M)\\b').exec(text) || new RegExp(nm + '[^\\n]{0,20}?해발\\s*(\\d{3,4})').exec(text);
+    if (m && +m[1] > 50 && +m[1] < 9000) x.bEle = Math.round(+m[1]);
+  }
+}
+function planHikeEst(a, b) {   // 두 곳 사이 등산 짐작: 등산로는 직선의 1.35배쯤 · 시속 3.5km + 오르막 600m에 1시간 + 내리막 1,200m에 1시간
+  const m = dist(a.lat, a.lng, b.lat, b.lng) * 1.35, up = a.ele2 != null && b.ele2 != null ? Math.max(0, b.ele2 - a.ele2) : 0, dn = a.ele2 != null && b.ele2 != null ? Math.max(0, a.ele2 - b.ele2) : 0;
+  return { m, up, dn, min: Math.round((m / 3500 + up / 600 + dn / 1200) * 60) };
+}
+async function planResearch(p, say) {
+  const L = [], add = (lv, t, src) => L.push({ lv, t, src: src || '' }), its = p.it || [], hike = !!(p.hike && p.hike.on);
+  const loc = its.filter(x => Number.isFinite(x.lat) && x.k !== 'fly');
+  its.forEach(x => delete x.vf);
+  // ① 글 날짜
+  if (p.blog && p.blog.date) { const yr = (Date.now() - new Date(p.blog.date)) / (365.25 * 864e5);
+    add(yr > 2 ? 'warn' : 'ok', `글 쓴 날 ${p.blog.date}${yr > 2 ? ` · ${Math.floor(yr)}년 넘게 지난 글이라 등산로 통제·식당 영업·가격이 바뀌었을 수 있어요` : yr > 1 ? ' · 1년 넘은 글이에요' : ' · 최근 글이에요'}`, '블로그'); }
+  else if (p.blog) add('info', '글 쓴 날을 찾지 못했어요 · 오래된 글일 수 있어요', '블로그');
+  // ② 위치 출처
+  const card = loc.filter(x => !x.ap && x.srcL === 'card').length, osm = loc.filter(x => !x.ap && x.srcL !== 'card').length, ap = its.filter(x => x.ap && x.k !== 'move').length, none = its.filter(x => x.lat == null && x.k !== 'move' && x.k !== 'fly').length;
+  add(none || ap ? 'warn' : 'ok', [card ? `블로그 지도 카드 ${card}곳` : '', osm ? `지도·정상 자료(OpenStreetMap)로 찾은 곳 ${osm}곳` : '', ap ? `대략 위치 ${ap}곳(AI 짐작·앞뒤 사이, 확인 필요)` : '', none ? `위치 없음 ${none}곳` : ''].filter(Boolean).join(' · ') || '위치 있는 곳이 없어요', '위치');
+  // ③ 혼자 멀리 떨어진 곳(같은 이름 다른 곳일 수 있음)
+  for (let d = 0; d < (p.nd || 1); d++) {
+    const day = loc.filter(x => x.d === d); if (day.length < 3) continue;
+    const md = a => a.slice().sort((u, v) => u - v)[a.length >> 1], c = [md(day.map(x => x.lat)), md(day.map(x => x.lng))], lim = hike ? 20000 : 150000;
+    for (const x of day) if (dist(c[0], c[1], x.lat, x.lng) > lim) { x.vf = `⚠ 같은 날 다른 곳과 ${fmtDist(dist(c[0], c[1], x.lat, x.lng))} 떨어져 있어요 · 같은 이름의 다른 곳일 수 있어요`; add('warn', `${x.n}: 다른 곳과 너무 멀어요 · 위치를 확인해 주세요`, '확인'); }
+  }
+  // ④ 높이(지형 자료) → 정상 해발 맞춰 보기
+  if (loc.length) { say && say('⛰ 장소 높이를 지형 자료에서 확인하는 중…');
+    try { const L2 = loc.slice(0, 100), e = await fetchT(`https://api.open-meteo.com/v1/elevation?latitude=${L2.map(x => x.lat.toFixed(5)).join(',')}&longitude=${L2.map(x => x.lng.toFixed(5)).join(',')}`, {}, 15000);
+      if (e.ok) { const E = (await e.json()).elevation || []; L2.forEach((x, i) => { if (Number.isFinite(E[i])) x.ele2 = Math.round(E[i]); }); } } catch {} }
+  for (const x of its.filter(x => x.k === 'peak')) {
+    const v = [x.bEle != null ? `글 ${x.bEle}m` : '', x.ele ? `정상 자료 ${x.ele}m` : '', x.ele2 != null ? `지형 ${x.ele2}m` : ''].filter(Boolean);
+    const ref = x.bEle ?? x.ele, bad = (x.bEle && x.ele && Math.abs(x.bEle - x.ele) > 30) || (ref && x.ele2 != null && Math.abs(ref - x.ele2) > 120);
+    if (!x.ele && !x.bEle && x.ele2 != null) x.m = [`해발 약 ${x.ele2}m (지형 자료)`, x.m].filter(Boolean).join(' · ').slice(0, 300);
+    if (bad) x.vf = `⚠ 해발이 서로 달라요 · ${v.join(' · ')} · 위치나 이름을 확인해 주세요`;
+    add(bad ? 'warn' : v.length ? 'ok' : 'info', `${x.n}: ${v.length ? v.join(' · ') : '해발을 찾지 못했어요'}${x.ap ? ' · 자리는 대략' : ''}`, '해발');
+  }
+  // ⑤ 등산 코스: 들머리 → 정상 → 하산 지점까지(식당·숙소·교통은 빼요) 짐작 ↔ 글에 적힌 값 (첫날)
+  let s0 = null;
+  if (hike) {
+    const d0 = loc.filter(x => x.d === 0), pi = d0.findIndex(x => x.k === 'peak'), before = pi > 0 ? d0.slice(0, pi) : d0.filter(x => x.k !== 'peak');
+    s0 = before.find(x => /탐방지원센터|매표소|분소|들머리|입구|주차장|탐방로/.test(x.n)) || before[before.length - 1] || loc[0];   // 들머리 = 오르기 바로 앞(이름에 입구·탐방지원센터가 있으면 그곳)
+    const seq = d0.slice(Math.max(0, d0.indexOf(s0))).filter(x => !/food|stay|move/.test(x.k));
+    if (seq.length >= 2) {
+      let m = 0, up = 0, min = 0; for (let i = 1; i < seq.length; i++) { const e = planHikeEst(seq[i - 1], seq[i]); m += e.m; up += e.up; min += e.min; }
+      const oneWay = seq[seq.length - 1].k === 'peak';   // 하산 지점이 없으면 올라간 길만 → 같은 길로 내려온다고 보고 왕복도 같이 봐요
+      if (oneWay) { const back = planHikeEst(seq[seq.length - 1], seq[0]); m += back.m; min += back.min; }
+      const H = p.hike, km = m / 1000;
+      H.est = { km: +km.toFixed(1), up: Math.round(up), h: +(min / 60).toFixed(1), from: s0.n, rt: oneWay ? 1 : 0 };
+      add('info', `앱 짐작 (${s0.n}부터${oneWay ? ', 같은 길로 하산' : ''}): 약 ${km.toFixed(1)}km · 오르막 ${Math.round(up)}m · ${Math.floor(min / 60)}시간 ${min % 60}분 · 장소 사이 직선 × 1.35, 시속 3.5km + 오르막 600m에 1시간`, '계산');
+      if (H.km) { const r = H.km / km, bad = r < .55 || r > 1.9; add(bad ? 'warn' : 'ok', `글의 거리 ${H.km}km ↔ 앱 짐작 ${km.toFixed(1)}km${bad ? ' · 많이 달라요 · 빠진 장소나 다른 코스일 수 있어요' : ' · 비슷해요'}`, '거리'); }
+      if (H.h) { const r = H.h / (min / 60), bad = r < .55 || r > 2; add(bad ? 'warn' : 'ok', `글의 시간 ${H.h}시간 ↔ 앱 짐작 ${(min / 60).toFixed(1)}시간${r < .75 ? ' · 글쓴이가 빠른 편이에요 · 넉넉히 잡으세요' : r > 1.6 ? ' · 글에는 쉬는 시간도 들어간 듯해요' : ' · 비슷해요'}`, '시간'); }
+      if (!H.km && !H.h) add('info', '글에 전체 거리·시간이 없어서 앱 짐작으로 채웠어요', '계산');
+    } else add('info', '위치 있는 곳이 적어서 코스 거리·시간을 짐작하지 못했어요', '계산');
+    // ⑥ 들머리 둘레 (주차장·버스 정류장·화장실) — 블로그에 없으면 OSM에서
+    if (s0) { say && say('🅿 들머리 둘레 주차장·버스 정류장·화장실을 찾는 중…');
+      try {
+        const q = `[out:json][timeout:20];(node(around:900,${s0.lat},${s0.lng})["amenity"~"^(parking|toilets)$"];way(around:900,${s0.lat},${s0.lng})["amenity"="parking"];node(around:900,${s0.lat},${s0.lng})["highway"="bus_stop"];);out center 60;`;
+        const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 25000)).json();
+        const near = t => (j.elements || []).filter(o => (o.tags || {}).amenity === t || (t === 'bus' && (o.tags || {}).highway === 'bus_stop')).map(o => ({ n: (o.tags['name:ko'] || o.tags.name || '').slice(0, 30), lat: o.lat ?? (o.center || {}).lat, lng: o.lon ?? (o.center || {}).lon })).filter(o => Number.isFinite(o.lat)).map(o => Object.assign(o, { m: Math.round(dist(s0.lat, s0.lng, o.lat, o.lng)) })).sort((a, b) => a.m - b.m)[0] || null;
+        const N = { park: near('parking'), bus: near('bus'), wc: near('toilets') }; p.hike.near = { at: s0.n, ...N };
+        add(N.park || N.bus ? 'ok' : 'info', `들머리 '${s0.n}' 둘레: ${[N.park ? `🅿 주차장${N.park.n ? ' ' + N.park.n : ''} ${fmtDist(N.park.m)}` : '주차장 자료 없음', N.bus ? `🚌 정류장${N.bus.n ? ' ' + N.bus.n : ''} ${fmtDist(N.bus.m)}` : '정류장 자료 없음', N.wc ? `🚻 화장실 ${fmtDist(N.wc.m)}` : ''].filter(Boolean).join(' · ')}`, 'OpenStreetMap');
+      } catch { add('info', '들머리 둘레 주차장·정류장 자료를 받지 못했어요(인터넷)', 'OpenStreetMap'); }
+    }
+    // ⑦ 해 지는 시각 (날짜가 정해져 있으면 그날, 아니면 오늘)
+    const pk = its.find(x => x.k === 'peak' && Number.isFinite(x.lat)) || s0;
+    if (pk) { const ts = p.start ? new Date(p.start + 'T12:00:00').getTime() : Date.now(), st = sunTimes(pk.lat, pk.lng, ts);
+      if (st) { const hh = new Date(st.set), est = p.hike.est, need = est ? est.h : 0, last = new Date(st.set - need * 3600e3 - 3600e3);
+        add('info', `${p.start ? '그날' : '오늘 기준'} 해 지는 시각 ${hh.getHours()}:${String(hh.getMinutes()).padStart(2, '0')}${need ? ` · 짐작 ${need}시간 + 여유 1시간이면 늦어도 ${last.getHours()}:${String(last.getMinutes()).padStart(2, '0')}에는 출발` : ''}`, '계산'); } }
+  }
+  // ⑧ 식당·가게는 확인 못 하는 것: 영업·가격
+  const foods = its.filter(x => x.k === 'food'); if (foods.length) add('info', `식당 ${foods.length}곳: 영업 여부·가격은 앱이 확인할 수 없어요 · 가기 전에 지도 앱에서 영업 시간을 봐 주세요`, '확인 못 함');
+  if (its.some(x => x.src === 'ai')) add('info', 'AI가 글에서 뽑은 차례·메모는 블로그 글과 한 번 견줘 보세요 · 📝 블로그 원문', 'AI');
+  p.chk = { at: Date.now(), L }; return p.chk;
+}
+function planChkCard(p) {
+  const C = p.chk; if (!C || !C.L || !C.L.length) return null;
+  const w = C.L.filter(x => x.lv === 'warn').length, ic = { ok: '✅', warn: '⚠', info: 'ℹ' };
+  const box = el('details', { class: 'card', style: 'padding:12px 14px' }, el('summary', { style: 'font-weight:800', text: `🔎 정보 확인 · ${w ? `⚠ ${w}가지 살펴볼 것` : '✅ 큰 문제 없어요'}` }),
+    el('div', { class: 'dt', style: 'font-size:12px;margin:6px 0', text: '블로그 글이 기준이에요 · 글에 없는 것은 앱이 공개 자료에서 찾아 채우고(출처 표시), 서로 어긋나면 ⚠로 알려요' }),
+    ...C.L.map(x => el('div', { style: 'display:flex;gap:6px;font-size:14px;line-height:1.5;margin:4px 0' }, el('span', { text: ic[x.lv] || 'ℹ' }), el('div', { class: 'grow', text: x.t }), x.src ? el('span', { class: 'dt', style: 'font-size:11px;flex:none', text: x.src }) : null)),
+    el('div', { class: 'row', style: 'gap:8px;margin-top:8px;align-items:center' }, el('span', { class: 'dt', style: 'font-size:12px', text: '확인한 때 ' + new Date(C.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }),
+      (() => { const b = el('button', { class: 'btn line small', text: '↻ 다시 확인', onclick: async () => { if (b.disabled) return; b.disabled = true; try { await planResearch(p, t => { b.textContent = t.slice(0, 30); }); planSave(p); location.reload(); } catch (e) { toast('⚠ 확인하지 못했어요 · ' + String(e && e.message || e).slice(0, 50)); b.disabled = false; b.textContent = '↻ 다시 확인'; } } }); return b; })()));
+  if (w) box.open = true; return box;
+}
+// 등산 계획 → 등산 기록 시작: 계획 장소를 차례대로 이은 길을 깔고(따라가기), 첫 정상을 목표 지점으로
+function planHikeGo(p, d) {
+  const pts = planItems(p, d == null || d < 0 ? 0 : d).filter(x => Number.isFinite(x.lat) && x.k !== 'fly' && x.k !== 'move');
+  if (pts.length < 2) return toast('이 날은 위치 있는 곳이 두 곳 넘게 있어야 코스를 깔 수 있어요');
+  const pk = pts.find(x => x.k === 'peak');
+  const N = ls.get('hikeTargetNext', null) || {}; ls.set('hikeTargetNext', Object.assign({}, N, { dest: pk ? { lat: pk.lat, lng: pk.lng, n: pk.n.replace(/\s*정상$/, '') + ' 정상' } : null }));
+  followRoute({ name: p.name, route: pts.map(x => [x.lat, x.lng]), spots: pts.filter(x => x.k !== 'stay').slice(0, 10).map(x => ({ lat: x.lat, lng: x.lng, n: x.n })), modeK: 'hike' });
+}
+function planHikeCard(p, d) {
+  const its = (p.it || []).filter(x => d == null || d < 0 ? x.d === 0 : x.d === d), pk = its.filter(x => x.k === 'peak'), H = p.hike || {};
+  const top = pk.reduce((m, x) => (x.ele || 0) > (m ? m.ele || 0 : -1) ? x : m, null);
+  const pts = its.filter(x => Number.isFinite(x.lat) && x.k !== 'fly' && x.k !== 'move'); let km = 0; for (let i = 1; i < pts.length; i++) km += dist(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng) / 1000;
+  return el('div', { class: 'card stack', style: 'gap:8px;padding:14px' },
+    el('div', { style: 'font-weight:800;font-size:17px', text: '🥾 이 코스로 등산하기' }),
+    el('div', { class: 'sub', text: [pk.length ? `⛰ ${pk.map(x => x.n.replace(/\s*정상$/, '')).join(' · ')}${top && (top.bEle || top.ele) ? ` (최고 ${top.bEle || top.ele}m)` : ''}` : '', H.lv ? `난이도 ${H.lv} (글)` : ''].filter(Boolean).join(' · ') }),
+    el('div', { class: 'sub', text: [H.km ? `📝 글: ${H.km}km` : '', H.h ? `${H.h}시간` : ''].filter(Boolean).join(' · ') + (H.est ? `${H.km || H.h ? '  ·  ' : ''}🔎 앱 짐작: ${H.est.km}km · ↑${H.est.up}m · ${H.est.h}시간` : !H.km && km ? `장소 사이 직선 약 ${km.toFixed(1)}km` : '') }),
+    H.near ? el('div', { class: 'sub', text: [H.near.park ? `🅿 ${H.near.park.n || '주차장'} ${fmtDist(H.near.park.m)}` : '', H.near.bus ? `🚌 ${H.near.bus.n || '정류장'} ${fmtDist(H.near.bus.m)}` : '', H.near.wc ? `🚻 ${fmtDist(H.near.wc.m)}` : ''].filter(Boolean).join(' · ') + (H.near.park || H.near.bus || H.near.wc ? ` · 들머리에서 (OpenStreetMap)` : '') }) : null,
+    el('button', { class: 'btn primary full', text: '▶ 이 코스로 등산 시작', onclick: () => planHikeGo(p, d) }),
+    el('div', { class: 'dt', style: 'font-size:12px', text: `지도에 이 계획의 장소를 차례로 이은 파란 선이 깔리고${pk.length ? ', 첫 정상이 목표 지점이 돼요(닿으면 알려 줘요)' : ''}. 선은 장소 사이 직선이라 실제 등산로와 달라요 · 길은 이정표를 따라 주세요.` }));
+}
 function planImportSheet() {
-  const ta = el('textarea', { rows: 8, placeholder: '하나투어 상품 주소를 붙여 넣거나(MPD 앱), 여행사 일정표의 글을 길게 눌러 복사해 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
+  const ta = el('textarea', { rows: 8, placeholder: '블로그 글 주소(여행·등산 후기)나 하나투어 상품 주소를 붙여 넣거나, 여행사 일정표의 글을 길게 눌러 복사해 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
   let file = null;
   const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
   const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
@@ -7151,7 +7429,15 @@ function planImportSheet() {
       catch (e) { const m = String(e && e.message || e); say(m === 'web' ? '⚠ 웹(브라우저)에선 하나투어가 막아 둬서 주소로 못 읽어요 · MPD 앱에서 이 주소를 넣으면 돼요 · 웹에선 일정 글을 복사해 붙여 넣거나 캡처 사진을 넣어 주세요' : '⚠ ' + m.slice(0, 120)); }
       return;
     }
-    if (/^https?:\/\/\S+$/.test(text) && !file) return say('⚠ 이 여행사 주소는 아직 못 읽어요(하나투어만 MPD 앱에서 돼요) · 그 화면의 일정 부분을 길게 눌러 복사해 붙여 넣거나, 일정 캡처 사진을 넣어 주세요');
+    const blog = !file && planBlogUrl(text);
+    if (blog) {   // 📝 블로그 글 주소 (등산 후기면 등산 계획으로)
+      try { const p = await planBlogRun(blog, ai && hasKey, say); bg.remove(); location.href = './?plan=1&p=' + encodeURIComponent(p.id); }
+      catch (e) { const m = String(e && (e.status || e.message) || e);
+        say(m === 'web' ? '⚠ 웹에선 이 블로그 글을 받지 못했어요 · MPD 앱에서 이 주소를 넣거나, 블로그 글을 길게 눌러 복사해 붙여 넣어 주세요'
+          : m === 'nomap' ? '⚠ 이 글엔 지도 카드가 없어서 AI 없이는 장소를 못 뽑아요 · ✨ AI로 읽기를 눌러 주세요(⚙ 설정의 Claude 열쇠 필요) · 아니면 글을 복사해 붙여 넣어 주세요'
+          : /401/.test(m) ? '⚠ AI 열쇠를 받지 않아요 · 열쇠를 다시 넣어 주세요' : '⚠ ' + m.slice(0, 120)); }
+      return;
+    }
     if (file && !ai) return say('사진·PDF는 AI로만 읽을 수 있어요 · 글을 붙여 넣으면 AI 없이도 돼요');
     try {
       let r;
@@ -7167,8 +7453,9 @@ function planImportSheet() {
       say(m === 'nokey' ? '⚠ AI로 읽으려면 Claude 열쇠가 필요해요 · ⚙ 설정 → 가족 앨범 ✍ Claude 열쇠' : /401/.test(m) ? '⚠ AI 열쇠를 받지 않아요 · 열쇠를 다시 넣어 주세요' : '⚠ 읽지 못했어요 · ' + m.slice(0, 80));
     }
   };
-  const bg = labSheet('📋 여행사 일정으로 만들기',
-    el('div', { class: 'sub', text: '여행사에서 받은 일정표 글을 붙여 넣거나, 일정표 캡처 사진·PDF를 넣으면 날마다 갈 곳을 지도에 놓아 드려요.' }),
+  const bg = labSheet('📋 일정·블로그 글로 만들기',
+    el('div', { class: 'sub', text: '여행사 일정표 글이나 캡처 사진·PDF, 또는 블로그 글 주소를 넣으면 날마다 갈 곳을 지도에 놓아 드려요.' }),
+    el('div', { class: 'sub', style: 'font-weight:700', text: '📝 블로그 글 주소(네이버·티스토리 등)도 돼요 · 등산 후기면 들머리 → ⛰ 정상 → 하산 차례로 등산 계획이 돼요' + (IN_NATIVE ? '' : ' (웹은 글 읽어 주는 곳 r.jina.ai를 거쳐요 · 주소만 보내요)') }),
     el('div', { class: 'sub', style: 'font-weight:700', text: IN_NATIVE ? '🔗 하나투어 상품 주소만 붙여 넣어도 돼요 · 아래 아무 단추나 누르세요' : '🔗 하나투어 상품 주소로 바로 만들기는 MPD 앱에서만 돼요(웹은 하나투어가 막아 둠)' }),
     ta, el('button', { class: 'btn line small', text: '📎 캡처 사진 · PDF 넣기', onclick: () => fIn.click() }), fIn, fLab,
     hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
@@ -7217,7 +7504,7 @@ async function viewPlan() {
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
     tvHero(null, { sm: 1, title: '🗓 여행 계획', d: 'MY TRIPS' }),
     el('div', { class: 'sub', text: '여행 전에 날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요.' }),
-    el('button', { class: 'btn primary full', text: '📋 여행사 일정으로 만들기', onclick: planImportSheet }),
+    el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
@@ -7854,7 +8141,7 @@ async function viewPlanToday(p) {
         x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
         nx || x.x ? el('div', { class: 'tv-b' },
           nx && Number.isFinite(x.lat) ? el('button', { class: 'go', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
-          x.x ? el('button', { text: '📖 여행사 안내', onclick: () => labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) }) : null,
+          x.x ? el('button', { text: planXLab(p), onclick: () => labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) }) : null,
           nx && isToday ? el('button', { text: '✓ 다녀왔어요', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); draw(); } }) : null) : null));
     });
     faRc(body,
@@ -8037,6 +8324,7 @@ function viewPlanOne(id) {
           try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}${r.nb ? ` (식사·쇼 등 ${r.nb}곳은 앞뒤 장소 사이로)` : ''}${r.ai ? '' : ' · Claude 열쇠가 있으면 더 정확해요'}`); location.reload(); }
           catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); bt.disabled = false; bt.textContent = `📍 위치 찾기 · ${miss}곳`; } } }); return bt; })(),
       el('a', { class: 'btn small', style: 'text-decoration:none', href: './?film=1&plan=' + encodeURIComponent(p.id), text: '🎬 미리 보기 영상' }),
+      p.blog && p.blog.url ? el('a', { class: 'btn line small', style: 'text-decoration:none', href: p.blog.url, target: '_blank', rel: 'noopener', text: '📝 블로그 원문' }) : null,
       el('button', { class: 'btn line small', text: '🗑 지우기', onclick: () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } } }))); };
   function editMeta() {
     const nm = el('input', { type: 'text', value: p.name, style: 'width:100%;box-sizing:border-box' }), dt = el('input', { type: 'date', value: p.start || '', style: 'width:100%;box-sizing:border-box' }), nd = el('input', { type: 'number', min: 1, max: 30, value: p.nd, style: 'width:100%;box-sizing:border-box' });
@@ -8054,7 +8342,7 @@ function viewPlanOne(id) {
     let at = Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng } : null;
     const locL = el('div', { class: 'sub' }); const paintL = () => { locL.textContent = at ? `📍 위치 있음${x.ap ? ' (대략)' : ''}` : '📍 아직 위치가 없어요'; }; paintL();
     const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
-    const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '📖 여행사 안내' }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
+    const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: planXLab(p) }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
     const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
       kRow, mm, locL,
       el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
@@ -8081,7 +8369,8 @@ function viewPlanOne(id) {
       el('div', { class: 'tv-t', text: [x.t, `${i + 1}`, isNx ? '다음 갈 곳' : ''].filter(Boolean).join(' · ') }),
       el('button', { class: 'tv-n', text: `${kk[0]} ${x.n}`, onclick: () => editItem(x) }),
       x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
-      x.x ? el('div', { class: 'tv-x', text: '📖 여행사 안내 · 누르면 보여요' }) : null,
+      x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
+      x.vf ? el('div', { class: 'tv-w', text: x.vf }) : null,
       !hasLoc && x.k !== 'fly' ? el('div', { class: 'tv-w', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'tv-m', text: x.near ? '📍 앞뒤 장소 사이 대략 위치' : '📍 대략 위치' }) : null,
       x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null,
       td === d || x.ok || hasLoc ? el('div', { class: 'tv-b' },
@@ -8100,7 +8389,7 @@ function viewPlanOne(id) {
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(el('div', { class: 'tv-day', style: `color:${PLAN_COLS[d % PLAN_COLS.length]}` }, `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
-      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
+      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x, p); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
       out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
     }
     list.replaceChildren(...out);
@@ -8126,7 +8415,7 @@ function viewPlanOne(id) {
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), hero,
-    head, planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, list,
+    head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), p.hike && p.hike.on && p.nd === 1 && !p.start ? null : planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, list,
     el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
     el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })), tvBar(p, 'plan'));
   drawAll();
