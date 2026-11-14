@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-112-tripbot';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-113-hana';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🤖 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7170,7 +7170,7 @@ function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐�
 // ---------- 링크로 보내기 (서버 없이 링크 안에) ----------
 async function planPack(p) {
   const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0, x.x || '']) };
-  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code;
+  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code; if (p.code) o.hc = p.code;
   const raw = new TextEncoder().encode(JSON.stringify(o));
   if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
   return 'j' + b64url(raw);
@@ -7185,7 +7185,8 @@ async function planUnpack(s) {
       k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0, x: str(a[8], 800) })),
     meet: o.mt && typeof o.mt === 'object' ? { d: /^\d{4}-\d{2}-\d{2}$/.test(o.mt.d) ? o.mt.d : '', t: /^\d{1,2}:\d{2}$/.test(o.mt.t) ? o.mt.t : '', n: str(o.mt.n, 200) } : null,
     info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x),
-    room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null };
+    room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null,
+    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined };
 }
 // 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
 //   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
@@ -7830,7 +7831,7 @@ async function viewPlan() {
     let filled = 0; try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
       const same = cands.find(x => x.name === p.name && (x.it || []).length === p.it.length) || cands.find(x => x.name === p.name) || cands[0];
       for (const same of cands) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
-        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
+        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.code && !same.code) { same.code = p.code; same.src = 'hanatour'; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
         for (const y of same.it) if (!y.x) { const z = p.it.find(q => q.n === y.n && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
         {   // 판 -92: 위치도 채워요. 내 계획에 위치가 없거나 대략인 곳 ← 링크 속 같은 날 같은 이름(띄어쓰기 무시), 장소 수가 같으면 같은 차례의 같은 날 장소(예전엔 설명만 채워 '위치 없음'이 그대로 남았음)
           const nm = v => String(v || '').replace(/\s+/g, ''), eq = same.it.length === p.it.length;
@@ -8208,10 +8209,10 @@ async function viewTripRoom(code, title, planId) {
       el('div', { class: 'row', style: 'gap:6px' }, tb('chat', '💬 대화'), tb('photo', `📷 사진 ${live().length}`), tb('loc', '📍 위치')));
   }
   function bubble(m) {
-    if (m.bot) return trBotBubble(m);
+    if (m.bot) return trBotBubble(m, S.tc.find(y => y.id === m.q), p || planOfRoom(code));
     const mine = m.by === me, phs = (m.ph || []).map(id => S.tp.find(x => x.id === id)).filter(x => x && !x.del);
     return el('div', { style: `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px` },
-      mine && !m.ask ? null : el('div', { class: 'dt', style: 'font-weight:700', text: (mine ? '' : (m.nm || '일행') + ' · ') + (m.ask ? '🤖 도우미에게' : '') }),
+      mine && !m.ask ? null : el('div', { class: 'dt', style: 'font-weight:700', text: (mine ? '' : (m.nm || '일행') + ' · ') + (m.ask ? '✨ 도우미에게' : '') }),
       m.x ? el('div', { style: `max-width:82%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;${mine ? 'background:var(--pine);color:#fff;border-bottom-right-radius:4px' : 'background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px'}`, text: m.x }) : null,
       phs.length ? el('div', { style: 'display:grid;grid-template-columns:repeat(3,72px);gap:4px' }, ...phs.slice(0, 9).map(ph => el('img', { src: ph.th, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer', onclick: () => { const L = live(); trViewer(R, L, Math.max(0, L.indexOf(ph))); } }))) : null,
       phs.length > 9 ? el('div', { class: 'dt', text: `외 ${phs.length - 9}장 · 📷 사진에서 모두` }) : null,
@@ -8250,7 +8251,7 @@ async function viewTripRoom(code, title, planId) {
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     faRc(foot, el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:flex-end' },
       el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', onclick: () => fileIn.click() }), ta,
-      el('button', { class: 'btn line small', text: '🤖', title: '여행 도우미에게 묻기', onclick: async () => { const x = ta.value.trim(); if (!x) return toast('🤖 궁금한 걸 적고 누르면 여행 도우미가 답해요 · ' + trBotWho(S).t.replace(/^\S+\s*/, ''), false, 5000); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); ta.value = ''; try { await trAsk(R, S, x); draw(true); if (trBotOn(R)) { await trBotTick(code, R, S); draw(true); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } } }),
+      el('button', { class: 'btn line small', text: '✨', title: '여행 도우미에게 묻기', onclick: async () => { const x = ta.value.trim(); if (!x) return toast('✨ 궁금한 걸 적고 누르면 여행 도우미가 답해요 · ' + trBotWho(S).t.replace(/^\S+\s*/, ''), false, 5000); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); ta.value = ''; try { await trAsk(R, S, x); draw(true); if (trBotOn(R)) { await trBotTick(code, R, S); draw(true); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } } }),
       el('button', { class: 'btn primary small', text: '보내기', onclick: send })));
     faRc(body, status, box);
     setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
@@ -8360,7 +8361,77 @@ function planRoomCard(p, tile) {
   (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R); paint(S, R); await trSync(R, S, ['tc', 'tp', 'tm']); paint(S, R); } catch {} })();
   return box;
 }
-// ---------- 🤖 여행 도우미 (2026-11-15 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게') ----------
+// ---------- 🔗 하나투어 연결 (2026-11-15 사용자 '하나투어 챗봇과 연결해서 답 줘도 되겠네' → '둘 다 만들어') ----------
+//   ① 도우미가 여행 자료로 답하지 못하면 '하나투어 AI에게 물어보기': 질문을 복사하고 하나투어 모바일(AI 채팅상담 있음)을 열어요
+//      하나투어 '하이'는 바깥 앱이 쓸 수 있는 통로(공개 API)가 없어서 MPD가 대신 묻고 답을 받아 올 수는 없어요
+//   ② 하나투어 일정 다시 받기: 계획을 만든 하나투어 상품(p.code, pkgCd)의 일정을 다시 받아 바뀐 것(시각·호텔 확정·새 일정·빠진 일정·안내 글)을 계획에 반영
+//      앱에서만(웹은 하나투어가 막아 둠) · 앱이 계획 화면을 열 때 12시간마다 저절로(ls 없이 p.hanaAt), 여행 끝나면 안 함 · 직접은 ⋯ 더보기
+function planIsHana(p) { return !!p && (p.src === 'hanatour' || !!p.code || /하나투어/.test(p.name || '')); }
+function hanaAskOpen(p, q) {
+  const t = `[${p ? p.name : '여행'}${p && p.start ? ` · 출발 ${p.start}` : ''}${p && p.code ? ` · 상품 ${p.code}` : ''}] ${q || ''}`.trim();
+  const go = () => { const u = 'https://m.hanatour.com/'; if (IN_NATIVE) location.href = u; else window.open(u, '_blank', 'noopener'); };
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+    () => toast('📋 질문을 복사했어요 · 하나투어 \'AI 채팅상담\'에 붙여넣기 하세요', false, 6000), () => toast('하나투어 \'AI 채팅상담\'에서 물어보세요', false, 5000)).finally(() => setTimeout(go, 600));
+}
+function planHanaMerge(p, r) {   // 바뀐 것만 고치고 바뀐 줄을 돌려줘요 (내가 정한 위치·다녀옴은 그대로)
+  const ch = [], nm = v => String(v || '').replace(/\s+/g, ''), used = new Set(), out = [];
+  if (r.start && r.start !== p.start) { ch.push(`📅 출발일 ${p.start || '없음'} → ${r.start}`); p.start = r.start; }
+  if (r.nd && r.nd !== p.nd) { ch.push(`📅 ${p.nd}일 → ${r.nd}일`); p.nd = r.nd; }
+  for (const z of r.it) {
+    const free = x => !used.has(x) && x.d === z.d;
+    let y = p.it.find(x => free(x) && nm(x.n) === nm(z.n)) || (/^(stay|fly)$/.test(z.k) ? p.it.find(x => free(x) && x.k === z.k && !r.it.some(w => w !== z && w.d === z.d && nm(w.n) === nm(x.n))) : null);
+    const D = `${z.d + 1}일차`;
+    if (y) {
+      used.add(y); delete y.hg;
+      if (z.t && z.t !== (y.t || '')) { ch.push(`🕘 ${D} ${z.n} · ${y.t || '시각 없음'} → ${z.t}`); y.t = z.t; }
+      const ren = nm(z.n) !== nm(y.n);
+      if (ren) { ch.push(`${z.k === 'stay' ? '🏨' : '✎'} ${D} ${y.n} → ${z.n}`); y.n = z.n; if (!y.man) { y.lat = null; y.lng = null; delete y.ap; delete y.near; delete y.vf; if (z.q) y.q = z.q; } }
+      if (z.x && z.x !== (y.x || '')) { if (y.x && !ren) ch.push(`📖 ${D} ${z.n} · 여행사 안내 글이 바뀌었어요`); y.x = z.x; }
+      if (z.m && z.m !== (y.m || '')) y.m = z.m;
+      out.push(y);
+    } else { const n = Object.assign({}, z, { id: planNewId() }); used.add(n); out.push(n); ch.push(`➕ ${D} 새 일정 · ${z.n}`); }
+  }
+  for (const y of p.it) if (!used.has(y)) { if (y.x && y.k !== 'move' && !y.hg) { y.hg = 1; ch.push(`⚠ ${y.d + 1}일차 여행사 일정에서 빠졌어요 · ${y.n} (지우지 않고 표시만)`); } out.push(y); }
+  out.forEach((x, i) => { x._o = i; }); out.sort((a, b) => a.d - b.d || a._o - b._o); out.forEach(x => { delete x._o; if (x.d >= p.nd) x.d = p.nd - 1; });
+  p.it = out;
+  if (r.meet && JSON.stringify(r.meet) !== JSON.stringify(p.meet || null)) { if (p.meet) ch.push(`🧭 출발 미팅이 바뀌었어요 · ${[r.meet.d, r.meet.t, r.meet.n].filter(Boolean).join(' · ').slice(0, 80)}`); p.meet = r.meet; }
+  if (r.info && r.info.length && JSON.stringify(r.info) !== JSON.stringify(p.info || [])) { if ((p.info || []).length) ch.push('📄 출입국·안내 글이 바뀌었어요'); p.info = r.info; }
+  return ch;
+}
+async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 throw
+  if (!p.code) throw new Error('nocode');
+  if (!IN_NATIVE) throw new Error('web');
+  const j = await planHanaFetch(p.code), r = planFromHana(j); planTermFix(r);
+  const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour';
+  if (ch.length) { planNeighborFill(p); await planGeocode(p, () => {}).catch(() => {}); }
+  p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planSave(p);
+  return { ch };
+}
+function planHanaSheet(p, after) {   // ⋯ 더보기 '🔗 하나투어 일정 다시 받기'
+  const st = el('div', { class: 'sub', style: 'font-weight:700' }), out = el('div', { class: 'stack', style: 'gap:6px' });
+  const urlIn = el('input', { type: 'text', placeholder: '하나투어 상품 주소 (pkgCd=… 들어 있는 주소)', value: '', style: 'width:100%;box-sizing:border-box' });
+  const showCh = c => faRc(out, ...(c && c.L && c.L.length ? [el('div', { style: 'font-weight:800', text: `바뀐 것 ${c.L.length}가지 · ${new Date(c.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` }), ...c.L.map(t => el('div', { class: 'card', style: 'padding:8px 12px;font-size:14px', text: t }))] : []));
+  const run = async () => {
+    const c = planHanaCode(urlIn.value); if (c) { p.code = c; p.src = 'hanatour'; planSave(p); }
+    if (!p.code) return toast('하나투어 상품 주소를 붙여 넣어 주세요');
+    btn.disabled = true; st.textContent = '🔗 하나투어에서 일정 받는 중…';
+    try { const r = await planHanaRefresh(p); st.textContent = r.ch.length ? `✅ 받았어요 · 바뀐 것 ${r.ch.length}가지를 계획에 반영했어요` : '✅ 받았어요 · 바뀐 게 없어요'; showCh(p.hanaCh); after && after(); }
+    catch (e) { const m = String(e && e.message || e); st.textContent = m === 'web' ? '⚠ 웹에선 하나투어가 막아 둬서 못 받아요 · MPD 앱에서 눌러 주세요' : '⚠ 못 받았어요 · ' + m.slice(0, 60); }
+    btn.disabled = false;
+  };
+  const btn = el('button', { class: 'btn primary full', text: '지금 다시 받기', onclick: run });
+  labSheet('🔗 하나투어 일정 다시 받기',
+    el('div', { class: 'sub', text: '출발 전에 호텔이 확정되거나 시각이 바뀌면 여기서 다시 받아요. 바뀐 것만 계획에 고치고, 내가 정한 위치·다녀옴 표시는 그대로 둬요. 앱에서는 계획을 열 때 12시간마다 저절로 받아요.' }),
+    el('div', { class: 'dt', text: p.code ? `상품 ${p.code}${p.hanaAt ? ` · 마지막으로 받은 때 ${trAgo(p.hanaAt)}` : ''}` : '이 계획엔 하나투어 상품 번호가 없어요. 상품 주소를 한 번 붙여 넣어 주세요.' }),
+    p.code ? null : urlIn, btn, st, out);
+  showCh(p.hanaCh);
+}
+function planHanaAuto(p, after) {   // 앱에서 계획을 열 때: 12시간마다 · 여행이 끝나면 안 함
+  if (!IN_NATIVE || !p.code) return; const k = planToday(p); if (k != null && k >= p.nd) return;
+  if (p.hanaAt && Date.now() - p.hanaAt < 12 * 3600e3) return;
+  planHanaRefresh(p, true).then(r => { if (r.ch.length) { toast(`🔗 하나투어 일정이 바뀌어 ${r.ch.length}가지를 고쳤어요 · ⋯ 더보기에서 보기`, false, 7000); after && after(); } }).catch(() => {});
+}
+// ---------- ✨ 여행 도우미 (2026-11-15 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게') ----------
 //   묻기: 계획 아래 메뉴 '🤖 물어보기' 또는 여행 방 대화의 🤖 단추 → 여행 방(tc)에 질문 {ask:1}을 올려요(일행 누구나)
 //   답하기: Claude 열쇠(ls claudeKey)를 넣은 휴대폰이 MPD를 켜 둔 동안 15초마다 방을 보고 답을 tc/a_{질문}에 {bot:1, src} 로 올려요
 //     답 쓰는 중엔 {wait:1}을 먼저 올려 다른 열쇠 휴대폰과 겹치지 않게(2분 지나면 다른 휴대폰이 이어받음)
@@ -8374,9 +8445,9 @@ function trBotOn(R) { return !!trBotKey() && ls.get('tripBot:' + R.rid, true) !=
 function trBotWho(S) {   // 답해 줄 휴대폰 상태 (일행 화면에 보여 줄 글)
   const me = trMe(), now = Date.now(), L = (S.tm || []).filter(x => x.bot).sort((a, b) => b.bot - a.bot);
   const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trBotKey();
-  if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '🤖 이 휴대폰은 답하기를 꺼 뒀어요' };
-  if (live) return { ok: 1, t: live.by === me ? '🤖 이 휴대폰이 바로 답해요 (Claude 열쇠)' : `🤖 지금 바로 답해요 · ${live.nm || '일행'} 님 휴대폰` };
-  if (mine) return { ok: 1, t: '🤖 이 휴대폰이 바로 답해요 (Claude 열쇠)' };
+  if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '✨ 이 휴대폰은 답하기를 꺼 뒀어요' };
+  if (live) return { ok: 1, t: live.by === me ? '✨ 이 휴대폰이 바로 답해요 (Claude 열쇠)' : `✨ 지금 바로 답해요 · ${live.nm || '일행'} 님 휴대폰` };
+  if (mine) return { ok: 1, t: '✨ 이 휴대폰이 바로 답해요 (Claude 열쇠)' };
   if (any) return { ok: 0, t: `⏳ ${any.nm || '일행'} 님 휴대폰에서 MPD가 켜지면 답해요 (마지막 ${trAgo(any.bot)})` };
   return { ok: 0, t: '⏳ 아직 답해 줄 휴대폰이 없어요 · Claude 열쇠를 넣은 일행이 MPD를 켜면 답해요' };
 }
@@ -8400,7 +8471,7 @@ function planBotCtx(p) {   // 계획 자료를 글로 (Claude에게 보낼 것)
 async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성공하면 true
   const me = trMe(), aid = 'a_' + q.id;
   const N = ls.get('tripBotN', null) || {}, day = new Date().toDateString(); if (N.d === day && N.n >= TB_DAY_MAX) return false;
-  try { await trPut(R, 'tc', aid, { by: me, nm: '🤖 여행 도우미', bot: 1, wait: 1, q: q.id, ow: trName(), t: Date.now() }); } catch { return false; }
+  try { await trPut(R, 'tc', aid, { by: me, nm: '✨ 여행 도우미', bot: 1, wait: 1, q: q.id, ow: trName(), t: Date.now() }); } catch { return false; }
   const ctx = planBotCtx(p), hist = S.tc.filter(m => m.ask && m.id !== q.id && m.t < q.t).slice(-3).map(m => { const a = S.tc.find(y => y.id === 'a_' + m.id && !y.wait); return a ? `질문: ${m.x}\n답: ${a.x}` : null; }).filter(Boolean);
   const sys = '너는 이 단체 여행에 함께하는 "여행 도우미"다. 아래 "여행 자료"(여행사 일정표·안내문·날씨·준비 목록)에 적힌 것만으로 답한다.\n- 자료에 없는 사실(영업시간·가격·가이드 연락처·환율·지금 상황 등)은 지어내지 말고 "여행 자료엔 없어요"라고 한 뒤 가이드나 여행사에 물어보라고 한다.\n- 지명·식당·호텔·관광 이름은 자료에 적힌 글자 그대로 쓴다(예: 장가계를 장자제로 바꾸지 않는다).\n- 한국어, 쉬운 말, 3~6줄. 시각·장소는 자료 그대로. 목록이 길면 줄을 나눠도 된다.\n- 근거로 쓴 일정은 "n일차 장소이름" 또는 "안내 · 제목" 꼴로 src에 적는다.\n결과는 JSON 하나로만: {"text": "답", "src": ["근거", ...]}';
   const prompt = `${ctx.today}\n\n여행 자료:\n${ctx.txt}\n\n${hist.length ? `앞서 나눈 말:\n${hist.join('\n\n')}\n\n` : ''}질문: ${q.x}`;
@@ -8415,13 +8486,13 @@ async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성
     toast(`✨ AI 사용 끝 · 여행 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
     const tb = (res.content || []).find(x => x.type === 'text'); if (!tb || res.stop_reason === 'refusal') throw new Error('빈 답');
     let j; try { j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || [tb.text])[0]); } catch { j = { text: tb.text, src: [] }; }
-    const a = { by: me, nm: '🤖 여행 도우미', bot: 1, q: q.id, ow: trName(), x: String(j.text || '').trim().slice(0, 1500) || '답을 만들지 못했어요', src: (Array.isArray(j.src) ? j.src : []).map(s => String(s).slice(0, 40)).slice(0, 5), t: Date.now() };
+    const a = { by: me, nm: '✨ 여행 도우미', bot: 1, q: q.id, ow: trName(), x: String(j.text || '').trim().slice(0, 1500) || '답을 만들지 못했어요', src: (Array.isArray(j.src) ? j.src : []).map(s => String(s).slice(0, 40)).slice(0, 5), t: Date.now() };
     await trPut(R, 'tc', aid, a);
     const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); else S.tc.push(Object.assign({ id: aid, _t: a.t }, a));
     await trSet('room:' + R.rid, S); return true;
   } catch (e) {
     const m = String(e && (e.status || e.message) || e), why = /401/.test(m) ? 'Claude 열쇠를 받지 않아요 · ⚙ 설정에서 다시 넣어 주세요' : /429/.test(m) ? '잠깐 너무 많이 물어서 쉬어요' : /credit|balance|402/i.test(m) ? 'Claude 잔액이 없어요' : '답을 못 만들었어요 · ' + m.slice(0, 40);
-    const a = { by: me, nm: '🤖 여행 도우미', bot: 1, err: 1, q: q.id, ow: trName(), x: '⚠ ' + why, t: Date.now() };
+    const a = { by: me, nm: '✨ 여행 도우미', bot: 1, err: 1, q: q.id, ow: trName(), x: '⚠ ' + why, t: Date.now() };
     try { await trPut(R, 'tc', aid, a); const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); } catch {}
     toast('⚠ 여행 도우미 · ' + why, false, 6000); return false;
   }
@@ -8458,12 +8529,14 @@ async function trAsk(R, S, x) {   // 질문 올리기 (누구나)
   await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S);
   return id;
 }
-function trBotBubble(a) {   // 도우미 답 말풍선
+function trBotBubble(a, q, p) {   // 도우미 답 말풍선 (여행 자료로 답 못 하면 하나투어 AI로 넘기는 단추)
+  const miss = !a.wait && (a.err || /여행 자료엔 없|자료에 없/.test(a.x || ''));
   return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px' },
-    el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '🤖 여행 도우미' }),
+    el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '✨ 여행 도우미' }),
     el('div', { style: 'max-width:88%;padding:10px 13px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;border:1px solid #FFD3C6;white-space:pre-wrap;word-break:break-word;line-height:1.55', text: a.wait ? '답을 쓰는 중이에요…' : a.x }),
     !a.wait && a.src && a.src.length ? el('div', { class: 'dt', style: 'font-size:11.5px', text: '근거 · ' + a.src.join(' · ') }) : null,
-    !a.wait && !a.err ? el('div', { class: 'dt', style: 'font-size:11px', text: `여행 자료로만 답해요 · 틀릴 수 있어요${a.ow ? ` · ${a.ow} 님 휴대폰` : ''} · ${trHm(a.t)}` }) : null);
+    !a.wait && !a.err ? el('div', { class: 'dt', style: 'font-size:11px', text: `여행 자료로만 답해요 · 틀릴 수 있어요${a.ow ? ` · ${a.ow} 님 휴대폰` : ''} · ${trHm(a.t)}` }) : null,
+    miss && q && planIsHana(p) ? el('button', { class: 'btn line small', style: 'margin-top:4px', text: '하나투어 AI에게 물어보기 ↗', onclick: () => hanaAskOpen(p, q.x) }) : null);
 }
 var TB_QUICK = ['오늘 일정 알려 줘', '내일은 뭘 챙겨야 해?', '첫날 미팅 장소랑 시간은?', '식사는 어떻게 나와?', '날씨랑 옷차림은?', '선택 관광은 뭐가 있어?'];
 function planAskSheet(p) {
@@ -8482,7 +8555,7 @@ function planAskSheet(p) {
     faRc(list, ...(qs.length ? qs.flatMap(q => { const a = S.tc.find(y => y.id === 'a_' + q.id);
       return [el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' }, q.by !== me ? el('div', { class: 'dt', style: 'font-weight:700', text: q.nm || '일행' }) : null,
           el('div', { style: 'max-width:82%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:var(--pine);color:#fff;white-space:pre-wrap', text: q.x })),
-        a ? trBotBubble(a) : el('div', { class: 'dt', text: q.pend ? '보내는 중…' : `⏳ 답을 기다려요 · ${who.ok ? '곧 와요' : '답해 줄 휴대폰이 켜지면 와요'}` })]; })
+        a ? trBotBubble(a, q, p) : el('div', { class: 'dt', text: q.pend ? '보내는 중…' : `⏳ 답을 기다려요 · ${who.ok ? '곧 와요' : '답해 줄 휴대폰이 켜지면 와요'}` })]; })
       : [el('div', { class: 'sub', text: '이 여행 일정·여행사 안내를 다 알고 있어요. 궁금한 걸 물어보세요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' })]));
     list.scrollTop = list.scrollHeight;
   };
@@ -8496,7 +8569,7 @@ function planAskSheet(p) {
     busy = false;
   };
   ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
-  const bg = labSheet('🤖 여행 도우미 · ' + p.name, st, list, chips, trName() ? null : nmIn, ta,
+  const bg = labSheet('✨ 여행 도우미 · ' + p.name, st, list, chips, trName() ? null : nmIn, ta,
     el('button', { class: 'btn primary full', text: '물어보기', onclick: () => send() }),
     el('div', { class: 'dt', style: 'font-size:12px', text: '여행사 일정·안내·날씨 자료로만 답하고, 자료에 없으면 없다고 해요. 열쇠를 넣은 휴대폰이 Claude에 일정 글만 보내요(사진·위치·이름은 안 보내요).' }));
   (async () => { try { R = await trRoom(code); S = await trLoad(R); paint(); await trSync(R, S, ['tc', 'tm']); paint();
@@ -8746,7 +8819,7 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     el('a', { href: `./?plan=1&p=${id}`, class: on === 'plan' ? 'on' : '' }, el('b', { text: '🗺' }), '전체 일정'),
     room,
     el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'photo' ? 'on' : '', onclick: () => ls.set('tripTab', 'photo') }, el('b', { text: '📷' }), '사진'),
-    el('button', { onclick: () => planAskSheet(p) }, el('b', { text: '🤖' }), '물어보기'),
+    el('button', { onclick: () => planAskSheet(p) }, el('b', { text: '✨' }), '물어보기'),
     planCN(p) ? el('button', { onclick: planSaySheet }, el('b', { text: '🗣' }), '중국어') : el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '🧳' }), '준비'));
   trBotStart(p);
   if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
@@ -8908,6 +8981,7 @@ function viewPlanOne(id) {
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go('👋 일행에게 일정 보내기', () => planShare(p)),
       go('✎ 이름 · 날짜 고치기', editMeta),
+      planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
       go('🗑 이 계획 지우기', () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } }));
   }
@@ -8953,6 +9027,7 @@ function viewPlanOne(id) {
     return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => editItem(x),
       extra: [x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
+        x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, el('b', { text: '⚠ 위치 확인 필요' }), el('span', { text: whyChk(x) + ' · 눌러서 지도에서 고치기' })) : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
       btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
@@ -9007,6 +9082,7 @@ function viewPlanOne(id) {
     tabs, head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, list,
     el('div', { class: 'sub', style: 'font-size:12px', text: `지도의 굵은 선은 지도 길 자료로 그린 걷는 길이고, 점선은 차례대로 이은 직선이에요(차·비행기로 가는 사이 등). 시간은 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` }))), tvBar(p, 'plan'));
   drawAll();
+  planHanaAuto(p, () => drawAll());
   setTimeout(() => {
     const abroad = p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
     map = L.map(mapEl); const base = mdTileLayer({ vec: !abroad }).addTo(map); drawMap();
