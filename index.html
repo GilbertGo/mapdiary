@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-80-plan';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-81-photo';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 여행 계획이 생겼어요 · 첫 화면 목록 여행 계획에서 여행사 일정표 글이나 캡처를 넣으면 날마다 갈 곳이 지도에 놓여요 · 여행 중엔 오늘 갈 곳과 길찾기 · 중국은 가오더 지도로 길찾기 · 📤 보내기로 같이 가는 사람에게 링크';
+const UI_NOTES = '🎬 이동 영상에서 사진이 더 오래 보여요 · 사진 한 장(한 카드)이 적어도 3초 · 스타일마다 사진 시간을 1.4배쯤 늘렸어요 · 더 길게 보려면 고급 설정 사진 보여 주는 시간 길게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5382,16 +5382,16 @@ function filmDur(ms) { const s = Math.round(ms / 1000), h = Math.floor(s / 3600)
 var FILM_STYLES = {
   cine: { k: 'cine', name: '🎞 시네마틱', say: '영화처럼 · 위아래 검은 띠와 깊은 색감, 풍경을 드론처럼 날다 하이라이트에서 음악이 차올라요',
     pitch: { sat: 67, map: 60 }, p0: 18, hold: 0.35, zoom: 0, look: 0.08, follow: 0.035, turn: 18, inF: 0.13, inMax: 4, outF: 0.24, outMax: 6.5,
-    slow: 0.38, zoomHL: 0.35, ramp: 0.25, card: [240, 300], phMin: 2.4, phPer: 0.9, fade: 0.25, kb: 0.06, music: 'cine', info: 1, grade: null },
+    slow: 0.38, zoomHL: 0.35, ramp: 0.25, card: [240, 300], phMin: 3.4, phPer: 1.3, fade: 0.25, kb: 0.06, music: 'cine', info: 1, grade: null },
   sport: { k: 'sport', name: '🏃 스포츠', say: '빠르고 힘 있게 · 거리·시간·페이스·높이, 1km(5km) 통과와 결승',
     pitch: { sat: 60, map: 56 }, p0: 0, hold: 0, zoom: 0.35, look: 0.05, follow: 0.07, turn: 32, inF: 0.07, inMax: 2, outF: 0.2, outMax: 5.5,
-    slow: 0.75, zoomHL: 0.15, ramp: 0.45, card: [200, 250], phMin: 1.6, phPer: 0.7, fade: 0.15, kb: 0, music: 'sport', info: 2, grade: null },
+    slow: 0.75, zoomHL: 0.15, ramp: 0.45, card: [200, 250], phMin: 2.4, phPer: 1, fade: 0.15, kb: 0, music: 'sport', info: 2, grade: null },
   memo: { k: 'memo', name: '📷 추억', say: '빛바랜 필름 느낌 · 사진은 폴라로이드로 크게, 날짜와 메모를 손글씨처럼 · 따뜻한 색',
     pitch: { sat: 62, map: 56 }, p0: 10, hold: 0.3, zoom: -0.15, look: 0.1, follow: 0.025, turn: 12, inF: 0.12, inMax: 3.5, outF: 0.26, outMax: 7,
-    slow: 0.25, zoomHL: 0.25, ramp: 0.25, card: [330, 410], phMin: 3, phPer: 1.4, fade: 0.45, kb: 0.08, music: 'calm', info: 0, grade: 'warm' },
+    slow: 0.25, zoomHL: 0.25, ramp: 0.25, card: [330, 410], phMin: 4, phPer: 1.8, fade: 0.45, kb: 0.08, music: 'calm', info: 0, grade: 'warm' },
   trip: { k: 'trip', name: '🧳 여행', say: '지명과 들른 곳을 따라가요 · 장소마다 이름 띠, 마지막에 다녀온 곳 정리',
     pitch: { sat: 64, map: 58 }, p0: 15, hold: 0.35, zoom: -0.3, look: 0.1, follow: 0.035, turn: 15, inF: 0.12, inMax: 3.5, outF: 0.26, outMax: 7,
-    slow: 0.35, zoomHL: 0.3, ramp: 0.3, card: [250, 310], phMin: 2.2, phPer: 0.9, fade: 0.25, kb: 0.05, music: 'up', info: 1, grade: null } };
+    slow: 0.35, zoomHL: 0.3, ramp: 0.3, card: [250, 310], phMin: 3.4, phPer: 1.4, fade: 0.25, kb: 0.05, music: 'up', info: 1, grade: null } };
 function filmDims(opt) { if (opt && opt.ratio === '16:9') { FILM_W = 1280; FILM_H = 720; } else { FILM_W = 720; FILM_H = 1280; } }
 function filmAdv(opt, st) {   // 고급 설정 → 숫자
   return { rh: opt.rhythm === 'flat' ? 0 : opt.rhythm === 'drama' ? 1.5 : 1,
@@ -5521,30 +5521,32 @@ function filmPhotoTimes(F, plan, st, adv, T, order) {
   photos.forEach(g => { if (g.e > T - 0.05) g.e = T - 0.05; });
   return photos;
 }
-// 사진 카드: 한 카드는 적어도 2초 (2026-11-13 사용자 '사진은 최소 2초' → 1번 '같은 자리 사진은 한 카드에 묶기')
+// 사진 카드: 한 카드는 적어도 3초(예전 2초) (2026-11-13 사용자 '사진은 최소 2초' → 1번 '같은 자리 사진은 한 카드에 묶기')
 //   몰려 있는 사진은 2~4장(넘치면 6·9장)을 한 카드에 같이 보여 줘요 · 사진은 하나도 빼지 않고 · 영상 길이는 그대로
 // 이동 영상의 움직이는 그림 선 (24칸, MPD 모드 아이콘과 같은 선): 비행기(위에서 본 모습)·차·걷기·러닝·자전거
 var FILM_VEH = { fly: ICONS.travel, run: ICONS.run, bike: ICONS.bike,
   car: ['M4 16.5V12l2.2-5h11.6L20 12v4.5', 'M3 12h18', 'M6.5 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.9 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M3 16.5h3.5', 'M10.1 16.5h3.8', 'M17.5 16.5H21'],
   walk: ['M12.4 3.6a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.2 7.6l-1.6 6.4', 'M11.6 14l2.6 2.9.4 4.1', 'M11.6 14l-2 3.4-1.6 3.6', 'M13 8.6l2.4 2.6 2.2.8', 'M13 8.6l-2.8 1.6-1 3'] };
-var FILM_PH_MIN = 2, FILM_VID_MIN = 3.5;   // 동영상은 혼자 한 카드, 3.5초 동안 실제로 움직여요(2026-11-13 사용자 '동영상 추가는 안 되나?' → '고쳐')
+var FILM_PH_MIN = 3, FILM_VID_MIN = 3.5;   // 사진 카드 최소 3초(2026-11-14 사용자 '사진 볼 시간 여유있게', 예전 2초)
+   // 동영상은 혼자 한 카드, 3.5초 동안 실제로 움직여요(2026-11-13 사용자 '동영상 추가는 안 되나?' → '고쳐')
 function filmCards(photos, T) {
-  const isV = c => c.ps.length === 1 && c.ps[0].p && c.ps[0].p.v, minOf = c => isV(c) ? FILM_VID_MIN : FILM_PH_MIN;
+  const PMIN = T < 25 ? 2 : FILM_PH_MIN;   // 15초 같은 짧은 영상은 예전처럼 2초(사진이 몰리면 한 카드에 너무 많아져서)
+  const isV = c => c.ps.length === 1 && c.ps[0].p && c.ps[0].p.v, minOf = c => isV(c) ? FILM_VID_MIN : PMIN;
   const L = photos.slice().sort((a, b) => a.s - b.s), lim = T - 0.05;
   const build = MAXN => {
     const cards = [];
     for (const q of L) { const c = cards[cards.length - 1];
-      if (c && c.ps.length < MAXN && q.s < c.s + FILM_PH_MIN && !(q.p && q.p.v) && !isV(c)) { c.ps.push(q); c.e = Math.max(c.e, q.e); }
+      if (c && c.ps.length < MAXN && q.s < c.s + PMIN && !(q.p && q.p.v) && !isV(c)) { c.ps.push(q); c.e = Math.max(c.e, q.e); }
       else cards.push({ s: q.s, e: q.e, ps: [q] }); }
     for (let i = 0; i < cards.length; i++) { const c = cards[i], n = cards[i + 1];
       c.e = Math.max(c.e, c.s + minOf(c));
       if (n) { if (n.s < c.e) n.s = c.e; if (n.s > c.s + minOf(c) && c.e > n.s) c.e = n.s; } }
     return cards;
   };
-  const over = C => C.length && C[C.length - 1].s > lim - FILM_PH_MIN;
+  const over = C => C.length && C[C.length - 1].s > lim - PMIN;
   let cards = build(4); for (const m of [6, 9]) { if (!over(cards)) break; cards = build(m); }
   if (over(cards)) {   // 그래도 넘치면: 남은 시간을 2초 카드로 똑같이 나누고 사진을 차례대로 고르게 담아요(빼지 않음)
-    const t0 = Math.min(L[0].s, lim - FILM_PH_MIN), K = Math.max(1, Math.floor((lim - t0) / FILM_PH_MIN)), per = Math.ceil(L.length / K), len = (lim - t0) / Math.ceil(L.length / per);
+    const t0 = Math.min(L[0].s, lim - PMIN), K = Math.max(1, Math.floor((lim - t0) / PMIN)), per = Math.ceil(L.length / K), len = (lim - t0) / Math.ceil(L.length / per);
     cards = []; for (let i = 0; i < L.length; i += per) { const s0 = t0 + cards.length * len; cards.push({ s: s0, e: s0 + len, ps: L.slice(i, i + per) }); }
   }
   cards.forEach(c => { c.e = Math.min(c.e, lim); c.star = c.ps.some(q => q.star); c.p = c.ps[0].p; c.pin = (c.ps.find(q => q.pin) || {}).pin; c.pins = c.ps.filter(q => q.pin).map(q => q.pin); c.n0 = 0; });
