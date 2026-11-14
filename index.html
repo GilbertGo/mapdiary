@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-100-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-95-share';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 일정 보내는 글을 일행용으로 바꿨어요 · 장가계 4박 5일 우리 여행 일정 · D-9처럼 남은 날도 보여요 · 단추 이름은 일행에게 일정 보내기';
+const UI_NOTES = '📤 영상 공유하기를 누르면 바로 ‘공유 준비 중… n%’가 보여요 · 앱에서 큰 영상도 멈추지 않고 휴대폰 공유 창이 열려요 · 휴대폰에 저장도 같은 방법으로 더 빨라졌어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6683,6 +6683,33 @@ function filmResult(U, blob, fname, out, T, playSec, logId, mkShort) {
   const cr = (out.meta && out.meta.credits) || [], crText = cr.length ? '사진: Wikimedia Commons\n' + cr.map(q => `· ${q.title} — ${q.by}${q.lic ? ' (' + q.lic + ')' : ''}`).join('\n') : '';
   // 저장·공유 결과는 사라지는 알림 대신 여기 남겨요 (2026-11-13 '실패하면 원본 보존, 오류를 명확히')
   const stBox = el('div', { class: 'fm-ck' }), stLine = (ok, txt) => stBox.append(el('div', { class: ok == null ? 'sub' : ok ? 'good' : 'bad', text: `${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${ok == null ? '' : ok ? '✅ ' : '⚠ '}${txt}` }));
+  // 공유하기 (2026-11-15 사용자 '공유하기 눌렀는데 반응이 안 보여'): 앱은 88MB 영상을 한꺼번에 글자(base64)로 바꿔 넘기느라 한참 멈춰 보였고,
+  //   웹은 누르고 나서 일정 링크를 만드느라 기다리는 사이 '누른 지 오래됐다'며 공유 창이 막힐 수 있었음
+  //   → 일정 글은 미리 만들어 두고, 누르자마자 단추 글을 바꾸고, 앱은 3MB씩 나눠 휴대폰에 쓰며 % 를 보여 준 뒤 휴대폰 공유 창
+  let shText = null; if (plan) filmPlanText(plan).then(t => { shText = t + (crText ? '\n\n' + crText : ''); }).catch(() => {});
+  const SH0 = '📤 공유하기 (카톡·인스타 등)', shSay = t => { shBtn.textContent = t; };
+  let shBusy = false;
+  const shBtn = el('button', { class: 'fm-go', type: 'button', text: SH0, onclick: async () => {
+    if (shBusy) return; shBusy = true; shSay('공유 창을 여는 중…');
+    const C = window.Capacitor, nat = window.mdNativeSave && C && C.Plugins;
+    try {
+      if (nat) {
+        const SH = C.Plugins.Share || (C.registerPlugin && C.registerPlugin('Share'));
+        const uri = await filmNativeWrite(blob, 'share/' + fname, 'CACHE', p => shSay(`공유 준비 중… ${p}%`));
+        await SH.share({ title: fname, text: shText || undefined, files: [uri], dialogTitle: '영상 보내기' });
+      } else {
+        if (navigator.canShare && !navigator.canShare({ files: [file] })) throw new Error('이 브라우저는 파일 공유를 못 해요 · 아래 저장을 눌러 주세요');
+        await navigator.share(shText ? { files: [file], title: fname, text: shText } : { files: [file], title: fname });
+      }
+      if (shText) { try { await navigator.clipboard.writeText(shText); } catch {} }
+      stLine(true, '공유 창으로 보냈어요' + (shText ? ' · 일정 링크도 복사해 뒀어요(카톡은 영상과 글을 같이 못 받아서, 입력칸을 길게 눌러 붙여 넣으세요)' : '')); filmTestUpd(logId, { share: 'ok' }); shSay(SH0);
+    } catch (e) {
+      const m = String(e && (e.name + ' ' + e.message)), c = /abort|cancel/i.test(m);
+      if (/NotAllowed/i.test(m)) { shSay('✓ 한 번 더 누르면 공유 창이 열려요'); stLine(null, '휴대폰이 공유 창을 잠깐 막았어요 · 단추를 한 번 더 눌러 주세요'); }
+      else { shSay(SH0); stLine(c ? null : false, c ? '공유를 닫았어요' : `공유하지 못했어요 (${e && e.message || e}) · 영상은 이 화면에 그대로 있어요, 아래 저장을 눌러 주세요`); }
+      filmTestUpd(logId, { share: c ? 'cancel' : 'fail: ' + (e && e.message || e) });
+    }
+    shBusy = false; } });
   U.result.style.display = '';
   U.result.replaceChildren(el('h2', { text: '검사 결과' }),
     el('div', { class: 'fm-ck' },
@@ -6694,10 +6721,7 @@ function filmResult(U, blob, fname, out, T, playSec, logId, mkShort) {
       el('div', { class: 'sub', text: `파일 ${fname} · ${(blob.size / 1048576).toFixed(1)}MB` }),
       cr.length ? el('details', {}, el('summary', { class: 'sub', text: `📷 위키미디어 공용 사진 ${cr.length}장 · 찍은 사람과 사용 조건 (보낼 때 글에 같이 들어가요)` }), el('div', { class: 'sub', style: 'white-space:pre-line', text: crText })) : null,
       out.meta ? el('div', { class: 'sub', text: `들어간 것: ${out.meta.style} · 사진 ${out.meta.photos}장${out.meta.stars ? `(★ ${out.meta.stars})` : ''} · 장소 이름 ${out.meta.labels}개 · 집 근처 500m ${out.meta.hide ? '가림' : '안 가림'} · 공유하기를 누르기 전엔 어디에도 올라가지 않아요` }) : null),
-    el('button', { class: 'fm-go', type: 'button', text: '📤 공유하기 (카톡·인스타 등)', onclick: async () => {
-      try { if (navigator.canShare && !navigator.canShare({ files: [file] })) throw new Error('이 브라우저는 파일 공유를 못 해요'); let text = null; if (plan) { text = await filmPlanText(plan) + (crText ? '\n\n' + crText : ''); try { await navigator.clipboard.writeText(text); } catch {} }
-        await navigator.share(text ? { files: [file], title: fname, text } : { files: [file], title: fname }); stLine(true, '공유 창으로 보냈어요' + (plan ? ' · 일정 링크도 복사해 뒀어요(카톡은 영상과 글을 같이 못 받아서, 입력칸을 길게 눌러 붙여 넣으세요)' : '')); filmTestUpd(logId, { share: 'ok' }); }
-      catch (e) { const c = /abort|cancel/i.test(String(e && (e.name + e.message))); stLine(c ? null : false, c ? '공유를 닫았어요' : `공유하지 못했어요 (${e && e.message || e}) · 영상은 이 화면에 그대로 있어요, 아래 저장을 눌러 주세요`); filmTestUpd(logId, { share: c ? 'cancel' : 'fail: ' + (e && e.message || e) }); } } }),
+    shBtn,
     mkShort ? el('button', { class: 'fm-line', type: 'button', text: '⚡ 30초 짧은 판도 만들기 (먼저 보내 궁금하게 · 이 영상은 아래에 그대로 남아요)', onclick: ev => {
       const kp = el('div', { class: 'fm-keep' }, el('h2', { text: `🎬 전체 판 · ${T}초` }), vid); ev.currentTarget.remove();
       kp.append(...U.result.childNodes); U.result.after(kp); mkShort(); } }) : null,
@@ -6714,12 +6738,24 @@ function filmPlanFor(al) {   // 영상 여행 날짜와 가장 많이 겹치는 
     if (ov >= 0 && ov + 1 > bo) { bo = ov + 1; best = p; } }
   return best;
 }
+// 앱: 큰 파일을 3MB씩 나눠 휴대폰에 써요(한꺼번에 글자로 바꾸면 메모리가 모자라 멈춤) → 파일 주소
+async function filmNativeWrite(blob, path, dir, prog) {
+  const C = window.Capacitor, FS = C.Plugins.Filesystem || C.registerPlugin('Filesystem'), CH = 3 * 1024 * 1024;
+  const b64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+  for (let o = 0; o < blob.size; o += CH) {
+    const d = await b64(blob.slice(o, o + CH));
+    if (!o) await FS.writeFile({ path, data: d, directory: dir, recursive: true }); else await FS.appendFile({ path, data: d, directory: dir });
+    prog && prog(Math.min(100, Math.round((o + CH) / blob.size * 100)));
+  }
+  const st = await FS.stat({ path, directory: dir });
+  if (!st || !(st.size >= blob.size * 0.99)) throw new Error('파일이 다 써지지 않았어요');
+  return st.uri || (await FS.getUri({ path, directory: dir })).uri;
+}
 async function filmSave(blob, fname) {
   const C = window.Capacitor, FS = window.mdNativeSave && C && (C.Plugins && C.Plugins.Filesystem || (C.registerPlugin && C.registerPlugin('Filesystem')));
   if (FS) {   // 앱: 다운로드 폴더에 쓰고 확인
     try {
-      const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
-      await FS.writeFile({ path: 'Download/' + fname, data: b64, directory: 'EXTERNAL_STORAGE', recursive: true });
+      await filmNativeWrite(blob, 'Download/' + fname, 'EXTERNAL_STORAGE');
       const st = await FS.stat({ path: 'Download/' + fname, directory: 'EXTERNAL_STORAGE' });
       if (st && st.size > 0) { toast(`✅ ${fname} 저장했어요 · 내 파일 > 다운로드`); return { ok: true, msg: `${fname} 저장했어요 · 내 파일 > 다운로드 (${(st.size / 1048576).toFixed(1)}MB 확인)` }; }
       throw new Error('파일이 생기지 않았어요');
