@@ -663,8 +663,9 @@ html.tv-page .role::after,html.tv-page .role::before{display:none!important}
 html.tv-page .role .home,html.tv-page .role .who{color:#fff!important;text-shadow:0 1px 6px rgba(0,0,0,.45)}
 html.tv-page .mapbox{border-radius:18px;overflow:hidden}
 html.tv-page a{color:inherit}
-.tv-hero{position:relative;margin:-20px -20px 0;min-height:min(54vh,460px);background:#1B2D44 linear-gradient(160deg,#25415F,#0F1C2B) center/cover;display:flex;align-items:flex-end}
-.tv-hero.sm{min-height:180px}
+.tv-hero{position:relative;margin:-20px -20px 0;min-height:250px;transition:min-height .4s;background:#1B2D44 linear-gradient(160deg,#25415F,#0F1C2B) center/cover;display:flex;align-items:flex-end}
+.tv-hero.img{min-height:min(54vh,460px)}
+.tv-hero.sm,.tv-hero.sm.img{min-height:180px}
 .tv-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,28,43,.45),rgba(15,28,43,0) 26%,rgba(15,28,43,.25) 55%,#0F1C2B 98%);pointer-events:none}
 .tv-hin{position:relative;z-index:2;padding:0 20px 14px;width:100%;box-sizing:border-box}
 .tv-d{font-weight:800;font-size:12px;letter-spacing:2px;color:#FFB59E}
@@ -2991,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-90-trip-b';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-91-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✈ 여행 화면을 여행 매거진처럼 새로 꾸몄어요 · 맨 위에 여행지 사진(여행 방 사진이나 위키백과 사진) · 일정은 시간 줄로 보여 주고 다음 갈 곳은 산호색으로 크게 · 아래 메뉴로 오늘, 전체 일정, 여행 방, 사진, 중국어를 바로 · 📅 오늘 화면에서 다른 날도 눌러 볼 수 있어요';
+const UI_NOTES = '✈ 여행 화면 맨 위 사진이 비어 보이던 것을 고쳤어요 · 사진이 실제로 열리는지 확인하고 보여 줘요 · 사진을 못 받으면 빈 칸을 크게 두지 않고 줄여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7609,22 +7610,25 @@ async function viewPlanToday(p) {
 async function tvHeroImg(p) {
   try { if (p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
     for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
-  const k = 'planHero:' + p.id, c = ls.get(k, null); if (c && c.u && Date.now() - c.at < 30 * 864e5) return c;
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (c && c.u && c.v === 2 && Date.now() - c.at < 30 * 864e5) return c;
   const sp = (p.it || []).find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || (p.it || []).find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return null;
-  try {
-    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=10000&ggslimit=20&prop=pageimages&piprop=original&format=json&origin=*`, {}, 12000);
+  try {   // 판 -91: 위키 API가 주는 1280px 그림 주소(thumbnail)를 쓰고, 실제로 열리는지 먼저 받아 봄(예전엔 주소만 정해 사진이 빈 채로 '사진 · 위키백과'만 보였음)
+    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=10000&ggslimit=20&prop=pageimages&piprop=original|thumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
     if (!r.ok) return null; const j = await r.json(), P = Object.values((j.query || {}).pages || {});
-    const ok = P.filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !/map|flag|logo|locator|svg|seal|emblem/i.test(x.original.source));
-    const pick = ok.sort((a, b) => (a.index || 99) - (b.index || 99))[0]; if (!pick) return null;
-    const src = pick.original.source.replace(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/]+)$/, '/commons/thumb/$1/$2/$3/1280px-$3');
-    const o = { u: pick.original.width > 1280 ? src : pick.original.source, t: pick.title, at: Date.now() }; ls.set(k, o); return o;
+    const ok = P.filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !/map|flag|logo|locator|svg|seal|emblem/i.test(x.original.source)).sort((a, b) => (a.index || 99) - (b.index || 99));
+    for (const pick of ok.slice(0, 5)) for (const u of [pick.thumbnail && pick.thumbnail.source, pick.original.source].filter(Boolean)) {
+      if (await tvImgOk(u)) { const o = { u, t: pick.title, at: Date.now(), v: 2 }; ls.set(k, o); return o; } }
+    return null;
   } catch { return null; }
 }
+function tvImgOk(u) { return new Promise(res => { const im = new Image(), tm = setTimeout(() => res(false), 15000); im.onload = () => { clearTimeout(tm); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(tm); res(false); }; im.src = u; }); }
 function tvHero(p, o = {}) {
   const hin = el('div', { class: 'tv-hin' }), box = el('div', { class: 'tv-hero' + (o.sm ? ' sm' : '') }, hin);
   const paint = () => faRc(hin, o.d ? el('div', { class: 'tv-d', text: o.d }) : null, el('h1', { text: o.title || p.name }), o.line ? el('div', { class: 'tv-hl', text: o.line }) : null, o.chips || null);
   paint(); box.repaint = (x) => { Object.assign(o, x || {}); paint(); };
-  if (p) tvHeroImg(p).then(im => { if (!im || !box.isConnected) return; box.style.backgroundImage = `url("${im.u}")`;
+  if (p) tvHeroImg(p).then(async im => { if (!im || !box.isConnected) return;
+    if (!im.room && !(await tvImgOk(im.u))) { try { localStorage.removeItem('planHero:' + p.id); } catch {} return; }
+    box.style.backgroundImage = `url("${im.u.replace(/"/g, '%22')}")`; box.classList.add('img');
     if (im.t) box.append(el('a', { class: 'tv-credit', href: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: '사진 · 위키백과' })); }).catch(() => {});
   return box;
 }
