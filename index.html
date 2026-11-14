@@ -1441,7 +1441,7 @@ async function addPhotos(t, files, now, later) {
 // ---------- 사진 위치 고르기: 지도에 다닌 길을 깔고, 누른 곳으로 옮겨요 ----------
 // rec: 사진 기록(t, ts, lat, lng). 저장하면 photoPut하고 'photo-changed'를 알려요
 // 걷기 목표 지점 고르기 (2026-11-07): 지도를 누르거나 이름으로 찾기 → {lat,lng,n}. 닫으면 null
-function pickDest(cur, near, world, title) {   // world: 나라 밖도 찾기(여행 계획) · title: 창 제목(계획 장소 위치 고치기)
+function pickDest(cur, near, world, title, ex) {   // ex(판 -106): { box: 판단 자료 칸, pts: [{lat,lng,no,n}] 앞뒤 장소 }   // world: 나라 밖도 찾기(여행 계획) · title: 창 제목(계획 장소 위치 고치기)
   return new Promise(res => {
     let at = cur ? [cur.lat, cur.lng] : null, name = cur ? cur.n : '', m = null, mk = null, seq = 0;
     const mapBox = el('div', { style: 'height:46vh;min-height:240px;border-radius:16px;overflow:hidden' });
@@ -1469,7 +1469,7 @@ function pickDest(cur, near, world, title) {   // world: 나라 밖도 찾기(�
     };
     q.addEventListener('keydown', e => { if (e.key === 'Enter') find(); });
     sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '목표 지점 고르기' },
-      el('h2', { style: 'margin:0', text: title || '🏁 목표 지점' }), title ? el('div', { class: 'sub', style: 'font-size:14px', text: '맞는 자리를 지도에서 누르거나 이름으로 찾은 뒤 \'여기로 정하기\'를 눌러 주세요.' }) : null,
+      el('h2', { style: 'margin:0', text: title || '🏁 목표 지점' }), ex && ex.box ? ex.box : null, title ? el('div', { class: 'sub', style: 'font-size:14px', text: '맞는 자리를 지도에서 누르거나 이름으로 찾은 뒤 \'여기로 정하기\'를 눌러 주세요.' }) : null,
       el('div', { class: 'row', style: 'gap:8px;flex-wrap:nowrap' }, q, el('button', { class: 'btn line small', text: '찾기', onclick: find })),
       mapBox, info,
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => close(null) }),
@@ -1478,7 +1478,11 @@ function pickDest(cur, near, world, title) {   // world: 나라 밖도 찾기(�
     setTimeout(() => {
       m = L.map(mapBox); mdTileLayer().addTo(m);
       if (near) L.circleMarker(near, { radius: 7, color: '#fff', weight: 3, fillColor: '#0A84FF', fillOpacity: 1 }).addTo(m);
-      if (at) { m.setView(at, 15); put(at, name); } else m.setView(near || [37.5665, 126.978], near ? 15 : 12);
+      const xp = (ex && ex.pts || []).filter(p => Number.isFinite(p.lat));
+      if (xp.length > 1) L.polyline(xp.map(p => [p.lat, p.lng]), { color: '#6B7684', weight: 3, opacity: .8, dashArray: '6 6' }).addTo(m);
+      xp.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-13px,-13px);display:flex;align-items:center;gap:4px;white-space:nowrap"><b style="width:26px;height:26px;border-radius:50%;background:#15202B;color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${p.no}</b><span style="background:#fff;color:#15202B;font:700 12px Pretendard,sans-serif;padding:2px 7px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.25)">${String(p.n || '').replace(/[<&]/g, '').slice(0, 14)}</span></div>` }) }).addTo(m));
+      if (xp.length) { const b = L.latLngBounds(xp.map(p => [p.lat, p.lng])); if (at) b.extend(at); m.fitBounds(b, { padding: [36, 36], maxZoom: 16 }); if (at) put(at, name); }
+      else if (at) { m.setView(at, 15); put(at, name); } else m.setView(near || [37.5665, 126.978], near ? 15 : 12);
       m.on('click', e => put([e.latlng.lat, e.latlng.lng]));
     }, 30);
   });
@@ -3112,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-105-route';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-106-why';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🥾 여행·등산 계획 지도에 실제 걷는 길이 그려져요: 점과 점을 곧게 잇던 선 대신 지도의 길을 따라 굵은 선 · 줄 사이 거리도 걷는 길 거리로 · 🗺 지도 선명하게 · ⚠ 확인이 필요한 곳은 맨 위 주황 상자에서 바로 고쳐요';
+const UI_NOTES = '⚠ 위치 확인 창에 판단 자료: 왜 다시 봐야 하는지 · 블로그(일정표)에 적힌 말 · 앞뒤 장소를 지도에 번호로 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8635,7 +8639,18 @@ function viewPlanOne(id) {
   const needChk = x => x.k !== 'move' && !(x.k === 'fly' && !Number.isFinite(x.lat)) && (!Number.isFinite(x.lat) || x.ap || x.near || x.vf);
   const whyChk = x => !Number.isFinite(x.lat) ? '지도 위치가 아직 없어요' : x.vf ? x.vf.replace(/^⚠\s*/, '') : x.near ? '앱이 앞뒤 장소 사이로 짐작한 위치예요' : '앱이 짐작한 대략 위치예요 · 틀릴 수 있어요';
   async function fixLoc(x) {
-    const r = await pickDest(Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng, n: x.n } : null, Number.isFinite(x.lat) ? [x.lat, x.lng] : centerOf(), true, `📍 '${x.n}' 위치 바로잡기`);
+    // 판 -106 (사용자 '블로그에선 뭐라고 했는지, 왜 다시 봐야 하는지 판단 자료를 줘야지'): 까닭·블로그(일정표) 글·앞뒤 장소를 창 위에, 앞뒤 장소는 지도에 번호로
+    const its = planItems(p, x.d), i = its.indexOf(x), loc = y => y && Number.isFinite(y.lat) && y.k !== 'fly' && y.k !== 'move';
+    let a = null, b = null; for (let j = i - 1; j >= 0; j--) if (loc(its[j]) && !needChk(its[j])) { a = its[j]; break; } for (let j = i + 1; j < its.length; j++) if (loc(its[j]) && !needChk(its[j])) { b = its[j]; break; }
+    const no = y => its.indexOf(y) + 1, src = p.src === 'blog' ? '블로그' : p.src === 'hana' ? '여행사 일정표' : '일정표';
+    const said = [x.m, x.x].filter(Boolean).join('\n').trim().slice(0, 400);
+    const sec = (h, t, c) => el('div', { style: `margin-top:8px;padding:10px 12px;border-radius:12px;background:${c || '#F5F6F8'}` }, el('div', { style: 'font-weight:800;font-size:13.5px;margin-bottom:3px', text: h }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.5', text: t }));
+    const box = el('div', {},
+      sec('⚠ 왜 다시 봐야 하나요', whyChk(x) + (Number.isFinite(x.lat) ? '\n지도의 🏁 자리가 지금 앱이 넣어 둔 위치예요.' : ''), '#FFF0E6'),
+      sec(`📝 ${src}에 적힌 말`, said || `${src}에 이 장소 설명이 따로 없어요. 이름만 있어요: '${x.n}'`),
+      (a || b) ? sec('🧭 앞뒤 장소', `${a ? `${no(a)}. ${a.n}` : '(처음)'} → ${i + 1}. ${x.n} → ${b ? `${no(b)}. ${b.n}` : '(끝)'}\n지도에 검은 번호로 보여요. 이 곳은 보통 그 사이 길 위에 있어요.`) : null);
+    const r = await pickDest(Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng, n: x.n } : null, Number.isFinite(x.lat) ? [x.lat, x.lng] : centerOf(), true, `📍 '${x.n}' 위치 바로잡기`,
+      { box, pts: [a, b].filter(Boolean).map(y => ({ lat: y.lat, lng: y.lng, no: no(y), n: y.n })) });
     if (!r) return; x.lat = r.lat; x.lng = r.lng; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 고쳤어요`);
   }
   function okLoc(x) { x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 맞다고 표시했어요`); }
