@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-111-rt';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-114-descent';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7186,7 +7186,7 @@ async function planUnpack(s) {
     meet: o.mt && typeof o.mt === 'object' ? { d: /^\d{4}-\d{2}-\d{2}$/.test(o.mt.d) ? o.mt.d : '', t: /^\d{1,2}:\d{2}$/.test(o.mt.t) ? o.mt.t : '', n: str(o.mt.n, 200) } : null,
     info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x),
     room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null,
-    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined };
+    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined, rd: o.rd ? 1 : 0 };
 }
 // 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
 //   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
@@ -7828,7 +7828,16 @@ async function viewPlan() {
   const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash), hs = /#ps=/.test(location.hash);
   if (hs) app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), el('div', { class: 'card sub', text: '🗓 받은 여행 계획을 여는 중이에요…' })));
   if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
-    let filled = 0; try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
+    let filled = 0; try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p);
+      if (p.rd) {   // 판 -114: '하산길 바꾸기' 링크 — 같은 날 계획의 정상 뒤 일정을 링크 속 하산길로 바꿔요(새 계획을 만들지 않음)
+        const w1 = v => String(v || '').split(/[\s·]/)[0], day = planAll().filter(x => x.start === p.start && x.nd === p.nd),
+          tg = day.find(x => w1(x.name) === w1(p.name)) || (day.length === 1 ? day[0] : day.find(x => (x.it || []).some(y => /정상/.test(y.n) || y.k === 'peak')));
+        const isPk = y => y.k === 'peak' || /정상/.test(y.n || ''), lastPk = L => { for (let i = L.length - 1; i >= 0; i--) if (L[i].k === 'peak') return i; for (let i = L.length - 1; i >= 0; i--) if (isPk(L[i])) return i; return -1; };
+        if (tg) { const mine = (tg.it || []).filter(y => y.d === 0), rest = (tg.it || []).filter(y => y.d !== 0), i0 = lastPk(mine), j0 = lastPk(p.it.filter(y => y.d === 0));
+          if (i0 >= 0 && j0 >= 0) { const inc = p.it.filter(y => y.d === 0).slice(j0 + 1).map(y => Object.assign({}, y, { id: planNewId(), man: 1 }));
+            tg.it = mine.slice(0, i0 + 1).concat(inc, rest); tg.u = Date.now(); planSave(tg);
+            history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(tg.id)); toast('⛰ ' + tg.name + ' · 정상 뒤 하산길을 바꿨어요 (' + inc.map(y => y.n.replace(/\s*\(.*$/, '')).join(' → ') + ')', false, 7000); return viewPlanOne(tg.id); } }
+      } const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
       const same = cands.find(x => x.name === p.name && (x.it || []).length === p.it.length) || cands.find(x => x.name === p.name) || cands[0];
       for (const same of cands) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
         let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.code && !same.code) { same.code = p.code; same.src = 'hanatour'; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
