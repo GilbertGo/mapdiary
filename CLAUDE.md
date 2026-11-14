@@ -255,6 +255,12 @@
 - **판 -101 영상 공유 고침**(같은 날 사용자 캡처 '공유하기 눌렀는데 반응이 안보여', 120초·88MB 계획 영상): 앱 native.js의 navigator.share가 파일을 한꺼번에 base64로 바꿔 넘겨 큰 영상에서 한참 멈춤, 웹은 누른 뒤 일정 링크를 만드느라 기다려 공유 창이 막힐 수 있었음 → `filmResult` 공유 단추 `shBtn`: 일정 글(`shText`)은 미리 만들고, 누르자마자 '공유 창을 여는 중…', 앱은 `filmNativeWrite`(Filesystem writeFile+appendFile 3MB씩, stat으로 크기 확인, '공유 준비 중… n%')로 CACHE share/에 쓴 뒤 `Capacitor.Plugins.Share`로 바로, 웹은 곧바로 navigator.share, NotAllowed면 '✓ 한 번 더 누르면…'. `filmSave`(앱 다운로드 폴더)도 `filmNativeWrite`로. 새 APK 필요 없음
 - 아직: 계획 대 실제 비교 화면, 실제 길(도로) 시간(돈·열쇠 필요)
 
+## 🤖 여행 도우미 (2026-11-15, 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게. 하자', 판 -112-tripbot)
+- 묻기(누구나): 계획·오늘 화면 아래 메뉴 '🤖 물어보기'(`tvBar`) → `planAskSheet(p)`(상태 줄 `trBotWho` · 질문·답 목록 · 자주 묻는 질문 칩 `TB_QUICK` · 이름 칸(없을 때) · 입력) 또는 여행 방 대화 입력칸 옆 🤖 단추. 질문은 여행 방 `tc/{번호}`에 {ask:1, x}(`trAsk`)로 올라가 일행 모두 봄
+- 답하기: Claude 열쇠(`claudeKey`)를 넣은 휴대폰이 MPD의 계획·오늘·여행 방 화면이나 첫 화면 여행 카드를 켜 둔 동안 `trBotStart`가 15초마다 방을 보고(`trBotTick`, 하루 지난 질문은 안 함) `trBotAnswer`: 먼저 `tc/a_{질문}`에 {bot:1, wait:1}(다른 열쇠 휴대폰과 겹치지 않게, 2분 지나면 이어받음) → `FA_MODEL`에 `planBotCtx(p)`(일정·시각·메모·여행사 안내 x·출입국 안내·미팅·날씨·준비 목록, 6만 자까지, 사진·위치·이름 안 보냄) + 앞 질문 3개 → JSON {text, src} → 같은 자리에 답 {bot:1, x, src, ow}. 실패면 {err:1} '⚠ 까닭'. 시스템 글: 자료에 있는 것만, 없으면 '여행 자료엔 없어요' + 가이드·여행사, 지명은 자료 그대로
+- 켜 둔 휴대폰은 2분마다 `tm/{나}`에 bot 시각 → 일행 화면 '🤖 지금 바로 답해요 · 성식 님 휴대폰' / '⏳ ○○ 님 휴대폰에서 MPD가 켜지면 답해요' / '아직 답해 줄 휴대폰이 없어요'. 열쇠 휴대폰은 창에서 '일행 질문에 답하기 끄기'(`ls tripBot:{방}`, 새 키), 하루 `TB_DAY_MAX` 60번(`ls tripBotN`={d,n}, 새 키), 쓸 때마다 알림 두 번·`labAiLog` kind '여행 도우미'
+- 답 말풍선 `trBotBubble`(옅은 산호 · '근거 · …' · '여행 자료로만 답해요 · 틀릴 수 있어요 · ○○ 님 휴대폰'). 한계: 열쇠 휴대폰이 꺼져 있으면 답이 늦음(서버 없음), 실시간 정보(영업·환율) 모름. 시험 scratchpad `room/bt2.js`(두 휴대폰, 가짜 Firestore·가짜 Claude)
+
 ## 🎨 새 디자인 1차 (2026-11-15, 판 -102-design)
 - 사용자 '여행 화면 너무 어둡다' → 색만 바꾼 시안 셋을 다 싫다고 함 + '디자인 감각이 구리다, 분석 잘하고 제안해' → 잘 만든 여행 앱(Wanderlog·Polarsteps·에어비앤비·TripIt·트리플) 화면을 보여 드리고 분석 → 'MPD 전반에 걸쳐 디자인 다 고쳐' → MPD 전체 캡처 진단(화면마다 다른 앱 같음·긴 설명 글·시끄러운 단추·무지개 숫자) → 구성부터 다시 짠 시안 ①이야기 ②기록 보기 ③여행 계획 ④나 → 시안 옆 체크 양식으로 '1234 괜찮아'. 시안 그림 scratchpad `zjj/dg/mock.html`·`mshot.js`, 캡처 `zjj/dg/cap.js`(가짜 기록 `seed.js`, `VP=1 OUT=vp`면 화면 크기만), 검토용 그림은 저장소 가지 `design-mock`(main 아님)
 - 공통 `html.n-page`(CSS 맨 아래 '새 디자인 공통'): 바탕 #F5F6F8·흰 카드(테두리 없음, 둥글기 18)·글 #15202B/#6B7684·강조 청록 #1D9EC0 하나·주 단추 짙은 남색. 머리 `.n-top`(동그란 아이콘 단추 `.n-ib`) + 큰 제목 `.n-lt`(30px) + `.n-ls`, 밑줄 탭 `.n-seg`, 사진 카드 `.n-rc`, 줄 `.n-row`, 접는 칸 `details.n-fold`. `cSvg`에 search·cal·back·more·share·again·film·dl·bag·chat·send·img·palette·key·scale·flag·vol·flask·heart·watch·cloud·x 더함
