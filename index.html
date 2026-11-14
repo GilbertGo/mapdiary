@@ -674,7 +674,7 @@ html.tv-page a{color:inherit}
 .tv-chips{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.tv-chips::-webkit-scrollbar{display:none}
 .tv-chips button{flex:none;padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.14);color:#fff;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap}
 .tv-chips button.on{background:#FF8A6B;color:#1A0D08}
-.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}
+.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 92px);right:12px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
 .tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
 .tv-day{font-weight:900;font-size:17px;margin:14px 0 2px;color:#fff}.tv-day small{display:block;font-weight:600;font-size:13px;color:#9FB0C2}
 .tv-tl{position:relative;padding-left:26px}
@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-97-blogfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-98-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📝 블로그 글로 계획 만들 때 지금 몇 번째 단계인지·몇 초 지났는지 보여요 · 정상 찾기는 20초 안에 끝나요 · 👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
+const UI_NOTES = '🖼 등산 계획 맨 위 사진은 정상 둘레 산 사진으로 · 마음에 안 들면 ↻ 다른 사진 · 📝 블로그 글로 계획 만들 때 지금 몇 번째 단계인지·몇 초 지났는지 보여요 · 정상 찾기는 20초 안에 끝나요 · 👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8227,29 +8227,56 @@ async function viewPlanToday(p) {
 // ---------- ✈ 여행 화면 B안 '여행 매거진' (2026-11-15 사용자 'B') ----------
 //   맨 위 여행지 사진: ① 여행 방에 올라온 사진(가장 최근, 가로 사진 먼저) ② 위키백과(영어) 지도 주변 글의 대표 사진(첫 구경 장소 둘레 10km, 가로·800px 넘는 것) → ls planHero:{ID}(새 키, 30일)
 //   못 받으면 남색 그라데이션 그대로. 위키 사진은 오른쪽 위에 작게 '사진 위키백과'(누르면 출처)
-async function tvHeroImg(p) {
-  try { if (p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
+// 계획 맨 위 사진 (2026-11-15 사용자 인왕산 등산 계획 캡처 '사진을 왜 이거 썼어 가기싫어져': 첫 장소(경복궁역) 둘레 위키 사진이 공사 중인 궁궐이었음)
+//   등산 계획(⛰ 정상 있음)은 정상 둘레(2km) 위키미디어 공용 풍경 사진 → 정상 둘레 위키백과 · 그 밖은 첫 구경 장소 둘레 위키백과
+//   '↻ 다른 사진'으로 넘겨 볼 수 있고 넘긴 사진은 ls planHeroSkip:{ID}(새 키)에 남겨 다시 안 고름
+async function tvHeroCands(p) {
+  const its = p.it || [], pk = its.find(x => x.k === 'peak' && Number.isFinite(x.lat)), hike = !!(pk || (p.hike && p.hike.on));
+  const sp = pk || its.find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || its.find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return [];
+  const out = [], bad = /map|karte|logo|sign|plan|diagram|flag|locator|seal|emblem|svg|ticket|menu|screenshot|construction|scaffold|ipark|apartment|badminton|court|station|car|interior|지도|안내|아파트|공사/i;
+  if (hike) {   // 위치로 찾으면 둘레 아무 사진(자동차·아파트)이 섞여서 산 이름으로 찾아요
+    const nm = String(pk ? pk.n : (p.name || '')).replace(/\s*정상.*$/, '').replace(/\s.*$/, '').trim(); let en = '';
+    if (nm) try {   // ① 한국어 위키백과 그 산 글의 대표 사진 + 영어 이름
+      const r = await fetchT(`https://ko.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(nm)}&redirects=1&prop=pageimages%7Clanglinks&lllang=en&piprop=original%7Cthumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
+      if (r.ok) { const pg = Object.values(((await r.json()).query || {}).pages || {})[0] || {}; en = ((pg.langlinks || [])[0] || {})['*'] || '';
+        const o = pg.original; if (o && o.width >= 900 && o.width > o.height * 1.1 && !bad.test(o.source)) out.push({ u: (pg.thumbnail && pg.thumbnail.source) || o.source, t: pg.title, src: 'kw' }); }
+    } catch {}
+    if (nm) try {   // ② 위키미디어 공용에서 산 이름으로 (검색 순위대로, 가로 사진만)
+      const r = await fetchT(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent((en || nm) + ' filetype:bitmap')}&gsrnamespace=6&gsrlimit=30&prop=imageinfo&iiprop=url%7Csize%7Cmime&iiurlwidth=1280`, {}, 12000);
+      if (r.ok) { const P = Object.values(((await r.json()).query || {}).pages || {}).map(pg => ({ pg, ii: (pg.imageinfo || [])[0] })).filter(({ pg, ii }) => ii && /jpeg/.test(ii.mime) && ii.width >= 1000 && ii.width > ii.height * 1.2 && !bad.test(pg.title));
+        P.sort((a, b) => (a.pg.index || 99) - (b.pg.index || 99));
+        P.slice(0, 8).forEach(({ pg, ii }) => { if (!out.some(x => x.u === (ii.thumburl || ii.url))) out.push({ u: ii.thumburl || ii.url, t: String(pg.title), src: 'cm', page: ii.descriptionurl }); }); }
+    } catch {}
+  }
+  try {   // 위키백과 글 대표 사진: 등산이면 정상 3km, 그 밖은 10km
+    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=${hike ? 3000 : 10000}&ggslimit=20&prop=pageimages&piprop=original|thumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
+    if (r.ok) { const P = Object.values(((await r.json()).query || {}).pages || {}).filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !bad.test(x.original.source)).sort((a, b) => (a.index || 99) - (b.index || 99));
+      P.slice(0, 5).forEach(x => out.push({ u: (x.thumbnail && x.thumbnail.source) || x.original.source, t: x.title, src: 'wp' })); }
+  } catch {}
+  return out;
+}
+async function tvHeroImg(p, again) {
+  try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
     for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
-  const k = 'planHero:' + p.id, c = ls.get(k, null); if (c && c.u && c.v === 2 && Date.now() - c.at < 30 * 864e5) return c;
-  const sp = (p.it || []).find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || (p.it || []).find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return null;
-  try {   // 판 -91: 위키 API가 주는 1280px 그림 주소(thumbnail)를 쓰고, 실제로 열리는지 먼저 받아 봄(예전엔 주소만 정해 사진이 빈 채로 '사진 · 위키백과'만 보였음)
-    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=10000&ggslimit=20&prop=pageimages&piprop=original|thumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
-    if (!r.ok) return null; const j = await r.json(), P = Object.values((j.query || {}).pages || {});
-    const ok = P.filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !/map|flag|logo|locator|svg|seal|emblem/i.test(x.original.source)).sort((a, b) => (a.index || 99) - (b.index || 99));
-    for (const pick of ok.slice(0, 5)) for (const u of [pick.thumbnail && pick.thumbnail.source, pick.original.source].filter(Boolean)) {
-      if (await tvImgOk(u)) { const o = { u, t: pick.title, at: Date.now(), v: 2 }; ls.set(k, o); return o; } }
-    return null;
-  } catch { return null; }
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 3 && Date.now() - c.at < 30 * 864e5) return c;
+  const skip = ls.get('planHeroSkip:' + p.id, []) || [];
+  const L = await tvHeroCands(p); let cand = L.filter(x => !skip.includes(x.u));
+  if (!cand.length && L.length) { ls.set('planHeroSkip:' + p.id, []); cand = L; }   // 다 넘겼으면 처음부터
+  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 3 }, x); ls.set(k, o); return o; }
+  return null;
 }
 function tvImgOk(u) { return new Promise(res => { const im = new Image(), tm = setTimeout(() => res(false), 15000); im.onload = () => { clearTimeout(tm); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(tm); res(false); }; im.src = u; }); }
 function tvHero(p, o = {}) {
   const hin = el('div', { class: 'tv-hin' }), box = el('div', { class: 'tv-hero' + (o.sm ? ' sm' : '') }, hin);
   const paint = () => faRc(hin, o.d ? el('div', { class: 'tv-d', text: o.d }) : null, el('h1', { text: o.title || p.name }), o.line ? el('div', { class: 'tv-hl', text: o.line }) : null, o.chips || null);
   paint(); box.repaint = (x) => { Object.assign(o, x || {}); paint(); };
-  if (p) tvHeroImg(p).then(async im => { if (!im || !box.isConnected) return;
+  const show = again => { if (!p) return; tvHeroImg(p, again).then(async im => { if (!im || !box.isConnected) return;
     if (!im.room && !(await tvImgOk(im.u))) { try { localStorage.removeItem('planHero:' + p.id); } catch {} return; }
     box.style.backgroundImage = `url("${im.u.replace(/"/g, '%22')}")`; box.classList.add('img');
-    if (im.t) box.append(el('a', { class: 'tv-credit', href: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: '사진 · 위키백과' })); }).catch(() => {});
+    box.querySelectorAll('.tv-credit,.tv-swap').forEach(x => x.remove());
+    if (im.t) box.append(el('a', { class: 'tv-credit', href: im.src === 'cm' ? im.page || 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(im.t) : (im.src === 'kw' ? 'https://ko.wikipedia.org/wiki/' : 'https://en.wikipedia.org/wiki/') + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: im.src === 'cm' ? '사진 · 위키미디어 공용' : '사진 · 위키백과' }));
+    if (!im.room) box.append(el('button', { class: 'tv-swap', text: '↻ 다른 사진', onclick: e => { e.stopPropagation(); const sk = ls.get('planHeroSkip:' + p.id, []) || []; if (!sk.includes(im.u)) sk.push(im.u); ls.set('planHeroSkip:' + p.id, sk.slice(-30)); e.target.textContent = '찾는 중…'; show(true); } })); }).catch(() => {}); };
+  show(false);
   return box;
 }
 function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
