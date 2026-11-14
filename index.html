@@ -929,6 +929,25 @@ html.vw-lt .gallery img{width:104px;height:104px;border-radius:14px;box-shadow:n
 .st-grp .st-th{width:32px;height:32px;border-radius:9px}
 .st-grp .st-go{color:#C4CAD1;font-size:20px}
 .sheet.st-full .st-h{font-size:13px;font-weight:700;color:#6B7684;margin:12px 10px 0;letter-spacing:0}
+/* 새 디자인 2차 (2026-11-15 '다 고쳐'): 맨 위 띠(roleBar)를 쓰는 모든 화면에 같은 옷 — 파도 띠 대신 투명한 줄 · 왼쪽 동그란 ⌂ · 오른쪽 작은 화면 이름 */
+html.n-page .role:not(.r3-bar):not(.rh-bar){background:transparent!important;box-shadow:none!important;color:#15202B!important;margin:-20px 0 0 -20px!important;padding:calc(12px + env(safe-area-inset-top,0px)) 20px 2px!important;min-height:44px}
+html.n-page .role:not(.r3-bar):not(.rh-bar)::before,html.n-page .role:not(.r3-bar):not(.rh-bar)::after{display:none!important}
+html.n-page .role:not(.r3-bar):not(.rh-bar) .home{font-size:0;width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(21,32,43,.08);display:grid;place-items:center;padding:0;margin:0;color:#15202B!important}
+html.n-page .role:not(.r3-bar):not(.rh-bar) .home .hi{width:20px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315202B' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l9-7 9 7'/%3E%3Cpath d='M5 10v10h5v-6h4v6h5V10'/%3E%3C/svg%3E") center/contain no-repeat!important}
+html.n-page .role:not(.r3-bar):not(.rh-bar) .who{color:#6B7684!important;font-weight:700;font-size:13px;margin-left:auto}
+html.n-page .role:not(.r3-bar):not(.rh-bar) .r3-bgic{background:#fff!important;color:#15202B!important;border:none!important;box-shadow:0 1px 3px rgba(21,32,43,.08);width:40px;height:40px}
+html.n-page .role:not(.r3-bar):not(.rh-bar) .r3-bgic svg{stroke:#15202B}
+html.n-page .wrap>.stack>h1,html.n-page .stack>h1{font-size:28px;font-weight:800;letter-spacing:-.8px;color:#15202B}
+html.n-page .stack>a.link[href="./"]{display:none}html.n-page a.link[href="./?album=1"],html.n-page a.link[href="./?game=1"],html.n-page a.link[href="./?my=1"]{color:#6B7684;font-size:14px;font-weight:600}
+html.n-page .member{background:#fff;border:none;border-radius:16px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+html.n-page .banner{border-radius:16px}
+html.n-page .chip{border-radius:20px}
+html.n-page details.more{background:#fff;border-radius:18px;border:none}
+html.n-page .role.r3-bar .home{font-size:0;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center;padding:0;margin:0}
+html.n-page .role.r3-bar .home .hi{width:20px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315202B' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l9-7 9 7'/%3E%3Cpath d='M5 10v10h5v-6h4v6h5V10'/%3E%3C/svg%3E") center/contain no-repeat!important}
+html.n-page .role.r3-bar .r3-bgic{width:40px;height:40px;background:rgba(255,255,255,.9)!important;color:#15202B!important;border:none!important}
+html.n-page .role.r3-bar .r3-bgic svg{stroke:#15202B}
+html.n-page .role.r3-bar .who{background:rgba(255,255,255,.9);color:#15202B!important;border-radius:20px;padding:8px 14px;font-size:13px;text-shadow:none}
 /* 나의 이야기 지도 */
 .c-mapv{position:fixed;inset:0;z-index:50;background:#E8F1F6}
 .c-mapv .c-map{position:absolute;inset:0}
@@ -1145,6 +1164,7 @@ function runnerSvg(size) {
 // iconK를 주면 오른쪽 글자 대신 그 아이콘을 보여줘요 (러닝이면 팔다리가 움직이는 달리는 사람)
 function roleBar(role, who, iconK) {
   document.body.dataset.role = role;
+  { const H = document.documentElement.classList; if (!H.contains('tv-page') && !H.contains('vw-page')) H.add('n-page'); }   // 새 디자인(2026-11-15): 띠를 쓰는 모든 화면에 같은 옷
   document.title = who ? `Map Photo Diary · ${who}` : role === 'leader' ? 'Map Photo Diary · 인솔자' : 'Map Photo Diary · 참여자';
   // 맨 위 'Map Photo Diary'를 누르면 어디서든 첫 화면으로
   const home = el('a', { class: 'home', href: './', 'aria-label': 'Map Photo Diary 첫 화면으로', onclick: e => {
@@ -3076,9 +3096,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-102-design';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-103-design2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🎨 화면을 새로 다듬었어요: 밝은 바탕·흰 카드·큰 제목으로 통일 · 이야기(내 MPD)는 사진이 크게 · 기록 보기는 지도 위로 흰 판이 올라오고 공유·다시 가기·영상·GPX 단추 넷 · 여행 계획은 밝은 화면에 일정이 시각과 카드로 · 나(설정)는 묶음 목록으로';
+const UI_NOTES = '🎨 나머지 화면도 같은 모습으로: 가족 앨범·게임·모임방·대화 정리·추억 만들기·기록 중 화면·받은 MPD 모두 밝은 바탕·흰 카드·큰 제목 · 맨 위 파도 띠 대신 동그란 ⌂ 단추 · 러닝·걷기·등산·자전거 첫 화면 위 단추도 동그랗게 · 추억 만들기 화면에 보이던 null 글자 없앰';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10368,10 +10388,10 @@ function viewLab() {
     box.append(row); return box;
   };
   const draw = () => {
-    top.replaceChildren(roleBar('leader', 'AI 추억 발견'));
+    top.replaceChildren(roleBar('leader', 'AI 추억 발견')); const tA = (...x) => top.append(...x.filter(v => v != null && v !== false));   // null이 'null' 글자로 보이지 않게
     if (S.step === 'home') {
       const mems = labMems();
-      top.append(...head('AI 추억 발견', '휴대폰 사진 몇 장을 고르면 MPD 기록과 이어 추억 카드를 만들어요. 고른 사진만 이 휴대폰 안에서 보고, 앨범 전체는 보지 않아요.'),
+      tA(...head('AI 추억 발견', '휴대폰 사진 몇 장을 고르면 MPD 기록과 이어 추억 카드를 만들어요. 고른 사진만 이 휴대폰 안에서 보고, 앨범 전체는 보지 않아요.'),
         el('button', { class: 'btn primary full big', text: '📷 사진 고르기 (20~50장)', onclick: () => pick.click() }),
         el('a', { class: 'btn line full', href: './?lab=check', text: '🔎 내 기록에서 몰랐던 사실 찾기 (점검 · 읽기만)' }),
         S.phs.length ? el('button', { class: 'btn line full', text: `고른 사진 ${S.phs.length}장으로 이어서 하기`, onclick: () => go('link') }) : null,
@@ -10389,7 +10409,7 @@ function viewLab() {
     } else if (S.step === 'link') {
       const days = labDays(), ok = S.phs.filter(p => p.ts), sure = ok.filter(p => (labMatch(p.ts, days) || {}).sure).length;
       const noTs = S.phs.filter(p => !p.ts || (p.tsSrc === 'file' && !(labMatch(p.ts, days) || {}).sure));
-      top.append(...head('기록과 잇기', `고른 사진 ${S.phs.length}장 · 찍은 시각 있음 ${S.phs.filter(p => p.tsSrc === 'exif').length}장 · MPD 기록 시간과 맞음 ${sure}장 · 사진 속 위치 ${S.phs.filter(p => p.locSrc === 'exif').length}장`),
+      tA(...head('기록과 잇기', `고른 사진 ${S.phs.length}장 · 찍은 시각 있음 ${S.phs.filter(p => p.tsSrc === 'exif').length}장 · MPD 기록 시간과 맞음 ${sure}장 · 사진 속 위치 ${S.phs.filter(p => p.locSrc === 'exif').length}장`),
         el('div', { class: 'sub', style: 'font-size:13px', text: '휴대폰이 개인정보 보호로 사진의 위치를 지워서 줄 때가 많아요. 그래서 찍은 시각으로 그때의 MPD 기록을 찾고, 기록의 길에서 위치를 알아내요.' }),
         noTs.length ? el('div', { class: 'card sub', text: `찍은 시각을 모르는 사진 ${noTs.length}장(파일 날짜뿐)은 그날이 맞는지 알 수 없어 후보에서 빠져요.` }) : null,
         el('div', { style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:4px' }, ...S.phs.slice(0, 50).map(p => { const m = p.ts ? labMatch(p.ts, days) : null;
@@ -10398,10 +10418,10 @@ function viewLab() {
         el('button', { class: 'btn primary full big', text: '추억 후보 찾기', onclick: () => { S.cands = labCands(S.phs); go('cands'); } }),
         el('button', { class: 'btn line full', text: '← 처음으로', onclick: () => go('home') }));
     } else if (S.step === 'cands') {
-      top.append(...head('추억 후보', '확인된 것(✔)과 짐작한 것(~)을 나눠 보여 줘요. 하나를 골라 카드를 만들어요.'));
-      if (!S.cands.length) top.append(el('div', { class: 'card', text: '날짜가 있는 사진이 없어 후보를 못 만들었어요. 다른 사진을 골라 주세요.' }));
+      tA(...head('추억 후보', '확인된 것(✔)과 짐작한 것(~)을 나눠 보여 줘요. 하나를 골라 카드를 만들어요.'));
+      if (!S.cands.length) tA(el('div', { class: 'card', text: '날짜가 있는 사진이 없어 후보를 못 만들었어요. 다른 사진을 골라 주세요.' }));
       S.cands.forEach((c, i) => { c.facts = labFacts(c);
-        top.append(el('div', { class: 'card stack', style: 'gap:8px' },
+        tA(el('div', { class: 'card stack', style: 'gap:8px' },
           el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('b', { style: 'font-size:17px', text: `${i + 1}. ${c.title}` })),
           el('div', { style: 'display:flex;gap:4px;overflow-x:auto' }, ...c.ph.slice(0, 6).map(p => el('img', { src: p.th, style: 'width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none' }))),
           el('div', { class: 'sub', style: 'font-size:13px' }, el('b', { text: '고른 까닭 ' }), c.why.join(' · ') || '사진을 고르셨어요'),
@@ -10410,7 +10430,7 @@ function viewLab() {
           !c.t || !(labLinks()[c.key] || []).length ? peopleBox(c.key, draw) : null,
           !c.t && !ls.get('labNote:' + c.key, '') ? el('button', { class: 'btn small line', style: 'align-self:flex-start', text: '✎ 이날을 한 줄로 적기 (선택)', onclick: () => { const v = prompt('이날은 어떤 날이었나요? (한 줄, 적은 그대로 카드 글에 써요)', ''); if (v && v.trim()) { ls.set('labNote:' + c.key, v.trim().slice(0, 80)); draw(); } } }) : null,
           el('button', { class: 'btn primary full', text: '이 추억으로 카드 만들기', onclick: () => { S.c = c; S.opt = { ph: c.ph.length <= 3 ? c.ph : [c.ph[0], c.ph[Math.floor(c.ph.length / 2)], c.ph[c.ph.length - 1]], msg: labMsg(c), showDate: true, showAct: !!c.t, showPlace: true, ai: null }; go('card'); } }))); });
-      top.append(el('button', { class: 'btn line full', text: '← 사진 다시 보기', onclick: () => go('link') }));
+      tA(el('button', { class: 'btn line full', text: '← 사진 다시 보기', onclick: () => go('link') }));
     } else if (S.step === 'card') {
       const c = S.c, o = S.opt, img = el('img', { style: 'width:100%;border-radius:14px;display:block;background:#10161F;aspect-ratio:4/5' });
       const repaint = async () => { const cv = await labCard(c, o); S.cv = cv; img.src = cv.toDataURL('image/jpeg', .9); };
@@ -10418,7 +10438,7 @@ function viewLab() {
       let tm = 0; ta.addEventListener('input', () => { o.msg = ta.value; clearTimeout(tm); tm = setTimeout(repaint, 400); });
       const tog = (k, t) => el('button', { class: 'btn small ' + (o[k] ? 'primary' : 'line'), text: (o[k] ? '✓ ' : '') + t, onclick: () => { o[k] = !o[k]; draw(); } });
       const aiNote = el('div', { class: 'sub', style: 'font-size:13px' }, o.ai ? (o.ai.odd.length ? `⚠ AI 글에 사실에 없는 숫자(${o.ai.odd.join(', ')})가 있어요. 확인해 주세요` : '✨ AI가 다듬은 글이에요 · 확인된 사실만 쓰게 했어요 · 마음대로 고쳐도 돼요') : '');
-      top.append(...head('카드 만들기', '사진·글·보일 정보를 고르고, 글은 마음대로 고쳐요.'), img,
+      tA(...head('카드 만들기', '사진·글·보일 정보를 고르고, 글은 마음대로 고쳐요.'), img,
         el('div', { style: 'display:flex;gap:6px;overflow-x:auto' }, ...c.ph.map(p => { const sel = o.ph.includes(p);
           return el('img', { src: p.th, style: `width:60px;height:60px;object-fit:cover;border-radius:8px;flex:none;outline:${sel ? '3px solid #FF8A4C' : 'none'};opacity:${sel ? 1 : .6}`, onclick: () => { if (sel) { if (o.ph.length > 1) o.ph = o.ph.filter(x => x !== p); } else if (o.ph.length < 3) o.ph = [...o.ph, p]; else toast('사진은 3장까지예요'); draw(); } }); })),
         el('div', { class: 'sub', style: 'font-size:12px', text: '사진을 눌러 1~3장 고르기' }),
@@ -10442,7 +10462,7 @@ function viewLab() {
         const up = await Kakao.Share.uploadImage({ file: files }); const u = APP_BASE;
         Kakao.Share.sendDefault({ objectType: 'feed', content: { title: c.title, description: o.msg.slice(0, 200), imageUrl: up.infos.original.url, imageWidth: up.infos.original.width || 1080, imageHeight: up.infos.original.height || 1350, link: { mobileWebUrl: u, webUrl: u } }, buttons: [] });
         setTimeout(done, 1500); } catch (e) { toast('⚠ 카카오톡으로 보내지 못했어요 · 아래 \'다른 앱으로\'에서 카카오톡을 골라 주세요'); } }, '카카오톡으로 보내기') : null;
-      top.append(...head('보내기 전 확인', '받는 사람에게는 이 그림 한 장과 글이 가요. MPD 앱이 없어도 볼 수 있어요. 직접 눌러야 보내져요.'), img,
+      tA(...head('보내기 전 확인', '받는 사람에게는 이 그림 한 장과 글이 가요. MPD 앱이 없어도 볼 수 있어요. 직접 눌러야 보내져요.'), img,
         el('div', { class: 'card sub', style: 'white-space:pre-wrap', text: o.msg }),
         kak,
         el('button', { class: 'btn primary full', text: '📤 다른 앱으로 보내기 (문자·메일 등)', onclick: async () => { const f = new File([await blob()], 'mpd_memory.jpg', { type: 'image/jpeg' });
@@ -10452,7 +10472,7 @@ function viewLab() {
     } else if (S.step === 'idea') {
       const c = S.c, idea = S.idea || (S.idea = labIdea(c)), ms = labMems(), cur = ms.find(m => m.id === S.memId);
       if (cur && !cur.idea) { cur.idea = idea.x; ls.set('labMem', ms); }
-      top.append(...head('추억을 남겼어요', '이 기억에서 이어지는 새로운 경험 한 가지예요.'),
+      tA(...head('추억을 남겼어요', '이 기억에서 이어지는 새로운 경험 한 가지예요.'),
         el('div', { class: 'card stack', style: 'gap:6px' }, el('b', { style: 'font-size:17px', text: '🌱 ' + idea.x }), el('div', { class: 'sub', style: 'font-size:13px', text: '까닭 · ' + idea.why })),
         ls.get('claudeKey', '') ? el('button', { class: 'btn line full', text: '✨ AI에게 다른 생각 물어보기', onclick: async e => { e.target.disabled = true; e.target.textContent = '✨ AI가 생각하는 중…';
           const r = await labAi('새로운 경험 제안', c.facts.f.map(x => x.x), `위 기억과 이어지지만 똑같이 반복하지 않는, 오늘 1~2시간 안에 할 수 있는 새로운 경험 한 가지를 한 문장으로 제안하라. 가게 이름·특정 장소 이름은 사실에 있을 때만 쓴다. 지금은 ${new Date().getMonth() + 1}월 ${new Date().getHours()}시.`);
