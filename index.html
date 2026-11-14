@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-91-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-92-fill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✈ 여행 화면 맨 위 사진이 비어 보이던 것을 고쳤어요 · 사진이 실제로 열리는지 확인하고 보여 줘요 · 사진을 못 받으면 빈 칸을 크게 두지 않고 줄여요';
+const UI_NOTES = '🗓 받은 계획 링크를 다시 열면 비어 있던 장소 위치를 채워요 · 이미 넣어 둔 계획이라도 위치 없음이 사라져요 · 직접 정한 위치는 그대로예요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6927,13 +6927,20 @@ async function viewPlan() {
   const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash), hs = /#ps=/.test(location.hash);
   if (hs) app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), el('div', { class: 'card sub', text: '🗓 받은 여행 계획을 여는 중이에요…' })));
   if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
-    try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const same = planAll().find(x => x.name === p.name && x.start === p.start && (x.it || []).length === p.it.length);
-      if (same) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
+    let filled = 0; try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
+      const same = cands.find(x => x.name === p.name && (x.it || []).length === p.it.length) || cands.find(x => x.name === p.name) || cands[0];
+      for (const same of cands) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
         let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
         for (const y of same.it) if (!y.x) { const z = p.it.find(q => q.n === y.n && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
-        if (ch) planSave(same);
+        {   // 판 -92: 위치도 채워요. 내 계획에 위치가 없거나 대략인 곳 ← 링크 속 같은 날 같은 이름(띄어쓰기 무시), 장소 수가 같으면 같은 차례의 같은 날 장소(예전엔 설명만 채워 '위치 없음'이 그대로 남았음)
+          const nm = v => String(v || '').replace(/\s+/g, ''), eq = same.it.length === p.it.length;
+          same.it.forEach((y, i) => { const z = p.it.find(q => q.d === y.d && nm(q.n) === nm(y.n)) || (eq && p.it[i].d === y.d ? p.it[i] : null);
+            if (!z || !Number.isFinite(z.lat)) return; const yHas = Number.isFinite(y.lat), better = !yHas || ((y.ap || y.near) && !z.ap && !z.near);
+            if (better) { y.lat = z.lat; y.lng = z.lng; y.ap = z.ap || 0; if (z.near) y.near = z.near; else delete y.near; ch++; } });
+        }
+        if (ch) planSave(same); filled += ch;
       }
-      const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? '이미 넣어 둔 계획이에요' : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
+      const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
   if (qs.get('p') && qs.get('today')) { const pt = planGet(qs.get('p')); if (pt) return viewPlanToday(pt); }
