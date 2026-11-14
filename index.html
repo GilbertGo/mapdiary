@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-111-planroad';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-112-tripbot';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🤖 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8204,17 +8204,18 @@ async function viewTripRoom(code, title, planId) {
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
       el('div', { class: 'sub', text: `함께하는 사람 ${pp.size}명${pp.size ? ' · ' + [...pp.values()].join(', ') : ''}${S.err ? ' · ⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' : ''}` }),
       trName() ? null : el('div', { class: 'card', style: 'padding:12px;border:2px solid var(--accent)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '일행에게 보일 내 이름을 적어 주세요' }),
-        el('div', { class: 'row', style: 'gap:6px' }, nmIn, el('button', { class: 'btn primary small', text: '저장', onclick: async () => { const v = nmIn.value.trim().slice(0, 12); if (!v) return; ls.set('nick', v); trPut(R, 'tm', me, { by: me, nm: v, t: Date.now() }).catch(() => {}); draw(); } }))),
+        el('div', { class: 'row', style: 'gap:6px' }, nmIn, el('button', { class: 'btn primary small', text: '저장', onclick: async () => { const v = nmIn.value.trim().slice(0, 12); if (!v) return; ls.set('nick', v); trPut(R, 'tm', me, { by: me, nm: v, bot: trBotOn(R) ? Date.now() : 0, t: Date.now() }).catch(() => {}); draw(); } }))),
       el('div', { class: 'row', style: 'gap:6px' }, tb('chat', '💬 대화'), tb('photo', `📷 사진 ${live().length}`), tb('loc', '📍 위치')));
   }
   function bubble(m) {
+    if (m.bot) return trBotBubble(m);
     const mine = m.by === me, phs = (m.ph || []).map(id => S.tp.find(x => x.id === id)).filter(x => x && !x.del);
     return el('div', { style: `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px` },
-      mine ? null : el('div', { class: 'dt', style: 'font-weight:700', text: m.nm || '일행' }),
+      mine && !m.ask ? null : el('div', { class: 'dt', style: 'font-weight:700', text: (mine ? '' : (m.nm || '일행') + ' · ') + (m.ask ? '🤖 도우미에게' : '') }),
       m.x ? el('div', { style: `max-width:82%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;${mine ? 'background:var(--pine);color:#fff;border-bottom-right-radius:4px' : 'background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px'}`, text: m.x }) : null,
       phs.length ? el('div', { style: 'display:grid;grid-template-columns:repeat(3,72px);gap:4px' }, ...phs.slice(0, 9).map(ph => el('img', { src: ph.th, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer', onclick: () => { const L = live(); trViewer(R, L, Math.max(0, L.indexOf(ph))); } }))) : null,
       phs.length > 9 ? el('div', { class: 'dt', text: `외 ${phs.length - 9}장 · 📷 사진에서 모두` }) : null,
-      el('div', { class: 'dt', style: 'font-size:11px', text: trHm(m.t) }));
+      el('div', { class: 'dt', style: 'font-size:11px', text: trHm(m.t) + (m.ask && !S.tc.some(y => y.id === 'a_' + m.id) ? ' · ⏳ ' + trBotWho(S).t.replace(/^\S+\s*/, '') : '') }));
   }
   const fileIn = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) upload(fs); } });
   async function upload(files) {
@@ -8237,7 +8238,7 @@ async function viewTripRoom(code, title, planId) {
   const status = el('div', { class: 'sub', style: 'font-weight:700' }); const setStatus = t => { status.textContent = t; };
   function drawChat() {
     const box = el('div', { class: 'stack', style: 'gap:10px;padding-bottom:90px' });
-    const msgs = S.tc.filter(m => m.x || (m.ph || []).length);
+    const msgs = S.tc.filter(m => m.x || m.wait || (m.ph || []).length);
     if (!msgs.length) box.append(el('div', { class: 'card sub', text: '아직 대화가 없어요. 첫 인사를 남겨 보세요. (앱이나 이 화면을 열어 두면 10초마다 새 글을 가져와요 · 휴대폰 알림은 오지 않아요)' }));
     let lastDay = '';
     for (const m of msgs.slice(-300)) { const dl = new Date(m.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (dl !== lastDay) { lastDay = dl; box.append(el('div', { class: 'dt', style: 'text-align:center;font-weight:700', text: dl })); } box.append(bubble(m)); }
@@ -8248,7 +8249,9 @@ async function viewTripRoom(code, title, planId) {
       try { await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S); } catch { const q = S.tc.find(y => y.id === id); if (q) q.fail = 1; toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } };
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     faRc(foot, el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:flex-end' },
-      el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', onclick: () => fileIn.click() }), ta, el('button', { class: 'btn primary small', text: '보내기', onclick: send })));
+      el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', onclick: () => fileIn.click() }), ta,
+      el('button', { class: 'btn line small', text: '🤖', title: '여행 도우미에게 묻기', onclick: async () => { const x = ta.value.trim(); if (!x) return toast('🤖 궁금한 걸 적고 누르면 여행 도우미가 답해요 · ' + trBotWho(S).t.replace(/^\S+\s*/, ''), false, 5000); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); ta.value = ''; try { await trAsk(R, S, x); draw(true); if (trBotOn(R)) { await trBotTick(code, R, S); draw(true); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } } }),
+      el('button', { class: 'btn primary small', text: '보내기', onclick: send })));
     faRc(body, status, box);
     setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
   }
@@ -8322,9 +8325,10 @@ async function viewTripRoom(code, title, planId) {
   document.documentElement.classList.add('tv-page');   // ✈ B안
   roleBar('member', '여행 방'); faRc(app, el('div', { class: 'stack', style: 'position:relative' }, tvTop(p ? './?plan=1&p=' + encodeURIComponent(p.id) : './?plan=1'), tvHero(p || { id: 'r_' + R.rid, it: [] , room: { code } }, { sm: 1, title: `${title || '여행'} 여행 방`, d: 'TRAVEL ROOM' }), el('div', { class: 'tv-sheet' }, top, body, foot), fileIn));
   draw();
-  if (trName()) trPut(R, 'tm', me, { by: me, nm: trName(), t: Date.now() }).catch(() => {});
+  if (trName()) trPut(R, 'tm', me, { by: me, nm: trName(), bot: trBotOn(R) ? Date.now() : 0, t: Date.now() }).catch(() => {});
   locStart();
   document.addEventListener('tr-changed', () => draw());
+  trBotStart(p || planOfRoom(code));
   // 새 글 가져오기: 열려 있는 동안만 (대화 10초 · 사진 20초 · 위치 30초)
   let n = 0;
   const tick = async () => {
@@ -8355,6 +8359,151 @@ function planRoomCard(p, tile) {
   paint(null);
   (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R); paint(S, R); await trSync(R, S, ['tc', 'tp', 'tm']); paint(S, R); } catch {} })();
   return box;
+}
+// ---------- 🤖 여행 도우미 (2026-11-15 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게') ----------
+//   묻기: 계획 아래 메뉴 '🤖 물어보기' 또는 여행 방 대화의 🤖 단추 → 여행 방(tc)에 질문 {ask:1}을 올려요(일행 누구나)
+//   답하기: Claude 열쇠(ls claudeKey)를 넣은 휴대폰이 MPD를 켜 둔 동안 15초마다 방을 보고 답을 tc/a_{질문}에 {bot:1, src} 로 올려요
+//     답 쓰는 중엔 {wait:1}을 먼저 올려 다른 열쇠 휴대폰과 겹치지 않게(2분 지나면 다른 휴대폰이 이어받음)
+//   자료: 그 휴대폰에 있는 계획(일정·시각·메모·여행사 안내·출입국 안내·미팅·날씨·준비 목록)만 보내요. 사진·위치·일행 이름은 안 보내요
+//   켜 둔 휴대폰은 2분마다 tm/{나}에 bot 시각을 남겨 → 일행 화면에 '지금 바로 답해요 / ○○ 님 휴대폰이 켜지면 답해요'
+//   하루 60번까지(ls tripBotN={d,n}), 끄기 ls tripBot:{방}=false(새 키), 쓸 때마다 알림·labAiLog
+var TB_DAY_MAX = 60;
+function planOfRoom(code) { return planAll().find(p => p.room && p.room.code === code) || null; }
+function trBotKey() { return String(ls.get('claudeKey', '') || '').trim(); }
+function trBotOn(R) { return !!trBotKey() && ls.get('tripBot:' + R.rid, true) !== false; }
+function trBotWho(S) {   // 답해 줄 휴대폰 상태 (일행 화면에 보여 줄 글)
+  const me = trMe(), now = Date.now(), L = (S.tm || []).filter(x => x.bot).sort((a, b) => b.bot - a.bot);
+  const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trBotKey();
+  if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '🤖 이 휴대폰은 답하기를 꺼 뒀어요' };
+  if (live) return { ok: 1, t: live.by === me ? '🤖 이 휴대폰이 바로 답해요 (Claude 열쇠)' : `🤖 지금 바로 답해요 · ${live.nm || '일행'} 님 휴대폰` };
+  if (mine) return { ok: 1, t: '🤖 이 휴대폰이 바로 답해요 (Claude 열쇠)' };
+  if (any) return { ok: 0, t: `⏳ ${any.nm || '일행'} 님 휴대폰에서 MPD가 켜지면 답해요 (마지막 ${trAgo(any.bot)})` };
+  return { ok: 0, t: '⏳ 아직 답해 줄 휴대폰이 없어요 · Claude 열쇠를 넣은 일행이 MPD를 켜면 답해요' };
+}
+function planBotCtx(p) {   // 계획 자료를 글로 (Claude에게 보낼 것)
+  const L = [], wx = ls.get('planWx:' + p.id, null), K = planToday(p), cut = (s, n) => String(s || '').replace(/\s+\n/g, '\n').trim().slice(0, n);
+  L.push(`여행 이름: ${p.name}`, `기간: ${p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 없음'} (${p.nd - 1}박 ${p.nd}일)`);
+  if (p.meet) L.push(`출발 미팅: ${[p.meet.d, p.meet.t, p.meet.n].filter(Boolean).join(' · ')}`);
+  for (const z of (p.info || [])) L.push(`[안내 · ${z.h}]\n${cut(z.x, 1500)}`);
+  for (let d = 0; d < p.nd; d++) {
+    L.push(`\n[${d + 1}일차 · ${planDayLabel(p, d)}]`);
+    const w = wx && wx.days && wx.days[d]; if (w) L.push(`날씨(${wx.src === 'fc' ? '예보' : '작년 같은 날'}): ${planWxLine(w)}`);
+    for (const x of planItems(p, d)) {
+      const kk = (PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1];
+      L.push(`- ${x.t || '시각 없음'} [${kk}] ${x.n}${x.m ? ` — ${cut(x.m, 200)}` : ''}${x.ok ? ' (다녀옴)' : ''}`);
+      if (x.x) L.push(`  ${planXLab(p).replace(/^\S+\s*/, '')}: ${cut(x.x, 700).replace(/\n/g, ' / ')}`);
+    }
+  }
+  try { const P = planPrepList(p, wx).S; L.push('\n[여행 준비 목록]'); for (const s of P) L.push(`${s.h}: ${s.it.map(i => i.t + (i.w ? ` (${cut(i.w, 120)})` : '')).join(' / ')}`); } catch {}
+  return { txt: L.join('\n').slice(0, 60000), today: K != null && K >= 0 && K < p.nd ? `오늘은 ${K + 1}일차(${planDayLabel(p, K)})예요.` : K != null && K < 0 ? `오늘은 출발 ${-K}일 전이에요.` : '여행 날짜가 지났거나 정해지지 않았어요.' };
+}
+async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성공하면 true
+  const me = trMe(), aid = 'a_' + q.id;
+  const N = ls.get('tripBotN', null) || {}, day = new Date().toDateString(); if (N.d === day && N.n >= TB_DAY_MAX) return false;
+  try { await trPut(R, 'tc', aid, { by: me, nm: '🤖 여행 도우미', bot: 1, wait: 1, q: q.id, ow: trName(), t: Date.now() }); } catch { return false; }
+  const ctx = planBotCtx(p), hist = S.tc.filter(m => m.ask && m.id !== q.id && m.t < q.t).slice(-3).map(m => { const a = S.tc.find(y => y.id === 'a_' + m.id && !y.wait); return a ? `질문: ${m.x}\n답: ${a.x}` : null; }).filter(Boolean);
+  const sys = '너는 이 단체 여행에 함께하는 "여행 도우미"다. 아래 "여행 자료"(여행사 일정표·안내문·날씨·준비 목록)에 적힌 것만으로 답한다.\n- 자료에 없는 사실(영업시간·가격·가이드 연락처·환율·지금 상황 등)은 지어내지 말고 "여행 자료엔 없어요"라고 한 뒤 가이드나 여행사에 물어보라고 한다.\n- 지명·식당·호텔·관광 이름은 자료에 적힌 글자 그대로 쓴다(예: 장가계를 장자제로 바꾸지 않는다).\n- 한국어, 쉬운 말, 3~6줄. 시각·장소는 자료 그대로. 목록이 길면 줄을 나눠도 된다.\n- 근거로 쓴 일정은 "n일차 장소이름" 또는 "안내 · 제목" 꼴로 src에 적는다.\n결과는 JSON 하나로만: {"text": "답", "src": ["근거", ...]}';
+  const prompt = `${ctx.today}\n\n여행 자료:\n${ctx.txt}\n\n${hist.length ? `앞서 나눈 말:\n${hist.join('\n\n')}\n\n` : ''}질문: ${q.x}`;
+  toast(`✨ AI를 써요 · 여행 도우미${q.by !== me ? ` · ${q.nm || '일행'} 님 질문` : ''}`, true);
+  try {
+    const { default: Anthropic } = await import(TALK_SDK);
+    const client = new Anthropic({ apiKey: trBotKey(), dangerouslyAllowBrowser: true });
+    const res = await client.messages.create({ model: FA_MODEL, max_tokens: 700, system: sys, messages: [{ role: 'user', content: prompt }] });
+    const u = res.usage || {}, log = ls.get('labAiLog', []);
+    log.unshift({ at: Date.now(), kind: '여행 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+    ls.set('tripBotN', { d: day, n: (N.d === day ? N.n : 0) + 1 });
+    toast(`✨ AI 사용 끝 · 여행 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+    const tb = (res.content || []).find(x => x.type === 'text'); if (!tb || res.stop_reason === 'refusal') throw new Error('빈 답');
+    let j; try { j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || [tb.text])[0]); } catch { j = { text: tb.text, src: [] }; }
+    const a = { by: me, nm: '🤖 여행 도우미', bot: 1, q: q.id, ow: trName(), x: String(j.text || '').trim().slice(0, 1500) || '답을 만들지 못했어요', src: (Array.isArray(j.src) ? j.src : []).map(s => String(s).slice(0, 40)).slice(0, 5), t: Date.now() };
+    await trPut(R, 'tc', aid, a);
+    const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); else S.tc.push(Object.assign({ id: aid, _t: a.t }, a));
+    await trSet('room:' + R.rid, S); return true;
+  } catch (e) {
+    const m = String(e && (e.status || e.message) || e), why = /401/.test(m) ? 'Claude 열쇠를 받지 않아요 · ⚙ 설정에서 다시 넣어 주세요' : /429/.test(m) ? '잠깐 너무 많이 물어서 쉬어요' : /credit|balance|402/i.test(m) ? 'Claude 잔액이 없어요' : '답을 못 만들었어요 · ' + m.slice(0, 40);
+    const a = { by: me, nm: '🤖 여행 도우미', bot: 1, err: 1, q: q.id, ow: trName(), x: '⚠ ' + why, t: Date.now() };
+    try { await trPut(R, 'tc', aid, a); const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); } catch {}
+    toast('⚠ 여행 도우미 · ' + why, false, 6000); return false;
+  }
+}
+async function trBotTick(code, R, S) {   // 안 답한 질문 찾기 (하루 지난 질문은 안 함)
+  if (!trBotOn(R) || trBotTick.busy) return 0; trBotTick.busy = 1;
+  let n = 0;
+  try {
+    const p = planOfRoom(code); if (!p) return 0;
+    const now = Date.now(), me = trMe();
+    const qs = S.tc.filter(m => m.ask && m.x && now - m.t < 864e5 && (() => { const a = S.tc.find(y => y.id === 'a_' + m.id); return !a || (a.wait && (a.by === me ? now - a.t > 90000 : now - a.t > 120000)); })());
+    for (const q of qs.slice(0, 3)) { if (await trBotAnswer(R, S, p, q)) n++; }
+    if (n) document.dispatchEvent(new Event('tr-changed'));
+  } finally { trBotTick.busy = 0; }
+  return n;
+}
+function trBotStart(p) {   // 계획·오늘·여행 방 화면에서: 열쇠가 있으면 켜 둔 동안 15초마다 방을 봐요
+  if (!p || !p.room || !p.room.code || !trBotKey()) return;
+  trBotStart.on = trBotStart.on || {}; if (trBotStart.on[p.room.code]) return; trBotStart.on[p.room.code] = 1;
+  const code = p.room.code; let beat = 0;
+  const go = async () => {
+    if (document.hidden) return;
+    try { const R = await trRoom(code), S = await trLoad(R);
+      if (Date.now() - beat > 120000) { beat = Date.now(); trPut(R, 'tm', trMe(), { by: trMe(), nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); }
+      if (!trBotOn(R)) return;
+      await trSync(R, S, ['tc', 'tm']); await trBotTick(code, R, S);
+    } catch {}
+  };
+  go(); setInterval(go, 15000);
+}
+async function trAsk(R, S, x) {   // 질문 올리기 (누구나)
+  const m = { by: trMe(), nm: trName() || '일행', ask: 1, x: String(x).trim().slice(0, 500), t: Date.now() }, id = Date.now().toString(36) + rid(4);
+  S.tc.push(Object.assign({ id, _t: m.t, pend: 1 }, m));
+  await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S);
+  return id;
+}
+function trBotBubble(a) {   // 도우미 답 말풍선
+  return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px' },
+    el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '🤖 여행 도우미' }),
+    el('div', { style: 'max-width:88%;padding:10px 13px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;border:1px solid #FFD3C6;white-space:pre-wrap;word-break:break-word;line-height:1.55', text: a.wait ? '답을 쓰는 중이에요…' : a.x }),
+    !a.wait && a.src && a.src.length ? el('div', { class: 'dt', style: 'font-size:11.5px', text: '근거 · ' + a.src.join(' · ') }) : null,
+    !a.wait && !a.err ? el('div', { class: 'dt', style: 'font-size:11px', text: `여행 자료로만 답해요 · 틀릴 수 있어요${a.ow ? ` · ${a.ow} 님 휴대폰` : ''} · ${trHm(a.t)}` }) : null);
+}
+var TB_QUICK = ['오늘 일정 알려 줘', '내일은 뭘 챙겨야 해?', '첫날 미팅 장소랑 시간은?', '식사는 어떻게 나와?', '날씨랑 옷차림은?', '선택 관광은 뭐가 있어?'];
+function planAskSheet(p) {
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
+  const code = p.room.code, list = el('div', { class: 'stack', style: 'gap:10px' }), st = el('div', { class: 'card', style: 'padding:10px 12px;font-weight:700;font-size:14px' });
+  const nmIn = el('input', { type: 'text', maxlength: 12, placeholder: '내 이름 (일행에게 보여요)', value: trName(), style: 'width:100%' });
+  const ta = el('textarea', { rows: 2, placeholder: '예: 3일차 점심은 뭐예요?', style: 'width:100%;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
+  const chips = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px' }, ...TB_QUICK.map(t => el('button', { class: 'btn line small', text: t, onclick: () => send(t) })));
+  let R = null, S = null, busy = false;
+  const paint = () => {
+    if (!S) return;
+    const who = trBotWho(S), me = trMe(), qs = S.tc.filter(m => m.ask).slice(-20);
+    st.textContent = who.t; st.style.borderLeft = `4px solid ${who.ok ? '#1D9EC0' : '#FF9F43'}`;
+    if (trBotKey()) st.append(el('div', { class: 'dt', style: 'font-weight:500;margin-top:4px', text: `${trBotOn(R) ? '일행이 물어도 이 휴대폰이 답해요(MPD를 켜 둔 동안) · 오늘 ' + (((ls.get('tripBotN', null) || {}).d === new Date().toDateString() ? ls.get('tripBotN').n : 0)) + '/' + TB_DAY_MAX + '번 · 한 번에 몇 원' : '일행 질문엔 답하지 않아요'}` }),
+      el('button', { class: 'btn line small', style: 'margin-top:6px', text: trBotOn(R) ? '일행 질문에 답하기 끄기' : '일행 질문에 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }));
+    faRc(list, ...(qs.length ? qs.flatMap(q => { const a = S.tc.find(y => y.id === 'a_' + q.id);
+      return [el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' }, q.by !== me ? el('div', { class: 'dt', style: 'font-weight:700', text: q.nm || '일행' }) : null,
+          el('div', { style: 'max-width:82%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:var(--pine);color:#fff;white-space:pre-wrap', text: q.x })),
+        a ? trBotBubble(a) : el('div', { class: 'dt', text: q.pend ? '보내는 중…' : `⏳ 답을 기다려요 · ${who.ok ? '곧 와요' : '답해 줄 휴대폰이 켜지면 와요'}` })]; })
+      : [el('div', { class: 'sub', text: '이 여행 일정·여행사 안내를 다 알고 있어요. 궁금한 걸 물어보세요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' })]));
+    list.scrollTop = list.scrollHeight;
+  };
+  const send = async (x) => {
+    x = String(x || ta.value).trim(); if (!x || busy) return;
+    const nm = nmIn.value.trim().slice(0, 12); if (!trName()) { if (!nm) { nmIn.focus(); return toast('먼저 내 이름을 적어 주세요'); } ls.set('nick', nm); }
+    if (!R) return toast('잠깐만요, 여행 방에 들어가는 중이에요');
+    busy = true; ta.value = '';
+    try { await trAsk(R, S, x); paint(); if (trBotOn(R)) { await trBotTick(code, R, S); paint(); } }
+    catch { toast('⚠ 질문을 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; }
+    busy = false;
+  };
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+  const bg = labSheet('🤖 여행 도우미 · ' + p.name, st, list, chips, trName() ? null : nmIn, ta,
+    el('button', { class: 'btn primary full', text: '물어보기', onclick: () => send() }),
+    el('div', { class: 'dt', style: 'font-size:12px', text: '여행사 일정·안내·날씨 자료로만 답하고, 자료에 없으면 없다고 해요. 열쇠를 넣은 휴대폰이 Claude에 일정 글만 보내요(사진·위치·이름은 안 보내요).' }));
+  (async () => { try { R = await trRoom(code); S = await trLoad(R); paint(); await trSync(R, S, ['tc', 'tm']); paint();
+    trBotStart(p);
+    const iv = setInterval(async () => { if (!bg.isConnected) return clearInterval(iv); if (document.hidden) return; if (await trSync(R, S, ['tc', 'tm'])) paint(); }, 5000);
+  } catch { st.textContent = '⚠ 여행 방에 들어가지 못했어요 · 인터넷을 확인해 주세요'; } })();
+  return bg;
 }
 
 // ---------- 📷 여행 사진 저절로 여행 방에 (2026-11-14 사용자 '1~3번 다 만들어') ----------
@@ -8464,6 +8613,7 @@ function planNext(p, d) {
 }
 function planHomeCard() {
   let p = null; try { p = planCur(); } catch {} if (!p) return null;
+  try { trBotStart(p); } catch {}
   const k = planToday(p), on = k >= 0, w = (ls.get('planWx:' + p.id, null) || {}).days || [], its = on ? planItems(p, k) : [], ni = on ? planNext(p, k) : -1, nx = ni >= 0 ? its[ni] : null;
   const st = ls.get('planPrep:' + p.id, {}) || {}, done = Object.values(st).filter(Boolean).length;
   return el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), style: 'display:block;text-decoration:none;color:#fff;border-radius:20px;padding:16px 18px;background:linear-gradient(135deg,#0277BD,#1D9EC0);box-shadow:0 6px 18px rgba(2,119,189,.25)' },
@@ -8596,7 +8746,9 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     el('a', { href: `./?plan=1&p=${id}`, class: on === 'plan' ? 'on' : '' }, el('b', { text: '🗺' }), '전체 일정'),
     room,
     el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'photo' ? 'on' : '', onclick: () => ls.set('tripTab', 'photo') }, el('b', { text: '📷' }), '사진'),
+    el('button', { onclick: () => planAskSheet(p) }, el('b', { text: '🤖' }), '물어보기'),
     planCN(p) ? el('button', { onclick: planSaySheet }, el('b', { text: '🗣' }), '중국어') : el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '🧳' }), '준비'));
+  trBotStart(p);
   if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
   return bar;
 }
