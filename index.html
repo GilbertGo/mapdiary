@@ -646,6 +646,57 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 .cw-code{font-weight:800;color:var(--pine);letter-spacing:.04em}
 /* 기록 보기 고급 화면 (2026-10-30 사용자가 애플 피트니스 사진을 보내며 '이렇게 고급스럽게'): 검은 바탕 · 짙은 회색 카드 · 밝은 색 숫자 · 어두운 지도 */
 .vw-mapw{position:relative}.vw-fade{display:none}
+/* ✈ 여행 화면 B안 '여행 매거진'(2026-11-15 사용자 'B'): 어두운 남색 · 맨 위 여행지 사진 · 시간 줄 · 노을 산호 */
+html.tv-page{--ground:#0F1C2B;--card:#16273B;--ink:#F3F6FA;--muted:#9FB0C2;--line:rgba(255,255,255,.1);--soft:#1E3249;--grey-soft:#1E3249;--pine:#FF8A6B;--accent:#FF8A6B;--forest:#FF8A6B;--forest-ink:#FF8A6B;--forest-soft:#1E3249;--blue-ink:#7FC4FF;--shadow:none;color-scheme:dark;background:#0F1C2B}
+html.tv-page body{background:#0F1C2B!important;color:var(--ink);padding-bottom:86px}
+html.tv-page .sky-clouds{display:none!important}
+html.tv-page .card,html.tv-page details.card{background:#16273B;box-shadow:none;border-color:rgba(255,255,255,.08);color:var(--ink)}
+html.tv-page h1,html.tv-page h2{color:#fff}
+html.tv-page .sub,html.tv-page .dt{color:#9FB0C2}
+html.tv-page .btn.line{background:rgba(255,255,255,.08);color:#F3F6FA;border-color:rgba(255,255,255,.14);box-shadow:none}
+html.tv-page .btn.dark{background:#FF8A6B;color:#1A0D08}
+html.tv-page .btn.primary{background:#FF8A6B;color:#1A0D08}
+html.tv-page input,html.tv-page textarea,html.tv-page select{background:#1E3249;color:#fff;border-color:rgba(255,255,255,.16)}
+html.tv-page .sheet{background:#13233A;color:#F3F6FA}
+html.tv-page .role{position:absolute;top:0;left:0;right:0;z-index:30;margin:0!important;width:100%!important;padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px!important;background:transparent!important;box-shadow:none!important}
+html.tv-page .role::after,html.tv-page .role::before{display:none!important}
+html.tv-page .role .home,html.tv-page .role .who{color:#fff!important;text-shadow:0 1px 6px rgba(0,0,0,.45)}
+html.tv-page .mapbox{border-radius:18px;overflow:hidden}
+html.tv-page a{color:inherit}
+.tv-hero{position:relative;margin:-20px -20px 0;min-height:min(54vh,460px);background:#1B2D44 linear-gradient(160deg,#25415F,#0F1C2B) center/cover;display:flex;align-items:flex-end}
+.tv-hero.sm{min-height:180px}
+.tv-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,28,43,.45),rgba(15,28,43,0) 26%,rgba(15,28,43,.25) 55%,#0F1C2B 98%);pointer-events:none}
+.tv-hin{position:relative;z-index:2;padding:0 20px 14px;width:100%;box-sizing:border-box}
+.tv-d{font-weight:800;font-size:12px;letter-spacing:2px;color:#FFB59E}
+.tv-hin h1{font-size:clamp(24px,7.2vw,32px);font-weight:900;margin:4px 0 4px;letter-spacing:-.5px;line-height:1.15;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.tv-hl{font-size:14px;color:rgba(255,255,255,.88)}
+.tv-chips{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.tv-chips::-webkit-scrollbar{display:none}
+.tv-chips button{flex:none;padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.14);color:#fff;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap}
+.tv-chips button.on{background:#FF8A6B;color:#1A0D08}
+.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}
+.tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
+.tv-day{font-weight:900;font-size:17px;margin:14px 0 2px;color:#fff}.tv-day small{display:block;font-weight:600;font-size:13px;color:#9FB0C2}
+.tv-tl{position:relative;padding-left:26px}
+.tv-tl::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:rgba(255,255,255,.14)}
+.tv-it{position:relative;padding:9px 0}
+.tv-it::before{content:'';position:absolute;left:-25px;top:14px;width:12px;height:12px;border-radius:50%;background:#0F1C2B;border:2px solid var(--dc,rgba(255,255,255,.45));box-sizing:border-box}
+.tv-it.on::before{background:#FF8A6B;border-color:#FF8A6B;box-shadow:0 0 0 5px rgba(255,138,107,.25)}
+.tv-it.ok{opacity:.5}.tv-it.ok::before{background:rgba(255,255,255,.55);border-color:transparent}
+.tv-it .tv-t{font-size:12px;color:#9FB0C2;font-weight:700}
+.tv-it .tv-n{display:block;width:100%;text-align:left;background:none;border:none;padding:0;color:#fff;font:800 16px/1.35 Pretendard,sans-serif;cursor:pointer}
+.tv-it.on .tv-n{font-size:19px;color:#FFB59E}
+.tv-it .tv-m{font-size:13px;color:#9FB0C2;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.tv-it .tv-x{font-size:12px;color:#FFB59E;font-weight:700;margin-top:3px}
+.tv-it .tv-w{font-size:12px;color:#FF9C9C;margin-top:3px}
+.tv-it .tv-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.tv-it .tv-b button,.tv-it .tv-b a{padding:6px 12px;border-radius:16px;border:none;font:800 13px Pretendard,sans-serif;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;text-decoration:none}
+.tv-it .tv-b .go{background:#FF8A6B;color:#1A0D08}
+.tv-gap{font-size:11px;color:rgba(159,176,194,.75);padding:0 0 0 2px}
+.tv-add{background:none;border:1px dashed rgba(255,255,255,.2);color:#9FB0C2;border-radius:14px;padding:8px 12px;font:700 13px Pretendard,sans-serif;cursor:pointer;margin:4px 0 6px}
+.tv-bar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:900;height:58px;border-radius:20px;background:rgba(22,39,59,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;justify-content:space-around;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.tv-bar a,.tv-bar button{flex:1;text-align:center;background:none;border:none;color:#9FB0C2;font:700 12px Pretendard,sans-serif;text-decoration:none;cursor:pointer;padding:6px 0;position:relative}
+.tv-bar .on{color:#FF8A6B}.tv-bar b{display:block;font-size:19px;line-height:1.1}
+.tv-bar .n{position:absolute;top:0;right:22%;background:#E5383B;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px}
 html.vw-page{--ground:#000;--card:#1C1C1E;--ink:#F2F2F7;--muted:#8E8E93;--line:#2C2C2E;--soft:#2C2C2E;--grey-soft:#2C2C2E;--pine:#4DA3FF;--forest:#4DA3FF;--forest-ink:#4DA3FF;--forest-soft:#2C2C2E;--blue-ink:#4DA3FF;--shadow:none;color-scheme:dark;background:#000}
 html.vw-page body{background:#000!important;color:var(--ink)}
 .vw-share{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:1200;display:flex;align-items:center;gap:6px;padding:0 20px;height:52px;border:none;border-radius:26px;background:#0A84FF;color:#fff;font:800 16px 'Pretendard Variable',Pretendard,-apple-system,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer}
@@ -2940,9 +2991,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-89-today';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-90-trip-b';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📅 여행 중 앱을 열면 첫 화면에 오늘 일정 알약, 누르면 오늘 화면(다음 갈 곳·길찾기·날씨·여행 방·보여 주는 말) · 📷 여행 날짜에 찍은 사진이 여행 방에 저절로 올라가요(끌 수 있어요) · 📥 지도 미리 받기로 인터넷이 약한 산에서도 한글 지도가 나와요';
+const UI_NOTES = '✈ 여행 화면을 여행 매거진처럼 새로 꾸몄어요 · 맨 위에 여행지 사진(여행 방 사진이나 위키백과 사진) · 일정은 시간 줄로 보여 주고 다음 갈 곳은 산호색으로 크게 · 아래 메뉴로 오늘, 전체 일정, 여행 방, 사진, 중국어를 바로 · 📅 오늘 화면에서 다른 날도 눌러 볼 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6892,8 +6943,9 @@ async function viewPlan() {
     el('span', { style: 'font-size:24px;flex:none', text: '🗓' }),
     el('div', { class: 'grow' }, el('div', { class: 'nm', text: p.name }), el('div', { class: 'dt', text: [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ') })),
     planStatus(p) ? el('span', { class: 'chip', style: 'background:var(--accent);color:#fff', text: planStatus(p) }) : null);
+  document.documentElement.classList.add('tv-page');   // ✈ B안
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
-    el('h1', { text: '🗓 여행 계획' }),
+    tvHero(null, { sm: 1, title: '🗓 여행 계획', d: 'MY TRIPS' }),
     el('div', { class: 'sub', text: '여행 전에 날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요.' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정으로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
@@ -7237,7 +7289,6 @@ async function viewTripRoom(code, title, planId) {
     const tb = (k, t) => el('button', { class: 'btn small ' + (tab === k ? 'dark' : 'line'), style: 'flex:1', text: t, onclick: () => { tab = k; ls.set('tripTab', k); draw(); } });
     faRc(top, 
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
-      el('h1', { style: 'margin:0', text: `💬 ${title || '여행'} 여행 방` }),
       el('div', { class: 'sub', text: `함께하는 사람 ${pp.size}명${pp.size ? ' · ' + [...pp.values()].join(', ') : ''}${S.err ? ' · ⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' : ''}` }),
       trName() ? null : el('div', { class: 'card', style: 'padding:12px;border:2px solid var(--accent)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '일행에게 보일 내 이름을 적어 주세요' }),
         el('div', { class: 'row', style: 'gap:6px' }, nmIn, el('button', { class: 'btn primary small', text: '저장', onclick: async () => { const v = nmIn.value.trim().slice(0, 12); if (!v) return; ls.set('nick', v); trPut(R, 'tm', me, { by: me, nm: v, t: Date.now() }).catch(() => {}); draw(); } }))),
@@ -7355,7 +7406,8 @@ async function viewTripRoom(code, title, planId) {
     if (tab === 'photo') drawPhoto(); else if (tab === 'loc') drawLoc(); else { drawChat(); if (!keepScroll) {} }
     ls.set('tripSeen:' + R.rid, Date.now());
   }
-  faRc(app, el('div', { class: 'stack' }, roleBar('member', '여행 방'), top, body, foot, fileIn));
+  document.documentElement.classList.add('tv-page');   // ✈ B안
+  faRc(app, el('div', { class: 'stack' }, roleBar('member', '여행 방'), tvHero(p || { id: 'r_' + R.rid, it: [] , room: { code } }, { sm: 1, title: `💬 ${title || '여행'} 여행 방`, d: 'TRAVEL ROOM' }), top, body, foot, fileIn));
   draw();
   if (trName()) trPut(R, 'tm', me, { by: me, nm: trName(), t: Date.now() }).catch(() => {});
   locStart();
@@ -7510,46 +7562,85 @@ function planSaySheet() {
 }
 async function viewPlanToday(p) {
   document.title = `${p.name} · 오늘`;
-  const k = planToday(p), d = Math.max(0, Math.min(p.nd - 1, k)), on = k >= 0 && k < p.nd, before = k < 0;
-  const wrap = el('div', { class: 'stack', style: 'gap:12px' }), status = el('div', { class: 'sub', style: 'font-weight:700' });
-  let wx = ls.get('planWx:' + p.id, null), wxErr = false;
+  document.documentElement.classList.add('tv-page');
+  const k = planToday(p), on = k >= 0 && k < p.nd, before = k < 0;
+  let d = Math.max(0, Math.min(p.nd - 1, k)), wx = ls.get('planWx:' + p.id, null), wxErr = false;
+  const body = el('div', { class: 'stack', style: 'gap:12px' }), status = el('div', { class: 'sub', style: 'font-weight:700' });
+  const chips = el('div', { class: 'tv-chips' }), hero = tvHero(p, { chips });
+  const mapButton = () => { const b = el('button', { class: 'btn line small', style: 'margin-top:8px', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
+    if (b.disabled) return; b.disabled = true; try { const r = await planOffline(p, t => { if (t) b.textContent = t; }); toast(`📥 지도를 받아 뒀어요 · ${r.n}장 · ${r.mb}MB${r.bad ? ` · 못 받은 ${r.bad}장` : ''}`); } catch (e) { toast('⚠ 지도를 다 받지 못했어요 · ' + String(e && e.message || e).slice(0, 50) + ' · 다시 누르면 이어서 받아요', false, 6000); } draw(); } }); return b; };
   const draw = () => {
-    const its = planItems(p, d), ni = on ? planNext(p, d) : 0, nx = ni >= 0 ? its[ni] : null, w = wx && wx.days && wx.days[d];
-    const mapInfo = ls.get('planMap:' + p.id, null);
-    faRc(wrap,
-      el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ 전체 일정 보기' }),
-      el('div', {}, el('div', { class: 'sub', style: 'font-weight:800;color:var(--pine)', text: on ? `여행 중 · ${d + 1}일차` : before ? `D-${-k} · 첫날 미리 보기` : '여행이 끝났어요' }),
-        el('h1', { style: 'margin:2px 0', text: `${p.name}` }), el('div', { class: 'sub', text: planDayLabel(p, d) })),
-      el('div', { class: 'card', style: 'padding:12px 14px' }, el('div', { style: 'font-weight:800', text: w ? planWxLine(w) : wxErr ? '🌤 날씨를 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '🌤 날씨를 받는 중…' }), el('div', { class: 'dt', text: planSunLine(p, d) })),
-      nx ? el('div', { class: 'card', style: 'padding:14px;border:2px solid var(--accent)' },
-        el('div', { class: 'dt', style: 'font-weight:800;color:var(--accent)', text: on ? '▶ 다음 갈 곳' : '첫 일정' }),
-        el('div', { style: 'font-size:20px;font-weight:900;margin:4px 0', text: `${nx.t ? nx.t + ' ' : ''}${(PLAN_KINDS[nx.k] || PLAN_KINDS.spot)[0]} ${nx.n}` }),
-        nx.m ? el('div', { class: 'dt', text: nx.m }) : null,
-        el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap;margin-top:8px' },
-          Number.isFinite(nx.lat) ? el('button', { class: 'btn primary small', text: '🧭 길찾기', onclick: () => planGo(nx) }) : null,
-          nx.x ? el('button', { class: 'btn line small', text: '📖 여행사 안내', onclick: () => labSheet(nx.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: nx.x })) }) : null,
-          on ? el('button', { class: 'btn line small', text: '✓ 다녀왔어요', onclick: () => { nx.ok = true; nx.okT = Date.now(); nx.okA = 0; nx.okNo = 0; planSave(p); draw(); } }) : null))
-        : el('div', { class: 'card sub', text: on ? '오늘 일정을 다 다녀왔어요 🎉' : '이날 일정이 없어요' }),
-      el('div', { class: 'card stack', style: 'gap:2px;padding:12px 14px' }, el('div', { style: 'font-weight:800', text: `${d + 1}일차 일정` }),
-        ...its.map((x, i) => el('div', { style: `display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);${x.ok ? 'opacity:.5' : ''}${i === ni ? ';font-weight:800;color:var(--accent)' : ''}` },
-          el('span', { style: 'flex:none;width:44px;color:var(--muted)', text: x.t || '' }), el('span', { style: 'flex:1', text: `${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[0]} ${x.n}` }), el('span', { text: x.ok ? '✓' : '' })))),
+    const its = planItems(p, d), isToday = on && d === k, ni = isToday ? planNext(p, d) : (before && d === 0 ? 0 : -1), w = wx && wx.days && wx.days[d];
+    const sun = planSunLine(p, d).replace(/^🌅 /, '').replace('해 뜨는 ', '').replace(' · 해 지는 ', ' ~ ');
+    hero.repaint({ d: isToday ? `${tvDayLabel(p, d)} · TODAY` : before && d === 0 ? `D-${-k} · ${tvDayLabel(p, d)}` : tvDayLabel(p, d),
+      line: [w ? planWxLine(w, true) : wxErr ? '날씨를 못 받았어요' : '', sun ? `☀ ${sun}` : ''].filter(Boolean).join(' · ') });
+    faRc(chips, ...Array.from({ length: p.nd }, (_, i) => el('button', { class: i === d ? 'on' : '', text: `${on && i === k ? '오늘' : `${i + 1}일`}`, onclick: () => { d = i; draw(); } })));
+    const mapInfo = ls.get('planMap:' + p.id, null), tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
+    its.forEach((x, i) => {
+      const nx = i === ni, kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot;
+      tl.append(el('div', { class: 'tv-it' + (nx ? ' on' : '') + (x.ok ? ' ok' : '') },
+        el('div', { class: 'tv-t', text: [x.t, nx ? (isToday ? '다음 갈 곳' : '첫 일정') : '', x.ok ? '✓ 다녀옴' : ''].filter(Boolean).join(' · ') || kk[1] }),
+        el('button', { class: 'tv-n', text: `${kk[0]} ${x.n}`, onclick: () => x.x ? labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) : null }),
+        x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
+        nx || x.x ? el('div', { class: 'tv-b' },
+          nx && Number.isFinite(x.lat) ? el('button', { class: 'go', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
+          x.x ? el('button', { text: '📖 여행사 안내', onclick: () => labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) }) : null,
+          nx && isToday ? el('button', { text: '✓ 다녀왔어요', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); draw(); } }) : null) : null));
+    });
+    faRc(body,
+      its.length ? tl : el('div', { class: 'card sub', text: '이날 일정이 없어요' }),
       planRoomCard(p),
-      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' },
-        el('a', { class: 'btn line', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', text: '📷 사진 올리기', onclick: () => ls.set('tripTab', 'photo') }),
-        el('button', { class: 'btn line', text: '🗣 보여 주는 말', onclick: planSaySheet }),
-        el('button', { class: 'btn line', text: '🧳 여행 준비', onclick: () => planPrepSheet(p, wx) }),
-        el('a', { class: 'btn line', href: 'tel:+82232100404', text: '🆘 영사콜센터' })),
       el('div', { class: 'card', style: 'padding:12px 14px' }, el('div', { style: 'font-weight:800', text: '📥 지도 미리 받기' }),
         el('div', { class: 'dt', text: mapInfo ? `✅ ${new Date(mapInfo.at).toLocaleDateString('ko-KR')}에 받아 뒀어요 · 장소 둘레 지도 ${mapInfo.n}장 · ${mapInfo.mb}MB · 인터넷이 약해도 지도가 나와요` : '인터넷이 약한 산·시골에서도 지도가 나오게 출발 전에 와이파이에서 받아 두세요(장소 둘레만, 수십 MB)' }),
         mapButton()),
+      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' },
+        el('button', { class: 'btn line', text: '🧳 여행 준비', onclick: () => planPrepSheet(p, wx) }),
+        el('a', { class: 'btn line', href: 'tel:+82232100404', text: '🆘 영사콜센터' })),
       status);
   };
-  const mapButton = () => { const b = el('button', { class: 'btn line small', style: 'margin-top:8px', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
-    if (b.disabled) return; b.disabled = true; try { const r = await planOffline(p, t => { if (t) b.textContent = t; }); toast(`📥 지도를 받아 뒀어요 · ${r.n}장 · ${r.mb}MB${r.bad ? ` · 못 받은 ${r.bad}장` : ''}`); } catch (e) { toast('⚠ 지도를 다 받지 못했어요 · ' + String(e && e.message || e).slice(0, 50) + ' · 다시 누르면 이어서 받아요', false, 6000); } draw(); } }); return b; };
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', on ? '오늘' : '여행'), wrap));
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', on ? '오늘' : '여행'), hero, body), tvBar(p, 'today'));
   draw();
   planWeather(p).then(w => { if (w) wx = w; else wxErr = !wx; draw(); }).catch(() => { wxErr = true; draw(); });
   if (on || k >= p.nd) trAuto(p, t => { status.textContent = t; }).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 여행 방에 올렸어요`); draw(); } }).catch(() => {});
+}
+// ---------- ✈ 여행 화면 B안 '여행 매거진' (2026-11-15 사용자 'B') ----------
+//   맨 위 여행지 사진: ① 여행 방에 올라온 사진(가장 최근, 가로 사진 먼저) ② 위키백과(영어) 지도 주변 글의 대표 사진(첫 구경 장소 둘레 10km, 가로·800px 넘는 것) → ls planHero:{ID}(새 키, 30일)
+//   못 받으면 남색 그라데이션 그대로. 위키 사진은 오른쪽 위에 작게 '사진 위키백과'(누르면 출처)
+async function tvHeroImg(p) {
+  try { if (p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
+    for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (c && c.u && Date.now() - c.at < 30 * 864e5) return c;
+  const sp = (p.it || []).find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || (p.it || []).find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return null;
+  try {
+    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=10000&ggslimit=20&prop=pageimages&piprop=original&format=json&origin=*`, {}, 12000);
+    if (!r.ok) return null; const j = await r.json(), P = Object.values((j.query || {}).pages || {});
+    const ok = P.filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !/map|flag|logo|locator|svg|seal|emblem/i.test(x.original.source));
+    const pick = ok.sort((a, b) => (a.index || 99) - (b.index || 99))[0]; if (!pick) return null;
+    const src = pick.original.source.replace(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/]+)$/, '/commons/thumb/$1/$2/$3/1280px-$3');
+    const o = { u: pick.original.width > 1280 ? src : pick.original.source, t: pick.title, at: Date.now() }; ls.set(k, o); return o;
+  } catch { return null; }
+}
+function tvHero(p, o = {}) {
+  const hin = el('div', { class: 'tv-hin' }), box = el('div', { class: 'tv-hero' + (o.sm ? ' sm' : '') }, hin);
+  const paint = () => faRc(hin, o.d ? el('div', { class: 'tv-d', text: o.d }) : null, el('h1', { text: o.title || p.name }), o.line ? el('div', { class: 'tv-hl', text: o.line }) : null, o.chips || null);
+  paint(); box.repaint = (x) => { Object.assign(o, x || {}); paint(); };
+  if (p) tvHeroImg(p).then(im => { if (!im || !box.isConnected) return; box.style.backgroundImage = `url("${im.u}")`;
+    if (im.t) box.append(el('a', { class: 'tv-credit', href: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: '사진 · 위키백과' })); }).catch(() => {});
+  return box;
+}
+function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
+function tvBar(p, on) {   // 여행 화면 아래 메뉴
+  const id = encodeURIComponent(p.id), nw = el('span', { class: 'n', style: 'display:none' });
+  const room = el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'room' ? 'on' : '', onclick: () => ls.set('tripTab', 'chat') }, el('b', { text: '💬' }), '여행 방', nw);
+  const k = planToday(p), isOn = k != null && k >= -30 && k < p.nd;
+  const bar = el('nav', { class: 'tv-bar' },
+    isOn ? el('a', { href: `./?plan=1&today=1&p=${id}`, class: on === 'today' ? 'on' : '' }, el('b', { text: '📅' }), k >= 0 ? '오늘' : '여행') : null,
+    el('a', { href: `./?plan=1&p=${id}`, class: on === 'plan' ? 'on' : '' }, el('b', { text: '🗺' }), '전체 일정'),
+    room,
+    el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'photo' ? 'on' : '', onclick: () => ls.set('tripTab', 'photo') }, el('b', { text: '📷' }), '사진'),
+    planCN(p) ? el('button', { onclick: planSaySheet }, el('b', { text: '🗣' }), '중국어') : el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '🧳' }), '준비'));
+  if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
+  return bar;
 }
 
 // 기록과 잇기 (2026-11-14): 여행 날짜 동안 MPD로 기록한 길이 계획 장소 가까이 지나갔으면 저절로 '✓ 다녀옴'(그 시각도)
@@ -7656,13 +7747,14 @@ function viewPlanOne(id) {
   if (td != null && td >= 0 && td < p.nd) day = td;   // 여행 중이면 오늘
   if (day == null || day >= p.nd) day = -1;   // -1 = 전체
   const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' });
-  const tabs = el('div', { class: 'mapbar', style: 'overflow-x:auto;flex-wrap:nowrap;gap:6px' }), list = el('div', { class: 'stack', style: 'gap:6px' });
+  document.documentElement.classList.add('tv-page');   // ✈ B안 '여행 매거진'
+  const tabs = el('div', { class: 'tv-chips' }), list = el('div', { class: 'stack', style: 'gap:2px' });
   let map = null, layer = null, wx = ls.get('planWx:' + id, null);
+  const hero = tvHero(p, { chips: tabs });
   const head = el('div', { class: 'stack', style: 'gap:4px' });
-  const drawHead = () => head.replaceChildren(
-    el('h1', { style: 'margin:0', text: p.name }),
-    el('div', { class: 'sub', text: [planNights(p), p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }),
-    el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' },
+  const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
+    hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
+    el('div', { class: 'tv-acts' },
       el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
       (() => { const k = planToday(p); return k != null && k >= -30 && k < p.nd ? el('a', { class: 'btn primary small', href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), text: k >= 0 ? '📅 오늘 화면' : '📅 여행 화면' }) : null; })(),
       el('button', { class: 'btn line small', text: '📤 일정 보내기', onclick: () => planShare(p) }),
@@ -7671,7 +7763,7 @@ function viewPlanOne(id) {
           if (bt.disabled) return; bt.disabled = true; const say = t => { bt.textContent = t.slice(0, 40); };
           try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}${r.nb ? ` (식사·쇼 등 ${r.nb}곳은 앞뒤 장소 사이로)` : ''}${r.ai ? '' : ' · Claude 열쇠가 있으면 더 정확해요'}`); location.reload(); }
           catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); bt.disabled = false; bt.textContent = `📍 위치 찾기 · ${miss}곳`; } } }); return bt; })(),
-      el('button', { class: 'btn line small', text: '🗑 지우기', onclick: () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } } })));
+      el('button', { class: 'btn line small', text: '🗑 지우기', onclick: () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } } }))); };
   function editMeta() {
     const nm = el('input', { type: 'text', value: p.name, style: 'width:100%;box-sizing:border-box' }), dt = el('input', { type: 'date', value: p.start || '', style: 'width:100%;box-sizing:border-box' }), nd = el('input', { type: 'number', min: 1, max: 30, value: p.nd, style: 'width:100%;box-sizing:border-box' });
     const bg = labSheet('✎ 이름·날짜', el('label', { class: 'sub', text: '여행 이름' }), nm, el('label', { class: 'sub', text: '출발하는 날' }), dt, el('label', { class: 'sub', text: '날 수' }), nd,
@@ -7709,33 +7801,33 @@ function viewPlanOne(id) {
     let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm);
     if (i < 0) i = its.findIndex(x => !x.ok); return i;
   }
-  function row(x, i, d, nx) {
-    const kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot, col = PLAN_COLS[x.d % PLAN_COLS.length], hasLoc = Number.isFinite(x.lat);
-    return el('div', { class: 'card', style: `display:flex;gap:10px;align-items:center;padding:10px 12px;${i === nx ? 'outline:2px solid var(--accent);' : ''}${x.ok ? 'opacity:.55;' : ''}` },
-      el('span', { style: `flex:none;width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center`, text: String(i + 1) }),
-      el('button', { style: 'flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer', onclick: () => editItem(x) },
-        el('div', { style: 'font-weight:700', text: `${x.t ? x.t + ' ' : ''}${kk[0]} ${x.n}` }),
-        x.m ? el('div', { class: 'dt', style: 'white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: x.m }) : null,
-        x.x ? el('div', { class: 'dt', style: 'color:var(--pine);font-weight:700', text: '📖 여행사 안내 보기' }) : null,
-        !hasLoc && x.k !== 'fly' ? el('div', { class: 'dt', style: 'color:#C2412D', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'dt', text: x.near ? '📍 앞뒤 장소 사이 대략 위치 · 눌러서 고치기' : '📍 대략 위치 · 눌러서 고치기' }) : null,
-        i === nx ? el('div', { class: 'dt', style: 'color:var(--accent);font-weight:800', text: '▶ 다음 갈 곳' }) : null,
-        x.ok && x.okT ? el('div', { class: 'dt', style: 'font-weight:700', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null),
-      td === d || x.ok ? el('button', { class: 'btn small ' + (x.ok ? 'dark' : 'line'), title: '다녀왔어요', text: x.ok ? '✓' : '○', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null,
-      hasLoc ? el('button', { class: 'btn small line', text: '길찾기', onclick: () => planGo(x) }) : null);
+  function row(x, i, d, nx) {   // ✈ 시간 줄 한 칸
+    const kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot, hasLoc = Number.isFinite(x.lat), isNx = i === nx;
+    return el('div', { class: 'tv-it' + (isNx ? ' on' : '') + (x.ok ? ' ok' : '') },
+      el('div', { class: 'tv-t', text: [x.t, `${i + 1}`, isNx ? '다음 갈 곳' : ''].filter(Boolean).join(' · ') }),
+      el('button', { class: 'tv-n', text: `${kk[0]} ${x.n}`, onclick: () => editItem(x) }),
+      x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
+      x.x ? el('div', { class: 'tv-x', text: '📖 여행사 안내 · 누르면 보여요' }) : null,
+      !hasLoc && x.k !== 'fly' ? el('div', { class: 'tv-w', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'tv-m', text: x.near ? '📍 앞뒤 장소 사이 대략 위치' : '📍 대략 위치' }) : null,
+      x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null,
+      td === d || x.ok || hasLoc ? el('div', { class: 'tv-b' },
+        hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
+        td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null) : null);
   }
   function drawTabs() {
-    const t = (d, label) => el('button', { class: 'btn small ' + (day === d ? 'dark' : 'line'), style: 'flex:none', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
-    tabs.replaceChildren(t(-1, '전체'), ...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘 · ' : ''}${d + 1}일차${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
+    const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
+    tabs.replaceChildren(t(-1, '전체'), ...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘' : `${d + 1}일`}${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
   }
   function drawList() {
     const out = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
       const its = planItems(p, d), nx = nextIdx(d);
-      out.push(el('div', { style: `font-weight:800;margin-top:6px;color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}${td === d ? ' · 오늘' : ''}` }));
-      { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true); if (ln) out.push(el('div', { class: 'dt', style: 'margin-top:-2px', text: (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln })); }
-      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x); if (g) out.push(el('div', { class: 'dt', style: 'padding-left:40px;font-size:12px', text: g })); } out.push(row(x, i, d, nx)); });
-      out.push(el('button', { class: 'btn line small', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
+      { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
+        out.push(el('div', { class: 'tv-day', style: `color:${PLAN_COLS[d % PLAN_COLS.length]}` }, `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
+      const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
+      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
+      out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
     }
     list.replaceChildren(...out);
   }
@@ -7759,10 +7851,10 @@ function viewPlanOne(id) {
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), hero,
+    head, planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, list,
     el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
-    head, planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, tabs, list,
-    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })));
+    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })), tvBar(p, 'plan'));
   drawAll();
   setTimeout(() => {
     map = L.map(mapEl); const base = mdTileLayer().addTo(map); drawMap();
