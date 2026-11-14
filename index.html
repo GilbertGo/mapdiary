@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-75-veh';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-76-veh';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상에서 비행기로 간 곳은 ✈️가, 차로 간 곳은 🚗가 길을 따라 움직여요 · 걷는 곳은 예전처럼 동그란 점이에요';
+const UI_NOTES = '이동 영상에서 지금 어떻게 가는지 그림이 길을 따라 움직여요 · 비행기 ✈️ · 차 🚗 · 걷기 🚶 · 러닝 🏃 · 자전거 🚴';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5993,16 +5993,16 @@ async function filmMake(S, opt, U) {
       let g = c.createLinearGradient(0, 0, 0, gTop); g.addColorStop(0, `rgba(0,0,0,${lt ? .62 : .55})`); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, gTop);
       g = c.createLinearGradient(0, H - gBot, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, `rgba(0,0,0,${lt ? .42 : .3})`); g.addColorStop(1, `rgba(0,0,0,${lt ? .8 : .68})`); c.fillStyle = g; c.fillRect(0, H - gBot, W, gBot);
       // ✈️·🚗 탈것 (2026-11-14 사용자 '비행기 이동은 ✈️가, 차량 이동은 🚗 아이콘이 이동하게'): 따라가는 동안 지금 자리 점 대신 탈것 그림
-      { const nx = P[Math.min(P.length - 1, cur.i + 1)], veh = tt >= plan.tIn && tt < runEnd ? (nx.fly ? 'fly' : nx.car ? 'car' : '') : '';
+      { const nx = P[Math.min(P.length - 1, cur.i + 1)], veh = tt >= plan.tIn && tt < runEnd ? (nx.fly ? 'fly' : nx.car ? 'car' : src.mode === 'run' ? 'run' : src.mode === 'bike' ? 'bike' : 'walk') : '';   // 걷기 🚶·러닝 🏃·자전거 🚴도 (같은 날 '도보 이동은? 러닝은? 자전거도')
         if (veh !== vehNow) { vehNow = veh; try { map.setPaintProperty('head', 'circle-opacity', veh ? 0 : 1); map.setPaintProperty('head', 'circle-stroke-opacity', veh ? 0 : 1); } catch {} }
         if (veh) {
           const a = map.project([cur.lng, cur.lat]), ah = filmAt(P, Math.min(D, dh + Math.max(30, look * 0.3))), b2 = map.project([ah.lng, ah.lat]), an = Math.atan2(b2.y - a.y, b2.x - a.x);
-          const R0 = veh === 'fly' ? 46 : 40; c.save(); c.translate(a.x, a.y);
+          const R0 = veh === 'fly' ? 46 : veh === 'car' ? 40 : 36; c.save(); c.translate(a.x, a.y);
           c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 14; c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(0, 0, R0, 0, 7); c.fill(); c.shadowBlur = 0;
           c.lineWidth = 5; c.strokeStyle = col; c.stroke();
           c.font = `${Math.round(R0 * 1.15)}px 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
           if (veh === 'fly') { c.rotate(an + Math.PI / 4); c.fillText('✈️', 0, 2); }   // ✈️ 그림은 오른쪽 위(45°)를 봐서 그만큼 돌려요
-          else { if (Math.cos(an) > 0) c.scale(-1, 1); c.fillText('🚗', 0, 3); }   // 🚗 그림은 왼쪽을 봐서, 오른쪽으로 갈 땐 뒤집어요
+          else { if (Math.cos(an) > 0) c.scale(-1, 1); c.fillText({ car: '🚗', run: '🏃', bike: '🚴', walk: '🚶' }[veh], 0, 3); }   // 🚗🏃🚴🚶 그림은 왼쪽을 봐서, 오른쪽으로 갈 땐 뒤집어요
           c.restore();
         } }
       // 처음·끝 장면(멀리서 전체 길): 경로를 굵게 직접 그려요 (2026-11-13 '종료 영상에 경로가 잘 안 보여')
