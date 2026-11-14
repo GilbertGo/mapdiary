@@ -647,56 +647,74 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 /* 기록 보기 고급 화면 (2026-10-30 사용자가 애플 피트니스 사진을 보내며 '이렇게 고급스럽게'): 검은 바탕 · 짙은 회색 카드 · 밝은 색 숫자 · 어두운 지도 */
 .vw-mapw{position:relative}.vw-fade{display:none}
 /* ✈ 여행 화면 B안 '여행 매거진'(2026-11-15 사용자 'B'): 어두운 남색 · 맨 위 여행지 사진 · 시간 줄 · 노을 산호 */
-html.tv-page{--ground:#0F1C2B;--card:#16273B;--ink:#F3F6FA;--muted:#9FB0C2;--line:rgba(255,255,255,.1);--soft:#1E3249;--grey-soft:#1E3249;--pine:#FF8A6B;--accent:#FF8A6B;--forest:#FF8A6B;--forest-ink:#FF8A6B;--forest-soft:#1E3249;--blue-ink:#7FC4FF;--shadow:none;color-scheme:dark;background:#0F1C2B}
-html.tv-page body{background:#0F1C2B!important;color:var(--ink);padding-bottom:86px}
+/* ✈ 여행 화면 (2026-11-15 새 디자인 시안 ③으로: 사진 위로 흰 판이 올라오는 밝은 화면. 예전 판 -90 '여행 매거진'의 어두운 남색은 '너무 어둡다'고 해서 바꿈) */
+html.tv-page{--ground:#F5F6F8;--card:#fff;--ink:#15202B;--muted:#6B7684;--line:#ECEEF1;--soft:#EEF2F5;--grey-soft:#EEF2F5;--pine:#1D9EC0;--accent:#1D9EC0;--forest:#1D9EC0;--forest-ink:#147FA0;--forest-soft:#E4F2F7;--blue-ink:#147FA0;--shadow:0 1px 3px rgba(21,32,43,.05);color-scheme:light;background:#F5F6F8}
+html.tv-page body{background:#F5F6F8!important;color:var(--ink);padding-bottom:92px}
 html.tv-page .sky-clouds{display:none!important}
-html.tv-page .card,html.tv-page details.card{background:#16273B;box-shadow:none;border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.tv-page h1,html.tv-page h2{color:#fff}
-html.tv-page .sub,html.tv-page .dt{color:#9FB0C2}
-html.tv-page .btn.line{background:rgba(255,255,255,.08);color:#F3F6FA;border-color:rgba(255,255,255,.14);box-shadow:none}
-html.tv-page .btn.dark{background:#FF8A6B;color:#1A0D08}
-html.tv-page .btn.primary{background:#FF8A6B;color:#1A0D08}
-html.tv-page input,html.tv-page textarea,html.tv-page select{background:#1E3249;color:#fff;border-color:rgba(255,255,255,.16)}
-html.tv-page .sheet{background:#13233A;color:#F3F6FA}
+html.tv-page .card,html.tv-page details.card{background:#fff;box-shadow:0 1px 3px rgba(21,32,43,.05);border:none;border-radius:18px;color:var(--ink)}
+html.tv-page h1,html.tv-page h2{color:#15202B}
+html.tv-page .sub,html.tv-page .dt{color:#6B7684}
+html.tv-page .btn.line{background:#fff;color:#15202B;border-color:#E3E7EB;box-shadow:none}
+html.tv-page .btn.dark,html.tv-page .btn.primary{background:#15202B;color:#fff;border-color:#15202B}
+html.tv-page input,html.tv-page textarea,html.tv-page select{background:#fff;color:#15202B;border-color:#E3E7EB}
+html.tv-page .sheet{background:#F5F6F8;color:#15202B}
 html.tv-page .role{position:absolute;top:0;left:0;right:0;z-index:30;margin:0!important;width:100%!important;padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px!important;background:transparent!important;box-shadow:none!important}
 html.tv-page .role::after,html.tv-page .role::before{display:none!important}
 html.tv-page .role .home,html.tv-page .role .who{color:#fff!important;text-shadow:0 1px 6px rgba(0,0,0,.45)}
 html.tv-page .mapbox{border-radius:18px;overflow:hidden}
 html.tv-page a{color:inherit}
-.tv-hero{position:relative;margin:-20px -20px 0;min-height:250px;transition:min-height .4s;background:#1B2D44 linear-gradient(160deg,#25415F,#0F1C2B) center/cover;display:flex;align-items:flex-end}
-.tv-hero.img{min-height:min(54vh,460px)}
-.tv-hero.sm,.tv-hero.sm.img{min-height:180px}
-.tv-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,28,43,.45),rgba(15,28,43,0) 26%,rgba(15,28,43,.25) 55%,#0F1C2B 98%);pointer-events:none}
-.tv-hin{position:relative;z-index:2;padding:0 20px 14px;width:100%;box-sizing:border-box}
-.tv-d{font-weight:800;font-size:12px;letter-spacing:2px;color:#FFB59E}
-.tv-hin h1{font-size:clamp(24px,7.2vw,32px);font-weight:900;margin:4px 0 4px;letter-spacing:-.5px;line-height:1.15;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.35)}
-.tv-hl{font-size:14px;color:rgba(255,255,255,.88)}
-.tv-chips{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.tv-chips::-webkit-scrollbar{display:none}
-.tv-chips button{flex:none;padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.14);color:#fff;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap}
-.tv-chips button.on{background:#FF8A6B;color:#1A0D08}
-.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 92px);right:12px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
-.tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
-.tv-day{font-weight:900;font-size:17px;margin:14px 0 2px;color:#fff}.tv-day small{display:block;font-weight:600;font-size:13px;color:#9FB0C2}
-.tv-tl{position:relative;padding-left:26px}
-.tv-tl::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:rgba(255,255,255,.14)}
-.tv-it{position:relative;padding:9px 0}
-.tv-it::before{content:'';position:absolute;left:-25px;top:14px;width:12px;height:12px;border-radius:50%;background:#0F1C2B;border:2px solid var(--dc,rgba(255,255,255,.45));box-sizing:border-box}
-.tv-it.on::before{background:#FF8A6B;border-color:#FF8A6B;box-shadow:0 0 0 5px rgba(255,138,107,.25)}
-.tv-it.ok{opacity:.5}.tv-it.ok::before{background:rgba(255,255,255,.55);border-color:transparent}
-.tv-it .tv-t{font-size:12px;color:#9FB0C2;font-weight:700}
-.tv-it .tv-n{display:block;width:100%;text-align:left;background:none;border:none;padding:0;color:#fff;font:800 16px/1.35 Pretendard,sans-serif;cursor:pointer}
-.tv-it.on .tv-n{font-size:19px;color:#FFB59E}
-.tv-it .tv-m{font-size:13px;color:#9FB0C2;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
-.tv-it .tv-x{font-size:12px;color:#FFB59E;font-weight:700;margin-top:3px}
-.tv-it .tv-w{font-size:12px;color:#FF9C9C;margin-top:3px}
+.tv-hero{position:relative;margin:-20px -20px 0;min-height:250px;transition:min-height .4s;background:#9CC9E8 linear-gradient(160deg,#8EC5EC,#DCEFFB) center/cover;display:flex;align-items:flex-end}
+.tv-hero.img{min-height:min(52vh,420px)}
+.tv-hero.sm,.tv-hero.sm.img{min-height:190px}
+.tv-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,0) 28%,rgba(0,0,0,0) 48%,rgba(0,0,0,.55));pointer-events:none}
+.tv-hin{position:relative;z-index:2;padding:0 20px 44px;width:100%;box-sizing:border-box;color:#fff}
+.tv-d{font-weight:700;font-size:12px;letter-spacing:1.6px;color:rgba(255,255,255,.92)}
+.tv-hin h1{font-size:clamp(26px,8vw,32px);font-weight:800;margin:6px 0 4px;letter-spacing:-1px;line-height:1.15;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.tv-hl{font-size:14px;color:rgba(255,255,255,.94)}
+.tv-hl .dd{display:inline-block;background:#fff;color:#15202B;font-weight:800;font-size:13px;padding:3px 10px;border-radius:20px;margin-right:6px}
+.tv-sheet{position:relative;z-index:3;margin:-28px -20px 0;padding:10px 20px 0;background:#F5F6F8;border-radius:28px 28px 0 0;display:flex;flex-direction:column;gap:12px}
+.tv-sheet::before{content:'';display:block;width:38px;height:5px;border-radius:3px;background:#D5DAE0;margin:0 auto 2px}
+.tv-topbar{position:absolute;top:0;left:0;right:0;z-index:30;display:flex;gap:10px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0}
+.tv-topbar .sp{flex:1}
+.tv-topbar .n-ib{background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.tv-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.tv-chips::-webkit-scrollbar{display:none}
+.tv-chips button{flex:none;padding:8px 14px;border-radius:20px;background:#fff;color:#6B7684;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.tv-chips button.on{background:#15202B;color:#fff}
+.tv-credit{position:absolute;right:16px;bottom:36px;z-index:3;font-size:10px;color:rgba(255,255,255,.7);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 70px);right:16px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
+.tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0}
+.tv-wg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tv-tile{display:block;background:#fff;border:none;border-radius:18px;padding:14px;text-align:left;font:inherit;color:#15202B;text-decoration:none;cursor:pointer;box-shadow:0 1px 3px rgba(21,32,43,.05);min-width:0}
+.tv-tile b{display:flex;gap:7px;align-items:center;font-size:15px;font-weight:800}.tv-tile b svg{stroke:#15202B;flex:none}
+.tv-tile p{margin:4px 0 8px;font-size:12px;color:#6B7684;line-height:1.4}
+.tv-tile .bar{height:5px;background:#EEF2F5;border-radius:3px;overflow:hidden}.tv-tile .bar i{display:block;height:100%;background:#1D9EC0;border-radius:3px}
+.tv-tile .nb{margin-left:auto;background:#F2665E;color:#fff;border-radius:10px;font-size:11px;padding:1px 7px}
+.tv-tile .av{display:flex}.tv-tile .av span{width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid #fff;margin-left:-6px}.tv-tile .av span:first-child{margin-left:0}
+.tv-day{font-weight:800;font-size:20px;margin:10px 0 0;color:#15202B!important;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.tv-day small{display:inline;font-weight:500;font-size:13px;color:#6B7684}
+.tv-day i{width:10px;height:10px;border-radius:50%;background:var(--dc);align-self:center;font-style:normal}
+.tv-tl{display:flex;flex-direction:column}
+.tv-it{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+html.tv-page .tv-hin h1{color:#fff}
+.tv-it .tv-tm{width:46px;flex:none;text-align:right;font-size:13px;font-weight:800;color:#15202B;padding-top:15px;line-height:1.2}
+.tv-it .tv-tm small{display:block;font-size:11px;font-weight:600;color:#A3ABB5}
+.tv-it .tv-c{flex:1;min-width:0;display:flex;gap:12px;background:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.tv-it .tv-ic{width:44px;height:44px;flex:none;border-radius:12px;background:#EEF2F5;display:grid;place-items:center;font-size:21px}
+.tv-it .tv-bd{flex:1;min-width:0}
+.tv-it.on .tv-c{box-shadow:0 0 0 2px #1D9EC0,0 4px 14px rgba(29,158,192,.18)}
+.tv-it.on .tv-tm{color:#1D9EC0}
+.tv-it .tv-nx{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:#1D9EC0;border-radius:10px;padding:1px 8px;margin-bottom:3px}
+.tv-it.ok{opacity:.55}
+.tv-it .tv-n{display:block;width:100%;text-align:left;background:none;border:none;padding:0;color:#15202B;font:800 15px/1.35 Pretendard,sans-serif;cursor:pointer}
+.tv-it .tv-m{font-size:12.5px;color:#6B7684;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.tv-it .tv-x{font-size:12px;color:#147FA0;font-weight:700;margin-top:3px}
+.tv-it .tv-w{font-size:12px;color:#D64545;margin-top:3px}
 .tv-it .tv-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
-.tv-it .tv-b button,.tv-it .tv-b a{padding:6px 12px;border-radius:16px;border:none;font:800 13px Pretendard,sans-serif;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;text-decoration:none}
-.tv-it .tv-b .go{background:#FF8A6B;color:#1A0D08}
-.tv-gap{font-size:11px;color:rgba(159,176,194,.75);padding:0 0 0 2px}
-.tv-add{background:none;border:1px dashed rgba(255,255,255,.2);color:#9FB0C2;border-radius:14px;padding:8px 12px;font:700 13px Pretendard,sans-serif;cursor:pointer;margin:4px 0 6px}
-.tv-bar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:900;height:58px;border-radius:20px;background:rgba(22,39,59,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;justify-content:space-around;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-.tv-bar a,.tv-bar button{flex:1;text-align:center;background:none;border:none;color:#9FB0C2;font:700 12px Pretendard,sans-serif;text-decoration:none;cursor:pointer;padding:6px 0;position:relative}
-.tv-bar .on{color:#FF8A6B}.tv-bar b{display:block;font-size:19px;line-height:1.1}
+.tv-it .tv-b button,.tv-it .tv-b a{padding:5px 11px;border-radius:14px;border:none;font:700 12.5px Pretendard,sans-serif;background:#EEF2F5;color:#15202B;cursor:pointer;text-decoration:none}
+.tv-it .tv-b .go{background:#15202B;color:#fff}
+.tv-gap{font-size:12px;color:#A3ABB5;padding:0 0 8px 68px;margin-top:-2px}
+.tv-add{background:none;border:1.5px dashed #D5DAE0;color:#6B7684;border-radius:14px;padding:9px 12px;font:700 13px Pretendard,sans-serif;cursor:pointer;margin:6px 0 4px 56px}
+.tv-bar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:900;height:60px;border-radius:22px;background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;justify-content:space-around;align-items:center;box-shadow:0 6px 24px rgba(21,32,43,.14);max-width:560px;margin:0 auto}
+.tv-bar a,.tv-bar button{flex:1;text-align:center;background:none;border:none;color:#6B7684;font:600 11.5px Pretendard,sans-serif;text-decoration:none;cursor:pointer;padding:6px 0;position:relative}
+.tv-bar .on{color:#15202B;font-weight:800}.tv-bar b{display:block;font-size:19px;line-height:1.15}
 .tv-bar .n{position:absolute;top:0;right:22%;background:#E5383B;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px}
 html.vw-page{--ground:#000;--card:#1C1C1E;--ink:#F2F2F7;--muted:#8E8E93;--line:#2C2C2E;--soft:#2C2C2E;--grey-soft:#2C2C2E;--pine:#4DA3FF;--forest:#4DA3FF;--forest-ink:#4DA3FF;--forest-soft:#2C2C2E;--blue-ink:#4DA3FF;--shadow:none;color-scheme:dark;background:#000}
 html.vw-page body{background:#000!important;color:var(--ink)}
@@ -845,6 +863,72 @@ html.c-home.c-live .c-ph-top{top:calc(44px + env(safe-area-inset-top,0px))}
 html.c-tabbed.c-live body{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){.c-lv-dot,.c-ph-rec.live{animation:none}}
 html.c-home .c-tabs{background:rgba(255,255,255,.97)}
+/* ── 새 디자인 공통 (2026-11-15 시안 ①~④ 승인): 옅은 회색 바탕 · 흰 카드(테두리 없음) · 짙은 남색 글 · 청록 강조 하나 · 큰 제목 · 아래 메뉴 ── */
+html.n-page{--ground:#F5F6F8;--card:#fff;--ink:#15202B;--muted:#6B7684;--line:#ECEEF1;--soft:#EEF2F5;--grey-soft:#EEF2F5;--pine:#1D9EC0;--accent:#1D9EC0;--forest:#1D9EC0;--forest-ink:#147FA0;--forest-soft:#E4F2F7;--blue-ink:#147FA0;--shadow:0 1px 3px rgba(21,32,43,.05);color-scheme:light;background:#F5F6F8}
+html.n-page body{background:#F5F6F8!important;color:#15202B}
+html.n-page .sky-clouds{display:none!important}
+html.n-page .wrap{padding-top:0}
+html.n-page .card,html.n-page details.card{background:#fff;border:none;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+html.n-page .sub,html.n-page .dt{color:#6B7684}
+html.n-page .btn.primary,html.n-page .btn.dark{background:#15202B;color:#fff;border-color:#15202B;box-shadow:none}
+html.n-page .btn.line{background:#fff;color:#15202B;border-color:#E3E7EB;box-shadow:none}
+.n-top{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0px)) 0 2px;min-height:44px}
+.n-top .sp{flex:1}
+.n-ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#fff;border:none;box-shadow:0 1px 3px rgba(21,32,43,.08);color:#15202B;cursor:pointer;text-decoration:none;flex:none}
+.n-ib svg{stroke:#15202B}
+.n-lt{font-size:30px;font-weight:800;letter-spacing:-.8px;margin:6px 0 0;line-height:1.2;color:#15202B}
+.n-ls{font-size:14px;color:#6B7684;margin-top:2px}
+.n-seg{display:flex;gap:20px;border-bottom:1px solid #E6E9ED;margin:8px -20px 4px;padding:0 20px;overflow-x:auto;scrollbar-width:none}.n-seg::-webkit-scrollbar{display:none}
+.n-seg button{flex:none;background:none;border:none;padding:10px 0 11px;font:700 15px Pretendard,sans-serif;color:#A3ABB5;cursor:pointer;white-space:nowrap}
+.n-seg button.on{color:#15202B;box-shadow:inset 0 -2.5px 0 #15202B}
+.n-rc{display:block;text-decoration:none;color:inherit}
+.n-rc .im{height:196px;border-radius:20px;background:#E3E8EC center/cover no-repeat;position:relative}
+.n-rc .tag{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.94);border-radius:20px;padding:4px 10px 4px 8px;font-size:12px;font-weight:700;display:flex;gap:5px;align-items:center;color:#15202B}
+.n-rc .tag svg{stroke:#15202B}
+.n-rc .cnt{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.5);color:#fff;border-radius:20px;padding:3px 9px;font-size:12px;font-weight:600}
+.n-rc .lv{position:absolute;right:12px;top:12px;background:#E5383B;color:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:800}
+.n-rc h3{margin:10px 2px 1px;font-size:18px;font-weight:800;letter-spacing:-.4px;color:#15202B}.n-rc p{margin:0 2px;font-size:13px;color:#6B7684}
+.n-row{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:12px 14px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.n-row .th{width:52px;height:52px;border-radius:14px;background:#EEF2F5;display:grid;place-items:center;color:#1D9EC0;flex:none}
+.n-row .th svg{stroke:#1D9EC0}
+.n-row h4{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;color:#15202B}.n-row p{margin:2px 0 0;font-size:13px;color:#6B7684}
+.n-row .chv{margin-left:auto;color:#C4CAD1;font-size:20px;flex:none}
+.n-gh{font-size:13px;font-weight:700;color:#6B7684;margin:14px 6px -4px}
+details.n-fold{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+details.n-fold>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-weight:700;font-size:15px}
+details.n-fold>summary::-webkit-details-marker{display:none}
+details.n-fold>summary .sp{flex:1}details.n-fold>summary small{font-weight:500;color:#6B7684;font-size:13px}
+details.n-fold>summary::after{content:'›';color:#C4CAD1;font-size:20px;transition:transform .2s}details.n-fold[open]>summary::after{transform:rotate(90deg)}
+details.n-fold>.n-fb{padding:0 12px 12px}
+details.n-fold>.n-fb .card{box-shadow:none;background:#F7F8FA}
+/* 기록 보기 새 디자인 (2026-11-15 시안 ②): 밝은 지도 위로 흰 판 · 큰 숫자 셋 · 동그라미 단추 넷 · 숫자는 한 색 */
+html.vw-lt .vw-mapw{margin:-20px -20px 0;position:relative}
+html.vw-lt .vw-mapw .mapbox{border-radius:0;box-shadow:none;height:46vh!important;min-height:300px!important}
+html.vw-lt .vw-mapw .leaflet-top{top:60px}
+html.vw-lt .vw-mapw .leaflet-bottom{bottom:30px}
+html.vw-lt .vw-t>b{color:#15202B!important}
+.vw-chip{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:700;color:#6B7684;flex-wrap:wrap}.vw-chip svg{stroke:#1D9EC0}
+.vw-ttl{display:flex;align-items:center;gap:8px}.vw-ttl h1{font-size:27px;font-weight:800;letter-spacing:-.7px;margin:0;line-height:1.2;color:#15202B}
+.vw-ttl button{background:none;border:none;color:#A3ABB5;font-size:15px;cursor:pointer;padding:4px;flex:none}
+.vw-3{display:flex;padding:6px 0 0}.vw-3>div{flex:1;min-width:0}.vw-3 small{display:block;font-size:12px;color:#6B7684;font-weight:600}.vw-3 b{font-size:26px;font-weight:800;letter-spacing:-.8px;color:#15202B;font-variant-numeric:tabular-nums;white-space:nowrap}.vw-3 em{font-style:normal;font-size:13px;font-weight:700;color:#6B7684;margin-left:2px}
+.vw-acts{display:flex;justify-content:space-around;padding:10px 0 4px}
+.vw-act{text-align:center;font:600 12px Pretendard,sans-serif;color:#15202B;width:66px;background:none;border:none;cursor:pointer;text-decoration:none;padding:0}
+.vw-act i{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 6px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(21,32,43,.08)}
+.vw-act i svg{stroke:#15202B}.vw-act.pri i{background:#15202B}.vw-act.pri i svg{stroke:#fff}
+.vw-sec{display:flex;justify-content:space-between;align-items:baseline;font-size:17px;font-weight:800;margin:8px 0 -4px}.vw-sec small{font-size:13px;color:#6B7684;font-weight:600}
+html.vw-lt .gallery img{width:104px;height:104px;border-radius:14px;box-shadow:none}
+/* ⚙ 나(설정) 새 디자인 (2026-11-15 시안 ④): 화면 가득 · 큰 제목 '나' · 프로필 칸 · 묶음 목록(색 네모 그림) */
+.sheet.st-full{position:fixed;inset:0;max-width:none;max-height:none;height:100%;border-radius:0;background:#F5F6F8;overflow:auto;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px));box-sizing:border-box;color:#15202B}
+.sheet.st-full>.st-in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.st-pf{display:flex;align-items:center;gap:14px;background:#fff;border:none;border-radius:20px;padding:16px;width:100%;text-align:left;font:inherit;color:#15202B;cursor:pointer;box-shadow:0 1px 3px rgba(21,32,43,.05);margin:6px 0 8px}
+.st-pf .av{width:56px;height:56px;border-radius:50%;background:#1D9EC0;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:800;flex:none}
+.st-grp{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.st-grp .st-row{border:none;border-radius:0;border-top:1px solid #ECEEF1;background:#fff;padding:13px 16px}
+.st-grp .st-row:first-child{border-top:none}
+.st-grp .st-ic{width:32px;height:32px;border-radius:9px;color:#fff}.st-grp .st-ic svg{stroke:#fff}
+.st-grp .st-th{width:32px;height:32px;border-radius:9px}
+.st-grp .st-go{color:#C4CAD1;font-size:20px}
+.sheet.st-full .st-h{font-size:13px;font-weight:700;color:#6B7684;margin:12px 10px 0;letter-spacing:0}
 /* 나의 이야기 지도 */
 .c-mapv{position:fixed;inset:0;z-index:50;background:#E8F1F6}
 .c-mapv .c-map{position:absolute;inset:0}
@@ -2992,9 +3076,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-101-share';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-102-design';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📤 영상 공유하기를 누르면 바로 ‘공유 준비 중… n%’가 보여요 · 앱에서 큰 영상도 멈추지 않고 휴대폰 공유 창이 열려요 · 휴대폰에 저장도 같은 방법으로 더 빨라졌어요';
+const UI_NOTES = '🎨 화면을 새로 다듬었어요: 밝은 바탕·흰 카드·큰 제목으로 통일 · 이야기(내 MPD)는 사진이 크게 · 기록 보기는 지도 위로 흰 판이 올라오고 공유·다시 가기·영상·GPX 단추 넷 · 여행 계획은 밝은 화면에 일정이 시각과 카드로 · 나(설정)는 묶음 목록으로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3861,9 +3945,11 @@ function appSettings() {
   const cb = el('div', { class: 'sheet-bg', style: 'z-index:3100', onclick: e => { if (e.target === cb) close(); } });
   const close = () => { cb.remove(); if (changed && !ls.get('walkNow', null)) location.reload(); };
   const done = () => { changed = true; paint(); };
-  const row = (ic, t, v, on) => el('button', { class: 'st-row', onclick: on }, el('span', { class: 'st-ic', text: ic }),
-    el('span', { class: 'grow' }, el('b', { text: t }), v ? el('div', { class: 'sub', style: 'font-size:13px;margin-top:2px', text: v }) : null), el('span', { class: 'st-go', text: '›' }));
+  const IC = { '🎨': ['palette', '#7B61FF'], '💬': ['key', '#F2A600'], '🔑': ['key', '#8A94A0'], '👤': ['user', '#3A7BD5'], '⚖️': ['scale', '#3A7BD5'], '🎯': ['flag', '#F2665E'], '🔊': ['vol', '#F2665E'], '🧪': ['flask', '#7B61FF'], '📸': ['heart', '#E8457A'], '⌚': ['watch', '#15202B'], '☁️': ['cloud', '#1D9EC0'] };
+  const row = (ic, t, v, on) => el('button', { class: 'st-row', onclick: on }, IC[ic] ? el('span', { class: 'st-ic', style: `background:${IC[ic][1]}` }, cSvg(IC[ic][0], 18)) : el('span', { class: 'st-ic', text: ic }),
+    el('span', { class: 'grow' }, el('b', { style: 'font-weight:600', text: t }), v ? el('div', { class: 'sub', style: 'font-size:13px;margin-top:2px', text: v }) : null), el('span', { class: 'st-go', text: '›' }));
   const head = t => el('div', { class: 'st-h', text: t });
+  const grp = (...r) => el('div', { class: 'st-grp' }, ...r.filter(Boolean));
   const body = el('div', { class: 'stack', style: 'gap:6px' });
   const paint = () => {
     const sea = ls.get('theme', 'sea') === 'sea', wg = ls.get('weekGoal', 0), voice = ls.get('runVoice', true), w = whereNow();
@@ -3872,28 +3958,34 @@ function appSettings() {
     photoRow.firstChild.replaceWith(thumb);
     const homeRow = row('', '첫 화면 사진', ls.get('homeHero', '') ? '내가 고른 사진' : '러닝 첫 화면 사진과 같아요', () => runHeroPick(done, 'homeHero'));
     homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
+    const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
     body.replaceChildren(
-      head('화면'), homeRow, photoRow,
-      row('🎨', '화면 분위기', sea ? '바닷가 · 누르면 산으로' : '산 · 누르면 바닷가로', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); }),
-      head('나'), (() => { const a = cloudAcct();
+      el('button', { class: 'st-pf', onclick: () => nickEdit(done) }, el('span', { class: 'av', text: (nk || '나').slice(0, 1) }), el('span', { class: 'grow' }, el('b', { style: 'font-size:18px;display:block', text: nk || '이름을 정해 주세요' }), el('span', { class: 'sub', style: 'font-size:13px', text: acc ? `${acc.via}로 로그인${L0 && L0.ok && !L0.bad ? ` · 기록 ${L0.n}개 모두 모음` : ''}` : '로그인 안 함 · 이 휴대폰에만 저장' })), el('span', { class: 'st-go', text: '›' })),
+      head('화면'), grp(homeRow, photoRow,
+      row('🎨', '화면 분위기', sea ? '바닷가 · 누르면 산으로' : '산 · 누르면 바닷가로', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
+      head('나'), grp( (() => { const a = cloudAcct();
         return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인한 계정', a ? `${a.via} 계정 · ${a.name}` : '로그인 안 함 · 누르면 카카오·구글로 로그인', () => { location.href = './?my=1'; }); })(),
       row('👤', '내 이름', ls.get('nick', '') || '아직 없어요 · 같이 달리기·모임방에 보여요', () => nickEdit(done)),
       row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg · 칼로리 셈에 써요` : '정하지 않았어요 · 칼로리를 65kg로 셈해요', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
-      head('러닝'),
+      ),
+      head('러닝'), grp(
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '정하지 않았어요', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
       row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
-      head('실험실'),
+      ),
+      head('실험실'), grp(
       row('🧪', 'AI 추억 발견', '사진을 골라 MPD 기록과 이어 추억 카드 만들기 · 시험 중', () => { location.href = './?lab=mem'; }),
-      head('연결'),
+      ),
+      head('연결'), grp(
       row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', () => { location.href = './?album=1'; }),
       row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
       row('☁️', '로그인 · 기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '카카오·구글로 앱·크롬 기록을 하나로';
-        const L = ls.get('cloudLast', null), a = cloudAcct(), who = a ? `${a.via} · ${a.name}` : '로그인돼 있어요'; return `${who} · ${!L ? '아직 맞추지 않음' : !L.ok || L.bad ? '⚠ 다시 맞춰 주세요' : `✅ 기록 ${L.n}개 모두 모음`}`; })(), () => { location.href = './?my=1'; }),
+        const L = ls.get('cloudLast', null), a = cloudAcct(), who = a ? `${a.via} · ${a.name}` : '로그인돼 있어요'; return `${who} · ${!L ? '아직 맞추지 않음' : !L.ok || L.bad ? '⚠ 다시 맞춰 주세요' : `✅ 기록 ${L.n}개 모두 모음`}`; })(), () => { location.href = './?my=1'; })),
       el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` }));
   };
   paint();
-  cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '앱 설정' }, el('h2', { text: '⚙ 설정' }), body,
-    el('button', { class: 'btn line small full', text: '닫기', onclick: close })));
+  cb.append(el('div', { class: 'sheet st-full', role: 'dialog', 'aria-label': '나 · 설정' }, el('div', { class: 'st-in' },
+    el('div', { class: 'n-top' }, el('span', { class: 'sp' }), el('button', { class: 'n-ib', type: 'button', 'aria-label': '닫기', onclick: close }, cSvg('x', 20))),
+    el('h1', { class: 'n-lt', style: 'margin-bottom:4px', text: '나' }), body)));
   document.body.append(cb);
 }
 // MPD를 모임방에 올려요. o = 공유 카드 내용(openBrag의 cardOpts)
@@ -7603,18 +7695,20 @@ async function viewPlan() {
   if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode() }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
-  const card = p => el('a', { class: 'member', href: './?plan=1&p=' + encodeURIComponent(p.id), style: 'text-decoration:none;color:inherit' },
-    el('span', { style: 'font-size:24px;flex:none', text: '🗓' }),
-    el('div', { class: 'grow' }, el('div', { class: 'nm', text: p.name }), el('div', { class: 'dt', text: [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ') })),
-    planStatus(p) ? el('span', { class: 'chip', style: 'background:var(--accent);color:#fff', text: planStatus(p) }) : null);
-  document.documentElement.classList.add('tv-page');   // ✈ B안
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
-    tvHero(null, { sm: 1, title: '🗓 여행 계획', d: 'MY TRIPS' }),
-    el('div', { class: 'sub', text: '여행 전에 날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요.' }),
+  const card = p => { const h = ls.get('planHero:' + p.id, null), st = planStatus(p), href = './?plan=1&p=' + encodeURIComponent(p.id), meta = [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ');
+    return h && h.u ? el('a', { class: 'n-rc', href }, el('div', { class: 'im', style: `background-image:url("${String(h.u).replace(/"/g, '%22')}")` }, st ? el('span', { class: 'tag', text: st }) : null), el('h3', { text: p.name }), el('p', { text: meta }))
+      : el('a', { class: 'n-row', href }, el('span', { class: 'th', style: 'font-size:24px', text: '🗓' }), el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: p.name }), el('p', { text: meta })), st ? el('span', { class: 'chip', style: 'background:#15202B;color:#fff', text: st }) : el('span', { class: 'chv', text: '›' })); };
+  document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15)
+  roleBar('member', '여행 계획');
+  app.replaceChildren(el('div', { class: 'stack' },
+    el('div', { class: 'n-top' }, el('a', { class: 'n-ib', href: './', 'aria-label': '처음으로' }, cSvg('back', 20)), el('span', { class: 'sp' })),
+    el('h1', { class: 'n-lt', text: '여행 계획' }),
+    el('div', { class: 'n-ls', text: '날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요' }),
+    ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
+    el('div', { class: 'n-gh', text: '새 계획' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
-    ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
 }
 // ---------- 🧳 여행 준비 (2026-11-14 사용자 '준비물·옷·음식 걱정·날씨·로밍 안내, 이번 여행에서 앱의 진가를'): 계획 화면 위 카드 → 준비 창 ----------
@@ -7794,13 +7888,14 @@ function planPrepSheet(p, wx) {
   body.append(el('div', { class: 'dt', style: 'font-size:12px', text: '날씨는 Open-Meteo 자료예요. 입국·반입 규칙은 바뀔 수 있으니 출발 전에 여행사 안내를 한 번 더 확인해 주세요.' }));
   return labSheet('🧳 여행 준비 · ' + p.name, body);
 }
-function planPrepCard(p, onWx) {
-  const box = el('button', { class: 'card', style: 'display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--accent);font:inherit;color:inherit;cursor:pointer;padding:12px 14px' });
+function planPrepCard(p, onWx, tile) {
+  const box = tile ? el('button', { class: 'tv-tile', type: 'button' }) : el('button', { class: 'card', style: 'display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--accent);font:inherit;color:inherit;cursor:pointer;padding:12px 14px' });
   let wx = ls.get('planWx:' + p.id, null);
   const paint = () => {
     const st = ls.get('planPrep:' + p.id, {}) || {}, all = planPrepList(p, wx).S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
     const W = (wx && wx.days || []).filter(Boolean), lo = W.length ? Math.round(Math.min(...W.map(w => w.me ? w.ml : w.lo))) : null, hi = W.length ? Math.round(Math.max(...W.map(w => w.hi))) : null;
     const left = p.start ? Math.round((planDate(p, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5) : null;
+    if (tile) return faRc(box, el('b', {}, cSvg('bag', 18), '여행 준비'), el('p', { text: [`${all.length}개 중 ${done}개${left != null && left > 0 ? ` · D-${left}` : ''}`, lo != null ? `${lo}~${hi}°C` : ''].filter(Boolean).join(' · ') }), el('div', { class: 'bar' }, el('i', { style: `width:${all.length ? Math.round(done / all.length * 100) : 0}%` })));
     faRc(box, el('span', { style: 'font-size:30px;flex:none', text: '🧳' }),
       el('div', { style: 'flex:1;min-width:0' },
         el('div', { style: 'font-weight:800', text: `여행 준비${left != null && left > 0 ? ` · D-${left}` : ''} · ${done}/${all.length}` }),
@@ -8072,7 +8167,7 @@ async function viewTripRoom(code, title, planId) {
     ls.set('tripSeen:' + R.rid, Date.now());
   }
   document.documentElement.classList.add('tv-page');   // ✈ B안
-  faRc(app, el('div', { class: 'stack' }, roleBar('member', '여행 방'), tvHero(p || { id: 'r_' + R.rid, it: [] , room: { code } }, { sm: 1, title: `💬 ${title || '여행'} 여행 방`, d: 'TRAVEL ROOM' }), top, body, foot, fileIn));
+  roleBar('member', '여행 방'); faRc(app, el('div', { class: 'stack', style: 'position:relative' }, tvTop(p ? './?plan=1&p=' + encodeURIComponent(p.id) : './?plan=1'), tvHero(p || { id: 'r_' + R.rid, it: [] , room: { code } }, { sm: 1, title: `${title || '여행'} 여행 방`, d: 'TRAVEL ROOM' }), el('div', { class: 'tv-sheet' }, top, body, foot), fileIn));
   draw();
   if (trName()) trPut(R, 'tm', me, { by: me, nm: trName(), t: Date.now() }).catch(() => {});
   locStart();
@@ -8090,12 +8185,15 @@ async function viewTripRoom(code, title, planId) {
   if (p) { const go = () => trAuto(p, t => setStatus(t)).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 저절로 올렸어요`); trLoad(R).then(x => { Object.assign(S, x); draw(); }); } }).catch(() => {}); go(); setInterval(() => { if (!document.hidden) go(); }, 5 * 60000); }
 }
 // 계획 화면의 여행 방 카드 (새 글 수)
-function planRoomCard(p) {
+function planRoomCard(p, tile) {
   if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
-  const box = el('a', { class: 'card', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', style: 'display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:12px 14px;border:2px solid var(--pine)' });
+  const box = tile ? el('a', { class: 'tv-tile', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1' }) : el('a', { class: 'card', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', style: 'display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:12px 14px;border:2px solid var(--pine)' });
   const paint = (S, R) => {
     const seen = R ? ls.get('tripSeen:' + R.rid, 0) : 0, me = trMe(), nw = S ? S.tc.filter(m => m.t > seen && m.by !== me).length : 0, ph = S ? S.tp.filter(x => !x.del).length : 0;
     const pp = new Set(S ? [...S.tm, ...S.tc, ...S.tp].map(x => x.by).filter(Boolean) : []);
+    if (tile) { const AC = ['#1D9EC0', '#F2665E', '#7B61FF', '#3A7BD5', '#E8457A'], nm = S ? [...new Map([...S.tm, ...S.tc, ...S.tp].filter(x => x.by && x.nm).map(x => [x.by, x.nm])).values()].slice(0, 4) : [];
+      return faRc(box, el('b', {}, cSvg('chat', 18), '여행 방', nw ? el('span', { class: 'nb', text: String(nw) }) : null), el('p', { text: S ? `함께 ${pp.size}명 · 사진 ${ph}장` : '대화 · 사진 · 일행 위치' }),
+        nm.length ? el('div', { class: 'av' }, ...nm.map((n, i) => el('span', { style: `background:${AC[i % AC.length]}`, text: String(n).slice(0, 1) }))) : null); }
     faRc(box, el('span', { style: 'font-size:30px;flex:none', text: '💬' }),
       el('div', { style: 'flex:1;min-width:0' }, el('div', { style: 'font-weight:800', text: `여행 방${nw ? ` · 새 글 ${nw}` : ''}` }),
         el('div', { class: 'dt', text: S ? `함께하는 사람 ${pp.size}명 · 사진 ${ph}장 · 대화·사진·일행 위치` : '일행과 대화·사진·위치 · 📤 일정 보내기를 받은 사람이 같이 들어와요' })),
@@ -8231,7 +8329,7 @@ async function viewPlanToday(p) {
   const k = planToday(p), on = k >= 0 && k < p.nd, before = k < 0;
   let d = Math.max(0, Math.min(p.nd - 1, k)), wx = ls.get('planWx:' + p.id, null), wxErr = false;
   const body = el('div', { class: 'stack', style: 'gap:12px' }), status = el('div', { class: 'sub', style: 'font-weight:700' });
-  const chips = el('div', { class: 'tv-chips' }), hero = tvHero(p, { chips });
+  const chips = el('div', { class: 'tv-chips' }), hero = tvHero(p, {});
   const mapButton = () => { const b = el('button', { class: 'btn line small', style: 'margin-top:8px', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
     if (b.disabled) return; b.disabled = true; try { const r = await planOffline(p, t => { if (t) b.textContent = t; }); toast(`📥 지도를 받아 뒀어요 · ${r.n}장 · ${r.mb}MB${r.bad ? ` · 못 받은 ${r.bad}장` : ''}`); } catch (e) { toast('⚠ 지도를 다 받지 못했어요 · ' + String(e && e.message || e).slice(0, 50) + ' · 다시 누르면 이어서 받아요', false, 6000); } draw(); } }); return b; };
   const draw = () => {
@@ -8243,27 +8341,25 @@ async function viewPlanToday(p) {
     const mapInfo = ls.get('planMap:' + p.id, null), tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
     its.forEach((x, i) => {
       const nx = i === ni, kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot;
-      tl.append(el('div', { class: 'tv-it' + (nx ? ' on' : '') + (x.ok ? ' ok' : '') },
-        el('div', { class: 'tv-t', text: [x.t, nx ? (isToday ? '다음 갈 곳' : '첫 일정') : '', x.ok ? '✓ 다녀옴' : ''].filter(Boolean).join(' · ') || kk[1] }),
-        el('button', { class: 'tv-n', text: `${kk[0]} ${x.n}`, onclick: () => x.x ? labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) : null }),
-        x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
-        nx || x.x ? el('div', { class: 'tv-b' },
-          nx && Number.isFinite(x.lat) ? el('button', { class: 'go', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
-          x.x ? el('button', { text: planXLab(p), onclick: () => labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x })) }) : null,
-          nx && isToday ? el('button', { text: '✓ 다녀왔어요', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); draw(); } }) : null) : null));
+      const about = () => labSheet(x.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: x.x }));
+      if (i) { const g = planGap(its[i - 1], x, p); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); }
+      tl.append(tvItem({ k: x.k, t: x.t, n: x.n, on: nx, ok: x.ok, nx: nx ? (isToday ? '다음 갈 곳' : '첫 일정') : x.ok ? '✓ 다녀옴' : '', onName: x.x ? about : null,
+        extra: [x.m ? el('div', { class: 'tv-m', text: x.m }) : null],
+        btns: [Number.isFinite(x.lat) ? el('button', { class: nx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
+          x.x ? el('button', { text: planXLab(p), onclick: about }) : null,
+          nx && isToday ? el('button', { text: '✓ 다녀왔어요', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); draw(); } }) : null] }));
     });
     faRc(body,
       its.length ? tl : el('div', { class: 'card sub', text: '이날 일정이 없어요' }),
-      planRoomCard(p),
+      el('div', { class: 'tv-wg' }, planPrepCard(p, w => { wx = w; }, true), planRoomCard(p, true)),
       el('div', { class: 'card', style: 'padding:12px 14px' }, el('div', { style: 'font-weight:800', text: '📥 지도 미리 받기' }),
         el('div', { class: 'dt', text: mapInfo ? `✅ ${new Date(mapInfo.at).toLocaleDateString('ko-KR')}에 받아 뒀어요 · 장소 둘레 지도 ${mapInfo.n}장 · ${mapInfo.mb}MB · 인터넷이 약해도 지도가 나와요` : '인터넷이 약한 산·시골에서도 지도가 나오게 출발 전에 와이파이에서 받아 두세요(장소 둘레만, 수십 MB)' }),
         mapButton()),
-      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' },
-        el('button', { class: 'btn line', text: '🧳 여행 준비', onclick: () => planPrepSheet(p, wx) }),
-        el('a', { class: 'btn line', href: 'tel:+82232100404', text: '🆘 영사콜센터' })),
+      el('a', { class: 'btn line full', href: 'tel:+82232100404', text: '🆘 영사콜센터 (해외 긴급 · 24시간)' }),
       status);
   };
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', on ? '오늘' : '여행'), hero, body), tvBar(p, 'today'));
+  roleBar('member', on ? '오늘' : '여행');   // 제목·역할만 (띠는 안 보임)
+  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1&p=' + encodeURIComponent(p.id), ['share', '일행에게 일정 보내기', () => planShare(p)]), hero, el('div', { class: 'tv-sheet' }, chips, body)), tvBar(p, 'today'));
   draw();
   planWeather(p).then(w => { if (w) wx = w; else wxErr = !wx; draw(); }).catch(() => { wxErr = true; draw(); });
   if (on || k >= p.nd) trAuto(p, t => { status.textContent = t; }).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 여행 방에 올렸어요`); draw(); } }).catch(() => {});
@@ -8324,6 +8420,20 @@ function tvHero(p, o = {}) {
   return box;
 }
 function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
+// 일정 한 칸 (2026-11-15 새 디자인): 왼쪽 시각 · 흰 카드(종류 그림 칸 + 이름·메모·단추)
+function tvItem(o) {
+  const kk = PLAN_KINDS[o.k] || PLAN_KINDS.spot;
+  return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') },
+    el('div', { class: 'tv-tm' }, o.t || '', o.no ? el('small', { text: o.no }) : null),
+    el('div', { class: 'tv-c' }, el('span', { class: 'tv-ic', 'aria-hidden': 'true', text: kk[0] }),
+      el('div', { class: 'tv-bd' }, o.nx ? el('span', { class: 'tv-nx', text: o.nx }) : null,
+        el('button', { class: 'tv-n', text: o.n, onclick: o.onName }), ...(o.extra || []).filter(Boolean),
+        o.btns && o.btns.filter(Boolean).length ? el('div', { class: 'tv-b' }, ...o.btns.filter(Boolean)) : null)));
+}
+function tvTop(back, ...acts) {   // 사진 위 동그란 단추 줄 (뒤로 · 오른쪽 단추들)
+  const ib = (svg, label, on) => typeof on === 'string' ? el('a', { class: 'n-ib', href: on, 'aria-label': label, title: label }, cSvg(svg, 20)) : el('button', { class: 'n-ib', type: 'button', 'aria-label': label, title: label, onclick: on }, cSvg(svg, 20));
+  return el('div', { class: 'tv-topbar' }, ib('back', '뒤로', back), el('span', { class: 'sp' }), ...acts.filter(Boolean).map(a => ib(a[0], a[1], a[2])));
+}
 function tvBar(p, on) {   // 여행 화면 아래 메뉴
   const id = encodeURIComponent(p.id), nw = el('span', { class: 'n', style: 'display:none' });
   const room = el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'room' ? 'on' : '', onclick: () => ls.set('tripTab', 'chat') }, el('b', { text: '💬' }), '여행 방', nw);
@@ -8445,22 +8555,24 @@ function viewPlanOne(id) {
   document.documentElement.classList.add('tv-page');   // ✈ B안 '여행 매거진'
   const tabs = el('div', { class: 'tv-chips' }), list = el('div', { class: 'stack', style: 'gap:2px' });
   let map = null, layer = null, wx = ls.get('planWx:' + id, null);
-  const hero = tvHero(p, { chips: tabs });
+  const hero = tvHero(p, {});
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-    el('div', { class: 'tv-acts' },
-      el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
-      (() => { const k = planToday(p); return k != null && k >= -30 && k < p.nd ? el('a', { class: 'btn primary small', href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), text: k >= 0 ? '📅 오늘 화면' : '📅 여행 화면' }) : null; })(),
-      el('button', { class: 'btn line small', text: '👋 일행에게 일정 보내기', onclick: () => planShare(p) }),
       (() => { const miss = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length; if (!miss) return null;
-        const bt = el('button', { class: 'btn line small', text: `📍 위치 찾기 · ${miss}곳`, onclick: async () => {
+        const t0 = `📍 위치가 없거나 대략인 곳 ${miss}곳 · 찾기 ›`, bt = el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:#147FA0', text: t0, onclick: async () => {
           if (bt.disabled) return; bt.disabled = true; const say = t => { bt.textContent = t.slice(0, 40); };
-          try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}${r.nb ? ` (식사·쇼 등 ${r.nb}곳은 앞뒤 장소 사이로)` : ''}${r.ai ? '' : ' · Claude 열쇠가 있으면 더 정확해요'}`); location.reload(); }
-          catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); bt.disabled = false; bt.textContent = `📍 위치 찾기 · ${miss}곳`; } } }); return bt; })(),
-      el('a', { class: 'btn small', style: 'text-decoration:none', href: './?film=1&plan=' + encodeURIComponent(p.id), text: '🎬 미리 보기 영상' }),
-      p.blog && p.blog.url ? el('a', { class: 'btn line small', style: 'text-decoration:none', href: p.blog.url, target: '_blank', rel: 'noopener', text: '📝 블로그 원문' }) : null,
-      el('button', { class: 'btn line small', text: '🗑 지우기', onclick: () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } } }))); };
+          try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}${r.nb ? ` (식사·쇼 등 ${r.nb}곳은 앞뒤 장소 사이로)` : ''}`); location.reload(); }
+          catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); bt.disabled = false; bt.textContent = t0; } } }); return bt; })()); };
+  function moreSheet() {   // ⋯ 더보기: 자주 안 쓰는 것들
+    const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
+    const bg = labSheet(p.name,
+      go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
+      go('👋 일행에게 일정 보내기', () => planShare(p)),
+      go('✎ 이름 · 날짜 고치기', editMeta),
+      p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
+      go('🗑 이 계획 지우기', () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } }));
+  }
   function editMeta() {
     const nm = el('input', { type: 'text', value: p.name, style: 'width:100%;box-sizing:border-box' }), dt = el('input', { type: 'date', value: p.start || '', style: 'width:100%;box-sizing:border-box' }), nd = el('input', { type: 'number', min: 1, max: 30, value: p.nd, style: 'width:100%;box-sizing:border-box' });
     const bg = labSheet('✎ 이름·날짜', el('label', { class: 'sub', text: '여행 이름' }), nm, el('label', { class: 'sub', text: '출발하는 날' }), dt, el('label', { class: 'sub', text: '날 수' }), nd,
@@ -8498,19 +8610,16 @@ function viewPlanOne(id) {
     let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm);
     if (i < 0) i = its.findIndex(x => !x.ok); return i;
   }
-  function row(x, i, d, nx) {   // ✈ 시간 줄 한 칸
-    const kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot, hasLoc = Number.isFinite(x.lat), isNx = i === nx;
-    return el('div', { class: 'tv-it' + (isNx ? ' on' : '') + (x.ok ? ' ok' : '') },
-      el('div', { class: 'tv-t', text: [x.t, `${i + 1}`, isNx ? '다음 갈 곳' : ''].filter(Boolean).join(' · ') }),
-      el('button', { class: 'tv-n', text: `${kk[0]} ${x.n}`, onclick: () => editItem(x) }),
-      x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
-      x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
-      x.vf ? el('div', { class: 'tv-w', text: x.vf }) : null,
-      !hasLoc && x.k !== 'fly' ? el('div', { class: 'tv-w', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'tv-m', text: x.near ? '📍 앞뒤 장소 사이 대략 위치' : '📍 대략 위치' }) : null,
-      x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null,
-      td === d || x.ok || hasLoc ? el('div', { class: 'tv-b' },
-        hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
-        td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null) : null);
+  function row(x, i, d, nx) {   // ✈ 일정 한 칸 (새 디자인 tvItem)
+    const hasLoc = Number.isFinite(x.lat), isNx = i === nx;
+    return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => editItem(x),
+      extra: [x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
+        x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
+        x.vf ? el('div', { class: 'tv-w', text: x.vf }) : null,
+        !hasLoc && x.k !== 'fly' ? el('div', { class: 'tv-w', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'tv-m', text: x.near ? '📍 앞뒤 장소 사이 대략 위치' : '📍 대략 위치' }) : null,
+        x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
+      btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
+        td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
   }
   function drawTabs() {
     const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
@@ -8522,7 +8631,7 @@ function viewPlanOne(id) {
       if (day !== -1 && day !== d) continue;
       const its = planItems(p, d), nx = nextIdx(d);
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
-        out.push(el('div', { class: 'tv-day', style: `color:${PLAN_COLS[d % PLAN_COLS.length]}` }, `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
+        out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
       its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x, p); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
       out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
@@ -8549,10 +8658,13 @@ function viewPlanOne(id) {
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), hero,
-    head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), p.hike && p.hike.on && p.nd === 1 && !p.start ? null : planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, list,
-    el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
-    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })), tvBar(p, 'plan'));
+  roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
+  const noPrep = p.hike && p.hike.on && p.nd === 1 && !p.start;
+  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['share', '일행에게 일정 보내기', () => planShare(p)], ['more', '더보기', moreSheet]), hero,
+    el('div', { class: 'tv-sheet' },
+    el('div', { class: 'tv-wg', style: noPrep ? 'grid-template-columns:1fr' : '' }, noPrep ? null : planPrepCard(p, w => { wx = w; drawList(); }, true), planRoomCard(p, true)),
+    tabs, head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, list,
+    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` }))), tvBar(p, 'plan'));
   drawAll();
   setTimeout(() => {
     map = L.map(mapEl); const base = mdTileLayer().addTo(map); drawMap();
@@ -9143,11 +9255,29 @@ function viewFoodLink() {
 }
 function viewMyList() {
   const list = pastTrips(), live = ls.get('walkNow', null);
-  const row = x => el('a', { class: 'member', href: `./?my=1&t=${encodeURIComponent(x.t)}`, style: 'text-decoration:none;color:inherit' },
-    el('span', { style: 'color:var(--pine);flex:none' }, ico(ls.get('walkMode:' + x.t, null) ? modeOfT(x.t).k : 'pin', 26)),
-    el('div', { class: 'grow' }, el('div', { class: 'nm', text: x.info.name }), el('div', { class: 'dt', text: mdLine(x) })),
-    x.t === live ? el('span', { class: 'chip', style: 'background:var(--accent);color:#1E3B2F', text: '기록 중' }) : x.album ? el('span', { class: 'chip', style: 'background:var(--forest-soft);color:var(--forest-ink)', text: `여행 ${x.info.days}일` }) : null,
-    myThumb(x.t));
+  document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15 시안 ① '이야기')
+  // 기록 한 편: 사진이 있으면 큰 사진 카드(대표 사진 원본), 없으면 작은 줄
+  const PH = viewMyList.ph || (viewMyList.ph = new Map());
+  const metaOf = x => { const M = modeOfT(x.t), s0 = mdLine(x); return ls.get('walkMode:' + x.t, null) ? s0.replace(M.label + ' · ', '') : s0; };
+  const row = x => {
+    const M = modeOfT(x.t), k = ls.get('walkMode:' + x.t, null) ? M.k : 'pin', href = `./?my=1&t=${encodeURIComponent(x.t)}`;
+    const small = () => el('a', { class: 'n-row', href },
+      el('span', { class: 'th' }, ico(k, 26)),
+      el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: x.info.name }), el('p', { text: metaOf(x) })),
+      x.t === live ? el('span', { class: 'chip', style: 'background:#E5383B;color:#fff', text: '기록 중' }) : el('span', { class: 'chv', text: '›' }));
+    const big = (ps) => {
+      const cid = ls.get('walkCover:' + x.t, null), p = (cid && cid !== 'none' && ps.find(r => r.id === cid)) || ps[Math.floor((ps.length - 1) / 2)] || ps[0];
+      const im = el('div', { class: 'im', style: `background-image:url("${phSrc(p)}")` },
+        el('span', { class: 'tag' }, ico(k, 15), x.album ? `여행 ${x.info.days}일` : M.label),
+        x.t === live ? el('span', { class: 'lv', text: '● 기록 중' }) : null,
+        el('span', { class: 'cnt', text: `사진 ${ps.length}` }));
+      return el('a', { class: 'n-rc', href }, im, el('h3', { text: x.info.name }), el('p', { text: metaOf(x) }));
+    };
+    const ps = PH.get(x.t); if (ps) return ps.length ? big(ps) : small();
+    const holder = small();
+    photoImgs(x.t).then(L => { PH.set(x.t, L); if (L.length && holder.isConnected) holder.replaceWith(big(L)); }).catch(() => PH.set(x.t, []));
+    return holder;
+  };
   // 대표 사진 (2026-10-20 사용자 '요기에 그 MPD의 대표 사진 넣기'): 줄 오른쪽에 작은 사진 — 공유 카드 '맨 위 사진'(walkCover)으로 고른 것, 없으면 첫 사진. 사진 없으면 안 보임
   function myThumb(t) {
     const th = el('span', { class: 'my-th', style: 'display:none' });
@@ -9160,8 +9290,8 @@ function viewMyList() {
   const days = list.filter(x => !x.album), last = days.length ? new Date(days[0].info.startAt) : new Date();
   let ym = [last.getFullYear(), last.getMonth()], sel = null;
   const body = el('div', { class: 'stack' });
-  const tab = (k, label) => el('button', { class: 'btn small ' + (mode === k ? 'dark' : 'line'), text: label, onclick: () => { mode = k; ls.set('myView', k); draw(); } });
-  const tabs = el('div', { class: 'mapbar' });
+  const tab = (k, label) => el('button', { class: mode === k ? 'on' : null, 'aria-pressed': mode === k ? 'true' : 'false', text: label, onclick: () => { mode = k; ls.set('myView', k); draw(); } });
+  const tabs = el('div', { class: 'n-seg', role: 'tablist' });
   const keyOf = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
   function calendar() {
     const [Y, Mo] = ym, first = new Date(Y, Mo, 1), nDays = new Date(Y, Mo + 1, 0).getDate();
@@ -9195,18 +9325,30 @@ function viewMyList() {
   function draw() {
     const nFood = foodPlaces().length;
     const nPk = myPeaks().length;
-    tabs.replaceChildren(tab('list', '목록'), tab('cal', '달력'), tab('peaks', `🏔 오른 산${nPk ? ' ' + nPk : ''}`), tab('food', `🍽 맛집${nFood ? ' ' + nFood : ''}`));
+    tabs.replaceChildren(tab('list', '전체'), tab('cal', '달력'), tab('peaks', `오른 산${nPk ? ' ' + nPk : ''}`), tab('food', `맛집${nFood ? ' ' + nFood : ''}`));
     body.replaceChildren(...(mode === 'peaks' ? peaksView(() => { if (mode === 'peaks') draw(); }) : mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
   }
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MPD'),
-    el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
-    el('h1', { text: '내 MPD' }),
-    el('div', { class: 'sub', text: `이 휴대폰에 저장한 기록 ${list.length}개예요. 누르면 지도와 사진으로 볼 수 있어요.` }),
-    cloudCard(),   // 2026-10-19 사용자 '로그인 안 보여 어딨어?' → 맨 아래에서 맨 위로
-    !watchGet() && !ls.get('watchAskHide', false) && !wearSelf() ? watchCard(viewMyList) : null,   // 시계 연결 전이면 맨 위에(2026-10-20). MPD Run 앱은 코드가 필요 없어 아래에
-
+  // 올해 걸은 거리
+  const Y0 = new Date().getFullYear(); let yWalk = 0;
+  days.forEach(x => { if (new Date(x.info.startAt).getFullYear() === Y0) { const M = modeOfT(x.t); yWalk += trackStats(trackLoad(x.t), M.car).walk; } });
+  const ib = (svg, label, on) => el('button', { class: 'n-ib', type: 'button', 'aria-label': label, title: label, onclick: on }, cSvg(svg, 20));
+  // 기록 지키기·가져오기: 늘 보이던 긴 안내 카드들을 한 줄씩 접어 둠(눌러서 펼침), 줄에 지금 상태
+  const acct = cloudAcct(), cl = ls.get('cloudLast', null);
+  const fold = (title, small, inner, open) => { const d = el('details', { class: 'n-fold' }, el('summary', {}, el('span', { class: 'sp', text: title }), small ? el('small', { text: small }) : null), el('div', { class: 'n-fb' }, inner)); if (open) d.open = true; return d; };
+  const wNeed = !watchGet() && !ls.get('watchAskHide', false) && !wearSelf();
+  const keep = [
+    fold('☁ 로그인 · 기록 모으기', acct ? `${acct.via} · ${acct.name || '로그인됨'}${cl && cl.ok ? ' · ✓' : ''}` : '로그인 안 함', cloudCard()),
+    fold('⌚ 시계 기록 받기', watchGet() ? '연결됨' : wearSelf() ? '저절로 와요' : '연결 안 됨', watchCard(viewMyList)),
+    fold('📥 다른 앱 기록(GPX) 가져오기', '', gpxImportBtn()),
+    fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
+  ];
+  app.replaceChildren(el('div', { class: 'stack' },
+    el('div', { class: 'n-top' }, el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch()), ib('cal', '달력으로 보기', () => { mode = 'cal'; ls.set('myView', 'cal'); draw(); })),
+    el('h1', { class: 'n-lt', text: '이야기' }),
+    el('div', { class: 'n-ls', text: `기록 ${list.length}개${yWalk > 0 ? ` · 올해 걸은 거리 ${fmtDist(yWalk)}` : ''}` }),
     tabs, body,
-    watchGet() || ls.get('watchAskHide', false) || wearSelf() ? watchCard(viewMyList) : null, gpxImportBtn(), backupCard(list.filter(x => !x.album).length)));
+    el('div', { class: 'n-gh', text: '기록 지키기 · 가져오기' }), ...keep));
+  app.append(cTabs('book'));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
@@ -9388,7 +9530,8 @@ async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
   if (!x) { location.replace('./?my=1'); return; }
   // 고급 검은 화면 (2026-10-30 사용자가 애플 피트니스 사진을 보내며 '이렇게 고급스럽게'): 이 화면에서만 밝은 색 숫자·어두운 지도
-  document.documentElement.classList.add('vw-page'); Object.assign(STAT_COL, VW_DARK.stat); PACE_COLS.splice(0, 5, ...VW_DARK.pace); ZONE_COL.splice(0, 5, ...VW_DARK.zone);
+  // 2026-11-15 새 디자인(시안 ② 승인): 예전 검은 화면(VW_DARK) 대신 밝은 지도 위로 흰 판
+  document.documentElement.classList.add('n-page', 'vw-lt');
   const M = modeOfT(t), tr = trackLoad(t), st = trackStats(tr, M.car), info = x.info, live = t === ls.get('walkNow', null);
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   const d = new Date(info.startAt), dateText = info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`;
@@ -9398,7 +9541,7 @@ async function viewMyOne(t) {
   const phSave = el('button', { class: 'btn line small', style: 'align-self:flex-start', onclick: () => savePhotos(phAll, info.name) }, '⬇ 사진 모두 휴대폰에 저장');
   const vNote = el('div', { class: 'sub', style: 'font-size:12px;display:none', text: '🎬 동영상은 이 휴대폰(과 백업 파일)에만 있어요 · 지도 링크·공유 카드·클라우드로는 아직 안 보내져요' });
   const phHd = el('span', { text: '사진' });
-  const gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:6px;display:none' }, el('b', { class: 'with-ico', style: 'color:var(--pine)' }, ico('camera', 20), phHd), gal, vNote, phSave);
+  const phN = el('small'), gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:10px;display:none' }, el('div', { class: 'vw-sec' }, phHd, phN), gal, vNote, phSave);
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
   // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
@@ -9486,22 +9629,39 @@ async function viewMyOne(t) {
     toastLater(`'${info.name}'을(를) 지웠어요`); location.replace('./?my=1');
   };
   const gpx = () => gpxSave(info.name, tr);   // 하루 기록·여러 날 여행 모두 (2026-11-10)
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '내 MPD'),
-    el('a', { class: 'link', href: './?my=1', style: 'align-self:flex-start;padding:0', text: '← 내 MPD 목록' }),
-    // 위→아래로 자세히 (2026-10-29): 큰 지도 → 모드·날짜 · 제목 · 큰 거리 · 시각 → 숫자 칸 → 1km 표 → 심박 → 높이
-    el('div', { class: 'vw-mapw' }, mapEl, el('i', { class: 'vw-fade' })), legEl, pickEl,
-    // 애플처럼: 장소 → 큰 제목 → 큰 거리 → 날짜·시각 → 날씨 칸
-    el('div', { class: 'stack', style: 'gap:6px' },
-      whereEl,
-      el('div', { class: 'row', style: 'gap:6px;align-items:center;flex-wrap:nowrap' }, title,
-        el('button', { class: 'btn line small', style: 'height:32px;padding:0 10px;white-space:nowrap;flex:none', text: '✎ 바꾸기', onclick: rename })),
-      el('div', { class: 'vw-big', style: `color:${STAT_COL.dist}` }, el('b', { text: km[0] }), el('span', { text: km[1] })),
-      off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
-      el('div', { style: 'font-size:15px;color:var(--muted);font-weight:600' }, `${dateText} ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}`, live ? ' · 기록 중' : ''),
-      el('div', { class: 'sub with-ico', style: 'font-weight:600;font-size:14px' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label] : null, wp.start || wp.end ? `${ls.get('walkMode:' + t, null) ? ' · ' : ''}${wp.start || '출발'} → ${wp.end || '도착'}` : ''),
-      wxEl,
-      noteEl,
-      ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })()),
+  // 큰 숫자 셋: 거리 · 시간 · (오른 높이 | 페이스 | 속도)
+  const third = ev && ev.gain >= 10 ? ['오른 높이', ev.gain.toLocaleString(), 'm'] : M.k === 'bike' && mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : M.k === 'run' && st.walk >= 200 && mv > 0 ? ['페이스', fmtPace(st.walk, mv), ''] : (spots.length ? ['들른 곳·별표', spots.length, '곳'] : null);
+  const big3 = el('div', { class: 'vw-3' }, ...[[`${M.did} 거리`, km[0], km[1]], [x.album ? '기간' : '시간', x.album ? (info.durText || '') : fmtRunTime(off && off.ms ? off.ms : st.ms), ''], third].filter(Boolean)
+    .map(([k, v, u]) => el('div', {}, el('small', { text: k }), el('b', { text: String(v) }), u ? el('em', { text: u }) : null)));
+  const act = (svg, label, on, pri) => typeof on === 'string' ? el('a', { class: 'vw-act' + (pri ? ' pri' : ''), href: on }, el('i', {}, cSvg(svg, 22)), label) : el('button', { class: 'vw-act' + (pri ? ' pri' : ''), type: 'button', onclick: on }, el('i', {}, cSvg(svg, 22)), label);
+  const canFilm = !(live || (x.album && (albumGet(t)?.days || []).includes(ls.get('walkNow', null))));
+  const acts = el('div', { class: 'vw-acts' },
+    act('share', '공유', () => openBrag(Object.assign({}, info), t, 0, false), true),
+    agBox ? act('again', '다시 가기', () => { agBox.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); agBox.classList.remove('ag-flash'); void agBox.offsetWidth; agBox.classList.add('ag-flash'); }) : null,
+    canFilm ? act('film', '영상', './?film=1&t=' + encodeURIComponent(t)) : null,
+    act('dl', 'GPX', gpx));
+  const moreSheet = () => {   // ⋯ 더보기
+    const go = (txt, fn, red) => el('button', { class: 'n-row', style: `width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer${red ? ';color:#D64545' : ''}`, onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
+    const bg = labSheet(info.name,
+      go('✎ 제목 바꾸기', rename),
+      live ? null : go('✎ 수정하기 (모드·장소·사진·경로 자르기)', () => editMD(x)),
+      live ? null : go('📸 가족 앨범에 올리기', () => famFromMD(t, info.name)),
+      canFilm ? go(x.album ? '🎬 여행 전체 이동 영상 만들기' : '🎬 이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
+      go('⬇ GPX 받기', gpx),
+      M.k === 'run' && !live && !x.album ? go(off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기', () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); }) : null,
+      go('🗑 이 기록 지우기', del, true));
+  };
+  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
+    tvTop('./?my=1', ['more', '더보기', moreSheet]),
+    el('div', { class: 'vw-mapw' }, mapEl),
+    el('div', { class: 'tv-sheet' },
+      el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [ico(M.k, 16), M.label, ' · '] : null, `${dateText} · ${kTime(info.startAt)}${live ? ' · 기록 중' : ''}`),
+      el('div', { class: 'vw-ttl' }, title, el('button', { type: 'button', 'aria-label': '제목 바꾸기', text: '✎', onclick: rename })),
+      wp.start || wp.end ? el('div', { class: 'sub', style: 'font-size:14px;margin-top:-6px', text: `${wp.start || '출발'} → ${wp.end || '도착'} · ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}` }) : null,
+      big3, off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
+      acts, whereEl, wxEl, noteEl,
+      ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })(),
+      phBox, legEl, pickEl,
     agBox,   // ↻ 다시 가기 (2026-11-09 P1): 이 길 다시 가기 · 길찾기
     stats, (() => {   // 🏔 오른 정상 (2026-11-07): 기록 중에 남긴 것, 없으면 지도 자료에서 찾아 채움
       const box = el('div', { class: 'card pk-rec', hidden: true });
@@ -9526,18 +9686,8 @@ async function viewMyOne(t) {
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
     golfBox, kmc, hrCard(t, tr), elevEl,
     wa ? el('details', { class: 'card vw-det' }, el('summary', { text: '⌚ 시계 분석 자세히 · 판단 글 · 심박 존 · 자세' }), wa) : null,
-    M.k === 'run' ? formCard(t) : null, spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]), phBox,
-    live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null,
-    // 보다가 바로 공유 (2026-11-11 사용자 '보기에 들어가서 보다가 공유하게 해'): 화면 오른쪽 아래에 늘 떠 있는 단추
-    el('button', { class: 'vw-share', type: 'button', 'aria-label': '이 MPD 공유하기', onclick: () => openBrag(Object.assign({}, info), t, 0, false) }, el('span', { 'aria-hidden': 'true', text: '📤' }), ' 공유하기'),
-    live ? null : el('button', { class: 'btn line full', text: '📸 가족 앨범에 올리기', onclick: () => famFromMD(t, info.name) }),
-    live || (x.album && (albumGet(t)?.days || []).includes(ls.get('walkNow', null))) ? null : el('a', { class: 'btn line full', href: './?film=1&t=' + encodeURIComponent(t), text: x.album ? '🎬 여행 전체 이동 영상 만들기' : '🎬 이동 영상 만들기 (실험)' }),
-    live ? null : el('button', { class: 'btn line full', onclick: () => editMD(x) }, '✎ 수정하기 (모드·장소·사진·경로 자르기)'),
-    el('div', { class: 'two' },
-      el('button', { class: 'btn line', text: 'GPX 받기', onclick: gpx }),
-      el('button', { class: 'btn line', style: 'color:var(--alert-ink)', text: '지우기', onclick: del })),
-    // 대회 기록 맞추기는 가끔만 쓰니 맨 아래 작은 글자로 (2026-10-20 사용자 '잘 안 보이는 곳으로')
-    M.k === 'run' && !live && !x.album ? el('button', { class: 'link', style: 'align-self:center;font-size:13px;color:var(--muted);padding:4px 0 10px', text: off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기', onclick: () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); } }) : null));
+    M.k === 'run' ? formCard(t) : null, spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]),
+    live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null)));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
     if (M.k !== 'pgolf' && paceOverlay(m, tr, trackModes(tr, M.car))) legEl.replaceChildren(paceLegend());   // 빠르기로 색칠한 길
@@ -9546,7 +9696,7 @@ async function viewMyOne(t) {
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
       const ps = await photoList(t); phAll = ps;
-      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = ps.some(isVid) ? '사진·동영상' : '사진'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
+      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}`; phN.textContent = '눌러서 크게'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
         : el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps) })));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
@@ -9561,10 +9711,7 @@ async function viewMyOne(t) {
       return bt; } });
     m.addControl(new PC());
     // 지도 오른쪽 위 '↻ 다시 가기': 첫 화면에서 바로 보이게, 누르면 아래 다시 가기 칸으로 (같은 기능을 두 번 만들지 않고 그 칸으로 데려가요)
-    if (agBox) m.addControl(new (L.Control.extend({ options: { position: 'topright' }, onAdd() {
-      const bt = L.DomUtil.create('button', 'fs-btn'); bt.type = 'button'; bt.textContent = '↻ 다시 가기'; L.DomEvent.disableClickPropagation(bt);
-      bt.addEventListener('click', () => { agBox.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); agBox.classList.remove('ag-flash'); void agBox.offsetWidth; agBox.classList.add('ag-flash'); });
-      return bt; } }))());
+    // '↻ 다시 가기'는 지도 아래 동그라미 단추로 옮김 (2026-11-15 새 디자인)
     drawPh(); addEventListener('photo-changed', drawPh);
     addEventListener('spots-changed', () => setTimeout(() => location.reload(), 300));   // 지도 위 별표도 새로
   }, 0);
@@ -10798,6 +10945,28 @@ function cSvg(n, s = 22, c = 'currentColor') {
     locate: '<path d="M21 3L3 10.5l7.5 3 3 7.5z"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+    img: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.2-1.7-.4-1 .3-2.3 1.5-2.3H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
+    scale: '<rect x="3" y="4" width="18" height="16" rx="4"/><path d="M8.5 10a5 5 0 0 1 7 0l-2.5 3"/>',
+    flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+    vol: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
+    flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
+    heart: '<path d="M12 20s-7-4.4-9-9a4.6 4.6 0 0 1 8-4 4.6 4.6 0 0 1 8 4c-2 4.6-7 9-7 9z"/>',
+    watch: '<rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 6l1-3h4l1 3M9 18l1 3h4l1-3"/>',
+    cloud: '<path d="M7 18a5 5 0 0 1-.5-10A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+    cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>',
+    more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+    share: '<path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/>',
+    again: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/>',
+    film: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4-2.5z"/>',
+    dl: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+    bag: '<rect x="4" y="7" width="16" height="13" rx="3"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+    chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+    send: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
     route: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>'
   };
   const sp = el('span', { class: 'ico', 'aria-hidden': 'true' });
