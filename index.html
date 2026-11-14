@@ -674,7 +674,7 @@ html.tv-page a{color:inherit}
 .tv-chips{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.tv-chips::-webkit-scrollbar{display:none}
 .tv-chips button{flex:none;padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.14);color:#fff;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap}
 .tv-chips button.on{background:#FF8A6B;color:#1A0D08}
-.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}
+.tv-credit{position:absolute;right:8px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:3;font-size:10px;color:rgba(255,255,255,.6);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 92px);right:12px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
 .tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
 .tv-day{font-weight:900;font-size:17px;margin:14px 0 2px;color:#fff}.tv-day small{display:block;font-weight:600;font-size:13px;color:#9FB0C2}
 .tv-tl{position:relative;padding-left:26px}
@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-97-invite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-99-invite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 카카오톡 초대 카드에 여행지 사진이 들어가요 · 사진이 빠지던 것을 고쳤어요';
+const UI_NOTES = '👋 카카오톡 초대 카드에 여행지 사진이 들어가요 · 🖼 등산 계획 맨 위 사진은 정상 둘레 산 사진으로 · 마음에 안 들면 ↻ 다른 사진 · 📝 블로그 글로 계획 만들 때 지금 몇 번째 단계인지·몇 초 지났는지 보여요 · 정상 찾기는 20초 안에 끝나요 · 👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7285,7 +7285,7 @@ async function planBlogBasic(B, hike, say) {
     if (!c) {   // 지도 카드가 없으면 처음 나온 산 이름으로 대략 자리를 찾아 그 둘레 정상 자료를 봐요
       try { const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(peaksSaid[0].n)}`, {}, 10000)).json(); if (j && j[0]) c = { lat: +j[0].lat, lng: +j[0].lon }; } catch {}
     }
-    if (c) { say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…'); pk = (await peaksAt(c.lat, c.lng)) || []; const more = [[.2, 0], [-.2, 0], [0, .2], [0, -.2]]; for (const [a, b] of more) { if (pk.length > 400) break; pk = pk.concat((await peaksAt(c.lat + a, c.lng + b)) || []); } }
+    if (c) { say && say('⛰ 산 정상 자료(OpenStreetMap)에서 정상 자리 찾기 · 20초 안'); pk = await planPeaksNear(c.lat, c.lng); }
     for (const q of c ? peaksSaid : []) {
       const nm = q.n.replace(/\s/g, ''), hit = pk.filter(p => p[0].replace(/\s/g, '') === nm).sort((a, b) => dist(c.lat, c.lng, a[1], a[2]) - dist(c.lat, c.lng, b[1], b[2]))[0];
       if (!hit || dist(c.lat, c.lng, hit[1], hit[2]) > 20000 || it.some(x => x.k === 'peak' && x.n.replace(/\s/g, '').startsWith(nm))) continue;
@@ -7295,12 +7295,23 @@ async function planBlogBasic(B, hike, say) {
   it.sort((a, b) => a.d - b.d || a.li - b.li); it.forEach(x => delete x.li);
   return { nd: maxD + 1, it };
 }
+// 정상 자료를 한 번에·빨리 (2026-11-15 휴대폰에서 '정상 자리를 찾는 중…'에 오래 멈춰 있어서): 15km 둘레 한 번만 묻고 20초 넘으면 건너뜀
+async function planPeaksNear(lat, lng) {
+  const k = lat.toFixed(2) + ',' + lng.toFixed(2); planPeaksNear.m = planPeaksNear.m || {}; if (planPeaksNear.m[k]) return planPeaksNear.m[k];
+  const own = ((() => { try { const c = ls.get('peakCache', {}); return Object.values(c).flatMap(v => v.p || []).filter(q => dist(lat, lng, q[1], q[2]) < 15000); } catch { return []; } })());
+  if (own.length >= 3) return (planPeaksNear.m[k] = own);   // 이미 받아 둔 칸이면 묻지 않음
+  try {
+    const q = `[out:json][timeout:15];node(around:15000,${lat},${lng})["natural"="peak"]["name"];out body 400;`;
+    const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 20000)).json();
+    return (planPeaksNear.m[k] = (j.elements || []).map(o => [String(o.tags['name:ko'] || o.tags.name).slice(0, 30), +o.lat.toFixed(5), +o.lon.toFixed(5), parseInt(o.tags.ele) || 0]));
+  } catch { return own; }
+}
 // 정상(⛰)은 산 정상 자료(OpenStreetMap)에서 같은 이름을 찾아 정확한 자리·해발로 바꿔요 (AI 좌표는 대략이라서)
 async function planPeakFix(p, say) {
   const P = (p.it || []).filter(x => x.k === 'peak'); if (!P.length) return 0;
   const ref = P.find(x => Number.isFinite(x.lat)) || (p.it || []).find(x => Number.isFinite(x.lat)); if (!ref) return 0;
-  say && say('⛰ 산 정상 자료에서 정상 자리를 찾는 중…');
-  let pk = []; for (const [a, b] of [[0, 0], [.2, 0], [-.2, 0], [0, .2], [0, -.2]]) pk = pk.concat((await peaksAt(ref.lat + a, ref.lng + b)) || []);
+  say && say('⛰ 산 정상 자료(OpenStreetMap)에서 정상 자리 확인 · 20초 안');
+  const pk = await planPeaksNear(ref.lat, ref.lng);
   let n = 0; const base = s => String(s || '').replace(/\s|정상|\(.*?\)|\d+\s*m/g, '');
   for (const x of P) {
     const nm = base(x.n), c = Number.isFinite(x.lat) ? x : ref;
@@ -7399,8 +7410,8 @@ async function planResearch(p, say) {
     // ⑥ 들머리 둘레 (주차장·버스 정류장·화장실) — 블로그에 없으면 OSM에서
     if (s0) { say && say('🅿 들머리 둘레 주차장·버스 정류장·화장실을 찾는 중…');
       try {
-        const q = `[out:json][timeout:20];(node(around:900,${s0.lat},${s0.lng})["amenity"~"^(parking|toilets)$"];way(around:900,${s0.lat},${s0.lng})["amenity"="parking"];node(around:900,${s0.lat},${s0.lng})["highway"="bus_stop"];);out center 60;`;
-        const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 25000)).json();
+        const q = `[out:json][timeout:12];(node(around:900,${s0.lat},${s0.lng})["amenity"~"^(parking|toilets)$"];way(around:900,${s0.lat},${s0.lng})["amenity"="parking"];node(around:900,${s0.lat},${s0.lng})["highway"="bus_stop"];);out center 60;`;
+        const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 15000)).json();
         const near = t => (j.elements || []).filter(o => (o.tags || {}).amenity === t || (t === 'bus' && (o.tags || {}).highway === 'bus_stop')).map(o => ({ n: (o.tags['name:ko'] || o.tags.name || '').slice(0, 30), lat: o.lat ?? (o.center || {}).lat, lng: o.lon ?? (o.center || {}).lon })).filter(o => Number.isFinite(o.lat)).map(o => Object.assign(o, { m: Math.round(dist(s0.lat, s0.lng, o.lat, o.lng)) })).sort((a, b) => a.m - b.m)[0] || null;
         const N = { park: near('parking'), bus: near('bus'), wc: near('toilets') }; p.hike.near = { at: s0.n, ...N };
         add(N.park || N.bus ? 'ok' : 'info', `들머리 '${s0.n}' 둘레: ${[N.park ? `🅿 주차장${N.park.n ? ' ' + N.park.n : ''} ${fmtDist(N.park.m)}` : '주차장 자료 없음', N.bus ? `🚌 정류장${N.bus.n ? ' ' + N.bus.n : ''} ${fmtDist(N.bus.m)}` : '정류장 자료 없음', N.wc ? `🚻 화장실 ${fmtDist(N.wc.m)}` : ''].filter(Boolean).join(' · ')}`, 'OpenStreetMap');
@@ -7469,7 +7480,15 @@ function planImportSheet() {
   const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
   const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
   const hasKey = !!String(ls.get('claudeKey', '') || '').trim();
-  const say = s => { stat.textContent = s; };
+  // 진행 표시 (2026-11-15 사용자 '뭐하고 있는지 인지 곤란'): 지나온 단계는 ✓, 지금 단계는 ⏳ + 지난 초, 맨 위 전체 시간
+  let steps = [], t0 = 0, tick = 0, busy = false;
+  const paint = () => { if (!t0) return; const sec = Math.round((Date.now() - t0) / 1000);
+    stat.replaceChildren(el('div', { style: 'font-weight:800;margin-bottom:4px', text: `⏳ 만드는 중 · ${sec}초 · 다 되면 저절로 계획 화면으로 넘어가요` }),
+      ...steps.map((x, i) => el('div', { style: `font-weight:${i === steps.length - 1 ? 800 : 500};opacity:${i === steps.length - 1 ? 1 : .7}`, text: (i === steps.length - 1 ? `⏳ ${i + 1}. ${x.t} · ${Math.round((Date.now() - x.at) / 1000)}초` : `✓ ${i + 1}. ${x.t}`) }))); };
+  const say = s => { if (!busy) { stat.textContent = s; return; } const t = String(s).replace(/…$/, ''); const last = steps[steps.length - 1]; if (last && last.t.split(/[·…]/)[0].trim() === t.split(/[·…]/)[0].trim()) last.t = t; else steps.push({ t, at: Date.now() }); paint(); };
+  const begin = () => { busy = true; steps = []; t0 = Date.now(); clearInterval(tick); tick = setInterval(paint, 1000); bg.querySelectorAll('button').forEach(b => b.disabled = true); paint(); setTimeout(() => stat.scrollIntoView({ block: 'end', behavior: 'smooth' }), 50); };
+  const end = () => { busy = false; t0 = 0; clearInterval(tick); bg.querySelectorAll('button').forEach(b => b.disabled = false); };
+  const run0 = async ai => { if (busy) return; begin(); try { await run(ai); } finally { end(); } };
   const run = async ai => {
     const text = ta.value.trim();
     if (!text && !file) return say('일정 글을 붙여 넣거나 캡처 사진·PDF를 넣어 주세요');
@@ -7509,8 +7528,8 @@ function planImportSheet() {
     el('div', { class: 'sub', style: 'font-weight:700', text: '📝 블로그 글 주소(네이버·티스토리 등)도 돼요 · 등산 후기면 들머리 → ⛰ 정상 → 하산 차례로 등산 계획이 돼요' + (IN_NATIVE ? '' : ' (웹은 글 읽어 주는 곳 r.jina.ai를 거쳐요 · 주소만 보내요)') }),
     el('div', { class: 'sub', style: 'font-weight:700', text: IN_NATIVE ? '🔗 하나투어 상품 주소만 붙여 넣어도 돼요 · 아래 아무 단추나 누르세요' : '🔗 하나투어 상품 주소로 바로 만들기는 MPD 앱에서만 돼요(웹은 하나투어가 막아 둠)' }),
     ta, el('button', { class: 'btn line small', text: '📎 캡처 사진 · PDF 넣기', onclick: () => fIn.click() }), fIn, fLab,
-    hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
-    el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run(false) }), stat);
+    hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run0(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
+    el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run0(false) }), stat);
 }
 function planNewSheet() {
   const nm = el('input', { type: 'text', placeholder: '예: 장가계 4박 5일', style: 'width:100%;box-sizing:border-box' });
@@ -8215,29 +8234,56 @@ async function viewPlanToday(p) {
 // ---------- ✈ 여행 화면 B안 '여행 매거진' (2026-11-15 사용자 'B') ----------
 //   맨 위 여행지 사진: ① 여행 방에 올라온 사진(가장 최근, 가로 사진 먼저) ② 위키백과(영어) 지도 주변 글의 대표 사진(첫 구경 장소 둘레 10km, 가로·800px 넘는 것) → ls planHero:{ID}(새 키, 30일)
 //   못 받으면 남색 그라데이션 그대로. 위키 사진은 오른쪽 위에 작게 '사진 위키백과'(누르면 출처)
-async function tvHeroImg(p) {
-  try { if (p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
+// 계획 맨 위 사진 (2026-11-15 사용자 인왕산 등산 계획 캡처 '사진을 왜 이거 썼어 가기싫어져': 첫 장소(경복궁역) 둘레 위키 사진이 공사 중인 궁궐이었음)
+//   등산 계획(⛰ 정상 있음)은 정상 둘레(2km) 위키미디어 공용 풍경 사진 → 정상 둘레 위키백과 · 그 밖은 첫 구경 장소 둘레 위키백과
+//   '↻ 다른 사진'으로 넘겨 볼 수 있고 넘긴 사진은 ls planHeroSkip:{ID}(새 키)에 남겨 다시 안 고름
+async function tvHeroCands(p) {
+  const its = p.it || [], pk = its.find(x => x.k === 'peak' && Number.isFinite(x.lat)), hike = !!(pk || (p.hike && p.hike.on));
+  const sp = pk || its.find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || its.find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return [];
+  const out = [], bad = /map|karte|logo|sign|plan|diagram|flag|locator|seal|emblem|svg|ticket|menu|screenshot|construction|scaffold|ipark|apartment|badminton|court|station|car|interior|지도|안내|아파트|공사/i;
+  if (hike) {   // 위치로 찾으면 둘레 아무 사진(자동차·아파트)이 섞여서 산 이름으로 찾아요
+    const nm = String(pk ? pk.n : (p.name || '')).replace(/\s*정상.*$/, '').replace(/\s.*$/, '').trim(); let en = '';
+    if (nm) try {   // ① 한국어 위키백과 그 산 글의 대표 사진 + 영어 이름
+      const r = await fetchT(`https://ko.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(nm)}&redirects=1&prop=pageimages%7Clanglinks&lllang=en&piprop=original%7Cthumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
+      if (r.ok) { const pg = Object.values(((await r.json()).query || {}).pages || {})[0] || {}; en = ((pg.langlinks || [])[0] || {})['*'] || '';
+        const o = pg.original; if (o && o.width >= 900 && o.width > o.height * 1.1 && !bad.test(o.source)) out.push({ u: (pg.thumbnail && pg.thumbnail.source) || o.source, t: pg.title, src: 'kw' }); }
+    } catch {}
+    if (nm) try {   // ② 위키미디어 공용에서 산 이름으로 (검색 순위대로, 가로 사진만)
+      const r = await fetchT(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent((en || nm) + ' filetype:bitmap')}&gsrnamespace=6&gsrlimit=30&prop=imageinfo&iiprop=url%7Csize%7Cmime&iiurlwidth=1280`, {}, 12000);
+      if (r.ok) { const P = Object.values(((await r.json()).query || {}).pages || {}).map(pg => ({ pg, ii: (pg.imageinfo || [])[0] })).filter(({ pg, ii }) => ii && /jpeg/.test(ii.mime) && ii.width >= 1000 && ii.width > ii.height * 1.2 && !bad.test(pg.title));
+        P.sort((a, b) => (a.pg.index || 99) - (b.pg.index || 99));
+        P.slice(0, 8).forEach(({ pg, ii }) => { if (!out.some(x => x.u === (ii.thumburl || ii.url))) out.push({ u: ii.thumburl || ii.url, t: String(pg.title), src: 'cm', page: ii.descriptionurl }); }); }
+    } catch {}
+  }
+  try {   // 위키백과 글 대표 사진: 등산이면 정상 3km, 그 밖은 10km
+    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=${hike ? 3000 : 10000}&ggslimit=20&prop=pageimages&piprop=original|thumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
+    if (r.ok) { const P = Object.values(((await r.json()).query || {}).pages || {}).filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !bad.test(x.original.source)).sort((a, b) => (a.index || 99) - (b.index || 99));
+      P.slice(0, 5).forEach(x => out.push({ u: (x.thumbnail && x.thumbnail.source) || x.original.source, t: x.title, src: 'wp' })); }
+  } catch {}
+  return out;
+}
+async function tvHeroImg(p, again) {
+  try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
     for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
-  const k = 'planHero:' + p.id, c = ls.get(k, null); if (c && c.u && c.v === 2 && Date.now() - c.at < 30 * 864e5) return c;
-  const sp = (p.it || []).find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || (p.it || []).find(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (!sp) return null;
-  try {   // 판 -91: 위키 API가 주는 1280px 그림 주소(thumbnail)를 쓰고, 실제로 열리는지 먼저 받아 봄(예전엔 주소만 정해 사진이 빈 채로 '사진 · 위키백과'만 보였음)
-    const r = await fetchT(`https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${sp.lat}|${sp.lng}&ggsradius=10000&ggslimit=20&prop=pageimages&piprop=original|thumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
-    if (!r.ok) return null; const j = await r.json(), P = Object.values((j.query || {}).pages || {});
-    const ok = P.filter(x => x.original && x.original.width >= 800 && x.original.width > x.original.height * 1.15 && !/map|flag|logo|locator|svg|seal|emblem/i.test(x.original.source)).sort((a, b) => (a.index || 99) - (b.index || 99));
-    for (const pick of ok.slice(0, 5)) for (const u of [pick.thumbnail && pick.thumbnail.source, pick.original.source].filter(Boolean)) {
-      if (await tvImgOk(u)) { const o = { u, t: pick.title, at: Date.now(), v: 2 }; ls.set(k, o); return o; } }
-    return null;
-  } catch { return null; }
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 3 && Date.now() - c.at < 30 * 864e5) return c;
+  const skip = ls.get('planHeroSkip:' + p.id, []) || [];
+  const L = await tvHeroCands(p); let cand = L.filter(x => !skip.includes(x.u));
+  if (!cand.length && L.length) { ls.set('planHeroSkip:' + p.id, []); cand = L; }   // 다 넘겼으면 처음부터
+  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 3 }, x); ls.set(k, o); return o; }
+  return null;
 }
 function tvImgOk(u) { return new Promise(res => { const im = new Image(), tm = setTimeout(() => res(false), 15000); im.onload = () => { clearTimeout(tm); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(tm); res(false); }; im.src = u; }); }
 function tvHero(p, o = {}) {
   const hin = el('div', { class: 'tv-hin' }), box = el('div', { class: 'tv-hero' + (o.sm ? ' sm' : '') }, hin);
   const paint = () => faRc(hin, o.d ? el('div', { class: 'tv-d', text: o.d }) : null, el('h1', { text: o.title || p.name }), o.line ? el('div', { class: 'tv-hl', text: o.line }) : null, o.chips || null);
   paint(); box.repaint = (x) => { Object.assign(o, x || {}); paint(); };
-  if (p) tvHeroImg(p).then(async im => { if (!im || !box.isConnected) return;
+  const show = again => { if (!p) return; tvHeroImg(p, again).then(async im => { if (!im || !box.isConnected) return;
     if (!im.room && !(await tvImgOk(im.u))) { try { localStorage.removeItem('planHero:' + p.id); } catch {} return; }
     box.style.backgroundImage = `url("${im.u.replace(/"/g, '%22')}")`; box.classList.add('img');
-    if (im.t) box.append(el('a', { class: 'tv-credit', href: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: '사진 · 위키백과' })); }).catch(() => {});
+    box.querySelectorAll('.tv-credit,.tv-swap').forEach(x => x.remove());
+    if (im.t) box.append(el('a', { class: 'tv-credit', href: im.src === 'cm' ? im.page || 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(im.t) : (im.src === 'kw' ? 'https://ko.wikipedia.org/wiki/' : 'https://en.wikipedia.org/wiki/') + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: im.src === 'cm' ? '사진 · 위키미디어 공용' : '사진 · 위키백과' }));
+    if (!im.room) box.append(el('button', { class: 'tv-swap', text: '↻ 다른 사진', onclick: e => { e.stopPropagation(); const sk = ls.get('planHeroSkip:' + p.id, []) || []; if (!sk.includes(im.u)) sk.push(im.u); ls.set('planHeroSkip:' + p.id, sk.slice(-30)); e.target.textContent = '찾는 중…'; show(true); } })); }).catch(() => {}); };
+  show(false);
   return box;
 }
 function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
