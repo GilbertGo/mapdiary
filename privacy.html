@@ -35,7 +35,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li>지도 그림은 OpenStreetMap(선명한 지도는 OpenStreetMap 자료로 만든 OpenFreeMap)에서 받으며, 이때 보고 있는 지도 위치가 지도 서버에 전달될 수 있습니다.</li>
 <li>여행 계획으로 미리 보기 영상을 만들 때, 계획한 구경 장소의 위치만 위키미디어 공용(Wikimedia Commons)에 보내 그 둘레의 자유 이용 사진을 찾습니다. 이름·계정은 보내지 않습니다.</li>
 <li>내 기록을 볼 때 다녀온 곳 이름과 그날 날씨를 보여 주려고, 출발점이 아닌 <b>출발에서 가장 먼 점</b>의 대략 위치(약 100m~1km 단위로 줄임)와 날짜만 OpenStreetMap Nominatim(장소 이름)과 Open-Meteo(날씨)에 한 번 물어봅니다. 이름·계정은 보내지 않으며, 받은 결과는 휴대폰에만 남깁니다.</li>
-<li>여행 계획에 블로그 글 주소를 넣으면 그 글을 받아 장소를 뽑습니다. 앱은 휴대폰이 직접 받고, 웹 브라우저에서는 블로그가 막아 두어 글 읽어 주는 곳(r.jina.ai)에 <b>그 글 주소만</b> 보냅니다. 장소 확인을 위해 계획 장소의 위치를 OpenStreetMap(Nominatim·Overpass: 장소·산 정상·주차장·정류장)과 Open-Meteo(높이)에 묻습니다. 내 기록·이름·계정은 보내지 않습니다.</li>
+<li>여행 계획에 블로그 글 주소를 넣으면 그 글을 받아 장소를 뽑습니다. 앱은 휴대폰이 직접 받고, 웹 브라우저에서는 블로그가 막아 두어 글 읽어 주는 곳(r.jina.ai)에 <b>그 글 주소만</b> 보냅니다. 장소 확인을 위해 계획 장소의 위치를 OpenStreetMap(Nominatim·Overpass: 장소·산 정상·주차장·정류장)과 Open-Meteo(높이)에 묻고, 걷는 길을 그리려고 장소 좌표를 OSRM 길찾기(routing.openstreetmap.de)에 보냅니다. 내 기록·이름·계정은 보내지 않습니다.</li>
 <li>몸무게(칼로리 셈용, 적었을 때만)는 휴대폰 안에만 저장됩니다.</li>
 </ul>
 
@@ -69,7 +69,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li>Map tiles are loaded from OpenStreetMap (sharp vector maps from OpenFreeMap, built on OpenStreetMap data).</li>
 <li>When making a preview video from a trip plan, only the locations of planned sights are sent to Wikimedia Commons to find freely licensed photos nearby. No name or account is sent.</li>
 <li>To show the place name and weather of a saved record, the app sends only a coarse location (rounded to about 100 m–1 km) of the point farthest from the start, plus the date, to OpenStreetMap Nominatim and Open-Meteo once. No name or account is sent; results stay on the device. Body weight (if entered, for calorie estimates) stays on the device.</li>
-<li>If you paste a blog post address into a trip plan, the app fetches that post to extract places. The Android app fetches it directly; in a web browser, where blogs block this, only the post address is sent to a reader service (r.jina.ai). To check places, plan locations are sent to OpenStreetMap (Nominatim, Overpass) and Open-Meteo (elevation). No records, names or accounts are sent.</li>
+<li>If you paste a blog post address into a trip plan, the app fetches that post to extract places. The Android app fetches it directly; in a web browser, where blogs block this, only the post address is sent to a reader service (r.jina.ai). To check places, plan locations are sent to OpenStreetMap (Nominatim, Overpass) and Open-Meteo (elevation), and walking routes between plan places are requested from OSRM (routing.openstreetmap.de). No records, names or accounts are sent.</li>
 <li>You can delete records in the app at any time; uninstalling removes local data. To delete cloud or shared data, email <a href="mailto:seongsikgo69@gmail.com">seongsikgo69@gmail.com</a>.</li>
 <li>The apps are not directed at children.</li>
 </ul>

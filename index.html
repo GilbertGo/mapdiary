@@ -3112,9 +3112,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-104-mapfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-105-route';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗺 지도가 선명해졌어요: 확대해도 글자·길이 흐리지 않아요(기록 중 지도는 그대로) · ⚠ 여행·등산 계획에서 위치가 틀릴 수 있는 곳은 맨 위 주황 상자에 크게 · 누르면 바로 지도에서 고쳐요 · 받은 계획 링크가 앱이 잘못 찾아 넣은 위치도 바로잡아요';
+const UI_NOTES = '🥾 여행·등산 계획 지도에 실제 걷는 길이 그려져요: 점과 점을 곧게 잇던 선 대신 지도의 길을 따라 굵은 선 · 줄 사이 거리도 걷는 길 거리로 · 🗺 지도 선명하게 · ⚠ 확인이 필요한 곳은 맨 위 주황 상자에서 바로 고쳐요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7051,9 +7051,34 @@ function planGo(x) {   // 길찾기: 중국은 네이버지도가 안 돼서 가
   if (planInChina(x.lat, x.lng)) { window.open(`https://uri.amap.com/marker?position=${x.lng},${x.lat}&name=${encodeURIComponent(x.n)}&coordinate=wgs84&callnative=1`, '_blank', 'noopener'); return; }
   naverOpen({ lat: x.lat, lng: x.lng, n: x.n });
 }
+// 판 -105 (사용자 '앱에서도 경로 지도 나오게'): 걸어서 가는 두 곳 사이는 OSRM 도보 길찾기(routing.openstreetmap.de)로 실제 길을 받아 지도에 그려요.
+//   걸어서 갈 사이만(등산 계획 15km, 그 밖 1.5km 아래, 이동·비행 빼고) · 받은 길은 ls planRt에 두 곳 좌표로 저장(300개) · 못 받으면 예전처럼 직선 점선
+const planRtKey = (a, b) => `${a.lat.toFixed(5)},${a.lng.toFixed(5)}>${b.lat.toFixed(5)},${b.lng.toFixed(5)}`;
+function planRtGet(a, b) { const c = planRtGet.c || (planRtGet.c = ls.get('planRt', {}) || {}); return c[planRtKey(a, b)] || null; }
+function planWalkPair(a, b, p) {
+  if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly' || a.k === 'move' || b.k === 'move') return false;
+  const m = dist(a.lat, a.lng, b.lat, b.lng); return m >= 40 && m < (p && p.hike && p.hike.on ? 15000 : 1500);
+}
+async function planRoutes(p, d) {   // 그날 걸어서 갈 사이마다 길 받기 · 새로 받은 게 있으면 true
+  const its = planItems(p, d), c = planRtGet.c || (planRtGet.c = ls.get('planRt', {}) || {}); let got = 0;
+  for (let i = 1; i < its.length; i++) { const a = its[i - 1], b = its[i]; if (!planWalkPair(a, b, p) || c[planRtKey(a, b)]) continue;
+    const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}?overview=full&geometries=geojson`;
+    let j = null;
+    try { const H = planHttp(); if (H) { const r = await H.request({ url, method: 'GET', responseType: 'json', connectTimeout: 15000, readTimeout: 15000 }); j = typeof r.data === 'string' ? JSON.parse(r.data) : r.data; }
+      else { const r = await fetchT(url, {}, 15000); if (r.ok) j = await r.json(); } } catch {}
+    const rt = j && j.routes && j.routes[0]; if (!rt || !rt.geometry) continue;
+    const st = dist(a.lat, a.lng, b.lat, b.lng); if (rt.distance > st * 4 + 1500) continue;   // 크게 돌아가는 길은 믿지 않아요
+    c[planRtKey(a, b)] = { m: Math.round(rt.distance), c: rt.geometry.coordinates.map(q => [+q[1].toFixed(5), +q[0].toFixed(5)]), at: Date.now() }; got++;
+    await new Promise(r => setTimeout(r, 250)); }
+  if (got) { const ks = Object.keys(c); if (ks.length > 300) ks.sort((x, y) => (c[x].at || 0) - (c[y].at || 0)).slice(0, ks.length - 300).forEach(k => delete c[k]); ls.set('planRt', c); }
+  return !!got;
+}
 function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
   const m = dist(a.lat, a.lng, b.lat, b.lng); if (m < 80) return '';
+  { const R = planWalkPair(a, b, p) && planRtGet(a, b);   // 받아 둔 실제 길이 있으면 그 거리로
+    if (R) { const e = p && p.hike && p.hike.on ? planHikeEst(a, b) : { up: 0, dn: 0 }, min = Math.max(1, Math.round((R.m / (p && p.hike && p.hike.on ? 3500 : 4000) + e.up / 600 + e.dn / 1200) * 60)), h = Math.floor(min / 60);
+      return `↓ 걷는 길 ${fmtDist(R.m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : e.dn > 20 ? ` · ↓${Math.round(e.dn)}m` : ''} · 걸어서 약 ${h ? h + '시간 ' : ''}${min % 60 || !h ? (min % 60) + '분' : ''}`; } }
   if (p && p.hike && p.hike.on && a.k !== 'move' && b.k !== 'move' && m < 15000) { const e = planHikeEst(a, b), h = Math.floor(e.min / 60);
     return `↓ 등산로 약 ${fmtDist(e.m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : e.dn > 20 ? ` · ↓${Math.round(e.dn)}m` : ''} · 걸어서 약 ${h ? h + '시간 ' : ''}${e.min % 60 || !h ? (e.min % 60) + '분' : ''} (짐작)`; }
   const car = m > 1500, min = Math.max(1, Math.round(m / (car ? 35000 : 4000) * 60));
@@ -8712,8 +8737,12 @@ function viewPlanOne(id) {
       its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]);
         L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => editItem(x)).addTo(layer); });
-      if (ll.length > 1) L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).addTo(layer);
+      { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
+        for (let i = 1; i < L2.length; i++) { const a = L2[i - 1], b = L2[i], R = planWalkPair(a, b, p) && planRtGet(a, b);
+          if (R) { L.polyline(R.c, { color: '#fff', weight: 8, opacity: .9 }).addTo(layer); L.polyline(R.c, { color: col, weight: 5, opacity: .95 }).addTo(layer); }
+          else L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).addTo(layer); } }
     }
+    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
     const real = pts.filter(q => q[1] > -180);
     if (!real.length) { map.setView([37.5665, 126.978], 5); return; }
     // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
@@ -8729,7 +8758,7 @@ function viewPlanOne(id) {
     el('div', { class: 'tv-sheet' },
     el('div', { class: 'tv-wg', style: noPrep ? 'grid-template-columns:1fr' : '' }, noPrep ? null : planPrepCard(p, w => { wx = w; drawList(); }, true), planRoomCard(p, true)),
     tabs, head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, list,
-    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` }))), tvBar(p, 'plan'));
+    el('div', { class: 'sub', style: 'font-size:12px', text: `지도의 굵은 선은 지도 길 자료로 그린 걷는 길이고, 점선은 차례대로 이은 직선이에요(차·비행기로 가는 사이 등). 시간은 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` }))), tvBar(p, 'plan'));
   drawAll();
   setTimeout(() => {
     const abroad = p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
