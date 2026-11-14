@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-107-compact';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-108-planfilm';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8811,7 +8811,7 @@ function viewPlanOne(id) {
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
   const noPrep = p.hike && p.hike.on && p.nd === 1 && !p.start;
-  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['share', '일행에게 일정 보내기', () => planShare(p)], ['more', '더보기', moreSheet]), hero,
+  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['film', '미리 보기 영상 만들기', './?film=1&plan=' + encodeURIComponent(p.id)], ['share', '일행에게 일정 보내기', () => planShare(p)], ['more', '더보기', moreSheet]), hero,
     el('div', { class: 'tv-sheet' },
     el('div', { class: 'tv-wg', style: noPrep ? 'grid-template-columns:1fr' : '' }, noPrep ? null : planPrepCard(p, w => { wx = w; drawList(); }, true), planRoomCard(p, true)),
     tabs, head, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, list,
