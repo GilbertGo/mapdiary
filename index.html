@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-81-photo';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-82-hana';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🎬 이동 영상에서 사진이 더 오래 보여요 · 사진 한 장(한 카드)이 적어도 3초 · 스타일마다 사진 시간을 1.4배쯤 늘렸어요 · 더 길게 보려면 고급 설정 사진 보여 주는 시간 길게';
+const UI_NOTES = '🔗 여행 계획에 하나투어 상품 주소만 붙여 넣어도 일정이 만들어져요(MPD 앱에서) · 날짜·비행·관광지·식사·호텔이 날마다 들어가요 · Claude 열쇠가 있으면 장소 위치도 찾아요 · 웹(크롬·엣지)에선 하나투어가 막아 둬서 글 복사나 캡처로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6631,19 +6631,133 @@ ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
 }
 async function planGeocode(p, say) {   // 위치를 지도 자료(OSM Nominatim)에서 찾아요 · 1초에 한 번(지도 자료 규칙)
   const todo = (p.it || []).filter(x => x.q && x.k !== 'fly' && (x.lat == null || x.ap));
-  let k = 0;
+  let k = 0; const memo = new Map();   // 같은 검색어(같은 호텔 여러 밤)는 한 번만 물어봐요
   for (const x of todo) {
     say(`📍 지도에서 장소 찾는 중… ${++k}/${todo.length} · ${x.n}`);
+    const again = memo.has(x.q);
     try {
-      const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(x.q)}`, {}, 10000)).json();
+      const j = again ? memo.get(x.q) : await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(x.q)}`, {}, 10000)).json();
+      memo.set(x.q, j);
       if (j && j[0]) { const lat = +j[0].lat, lng = +j[0].lon; if (x.lat == null || dist(x.lat, x.lng, lat, lng) < 60000) { x.lat = +lat.toFixed(6); x.lng = +lng.toFixed(6); x.ap = 0; } }
     } catch {}
-    await new Promise(r => setTimeout(r, 1100));
+    if (!again) await new Promise(r => setTimeout(r, 1100));
   }
   (p.it || []).forEach(x => delete x.q);
 }
+// 하나투어 상품 주소 → 일정 받기 (2026-11-14 사용자 '링크 두고 받아서 만들게도')
+//   하나투어 일정 자료(getPkgProdItnrInfo)는 하나투어 사이트에서만 읽게 막혀 있어(CORS) 웹 브라우저는 못 읽고,
+//   MPD 앱은 휴대폰 쪽 인터넷(CapacitorHttp)으로 읽어요 · 일정 자료에 지도 좌표는 비어 있어 위치는 따로 찾아요
+function planHanaCode(s) { const m = /hanatour\.com\S*?[?&]pkgCd=([A-Za-z0-9]{6,30})/i.exec(String(s || '')); return m ? m[1] : null; }
+async function planHanaFetch(code) {
+  const url = 'https://gw.hanatour.com/package/pkg/api/common/pkgcomprod/getPkgProdItnrInfo/v1.00?_siteId=hanatour', body = { pkgCd: code };
+  const C = window.Capacitor, H = IN_NATIVE && C && (C.Plugins && C.Plugins.CapacitorHttp || (C.registerPlugin && C.registerPlugin('CapacitorHttp')));
+  if (H) {
+    const r = await H.request({ url, method: 'POST', headers: { 'Content-Type': 'application/json' }, data: body, connectTimeout: 20000, readTimeout: 40000 });
+    if (r.status !== 200) throw new Error('HTTP ' + r.status);
+    return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+  }
+  const r = await fetchT(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 20000);   // 웹은 보통 여기서 막혀요
+  return r.json();
+}
+function planFromHana(j) {
+  const D = j && j.data || {}, days = Array.isArray(D.schdInfoList) ? D.schdInfoList : [];
+  if (!days.length) throw new Error('일정이 비어 있어요');
+  const s0 = String(days[0].strtDt || ''), start = /^\d{8}$/.test(s0) ? `${s0.slice(0, 4)}-${s0.slice(4, 6)}-${s0.slice(6, 8)}` : '';
+  const clean = s => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&amp;/g, ' ').replace(/[◆◇■□☞※★☆]/g, '').replace(/\((특전 기본형|특전)\)/g, '').replace(/\s+/g, ' ').trim();
+  const first = s => (clean(s).split(/(?<=[.!?])\s|(?<=니다)\s|(?<=요)\s/)[0] || '').slice(0, 90);
+  const hm = v => /^\d{4}$/.test(String(v || '')) ? `${String(v).slice(0, 2)}:${String(v).slice(2)}` : '';
+  const air = Array.isArray(D.pkgAirSeqList) ? D.pkgAirSeqList : [];
+  const city = (air[0] && air[0].arrAptCityNm) || '';
+  const it = [], seen = new Set(), nd = days.length;
+  const add = (d, x) => { const key = d + '|' + x.n; if (!x.n || seen.has(key)) return; seen.add(key); it.push(Object.assign({ id: planNewId(), d, t: '', m: '', lat: null, lng: null }, x)); };
+  const MEAL = { 조식: '아침', 중식: '점심', 석식: '저녁' };
+  // 비행: 출발 날·도착 날(depBassFlxbDt·arrBassFlxbDt = 첫날부터 며칠째), 일정의 '도시간이동' 자리에 차례로 놓음
+  const fq = {}; const fpush = (d, x) => (fq[d] = fq[d] || []).push(x);
+  air.forEach(a => {
+    const dd = Number.isFinite(+a.depBassFlxbDt) ? +a.depBassFlxbDt : Math.max(0, (+a.schdSeq || 1) - 1), ad = Number.isFinite(+a.arrBassFlxbDt) ? +a.arrBassFlxbDt : dd;
+    const fl = `${a.airlNm || ''} ${a.airlCd || ''}${a.flgtNm || ''}`.trim();
+    fpush(dd, { t: hm(a.depHm), n: `${a.depAptNm || a.depAptCityNm || '공항'} 출발${fl ? ' · ' + fl : ''}`, k: 'fly', m: `${a.depAptCityNm || ''} → ${a.arrAptCityNm || ''}` });
+    fpush(ad, { t: hm(a.arrHm), n: `${a.arrAptNm || a.arrAptCityNm || '공항'} 도착`, k: 'fly', m: '' });
+  });
+  days.forEach((s, i) => {
+    const d = Math.max(0, Math.min(nd - 1, (+s.schdDay || i + 1) - 1));
+    for (const m of (Array.isArray(s.schdMainInfoList) ? s.schdMainInfoList : [])) {
+      const c = String(m.schdCatgCd || '');
+      if (c === '002') { const f = (fq[d] || []).shift(); if (f) add(d, f); continue; }
+      if (c === '004') {
+        const mt = clean(m.mealTypeNm), cont = clean(m.mealCont), card = clean(m.cardNm);
+        if (!cont && /호텔식|기내식|자유식/.test(mt) && !/특식/.test(m.dtlMealDvNm || '')) continue;
+        const what = cont || card.replace(/^.*?['‘“"](.+?)['’”"].*$/, '$1') || mt || '식사';
+        add(d, { n: `${MEAL[String(m.dtlMealDvNm || '').split(' ')[0]] || '식사'} · ${what}`.slice(0, 60), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '' });
+        continue;
+      }
+      if (c !== '001' && c !== '005') continue;
+      const L = Array.isArray(m.cmsInfoList) && m.cmsInfoList.length ? m.cmsInfoList : [{ cmsCntntNm: m.cardNm, cmsCntntCont: m.memoCont }];
+      for (const ci of L) {
+        let nm = clean(ci.cmsCntntNm || m.cardNm).replace(/\[[^\]]*\]/g, '').replace(/\s*VIP\s*(좌석|석|통로)/g, '').trim();
+        if (!nm || /출입국|입국 정보|코스$/.test(nm) || nm === city) continue;
+        const parts = / \+ ?|\+ /.test(nm) ? nm.split(/\s*\+\s*/) : [nm];
+        parts.forEach(pt => {
+          pt = pt.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*(코스|포함|통로)[^)]*\)/g, '').split('+')[0].replace(/^하나투어 전용\s*/, '').trim();
+          if (pt.length < 2 || pt === city) return;
+          const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(pt) ? 'show' : /다방|카페|커피/.test(pt) ? 'food' : 'spot';
+          add(d, { n: pt.slice(0, 60), k, m: first(ci.cmsCntntCont || m.memoCont) });
+        });
+      }
+    }
+    (fq[d] || []).splice(0).forEach(f => add(d, f));   // 자리를 못 찾은 비행은 그날 끝에
+    const H = Array.isArray(s.htlInfoList) ? s.htlInfoList : [];
+    if (H.length && d < nd - 1) {
+      const h = H[0];
+      add(d, { n: `${h.htlKoNm || h.htlEnNm}${H.length > 1 ? ` 등 ${H.length}곳 중 한 곳` : ''}`.slice(0, 60), k: 'stay', m: H.length > 1 ? '호텔은 출발 전에 정해져요 · ' + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '' });
+    }
+  });
+  return { name: `${city || '여행'} ${nd > 1 ? `${nd - 1}박 ${nd}일` : '당일'}`, start, nd, it };
+}
+async function planAiPlaces(p, city, say) {   // Claude 열쇠가 있으면: 장소 이름 → 지도 검색어(영어)·대략 좌표 (이름만 보내요)
+  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) return false;
+  const L = (p.it || []).map((x, i) => [i, x]).filter(([, x]) => x.lat == null && !x.q);
+  if (!L.length) return true;
+  say('✨ AI(Claude)에게 장소 위치를 묻는 중…');
+  toast('✨ AI를 써요 · 여행 장소 위치 찾기 · 장소 이름만 보내요', true);
+  const { default: Anthropic } = await import(TALK_SDK);
+  const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+  const res = await client.messages.create({ model: FA_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: `${city || ''} 단체여행 일정의 장소 목록이에요. 장소마다 지도 검색어(영어나 현지어, 도시 이름 포함, 예 "Tianmen Mountain, Zhangjiajie")와 대략 좌표를 JSON 배열 하나로만 답하세요.
+식사·마사지처럼 특정 장소를 알 수 없으면 q는 빈칸, lat/lng는 null. 모르면 null. 지어내지 말 것.
+형식: [{"i":번호,"q":"","lat":null,"lng":null}]
+${L.map(([i, x]) => `${i}. ${x.n}`).join('\n')}` }] });
+  const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '여행 장소 위치', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+  toast(`✨ AI 사용 끝 · 여행 장소 위치 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+  const tb = (res.content || []).find(x => x.type === 'text'); if (!tb) return false;
+  let arr = []; try { arr = JSON.parse((/\[[\s\S]*\]/.exec(tb.text) || ['[]'])[0]); } catch {}
+  for (const r of Array.isArray(arr) ? arr : []) {
+    const x = p.it[+r.i]; if (!x) continue;
+    if (r.q) x.q = String(r.q).slice(0, 100);
+    if (r.lat != null && r.lng != null && Number.isFinite(+r.lat) && Number.isFinite(+r.lng) && Math.abs(+r.lat) <= 90 && Math.abs(+r.lng) <= 180) { x.lat = +(+r.lat).toFixed(6); x.lng = +(+r.lng).toFixed(6); x.ap = 1; }
+  }
+  return true;
+}
+async function planHanaRun(code, say) {
+  say('🔗 하나투어에서 일정 받는 중…');
+  let j;
+  try { j = await planHanaFetch(code); }
+  catch (e) {
+    if (!IN_NATIVE) throw new Error('web');
+    throw new Error('하나투어에서 일정을 받지 못했어요 · ' + String(e && e.message || e).slice(0, 60));
+  }
+  const r = planFromHana(j);
+  if (!r.it.length) throw new Error('일정에서 장소를 찾지 못했어요');
+  const p = { id: planNewId(), name: r.name, start: r.start, nd: r.nd, it: r.it, at: Date.now(), src: 'hanatour', code };
+  let ai = false;
+  try { ai = await planAiPlaces(p, r.name.split(' ')[0], say); } catch (e) { toast('⚠ AI로 위치를 못 찾았어요 · ' + String(e && (e.status || e.message) || e).slice(0, 50), true); }
+  await planGeocode(p, say);
+  const miss = p.it.filter(x => x.lat == null && x.k !== 'food').length;
+  planSave(p);
+  toastLater(`🔗 하나투어 일정으로 만들었어요 · ${p.it.length}곳${miss ? ` · 위치 없는 ${miss}곳은 눌러서 📍 정해 주세요` : ''}${ai ? '' : ' · Claude 열쇠가 있으면 위치를 더 찾아요'}`);
+  return p;
+}
 function planImportSheet() {
-  const ta = el('textarea', { rows: 8, placeholder: '여행사 일정표의 글을 길게 눌러 복사해 여기에 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
+  const ta = el('textarea', { rows: 8, placeholder: '하나투어 상품 주소를 붙여 넣거나(MPD 앱), 여행사 일정표의 글을 길게 눌러 복사해 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
   let file = null;
   const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
   const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
@@ -6652,7 +6766,13 @@ function planImportSheet() {
   const run = async ai => {
     const text = ta.value.trim();
     if (!text && !file) return say('일정 글을 붙여 넣거나 캡처 사진·PDF를 넣어 주세요');
-    if (/^https?:\/\/\S+$/.test(text) && !file) return say('⚠ 여행사 주소만으로는 이 앱이 일정을 읽을 수 없어요(여행사 사이트가 막아 둠) · 그 화면의 일정 부분을 길게 눌러 복사해 붙여 넣거나, 일정 캡처 사진을 넣어 주세요');
+    const hana = !file && planHanaCode(text);
+    if (hana) {
+      try { const p = await planHanaRun(hana, say); bg.remove(); location.href = './?plan=1&p=' + encodeURIComponent(p.id); }
+      catch (e) { const m = String(e && e.message || e); say(m === 'web' ? '⚠ 웹(브라우저)에선 하나투어가 막아 둬서 주소로 못 읽어요 · MPD 앱에서 이 주소를 넣으면 돼요 · 웹에선 일정 글을 복사해 붙여 넣거나 캡처 사진을 넣어 주세요' : '⚠ ' + m.slice(0, 120)); }
+      return;
+    }
+    if (/^https?:\/\/\S+$/.test(text) && !file) return say('⚠ 이 여행사 주소는 아직 못 읽어요(하나투어만 MPD 앱에서 돼요) · 그 화면의 일정 부분을 길게 눌러 복사해 붙여 넣거나, 일정 캡처 사진을 넣어 주세요');
     if (file && !ai) return say('사진·PDF는 AI로만 읽을 수 있어요 · 글을 붙여 넣으면 AI 없이도 돼요');
     try {
       let r;
@@ -6670,6 +6790,7 @@ function planImportSheet() {
   };
   const bg = labSheet('📋 여행사 일정으로 만들기',
     el('div', { class: 'sub', text: '여행사에서 받은 일정표 글을 붙여 넣거나, 일정표 캡처 사진·PDF를 넣으면 날마다 갈 곳을 지도에 놓아 드려요.' }),
+    el('div', { class: 'sub', style: 'font-weight:700', text: IN_NATIVE ? '🔗 하나투어 상품 주소만 붙여 넣어도 돼요 · 아래 아무 단추나 누르세요' : '🔗 하나투어 상품 주소로 바로 만들기는 MPD 앱에서만 돼요(웹은 하나투어가 막아 둠)' }),
     ta, el('button', { class: 'btn line small', text: '📎 캡처 사진 · PDF 넣기', onclick: () => fIn.click() }), fIn, fLab,
     hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
     el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run(false) }), stat);
