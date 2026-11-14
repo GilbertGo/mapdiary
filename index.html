@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-82-hana';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-83-plan2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔗 여행 계획에 하나투어 상품 주소만 붙여 넣어도 일정이 만들어져요(MPD 앱에서) · 날짜·비행·관광지·식사·호텔이 날마다 들어가요 · Claude 열쇠가 있으면 장소 위치도 찾아요 · 웹(크롬·엣지)에선 하나투어가 막아 둬서 글 복사나 캡처로';
+const UI_NOTES = '🗓 여행 계획이 백업 파일과 로그인 모음에도 들어가요(휴대폰을 바꿔도 그대로) · 여행 중 MPD로 기록하면 계획한 곳 가까이 지날 때 저절로 ✓ 다녀옴과 그 시각이 표시돼요 · 직접 ○로 되돌린 곳은 다시 표시하지 않아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4221,7 +4221,8 @@ async function cloudSync(quiet) {
     if (Array.isArray(one.rooms)) ls.set('rooms', [...roomsLoad(), ...one.rooms.filter(x => x && !roomsLoad().some(y => y.code === x.code))]);
     if (Array.isArray(one.myPosts)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...one.myPosts])].slice(-300));
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', '') });
+    if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone);   // 🗓 여행 계획도 모음에(2026-11-14)
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}) });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
@@ -6533,7 +6534,18 @@ var PLAN_COLS = ['#0277BD', '#FF6B4A', '#7B61FF', '#E8457A', '#1D9EC0', '#5B6B7F
 function planAll() { const a = ls.get('tripPlans', []); return Array.isArray(a) ? a : []; }
 function planGet(id) { return planAll().find(p => p.id === id) || null; }
 function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id); p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); }
-function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); }
+function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); const g = ls.get('planGone', {}) || {}; g[id] = Date.now(); ls.set('planGone', g); }
+// 계획 합치기(백업 불러오기·로그인 모음): 같은 계획이면 나중에 고친 것(u), 지운 계획(planGone)은 되살리지 않아요
+function planMerge(list, gone) {
+  const G = Object.assign({}, gone && typeof gone === 'object' ? gone : {}, ls.get('planGone', {}) || {}); ls.set('planGone', G);
+  const a = planAll().filter(p => !G[p.id]);
+  for (const x of Array.isArray(list) ? list : []) {
+    if (!x || !x.id || G[x.id] || !Array.isArray(x.it)) continue;
+    const i = a.findIndex(p => p.id === x.id);
+    if (i < 0) a.push(x); else if ((x.u || 0) > (a[i].u || 0)) a[i] = x;
+  }
+  ls.set('tripPlans', a);
+}
 function planNewId() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function planDate(p, d) { const [y, m, dd] = String(p.start || '').split('-').map(Number); if (!y) return null; return new Date(y, m - 1, dd + d); }
 function planDayLabel(p, d) { const x = planDate(p, d); return x ? `${x.getMonth() + 1}월 ${x.getDate()}일 (${'일월화수목금토'[x.getDay()]})` : ''; }
@@ -6826,9 +6838,39 @@ async function viewPlan() {
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
 }
+// 기록과 잇기 (2026-11-14): 여행 날짜 동안 MPD로 기록한 길이 계획 장소 가까이 지나갔으면 저절로 '✓ 다녀옴'(그 시각도)
+//   가까이 = 300m(대략 위치는 700m, 공항은 2km) · 직접 ○로 되돌린 곳(okNo)은 다시 표시하지 않아요 · 기록은 읽기만
+function planAutoVisit(p) {
+  const s0 = planDate(p, 0); if (!s0) return 0;
+  const a = s0.getTime() - 864e5, b = s0.getTime() + (p.nd + 1) * 864e5;
+  const todo = (p.it || []).filter(x => !x.ok && !x.okNo && Number.isFinite(x.lat) && Number.isFinite(x.lng)); if (!todo.length) return 0;
+  const pts = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue;
+    let tr; try { tr = JSON.parse(localStorage.getItem(k)); } catch { continue; }
+    if (!Array.isArray(tr) || !tr.length) continue;
+    const t0 = tr[0] && tr[0][2], t1 = tr[tr.length - 1] && tr[tr.length - 1][2]; if (!(t1 >= a && t0 <= b)) continue;
+    for (const q of tr) if (q && q[2] >= a && q[2] <= b && Number.isFinite(q[0])) pts.push(q);
+  }
+  if (!pts.length) return 0;
+  let n = 0;
+  for (const x of todo) {
+    const lim = x.k === 'fly' ? 2000 : x.ap ? 700 : 300, cosL = Math.cos(x.lat * Math.PI / 180);
+    let hit = null;
+    for (const q of pts) {
+      if (Math.abs(q[0] - x.lat) > lim / 111000 || Math.abs(q[1] - x.lng) * cosL > lim / 111000) continue;   // 먼저 대충 거르고
+      if (dist(q[0], q[1], x.lat, x.lng) <= lim && (!hit || q[2] < hit[2])) hit = q;
+    }
+    if (hit) { x.ok = true; x.okT = hit[2]; x.okA = 1; n++; }
+  }
+  if (n) planSave(p);
+  return n;
+}
 function viewPlanOne(id) {
   const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
   p.it = p.it || [];
+  { const n = planAutoVisit(p); if (n) setTimeout(() => toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`), 600); }
+  setInterval(() => { if (document.hidden) return; const n = planAutoVisit(p); if (n) { toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`); drawAll(); } }, 120000);   // 여행 중 화면을 열어 두면 2분마다
   const td = planToday(p);
   let day = ls.get('planDay:' + id, null);
   if (td != null && td >= 0 && td < p.nd) day = td;   // 여행 중이면 오늘
@@ -6888,8 +6930,9 @@ function viewPlanOne(id) {
         el('div', { style: 'font-weight:700', text: `${x.t ? x.t + ' ' : ''}${kk[0]} ${x.n}` }),
         x.m ? el('div', { class: 'dt', style: 'white-space:pre-wrap', text: x.m }) : null,
         !hasLoc && x.k !== 'fly' ? el('div', { class: 'dt', style: 'color:#C2412D', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'dt', text: '📍 대략 위치 · 눌러서 고치기' }) : null,
-        i === nx ? el('div', { class: 'dt', style: 'color:var(--accent);font-weight:800', text: '▶ 다음 갈 곳' }) : null),
-      td === d ? el('button', { class: 'btn small ' + (x.ok ? 'dark' : 'line'), title: '다녀왔어요', text: x.ok ? '✓' : '○', onclick: () => { x.ok = !x.ok; planSave(p); drawList(); } }) : null,
+        i === nx ? el('div', { class: 'dt', style: 'color:var(--accent);font-weight:800', text: '▶ 다음 갈 곳' }) : null,
+        x.ok && x.okT ? el('div', { class: 'dt', style: 'font-weight:700', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null),
+      td === d || x.ok ? el('button', { class: 'btn small ' + (x.ok ? 'dark' : 'line'), title: '다녀왔어요', text: x.ok ? '✓' : '○', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null,
       hasLoc ? el('button', { class: 'btn small line', text: '길찾기', onclick: () => planGo(x) }) : null);
   }
   function drawTabs() {
@@ -7065,6 +7108,7 @@ function backupLs(ids) {
   const out = {};
   for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) out[k + id] = v; }
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
+  for (const k of ['tripPlans', 'planGone']) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }   // 🗓 여행 계획도 백업에
   const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
   return out;
 }
@@ -7154,6 +7198,7 @@ async function backupLoad(file) {
     } else if (k === 'albums') { const a = parse(v); if (Array.isArray(a)) { const m = albumsLoad(); a.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); } }
     else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
     else if (k === 'recGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) ls.set('recGone', Object.assign({}, a, goneAll())); }
+    else if (k === 'tripPlans') planMerge(parse(v), parse(data.ls.planGone));
     else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
