@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-109-pickbtn';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-110-route';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7105,19 +7105,28 @@ function planWalkPair(a, b, p) {
   const m = dist(a.lat, a.lng, b.lat, b.lng); return m >= 40 && m < (p && p.hike && p.hike.on ? 15000 : 1500);
 }
 async function planRoutes(p, d) {   // 그날 걸어서 갈 사이마다 길 받기 · 새로 받은 게 있으면 true
-  const its = planItems(p, d), c = planRtGet.c || (planRtGet.c = ls.get('planRt', {}) || {}); let got = 0;
-  for (let i = 1; i < its.length; i++) { const a = its[i - 1], b = its[i]; if (!planWalkPair(a, b, p) || c[planRtKey(a, b)]) continue;
-    const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}?overview=full&geometries=geojson`;
-    let j = null;
-    try { const H = planHttp(); if (H) { const r = await H.request({ url, method: 'GET', responseType: 'json', connectTimeout: 15000, readTimeout: 15000 }); j = typeof r.data === 'string' ? JSON.parse(r.data) : r.data; }
-      else { const r = await fetchT(url, {}, 15000); if (r.ok) j = await r.json(); } } catch {}
-    const rt = j && j.routes && j.routes[0]; if (!rt || !rt.geometry) continue;
-    const st = dist(a.lat, a.lng, b.lat, b.lng); if (rt.distance > st * 4 + 1500) continue;   // 크게 돌아가는 길은 믿지 않아요
-    c[planRtKey(a, b)] = { m: Math.round(rt.distance), c: rt.geometry.coordinates.map(q => [+q[1].toFixed(5), +q[0].toFixed(5)]), at: Date.now() }; got++;
+  // 판 -110: 위치 없는 장소는 건너뛰고 이음(예전엔 3→(위치 없음)→5 사이를 못 받았어요) · 앱도 먼저 fetch(CapacitorHttp는 길찾기 서버가 막을 수 있어서) · OSRM이 안 되면 Valhalla(같은 OSM 자료)
+  const its = planItems(p, d).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng)), c = planRtGet.c || (planRtGet.c = ls.get('planRt', {}) || {}); let got = 0;
+  const S = planRoutes.st || (planRoutes.st = {}); S.fail = S.fail || {};
+  for (let i = 1; i < its.length; i++) { const a = its[i - 1], b = its[i], key = planRtKey(a, b); if (!planWalkPair(a, b, p) || c[key] || S.fail[key] > Date.now()) continue;
+    const st = dist(a.lat, a.lng, b.lat, b.lng); let pts = null, m = 0;
+    try { const j = await planRtJson(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}?overview=full&geometries=geojson`);
+      const rt = j && j.routes && j.routes[0]; if (rt && rt.geometry) { pts = rt.geometry.coordinates.map(q => [+q[1].toFixed(5), +q[0].toFixed(5)]); m = rt.distance; } } catch {}
+    if (!pts) try { const j = await planRtJson('https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify({ locations: [{ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }], costing: 'pedestrian', directions_type: 'none' })));
+      const lg = j && j.trip && j.trip.legs && j.trip.legs[0]; if (lg && lg.shape) { pts = planPoly6(lg.shape); m = (j.trip.summary && j.trip.summary.length || 0) * 1000; } } catch {}
+    if (!pts || pts.length < 2 || m > st * 4 + 1500) { S.fail[key] = Date.now() + 5 * 60000; S.bad = (S.bad || 0) + 1; continue; }
+    c[key] = { m: Math.round(m), c: pts, at: Date.now() }; got++;
     await new Promise(r => setTimeout(r, 250)); }
   if (got) { const ks = Object.keys(c); if (ks.length > 300) ks.sort((x, y) => (c[x].at || 0) - (c[y].at || 0)).slice(0, ks.length - 300).forEach(k => delete c[k]); ls.set('planRt', c); }
   return !!got;
 }
+async function planRtJson(url) {
+  try { const r = await fetchT(url, {}, 15000); if (r.ok) return await r.json(); } catch {}
+  const H = planHttp(); if (!H) return null;
+  const r = await H.request({ url, method: 'GET', headers: { 'User-Agent': 'MapPhotoDiary/1.0 (+https://gilbertgo.github.io/mapdiary/)', Accept: 'application/json' }, responseType: 'text', connectTimeout: 15000, readTimeout: 15000 });
+  if (!r || r.status >= 400) return null; return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+}
+function planPoly6(s) { const o = []; let i = 0, la = 0, ln = 0; while (i < s.length) { for (const k of [0, 1]) { let r = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32); const v = r & 1 ? ~(r >> 1) : r >> 1; if (k) ln += v; else la += v; } o.push([+(la / 1e6).toFixed(5), +(ln / 1e6).toFixed(5)]); } return o; }
 function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
   const m = dist(a.lat, a.lng, b.lat, b.lng); if (m < 80) return '';
