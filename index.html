@@ -1276,7 +1276,7 @@ async function addPhotos(t, files, now, later) {
 // ---------- 사진 위치 고르기: 지도에 다닌 길을 깔고, 누른 곳으로 옮겨요 ----------
 // rec: 사진 기록(t, ts, lat, lng). 저장하면 photoPut하고 'photo-changed'를 알려요
 // 걷기 목표 지점 고르기 (2026-11-07): 지도를 누르거나 이름으로 찾기 → {lat,lng,n}. 닫으면 null
-function pickDest(cur, near) {
+function pickDest(cur, near, world) {   // world: 나라 밖도 찾기(여행 계획)
   return new Promise(res => {
     let at = cur ? [cur.lat, cur.lng] : null, name = cur ? cur.n : '', m = null, mk = null, seq = 0;
     const mapBox = el('div', { style: 'height:46vh;min-height:240px;border-radius:16px;overflow:hidden' });
@@ -1297,7 +1297,7 @@ function pickDest(cur, near) {
       info.textContent = '찾는 중…';
       try {
         const c = m ? m.getCenter() : null, vb = c ? `&viewbox=${c.lng - .3},${c.lat + .3},${c.lng + .3},${c.lat - .3}` : '';
-        const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&countrycodes=kr${vb}&q=${encodeURIComponent(t)}`, {}, 10000)).json();
+        const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko${world ? '' : '&countrycodes=kr'}${vb}&q=${encodeURIComponent(t)}`, {}, 10000)).json();
         if (!j || !j[0]) { info.textContent = `'${t}'을(를) 못 찾았어요. 지도에서 눌러 주세요.`; return; }
         const ll = [+j[0].lat, +j[0].lon]; put(ll, (j[0].name || t).slice(0, 30)); if (m) m.setView(ll, 16);
       } catch { info.textContent = '찾지 못했어요(인터넷 확인). 지도에서 눌러 주세요.'; }
@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-79-food';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-80-plan';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상에 맛집 카드가 나와요 · 맛집으로 표시한 곳을 지날 때 가게 이름과 먹은 메뉴와 가격과 별점과 메모 · 비행 중엔 북쪽이 위로 고정돼요';
+const UI_NOTES = '🗓 여행 계획이 생겼어요 · 첫 화면 목록 여행 계획에서 여행사 일정표 글이나 캡처를 넣으면 날마다 갈 곳이 지도에 놓여요 · 여행 중엔 오늘 갈 곳과 길찾기 · 중국은 가오더 지도로 길찾기 · 📤 보내기로 같이 가는 사람에게 링크';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3626,6 +3626,7 @@ function route() {
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
   if (LAB_QUIET) return setTimeout(viewLabCheck);   // 🔎 발견 점검 (읽기만, 2026-11-08)
   if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
+  if (qs.get('plan')) return setTimeout(viewPlan);   // 🗓 여행 계획 (2026-11-14)
   if (qs.get('film')) return setTimeout(viewFilm);   // 🎬 이동 기록 영상 만들기 (실험, 2026-11-12)
   if (qs.get('album')) return setTimeout(viewAlbum);   // 가족 앨범 (아래쪽 const가 준비된 뒤에)
   if (qs.get('room')) return viewRoom();
@@ -6523,6 +6524,293 @@ function filmMapLook(style, dark) {
   return style;
 }
 
+// ================= 🗓 여행 계획 (2026-11-14, 사용자 '이 앱을 여행 전 일정 계획으로도' + '여행사에서 준 정보를 가지고 만드는 방법도') =================
+// 계획은 이 휴대폰에만(ls tripPlans), 보내기는 링크 안에 넣어서(#pl=, 서버 없이). 함수만 써요(라우팅이 스크립트 중간에 돌아서).
+var PLAN_KINDS = { spot: ['📍', '구경'], food: ['🍽', '식사'], stay: ['🏨', '숙소'], fly: ['✈', '비행'], show: ['🎭', '공연·체험'], move: ['🚌', '이동'] };
+var PLAN_COLS = ['#0277BD', '#FF6B4A', '#7B61FF', '#E8457A', '#1D9EC0', '#5B6B7F', '#C2412D', '#3D5AFE'];
+function planAll() { const a = ls.get('tripPlans', []); return Array.isArray(a) ? a : []; }
+function planGet(id) { return planAll().find(p => p.id === id) || null; }
+function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id); p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); }
+function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); }
+function planNewId() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function planDate(p, d) { const [y, m, dd] = String(p.start || '').split('-').map(Number); if (!y) return null; return new Date(y, m - 1, dd + d); }
+function planDayLabel(p, d) { const x = planDate(p, d); return x ? `${x.getMonth() + 1}월 ${x.getDate()}일 (${'일월화수목금토'[x.getDay()]})` : ''; }
+function planToday(p) {   // 오늘이 몇째 날인지(0부터), 여행 전이면 음수, 끝났으면 nd 이상
+  const s = planDate(p, 0); if (!s) return null; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((t - s) / 864e5);
+}
+function planStatus(p) {
+  const k = planToday(p); if (k == null) return '';
+  if (k < 0) return `D-${-k}`; if (k < p.nd) return `여행 중 · 오늘 ${k + 1}일차`; return '다녀왔어요';
+}
+function planNights(p) { return p.nd > 1 ? `${p.nd - 1}박 ${p.nd}일` : '당일'; }
+function planItems(p, d) { return (p.it || []).filter(x => x.d === d); }
+function planInChina(lat, lng) { return lat > 18 && lat < 54 && lng > 73 && lng < 135 && !(lat > 33 && lat < 39 && lng > 124.5 && lng < 132); }
+function planGo(x) {   // 길찾기: 중국은 네이버지도가 안 돼서 가오더(Amap) 지도로
+  if (!Number.isFinite(x.lat)) return toast('이 장소는 아직 위치가 없어요 · 눌러서 위치를 정해 주세요');
+  if (planInChina(x.lat, x.lng)) { window.open(`https://uri.amap.com/marker?position=${x.lng},${x.lat}&name=${encodeURIComponent(x.n)}&coordinate=wgs84&callnative=1`, '_blank', 'noopener'); return; }
+  naverOpen({ lat: x.lat, lng: x.lng, n: x.n });
+}
+function planGap(a, b) {   // 두 곳 사이: 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
+  if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
+  const m = dist(a.lat, a.lng, b.lat, b.lng); if (m < 80) return '';
+  const car = m > 1500, min = Math.max(1, Math.round(m / (car ? 35000 : 4000) * 60));
+  return `↓ 직선 ${fmtDist(m)} · ${car ? '차로' : '걸어서'} 약 ${min >= 60 ? Math.floor(min / 60) + '시간 ' + (min % 60 ? (min % 60) + '분' : '') : min + '분'}`;
+}
+// ---------- 링크로 보내기 (서버 없이 링크 안에) ----------
+async function planPack(p) {
+  const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0]) };
+  const raw = new TextEncoder().encode(JSON.stringify(o));
+  if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
+  return 'j' + b64url(raw);
+}
+async function planUnpack(s) {
+  let u = urlb64(s.slice(1));
+  if (s[0] === 'z') u = new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  const o = JSON.parse(new TextDecoder().decode(u)), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+  const nd = Math.max(1, Math.min(30, o.d | 0));
+  return { id: planNewId(), name: str(o.n, 60) || '여행 계획', start: /^\d{4}-\d{2}-\d{2}$/.test(o.s) ? o.s : '', nd, at: Date.now(),
+    it: (Array.isArray(o.i) ? o.i : []).slice(0, 300).map(a => ({ id: planNewId(), d: Math.max(0, Math.min(nd - 1, a[0] | 0)), t: /^\d{1,2}:\d{2}$/.test(a[1]) ? a[1] : '', n: str(a[2], 60) || '장소',
+      k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0 })) };
+}
+async function planShare(p) {
+  const url = APP_BASE + '?plan=1#pl=' + await planPack(p);
+  const lines = [`🗓 ${p.name}`, `${planNights(p)}${p.start ? ' · ' + planDayLabel(p, 0) + ' 출발' : ''}`, ''];
+  for (let d = 0; d < p.nd; d++) { lines.push(`[${d + 1}일차${p.start ? ' ' + planDayLabel(p, d) : ''}]`); for (const x of planItems(p, d)) lines.push(`${x.t ? x.t + ' ' : ''}${PLAN_KINDS[x.k][0]} ${x.n}`); lines.push(''); }
+  lines.push('👉 지도와 함께 보기', url);
+  const text = lines.join('\n');
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (/abort|cancel/i.test(String(e && (e.name + e.message)))) return; }
+  try { await navigator.clipboard.writeText(text); toast('일정 글과 링크를 복사했어요 · 카톡 입력칸을 길게 눌러 붙여 넣으세요', false, 6000); } catch { prompt('이 글을 복사해 보내세요', text); }
+}
+// ---------- 여행사 일정 읽기 ----------
+function planBasicParse(text) {   // AI 없이: 'n일차'·'DAY n'로 날을 나누고, 줄마다 한 곳
+  const items = []; let d = 0, maxD = 0;
+  const junk = /^(상세보기|이전|다음|\d+\/\d+|호텔소개|식사|호텔|더보기|닫기|일정 전체펼침|상세내용을 확인해보세요|출입국 정보|호텔 투숙 및 휴식)$|^\d{4}\.\d{1,2}\.\d{1,2}|^\d{1,2}\/\d{1,2}\s*\(|^\d+시간\s*\d*분?|상세보기$|^TEL|^홈페이지|^객실시설|^부대시설|^■|^-\s|^※|^①|^②|^③/;
+  for (let line of String(text).split(/\r?\n/)) {
+    line = line.replace(/\s+/g, ' ').trim(); if (!line || junk.test(line)) continue;
+    const dm = /^(?:제\s*)?(\d{1,2})\s*일\s*차|^day\s*(\d{1,2})|^제\s*(\d{1,2})\s*일/i.exec(line);
+    if (dm) { d = Math.max(0, +(dm[1] || dm[2] || dm[3]) - 1); maxD = Math.max(maxD, d); continue; }
+    if (line.length < 2 || line.length > 70) continue;
+    const tm = /(\d{1,2}):(\d{2})/.exec(line), t = tm ? `${String(+tm[1]).padStart(2, '0')}:${tm[2]}` : '';
+    const n = line.replace(/(\d{1,2}):(\d{2})/, '').replace(/^[-·•▶■☞※\s]+/, '').trim(); if (n.length < 2) continue;
+    const k = /조식|중식|석식|특식|식사|식당/.test(n) ? 'food' : /호텔|숙박|투숙|리조트/.test(n) ? 'stay' : /항공|공항|출발|도착|편\b|[A-Z0-9]{2}\d{3,4}/.test(n) ? 'fly' : /쇼|공연|마사지|체험/.test(n) ? 'show' : /이동|버스|열차|기차/.test(n) ? 'move' : 'spot';
+    items.push({ id: planNewId(), d, t, n: n.slice(0, 60), k, m: '', lat: null, lng: null });
+  }
+  return { nd: maxD + 1, it: items };
+}
+async function planAiRead(text, file, say) {   // 넣어 둔 Claude 열쇠로: 글·사진·PDF에서 날마다 갈 곳을 뽑아요
+  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
+  say('✨ AI(Claude)에게 일정을 보내 읽는 중…');
+  const content = [];
+  if (file) {
+    const b = await new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(String(f.result).split(',')[1]); f.onerror = rej; f.readAsDataURL(file); });
+    if (/pdf/.test(file.type)) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b } });
+    else if (/^image\//.test(file.type)) content.push({ type: 'image', source: { type: 'base64', media_type: /png|webp|gif/.test(file.type) ? file.type : 'image/jpeg', data: b } });
+    else text = (text ? text + '\n' : '') + await file.text();
+  }
+  content.push({ type: 'text', text: `아래는 여행사 여행 일정표예요. 날마다 가는 곳을 차례대로 뽑아 JSON 하나로만 답하세요.
+규칙: 일정표에 적힌 것만. 지어내지 말 것. 관광지·식사(무엇을 먹는지)·숙소·비행·공연/체험·긴 이동을 각각 한 줄로. 같은 곳을 두 번 쓰지 말 것. 시각이 적혀 있으면 HH:MM.
+q는 지도에서 찾을 검색어(영어, 도시 이름 포함, 예 "Tianmen Mountain, Zhangjiajie"), lat/lng는 그 장소의 대략 좌표(모르면 null).
+형식: {"name":"여행 이름","start":"YYYY-MM-DD 또는 빈칸","days":[{"items":[{"t":"","n":"한국어 이름","k":"spot|food|stay|fly|show|move","m":"한 줄 메모(메뉴·특징)","q":"","lat":null,"lng":null}]}]}
+${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
+  toast('✨ AI를 써요 · 여행 일정 읽기 · 넣은 글·사진만 보내요', true);
+  const { default: Anthropic } = await import(TALK_SDK);
+  const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+  const res = await client.messages.create({ model: FA_MODEL, max_tokens: 8000, messages: [{ role: 'user', content }] });
+  const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '여행 일정 읽기', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+  toast(`✨ AI 사용 끝 · 여행 일정 읽기 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+  const tb = (res.content || []).find(x => x.type === 'text'); if (!tb) throw new Error('빈 답');
+  const j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || ['{}'])[0]);
+  const days = Array.isArray(j.days) ? j.days.slice(0, 30) : [], it = [];
+  days.forEach((dd, d) => (Array.isArray(dd.items) ? dd.items : []).slice(0, 40).forEach(x => {
+    const lat = Number.isFinite(+x.lat) && x.lat !== null ? +x.lat : null, lng = Number.isFinite(+x.lng) && x.lng !== null ? +x.lng : null;
+    it.push({ id: planNewId(), d, t: /^\d{1,2}:\d{2}$/.test(x.t || '') ? x.t : '', n: String(x.n || '').slice(0, 60) || '장소', k: PLAN_KINDS[x.k] ? x.k : 'spot', m: String(x.m || '').slice(0, 300), q: String(x.q || '').slice(0, 100), lat, lng, ap: lat != null ? 1 : 0 });
+  }));
+  return { name: String(j.name || '').slice(0, 60), start: /^\d{4}-\d{2}-\d{2}$/.test(j.start || '') ? j.start : '', nd: Math.max(1, days.length), it };
+}
+async function planGeocode(p, say) {   // 위치를 지도 자료(OSM Nominatim)에서 찾아요 · 1초에 한 번(지도 자료 규칙)
+  const todo = (p.it || []).filter(x => x.q && x.k !== 'fly' && (x.lat == null || x.ap));
+  let k = 0;
+  for (const x of todo) {
+    say(`📍 지도에서 장소 찾는 중… ${++k}/${todo.length} · ${x.n}`);
+    try {
+      const j = await (await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(x.q)}`, {}, 10000)).json();
+      if (j && j[0]) { const lat = +j[0].lat, lng = +j[0].lon; if (x.lat == null || dist(x.lat, x.lng, lat, lng) < 60000) { x.lat = +lat.toFixed(6); x.lng = +lng.toFixed(6); x.ap = 0; } }
+    } catch {}
+    await new Promise(r => setTimeout(r, 1100));
+  }
+  (p.it || []).forEach(x => delete x.q);
+}
+function planImportSheet() {
+  const ta = el('textarea', { rows: 8, placeholder: '여행사 일정표의 글을 길게 눌러 복사해 여기에 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
+  let file = null;
+  const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
+  const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
+  const hasKey = !!String(ls.get('claudeKey', '') || '').trim();
+  const say = s => { stat.textContent = s; };
+  const run = async ai => {
+    const text = ta.value.trim();
+    if (!text && !file) return say('일정 글을 붙여 넣거나 캡처 사진·PDF를 넣어 주세요');
+    if (/^https?:\/\/\S+$/.test(text) && !file) return say('⚠ 여행사 주소만으로는 이 앱이 일정을 읽을 수 없어요(여행사 사이트가 막아 둠) · 그 화면의 일정 부분을 길게 눌러 복사해 붙여 넣거나, 일정 캡처 사진을 넣어 주세요');
+    if (file && !ai) return say('사진·PDF는 AI로만 읽을 수 있어요 · 글을 붙여 넣으면 AI 없이도 돼요');
+    try {
+      let r;
+      if (ai) r = await planAiRead(text, file, say);
+      else { r = planBasicParse(text); r.name = ''; r.start = ''; }
+      if (!r.it.length) return say('⚠ 일정에서 장소를 찾지 못했어요 · 1일차·2일차 같은 글이 들어 있는지 봐 주세요');
+      const p = { id: planNewId(), name: r.name || '새 여행 계획', start: r.start, nd: r.nd, it: r.it, at: Date.now(), src: ai ? 'ai' : 'text' };
+      if (ai) await planGeocode(p, say);
+      planSave(p); bg.remove();
+      location.href = './?plan=1&p=' + encodeURIComponent(p.id);
+    } catch (e) {
+      const m = String(e && (e.status || e.message) || e);
+      say(m === 'nokey' ? '⚠ AI로 읽으려면 Claude 열쇠가 필요해요 · ⚙ 설정 → 가족 앨범 ✍ Claude 열쇠' : /401/.test(m) ? '⚠ AI 열쇠를 받지 않아요 · 열쇠를 다시 넣어 주세요' : '⚠ 읽지 못했어요 · ' + m.slice(0, 80));
+    }
+  };
+  const bg = labSheet('📋 여행사 일정으로 만들기',
+    el('div', { class: 'sub', text: '여행사에서 받은 일정표 글을 붙여 넣거나, 일정표 캡처 사진·PDF를 넣으면 날마다 갈 곳을 지도에 놓아 드려요.' }),
+    ta, el('button', { class: 'btn line small', text: '📎 캡처 사진 · PDF 넣기', onclick: () => fIn.click() }), fIn, fLab,
+    hasKey ? el('button', { class: 'btn primary full', text: '✨ AI로 읽기 (Claude에 일정만 보내요)', onclick: () => run(true) }) : el('div', { class: 'sub', text: 'AI로 읽으려면 ⚙ 설정의 Claude 열쇠가 필요해요(사진·PDF도 읽고 장소 위치까지 찾아요). 열쇠가 없으면 아래 단추로 글만 나눠요.' }),
+    el('button', { class: 'btn line full', text: 'AI 없이 글만으로 나누기 (위치는 직접)', onclick: () => run(false) }), stat);
+}
+function planNewSheet() {
+  const nm = el('input', { type: 'text', placeholder: '예: 장가계 4박 5일', style: 'width:100%;box-sizing:border-box' });
+  const dt = el('input', { type: 'date', style: 'width:100%;box-sizing:border-box' });
+  const nd = el('input', { type: 'number', min: 1, max: 30, value: 3, style: 'width:100%;box-sizing:border-box' });
+  const bg = labSheet('🗓 새 여행 계획', el('label', { class: 'sub', text: '여행 이름' }), nm, el('label', { class: 'sub', text: '출발하는 날' }), dt, el('label', { class: 'sub', text: '며칠 동안 (날 수)' }), nd,
+    el('button', { class: 'btn primary full', text: '만들기', onclick: () => { const p = { id: planNewId(), name: nm.value.trim() || '새 여행 계획', start: dt.value || '', nd: Math.max(1, Math.min(30, +nd.value || 1)), it: [], at: Date.now() }; planSave(p); bg.remove(); location.href = './?plan=1&p=' + encodeURIComponent(p.id); } }));
+  setTimeout(() => nm.focus(), 50);
+}
+// ---------- 화면 ----------
+async function viewPlan() {
+  document.title = '여행 계획 · Map Photo Diary';
+  const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash);
+  if (hm) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
+    try { const p = await planUnpack(hm[1]); const same = planAll().find(x => x.name === p.name && x.start === p.start && (x.it || []).length === p.it.length);
+      const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? '이미 넣어 둔 계획이에요' : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
+    catch { toast('⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요'); }
+  }
+  if (qs.get('p')) return viewPlanOne(qs.get('p'));
+  const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
+  const card = p => el('a', { class: 'member', href: './?plan=1&p=' + encodeURIComponent(p.id), style: 'text-decoration:none;color:inherit' },
+    el('span', { style: 'font-size:24px;flex:none', text: '🗓' }),
+    el('div', { class: 'grow' }, el('div', { class: 'nm', text: p.name }), el('div', { class: 'dt', text: [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ') })),
+    planStatus(p) ? el('span', { class: 'chip', style: 'background:var(--accent);color:#fff', text: planStatus(p) }) : null);
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
+    el('h1', { text: '🗓 여행 계획' }),
+    el('div', { class: 'sub', text: '여행 전에 날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요.' }),
+    el('button', { class: 'btn primary full', text: '📋 여행사 일정으로 만들기', onclick: planImportSheet }),
+    el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
+    ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
+    el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
+}
+function viewPlanOne(id) {
+  const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
+  p.it = p.it || [];
+  const td = planToday(p);
+  let day = ls.get('planDay:' + id, null);
+  if (td != null && td >= 0 && td < p.nd) day = td;   // 여행 중이면 오늘
+  if (day == null || day >= p.nd) day = -1;   // -1 = 전체
+  const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' });
+  const tabs = el('div', { class: 'mapbar', style: 'overflow-x:auto;flex-wrap:nowrap;gap:6px' }), list = el('div', { class: 'stack', style: 'gap:6px' });
+  let map = null, layer = null;
+  const head = el('div', { class: 'stack', style: 'gap:4px' });
+  const drawHead = () => head.replaceChildren(
+    el('h1', { style: 'margin:0', text: p.name }),
+    el('div', { class: 'sub', text: [planNights(p), p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }),
+    el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' },
+      el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
+      el('button', { class: 'btn line small', text: '📤 일정 보내기', onclick: () => planShare(p) }),
+      el('button', { class: 'btn line small', text: '🗑 지우기', onclick: () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } } })));
+  function editMeta() {
+    const nm = el('input', { type: 'text', value: p.name, style: 'width:100%;box-sizing:border-box' }), dt = el('input', { type: 'date', value: p.start || '', style: 'width:100%;box-sizing:border-box' }), nd = el('input', { type: 'number', min: 1, max: 30, value: p.nd, style: 'width:100%;box-sizing:border-box' });
+    const bg = labSheet('✎ 이름·날짜', el('label', { class: 'sub', text: '여행 이름' }), nm, el('label', { class: 'sub', text: '출발하는 날' }), dt, el('label', { class: 'sub', text: '날 수' }), nd,
+      el('button', { class: 'btn primary full', text: '저장', onclick: () => { p.name = nm.value.trim() || p.name; p.start = dt.value || ''; p.nd = Math.max(1, Math.min(30, +nd.value || p.nd)); p.it.forEach(x => { if (x.d >= p.nd) x.d = p.nd - 1; }); planSave(p); bg.remove(); drawAll(); } }));
+  }
+  function editItem(x, isNew) {
+    const nm = el('input', { type: 'text', value: x.n || '', placeholder: '장소 이름', style: 'width:100%;box-sizing:border-box' });
+    const tm = el('input', { type: 'time', value: x.t || '', style: 'width:100%;box-sizing:border-box' });
+    const ds = el('select', { style: 'width:100%' }, ...Array.from({ length: p.nd }, (_, d) => el('option', { value: d, selected: d === x.d ? true : null, text: `${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}` })));
+    let k = x.k || 'spot';
+    const kRow = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });
+    const drawK = () => kRow.replaceChildren(...Object.entries(PLAN_KINDS).map(([kk, v]) => el('button', { class: 'btn small ' + (k === kk ? 'dark' : 'line'), text: v[0] + ' ' + v[1], onclick: () => { k = kk; drawK(); } }))); drawK();
+    const mm = el('textarea', { rows: 2, placeholder: '메모 (메뉴·입장 시간·준비물 등)', style: 'width:100%;box-sizing:border-box;font:inherit' }); mm.value = x.m || '';
+    let at = Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng } : null;
+    const locL = el('div', { class: 'sub' }); const paintL = () => { locL.textContent = at ? `📍 위치 있음${x.ap ? ' (대략)' : ''}` : '📍 아직 위치가 없어요'; }; paintL();
+    const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
+    const bg = labSheet(isNew ? '+ 장소 넣기' : '✎ 장소 고치기', nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
+      kRow, mm, locL,
+      el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
+      el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
+      isNew ? null : el('div', { class: 'row', style: 'gap:6px' },
+        el('button', { class: 'btn line small grow', text: '↑ 앞으로', onclick: () => { move(x, -1); bg.remove(); } }),
+        el('button', { class: 'btn line small grow', text: '↓ 뒤로', onclick: () => { move(x, 1); bg.remove(); } }),
+        el('button', { class: 'btn line small grow', text: '🗑 빼기', onclick: () => { p.it = p.it.filter(y => y !== x); planSave(p); bg.remove(); drawAll(); } })));
+    if (isNew) setTimeout(() => nm.focus(), 50);
+  }
+  function centerOf() { const a = p.it.filter(x => Number.isFinite(x.lat)); if (!a.length) return null; return [a.reduce((s, x) => s + x.lat, 0) / a.length, a.reduce((s, x) => s + x.lng, 0) / a.length]; }
+  function move(x, dir) {   // 같은 날 안에서 앞뒤로
+    const same = p.it.filter(y => y.d === x.d), i = same.indexOf(x), j = i + dir; if (j < 0 || j >= same.length) return;
+    const a = p.it.indexOf(x), b = p.it.indexOf(same[j]); [p.it[a], p.it[b]] = [p.it[b], p.it[a]]; planSave(p); drawAll();
+  }
+  function nextIdx(d) {   // 여행 중 오늘: 지금 시각 다음 곳(시각이 없으면 아직 안 다녀온 첫 곳)
+    if (td !== d) return -1; const now = new Date(), hm = now.getHours() * 60 + now.getMinutes(), its = planItems(p, d);
+    let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm);
+    if (i < 0) i = its.findIndex(x => !x.ok); return i;
+  }
+  function row(x, i, d, nx) {
+    const kk = PLAN_KINDS[x.k] || PLAN_KINDS.spot, col = PLAN_COLS[x.d % PLAN_COLS.length], hasLoc = Number.isFinite(x.lat);
+    return el('div', { class: 'card', style: `display:flex;gap:10px;align-items:center;padding:10px 12px;${i === nx ? 'outline:2px solid var(--accent);' : ''}${x.ok ? 'opacity:.55;' : ''}` },
+      el('span', { style: `flex:none;width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center`, text: String(i + 1) }),
+      el('button', { style: 'flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer', onclick: () => editItem(x) },
+        el('div', { style: 'font-weight:700', text: `${x.t ? x.t + ' ' : ''}${kk[0]} ${x.n}` }),
+        x.m ? el('div', { class: 'dt', style: 'white-space:pre-wrap', text: x.m }) : null,
+        !hasLoc && x.k !== 'fly' ? el('div', { class: 'dt', style: 'color:#C2412D', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'dt', text: '📍 대략 위치 · 눌러서 고치기' }) : null,
+        i === nx ? el('div', { class: 'dt', style: 'color:var(--accent);font-weight:800', text: '▶ 다음 갈 곳' }) : null),
+      td === d ? el('button', { class: 'btn small ' + (x.ok ? 'dark' : 'line'), title: '다녀왔어요', text: x.ok ? '✓' : '○', onclick: () => { x.ok = !x.ok; planSave(p); drawList(); } }) : null,
+      hasLoc ? el('button', { class: 'btn small line', text: '길찾기', onclick: () => planGo(x) }) : null);
+  }
+  function drawTabs() {
+    const t = (d, label) => el('button', { class: 'btn small ' + (day === d ? 'dark' : 'line'), style: 'flex:none', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
+    tabs.replaceChildren(t(-1, '전체'), ...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘 · ' : ''}${d + 1}일차${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
+  }
+  function drawList() {
+    const out = [];
+    for (let d = 0; d < p.nd; d++) {
+      if (day !== -1 && day !== d) continue;
+      const its = planItems(p, d), nx = nextIdx(d);
+      out.push(el('div', { style: `font-weight:800;margin-top:6px;color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}${td === d ? ' · 오늘' : ''}` }));
+      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x); if (g) out.push(el('div', { class: 'dt', style: 'padding-left:40px;font-size:12px', text: g })); } out.push(row(x, i, d, nx)); });
+      out.push(el('button', { class: 'btn line small', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
+    }
+    list.replaceChildren(...out);
+  }
+  function drawMap() {
+    if (!map) return; if (layer) layer.remove(); layer = L.layerGroup().addTo(map);
+    const pts = [];
+    for (let d = 0; d < p.nd; d++) {
+      if (day !== -1 && day !== d) continue;
+      const col = PLAN_COLS[d % PLAN_COLS.length], its = planItems(p, d), ll = [];
+      its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]);
+        L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
+          .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => editItem(x)).addTo(layer); });
+      if (ll.length > 1) L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).addTo(layer);
+    }
+    const real = pts.filter(q => q[1] > -180);
+    if (!real.length) { map.setView([37.5665, 126.978], 5); return; }
+    // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
+    const c = real.reduce((s, q) => [s[0] + q[0] / real.length, s[1] + q[1] / real.length], [0, 0]);
+    let near = real.filter(q => dist(c[0], c[1], q[0], q[1]) < 300000); if (near.length < 2) near = real;
+    if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: [28, 28], maxZoom: 15 });
+  }
+  function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
+  const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
+    el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
+    head, mapEl, tabs, list,
+    el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })));
+  drawAll();
+  setTimeout(() => { map = L.map(mapEl); mdTileLayer().addTo(map); drawMap(); }, 30);
+}
 route();
 if (!LAB_QUIET) cloudWatch();
 if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
@@ -9374,6 +9662,8 @@ function viewLanding() {
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
         row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `지금까지 남긴 기록 ${n}개 · 목록과 달력` : '남긴 기록을 목록과 달력으로'; })(), './?my=1'),
+        row('🗓', '여행 계획', (() => { try { const a = planAll(), on = a.find(p => { const k = planToday(p); return k != null && k >= 0 && k < p.nd; }), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0];
+          return on ? `${on.name} · ${planStatus(on)}` : up ? `${up.name} · ${planStatus(up)}` : '여행사 일정을 넣으면 날마다 갈 곳이 지도에'; } catch { return '여행 전 일정 계획'; } })(), './?plan=1'),
         row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
         row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
         row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
