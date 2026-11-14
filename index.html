@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-88-room';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-89-today';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '💬 여행 계획마다 여행 방이 생겼어요(일행 대화, 사진 모으기, 일행 위치) · 📤 일정 보내기를 받은 사람은 같은 방에 바로 들어와요(로그인 없이 이름만) · 📷 방 사진은 선명한 2,560픽셀, 원본과 동영상은 내 구글 드라이브에(웹 브라우저에서 연결) · 휴대폰 알림은 안 와요, 앱을 열면 새 글을 가져와요';
+const UI_NOTES = '📅 여행 중 앱을 열면 첫 화면에 오늘 일정 알약, 누르면 오늘 화면(다음 갈 곳·길찾기·날씨·여행 방·보여 주는 말) · 📷 여행 날짜에 찍은 사진이 여행 방에 저절로 올라가요(끌 수 있어요) · 📥 지도 미리 받기로 인터넷이 약한 산에서도 한글 지도가 나와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6884,6 +6884,7 @@ async function viewPlan() {
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? '이미 넣어 둔 계획이에요' : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
+  if (qs.get('p') && qs.get('today')) { const pt = planGet(qs.get('p')); if (pt) return viewPlanToday(pt); }
   if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode() }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
@@ -6987,6 +6988,7 @@ function planPrepList(p, wx) {
     cn && { id: 'pay', t: '알리페이(또는 위챗페이)에 내 카드 연결 + 위안 현금 조금', w: '중국은 가게·택시 대부분 QR 결제 · 현금만 받는 노점·화장실도 있어요(100~300위안쯤)' },
     { id: 'ins', t: '여행자 보험', w: '패키지에 들어 있는지 여행사에 확인 · 없으면 출발 전에' },
     { id: 'mpd', t: 'MPD 로그인(☁ 기록 모으기)', w: '휴대폰을 잃어버려도 여행 기록·사진이 남아요 · 내 MPD 맨 위', ok: !!ls.get('cloudName', '') },
+    { id: 'map', t: '📥 지도 미리 받기 (와이파이에서)', w: '📅 여행 화면 맨 아래 · 인터넷이 약한 산에서도 지도가 나와요', ok: !!ls.get('planMap:' + p.id, null) },
     { id: 'share', t: '같이 가는 가족에게 이 계획 보내기', w: '위 📤 일정 보내기 · 받은 휴대폰에도 지도·여행사 안내가 그대로 들어가요' }].filter(Boolean) });
   const clothes = [];
   if (lo != null) {
@@ -7136,9 +7138,9 @@ async function trImg(f, max, q) {   // WebP가 되면 WebP(같은 화질에 30%�
   let b = await new Promise(r => c.toBlob(r, 'image/webp', q)); if (!b || b.type !== 'image/webp') b = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
   return { b, w: c.width, h: c.height };
 }
-async function trSendPhoto(R, f, drv, say) {
+async function trSendPhoto(R, f, drv, say, over) {
   const isV = /^video\//.test(f.type || '');
-  const ex = isV ? {} : await famExif(f).catch(() => ({}));
+  const ex = over || (isV ? {} : await famExif(f).catch(() => ({})));
   const pid = Date.now().toString(36) + rid(4), meta = { by: trMe(), nm: trName(), t: Date.now(), ts: ex.ts || f.lastModified || Date.now(), lat: ex.lat ?? null, lng: ex.lng ?? null };
   if (isV) {   // 동영상은 방에 못 담아서 드라이브에만(연결돼 있을 때)
     if (!drv) throw new Error('video');
@@ -7297,7 +7299,12 @@ async function viewTripRoom(code, title, planId) {
       drv ? null : IN_NATIVE
         ? el('button', { class: 'btn line small', style: 'margin-top:8px', text: '크롬에서 열어 원본 올리기 ↗', onclick: () => { location.href = trWebUrl(code, title); } })
         : el('button', { class: 'btn line small', style: 'margin-top:8px', text: '구글 드라이브 연결', onclick: async () => { try { drv = await driveToken(true); toast(`☁ 드라이브 연결됨 · ${drv.em}`); draw(); } catch (e) { toast(/popup|cancel|closed/i.test(String(e && (e.code || e.message))) ? '연결을 취소했어요' : IN_KAKAO ? '카카오톡 안에선 안 돼요 · 크롬에서 열어 주세요' : '⚠ 드라이브에 연결하지 못했어요 · ' + String(e && (e.code || e.message) || e).slice(0, 50), false, 6000); } } }));
-    faRc(body, status,
+    const autoOn = !!ls.get('tripAuto:' + R.rid, true), al = ls.get('tripAutoLast:' + R.rid, null);
+    const autoBox = p && p.start ? el('div', { class: 'card', style: 'padding:12px 14px' },
+      el('div', { style: 'font-weight:800', text: `📷 여행 사진 저절로 올리기 · ${autoOn ? '켜짐' : '꺼짐'}` }),
+      el('div', { class: 'dt', text: autoOn ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}에 ${window.mdNativePhotos ? '휴대폰 카메라로' : 'MPD로'} 찍은 사진이 방에 저절로 올라가요(2,560픽셀, 스크린샷 빼고)${al ? ` · 마지막 ${trAgo(al.at)} ${al.n}장` : ''}` : '끄면 직접 고른 사진만 올라가요' }),
+      el('button', { class: 'btn line small', style: 'margin-top:8px', text: autoOn ? '끄기' : '켜기', onclick: () => { ls.set('tripAuto:' + R.rid, !autoOn); draw(); } })) : null;
+    faRc(body, status, autoBox,
       el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' },
         el('button', { class: 'btn primary', text: '📷 사진 올리기', onclick: () => fileIn.click() }),
         el('div', { class: 'dt', text: `${L.length}장 · 방에 ${Math.max(0, TR_MAX - L.length)}장 더 넣을 수 있어요` })),
@@ -7363,6 +7370,7 @@ async function viewTripRoom(code, title, planId) {
   };
   await trSync(R, S, ['tc', 'tp', 'tl', 'tm']); draw();
   setInterval(tick, 10000);
+  if (p) { const go = () => trAuto(p, t => setStatus(t)).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 저절로 올렸어요`); trLoad(R).then(x => { Object.assign(S, x); draw(); }); } }).catch(() => {}); go(); setInterval(() => { if (!document.hidden) go(); }, 5 * 60000); }
 }
 // 계획 화면의 여행 방 카드 (새 글 수)
 function planRoomCard(p) {
@@ -7379,6 +7387,169 @@ function planRoomCard(p) {
   paint(null);
   (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R); paint(S, R); await trSync(R, S, ['tc', 'tp', 'tm']); paint(S, R); } catch {} })();
   return box;
+}
+
+// ---------- 📷 여행 사진 저절로 여행 방에 (2026-11-14 사용자 '1~3번 다 만들어') ----------
+//   여행 날짜(첫날 0시 ~ 끝날 24시)에 찍은 사진을 방에 올려요: 앱은 휴대폰 카메라 원본(mdNativePhotos, 스크린샷·MapDiary 앨범 빼고)을 2,560픽셀로,
+//   웹은 MPD로 찍은 사진(이 휴대폰 baldojang). 같은 사진(찍은 시각 3초 안)은 한 번만 · 보낸 것은 ls tripSent:{방}(새 키) · 끄기 ls tripAuto:{방}
+//   한 번에 30장까지(데이터·배터리), 다음에 열 때 이어서
+async function trMpdPhotos(a, b) {
+  try { const db = await photoDb(); return await new Promise(res => { const out = [], q = db.transaction('photos').objectStore('photos').openCursor();
+    q.onsuccess = () => { const c = q.result; if (!c) return res(out); const v = c.value; if (v && v.ts >= a && v.ts < b && v.blob && !v.v) out.push(v); c.continue(); }; q.onerror = () => res(out); }); } catch { return []; }
+}
+async function trAutoCands(p, R) {
+  const a = planDate(p, 0).getTime(), b = Math.min(Date.now(), planDate(p, p.nd - 1).getTime() + 864e5), sent = ls.get('tripSent:' + R.rid, {}) || {}, out = [];
+  if (b <= a) return out;
+  if (window.mdNativePhotos) try { for (const g of await window.mdNativePhotos.between(a, b)) { const k = 'g:' + g.uri; if (sent[k]) continue;
+    out.push({ k, ts: g.ts, file: async () => { const bl = await window.mdNativePhotos.blob(g.uri); return new File([bl], g.name || 'photo.jpg', { type: g.type || bl.type || 'image/jpeg', lastModified: g.ts }); } }); } } catch {}
+  for (const ph of await trMpdPhotos(a, b)) { const k = 'm:' + ph.id; if (sent[k]) continue; if (out.some(c => Math.abs(c.ts - ph.ts) < 3000) || Object.keys(sent).some(z => sent[z] && Math.abs(sent[z] - ph.ts) < 3000)) continue;
+    out.push({ k, ts: ph.ts, over: { ts: ph.ts, lat: ph.lat ?? null, lng: ph.lng ?? null }, file: async () => new File([ph.blob], 'mpd.jpg', { type: ph.blob.type || 'image/jpeg', lastModified: ph.ts }) }); }
+  return out.sort((x, y) => x.ts - y.ts);
+}
+async function trAuto(p, say) {
+  if (trAuto.busy || !p || !p.start || !p.room || !p.room.code || !trName()) return null;
+  const R = await trRoom(p.room.code); if (!ls.get('tripAuto:' + R.rid, true)) return null;
+  trAuto.busy = true;
+  try {
+    const S = await trLoad(R), left = TR_MAX - S.tp.filter(x => !x.del).length; if (left <= 0) return { n: 0, full: 1 };
+    const C = (await trAutoCands(p, R)).slice(0, Math.min(30, left)); if (!C.length) return { n: 0 };
+    const sent = ls.get('tripSent:' + R.rid, {}) || {}, ids = []; let fail = 0;
+    for (let i = 0; i < C.length; i++) {
+      say && say(`📷 여행 사진 저절로 올리는 중 ${i + 1}/${C.length}`);
+      try { const ph = await trSendPhoto(R, await C[i].file(), null, null, C[i].over); S.tp.push(ph); ids.push(ph.id); sent[C[i].k] = C[i].ts; ls.set('tripSent:' + R.rid, sent); } catch { fail++; }
+    }
+    if (ids.length) { const m = { by: trMe(), nm: trName(), x: '', ph: ids, auto: 1, t: Date.now() }, id = Date.now().toString(36) + rid(4); try { await trPut(R, 'tc', id, m); S.tc.push(Object.assign({ id, _t: m.t }, m)); } catch {} }
+    await trSet('room:' + R.rid, S); say && say('');
+    ls.set('tripAutoLast:' + R.rid, { at: Date.now(), n: ids.length, fail });
+    return { n: ids.length, fail };
+  } finally { trAuto.busy = false; }
+}
+// ---------- 📥 지도 미리 받기 (인터넷이 약한 곳 대비) ----------
+//   중국 등 한글 이름 지도(OpenFreeMap 벡터 지도)를 그 여행 장소 둘레만 휴대폰에(Cache 'md-vt-v1') 받아 둬요:
+//   지도 프로그램(MapLibre·연결 조각)·지도 모양·글자(한글)·그림·장소 둘레 지도 조각(가까이 z13~14 반경 3~6km, 넓게 z7~12 전체)·한자 읽기 표
+//   지도는 'mdvt://' 주소로 바꿔 받은 것을 먼저 쓰고, 없으면 인터넷에서 (koMapStyle·koMapLayer) · 기록 ls planMap:{ID}(새 키)
+var VT_CACHE = 'md-vt-v1';
+async function vtGet(url, type) {
+  let r = null; try { const c = await caches.open(VT_CACHE); r = await c.match(url); } catch {}
+  if (!r) r = await fetchT(url, {}, 20000);
+  if (!r || !r.ok) throw new Error('HTTP ' + (r && r.status));
+  return type === 'json' ? r.json() : type === 'text' ? r.text() : r.arrayBuffer();
+}
+function vtProto() {   // MapLibre가 'mdvt://' 주소를 받으면 저장해 둔 것 먼저
+  if (vtProto.on || !window.maplibregl || !maplibregl.addProtocol) return; vtProto.on = 1;
+  maplibregl.addProtocol('mdvt', async params => {
+    const url = params.url.replace(/^mdvt:\/\//, 'https://');
+    if (params.type === 'json') { const j = await vtGet(url, 'json'); if (Array.isArray(j.tiles)) j.tiles = j.tiles.map(t => t.replace(/^https:\/\//, 'mdvt://')); return { data: j }; }
+    return { data: await vtGet(url, 'buf') };
+  });
+}
+function vtStyle(st) {   // 지도 모양의 주소를 mdvt://로
+  const m = u => typeof u === 'string' ? u.replace(/^https:\/\/tiles\.openfreemap\.org\//, 'mdvt://tiles.openfreemap.org/') : u;
+  for (const s of Object.values(st.sources || {})) { if (s.url) s.url = m(s.url); if (Array.isArray(s.tiles)) s.tiles = s.tiles.map(m); }
+  st.glyphs = m(st.glyphs); if (typeof st.sprite === 'string') st.sprite = m(st.sprite); else if (Array.isArray(st.sprite)) st.sprite = st.sprite.map(s => Object.assign({}, s, { url: m(s.url) }));
+  return st;
+}
+async function vtLoad(src, css) {   // 지도 프로그램: 받아 둔 게 있으면 그걸로(인터넷 없이도)
+  if (document.querySelector(`[data-film="${src}"]`)) return;
+  let blobUrl = null; try { const c = await caches.open(VT_CACHE), r = await c.match(src); if (r) blobUrl = URL.createObjectURL(new Blob([await r.text()], { type: css ? 'text/css' : 'text/javascript' })); } catch {}
+  if (!blobUrl) return filmLoad(src, css);
+  await new Promise((res, rej) => { const e = css ? el('link', { rel: 'stylesheet', href: blobUrl, 'data-film': src }) : el('script', { src: blobUrl, 'data-film': src }); e.onload = res; e.onerror = () => rej(new Error('lib')); document.head.append(e); });
+}
+function vtTiles(p) {
+  const pts = (p.it || []).filter(x => Number.isFinite(x.lat) && x.k !== 'fly'), c = planCenter(p); if (!pts.length || !c) return [];
+  const near = pts.filter(x => dist(c[0], c[1], x.lat, x.lng) < 300000), set = new Set();
+  const tx = (lng, z) => Math.floor((lng + 180) / 360 * 2 ** z), ty = (lat, z) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z); };
+  const box = (la0, ln0, la1, ln1, z) => { for (let x = tx(ln0, z); x <= tx(ln1, z); x++) for (let y = ty(la1, z); y <= ty(la0, z); y++) set.add(`${z}/${x}/${y}`); };
+  const la = near.map(x => x.lat), ln = near.map(x => x.lng), m = 0.15;
+  for (let z = 6; z <= 11; z++) box(Math.min(...la) - m, Math.min(...ln) - m, Math.max(...la) + m, Math.max(...ln) + m, z);
+  for (const x of near) { const r = (km, z) => { const dl = km / 111, dn = km / (111 * Math.cos(x.lat * Math.PI / 180)); box(x.lat - dl, x.lng - dn, x.lat + dl, x.lng + dn, z); }; r(8, 12); r(5, 13); r(3, 14); }
+  return [...set];
+}
+async function planOffline(p, say) {
+  if (!window.caches) throw new Error('이 브라우저는 지도를 저장할 수 없어요');
+  const c = await caches.open(VT_CACHE), put = async u => { if (await c.match(u)) return 0; const r = await fetchT(u, {}, 30000); if (!r.ok) throw new Error('HTTP ' + r.status); const b = await r.clone().arrayBuffer(); await c.put(u, r); return b.byteLength; };
+  say('📥 지도 프로그램 받는 중…');
+  let bytes = 0, n = 0, bad = 0;
+  for (const u of [FILM_LIB.gl, FILM_LIB.css, KO_MAP_PLUGIN, APP_BASE.replace(/[^/]*$/, '') + 'hanja-ko.txt']) try { bytes += await put(u); } catch { bad++; }
+  bytes += await put(FILM_LIB.osm);
+  const st = await (await c.match(FILM_LIB.osm)).json(), src = st.sources.openmaptiles.url; bytes += await put(src);
+  const tj = await (await c.match(src)).json(), tpl = tj.tiles[0], maxz = tj.maxzoom || 14;
+  const sp = typeof st.sprite === 'string' ? st.sprite : null; if (sp) for (const s of ['.json', '.png', '@2x.json', '@2x.png']) try { bytes += await put(sp + s); } catch {}
+  const fonts = new Set(); for (const l of st.layers) { const f = l.layout && l.layout['text-font']; if (Array.isArray(f)) fonts.add(f.join(',')); }
+  const ranges = [0, 256, 8192, 12288, 65280]; for (let s = 44032; s < 55296; s += 256) ranges.push(s - (s % 256));   // 기본·문장 부호·한글
+  const G = []; for (const f of fonts) for (const r of new Set(ranges)) G.push(st.glyphs.replace('{fontstack}', encodeURIComponent(f)).replace('{range}', `${r}-${r + 255}`));
+  const T = vtTiles(p).filter(k => +k.split('/')[0] <= maxz).map(k => { const [z, x, y] = k.split('/'); return tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y); });
+  const all = [...G, ...T]; let i = 0;
+  const work = async () => { while (i < all.length) { const u = all[i++]; try { bytes += await put(u); } catch { bad++; } n++; if (n % 10 === 0) say(`📥 지도 받는 중 ${n}/${all.length} · ${(bytes / 1048576).toFixed(0)}MB`); } };
+  await Promise.all([work(), work(), work(), work()]);
+  const out = { at: Date.now(), n: T.length, mb: Math.round(bytes / 1048576), bad }; ls.set('planMap:' + p.id, out); say(''); return out;
+}
+// ---------- 📅 오늘 화면 (여행 중 앱을 열면) ----------
+function planCur() {   // 여행 중인 계획, 없으면 30일 안에 떠나는 계획
+  const a = planAll(), on = a.find(p => { const k = planToday(p); return k != null && k >= 0 && k < p.nd; });
+  if (on) return on;
+  return a.filter(p => { const k = planToday(p); return k != null && k < 0 && k >= -30; }).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0] || null;
+}
+function planNext(p, d) {
+  const its = planItems(p, d), now = new Date(), hm = now.getHours() * 60 + now.getMinutes();
+  let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm); if (i < 0) i = its.findIndex(x => !x.ok); return i;
+}
+function planHomeCard() {
+  let p = null; try { p = planCur(); } catch {} if (!p) return null;
+  const k = planToday(p), on = k >= 0, w = (ls.get('planWx:' + p.id, null) || {}).days || [], its = on ? planItems(p, k) : [], ni = on ? planNext(p, k) : -1, nx = ni >= 0 ? its[ni] : null;
+  const st = ls.get('planPrep:' + p.id, {}) || {}, done = Object.values(st).filter(Boolean).length;
+  return el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), style: 'display:block;text-decoration:none;color:#fff;border-radius:20px;padding:16px 18px;background:linear-gradient(135deg,#0277BD,#1D9EC0);box-shadow:0 6px 18px rgba(2,119,189,.25)' },
+    el('div', { style: 'font-size:13px;opacity:.9;font-weight:700', text: on ? `여행 중 · ${k + 1}일차 · ${planDayLabel(p, k)}` : `D-${-k} · ${planDayLabel(p, 0)} 출발` }),
+    el('div', { style: 'font-size:22px;font-weight:900;margin:2px 0 6px', text: p.name }),
+    on ? el('div', { style: 'font-size:15px;font-weight:700', text: nx ? `▶ 다음: ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : el('div', { style: 'font-size:15px', text: `🧳 준비 ${done}개 체크 · 날씨·준비물·입국신고서 보기` }),
+    w[on ? k : 0] ? el('div', { style: 'font-size:14px;opacity:.95;margin-top:4px', text: planWxLine(w[on ? k : 0], true) }) : null,
+    el('div', { style: 'font-size:13px;font-weight:800;margin-top:8px', text: on ? '📅 오늘 화면 열기 ›' : '📅 여행 화면 열기 ›' }));
+}
+function planSaySheet() {
+  return labSheet('🗣 보여 주는 말 · 누르면 크게', ...PLAN_SAY_CN.map(([c, k, y]) => el('button', { class: 'btn line', style: 'display:flex;justify-content:space-between;gap:8px;text-align:left;width:100%', onclick: () => planSayShow(c, k, y) }, el('span', { text: k }), el('b', { text: c }))));
+}
+async function viewPlanToday(p) {
+  document.title = `${p.name} · 오늘`;
+  const k = planToday(p), d = Math.max(0, Math.min(p.nd - 1, k)), on = k >= 0 && k < p.nd, before = k < 0;
+  const wrap = el('div', { class: 'stack', style: 'gap:12px' }), status = el('div', { class: 'sub', style: 'font-weight:700' });
+  let wx = ls.get('planWx:' + p.id, null), wxErr = false;
+  const draw = () => {
+    const its = planItems(p, d), ni = on ? planNext(p, d) : 0, nx = ni >= 0 ? its[ni] : null, w = wx && wx.days && wx.days[d];
+    const mapInfo = ls.get('planMap:' + p.id, null);
+    faRc(wrap,
+      el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ 전체 일정 보기' }),
+      el('div', {}, el('div', { class: 'sub', style: 'font-weight:800;color:var(--pine)', text: on ? `여행 중 · ${d + 1}일차` : before ? `D-${-k} · 첫날 미리 보기` : '여행이 끝났어요' }),
+        el('h1', { style: 'margin:2px 0', text: `${p.name}` }), el('div', { class: 'sub', text: planDayLabel(p, d) })),
+      el('div', { class: 'card', style: 'padding:12px 14px' }, el('div', { style: 'font-weight:800', text: w ? planWxLine(w) : wxErr ? '🌤 날씨를 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '🌤 날씨를 받는 중…' }), el('div', { class: 'dt', text: planSunLine(p, d) })),
+      nx ? el('div', { class: 'card', style: 'padding:14px;border:2px solid var(--accent)' },
+        el('div', { class: 'dt', style: 'font-weight:800;color:var(--accent)', text: on ? '▶ 다음 갈 곳' : '첫 일정' }),
+        el('div', { style: 'font-size:20px;font-weight:900;margin:4px 0', text: `${nx.t ? nx.t + ' ' : ''}${(PLAN_KINDS[nx.k] || PLAN_KINDS.spot)[0]} ${nx.n}` }),
+        nx.m ? el('div', { class: 'dt', text: nx.m }) : null,
+        el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap;margin-top:8px' },
+          Number.isFinite(nx.lat) ? el('button', { class: 'btn primary small', text: '🧭 길찾기', onclick: () => planGo(nx) }) : null,
+          nx.x ? el('button', { class: 'btn line small', text: '📖 여행사 안내', onclick: () => labSheet(nx.n, el('div', { style: 'white-space:pre-wrap;font-size:15px;line-height:1.6', text: nx.x })) }) : null,
+          on ? el('button', { class: 'btn line small', text: '✓ 다녀왔어요', onclick: () => { nx.ok = true; nx.okT = Date.now(); nx.okA = 0; nx.okNo = 0; planSave(p); draw(); } }) : null))
+        : el('div', { class: 'card sub', text: on ? '오늘 일정을 다 다녀왔어요 🎉' : '이날 일정이 없어요' }),
+      el('div', { class: 'card stack', style: 'gap:2px;padding:12px 14px' }, el('div', { style: 'font-weight:800', text: `${d + 1}일차 일정` }),
+        ...its.map((x, i) => el('div', { style: `display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);${x.ok ? 'opacity:.5' : ''}${i === ni ? ';font-weight:800;color:var(--accent)' : ''}` },
+          el('span', { style: 'flex:none;width:44px;color:var(--muted)', text: x.t || '' }), el('span', { style: 'flex:1', text: `${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[0]} ${x.n}` }), el('span', { text: x.ok ? '✓' : '' })))),
+      planRoomCard(p),
+      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' },
+        el('a', { class: 'btn line', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', text: '📷 사진 올리기', onclick: () => ls.set('tripTab', 'photo') }),
+        el('button', { class: 'btn line', text: '🗣 보여 주는 말', onclick: planSaySheet }),
+        el('button', { class: 'btn line', text: '🧳 여행 준비', onclick: () => planPrepSheet(p, wx) }),
+        el('a', { class: 'btn line', href: 'tel:+82232100404', text: '🆘 영사콜센터' })),
+      el('div', { class: 'card', style: 'padding:12px 14px' }, el('div', { style: 'font-weight:800', text: '📥 지도 미리 받기' }),
+        el('div', { class: 'dt', text: mapInfo ? `✅ ${new Date(mapInfo.at).toLocaleDateString('ko-KR')}에 받아 뒀어요 · 장소 둘레 지도 ${mapInfo.n}장 · ${mapInfo.mb}MB · 인터넷이 약해도 지도가 나와요` : '인터넷이 약한 산·시골에서도 지도가 나오게 출발 전에 와이파이에서 받아 두세요(장소 둘레만, 수십 MB)' }),
+        mapButton()),
+      status);
+  };
+  const mapButton = () => { const b = el('button', { class: 'btn line small', style: 'margin-top:8px', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
+    if (b.disabled) return; b.disabled = true; try { const r = await planOffline(p, t => { if (t) b.textContent = t; }); toast(`📥 지도를 받아 뒀어요 · ${r.n}장 · ${r.mb}MB${r.bad ? ` · 못 받은 ${r.bad}장` : ''}`); } catch (e) { toast('⚠ 지도를 다 받지 못했어요 · ' + String(e && e.message || e).slice(0, 50) + ' · 다시 누르면 이어서 받아요', false, 6000); } draw(); } }); return b; };
+  app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', on ? '오늘' : '여행'), wrap));
+  draw();
+  planWeather(p).then(w => { if (w) wx = w; else wxErr = !wx; draw(); }).catch(() => { wxErr = true; draw(); });
+  if (on || k >= p.nd) trAuto(p, t => { status.textContent = t; }).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 여행 방에 올렸어요`); draw(); } }).catch(() => {});
 }
 
 // 기록과 잇기 (2026-11-14): 여행 날짜 동안 MPD로 기록한 길이 계획 장소 가까이 지나갔으면 저절로 '✓ 다녀옴'(그 시각도)
@@ -7415,11 +7586,10 @@ function planAutoVisit(p) {
 var KO_MAP_PLUGIN = 'https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js';
 async function koMapStyle() {
   if (koMapStyle.s) return JSON.parse(JSON.stringify(koMapStyle.s));
-  const r = await fetchT(FILM_LIB.osm, {}, 15000); if (!r.ok) throw new Error('HTTP ' + r.status);
   // 한글 → 영어(그 나라 이름과 다를 때만) → 로마자 읽기 → 큰 이름(도시·나라·공항)만 그 나라 글자, 작은 마을·가게·길 이름은 읽을 수 없으면 숨김
   const nm = keep => ['case', ['has', 'name:ko'], ['get', 'name:ko'], ['has', 'name:en'], ['get', 'name:en'],
     ['all', ['has', 'name_en'], ['!=', ['get', 'name_en'], ['get', 'name']]], ['get', 'name_en'], ['has', 'name:latin'], ['get', 'name:latin'], keep ? ['get', 'name'] : ''];
-  const st = await r.json();
+  const st = vtStyle(await vtGet(FILM_LIB.osm, 'json'));
   for (const l of st.layers || []) { const tf = l.layout && l.layout['text-field']; if (tf && /name/.test(JSON.stringify(tf))) { l.layout['text-field'] = nm(/label_(city|town|state|country)|airport/.test(l.id)); l.metadata = Object.assign({}, l.metadata, { koName: 1 }); } }
   koMapStyle.s = st; return JSON.parse(JSON.stringify(st));
 }
@@ -7428,7 +7598,7 @@ async function koMapStyle() {
 //   표 hanja-ko.txt(간체·번체 약 8,800자 → 한글, 둘째 줄은 첫 글자가 아닐 때 읽기(두음 법칙): opencc 간→번 + hanja 읽기로 만든 것)
 //   지도에 보이는 이름만 그때그때 바꿔 'match' 식으로 넣어요(새로 보이는 이름이 생기면 다시)
 function koHanjaLoad() {
-  return koHanjaLoad.p || (koHanjaLoad.p = fetchT(APP_BASE.replace(/[^/]*$/, '') + 'hanja-ko.txt', {}, 15000).then(r => r.text()).then(t => {
+  return koHanjaLoad.p || (koHanjaLoad.p = vtGet(APP_BASE.replace(/[^/]*$/, '') + 'hanja-ko.txt', 'text').then(t => {
     const [a, b] = t.split('\n'), A = new Map(), B = new Map(), ca = [...(a || '')], cb = [...(b || '')];
     for (let i = 0; i + 1 < ca.length; i += 2) A.set(ca[i], ca[i + 1]); for (let i = 0; i + 1 < cb.length; i += 2) B.set(cb[i], cb[i + 1]);
     return { A, B };
@@ -7466,8 +7636,9 @@ function koHanjaWire(mm) {
 }
 async function koMapLayer(hanja) {
   try {
-    await filmLoad(FILM_LIB.css, true); await filmLoad(FILM_LIB.gl); await filmLoad(KO_MAP_PLUGIN);
+    await vtLoad(FILM_LIB.css, true); await vtLoad(FILM_LIB.gl); await vtLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
+    vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
     if (hanja) { koHanjaLoad(); ly.once('add', () => { const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm); else mm.once('load', () => koHanjaWire(mm)); }; go(); }); }
     return ly;
@@ -7493,6 +7664,7 @@ function viewPlanOne(id) {
     el('div', { class: 'sub', text: [planNights(p), p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }),
     el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' },
       el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
+      (() => { const k = planToday(p); return k != null && k >= -30 && k < p.nd ? el('a', { class: 'btn primary small', href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), text: k >= 0 ? '📅 오늘 화면' : '📅 여행 화면' }) : null; })(),
       el('button', { class: 'btn line small', text: '📤 일정 보내기', onclick: () => planShare(p) }),
       (() => { const miss = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length; if (!miss) return null;
         const bt = el('button', { class: 'btn line small', text: `📍 위치 찾기 · ${miss}곳`, onclick: async () => {
@@ -10445,8 +10617,17 @@ function viewLanding() {
   // 시안 한 화면 아래(스크롤): 예전 첫 화면에 있던 들어가는 길은 그대로 한 줄씩
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), el('small', { text: sub })), el('span', { class: 'go', text: '›' }));
-  app.replaceChildren(cHomePhoto(),
+  const heroEl = cHomePhoto();
+  try {   // 여행 중·여행 30일 전이면 첫 화면 사진 위에도 작은 알약(누르면 오늘 화면)
+    const pc = planCur(); if (pc) { const k = planToday(pc), its = k >= 0 ? planItems(pc, k) : [], ni = k >= 0 ? planNext(pc, k) : -1, nx = ni >= 0 ? its[ni] : null;
+      if (getComputedStyle(heroEl).position === 'static') heroEl.style.position = 'relative';
+      heroEl.append(el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(pc.id), style: 'position:absolute;left:16px;right:16px;top:262px;z-index:5;display:block;text-decoration:none;color:#102A43;background:rgba(255,255,255,.92);border-radius:16px;padding:10px 14px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2)' },
+        el('div', { style: 'font-size:12px;color:#0277BD', text: k >= 0 ? `🗓 ${pc.name} · ${k + 1}일차` : `🗓 ${pc.name} · D-${-k}` }),
+        el('div', { style: 'font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: k >= 0 ? (nx ? `▶ 다음 ${nx.t ? nx.t + ' ' : ''}${nx.n} ›` : '오늘 일정 끝 · 오늘 화면 ›') : '🧳 여행 준비 · 날씨 · 지도 받기 ›' }))); }
+  } catch {}
+  app.replaceChildren(heroEl,
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
+      (() => { try { return planHomeCard(); } catch { return null; } })(),
       memSlot,
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
