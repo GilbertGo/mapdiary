@@ -576,6 +576,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .wk-gt{display:flex;justify-content:space-between;gap:8px;font-size:14px}.wk-gt b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wk-gt span{color:var(--muted);white-space:nowrap}
 .wk-bar{display:block;height:6px;border-radius:3px;background:var(--soft);margin-top:5px;overflow:hidden}.wk-bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .wk-gr.ok .wk-gi{color:#fff;background:var(--pine);border-radius:50%;font-size:14px;line-height:26px;height:26px}.wk-gr.ok .wk-gt span{color:var(--pine);font-weight:800}
+.fly-ic svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
 .wk-dpin b{display:block;font-size:26px;line-height:34px;text-align:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
 .wk-g{font-size:15px;font-weight:800;color:var(--accent)}.wk-s{font-size:12px;color:var(--muted)}
 .r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
@@ -1582,7 +1583,9 @@ function trackAdd(t, lat, lng, acc, name, alt, shake, brk) {
 // GPS 높이는 10m쯤 흔들려서, 앞뒤 5점 평균으로 부드럽게 한 뒤 4m 넘게 오를 때만 더해요. 높이 값이 5점보다 적으면 null
 const ELEV_MODES = ['hike', 'trek', 'backpack', 'camp'];
 function elevStats(tr) {
-  const pts = (tr || []).filter(q => Number.isFinite(q[3]));
+  // 비행기 안에서 잡힌 점(빠르기 초속 60m 넘게)은 높이가 수천 m라 빼요 (2026-11-14 비행 구간)
+  const T = tr || [], sp = i => { if (i < 1 || i >= T.length) return 0; const dt = (T[i][2] - T[i - 1][2]) / 1000; return dt > 0 ? dist(T[i - 1][0], T[i - 1][1], T[i][0], T[i][1]) / dt : 0; };
+  const pts = T.filter((q, i) => Number.isFinite(q[3]) && sp(i) <= 60 && sp(i + 1) <= 60);
   if (pts.length < 5) return null;
   const h = pts.map((_, i) => { let a = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(pts.length - 1, i + 2); j++) { a += pts[j][3]; n++; } return a / n; });
   let gain = 0, loss = 0, ref = h[0];
@@ -2300,10 +2303,10 @@ const fmtRunTime = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3
 function trackStats(tr, kmh) {
   let d = 0; for (let i = 1; i < tr.length; i++) d += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
   const m = trackModes(tr, kmh);
-  let walk = 0; for (let i = 1; i < tr.length; i++) if (m[i] === 'w') walk += dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]);
+  let walk = 0, fly = 0, flyMs = 0; for (let i = 1; i < tr.length; i++) { const dd = dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]); if (m[i] === 'w') walk += dd; else if (m[i] === 'f') { fly += dd; flyMs += tr[i][2] - tr[i - 1][2]; } }
   const o = officialOf(tr), ms = tr.length > 1 ? tr[tr.length - 1][2] - tr[0][2] : 0;
-  if (o) return { d: d + o.km * 1000 - walk, walk: o.km * 1000, ms: o.ms > 0 ? o.ms : ms, gps: walk };
-  return { d, walk, ms };
+  if (o) return { d: d + o.km * 1000 - walk, walk: o.km * 1000, ms: o.ms > 0 ? o.ms : ms, gps: walk, fly, flyMs };
+  return { d, walk, ms, fly, flyMs };
 }
 // ---------- 걸은 구간 / 차로 간 구간 나누기 ----------
 // 점마다 한 글자: 'w' 걸어서 온 길, 'c' 차(탈것)로 온 길. 시속 15km보다 빠르면 차로 봐요.
@@ -2318,6 +2321,16 @@ function trackModes(tr, kmh) {
   tmCache.set(key, r); if (tmCache.size > 12) tmCache.delete(tmCache.keys().next().value);
   return r;
 }
+// 비행 구간 (2026-11-14 사용자 '비행기 타고 가는 여행도 기록'): 위치가 끊겼다가 100km 넘게 떨어진 곳에서 평균 시속 220km 넘게 이어졌거나(비행기 안은 GPS가 끊겨서),
+//   점이 이어져 있어도 시속 324km 넘으면(창가에서 GPS가 잡힌 때) 비행. KTX(시속 300km 안팎)·차와 겹치지 않게 넉넉히
+function isFlySeg(d, sec) { if (!(sec > 0)) return false; const v = d / sec; return v < 340 && (d > 100000 && v > 61 || d > 200 && v > 90); }
+// 두 공항 사이 둥근 곡선 (실제 날아간 길은 몰라서 그림으로만): [[lat,lng], …]
+function flyArc(a, b, n) {
+  n = n || 32; const k = Math.cos((a[0] + b[0]) / 2 * Math.PI / 180), dx = (b[1] - a[1]) * k, dy = b[0] - a[0], L = Math.hypot(dx, dy) || 1e-9, h = L * 0.18;
+  const cx = (a[1] * k + b[1] * k) / 2 - dy / L * h, cy = (a[0] + b[0]) / 2 + dx / L * h, out = [];
+  for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t, x = u * u * a[1] * k + 2 * u * t * cx + t * t * b[1] * k, y = u * u * a[0] + 2 * u * t * cy + t * t * b[0]; out.push([y, x / k]); }
+  return out;
+}
 function trackModesCalc(tr, kmh) {
   const lim = kmh ? kmh / 3.6 : CAR_MS;
   const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
@@ -2327,19 +2340,19 @@ function trackModesCalc(tr, kmh) {
     const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = segD(i);
     // 'g': 화면이 꺼지는 등으로 5분 넘게 위치가 안 들어왔다가 150m 넘게 떨어진 곳에서 다시 이어진 구간 (가는 점선)
     // '잠시 멈춤'을 풀고 다시 시작한 점(6번째 값 1)도 끊긴 구간이에요
-    m.push(tr[i][5] === 1 || dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
+    m.push(tr[i][5] === 1 ? 'g' : isFlySeg(d, dt) ? 'f' : dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
   }
   // 신호 대기처럼 잠깐 느려지거나, GPS가 튀어 잠깐 빨라진 곳은 앞뒤에 맞춰요 (끊긴 구간 'g'는 그대로 둬요)
   const smooth = () => { for (let pass = 0; pass < 2; pass++)
     for (let i = 1; i < m.length - 1; i++) {
       let j = i; while (j < m.length - 1 && m[j + 1] === m[i]) j++;
-      if (j - i < 2 && m[i - 1] === m[j + 1] && m[i] !== m[i - 1] && m[i] !== 'g' && m[i - 1] !== 'g') for (let k = i; k <= j; k++) m[k] = m[i - 1];
+      if (j - i < 2 && m[i - 1] === m[j + 1] && m[i] !== m[i - 1] && m[i] !== 'g' && m[i - 1] !== 'g' && m[i] !== 'f') for (let k = i; k <= j; k++) m[k] = m[i - 1];
       i = j;
     } };
   smooth();
   // 30초 평균 빠르기 (m/s)
-  const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
-    for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+  const win = k => { let d = 0, t = 0; for (let a = k; a >= 1 && tr[k][2] - tr[a][2] <= 15000; a--) { if (m[a] === 'g' || m[a] === 'f') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
+    for (let a = k + 1; a < m.length && tr[a][2] - tr[k][2] <= 15000; a++) { if (m[a] === 'g' || m[a] === 'f') break; d += segD(a); t += tr[a][2] - tr[a - 1][2]; }
     return t > 0 ? d / (t / 1000) : 0; };
   // 휴대폰 흔들림(점의 5번째 값): 1 = 걷거나 뛰며 흔들림, 0 = 흔들림 없이 매끈함(차 안), 없음 = 모름(화면 꺼짐·센서 없음·예전 기록)
   // 자전거는 페달을 밟아도 휴대폰이 잘 안 흔들려서 안 써요
@@ -2384,16 +2397,27 @@ function trimEnds(R, modes, m) {
 const RUN_STYLE = {
   w: { color: '#E4572E', weight: 5 },
   c: { color: '#6B7280', weight: 4, dashArray: '8 8' },
-  g: { color: '#6B7280', weight: 2.5, dashArray: '2 7', opacity: 0.9 }
+  g: { color: '#6B7280', weight: 2.5, dashArray: '2 7', opacity: 0.9 },
+  f: { color: '#0277BD', weight: 3, dashArray: '1 9', lineCap: 'round', opacity: 0.95 }   // ✈ 비행: 파란 점 곡선
 };
+// 비행 구간 가운데에 ✈ (지도마다)
+function flyMarks(layer, runs) {
+  for (const r of runs) { if (r.k !== 'f' || r.pts.length < 2) continue;
+    const P = r.pts, i = Math.floor(P.length / 2), a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+    const br = Math.atan2((b[1] - a[1]) * Math.cos(a[0] * Math.PI / 180), b[0] - a[0]) * 180 / Math.PI;
+    L.marker(P[i], { interactive: false, icon: L.divIcon({ className: 'fly-ic', iconSize: [30, 30], iconAnchor: [15, 15], html: `<svg viewBox="0 0 24 24" width="26" height="26" style="transform:rotate(${br.toFixed(0)}deg)"><path d="${FLY_PATH}" fill="#0277BD" stroke="#fff" stroke-width="1.6" paint-order="stroke"/></svg>` }) }).addTo(layer); }
+}
+var FLY_PATH = 'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';   // 위를 보는 비행기 그림 (지도·카드)
 // 같은 방식끼리 이어진 조각으로 나눠요: [{ k: 'w'|'c'|'g', car, pts: [[lat,lng], ...] }]
 function modeRuns(R, modes) {
   if (!modes || modes.length !== R.length) return [{ k: 'w', car: false, pts: R }];
   const runs = [];
   for (let i = 1; i < R.length; i++) {
-    const k = modes[i] === 'c' || modes[i] === 'g' ? modes[i] : 'w', last = runs[runs.length - 1];
+    const k = modes[i] === 'c' || modes[i] === 'g' || modes[i] === 'f' ? modes[i] : 'w', last = runs[runs.length - 1];
     if (last && last.k === k) last.pts.push(R[i]); else runs.push({ k, car: k === 'c', pts: [R[i - 1], R[i]] });
   }
+  // 비행은 점이 끊긴 두 공항뿐이면 둥근 곡선으로 (실제 날아간 길이 아니라 그림)
+  runs.forEach(r => { if (r.k === 'f' && r.pts.length === 2) r.pts = flyArc(r.pts[0], r.pts[1]); });
   return runs;
 }
 // 경로를 줄일 때(점 개수 제한) 방식 글자도 같이 줄여요
@@ -2401,7 +2425,7 @@ function thinRoute(R, modes, max) {
   if (R.length <= max) return { R, modes };
   const step = Math.ceil(R.length / max), keep = [];
   for (let i = 0; i < R.length; i++) if (i % step === 0 || i === R.length - 1) keep.push(i);
-  const mm = modes ? keep.map((k, n) => { if (!n) return 'w'; const seg = modes.slice(keep[n - 1] + 1, k + 1); return seg.includes('g') ? 'g' : seg.includes('c') && seg.split('c').length - 1 >= seg.length / 2 ? 'c' : 'w'; }).join('') : null;
+  const mm = modes ? keep.map((k, n) => { if (!n) return 'w'; const seg = modes.slice(keep[n - 1] + 1, k + 1); return seg.includes('f') ? 'f' : seg.includes('g') ? 'g' : seg.includes('c') && seg.split('c').length - 1 >= seg.length / 2 ? 'c' : 'w'; }).join('') : null;
   return { R: keep.map(k => R[k]), modes: mm };
 }
 function fmtDur(ms) { const m = Math.round(ms / 60000), h = Math.floor(m / 60); return h ? `${h}시간 ${m % 60}분` : `${m}분`; }
@@ -2634,16 +2658,22 @@ async function drawBragCard(o) {
       P = R.map(proj);
     }
     const line = (w, c) => { g.beginPath(); P.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.lineWidth = w; g.strokeStyle = c; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); };
-    const hasCar = typeof o.modes === 'string' && o.modes.length === P.length && /[cg]/.test(o.modes);
+    const hasCar = typeof o.modes === 'string' && o.modes.length === P.length && /[cgf]/.test(o.modes);
     if (!hasCar) { if (onMap) { line(24, '#FFFFFF'); line(12, '#E4572E'); } else { line(26, 'rgba(255,255,255,.14)'); line(12, ACC); } }
     else {
       // 걸은 길은 굵은 실선, 차로 간 길은 회색 점선, 기록이 끊긴 구간은 가는 점선 (테두리 없이)
       const path = (a, b) => { g.beginPath(); g.moveTo(P[a][0], P[a][1]); for (let k = a + 1; k <= b; k++) g.lineTo(P[k][0], P[k][1]); };
       const runs = []; let a = 0;
-      for (let i = 1; i < P.length; i++) if (i === P.length - 1 || o.modes[i + 1] !== o.modes[i]) { runs.push([a, i, o.modes[i] === 'c' || o.modes[i] === 'g' ? o.modes[i] : 'w']); a = i; }
+      for (let i = 1; i < P.length; i++) if (i === P.length - 1 || o.modes[i + 1] !== o.modes[i]) { runs.push([a, i, 'cgf'.includes(o.modes[i]) ? o.modes[i] : 'w']); a = i; }
       g.lineCap = 'round'; g.lineJoin = 'round';
-      runs.filter(r => r[2] !== 'g').forEach(([s, e]) => { path(s, e); g.lineWidth = onMap ? 20 : 22; g.strokeStyle = onMap ? '#FFFFFF' : 'rgba(255,255,255,.14)'; g.stroke(); });
+      // ✈ 비행: 두 점뿐이면 둥근 곡선, 가운데에 비행기
+      const flyPath = (s, e) => { if (e - s === 1) { const A = P[s], B = P[e], dx = B[0] - A[0], dy = B[1] - A[1], Ln = Math.hypot(dx, dy) || 1, cx = (A[0] + B[0]) / 2 + dy / Ln * Ln * 0.18, cy = (A[1] + B[1]) / 2 - dx / Ln * Ln * 0.18;
+          g.beginPath(); g.moveTo(A[0], A[1]); g.quadraticCurveTo(cx, cy, B[0], B[1]); return [(A[0] + 2 * cx + B[0]) / 4, (A[1] + 2 * cy + B[1]) / 4, Math.atan2(dy, dx)]; }
+        path(s, e); const mi = Math.floor((s + e) / 2), q = P[Math.min(e, mi + 1)]; return [P[mi][0], P[mi][1], Math.atan2(q[1] - P[mi][1], q[0] - P[mi][0])]; };
+      runs.filter(r => r[2] !== 'g' && r[2] !== 'f').forEach(([s, e]) => { path(s, e); g.lineWidth = onMap ? 20 : 22; g.strokeStyle = onMap ? '#FFFFFF' : 'rgba(255,255,255,.14)'; g.stroke(); });
       runs.forEach(([s, e, k]) => {
+        if (k === 'f') { const [mx, my, an] = flyPath(s, e); g.setLineDash([2, 18]); g.lineWidth = 8; g.strokeStyle = '#0277BD'; g.stroke(); g.setLineDash([]);
+          g.save(); g.translate(mx, my); g.rotate(an + Math.PI / 2); g.scale(2.4, 2.4); g.translate(-12, -12); const pp = new Path2D(FLY_PATH); g.lineWidth = 2.4; g.strokeStyle = '#fff'; g.stroke(pp); g.fillStyle = '#0277BD'; g.fill(pp); g.restore(); return; }
         path(s, e);
         if (k === 'g') { g.setLineDash([2, 14]); g.lineWidth = 6; g.strokeStyle = onMap ? '#6B7280' : '#C9CFC7'; }
         else if (k === 'c') { g.setLineDash([16, 14]); g.lineWidth = 8; g.strokeStyle = onMap ? '#6B7280' : '#C9CFC7'; }
@@ -2797,6 +2827,7 @@ function openBrag(info, t, count, allDone, room) {
     if (route && which === 'mine') {
       const st = trackStats(trackLoad(t), M.car);
       if (st.d - st.walk > 300) stats.push(`${M.did} 거리 ${fmtDist(st.walk)}`, `전체 이동 ${fmtDist(st.d)}`);   // 차로 간 길이 있으면 따로
+      if (st.fly > 0) stats.push(`✈ 비행 ${fmtDist(st.fly)}`);
       else stats.push(`${M.did} 거리 ${fmtDist(st.d)}`);
       if (M.k === 'trek') { const sn = (ls.get('walkSteps:' + t, {}) || {}).n || 0; if (sn >= 200) stats.push(`걸음 ${sn.toLocaleString()}보`); }   // 걷기는 걸음 수를 카드에
       if (M.k === 'run') { const mv = movingMs(trackLoad(t), M.car), sn = ls.get('walkSteps:' + t, {}).n; stats.push(`페이스 ${fmtPace(st.walk, mv)}`); if (sn > 20 && mv > 60000) stats.push(`케이던스 ${Math.round(sn / (mv / 60000))}`); }
@@ -2907,9 +2938,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-70-ios';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-71-fly';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '아이폰에서 기록하는 동안 화면이 저절로 꺼지지 않아요 · 주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기를 눌러 주세요 · 다른 앱 기록(GPX) 가져오기는 내 MPD 맨 아래로 옮겼어요';
+const UI_NOTES = '비행기로 간 길을 알아봐요 · 지도에 두 공항 사이 파란 점 곡선과 비행기 그림 · 숫자 칸에 ✈ 비행 거리와 시간 · 걸은 거리에는 섞이지 않아요 · 이동 영상에선 카메라가 하늘 높이 올라가 날아가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3395,8 +3426,8 @@ function routeMap(mapEl, R, photos, modes, spots) {
   mdTileLayer().addTo(m);
   // 걸은 길은 주황 실선, 차로 간 길은 회색 점선, 끊긴 구간은 가는 점선 (끊긴 구간은 흰 테두리 없이)
   const runs = modeRuns(R, modes);
-  runs.filter(r => r.k !== 'g').forEach(r => L.polyline(r.pts, { color: '#FFFFFF', weight: 9, opacity: 0.9 }).addTo(m));
-  runs.forEach(r => L.polyline(r.pts, RUN_STYLE[r.k]).addTo(m));
+  runs.filter(r => r.k !== 'g' && r.k !== 'f').forEach(r => L.polyline(r.pts, { color: '#FFFFFF', weight: 9, opacity: 0.9 }).addTo(m));
+  runs.forEach(r => L.polyline(r.pts, RUN_STYLE[r.k]).addTo(m)); flyMarks(m, runs);
   setRouteArrows(m, R, true);
   const A = R[0], B = R[R.length - 1], same = dist(A[0], A[1], B[0], B[1]) < 80;
   const pin = (p, label, fill) => L.circleMarker(p, { radius: 9, color: '#1E3B2F', weight: 3, fillColor: fill, fillOpacity: 1 })
@@ -5297,19 +5328,36 @@ function filmGpx(text) {
 // 길 준비: 점 정리 → 누적 거리 → 집 가리기(앞뒤 500m, 짧으면 1/3)
 function filmPath(rows, hide) {
   let P = rows.filter(q => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(q => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null }));
-  const cum = P => { let d = 0; return P.map((p, i) => (d += i ? dist(P[i - 1].lat, P[i - 1].lng, p.lat, p.lng) : 0, Object.assign(p, { d }))); };
   // 5m 안 겹친 점은 하나로(카메라 방향이 흔들리지 않게)
   const Q = []; for (const p of P) { const l = Q[Q.length - 1]; if (!l || dist(l.lat, l.lng, p.lat, p.lng) >= 5) Q.push(p); }
-  P = cum(Q); if (P.length < 2) return null;
+  if (Q.length < 2) return null;
+  // ✈ 비행 구간 (2026-11-14): 끊긴 두 공항 사이는 둥근 곡선 점으로 채우고, 영상에선 짧게 지나가요(길이를 걸은 길의 절반 안팎으로 줄여 셈)
+  //   d = 영상에서 쓰는 길 위 거리(비행은 줄인 값) · g = 땅 위에서 다닌 거리(비행 뺌, 화면 숫자·km 표시용)
+  const R = [Object.assign(Q[0], { fly: false })];
+  for (let i = 1; i < Q.length; i++) {
+    const a = Q[i - 1], b = Q[i], dd = dist(a.lat, a.lng, b.lat, b.lng), fly = isFlySeg(dd, (b.ts - a.ts) / 1000);
+    if (fly && dd > 30000) { const arc = flyArc([a.lat, a.lng], [b.lat, b.lng], 48); for (let k = 1; k < arc.length - 1; k++) R.push({ lat: arc[k][0], lng: arc[k][1], ts: a.ts + (b.ts - a.ts) * k / (arc.length - 1), alt: null, fly: true }); }
+    if (fly) { b.alt = null; if (dd <= 30000) a.alt = null; }   // 비행기 안 높이(수천 m)는 높이 그림에서 빼요
+    R.push(Object.assign(b, { fly }));
+  }
+  let Gr = 0, Fr = 0; for (let i = 1; i < R.length; i++) { const dd = dist(R[i - 1].lat, R[i - 1].lng, R[i].lat, R[i].lng); if (R[i].fly) Fr += dd; else Gr += dd; }
+  const fs = Fr > 0 ? Math.min(1, Math.max(Gr * 0.5, 1000) / Fr) : 1;
+  const cum = P => { let d = 0, g = 0; return P.map((p, i) => { if (i) { const dd = dist(P[i - 1].lat, P[i - 1].lng, p.lat, p.lng); if (p.fly) d += dd * fs; else { d += dd; g += dd; } } return Object.assign(p, { d, g }); }); };
+  P = cum(R);
   let D = P[P.length - 1].d, off = 0;
-  const Dfull = D;
+  const Dfull = P[P.length - 1].g;
   if (hide && D > 300) {
     const cut = Math.min(500, D / 3), a = P.findIndex(p => p.d >= cut), b = P.length - 1 - [...P].reverse().findIndex(p => D - p.d >= cut);
-    if (a > 0 && b > a + 1) { off = P[a].d; P = cum(P.slice(a, b + 1).map(p => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt }))); D = P[P.length - 1].d; }
+    if (a > 0 && b > a + 1) { off = P[a].d; P = cum(P.slice(a, b + 1).map((p, i) => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt, fly: i ? p.fly : false }))); D = P[P.length - 1].d; }
   }
-  // off: 가린 앞부분 길이, Dfull: 가리기 전 전체 길이 (화면 거리 숫자는 이걸로 셈, 2026-11-13 '10km인데 9km로 나와')
-  return { P, D, off, Dfull };
+  // off: 가린 앞부분 길이, Dfull: 가리기 전 전체 길이(비행 뺀 땅 위 거리) (화면 거리 숫자는 이걸로 셈, 2026-11-13 '10km인데 9km로 나와')
+  //   fly: 비행 구간 [{a, b}] (d 기준)
+  const fly = []; for (let i = 1; i < P.length; i++) if (P[i].fly) { const l = fly[fly.length - 1]; if (l && l.b === P[i - 1].d) l.b = P[i].d; else fly.push({ a: P[i - 1].d, b: P[i].d }); }
+  return { P, D, off, Dfull, fly };
 }
+// d(영상 길 위 거리) → g(땅 위 거리), 그 반대 (비행이 없으면 둘이 같아요)
+function filmGAt(P, d) { const a = filmAt(P, d), i = a.i, q = P[Math.min(P.length - 1, i + 1)], p = P[i]; if (!q || q === p || q.d <= p.d) return p.g; return p.g + (q.g - p.g) * Math.max(0, Math.min(1, (d - p.d) / (q.d - p.d))); }
+function filmDAtG(P, g) { let lo = 0, hi = P.length - 1; if (g <= 0) return 0; if (g >= P[hi].g) return P[hi].d; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P[m].g <= g) lo = m; else hi = m; } const a = P[lo], b = P[hi]; return a.d + (b.d - a.d) * ((g - a.g) / ((b.g - a.g) || 1)); }
 function filmAt(P, d) {   // 길 위 거리 d 자리 (보간)
   if (d <= 0) return Object.assign({ i: 0 }, P[0]);
   let lo = 0, hi = P.length - 1;
@@ -5393,7 +5441,8 @@ function filmLabels(src, P, D, opt, st) {
 }
 function filmMarks(src, P, D, TOT) {   // 거리 표시(러닝·자전거): 1km, 15km 넘으면 5km
   const kmStep = src.mode === 'run' || src.mode === 'bike' ? (D >= 15000 ? 5000 : 1000) : 0, marks = [];
-  if (kmStep) for (let m = kmStep; m < TOT - 50; m += kmStep) { const dd = m * D / TOT; if (dd <= 0 || dd >= D) continue; const a = filmAt(P, dd); marks.push({ lat: a.lat, lng: a.lng, d: dd, km: m / 1000, n: `${m / 1000}km` }); }
+  const Gt = P[P.length - 1].g || D;
+  if (kmStep) for (let m = kmStep; m < TOT - 50; m += kmStep) { const dd = filmDAtG(P, m * Gt / TOT); if (dd <= 0 || dd >= D) continue; const a = filmAt(P, dd); marks.push({ lat: a.lat, lng: a.lng, d: dd, km: m / 1000, n: `${m / 1000}km` }); }
   return marks;
 }
 // 이야기 짜기: 강조할 자리(사진·장소·구간)에서 카메라가 천천히 지나가도록 '거리 ↔ 시간' 표를 만듦
@@ -5493,7 +5542,9 @@ function filmCards(photos, T) {
 }
 // 카메라: 모든 장의 카메라를 그리기 전에 미리 계산 (진행 방향이 화면 위, 앞을 넓게 보고 천천히 돎, 급한 회전·확대 제한)
 function filmCamTrack(o) {
-  const { P, D, plan, st, adv, over, zRun, pitch, N, look } = o, out = [];
+  const { P, D, plan, st, adv, over, zRun, pitch, N, look } = o, out = [], fly = o.fly || [];
+  // ✈ 비행 구간 가까이 갈수록 1에 가까워짐 → 카메라가 하늘 높이(전체 길이 보이는 높이) 올라가 곡선을 따라가요
+  const flyW = d => { let w = 0; for (const f of fly) { const m = Math.max(look, (f.b - f.a) * 0.35); w = Math.max(w, d >= f.a && d <= f.b ? 1 : d < f.a ? Math.max(0, 1 - (f.a - d) / m) : Math.max(0, 1 - (d - f.b) / m)); } return filmEase(w); };
   const camAt = d => {
     const b = filmAt(P, Math.min(D, d + look)), z = filmAt(P, Math.max(0, d - look * 0.5));
     let lat = 0, lng = 0; for (let k = -2; k <= 2; k++) { const q = filmAt(P, Math.max(0, Math.min(D, d + k * look * 0.12))); lat += q.lat / 5; lng += q.lng / 5; }
@@ -5512,9 +5563,9 @@ function filmCamTrack(o) {
     } else if (tt < runEnd) {   // 길 따라가기: 이야기 짜기 표대로 (강조할 자리에서 천천히·조금 다가감)
       const dh = plan.dOfT(tt), s = camAt(dh);
       bear = (bear + Math.max(-MAXT, Math.min(MAXT, filmAng(bear, s.br) * st.follow)) + 360) % 360;
-      const zt = zBase + st.zoomHL * Math.min(1, plan.hlAt(dh) * Math.max(adv.rh, 0.5));
-      z += Math.max(-0.012, Math.min(0.012, zt - z));
-      out.push({ center: [s.a.lng, s.a.lat], zoom: z, pitch, bearing: bear, dh });
+      const fw = fly.length ? flyW(dh) : 0, zt = (zBase + st.zoomHL * Math.min(1, plan.hlAt(dh) * Math.max(adv.rh, 0.5))) * (1 - fw) + Math.min(zBase, over.zoom + 0.4) * fw, zr = fw > 0 ? 0.09 : 0.012;
+      z += Math.max(-zr, Math.min(zr, zt - z));
+      out.push({ center: [s.a.lng, s.a.lat], zoom: z, pitch: pitch - (pitch - 35) * fw, bearing: bear, dh });
     } else {   // 끝: 하늘로 올라가 전체 길을 다시 봄
       const e = filmEase(Math.min(1, (tt - runEnd) / (plan.tOut * 0.6))), s = filmAt(P, D), o2 = Math.max(0, (tt - runEnd - plan.tOut * 0.6) / (plan.tOut * 0.4));   // 다 올라간 뒤 천천히 돌며 다가감
       out.push({ center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: z + (over.zoom - z) * e + 0.12 * o2, pitch: pitch - (pitch - 30) * e + 6 * o2, bearing: (bear + filmAng(bear, 0) * e - 7 * o2 + 360) % 360, dh: D });
@@ -5812,7 +5863,7 @@ async function filmMake(S, opt, U) {
     if (!vcodec) throw new Error('이 휴대폰은 H.264 영상 만들기를 지원하지 않아요');
     const { P, D } = path, T = opt.sec, N = Math.round(T * FILM_FPS), col = FILM_COL[src.mode] || '#FF6B4A', bike = src.mode === 'bike';
     // 화면 숫자는 0에서 시작해 끝에서 기록 보기와 같은 총 거리(TOT)가 되게 길 위 비율로 셈 (집 가리기로 앞뒤를 잘라도 끝 숫자는 총 거리, 2026-11-13 '10km인데 9km')
-    const TOT = filmTotal(src, path), shownAt = dh => Math.min(TOT, TOT * dh / D);
+    const Gt = P[P.length - 1].g || D, TOT = filmTotal(src, path), shownAt = dh => Math.min(TOT, TOT * filmGAt(P, dh) / Gt);   // 비행하는 동안은 숫자가 그대로
     const pT = P[P.length - 1].ts - P[0].ts, totMs = src.ms > 0 ? src.ms : pT, msAt = ts => pT > 0 && totMs > 0 ? Math.max(0, Math.min(totMs, totMs * (ts - P[0].ts) / pT)) : 0;
     // 오른 높이 (5점 평균, 4m 넘게 오를 때만)
     const gain = new Float64Array(P.length); { let base = null, g = 0; for (let i = 0; i < P.length; i++) { let s = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(P.length - 1, i + 2); j++) if (P[j].alt != null) { s += P[j].alt; n++; } if (n) { const a = s / n; if (base == null) base = a; else if (a > base + 4) { g += a - base; base = a; } else if (a < base) base = a; } gain[i] = g; } }
@@ -5880,7 +5931,7 @@ async function filmMake(S, opt, U) {
     // 처음·끝 전체 길: 길은 위(세로)·왼쪽(가로)에, 글자 판은 아래·오른쪽에 (2026-11-13 사용자 화담숲 캡처: 제목이 길 위에 겹침 → '마지막 장면을 확 새롭게')
     const over = map.cameraForBounds(bounds, { padding: LAND ? { top: Math.round(H * 0.16), bottom: Math.round(H * 0.16), left: Math.round(W * 0.05), right: Math.round(W * 0.47) } : { top: Math.round(H * 0.13), bottom: Math.round(H * (st.k === 'memo' ? 0.58 : 0.47)), left: Math.round(W * 0.08), right: Math.round(W * 0.08) } }) || { center: bounds.getCenter(), zoom: 12 };
     const look = Math.max(250, Math.min(2500, D * st.look));
-    const cams = filmCamTrack({ P, D, plan, st, adv, over, zRun, pitch: PITCH, N, look });
+    const cams = filmCamTrack({ P, D, plan, st, adv, over, zRun, pitch: PITCH, N, look, fly: path.fly });
     // 영상 굳히기 (조각은 모아 두었다가 ①영상만 ②음악 넣은 판 두 번 묶어요)
     const chunks = []; let encErr = null;
     const enc = new VideoEncoder({ output: (ch, meta) => chunks.push({ ch, meta }), error: e => { encErr = e; } });
@@ -7319,6 +7370,7 @@ async function viewMyOne(t) {
     !x.album && ['trek', 'hike', 'daily', 'date', 'travel'].includes(M.k) && stepN >= 200 ? ['걸음 수', stepN.toLocaleString(), '보'] : null,
     !x.album && ['trek', 'hike', 'daily', 'date', 'travel'].includes(M.k) && stepN >= 200 && st.walk / stepN >= .3 && st.walk / stepN <= 2 ? ['평균 보폭', Math.round(st.walk / stepN * 100), 'cm'] : null,
     st.d - st.walk > 300 ? ['전체 이동', fmtDist(st.d)] : null,
+    st.fly > 0 ? ['✈ 비행', `${fmtDist(st.fly)} · 약 ${fmtDur(st.flyMs)}`] : null,
     stays ? ['들른 곳', stays, '곳'] : null, stars ? ['별표', stars, '곳'] : null]);
   const kmc = x.album || M.k === 'pgolf' ? null : kmCard(kmRows(t, tr, trackModes(tr, M.car), M.k === 'run'), { elev: ELEV_MODES.includes(M.k) || (ev && ev.gain >= 30), run: M.k === 'run', bike: M.k === 'bike' });
   const wa = M.k === 'run' ? watchAnalysis(t) : null;
@@ -10429,7 +10481,7 @@ function viewWalk() {
       // 걸은 길은 주황 실선, 차로 간 길은 회색 점선
       if (!line) line = L.layerGroup().addTo(map);
       line.clearLayers();
-      modeRuns(tr.map(q => [q[0], q[1]]), trackModes(tr, m.car)).forEach(r => L.polyline(r.pts, RUN_STYLE[r.k]).addTo(line));
+      { const runs = modeRuns(tr.map(q => [q[0], q[1]]), trackModes(tr, m.car)); runs.forEach(r => L.polyline(r.pts, RUN_STYLE[r.k]).addTo(line)); flyMarks(line, runs); }
       const T = m.k === 'trek' && id ? ls.get('walkTarget:' + id, null) : null;
       if (T && T.dest) {
         const at = lastFix ? [lastFix.lat, lastFix.lng] : tr.length ? [tr[tr.length - 1][0], tr[tr.length - 1][1]] : null;
