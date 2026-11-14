@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-95-blog';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-96-link';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📝 블로그 글 주소로 여행·등산 계획 만들기 · 🗓 여행 계획 → 📋 일정·블로그 글로 만들기에 주소를 붙여 넣으면 돼요 · 등산 후기면 들머리 → ⛰ 정상 → 하산 차례로, ▶ 이 코스로 등산 시작 · 🔎 글에 없는 것은 앱이 찾아 채우고(정상 해발·높이·주차장·정류장·화장실·걸리는 시간·해 지는 시각) 글과 어긋나면 ⚠로 알려요 · 🎬 영상을 못 만들 때 까닭을 알려 줘요 · 계획 영상인데 계획을 못 찾으면, 위치 있는 장소가 모자라면, 고른 기록이 너무 짧으면 그렇게 적어요 · 계획 영상이 다른 기록으로 잘못 넘어가지 않게 고쳤어요';
+const UI_NOTES = '👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6934,16 +6934,35 @@ async function planFromLink(hash) {   // #ps=번호.열쇠 → 계획
   const o = JSON.parse(raw), k = await crypto.subtle.importKey('raw', urlb64(m[2]), 'AES-GCM', false, ['decrypt']);
   return planUnpack(new TextDecoder().decode(await openBytes(o.enc, k)));
 }
-async function planShare(p) {
+async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는데 너무 길다, 매력도 없고' → 날마다 목록 대신 짧은 초대 글 + 카카오톡이면 여행지 사진 카드
   if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }   // 받은 사람이 같은 여행 방에 들어오게
-  toast('🔗 계획 링크를 만드는 중…');
-  const url = await planLink(p);
-  const lines = [`🗓 ${p.name}`, `${planNights(p)}${p.start ? ' · ' + planDayLabel(p, 0) + ' 출발' : ''}`, ''];
-  for (let d = 0; d < p.nd; d++) { lines.push(`[${d + 1}일차${p.start ? ' ' + planDayLabel(p, d) : ''}]`); for (const x of planItems(p, d)) lines.push(`${x.t ? x.t + ' ' : ''}${PLAN_KINDS[x.k][0]} ${x.n}`); lines.push(''); }
-  lines.push('👉 지도와 함께 보기', url);
-  const text = lines.join('\n');
-  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (/abort|cancel/i.test(String(e && (e.name + e.message)))) return; }
-  try { await navigator.clipboard.writeText(text); toast('일정 글과 링크를 복사했어요 · 카톡 입력칸을 길게 눌러 붙여 넣으세요', false, 6000); } catch { prompt('이 글을 복사해 보내세요', text); }
+  const sh = s => String(s || '').replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  const top = [], seen = new Set();
+  for (const x of (p.it || []).filter(x => x.k === 'spot' || x.k === 'show')) {
+    for (const n0 of sh(x.n).split(/\s*[+·,\/]\s*/)) { const n = n0.replace(/VIP.*$/, '').trim(); if (n.length < 2 || n.length > 12 || seen.has(n) || /이동|공항|호텔|마사지/.test(n)) continue; seen.add(n); top.push({ n, d: x.d }); }
+  }
+  const pick = [];   // 날마다 하나씩 돌아가며(첫날 것만 몰리지 않게)
+  for (let r = 0; pick.length < 4 && r < 6; r++) for (let d = 0; d < p.nd && pick.length < 4; d++) { const z = top.filter(y => y.d === d)[r]; if (z) pick.push(z.n); }
+  const d0 = planDate(p, 0), d1 = planDate(p, p.nd - 1);
+  const md = x => x ? `${x.getMonth() + 1}월 ${x.getDate()}일(${'일월화수목금토'[x.getDay()]})` : '';
+  const when = d0 ? `${md(d0)}${p.nd > 1 ? ' ~ ' + (d1.getMonth() === d0.getMonth() ? `${d1.getDate()}일(${'일월화수목금토'[d1.getDay()]})` : md(d1)) : ''}` : '';
+  const title = `✈️ ${sh(p.name).replace(/\s*·\s*하나투어$/, '')} 함께 가요!`;
+  const desc = [[planNights(p), when].filter(Boolean).join(' · '), pick.length ? '📍 ' + pick.join(' · ') : ''].filter(Boolean).join('\n');
+  const textOf = url => [title, desc, '', '👉 일정 · 지도 · 여행 방 열기', url].join('\n');
+  const hero = ls.get('planHero:' + p.id, null), img = hero && /^https:/.test(hero.u) ? hero.u : APP_BASE.replace(/[^/]*$/, '') + 'icon-512.png';
+  const st = el('div', { class: 'sub', style: 'font-weight:700', text: '🔗 초대 링크를 만드는 중…' });
+  let url = null;
+  const kb = kakaoOK() ? kakaoBtn(() => { if (!url) return; try { const r = Kakao.Share.sendDefault({ objectType: 'feed', content: { title, description: desc, imageUrl: img, imageWidth: 1280, imageHeight: 853, link: { mobileWebUrl: url, webUrl: url } }, buttons: [{ title: '일정·여행 방 열기', link: { mobileWebUrl: url, webUrl: url } }] }); if (r && r.catch) r.catch(e => { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요 (' + String(e && e.message || e).slice(0, 60) + ')'; }); bg.remove(); } catch (e) { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요'; } }, '카카오톡으로 초대하기') : null;
+  const other = el('button', { class: 'btn line full', text: kb ? '문자 · 다른 앱으로 보내기' : '📤 초대 보내기', onclick: async () => { if (!url) return; const text = textOf(url);
+    try { if (navigator.share) { await navigator.share({ text }); bg.remove(); return; } } catch (e) { if (/abort|cancel/i.test(String(e && (e.name + e.message)))) return; }
+    try { await navigator.clipboard.writeText(text); toast('초대 글을 복사했어요 · 카톡 입력칸을 길게 눌러 붙여 넣으세요', false, 6000); bg.remove(); } catch { prompt('이 글을 복사해 보내세요', text); } } });
+  const prev = el('div', { style: 'border-radius:14px;overflow:hidden;background:#16273B;color:#fff' },
+    el('div', { style: `height:140px;background:#25415F url("${img.replace(/"/g, '%22')}") center/cover` }),
+    el('div', { style: 'padding:10px 12px' }, el('div', { style: 'font-weight:800;font-size:16px', text: title }), el('div', { style: 'white-space:pre-line;font-size:13px;color:#9FB0C2;margin-top:4px', text: desc })));
+  const bg = labSheet('👋 함께 갈 사람 초대', el('div', { class: 'sub', text: '받은 사람은 링크를 누르면 일정·지도·여행 방에 바로 들어와요. 로그인은 필요 없어요.' }), prev, st, ...(kb ? [kb] : []), other);
+  [kb, other].forEach(b => b && (b.disabled = true));
+  try { url = await planLink(p); st.textContent = '✅ 초대 링크가 준비됐어요'; [kb, other].forEach(b => b && (b.disabled = false)); }
+  catch (e) { st.textContent = '⚠ 링크를 만들지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'; }
 }
 // ---------- 여행사 일정 읽기 ----------
 function planBasicParse(text) {   // AI 없이: 'n일차'·'DAY n'로 날을 나누고, 줄마다 한 곳
@@ -7421,6 +7440,22 @@ function planHikeCard(p, d) {
     el('button', { class: 'btn primary full', text: '▶ 이 코스로 등산 시작', onclick: () => planHikeGo(p, d) }),
     el('div', { class: 'dt', style: 'font-size:12px', text: `지도에 이 계획의 장소를 차례로 이은 파란 선이 깔리고${pk.length ? ', 첫 정상이 목표 지점이 돼요(닿으면 알려 줘요)' : ''}. 선은 장소 사이 직선이라 실제 등산로와 달라요 · 길은 이정표를 따라 주세요.` }));
 }
+// 판 -96: 받은 계획·여행 방 링크를 붙여 넣어 이 앱(또는 이 브라우저)에 넣기 — 카톡에서 링크를 누르면 앱이 아니라 브라우저로 열려서(사용자 '난 앱에서 열면 안돼?')
+function planLinkOpen(text) {
+  const t = String(text || ''), h = (/#(?:ps|pl)=[A-Za-z0-9_.\-]+/.exec(t) || [])[0];
+  if (h && /plan=1/.test(t)) { history.replaceState(null, '', './?plan=1' + h); viewPlan(); return true; }
+  const r = /#tr=([A-Za-z0-9]+)(?:&n=[^\s]*)?/.exec(t);
+  if (r && /troom=1/.test(t)) { location.href = './?troom=1' + r[0]; return true; }
+  return false;
+}
+function planLinkSheet() {
+  const inp = el('textarea', { rows: 3, placeholder: '카톡으로 받은 계획 링크(https://gilbertgo.github.io/mapdiary/?plan=1#ps=…)를 길게 눌러 붙여 넣으세요', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
+  const st = el('div', { class: 'sub', style: 'font-weight:700' });
+  const go = () => { if (planLinkOpen(inp.value)) bg.remove(); else st.textContent = '⚠ 계획 링크가 아니에요 · 끝부분(# 뒤)까지 그대로 붙여 넣어 주세요'; };
+  const paste = navigator.clipboard && navigator.clipboard.readText ? el('button', { class: 'btn line full', text: '📋 복사한 링크 바로 붙여 넣기', onclick: async () => { try { inp.value = await navigator.clipboard.readText(); go(); } catch { st.textContent = '붙여 넣기를 못 했어요 · 칸을 길게 눌러 붙여 넣어 주세요'; } } }) : null;
+  const bg = labSheet('🔗 받은 계획 링크 넣기', el('div', { class: 'sub', text: '가족이 보낸 여행 계획 링크를 넣으면 그 계획과 여행 방이 여기(이 앱)에 들어와요. 카톡에서 링크를 길게 눌러 \'복사\'한 뒤 넣어 주세요.' }), paste, inp, st,
+    el('button', { class: 'btn primary full', text: '넣기', onclick: go }));
+}
 function planImportSheet() {
   const ta = el('textarea', { rows: 8, placeholder: '블로그 글 주소(여행·등산 후기)나 하나투어 상품 주소를 붙여 넣거나, 여행사 일정표의 글을 길게 눌러 복사해 붙여 넣으세요 (1일차, 2일차…가 들어 있으면 돼요)', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line)' });
   let file = null;
@@ -7431,6 +7466,7 @@ function planImportSheet() {
   const run = async ai => {
     const text = ta.value.trim();
     if (!text && !file) return say('일정 글을 붙여 넣거나 캡처 사진·PDF를 넣어 주세요');
+    if (!file && planLinkOpen(text)) { bg.remove(); return; }   // 받은 계획·여행 방 링크
     const hana = !file && planHanaCode(text);
     if (hana) {
       try { const p = await planHanaRun(hana, say); bg.remove(); location.href = './?plan=1&p=' + encodeURIComponent(p.id); }
@@ -7513,6 +7549,7 @@ async function viewPlan() {
     tvHero(null, { sm: 1, title: '🗓 여행 계획', d: 'MY TRIPS' }),
     el('div', { class: 'sub', text: '여행 전에 날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요.' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
+    el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
@@ -8325,7 +8362,7 @@ function viewPlanOne(id) {
     el('div', { class: 'tv-acts' },
       el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
       (() => { const k = planToday(p); return k != null && k >= -30 && k < p.nd ? el('a', { class: 'btn primary small', href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), text: k >= 0 ? '📅 오늘 화면' : '📅 여행 화면' }) : null; })(),
-      el('button', { class: 'btn line small', text: '📤 일정 보내기', onclick: () => planShare(p) }),
+      el('button', { class: 'btn line small', text: '👋 함께 갈 사람 초대', onclick: () => planShare(p) }),
       (() => { const miss = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length; if (!miss) return null;
         const bt = el('button', { class: 'btn line small', text: `📍 위치 찾기 · ${miss}곳`, onclick: async () => {
           if (bt.disabled) return; bt.disabled = true; const say = t => { bt.textContent = t.slice(0, 40); };
