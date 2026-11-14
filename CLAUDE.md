@@ -289,6 +289,12 @@
 ## 판 -110 계획 지도 걷는 길 안 그려짐 (2026-11-15, 사용자 인왕산 계획 캡처 '경로 제대로 안그려지네')
 - 앱에서 길이 하나도 안 받아짐(목록이 모두 '직선 …'): 앱은 CapacitorHttp만 썼는데(기본 UA라 막혔을 것으로 봄) → `planRtJson`이 웹뷰 fetch 먼저(OSRM·Valhalla 모두 CORS 됨, 컴퓨터 앱 브라우저로 확인), 안 되면 CapacitorHttp + User-Agent. OSRM 실패면 Valhalla `valhalla1.openstreetmap.de` pedestrian(`planPoly6`로 polyline6 풀기). 위치 없는 장소는 건너뛰고 이음(예전엔 그 앞뒤를 못 받음). 실패한 사이는 5분 쉬고 다시(`planRoutes.st`)
 
+## 판 -111 계획 미리 보기 영상이 실제 길로 (2026-11-15, 사용자 '영상에서 길이 없는 데로 차가 이동하고, 도보여행도 그래')
+- 까닭: `planFilmSrc`가 장소 사이를 직선으로 잇고, 구경하는 곳에서는 반지름 70m 원을 돌았음(건물·숲 위로)
+- `planFilmRoutes(p, say)`: 영상 화면을 열 때(`S.rtP`) 차례로 이어지는 두 곳마다 실제 길 받기 — 1.5km 아래 도보(OSRM routed-foot → Valhalla pedestrian, 계획 지도와 같은 `planRt` 키), 1.5~100km 차(OSRM routed-car → Valhalla auto, 키 'car:'+키, 400점까지 솎음), 100km 넘으면 비행이라 안 받음. 직선 4배+5km(도보 1.5km) 넘게 돌면 버림, 못 받으면 5분 쉬고 그 사이는 직선. `planRtGet(a, b, car)`. `filmMake`는 받기가 끝날 때까지 기다린 뒤 만듦, 진행 글 '🛣 장소 사이 실제 길 n/m곳 받았어요'
+- `planFilmSrc` `go()`가 받은 길(폴리라인)을 따라 15m(차 120m)마다 점, 구경하는 곳은 그 자리에 머묾(원 돌기 없앰)
+- 기록으로 만든 영상은 원래 GPS 길 그대로(바꾸지 않음). 시험 scratchpad `prt.js`(가짜 OSRM L자 길 → 영상 길이 L자, 대각선 점 0)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
