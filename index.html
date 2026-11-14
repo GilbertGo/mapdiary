@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-85-findloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-86-hanja';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📍 여행 계획에 위치 찾기 단추가 생겼어요 · 위치가 없거나 대략인 곳을 AI와 지도 자료로 다시 찾아요(Claude 열쇠가 있으면 더 정확) · 식당 이름이 없는 식사·마사지는 그날 앞뒤 장소 사이에 대략으로 놓아요';
+const UI_NOTES = '🈶 중국 여행 계획 지도의 지명을 여행사처럼 우리 한자 읽기로 보여 줘요(장자제 → 장가계, 우링위안 → 무릉원) · 하나투어 주소로 만든 일정은 여행사가 쓴 이름·용어 그대로(중식 특식·석식 등)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6583,7 +6583,7 @@ async function planUnpack(s) {
   const o = JSON.parse(new TextDecoder().decode(u)), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
   const nd = Math.max(1, Math.min(30, o.d | 0));
   return { id: planNewId(), name: str(o.n, 60) || '여행 계획', start: /^\d{4}-\d{2}-\d{2}$/.test(o.s) ? o.s : '', nd, at: Date.now(),
-    it: (Array.isArray(o.i) ? o.i : []).slice(0, 300).map(a => ({ id: planNewId(), d: Math.max(0, Math.min(nd - 1, a[0] | 0)), t: /^\d{1,2}:\d{2}$/.test(a[1]) ? a[1] : '', n: str(a[2], 60) || '장소',
+    it: (Array.isArray(o.i) ? o.i : []).slice(0, 300).map(a => ({ id: planNewId(), d: Math.max(0, Math.min(nd - 1, a[0] | 0)), t: /^\d{1,2}:\d{2}$/.test(a[1]) ? a[1] : '', n: str(a[2], 80) || '장소',
       k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0 })) };
 }
 async function planShare(p) {
@@ -6622,7 +6622,7 @@ async function planAiRead(text, file, say) {   // 넣어 둔 Claude 열쇠로: �
     else text = (text ? text + '\n' : '') + await file.text();
   }
   content.push({ type: 'text', text: `아래는 여행사 여행 일정표예요. 날마다 가는 곳을 차례대로 뽑아 JSON 하나로만 답하세요.
-규칙: 일정표에 적힌 것만. 지어내지 말 것. 관광지·식사(무엇을 먹는지)·숙소·비행·공연/체험·긴 이동을 각각 한 줄로. 같은 곳을 두 번 쓰지 말 것. 시각이 적혀 있으면 HH:MM.
+규칙: 일정표에 적힌 것만. 지어내지 말 것. n(이름)은 일정표에 적힌 글자 그대로(지명 표기·띄어쓰기·용어를 바꾸거나 번역하지 말 것, 예 '장가계'를 '장자제'로 바꾸지 말 것). 관광지·식사(무엇을 먹는지)·숙소·비행·공연/체험·긴 이동을 각각 한 줄로. 같은 곳을 두 번 쓰지 말 것. 시각이 적혀 있으면 HH:MM.
 q는 지도에서 찾을 검색어(영어, 도시 이름 포함, 예 "Tianmen Mountain, Zhangjiajie"), lat/lng는 그 장소의 대략 좌표(모르면 null).
 형식: {"name":"여행 이름","start":"YYYY-MM-DD 또는 빈칸","days":[{"items":[{"t":"","n":"한국어 이름","k":"spot|food|stay|fly|show|move","m":"한 줄 메모(메뉴·특징)","q":"","lat":null,"lng":null}]}]}
 ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
@@ -6682,7 +6682,6 @@ function planFromHana(j) {
   const city = (air[0] && air[0].arrAptCityNm) || '';
   const it = [], seen = new Set(), nd = days.length;
   const add = (d, x) => { const key = d + '|' + x.n; if (!x.n || seen.has(key)) return; seen.add(key); it.push(Object.assign({ id: planNewId(), d, t: '', m: '', lat: null, lng: null }, x)); };
-  const MEAL = { 조식: '아침', 중식: '점심', 석식: '저녁' };
   // 비행: 출발 날·도착 날(depBassFlxbDt·arrBassFlxbDt = 첫날부터 며칠째), 일정의 '도시간이동' 자리에 차례로 놓음
   const fq = {}; const fpush = (d, x) => (fq[d] = fq[d] || []).push(x);
   air.forEach(a => {
@@ -6699,29 +6698,24 @@ function planFromHana(j) {
       if (c === '004') {
         const mt = clean(m.mealTypeNm), cont = clean(m.mealCont), card = clean(m.cardNm);
         if (!cont && /호텔식|기내식|자유식/.test(mt) && !/특식/.test(m.dtlMealDvNm || '')) continue;
-        const what = cont || card.replace(/^.*?['‘“"](.+?)['’”"].*$/, '$1') || mt || '식사';
-        add(d, { n: `${MEAL[String(m.dtlMealDvNm || '').split(' ')[0]] || '식사'} · ${what}`.slice(0, 60), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '' });
+        const what = cont || card || mt || '식사';   // 여행사 글 그대로 (2026-11-14 사용자 '지명이나 용어는 여행사에서 안내한 것과 동일하게')
+        add(d, { n: `${clean(m.dtlMealDvNm) || '식사'} · ${what}`.slice(0, 80), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '' });
         continue;
       }
       if (c !== '001' && c !== '005') continue;
       const L = Array.isArray(m.cmsInfoList) && m.cmsInfoList.length ? m.cmsInfoList : [{ cmsCntntNm: m.cardNm, cmsCntntCont: m.memoCont }];
       for (const ci of L) {
-        let nm = clean(ci.cmsCntntNm || m.cardNm).replace(/\[[^\]]*\]/g, '').replace(/\s*VIP\s*(좌석|석|통로)/g, '').trim();
-        if (!nm || /출입국|입국 정보|코스$/.test(nm) || nm === city) continue;
-        const parts = / \+ ?|\+ /.test(nm) ? nm.split(/\s*\+\s*/) : [nm];
-        parts.forEach(pt => {
-          pt = pt.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*(코스|포함|통로)[^)]*\)/g, '').split('+')[0].replace(/^하나투어 전용\s*/, '').trim();
-          if (pt.length < 2 || pt === city) return;
-          const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(pt) ? 'show' : /다방|카페|커피/.test(pt) ? 'food' : 'spot';
-          add(d, { n: pt.slice(0, 60), k, m: first(ci.cmsCntntCont || m.memoCont) });
-        });
+        const nm = clean(ci.cmsCntntNm || m.cardNm);   // 여행사가 쓴 이름 그대로(나누거나 줄이지 않음)
+        if (!nm || /출입국|입국 정보|코스$/.test(nm) || nm === city) continue;   // 안내 머리글(…코스·출입국·도시 소개)만 뺌
+        const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(nm) ? 'show' : /다방|카페|커피/.test(nm) ? 'food' : 'spot';
+        add(d, { n: nm.slice(0, 80), k, m: first(ci.cmsCntntCont || m.memoCont) });
       }
     }
     (fq[d] || []).splice(0).forEach(f => add(d, f));   // 자리를 못 찾은 비행은 그날 끝에
     const H = Array.isArray(s.htlInfoList) ? s.htlInfoList : [];
     if (H.length && d < nd - 1) {
       const h = H[0];
-      add(d, { n: `${h.htlKoNm || h.htlEnNm}${H.length > 1 ? ` 등 ${H.length}곳 중 한 곳` : ''}`.slice(0, 60), k: 'stay', m: H.length > 1 ? '호텔은 출발 전에 정해져요 · ' + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '' });
+      add(d, { n: `${h.htlKoNm || h.htlEnNm}`.slice(0, 80), k: 'stay', m: H.length > 1 ? `예정 호텔 ${H.length}곳 중 한 곳 · 출발 전 확정 · ` + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '' });
     }
   });
   return { name: `${city || '여행'} ${nd > 1 ? `${nd - 1}박 ${nd}일` : '당일'}`, start, nd, it };
@@ -6901,16 +6895,61 @@ async function koMapStyle() {
   const nm = keep => ['case', ['has', 'name:ko'], ['get', 'name:ko'], ['has', 'name:en'], ['get', 'name:en'],
     ['all', ['has', 'name_en'], ['!=', ['get', 'name_en'], ['get', 'name']]], ['get', 'name_en'], ['has', 'name:latin'], ['get', 'name:latin'], keep ? ['get', 'name'] : ''];
   const st = await r.json();
-  for (const l of st.layers || []) { const tf = l.layout && l.layout['text-field']; if (tf && /name/.test(JSON.stringify(tf))) l.layout['text-field'] = nm(/label_(city|town|state|country)|airport/.test(l.id)); }
+  for (const l of st.layers || []) { const tf = l.layout && l.layout['text-field']; if (tf && /name/.test(JSON.stringify(tf))) { l.layout['text-field'] = nm(/label_(city|town|state|country)|airport/.test(l.id)); l.metadata = Object.assign({}, l.metadata, { koName: 1 }); } }
   koMapStyle.s = st; return JSON.parse(JSON.stringify(st));
 }
-async function koMapLayer() {
+// 🈶 중국·대만·홍콩 지명은 여행사처럼 우리 한자 읽기로 (2026-11-14 사용자 '지명이나 용어는 여행사에서 안내한 것과 동일하게'):
+//   张家界 → 장가계, 武陵源 → 무릉원 (OSM 한글 이름은 장자제·우링위안처럼 중국어 소리라 여행사 글과 달라서)
+//   표 hanja-ko.txt(간체·번체 약 8,800자 → 한글, 둘째 줄은 첫 글자가 아닐 때 읽기(두음 법칙): opencc 간→번 + hanja 읽기로 만든 것)
+//   지도에 보이는 이름만 그때그때 바꿔 'match' 식으로 넣어요(새로 보이는 이름이 생기면 다시)
+function koHanjaLoad() {
+  return koHanjaLoad.p || (koHanjaLoad.p = fetchT(APP_BASE.replace(/[^/]*$/, '') + 'hanja-ko.txt', {}, 15000).then(r => r.text()).then(t => {
+    const [a, b] = t.split('\n'), A = new Map(), B = new Map(), ca = [...(a || '')], cb = [...(b || '')];
+    for (let i = 0; i + 1 < ca.length; i += 2) A.set(ca[i], ca[i + 1]); for (let i = 0; i + 1 < cb.length; i += 2) B.set(cb[i], cb[i + 1]);
+    return { A, B };
+  }).catch(() => (koHanjaLoad.p = null)));
+}
+function koHanjaRead(T, n) {
+  n = String(n).replace(/国际机场|國際機場/g, '\u0001').replace(/机场|機場/g, '\u0002').replace(/火车站|火車站|高铁站|高鐵站/g, '\u0003');
+  let out = '', first = true;
+  for (const ch of n) {
+    if (ch === '\u0001') { out += '국제공항'; first = false; continue; } if (ch === '\u0002') { out += '공항'; first = false; continue; } if (ch === '\u0003') { out += '역'; first = false; continue; }
+    const r = (!first && T.B.get(ch)) || T.A.get(ch); if (r) { out += r; first = false; } else { out += ch; first = !/[\u4e00-\u9fff]/.test(ch) ? true : false; }
+  }
+  return /[\u4e00-\u9fff]/.test(out) ? null : out;   // 못 읽은 글자가 남으면 쓰지 않음
+}
+function koHanjaWire(mm) {
+  const fb = {}, layers = mm.getStyle().layers.filter(l => l.metadata && l.metadata.koName);
+  layers.forEach(l => { fb[l.id] = l.layout['text-field']; });
+  const dict = new Map(); let busy = 0, T = null;
+  const run = async () => {
+    if (busy) return; busy = 1;
+    try {
+      T = T || await koHanjaLoad(); if (!T) return;
+      let add = 0;
+      for (const sl of ['place', 'poi', 'water_name', 'transportation_name', 'aerodrome_label', 'mountain_peak', 'park']) {
+        let fs = []; try { fs = mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }); } catch {}
+        for (const f of fs) { const n = f.properties && f.properties.name; if (!n || dict.has(n) || !/[\u4e00-\u9fff]/.test(n)) continue; dict.set(n, koHanjaRead(T, n)); add++; }
+      }
+      if (!add) return;
+      const pairs = []; for (const [k, v] of dict) if (v) pairs.push(k, v);
+      if (!pairs.length) return;
+      for (const l of layers) try { mm.setLayoutProperty(l.id, 'text-field', ['match', ['get', 'name'], ...pairs, fb[l.id]]); } catch {}
+    } finally { busy = 0; }
+  };
+  let tm = 0; mm.on('idle', () => { clearTimeout(tm); tm = setTimeout(run, 300); });
+}
+async function koMapLayer(hanja) {
   try {
     await filmLoad(FILM_LIB.css, true); await filmLoad(FILM_LIB.gl); await filmLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
-    return L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
+    const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
+    if (hanja) { koHanjaLoad(); ly.once('add', () => { const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm); else mm.once('load', () => koHanjaWire(mm)); }; go(); }); }
+    return ly;
   } catch { return null; }
 }
+// 중국·대만·홍콩·마카오 안인지 (일본 한자 지명은 일본 소리로 써서 빼요)
+function koInHanzi(lat, lng) { return planInChina(lat, lng) && !(lng > 128.5 && lat < 45.5); }
 function viewPlanOne(id) {
   const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
   p.it = p.it || [];
@@ -7028,7 +7067,7 @@ function viewPlanOne(id) {
   setTimeout(() => {
     map = L.map(mapEl); const base = mdTileLayer().addTo(map); drawMap();
     // 나라 밖 계획이면 지도 이름을 한글로(없으면 영어) — 기본 지도(OSM)는 그 나라 글자(중국은 한자)라서
-    if (p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132))) koMapLayer().then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
+    if (p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132))) koMapLayer(p.it.some(x => Number.isFinite(x.lat) && koInHanzi(x.lat, x.lng))).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
   }, 30);
 }
 route();
