@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-86-hanja';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-87-prep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🈶 중국 여행 계획 지도의 지명을 여행사처럼 우리 한자 읽기로 보여 줘요(장자제 → 장가계, 우링위안 → 무릉원) · 하나투어 주소로 만든 일정은 여행사가 쓴 이름·용어 그대로(중식 특식·석식 등)';
+const UI_NOTES = '🧳 여행 계획 맨 위에 여행 준비가 생겼어요(출발 미팅, 날마다 날씨와 산 위 기온, 입국신고서, 옷, 챙길 것, 음식 걱정 팁, 로밍, 급할 때 연락처) · 🗣 식당·택시에서 크게 보여 주는 중국어 · 📖 장소를 누르면 여행사 안내가 그대로 · 지명은 장가계·무릉원·천문산으로 통일';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6572,7 +6572,8 @@ function planGap(a, b) {   // 두 곳 사이: 직선거리 + 대략 걸리는 �
 }
 // ---------- 링크로 보내기 (서버 없이 링크 안에) ----------
 async function planPack(p) {
-  const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0]) };
+  const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0, x.x || '']) };
+  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info;
   const raw = new TextEncoder().encode(JSON.stringify(o));
   if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
   return 'j' + b64url(raw);
@@ -6584,10 +6585,32 @@ async function planUnpack(s) {
   const nd = Math.max(1, Math.min(30, o.d | 0));
   return { id: planNewId(), name: str(o.n, 60) || '여행 계획', start: /^\d{4}-\d{2}-\d{2}$/.test(o.s) ? o.s : '', nd, at: Date.now(),
     it: (Array.isArray(o.i) ? o.i : []).slice(0, 300).map(a => ({ id: planNewId(), d: Math.max(0, Math.min(nd - 1, a[0] | 0)), t: /^\d{1,2}:\d{2}$/.test(a[1]) ? a[1] : '', n: str(a[2], 80) || '장소',
-      k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0 })) };
+      k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0, x: str(a[8], 800) })),
+    meet: o.mt && typeof o.mt === 'object' ? { d: /^\d{4}-\d{2}-\d{2}$/.test(o.mt.d) ? o.mt.d : '', t: /^\d{1,2}:\d{2}$/.test(o.mt.t) ? o.mt.t : '', n: str(o.mt.n, 200) } : null,
+    info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x) };
+}
+// 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
+//   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
+async function planLink(p) {
+  const packed = await planPack(p);
+  try {
+    const k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']), id = rid(10);
+    await pub(`allhere/v1/share/${id}`, { v: 4, plan: 1, enc: await sealBytes(new TextEncoder().encode(packed), k) });
+    return APP_BASE + '?plan=1#ps=' + id + '.' + b64url(new Uint8Array(await crypto.subtle.exportKey('raw', k)));
+  } catch {
+    const lite = Object.assign({}, p, { info: null, it: (p.it || []).map(x => Object.assign({}, x, { x: '' })) });
+    return APP_BASE + '?plan=1#pl=' + await planPack(lite);
+  }
+}
+async function planFromLink(hash) {   // #ps=번호.열쇠 → 계획
+  const m = /#ps=([a-z0-9]{6,20})\.([A-Za-z0-9_-]+)/.exec(hash); if (!m) return null;
+  const raw = await fsGet('shares/' + m[1]); if (raw == null) throw new Error(raw === null ? 'gone' : 'net');
+  const o = JSON.parse(raw), k = await crypto.subtle.importKey('raw', urlb64(m[2]), 'AES-GCM', false, ['decrypt']);
+  return planUnpack(new TextDecoder().decode(await openBytes(o.enc, k)));
 }
 async function planShare(p) {
-  const url = APP_BASE + '?plan=1#pl=' + await planPack(p);
+  toast('🔗 계획 링크를 만드는 중…');
+  const url = await planLink(p);
   const lines = [`🗓 ${p.name}`, `${planNights(p)}${p.start ? ' · ' + planDayLabel(p, 0) + ' 출발' : ''}`, ''];
   for (let d = 0; d < p.nd; d++) { lines.push(`[${d + 1}일차${p.start ? ' ' + planDayLabel(p, d) : ''}]`); for (const x of planItems(p, d)) lines.push(`${x.t ? x.t + ' ' : ''}${PLAN_KINDS[x.k][0]} ${x.n}`); lines.push(''); }
   lines.push('👉 지도와 함께 보기', url);
@@ -6677,6 +6700,10 @@ function planFromHana(j) {
   const s0 = String(days[0].strtDt || ''), start = /^\d{8}$/.test(s0) ? `${s0.slice(0, 4)}-${s0.slice(4, 6)}-${s0.slice(6, 8)}` : '';
   const clean = s => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&amp;/g, ' ').replace(/[◆◇■□☞※★☆]/g, '').replace(/\((특전 기본형|특전)\)/g, '').replace(/\s+/g, ' ').trim();
   const first = s => (clean(s).split(/(?<=[.!?])\s|(?<=니다)\s|(?<=요)\s/)[0] || '').slice(0, 90);
+  // 여행사 설명 그대로(줄바꿈 살림) — 장소를 누르면 '📖 여행사 안내'로 보여요
+  const full = (s, n = 700) => String(s || '').replace(/<br\s*\/?>|<\/p>|<\/li>|<\/div>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .split('\n').map(l => l.replace(/[ \t\u3000]+/g, ' ').trim()).filter(Boolean).join('\n').slice(0, n);
+  const info = [];
   const hm = v => /^\d{4}$/.test(String(v || '')) ? `${String(v).slice(0, 2)}:${String(v).slice(2)}` : '';
   const air = Array.isArray(D.pkgAirSeqList) ? D.pkgAirSeqList : [];
   const city = (air[0] && air[0].arrAptCityNm) || '';
@@ -6699,16 +6726,18 @@ function planFromHana(j) {
         const mt = clean(m.mealTypeNm), cont = clean(m.mealCont), card = clean(m.cardNm);
         if (!cont && /호텔식|기내식|자유식/.test(mt) && !/특식/.test(m.dtlMealDvNm || '')) continue;
         const what = cont || card || mt || '식사';   // 여행사 글 그대로 (2026-11-14 사용자 '지명이나 용어는 여행사에서 안내한 것과 동일하게')
-        add(d, { n: `${clean(m.dtlMealDvNm) || '식사'} · ${what}`.slice(0, 80), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '' });
+        const mi = Array.isArray(m.cmsInfoList) && m.cmsInfoList[0] ? full(m.cmsInfoList[0].cmsCntntCont) : '';
+        add(d, { n: `${clean(m.dtlMealDvNm) || '식사'} · ${what}`.slice(0, 80), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '', x: mi });
         continue;
       }
       if (c !== '001' && c !== '005') continue;
       const L = Array.isArray(m.cmsInfoList) && m.cmsInfoList.length ? m.cmsInfoList : [{ cmsCntntNm: m.cardNm, cmsCntntCont: m.memoCont }];
       for (const ci of L) {
         const nm = clean(ci.cmsCntntNm || m.cardNm);   // 여행사가 쓴 이름 그대로(나누거나 줄이지 않음)
-        if (!nm || /출입국|입국 정보|코스$/.test(nm) || nm === city) continue;   // 안내 머리글(…코스·출입국·도시 소개)만 뺌
+        if (/출입국|입국 정보/.test(nm)) { const t = full(ci.cmsCntntCont, 2500); if (t && !info.some(z => z.h === nm)) info.push({ h: nm, x: t }); continue; }   // 출입국 안내는 '🧳 여행 준비'에
+        if (!nm || /코스$/.test(nm) || nm === city) continue;   // 안내 머리글(…코스·도시 소개)만 뺌
         const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(nm) ? 'show' : /다방|카페|커피/.test(nm) ? 'food' : 'spot';
-        add(d, { n: nm.slice(0, 80), k, m: first(ci.cmsCntntCont || m.memoCont) });
+        add(d, { n: nm.slice(0, 80), k, m: first(ci.cmsCntntCont || m.memoCont), x: full(ci.cmsCntntCont || m.memoCont) });
       }
     }
     (fq[d] || []).splice(0).forEach(f => add(d, f));   // 자리를 못 찾은 비행은 그날 끝에
@@ -6718,7 +6747,9 @@ function planFromHana(j) {
       add(d, { n: `${h.htlKoNm || h.htlEnNm}`.slice(0, 80), k: 'stay', m: H.length > 1 ? `예정 호텔 ${H.length}곳 중 한 곳 · 출발 전 확정 · ` + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '' });
     }
   });
-  return { name: `${city || '여행'} ${nd > 1 ? `${nd - 1}박 ${nd}일` : '당일'}`, start, nd, it };
+  const M = D.meetInfoBcVo || {}, md = String(M.sndgMeetDt || ''), mtm = String(M.sndgMeetTm || '');
+  const meet = M.fstMeetCont ? { d: /^\d{8}$/.test(md) ? `${md.slice(0, 4)}-${md.slice(4, 6)}-${md.slice(6, 8)}` : '', t: hm(mtm), n: clean(M.fstMeetCont).slice(0, 200) } : null;
+  const out = { name: `${city || '여행'} ${nd > 1 ? `${nd - 1}박 ${nd}일` : '당일'}`, start, nd, it, meet, info }; planTermFix(out); return out;
 }
 async function planAiPlaces(p, city, say, redo) {   // Claude 열쇠가 있으면: 장소 이름 → 지도 검색어(현지어·영어)·대략 좌표 (이름만 보내요) · redo면 대략 위치인 곳도 다시
   const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) return false;
@@ -6778,6 +6809,7 @@ async function planHanaRun(code, say) {
   const r = planFromHana(j);
   if (!r.it.length) throw new Error('일정에서 장소를 찾지 못했어요');
   const p = { id: planNewId(), name: r.name, start: r.start, nd: r.nd, it: r.it, at: Date.now(), src: 'hanatour', code };
+  if (r.meet) p.meet = r.meet; if (r.info && r.info.length) p.info = r.info;
   let ai = false;
   try { ai = await planAiPlaces(p, r.name.split(' ')[0], say); } catch (e) { toast('⚠ AI로 위치를 못 찾았어요 · ' + String(e && (e.status || e.message) || e).slice(0, 50), true); }
   await planGeocode(p, say); planNeighborFill(p);
@@ -6836,11 +6868,18 @@ function planNewSheet() {
 // ---------- 화면 ----------
 async function viewPlan() {
   document.title = '여행 계획 · Map Photo Diary';
-  const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash);
-  if (hm) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
-    try { const p = await planUnpack(hm[1]); const same = planAll().find(x => x.name === p.name && x.start === p.start && (x.it || []).length === p.it.length);
+  planTermsAll();
+  const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash), hs = /#ps=/.test(location.hash);
+  if (hs) app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), el('div', { class: 'card sub', text: '🗓 받은 여행 계획을 여는 중이에요…' })));
+  if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
+    try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const same = planAll().find(x => x.name === p.name && x.start === p.start && (x.it || []).length === p.it.length);
+      if (same) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
+        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
+        for (const y of same.it) if (!y.x) { const z = p.it.find(q => q.n === y.n && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
+        if (ch) planSave(same);
+      }
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? '이미 넣어 둔 계획이에요' : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
-    catch { toast('⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요'); }
+    catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
@@ -6855,6 +6894,200 @@ async function viewPlan() {
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
+}
+// ---------- 🧳 여행 준비 (2026-11-14 사용자 '준비물·옷·음식 걱정·날씨·로밍 안내, 이번 여행에서 앱의 진가를'): 계획 화면 위 카드 → 준비 창 ----------
+//   날씨 = Open-Meteo(그날 장소 가운데, 16일 안이면 예보·그보다 멀면 작년 같은 날) + 산 위 기온(그날 가장 높은 장소의 해발로 100m마다 0.65°C 낮춤)
+//   준비물·옷·음식·통신·돈·긴급·보여 주는 말 = 나라·날씨·일정(산·걷는 곳·한식 수)에 맞춘 규칙(AI 안 씀) · 챙긴 것 체크 ls planPrep:{ID}
+// 용어 통일 (2026-11-14 사용자 '용어통일!!!'): 여행사 일정 글은 '장가계·무릉원·천문산'인데 항공·호텔 자료만 중국어 소리(장자제·장자지에·우링위안·톈먼산·허화)라 섞여 보였어요.
+//   여행사 글이 주로 쓰는 우리 한자 읽기로 모두 맞춰요(지도 이름도 같은 읽기) · 계획을 열 때 저절로 고쳐 저장
+var PLAN_TERMS = [[/장자지에|장자제|장쟈제|짱자제/g, '장가계'], [/우링위안|우링원/g, '무릉원'], [/톈먼산|텐먼산|티엔먼산/g, '천문산'], [/톈먼/g, '천문'], [/허화(?=\s*국제공항)/g, '하화'],
+  [/위안자제/g, '원가계'], [/톈쯔산|텐쯔산/g, '천자산'], [/바오펑후/g, '보봉호'], [/푸룽전|푸룽진/g, '부용진'], [/황룽둥/g, '황룡동'], [/후난성/g, '호남성']];
+function planTerm(t) { if (typeof t !== 'string' || !t) return t; let o = t; for (const [r, v] of PLAN_TERMS) o = o.replace(r, v); return o; }
+function planTermFix(p) {
+  let ch = 0; const f = (o, k) => { if (o && typeof o[k] === 'string') { const v = planTerm(o[k]); if (v !== o[k]) { o[k] = v; ch++; } } };
+  f(p, 'name'); (p.it || []).forEach(x => { f(x, 'n'); f(x, 'm'); f(x, 'x'); }); (p.info || []).forEach(z => { f(z, 'h'); f(z, 'x'); }); if (p.meet) f(p.meet, 'n');
+  return ch;
+}
+function planTermsAll() { for (const p of planAll()) if (planTermFix(p)) planSave(p); }
+function planDayPts(p, d) { return planItems(p, d).filter(x => Number.isFinite(x.lat) && x.k !== 'fly'); }
+function planCenter(p, d) {
+  let a = (d == null ? (p.it || []) : planItems(p, d)).filter(x => Number.isFinite(x.lat) && x.k !== 'fly');
+  if (!a.length && d != null) return planCenter(p, null);
+  if (!a.length) a = (p.it || []).filter(x => Number.isFinite(x.lat)); if (!a.length) return null;
+  const c = [a.reduce((s, x) => s + x.lat, 0) / a.length, a.reduce((s, x) => s + x.lng, 0) / a.length];
+  const nb = a.filter(x => dist(c[0], c[1], x.lat, x.lng) < 300000); if (nb.length && nb.length < a.length) return planCenter({ it: nb }, null);
+  return c;
+}
+function planCN(p) { const c = planCenter(p); return !!(c && planInChina(c[0], c[1]) && koInHanzi(c[0], c[1])); }
+function planTz(p) { return planCN(p) ? 'Asia/Shanghai' : undefined; }
+function planYmd(p, d, back) { const x = planDate(p, d); if (!x) return ''; if (back) x.setFullYear(x.getFullYear() - back); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; }
+async function planWeather(p, force) {
+  if (!p.start) return null;
+  const key = 'planWx:' + p.id, old = ls.get(key, null), sig = p.start + '|' + p.nd + '|' + (p.it || []).filter(x => Number.isFinite(x.lat)).length;
+  if (!force && old && old.sig === sig && Date.now() - old.at < 3 * 3600e3) return old;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const last = planDate(p, p.nd - 1); if (last < today) return old;   // 끝난 여행
+  const fc = (planDate(p, 0) - today) / 864e5 <= 14;   // 출발이 2주 안이면 예보, 아니면 작년 이맘때
+  const C = Array.from({ length: p.nd }, (_, d) => planCenter(p, d)); if (!C[0]) return old;
+  const lat = C.map(c => c[0].toFixed(3)).join(','), lng = C.map(c => c[1].toFixed(3)).join(',');
+  const vars = 'temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum' + (fc ? ',precipitation_probability_max' : '');
+  const a = fc ? planYmd(p, 0) : planYmd(p, 0, 1), b = fc ? planYmd(p, p.nd - 1) : planYmd(p, p.nd - 1, 1);
+  const host = fc ? 'https://api.open-meteo.com/v1/forecast' : 'https://archive-api.open-meteo.com/v1/archive';
+  const r = await fetchT(`${host}?latitude=${lat}&longitude=${lng}&daily=${vars}&timezone=auto&start_date=${a}&end_date=${b}`, {}, 20000);
+  if (!r.ok) throw new Error('weather ' + r.status);
+  let J = await r.json(); if (!Array.isArray(J)) J = [J];
+  // 산 위: 그날 장소 중 가장 높은 곳의 해발(Open-Meteo 고도 자료)
+  const H = Array.from({ length: p.nd }, (_, d) => planDayPts(p, d).filter(x => x.k === 'spot' || x.k === 'show'));
+  const flat = H.flat().slice(0, 100); let EL = [];
+  if (flat.length) try { const e = await fetchT(`https://api.open-meteo.com/v1/elevation?latitude=${flat.map(x => x.lat.toFixed(4)).join(',')}&longitude=${flat.map(x => x.lng.toFixed(4)).join(',')}`, {}, 15000); if (e.ok) EL = (await e.json()).elevation || []; } catch {}
+  const elOf = new Map(flat.map((x, i) => [x, EL[i]]));
+  const days = Array.from({ length: p.nd }, (_, d) => {
+    const j = J[d] || J[0], D = j && j.daily || {}, i = (D.time || []).indexOf(fc ? planYmd(p, d) : planYmd(p, d, 1)); if (i < 0) return null;
+    const v = k => Array.isArray(D[k]) && Number.isFinite(D[k][i]) ? D[k][i] : null;
+    const o = { lo: v('temperature_2m_min'), hi: v('temperature_2m_max'), c: v('weather_code'), pr: v('precipitation_sum'), pp: v('precipitation_probability_max') };
+    if (o.lo == null || o.hi == null) return null;
+    let top = null; for (const x of H[d]) { const e = elOf.get(x); if (Number.isFinite(e) && (!top || e > top.e)) top = { e, n: x.n }; }
+    const g = Number.isFinite(j.elevation) ? j.elevation : null;
+    if (top && g != null && top.e - g > 350) { const dd = (top.e - g) * 0.0065; Object.assign(o, { me: Math.round(top.e / 10) * 10, mn: top.n, ml: o.lo - dd, mh: o.hi - dd }); }
+    return o;
+  });
+  const out = { at: Date.now(), sig, src: fc ? 'fc' : 'past', days };
+  ls.set(key, out); return out;
+}
+function planWxLine(w, short) {
+  if (!w) return '';
+  const [ic, nm] = w.c != null ? wxName(w.c) : ['🌡', ''], R = v => Math.round(v);
+  return [`${ic} ${short ? '' : nm + ' '}${R(w.lo)}~${R(w.hi)}°C`.replace(/\s+/g, ' '), w.pp != null && w.pp >= 20 ? `비 ${w.pp}%` : w.pr != null && w.pr >= 1 ? `비 ${Math.round(w.pr)}mm` : '',
+    w.me ? `⛰ 산 위(${w.me.toLocaleString()}m) ${R(w.ml)}~${R(w.mh)}°C` : ''].filter(Boolean).join(' · ');
+}
+function planSunLine(p, d) {
+  const c = planCenter(p, d), x = planDate(p, d); if (!c || !x) return '';
+  const s = sunTimes(c[0], c[1], x.getTime() + 12 * 3600e3); if (!s) return '';
+  const f = t => new Date(t).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: planTz(p) });
+  return `🌅 해 뜨는 ${f(s.rise)} · 해 지는 ${f(s.set)}`;
+}
+function planKoreanMeals(p) { return (p.it || []).filter(x => x.k === 'food' && /한식|백숙|된장|김치|불고기|삼겹|비빔|찌개|전골|갈비|유람/.test(x.n + ' ' + (x.x || ''))); }
+// 챙길 것·할 일 목록 (나라·날씨·일정에 맞춰서)
+function planPrepList(p, wx) {
+  const cn = planCN(p), W = (wx && wx.days || []).filter(Boolean), R = Math.round;
+  const lo = W.length ? Math.min(...W.map(w => w.me ? w.ml : w.lo)) : null, hi = W.length ? Math.max(...W.map(w => w.hi)) : null;
+  const rainy = W.filter(w => (w.pp != null && w.pp >= 50) || (w.pr != null && w.pr >= 3)).length;
+  const mount = W.some(w => w.me) || (p.it || []).some(x => /산|봉|협곡|잔도|케이블카|계곡/.test(x.n));
+  const walky = (p.it || []).filter(x => x.k === 'spot').length >= 8, kor = planKoreanMeals(p), kn = kor.length;
+  const meet = p.meet && p.meet.n ? p.meet : null;
+  const S = [];
+  S.push({ h: '📅 떠나기 전에 할 일', it: [
+    cn && { id: 'arr', t: '중국 온라인 입국신고서 쓰고 QR 저장', w: '2025년 11월 26일부터 꼭 써야 들어가요 · 입국 90일 전부터 · 최대 10명 같이 · 무료(돈 내라는 곳은 가짜) · QR은 캡처나 PDF로 휴대폰에 (종이 인쇄는 안 읽힐 수 있어요)', a: 'https://s.nia.gov.cn/ArrivalCardFillingPC/entry-registation-home', al: '입국신고서 쓰는 곳 열기' },
+    { id: 'pass', t: '여권 유효기간 6개월 넘게 남았는지', w: cn ? '무비자(30일, 2026년 12월 31일까지)라 비자는 필요 없어요 · 단수여권은 무비자가 안 될 수 있어요' : '나라마다 비자·입국 규칙을 출발 전에 확인' },
+    { id: 'roam', t: '로밍이나 eSIM 정하기', w: cn ? '아래 📶 통신 참고 · 중국은 현지 유심이면 카톡·구글이 막혀요' : '도착하자마자 지도·연락이 되게' },
+    cn && { id: 'pay', t: '알리페이(또는 위챗페이)에 내 카드 연결 + 위안 현금 조금', w: '중국은 가게·택시 대부분 QR 결제 · 현금만 받는 노점·화장실도 있어요(100~300위안쯤)' },
+    { id: 'ins', t: '여행자 보험', w: '패키지에 들어 있는지 여행사에 확인 · 없으면 출발 전에' },
+    { id: 'mpd', t: 'MPD 로그인(☁ 기록 모으기)', w: '휴대폰을 잃어버려도 여행 기록·사진이 남아요 · 내 MPD 맨 위', ok: !!ls.get('cloudName', '') },
+    { id: 'share', t: '같이 가는 가족에게 이 계획 보내기', w: '위 📤 일정 보내기 · 받은 휴대폰에도 지도·여행사 안내가 그대로 들어가요' }].filter(Boolean) });
+  const clothes = [];
+  if (lo != null) {
+    if (lo <= 3) clothes.push({ id: 'c_pad', t: '두꺼운 패딩이나 경량 패딩 + 바람막이', w: `가장 추울 때 ${R(lo)}°C${W.some(w => w.me) ? ' (산 위)' : ''}` }, { id: 'c_glove', t: '장갑·목도리(넥워머)·모자, 핫팩 몇 개' });
+    else if (lo <= 9) clothes.push({ id: 'c_pad', t: '접는 경량 패딩이나 플리스 하나', w: `가장 추울 때 ${R(lo)}°C${W.some(w => w.me) ? ' (산 위)' : ''} · 아침저녁·산 위는 쌀쌀해요` }, { id: 'c_neck', t: '목도리나 넥워머(산 위 바람)' });
+    else if (lo <= 15) clothes.push({ id: 'c_jk', t: '얇은 겉옷(바람막이·가디건)', w: `아침저녁 ${R(lo)}°C쯤` });
+    if (hi != null && hi >= 25) clothes.push({ id: 'c_short', t: '반팔·통기 잘되는 옷, 모자', w: `낮 ${R(hi)}°C까지` });
+  }
+  clothes.push({ id: 'c_layer', t: '겹쳐 입기: 긴팔 + 얇은 겉옷 + 따뜻한 것', w: lo != null ? `${R(lo)}~${R(hi)}°C · 버스 안은 덥고 밖은 추워서 벗고 입기 쉽게` : '버스 안은 덥고 밖은 추워서 벗고 입기 쉽게' });
+  clothes.push({ id: 'c_shoe', t: '바닥이 미끄럽지 않은 편한 운동화', w: walky ? `구경할 곳이 ${(p.it || []).filter(x => x.k === 'spot').length}곳 · 계단·잔도를 많이 걸어요 (새 신발은 피하기)` : '많이 걸어요' });
+  if (rainy || mount) clothes.push({ id: 'c_rain', t: '얇은 우비 + 접는 우산', w: rainy ? `비 올 수 있는 날 ${rainy}일 · 산 위 잔도는 우산보다 우비가 편해요` : '산은 날씨가 자주 바뀌어요 · 잔도에선 우산보다 우비' });
+  S.push({ h: '👕 옷' + (lo != null ? ` (${wx.src === 'fc' ? '일기 예보' : '작년 이맘때'} ${R(lo)}~${R(hi)}°C)` : ''), it: clothes });
+  S.push({ h: '🎒 챙길 것', it: [
+    { id: 'g_pass', t: '여권 + 여권 사진면을 휴대폰에 찍어 두기' },
+    { id: 'g_charge', t: '휴대폰 충전기' + (cn ? ' + 멀티 어댑터' : ''), w: cn ? '중국은 220V · 한국 둥근 플러그가 대부분 맞지만 납작한 구멍만 있는 곳도 있어요' : '' },
+    { id: 'g_bat', t: '보조배터리 (기내 가방에만)', w: cn ? '중국 공항은 3C 표시가 없거나 글씨가 지워진 배터리를 빼앗을 수 있어요 · 표시 있는 걸로' : '부치는 짐엔 못 넣어요' },
+    { id: 'g_med', t: '상비약: 소화제·지사제·두통약·감기약·밴드·평소 먹는 약' },
+    mount && { id: 'g_motion', t: '멀미약', w: '꼬불꼬불 산길 버스·케이블카' },
+    cn && { id: 'g_tissue', t: '휴대용 휴지·물티슈', w: '중국 화장실엔 휴지가 없는 곳이 많아요' },
+    { id: 'g_sun', t: '선글라스·자외선 차단제·립밤' },
+    { id: 'g_bag', t: '작은 배낭이나 크로스백', w: '손이 자유로워야 사진 찍기·계단이 편해요' }].filter(Boolean) });
+  S.push({ h: '🍜 음식이 걱정되면', note: kn ? `이번 일정엔 한식이 ${kn}번 있어요: ${kor.map(x => x.n.replace(/^[^·]*·\s*/, '')).join(', ')}` : '', it: [
+    { id: 'f_paste', t: '튜브 고추장·작은 김·볶음김치 캔', w: cn ? '고기가 들어간 것(장조림·육포·소시지·고기 볶음고추장)은 중국에 가져갈 수 없어요 · 고기 없는 것만' : '' },
+    { id: 'f_ramen', t: '작은 컵라면 몇 개·누룽지', w: '중국 호텔엔 전기포트가 있는 곳이 많아요(없으면 프런트에 부탁)' },
+    cn && { id: 'f_say', t: "'고수 빼 주세요' 화면 보여 주기", w: '아래 🗣 보여 주는 말 · 향 강한 음식이 걱정되면 먼저 보여 주세요' },
+    { id: 'f_digest', t: '소화제·위장약', w: '기름진 음식이 이어질 때' }].filter(Boolean) });
+  return { S, cn, meet };
+}
+function planSayShow(cn, ko, py) {
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4300;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center', onclick: () => bg.remove() },
+    el('div', { style: 'font-size:min(14vw,64px);font-weight:900;color:#102A43;line-height:1.25;word-break:keep-all', text: cn }),
+    py ? el('div', { style: 'font-size:20px;color:#5F7A92', text: py }) : null,
+    el('div', { style: 'font-size:18px;color:#5F7A92', text: ko }),
+    el('div', { style: 'font-size:13px;color:#9AA', text: '화면을 누르면 닫혀요' }));
+  document.body.append(bg); ovGuard();
+}
+var PLAN_SAY_CN = [
+  ['不要香菜', '고수(샹차이) 빼 주세요', '부야오 샹차이'], ['不要辣', '안 맵게 해 주세요', '부야오 라'], ['洗手间在哪里？', '화장실이 어디예요?', '시서우젠 짜이 나리?'],
+  ['多少钱？', '얼마예요?', '둬샤오 첸?'], ['请给我热水', '뜨거운 물 좀 주세요', '칭 게이워 러수이'], ['我不吃这个', '이건 못 먹어요', '워 부츠 저거'],
+  ['我和团队走散了，请帮我给导游打电话', '일행을 잃어버렸어요. 가이드에게 전화해 주세요', ''], ['请帮帮我', '도와주세요', '칭 방방 워'], ['谢谢', '고맙습니다', '셰셰']];
+function planPrepSheet(p, wx) {
+  const st = ls.get('planPrep:' + p.id, {}) || {}, { S, cn, meet } = planPrepList(p, wx);
+  const body = el('div', { class: 'stack', style: 'gap:12px' });
+  const chk = x => {
+    const on = () => !!(st[x.id] || x.ok);
+    const b = el('button', { style: 'display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;padding:8px 0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px solid var(--line)', onclick: () => { if (x.ok) return; st[x.id] = st[x.id] ? 0 : 1; ls.set('planPrep:' + p.id, st); paint(); } });
+    const paint = () => b.replaceChildren(el('span', { style: `flex:none;width:22px;height:22px;border-radius:6px;border:2px solid ${on() ? 'var(--pine)' : '#B8C7D6'};background:${on() ? 'var(--pine)' : '#fff'};color:#fff;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center`, text: on() ? '✓' : '' }),
+      el('div', { style: 'flex:1;min-width:0' }, el('div', { style: `font-weight:700;${on() ? 'color:var(--muted);text-decoration:line-through' : ''}`, text: x.t + (x.ok ? ' (되어 있어요)' : '') }), x.w ? el('div', { class: 'dt', style: 'font-size:13px', text: x.w }) : null));
+    paint();
+    return el('div', {}, b, x.a ? el('a', { href: x.a, target: '_blank', rel: 'noopener', class: 'btn line small', style: 'margin:6px 0 4px 32px;display:inline-block', text: '↗ ' + x.al }) : null);
+  };
+  const sec = (h, ...kids) => el('div', { class: 'card stack', style: 'gap:4px;padding:12px 14px' }, el('div', { style: 'font-weight:800;font-size:16px', text: h }), ...kids);
+  const all = S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
+  if (meet) body.append(sec('🧭 출발 미팅', el('div', { style: 'font-weight:700', text: `${meet.d ? planDayLabel({ start: meet.d }, 0) + ' ' : ''}${meet.t || ''}` }), el('div', { text: meet.n }), el('div', { class: 'dt', text: '여행사 안내 그대로 · 늦지 않게 공항엔 비행기 3시간 전쯤' })));
+  // 날씨
+  const W = wx && wx.days || [];
+  body.append(sec(`🌤 날씨 ${wx ? (wx.src === 'fc' ? '· 일기 예보' : '· 작년 이맘때 (출발 2주 전부터 예보로 바뀌어요)') : ''}`,
+    ...(W.length ? Array.from({ length: p.nd }, (_, d) => el('div', { style: 'padding:4px 0;border-bottom:1px solid var(--line)' },
+      el('div', { style: `font-weight:700;color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차 · ${planDayLabel(p, d)}` }),
+      el('div', { text: planWxLine(W[d]) || '날씨 정보 없음' }), el('div', { class: 'dt', text: planSunLine(p, d) })))
+      : [el('div', { class: 'sub', text: wx === null ? '날짜와 장소 위치가 있어야 날씨를 볼 수 있어요' : '날씨를 받지 못했어요 · 인터넷이 되면 다시 열어 주세요' })]),
+    W.some(w => w && w.me) ? el('div', { class: 'dt', text: '⛰ 산 위 기온은 그날 가장 높은 곳의 해발로 짐작한 값이에요(100m 오를 때마다 약 0.65°C 낮게). 바람이 불면 더 춥게 느껴져요' }) : null));
+  body.append(el('div', { class: 'sub', style: 'font-weight:700', text: `✔ 준비 ${done} / ${all.length}` }));
+  for (const s of S) body.append(sec(s.h, s.note ? el('div', { class: 'dt', style: 'font-weight:700;color:var(--pine)', text: s.note }) : null, ...s.it.map(chk)));
+  if (cn) {
+    body.append(sec('📶 통신·로밍 (중국)',
+      el('div', { text: '중국에선 카카오톡·구글(지도·지메일)·유튜브·인스타그램이 막혀요.' }),
+      el('div', { text: '① 한국 통신사 로밍: 가장 쉬워요. 막힌 앱도 다 되고 MPD 링크·로그인도 돼요.' }),
+      el('div', { text: "② eSIM: 싸지만 '홍콩 경유(VPN 필요 없음)'라고 쓰인 상품만. 그냥 중국 유심은 카톡이 안 돼요." }),
+      el('div', { text: '③ 호텔 와이파이만 쓰면 카톡·MPD 공유가 안 될 수 있어요.' }),
+      el('div', { class: 'dt', text: '가족 중 한 명만 로밍하고 나머지는 핫스팟으로 같이 쓰는 방법도 있어요.' })));
+    body.append(sec('💳 돈 · 🕐 시차 · 🔌 전기',
+      el('div', { text: '돈: 알리페이에 내 카드를 연결하면 QR로 거의 다 돼요. 위안 현금은 조금만.' }),
+      el('div', { text: '시차: 중국은 한국보다 1시간 늦어요. 휴대폰 시계는 저절로 바뀌고, 일정표 시각은 현지 시각이에요.' }),
+      el('div', { text: '전기: 220V. 대부분 한국 플러그가 맞지만 멀티 어댑터 하나면 마음 편해요.' })));
+    const hotels = (p.it || []).filter(x => x.k === 'stay');
+    body.append(sec('🗣 보여 주는 말 (누르면 크게)',
+      ...PLAN_SAY_CN.map(([c, k, y]) => el('button', { class: 'btn line', style: 'display:flex;justify-content:space-between;gap:8px;text-align:left;width:100%', onclick: () => planSayShow(c, k, y) }, el('span', { text: k }), el('b', { text: c }))),
+      ...hotels.map(h => el('button', { class: 'btn line', style: 'display:flex;justify-content:space-between;gap:8px;text-align:left;width:100%', onclick: () => planSayShow('请带我去这家酒店', `이 호텔로 가 주세요 · ${h.n}`, h.q || '') }, el('span', { text: `🚕 이 호텔로 가 주세요 · ${h.n}` }), el('b', { text: '请带我去这家酒店' })))));
+  } else body.append(sec('📶 통신', el('div', { text: '한국 통신사 로밍이 가장 쉬워요. 싸게 하려면 그 나라 eSIM. 도착하자마자 지도·연락이 되게 출발 전에 정해 두세요.' })));
+  body.append(sec('🆘 급할 때',
+    el('a', { href: 'tel:+82232100404', class: 'btn line', style: 'text-align:left', text: '📞 외교부 영사콜센터 +82-2-3210-0404 (24시간, 한국어)' }),
+    cn ? el('div', { text: '중국 경찰 110 · 구급차 120 · 불 119' }) : null,
+    el('div', { class: 'dt', text: '여권을 잃어버리면 영사콜센터에 먼저 전화 · 가이드 전화번호는 첫날 받아서 아래 메모나 계획 장소 메모에 적어 두세요' })));
+  for (const z of (p.info || [])) body.append(el('details', { class: 'card', style: 'padding:12px 14px' }, el('summary', { style: 'font-weight:800', text: '📄 여행사 안내 · ' + z.h }), el('div', { style: 'white-space:pre-wrap;font-size:14px;margin-top:8px', text: z.x })));
+  body.append(el('div', { class: 'dt', style: 'font-size:12px', text: '날씨는 Open-Meteo 자료예요. 입국·반입 규칙은 바뀔 수 있으니 출발 전에 여행사 안내를 한 번 더 확인해 주세요.' }));
+  return labSheet('🧳 여행 준비 · ' + p.name, body);
+}
+function planPrepCard(p, onWx) {
+  const box = el('button', { class: 'card', style: 'display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--accent);font:inherit;color:inherit;cursor:pointer;padding:12px 14px' });
+  let wx = ls.get('planWx:' + p.id, null);
+  const paint = () => {
+    const st = ls.get('planPrep:' + p.id, {}) || {}, all = planPrepList(p, wx).S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
+    const W = (wx && wx.days || []).filter(Boolean), lo = W.length ? Math.round(Math.min(...W.map(w => w.me ? w.ml : w.lo))) : null, hi = W.length ? Math.round(Math.max(...W.map(w => w.hi))) : null;
+    const left = p.start ? Math.round((planDate(p, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5) : null;
+    box.replaceChildren(el('span', { style: 'font-size:30px;flex:none', text: '🧳' }),
+      el('div', { style: 'flex:1;min-width:0' },
+        el('div', { style: 'font-weight:800', text: `여행 준비${left != null && left > 0 ? ` · D-${left}` : ''} · ${done}/${all.length}` }),
+        el('div', { class: 'dt', text: [lo != null ? `🌤 ${wx.src === 'fc' ? '예보' : '작년 이맘때'} ${lo}~${hi}°C${W.some(w => w.me) ? ' (산 위 포함)' : ''}` : '', '준비물·옷·음식·로밍·날씨'].filter(Boolean).join(' · ') })),
+      el('span', { style: 'font-weight:800;color:var(--accent)', text: '열기 ›' }));
+  };
+  box.onclick = () => { const bg = planPrepSheet(p, wx); new MutationObserver((_, o) => { if (!bg.isConnected) { o.disconnect(); paint(); } }).observe(document.body, { childList: true }); };
+  paint();
+  planWeather(p).then(w => { if (w) { wx = w; paint(); onWx && onWx(w); } }).catch(() => {});
+  return box;
 }
 // 기록과 잇기 (2026-11-14): 여행 날짜 동안 MPD로 기록한 길이 계획 장소 가까이 지나갔으면 저절로 '✓ 다녀옴'(그 시각도)
 //   가까이 = 300m(대략 위치는 700m, 공항은 2km) · 직접 ○로 되돌린 곳(okNo)은 다시 표시하지 않아요 · 기록은 읽기만
@@ -6961,7 +7194,7 @@ function viewPlanOne(id) {
   if (day == null || day >= p.nd) day = -1;   // -1 = 전체
   const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' });
   const tabs = el('div', { class: 'mapbar', style: 'overflow-x:auto;flex-wrap:nowrap;gap:6px' }), list = el('div', { class: 'stack', style: 'gap:6px' });
-  let map = null, layer = null;
+  let map = null, layer = null, wx = ls.get('planWx:' + id, null);
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => head.replaceChildren(
     el('h1', { style: 'margin:0', text: p.name }),
@@ -6991,7 +7224,8 @@ function viewPlanOne(id) {
     let at = Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng } : null;
     const locL = el('div', { class: 'sub' }); const paintL = () => { locL.textContent = at ? `📍 위치 있음${x.ap ? ' (대략)' : ''}` : '📍 아직 위치가 없어요'; }; paintL();
     const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
-    const bg = labSheet(isNew ? '+ 장소 넣기' : '✎ 장소 고치기', nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
+    const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '📖 여행사 안내' }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
+    const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
       kRow, mm, locL,
       el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
@@ -7017,7 +7251,8 @@ function viewPlanOne(id) {
       el('span', { style: `flex:none;width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center`, text: String(i + 1) }),
       el('button', { style: 'flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer', onclick: () => editItem(x) },
         el('div', { style: 'font-weight:700', text: `${x.t ? x.t + ' ' : ''}${kk[0]} ${x.n}` }),
-        x.m ? el('div', { class: 'dt', style: 'white-space:pre-wrap', text: x.m }) : null,
+        x.m ? el('div', { class: 'dt', style: 'white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: x.m }) : null,
+        x.x ? el('div', { class: 'dt', style: 'color:var(--pine);font-weight:700', text: '📖 여행사 안내 보기' }) : null,
         !hasLoc && x.k !== 'fly' ? el('div', { class: 'dt', style: 'color:#C2412D', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'dt', text: x.near ? '📍 앞뒤 장소 사이 대략 위치 · 눌러서 고치기' : '📍 대략 위치 · 눌러서 고치기' }) : null,
         i === nx ? el('div', { class: 'dt', style: 'color:var(--accent);font-weight:800', text: '▶ 다음 갈 곳' }) : null,
         x.ok && x.okT ? el('div', { class: 'dt', style: 'font-weight:700', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null),
@@ -7034,6 +7269,7 @@ function viewPlanOne(id) {
       if (day !== -1 && day !== d) continue;
       const its = planItems(p, d), nx = nextIdx(d);
       out.push(el('div', { style: `font-weight:800;margin-top:6px;color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}${td === d ? ' · 오늘' : ''}` }));
+      { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true); if (ln) out.push(el('div', { class: 'dt', style: 'margin-top:-2px', text: (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln })); }
       its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x); if (g) out.push(el('div', { class: 'dt', style: 'padding-left:40px;font-size:12px', text: g })); } out.push(row(x, i, d, nx)); });
       out.push(el('button', { class: 'btn line small', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
     }
@@ -7061,7 +7297,7 @@ function viewPlanOne(id) {
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
     el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
-    head, mapEl, tabs, list,
+    head, planPrepCard(p, w => { wx = w; drawList(); }), mapEl, tabs, list,
     el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })));
   drawAll();
   setTimeout(() => {
