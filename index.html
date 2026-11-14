@@ -3112,9 +3112,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-104-mapfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-105-film-ui';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗺 지도가 선명해졌어요: 확대해도 글자·길이 흐리지 않아요(기록 중 지도는 그대로) · ⚠ 여행·등산 계획에서 위치가 틀릴 수 있는 곳은 맨 위 주황 상자에 크게 · 누르면 바로 지도에서 고쳐요 · 받은 계획 링크가 앱이 잘못 찾아 넣은 위치도 바로잡아요';
+const UI_NOTES = '🎬 영상 만들기 화면을 새로 정리했어요: 밝은 바탕에 미리보기 먼저, 자주 안 쓰는 설정은 접어 두고 만들기 단추는 아래에 늘 떠 있어요 · 🗺 지도가 선명해졌어요: 확대해도 글자·길이 흐리지 않아요(기록 중 지도는 그대로) · ⚠ 여행·등산 계획에서 위치가 틀릴 수 있는 곳은 맨 위 주황 상자에 크게 · 누르면 바로 지도에서 고쳐요 · 받은 계획 링크가 앱이 잘못 찾아 넣은 위치도 바로잡아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5967,35 +5967,57 @@ function filmPlayLen(blob) {   // 브라우저가 실제로 읽은 길이 (못 �
 }
 // 화면
 function viewFilm() {
-  document.title = '이동 기록 영상 · MPD'; document.documentElement.classList.add('vw-page');
+  document.title = '이동 기록 영상 · MPD'; { const H = document.documentElement.classList; H.remove('vw-page'); H.add('n-page'); }   // 새 디자인(2026-11-15 판 -105): 밝은 바탕 · 흰 카드 · 미리보기 먼저 · 자주 안 쓰는 건 접기 · 아래 고정 단추
   if (!document.getElementById('film-css')) document.head.append(el('style', { id: 'film-css', text: `
-.fm{max-width:520px;margin:0 auto;padding:12px 16px 120px;color:#F2F2F7;display:flex;flex-direction:column;gap:14px}
-.fm h1{font-size:22px;margin:4px 0 0}.fm .sub{color:#8E8E93;font-size:13.5px;line-height:1.5}
-.fm-card{background:#1C1C1E;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.fm-card h2{font-size:15px;margin:0;color:#fff}
-.fm-chips{display:flex;flex-wrap:wrap;gap:8px}.fm-chip{border:1px solid #3A3A3C;background:none;color:#E5E5EA;border-radius:999px;padding:8px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer}
-.fm-chip.on{background:#0A84FF;border-color:#0A84FF;color:#fff}
-.fm select,.fm input[type=file]{width:100%;background:#2C2C2E;color:#fff;border:none;border-radius:12px;padding:12px;font:15px inherit;font-family:inherit}
-.fm-stage{position:relative;align-self:center;width:min(100%,300px);aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:#000}
+.fm{--fa:#15202B;--fs:#15202B;--fst:#fff;max-width:520px;margin:0 auto;padding:0 0 calc(120px + env(safe-area-inset-bottom,0px));color:#15202B;display:flex;flex-direction:column;gap:12px}
+.fm .n-lt{margin-top:2px}.fm .sub{color:#6B7684;font-size:13.5px;line-height:1.5}
+.fm-card{background:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.fm-card h2{font-size:17px;font-weight:800;letter-spacing:-.3px;margin:0;color:#15202B;display:flex;align-items:baseline;gap:8px}.fm-card h2 small{font-size:13px;font-weight:600;color:#6B7684}
+.fm-card.dk{background:#1C1C1E;color:#F2F2F7}.fm-card.dk h2{color:#fff}.fm-card.dk .sub{color:#AEAEB2}
+.fm-chips{display:flex;flex-wrap:wrap;gap:8px}.fm-chip{border:none;background:#F1F3F5;color:#15202B;border-radius:999px;padding:9px 15px;font:600 14.5px inherit;font-family:inherit;cursor:pointer}
+.fm-chip.on{background:var(--fs);color:var(--fst)}
+.fm-card.dk .fm-chip{background:#2C2C2E;color:#E5E5EA}.fm-card.dk .fm-chip.on{background:#0A84FF}
+.fm select,.fm input[type=file]{width:100%;background:#F1F3F5;color:#15202B;border:none;border-radius:12px;padding:12px;font:15px inherit;font-family:inherit}
+.fm-stage{position:relative;align-self:center;width:min(100%,280px);aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:#000;box-shadow:0 10px 30px rgba(21,32,43,.18)}
 .fm-stage.land{width:100%;aspect-ratio:16/9}
 .fm-stage canvas,.fm-stage video{width:100%;height:100%;display:block;object-fit:cover}
-.fm-go{background:#0A84FF;color:#fff;border:none;border-radius:16px;padding:16px;font:800 17px inherit;font-family:inherit;cursor:pointer}
-.fm-go[disabled]{opacity:.5}.fm-line{background:none;border:1px solid #3A3A3C;color:#E5E5EA;border-radius:14px;padding:13px;font:700 15px inherit;font-family:inherit;cursor:pointer}
-.fm-bar{height:8px;background:#2C2C2E;border-radius:4px;overflow:hidden}.fm-bar i{display:block;height:100%;width:0;background:#0A84FF;transition:width .2s}
-.fm-ck{font-size:14px;line-height:1.7}.fm-ck .bad{color:#FF6B6B}.fm-ck .good{color:#7FD1FF}
+.fm-go{background:var(--fa);color:#fff;border:none;border-radius:16px;padding:16px;font:800 17px inherit;font-family:inherit;cursor:pointer;width:100%}
+.fm-go[disabled]{opacity:.5}.fm-line{background:#F1F3F5;border:none;color:#15202B;border-radius:14px;padding:13px;font:700 15px inherit;font-family:inherit;cursor:pointer}
+.fm-card.dk .fm-line{background:#2C2C2E;color:#E5E5EA}
+.fm-dock{position:fixed;left:0;right:0;bottom:0;z-index:900;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(245,246,248,0),#F5F6F8 26%);display:flex;flex-direction:column;gap:6px}
+.fm-dock>*{max-width:520px;width:100%;margin:0 auto}.fm-dock .sub{text-align:center;font-size:12.5px;min-height:0}
+.fm-bar{height:6px;background:#E6E9ED;border-radius:3px;overflow:hidden}.fm-bar i{display:block;height:100%;width:0;background:#1D9EC0;transition:width .2s}
+.fm-ck{font-size:14px;line-height:1.7}.fm-ck .bad{color:#D64545}.fm-ck .good{color:#147FA0}.fm-card.dk .fm-ck .good{color:#7FD1FF}.fm-card.dk .fm-ck .bad,.fm-card.dk .bad{color:#FF6B6B}
 .fm-mapbox{position:fixed;left:-20000px;top:0;width:${FILM_W}px;height:${FILM_H}px;pointer-events:none}
-.fm label.ck{display:flex;gap:10px;align-items:center;font-size:14.5px}
-.fm-sty{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.fm-sty button{text-align:left;background:#2C2C2E;border:2px solid transparent;border-radius:14px;padding:11px 12px;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;gap:4px}
-.fm-sty button b{font-size:15px}.fm-sty button span{font-size:12px;color:#AEAEB2;line-height:1.4}
-.fm-sty button.on{border-color:#0A84FF;background:#0A2A4A}
+.fm label.ck{display:flex;gap:12px;align-items:center;font-size:15px;padding:4px 0}.fm label.ck input[type=checkbox]{width:20px;height:20px;accent-color:#15202B;flex:none}
+.fm-pick{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:12px 14px;box-shadow:0 1px 3px rgba(21,32,43,.05);position:relative}
+.fm-pick .ic{width:44px;height:44px;border-radius:12px;background:#E4F2F7;display:grid;place-items:center;font-size:22px;flex:none}
+.fm-pick .tx{flex:1;min-width:0}.fm-pick .tx b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fm-pick .tx span{font-size:13px;color:#6B7684}
+.fm-pick .ch{font-size:13px;font-weight:700;color:#147FA0;flex:none}
+.fm-pick select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;padding:0}
+.fm-sty{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}.fm-sty::-webkit-scrollbar{display:none}
+.fm-sty button{flex:none;width:148px;text-align:left;background:#F5F6F8;border:2px solid transparent;border-radius:16px;padding:12px;color:#15202B;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;gap:5px}
+.fm-sty button b{font-size:16px}.fm-sty button span{font-size:12.5px;color:#6B7684;line-height:1.4}.fm-sty button i{font-style:normal;font-size:11px;font-weight:800;color:#147FA0}
+.fm-sty button.on{border-color:var(--fs);background:#fff;box-shadow:0 4px 14px rgba(21,32,43,.08)}
+.fm-opt{display:flex;flex-direction:column;gap:6px}.fm-opt>.lab{font-size:13px;font-weight:700;color:#6B7684;margin:0}
+.fm-dock .fm-bar{display:none}.fm-dock .fm-bar:has(i[style*=width]){display:block}
 .fm-board{width:100%;height:auto;display:block;border-radius:12px;background:#111}
 .fm-phs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.fm-phs button{position:relative;padding:0;border:2px solid transparent;border-radius:10px;overflow:hidden;aspect-ratio:1;background:#2C2C2E;cursor:pointer}
+.fm-phs button{position:relative;padding:0;border:none;border-radius:10px;overflow:hidden;aspect-ratio:1;background:#F1F3F5;cursor:pointer}
 .fm-phs button img{width:100%;height:100%;object-fit:cover;display:block}
-.fm-phs button.on{border-color:#FF8A4C}.fm-phs button.on::after{content:'★';position:absolute;right:3px;top:1px;color:#FF8A4C;font-size:16px;text-shadow:0 0 4px #000}
-.fm details summary{cursor:pointer;font-weight:700;font-size:15px;color:#fff;list-style:none}.fm details summary::-webkit-details-marker{display:none}
-.fm details[open] summary{margin-bottom:8px}.fm .lab{font-size:13px;color:#AEAEB2;margin-top:4px}` }));
+.fm-phs button.on{box-shadow:inset 0 0 0 3px #FF6B4A}.fm-phs button.on::after{content:'★';position:absolute;right:4px;top:2px;color:#fff;font-size:12px;width:20px;height:20px;border-radius:50%;background:#FF6B4A;display:grid;place-items:center}
+.fm-phs.cut button:nth-child(n+11){display:none}
+.fm-more{background:none;border:none;color:#147FA0;font:700 14px inherit;font-family:inherit;cursor:pointer;padding:2px 0;align-self:flex-start}
+.fm details.fm-card{gap:0}.fm details.fm-card[open]{gap:12px}
+.fm details summary{cursor:pointer;font-weight:800;font-size:16px;color:#15202B;list-style:none;display:flex;align-items:center;gap:8px}.fm details summary::-webkit-details-marker{display:none}
+.fm details summary::after{content:'';margin-left:auto;width:9px;height:9px;border-right:2px solid #9AA4AE;border-bottom:2px solid #9AA4AE;transform:rotate(45deg);transition:transform .2s}.fm details[open] summary::after{transform:rotate(225deg)}
+.fm details summary small{font-size:13px;font-weight:600;color:#6B7684}
+.fm .lab{font-size:13px;color:#6B7684;margin-top:4px}
+.fm-warn{background:#FFF1EC;color:#B23A1E;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5}
+.fm-keep{background:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!important}
+.fm details summary{white-space:nowrap}.fm details summary small{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.fm-sty button span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}` }));
   const opt = Object.assign({ style: 'cine', ratio: '9:16', map: 'sat', sec: 30, music: 'auto', vol: 70, title: true, date: true, stats: true, places: true, photos: true, elev: true, hide: ls.get('hideEnds', true), rhythm: 'mid', height: 'mid', phTime: 'mid', info: 'auto' }, ls.get('filmOpt', {}));
   if (!FILM_STYLES[opt.style]) opt.style = 'cine';
   filmDims(opt);
@@ -6009,64 +6031,83 @@ function viewFilm() {
   const cv = el('canvas', { width: FILM_W, height: FILM_H }), stage = el('div', { class: 'fm-stage' + (FILM_W > FILM_H ? ' land' : '') }, cv);
   const board = el('canvas', { class: 'fm-board', width: 640, height: 250 });
   const redraw = () => { filmDims(opt); stage.classList.toggle('land', FILM_W > FILM_H); if (!S.busy) { if (!stage.contains(cv)) stage.replaceChildren(cv); cv.width = FILM_W; cv.height = FILM_H; filmPoster(S, opt, cv); } filmBoard(S, opt, board); };
-  const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); redraw(); } })));
+  const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); redraw(); sumPaint(); } })));
   const ck = (k, txt) => el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt[k] ? true : null, onchange: e => { opt[k] = e.target.checked; save(); redraw(); } }), txt);
+  const opt1 = (lab, node) => el('div', { class: 'fm-opt' }, el('div', { class: 'lab', text: lab }), node);
   const styleBox = el('div', { class: 'fm-sty' }, Object.values(FILM_STYLES).map(st => el('button', { type: 'button', class: opt.style === st.k ? 'on' : '', onclick: e => { opt.style = st.k; save(); styleBox.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.currentTarget)); redraw(); } },
-    el('b', { text: st.name }), el('span', { text: (st.k === 'cine' ? '추천 · ' : '') + st.say }))));
+    st.k === 'cine' ? el('i', { text: '추천' }) : null, el('b', { text: st.name }), el('span', { text: st.say }))));
   const bar = el('i'), prog = el('div', { class: 'sub', text: '' }), result = el('div', { class: 'fm-card', style: 'display:none' });
-  const go = el('button', { class: 'fm-go', type: 'button', text: '🎬 영상 만들기', onclick: () => filmMake(S, opt, { cv, bar, prog, result, go, stage }) });
+  const go = el('button', { class: 'fm-go', type: 'button', text: '🎬 영상 만들기', onclick: () => { if (!S.busy) stage.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); filmMake(S, opt, { cv, bar, prog, result, go, stage }); } });
   // 강조할 사진(★): 누르면 크게·길게, 카메라도 그 자리에서 더 천천히 (기록마다 따로 기억)
   const phCard = el('div', { class: 'fm-card', style: 'display:none' });
   const drawPhs = async () => {
     const t = S.gpx ? null : S.rec; if (!t) { phCard.style.display = 'none'; return; }
     if (!S.ph[t]) S.ph[t] = await filmPhotos(t);
     const L = S.ph[t]; if (t !== (S.gpx ? null : S.rec)) return;
-    const offNote = opt.photos ? null : el('div', { class: 'sub', style: 'color:#FF6B6B', text: "⚠ 아래 '보여 줄 것'에서 '그 자리에서 찍은 사진'이 꺼져 있어요. 켜야 영상에 사진이 들어가요." });
-    if (!L.length) { phCard.style.display = ''; phCard.replaceChildren(el('h2', { text: '사진' }), el('div', { class: 'sub', style: 'color:#FF6B6B', text: '이 기록에는 이 휴대폰에 저장된 사진이 없어요(0장). 사진이 있는 기록을 위에서 고르거나, 사진이 든 백업 파일을 불러와 주세요.' }), ...(offNote ? [offNote] : [])); return; }
+    pickPaint(L.length);
+    const offNote = opt.photos ? null : el('div', { class: 'fm-warn', text: "'보여 줄 것'에서 '그 자리에서 찍은 사진'이 꺼져 있어요. 켜야 영상에 사진이 들어가요." });
+    if (!L.length) { phCard.style.display = ''; phCard.replaceChildren(el('h2', { text: '사진' }), el('div', { class: 'fm-warn', text: '이 기록에는 이 휴대폰에 저장된 사진이 없어요. 사진이 있는 기록을 고르거나, 사진이 든 백업 파일을 불러와 주세요.' }), ...(offNote ? [offNote] : [])); return; }
     const star = new Set(ls.get('filmStar:' + t, []) || []);
+    const hd = () => el('h2', {}, '강조할 사진', el('small', { text: star.size ? `★ ${star.size}장 · 모두 ${L.length}장` : `모두 ${L.length}장 들어가요` }));
+    const grid = el('div', { class: 'fm-phs' + (L.length > 10 ? ' cut' : '') }, L.map(p => { const u = typeof p.thumb === 'string' && p.thumb ? p.thumb : URL.createObjectURL(p.thumb instanceof Blob ? p.thumb : p.blob); return el('button', { type: 'button', class: star.has(p.id) ? 'on' : '', onclick: e => {
+        if (star.has(p.id)) star.delete(p.id); else star.add(p.id); ls.set('filmStar:' + t, [...star]); e.currentTarget.classList.toggle('on', star.has(p.id)); phCard.querySelector('h2').replaceWith(hd()); filmBoard(S, opt, board); } },
+        el('img', { src: u, alt: '', loading: 'lazy' })); }));
     phCard.style.display = '';
-    phCard.replaceChildren(el('h2', { text: `강조할 사진 ★ (${star.size}/${L.length})` }),
-      el('div', { class: 'sub', text: '누르면 ★ 강조 사진이 돼요. 영상에서 더 크고 길게 보이고, 그 자리에서 카메라가 천천히 지나가요. 사진은 모두 들어가요.' }), ...(offNote ? [offNote] : []),
-      el('div', { class: 'fm-phs' }, L.map(p => { const u = typeof p.thumb === 'string' && p.thumb ? p.thumb : URL.createObjectURL(p.thumb instanceof Blob ? p.thumb : p.blob); return el('button', { type: 'button', class: star.has(p.id) ? 'on' : '', onclick: e => {
-        if (star.has(p.id)) star.delete(p.id); else star.add(p.id); ls.set('filmStar:' + t, [...star]); e.currentTarget.classList.toggle('on', star.has(p.id)); phCard.querySelector('h2').textContent = `강조할 사진 ★ (${star.size}/${L.length})`; filmBoard(S, opt, board); } },
-        el('img', { src: u, alt: '', loading: 'lazy' })); })));
+    phCard.replaceChildren(hd(), el('div', { class: 'sub', text: '누른 사진은 영상에서 더 크고 길게 나와요.' }), ...(offNote ? [offNote] : []), grid,
+      L.length > 10 ? el('button', { class: 'fm-more', type: 'button', text: `사진 ${L.length}장 모두 보기 ›`, onclick: e => { grid.classList.remove('cut'); e.currentTarget.remove(); } }) : null);
   };
-  const recSel = el('select', { onchange: e => { S.rec = e.target.value; S.gpx = null; redraw(); drawPhs(); } },
+  // 어떤 길로: 한 줄 카드(누르면 기록 고르기). 고르기 창은 휴대폰 기본 목록
+  const recSel = el('select', { 'aria-label': '기록 고르기', onchange: e => { S.rec = e.target.value; S.gpx = null; redraw(); drawPhs(); pickPaint(); } },
     recs.map(r => el('option', { value: r.t, selected: r.t === S.rec ? true : null, text: `${new Date(r.at).toLocaleDateString('ko-KR')} · ${r.name}` })));
+  let phN = null; const pickTx = el('div', { class: 'tx' }), pickIc = el('div', { class: 'ic' });
+  const pickPaint = n => { if (n != null) phN = n; const r = recs.find(x => x.t === S.rec);
+    if (S.gpx) { pickIc.replaceChildren('🧭'); pickTx.replaceChildren(el('b', { text: S.gpx.name || 'GPX 파일' }), el('span', { text: `GPX · 점 ${S.gpx.rows.length}개` })); return; }
+    if (!r) { pickIc.replaceChildren('🗺'); pickTx.replaceChildren(el('b', { text: '기록을 골라 주세요' }), el('span', { text: '이 휴대폰에 기록이 없으면 아래에서 GPX를 가져와요' })); return; }
+    try { pickIc.replaceChildren(ico(r.mode, 24)); } catch { pickIc.replaceChildren('🗺'); }
+    pickTx.replaceChildren(el('b', { text: r.name }), el('span', { text: new Date(r.at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) + (phN != null ? ` · 사진 ${phN}장` : '') })); };
   filmPhCounts().then(C => { [...recSel.options].forEach(o => { o.textContent += ` · 사진 ${C.m[o.value] || 0}장`; }); });
-  const gpxIn = el('input', { type: 'file', accept: '.gpx,application/gpx+xml,application/xml,text/xml', onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const g = filmGpx(await f.text()); if (g.rows.length < 2) throw new Error('점이 없어요'); S.gpx = g; toast(`GPX를 읽었어요 · 점 ${g.rows.length}개`); redraw(); drawPhs(); } catch (err) { toast('GPX를 읽지 못했어요 · ' + err.message); } } });
-  const musIn = el('input', { type: 'file', accept: 'audio/*', style: 'display:none', onchange: e => { S.file = e.target.files[0] || null; if (S.file) { opt.music = 'file'; toast('음악 파일: ' + S.file.name); } } });
+  const gpxIn = el('input', { type: 'file', accept: '.gpx,application/gpx+xml,application/xml,text/xml', onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const g = filmGpx(await f.text()); if (g.rows.length < 2) throw new Error('점이 없어요'); g.name = g.name || f.name.replace(/\.gpx$/i, ''); S.gpx = g; toast(`GPX를 읽었어요 · 점 ${g.rows.length}개`); redraw(); drawPhs(); pickPaint(); } catch (err) { toast('GPX를 읽지 못했어요 · ' + err.message); } } });
+  const musIn = el('input', { type: 'file', accept: 'audio/*', style: 'display:none', onchange: e => { S.file = e.target.files[0] || null; if (S.file) { opt.music = 'file'; toast('음악 파일: ' + S.file.name); sumPaint(); } } });
   const back = S.plan ? './?plan=1&p=' + encodeURIComponent(S.plan.id) : qs.get('t') ? './?my=1&t=' + encodeURIComponent(qs.get('t')) : './?my=1';
+  // 접어 둔 칸의 지금 값을 제목 옆에 작게 (열지 않아도 무엇이 골라졌는지 보이게)
+  const showSum = el('small'), musSum = el('small');
+  const sumPaint = () => { const on = [opt.title && '제목', opt.date && '날짜', opt.stats && '거리·시간', opt.elev && '높이', opt.places && '장소', opt.photos && '사진', !S.plan && opt.hide && '집 가림'].filter(Boolean);
+    showSum.textContent = on.join(' · ') || '없음';
+    musSum.textContent = ({ auto: '스타일에 맞게', none: '없음', calm: '잔잔하게', up: '경쾌하게', file: S.file ? S.file.name : '내 파일' })[opt.music] + (opt.music === 'none' ? '' : ` · 음량 ${opt.vol}`); };
+  const warns = [planMiss ? '이 계획을 이 휴대폰(지금 연 앱·브라우저)에서 찾지 못했어요. 계획을 만든 곳(MPD 앱 또는 크롬)에서 🗓 여행 계획 → 🎬 미리 보기 영상을 눌러 주세요.' : null,
+    S.plan && !filmSrc(S) ? `'${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요. 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요.` : null].filter(Boolean);
   app.replaceChildren(el('div', { class: 'fm' },
-    FILM_TEST ? filmTestHead() : el('a', { href: back, style: 'color:#4DA3FF;text-decoration:none;font-weight:700', text: S.plan ? '‹ 여행 계획' : '‹ 내 MPD' }),
-    el('h1', { text: S.plan ? '🎬 여행 계획 미리 보기 영상' : '🎬 이동 기록 영상 만들기' }),
-    planMiss ? el('div', { class: 'sub', style: 'color:#FF6B6B', text: '⚠ 이 계획을 이 휴대폰(지금 연 앱·브라우저)에서 찾지 못했어요. 계획을 만든 곳(MPD 앱 또는 크롬)에서 🗓 여행 계획 → 🎬 미리 보기 영상을 눌러 주세요.' }) : null,
-    S.plan && !filmSrc(S) ? el('div', { class: 'sub', style: 'color:#FF6B6B', text: `⚠ '${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요. 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요.` }) : null,
-    S.plan ? el('div', { class: 'sub', text: `'${S.plan.name}' 일정대로 장소를 날마다 차례로 지나가는 영상이에요. 장소 사이는 실제 길이 아니라 직선(비행은 곡선)이고, 장소 사진은 위키미디어 공용(누구나 쓸 수 있는 사진)에서 찾아 넣고 찍은 사람을 함께 적어요. 위치가 없는 장소는 빠져요.` }) :
-    el('div', { class: 'sub', text: '다닌 길을 지도와 지형 위로 드론처럼 따라가는 영상(MP4)을 만들어요. 실험 중인 기능이에요. 영상은 이 휴대폰에서 만들고, 기록은 바꾸지 않아요. 다 만든 영상은 저절로 어디에도 올라가지 않아요.' }),
-    stage,
-    el('div', { class: 'fm-card' }, el('h2', { text: '연출 스타일' }), styleBox,
-      el('div', { class: 'lab', text: '장면 흐름 (스타일을 바꾸면 바로 바뀌어요)' }), board),
-    S.plan ? null : el('div', { class: 'fm-card' }, el('h2', { text: '어떤 길로' }), recs.length ? recSel : el('div', { class: 'sub', text: '이 휴대폰에 기록이 없어요. GPX 파일을 가져오세요.' }),
-      el('div', { class: 'sub', text: '또는 GPX 파일 가져오기' }), gpxIn),
+    FILM_TEST ? filmTestHead() : el('div', { class: 'n-top' }, el('a', { class: 'n-ib', href: back, 'aria-label': S.plan ? '여행 계획으로' : '내 MPD로' }, cSvg('back', 20)), el('span', { class: 'sp' })),
+    el('div', {}, el('h1', { class: 'n-lt', text: S.plan ? '미리 보기 영상' : '영상 만들기' }),
+      el('div', { class: 'n-ls', text: S.plan ? `'${S.plan.name}' 일정대로 장소를 차례로 지나가요` : '다닌 길을 하늘에서 따라가는 영상이에요' })),
+    ...warns.map(w => el('div', { class: 'fm-warn', text: '⚠ ' + w })),
+    stage, result,
+    S.plan ? null : el('div', { class: 'fm-pick' }, pickIc, pickTx, el('span', { class: 'ch', text: recs.length ? '바꾸기 ›' : '' }), recs.length ? recSel : null),
+    el('div', { class: 'fm-card' }, el('h2', { text: '스타일' }), styleBox),
+    el('div', { class: 'fm-card' },
+      opt1('길이', chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분'], [90, '1분 30초'], [120, '2분']], () => opt.sec, v => { opt.sec = v; })),
+      opt1('화면', chips([['9:16', '세로 · 휴대폰'], ['16:9', '가로 · TV']], () => opt.ratio, v => { opt.ratio = v; })),
+      opt1('지도', chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도'], ['dark', '🌙 어두운 지도']], () => opt.map, v => { opt.map = v; }))),
     phCard,
-    el('div', { class: 'fm-card' }, el('h2', { text: '영상 길이 · 화면' }), chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분'], [90, '1분 30초'], [120, '2분']], () => opt.sec, v => { opt.sec = v; }),
-      chips([['9:16', '📱 세로 9:16'], ['16:9', '🖥 가로 16:9']], () => opt.ratio, v => { opt.ratio = v; })),
-    el('div', { class: 'fm-card' }, el('h2', { text: '지도 모양' }), chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도 (3D 건물)'], ['dark', '🌙 어두운 지도']], () => opt.map, v => { opt.map = v; }),
-      el('div', { class: 'sub', text: '일반 지도는 도로·건물·이름이 그려진 지도를 입체로 세워 보여 줘요(OpenStreetMap 자료).' })),
-    el('div', { class: 'fm-card' }, el('h2', { text: '보여 줄 것' }), ck('title', '제목'), ck('date', '날짜'), ck('stats', '거리·시간'), ck('elev', '⛰ 높이 그림 · 오르막 표시 (높이 기록이 있을 때)'), ck('places', '장소 이름(좋은 곳·들른 곳·정상)'), el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt.photos ? true : null, onchange: e => { opt.photos = e.target.checked; save(); redraw(); drawPhs(); } }), S.plan ? '장소 사진 (위키미디어 공용에서 찾아요)' : '그 자리에서 찍은 사진'),
-      S.plan ? null : ck('hide', '🏠 출발·도착 근처 500m 가리기 (집 위치가 드러나지 않게)')),
-    el('div', { class: 'fm-card' }, el('h2', { text: '음악' }),
+    el('details', { class: 'fm-card' }, el('summary', {}, '음악', musSum),
       chips([['auto', '스타일에 맞게'], ['none', '없음'], ['calm', '잔잔하게'], ['up', '경쾌하게'], ['file', '내 음악 파일']], () => opt.music, v => { opt.music = v; if (v === 'file') musIn.click(); }), musIn,
-      el('label', { class: 'ck' }, '음량', el('input', { type: 'range', min: 0, max: 100, value: opt.vol, style: 'flex:1', oninput: e => { opt.vol = +e.target.value; save(); } })),
-      el('div', { class: 'sub', text: '스타일에 맞게·잔잔하게·경쾌하게는 MPD가 직접 만든 소리라 어디에 올려도 괜찮아요. 하이라이트에서 소리가 가장 커져요. 내 음악 파일은 저작권을 꼭 확인하세요.' })),
-    el('details', { class: 'fm-card' }, el('summary', { text: '⚙ 고급 설정 ›' }),
-      el('div', { class: 'lab', text: '비행 리듬 (영상 길이는 그대로, 사진·장소에서 늦추는 정도)' }), chips([['flat', '고르게'], ['mid', '보통'], ['drama', '극적으로']], () => opt.rhythm, v => { opt.rhythm = v; }),
+      el('label', { class: 'ck' }, '음량', el('input', { type: 'range', min: 0, max: 100, value: opt.vol, style: 'flex:1;accent-color:#15202B', oninput: e => { opt.vol = +e.target.value; save(); sumPaint(); } })),
+      el('div', { class: 'sub', text: 'MPD가 직접 만든 소리라 어디에 올려도 괜찮아요. 내 음악 파일은 저작권을 꼭 확인하세요.' })),
+    el('details', { class: 'fm-card' }, el('summary', {}, '보여 줄 것', showSum),
+      ck('title', '제목'), ck('date', '날짜'), ck('stats', '거리·시간'), ck('elev', '⛰ 높이 그림 · 오르막 (높이 기록이 있을 때)'), ck('places', '장소 이름 (좋은 곳·들른 곳·정상)'),
+      el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt.photos ? true : null, onchange: e => { opt.photos = e.target.checked; save(); redraw(); drawPhs(); sumPaint(); } }), S.plan ? '장소 사진 (위키미디어 공용에서 찾아요)' : '그 자리에서 찍은 사진'),
+      S.plan ? null : ck('hide', '🏠 출발·도착 근처 500m 가리기 (집 위치가 드러나지 않게)')),
+    el('details', { class: 'fm-card' }, el('summary', {}, '장면 흐름', el('small', { text: '처음 · 따라가기 · 하이라이트 · 끝' })), board),
+    el('details', { class: 'fm-card' }, el('summary', {}, '고급 설정'),
+      el('div', { class: 'lab', text: '비행 리듬 (사진·장소에서 늦추는 정도)' }), chips([['flat', '고르게'], ['mid', '보통'], ['drama', '극적으로']], () => opt.rhythm, v => { opt.rhythm = v; }),
       el('div', { class: 'lab', text: '카메라 높이' }), chips([['low', '낮게'], ['mid', '보통'], ['high', '높게']], () => opt.height, v => { opt.height = v; }),
       el('div', { class: 'lab', text: '사진 보여 주는 시간' }), chips([['short', '짧게'], ['mid', '보통'], ['long', '길게']], () => opt.phTime, v => { opt.phTime = v; }),
-      el('div', { class: 'lab', text: '숫자 정보' }), chips([['auto', '스타일에 맞게'], ['less', '적게'], ['more', '많게 (페이스·높이·구간)']], () => opt.info, v => { opt.info = v; })),
-    go, el('div', { class: 'fm-bar' }, bar), prog, result, FILM_TEST ? filmTestBoard() : null));
-  redraw(); drawPhs();
+      el('div', { class: 'lab', text: '숫자 정보' }), chips([['auto', '스타일에 맞게'], ['less', '적게'], ['more', '많게 (페이스·높이·구간)']], () => opt.info, v => { opt.info = v; }),
+      S.plan ? null : el('div', { class: 'lab', text: '다른 앱에서 받은 GPX 파일로 만들기' }), S.plan ? null : gpxIn),
+    el('div', { class: 'sub', style: 'padding:0 6px', text: S.plan ? '장소 사이는 실제 길이 아니라 직선(비행은 곡선)이에요. 위치가 없는 장소는 빠져요. 장소 사진은 위키미디어 공용에서 찾아 찍은 사람을 함께 적어요.' : '영상은 이 휴대폰에서 만들어요. 기록은 바꾸지 않고, 다 만든 영상도 저절로 어디에 올라가지 않아요.' }),
+    FILM_TEST ? filmTestBoard() : null,
+    el('div', { class: 'fm-dock' }, go, el('div', { class: 'fm-bar' }, bar), prog)));
+  sumPaint(); pickPaint(); redraw(); drawPhs();
 }
 // 장면 흐름 그림: 처음 · 따라가기 · 하이라이트 · 끝 + 사진(●, ★)·장소(▲) 자리 + 카메라 빠르기
 async function filmBoard(S, opt, cv) {
@@ -6919,7 +6960,7 @@ function filmTestHead() {
   const inp = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none', onchange: async e => { const f = e.target.files[0]; if (!f) return;
     try { const d = JSON.parse(await f.text()); ls.set('filmTestImport', { at: Date.now(), name: f.name, rec: Object.keys(d && d.ls || {}).filter(k => k.startsWith('track:')).length, ph: Array.isArray(d && d.photos) ? d.photos.length : 0 }); } catch {}
     backupLoad(f); } });
-  return el('div', { class: 'fm-card', style: 'border:2px solid #FF8A4C' },
+  return el('div', { class: 'fm-card dk', style: 'border:2px solid #FF8A4C' },
     el('h2', { text: '🧪 영상 2.0 시험판 · 운영 MPD와 따로예요' }),
     el('div', { class: 'sub', text: `시험 주소예요. 운영 MPD(gilbertgo.github.io/mapdiary)와 저장소가 따로라, 운영 기록·사진·설정은 읽지도 바꾸지도 않아요. 여기 넣은 기록·만든 영상은 이 휴대폰의 이 주소에만 남고, 저절로 어디에도 올라가지 않아요. 판 ${UI_VER}` }),
     cnt, impEl,
@@ -6933,7 +6974,7 @@ function filmTestHead() {
 function filmTestLog(e) { if (!FILM_TEST) return null; const L = ls.get('filmTestLog', []) || [], id = 'r' + Date.now().toString(36); L.push(Object.assign({ id, at: Date.now() }, e)); ls.set('filmTestLog', L.slice(-80)); filmTestBoard.redraw && filmTestBoard.redraw(); return id; }
 function filmTestUpd(id, patch) { if (!FILM_TEST || !id) return; const L = ls.get('filmTestLog', []) || [], x = L.find(q => q.id === id); if (!x) return; Object.assign(x, patch); ls.set('filmTestLog', L); filmTestBoard.redraw && filmTestBoard.redraw(); }
 function filmTestBoard() {
-  const box = el('div', { class: 'fm-card', style: 'border:2px solid #FF8A4C' });
+  const box = el('div', { class: 'fm-card dk', style: 'border:2px solid #FF8A4C' });
   const ST = ['cine', 'sport', 'memo', 'trip'], SEC = [15, 30, 60];
   const mus = x => x.music === 'aac' ? 'AAC' : x.music === 'opus' ? 'Opus⚠' : x.mWant ? '소리없음⚠' : '음악끔';
   const text = L => [`MPD 영상 2.0 시험 결과 · ${navigator.userAgent.replace(/^.*?\(|\).*$/g, '').slice(0, 60)}`].concat(L.map(x => `${new Date(x.at).toLocaleString('ko-KR')} | ${(FILM_STYLES[x.style] || {}).name || x.style} ${x.sec}초 ${x.ratio} ${x.map === 'map' ? '일반' : '위성'} | ${x.ok ? `✅ ${x.vSec}초 ${x.n}장 재생기 ${x.play == null ? '?' : x.play + '초'} ${mus(x)} ${x.mb}MB 만드는 데 ${x.renderSec}초 · 넣은 사진 ${x.photos == null ? '?' : x.photos}장(${x.phAll === 'off' ? '사진 보여 주기 꺼짐' : x.phAll === 'gpx' ? 'GPX라 사진 없음' : '기록에 ' + (x.phAll == null ? '?' : x.phAll) + '장'})${x.num == null ? '' : x.num < 0 ? ' · 거리 숫자 꺼짐' : x.num === 0 ? ' · 거리 숫자 끝에만' : ' · 거리 숫자 보임'}${x.mode ? ' · 종류 ' + x.mode : ''}${x.elev == null ? '' : x.elev === 'none' ? ' · 높이 기록 없음' : x.elev === 'flat' ? ' · 높이 차 작음' : ' · 높이 그림(차 ' + x.elev + 'm)'}${x.ver ? ' · 판 ' + x.ver : ' · 예전 판'}` : '⚠ 실패 ' + x.why}${x.mNote ? ' (' + x.mNote + ')' : ''}${x.save ? ' | 저장 ' + x.save : ''}${x.share ? ' | 공유 ' + x.share : ''}${x.kakao != null ? ' | 카톡 ' + (x.kakao ? '끝까지 재생됨' : '문제 있음') : ''}`)).join('\n');
