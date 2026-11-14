@@ -2907,9 +2907,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-69-ios';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-70-ios';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '아이폰에서 기록하는 동안 화면이 저절로 꺼지지 않아요 · 화면이 꺼졌다 켜지면 끊긴 시간을 알려 드려요 · 내 MPD에서 다른 앱 기록(GPX 파일)을 가져올 수 있어요 · 나중에 넣는 사진은 사진 속 찍은 시각과 위치로 길 위에 놓여요';
+const UI_NOTES = '아이폰에서 기록하는 동안 화면이 저절로 꺼지지 않아요 · 주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기를 눌러 주세요 · 다른 앱 기록(GPX) 가져오기는 내 MPD 맨 아래로 옮겼어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6535,9 +6535,7 @@ function gpxImportBtn() {
   const inp = el('input', Object.assign({ type: 'file', multiple: true, style: 'display:none', onchange: () => { const fs = [...inp.files]; inp.value = ''; if (fs.length) { toast('GPX 파일을 읽는 중이에요…'); gpxImport(fs); } } }, IS_IOS ? {} : { accept: '.gpx,application/gpx+xml,application/xml,text/xml' }));
   return el('div', { class: 'card stack', style: 'gap:6px;padding:12px 14px' }, inp,
     el('button', { class: 'btn line full', onclick: () => inp.click() }, '📥 다른 앱 기록(GPX) 가져오기'),
-    el('div', { class: 'sub', style: 'font-size:13px', text: IS_IOS && !IN_NATIVE
-      ? '아이폰은 화면이 꺼지면 이 웹앱 기록이 멈춰요. 트랭글·램블러·스트라바처럼 화면이 꺼져도 기록되는 앱으로 다닌 뒤 GPX 파일로 내보내 여기서 가져오면, 사진·공유 카드·이동 영상까지 모두 돼요.'
-      : '트랭글·램블러·스트라바 같은 앱에서 내보낸 GPX 파일을 MPD 기록으로 넣어요. 사진을 더하면 찍은 시각대로 길 위에 놓여요.' }));
+    el('div', { class: 'sub', style: 'font-size:13px', text: '트랭글·램블러·스트라바 같은 앱에서 내보낸 GPX 파일을 MPD 기록으로 넣어요. 사진을 더하면 찍은 시각대로 길 위에 놓여요.' }));
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
 // MD_KEYS는 아래 백업 칸에 있던 것을 route() 앞으로 옮겼어요(2026-11-07): 첫 화면을 그리는 중(시계 카드의 보류 안내 recAny)에도 써서, 뒤에 있으면 아직 준비 안 됨(TDZ) 오류가 나요
@@ -7064,9 +7062,8 @@ function viewMyList() {
     cloudCard(),   // 2026-10-19 사용자 '로그인 안 보여 어딨어?' → 맨 아래에서 맨 위로
     !watchGet() && !ls.get('watchAskHide', false) && !wearSelf() ? watchCard(viewMyList) : null,   // 시계 연결 전이면 맨 위에(2026-10-20). MPD Run 앱은 코드가 필요 없어 아래에
 
-    gpxImportBtn(),
     tabs, body,
-    watchGet() || ls.get('watchAskHide', false) || wearSelf() ? watchCard(viewMyList) : null, backupCard(list.filter(x => !x.album).length)));
+    watchGet() || ls.get('watchAskHide', false) || wearSelf() ? watchCard(viewMyList) : null, gpxImportBtn(), backupCard(list.filter(x => !x.album).length)));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
