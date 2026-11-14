@@ -707,6 +707,15 @@ html.tv-page .tv-hin h1{color:#fff}
 .tv-it .tv-m{font-size:12.5px;color:#6B7684;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
 .tv-it .tv-x{font-size:12px;color:#147FA0;font-weight:700;margin-top:3px}
 .tv-it .tv-w{font-size:12px;color:#D64545;margin-top:3px}
+.tv-warn{display:block;width:100%;text-align:left;margin-top:6px;padding:9px 11px;border:2px solid #E8590C;background:#FFF0E6;border-radius:12px;font:inherit;cursor:pointer}
+.tv-warn b{display:block;color:#C2410C;font-size:14px;font-weight:800}.tv-warn span{display:block;color:#7A2E0B;font-size:12.5px;margin-top:2px;line-height:1.4}
+.pw{background:#FFF0E6;border:2.5px solid #E8590C;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.pw-h{font-size:19px;font-weight:900;color:#C2410C}.pw-s{font-size:13.5px;color:#7A2E0B;line-height:1.45}
+.pw-i{display:flex;flex-direction:column;gap:4px}
+.pw-b{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:#fff;border:2px solid #E8590C;border-radius:14px;padding:11px 13px;font:inherit;cursor:pointer;min-height:44px}
+.pw-b b{font-size:16px;color:#15202B}.pw-b span{font-size:13px;color:#7A2E0B}.pw-b em{font-style:normal;font-size:13.5px;font-weight:800;color:#C2410C}
+.pw-ok{align-self:flex-end;background:none;border:none;color:#7A2E0B;font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:4px}
+.pw-auto{background:none;border:none;color:#6B7684;font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:6px 0;text-align:left}
 .tv-it .tv-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 .tv-it .tv-b button,.tv-it .tv-b a{padding:5px 11px;border-radius:14px;border:none;font:700 12.5px Pretendard,sans-serif;background:#EEF2F5;color:#15202B;cursor:pointer;text-decoration:none}
 .tv-it .tv-b .go{background:#15202B;color:#fff}
@@ -1432,7 +1441,7 @@ async function addPhotos(t, files, now, later) {
 // ---------- 사진 위치 고르기: 지도에 다닌 길을 깔고, 누른 곳으로 옮겨요 ----------
 // rec: 사진 기록(t, ts, lat, lng). 저장하면 photoPut하고 'photo-changed'를 알려요
 // 걷기 목표 지점 고르기 (2026-11-07): 지도를 누르거나 이름으로 찾기 → {lat,lng,n}. 닫으면 null
-function pickDest(cur, near, world) {   // world: 나라 밖도 찾기(여행 계획)
+function pickDest(cur, near, world, title) {   // world: 나라 밖도 찾기(여행 계획) · title: 창 제목(계획 장소 위치 고치기)
   return new Promise(res => {
     let at = cur ? [cur.lat, cur.lng] : null, name = cur ? cur.n : '', m = null, mk = null, seq = 0;
     const mapBox = el('div', { style: 'height:46vh;min-height:240px;border-radius:16px;overflow:hidden' });
@@ -1440,7 +1449,7 @@ function pickDest(cur, near, world) {   // world: 나라 밖도 찾기(여행 �
     const q = el('input', { type: 'search', placeholder: '이름으로 찾기 (예: 호수공원, ○○역)', style: 'flex:1;min-width:0' });
     const sb = el('div', { class: 'sheet-bg', style: 'z-index:4300', onclick: e => { if (e.target === sb) close(null); } });
     const close = v => { sb.remove(); res(v); };
-    const paint = () => { info.textContent = at ? `📍 ${name || '고른 곳'}${near ? ` · 지금 있는 곳에서 ${fmtDist(dist(near[0], near[1], at[0], at[1]))}` : ''}` : '가고 싶은 곳을 지도에서 누르거나 이름으로 찾아요.'; };
+    const paint = () => { info.textContent = at ? `📍 ${name || '고른 곳'}${near && !title ? ` · 지금 있는 곳에서 ${fmtDist(dist(near[0], near[1], at[0], at[1]))}` : ''}` : '가고 싶은 곳을 지도에서 누르거나 이름으로 찾아요.'; };
     const put = (ll, n) => {
       at = ll; name = n || ''; const my = ++seq;
       if (mk) mk.setLatLng(ll); else if (m) mk = L.marker(ll, { icon: L.divIcon({ className: 'wk-dpin', iconSize: [30, 38], iconAnchor: [15, 36], html: '<b>🏁</b>' }) }).addTo(m);
@@ -1460,7 +1469,7 @@ function pickDest(cur, near, world) {   // world: 나라 밖도 찾기(여행 �
     };
     q.addEventListener('keydown', e => { if (e.key === 'Enter') find(); });
     sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '목표 지점 고르기' },
-      el('h2', { style: 'margin:0', text: '🏁 목표 지점' }),
+      el('h2', { style: 'margin:0', text: title || '🏁 목표 지점' }), title ? el('div', { class: 'sub', style: 'font-size:14px', text: '맞는 자리를 지도에서 누르거나 이름으로 찾은 뒤 \'여기로 정하기\'를 눌러 주세요.' }) : null,
       el('div', { class: 'row', style: 'gap:8px;flex-wrap:nowrap' }, q, el('button', { class: 'btn line small', text: '찾기', onclick: find })),
       mapBox, info,
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => close(null) }),
@@ -2660,7 +2669,7 @@ async function tileBlob(url) {
     return b;
   } catch { return hit ? hit.blob() : null; }   // 인터넷이 없으면 오래된 조각이라도
 }
-function mdTileLayer() {
+function mdTileLayer(opt) {
   const T = L.TileLayer.extend({
     createTile(coords, done) {
       const img = document.createElement('img'), url = this.getTileUrl(coords);
@@ -2671,7 +2680,14 @@ function mdTileLayer() {
       return img;
     }
   });
-  return new T(TILE_URL, { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+  const base = new T(TILE_URL, { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+  // 판 -104 (사용자 '지도 해상도 왜 이래, 보기 싫어'): OSM 그림 지도는 256픽셀이라 촘촘한 휴대폰 화면에선 늘려 보여 흐려요 →
+  //   화면이 촘촘하고 인터넷이 되면, 붙인 뒤 선명한 벡터 지도(OpenFreeMap, 한글 이름)로 바꿔요. 못 받으면 그림 지도 그대로.
+  //   기록 중 지도(배터리·산속 인터넷)와 나라 밖 계획 지도(따로 한글 지도를 붙임)는 opt.vec === false
+  if (!(opt && opt.vec === false) && (window.devicePixelRatio || 1) >= 1.5 && navigator.onLine && !LAB_QUIET) base.once('add', () => {
+    koMapLayer(false).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});
+  });
+  return base;
 }
 function loadTile(src) {
   return new Promise(res => {
@@ -3096,9 +3112,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-103-design2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-104-mapfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🎨 나머지 화면도 같은 모습으로: 가족 앨범·게임·모임방·대화 정리·추억 만들기·기록 중 화면·받은 MPD 모두 밝은 바탕·흰 카드·큰 제목 · 맨 위 파도 띠 대신 동그란 ⌂ 단추 · 러닝·걷기·등산·자전거 첫 화면 위 단추도 동그랗게 · 추억 만들기 화면에 보이던 null 글자 없앰';
+const UI_NOTES = '🗺 지도가 선명해졌어요: 확대해도 글자·길이 흐리지 않아요(기록 중 지도는 그대로) · ⚠ 여행·등산 계획에서 위치가 틀릴 수 있는 곳은 맨 위 주황 상자에 크게 · 누르면 바로 지도에서 고쳐요 · 받은 계획 링크가 앱이 잘못 찾아 넣은 위치도 바로잡아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7496,7 +7512,8 @@ async function planBlogRun(url, ai, say) {
 //   자료: 높이 Open-Meteo elevation · 정상 이름·해발 / 주차장·버스 정류장·화장실 OpenStreetMap(Overpass) · 해 지는 시각 계산
 //   p.chk = { at, L: [{ lv: 'ok'|'warn'|'info', t, src }] } · 장소마다 x.ele2(지형 높이) · x.bEle(글에 적힌 해발) · x.vf(확인 글)
 function planBlogDate(html) {
-  const m = /article:published_time"\s+content="(\d{4})-(\d{2})-(\d{2})/.exec(html) || /(?:publishDate|se_date|blog_date|date)[^>]*>\s*(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./.exec(html) || /"(?:addDate|datePublished)"\s*:\s*"?(\d{4})[-.](\d{1,2})[-.](\d{1,2})/.exec(html);
+  const m = /article:published_time"\s+content="(\d{4})-(\d{2})-(\d{2})/.exec(html) || /(?:publishDate|se_date|blog_date|date)[^>]*>\s*(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./.exec(html) || /"(?:addDate|datePublished)"\s*:\s*"?(\d{4})[-.](\d{1,2})[-.](\d{1,2})/.exec(html)
+    || /(20\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\d{1,2}:\d{2}/.exec(html);   // 판 -104: 네이버 글 '2022. 5. 3. 8:40'
   if (!m) return ''; const y = +m[1], mo = +m[2], d = +m[3]; if (y < 2000 || y > 2100 || mo > 12 || d > 31) return '';
   return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
@@ -7527,6 +7544,13 @@ async function planResearch(p, say) {
     const day = loc.filter(x => x.d === d); if (day.length < 3) continue;
     const md = a => a.slice().sort((u, v) => u - v)[a.length >> 1], c = [md(day.map(x => x.lat)), md(day.map(x => x.lng))], lim = hike ? 20000 : 150000;
     for (const x of day) if (dist(c[0], c[1], x.lat, x.lng) > lim) { x.vf = `⚠ 같은 날 다른 곳과 ${fmtDist(dist(c[0], c[1], x.lat, x.lng))} 떨어져 있어요 · 같은 이름의 다른 곳일 수 있어요`; add('warn', `${x.n}: 다른 곳과 너무 멀어요 · 위치를 확인해 주세요`, '확인'); }
+  }
+  // ③-2 판 -104: 앞뒤 장소에서 엉뚱하게 벗어난 곳(검색이 다른 동네를 찾은 경우, 인왕산 계획에서 실제로 생김) · 직접 정한 곳·블로그 지도 카드는 빼요
+  for (let d = 0; d < (p.nd || 1); d++) {
+    const day = loc.filter(x => x.d === d), ex = hike ? 600 : 5000;
+    for (let i = 1; i < day.length - 1; i++) { const a = day[i - 1], x = day[i], b = day[i + 1]; if (x.man || x.srcL === 'card' || x.vf) continue;
+      const ax = dist(a.lat, a.lng, x.lat, x.lng), xb = dist(x.lat, x.lng, b.lat, b.lng), ab = dist(a.lat, a.lng, b.lat, b.lng);
+      if (ax + xb > 2.2 * ab + ex && Math.min(ax, xb) > ex) { x.vf = `앞뒤 장소에서 ${fmtDist(Math.min(ax, xb))} 벗어나 있어요 · 다른 동네를 잘못 찾았을 수 있어요`; add('warn', `${x.n}: 앞뒤 장소와 동떨어져 있어요 · 위치를 확인해 주세요`, '확인'); } }
   }
   // ④ 높이(지형 자료) → 정상 해발 맞춰 보기
   if (loc.length) { say && say('⛰ 장소 높이를 지형 자료에서 확인하는 중…');
@@ -7703,8 +7727,9 @@ async function viewPlan() {
         {   // 판 -92: 위치도 채워요. 내 계획에 위치가 없거나 대략인 곳 ← 링크 속 같은 날 같은 이름(띄어쓰기 무시), 장소 수가 같으면 같은 차례의 같은 날 장소(예전엔 설명만 채워 '위치 없음'이 그대로 남았음)
           const nm = v => String(v || '').replace(/\s+/g, ''), eq = same.it.length === p.it.length;
           same.it.forEach((y, i) => { const z = p.it.find(q => q.d === y.d && nm(q.n) === nm(y.n)) || (eq && p.it[i].d === y.d ? p.it[i] : null);
-            if (!z || !Number.isFinite(z.lat)) return; const yHas = Number.isFinite(y.lat), better = !yHas || ((y.ap || y.near) && !z.ap && !z.near);
-            if (better) { y.lat = z.lat; y.lng = z.lng; y.ap = z.ap || 0; if (z.near) y.near = z.near; else delete y.near; ch++; } });
+            if (!z || !Number.isFinite(z.lat)) return; const yHas = Number.isFinite(y.lat), better = !yHas || ((y.ap || y.near || y.vf) && !z.ap && !z.near)
+              || (!y.man && dist(y.lat, y.lng, z.lat, z.lng) > 150);   // 판 -104: 앱이 잘못 찾아 넣은 위치도 받은 링크의 정확한 위치로 바꿔요(내가 직접 정한 곳 man은 그대로)
+            if (better) { y.lat = z.lat; y.lng = z.lng; y.ap = z.ap || 0; if (z.near) y.near = z.near; else delete y.near; delete y.vf; ch++; } });
         }
         if (ch) planSave(same); filled += ch;
       }
@@ -7740,7 +7765,7 @@ var PLAN_TERMS = [[/장자지에|장자제|장쟈제|짱자제/g, '장가계'], 
   [/위안자제/g, '원가계'], [/톈쯔산|텐쯔산/g, '천자산'], [/바오펑후/g, '보봉호'], [/푸룽전|푸룽진/g, '부용진'], [/황룽둥/g, '황룡동'], [/후난성/g, '호남성']];
 function planTerm(t) { if (typeof t !== 'string' || !t) return t; let o = t; for (const [r, v] of PLAN_TERMS) o = o.replace(r, v); return o; }
 function planTermFix(p) {
-  let ch = 0; const f = (o, k) => { if (o && typeof o[k] === 'string') { const v = planTerm(o[k]); if (v !== o[k]) { o[k] = v; ch++; } } };
+  let ch = 0; const f = (o, k) => { if (o && typeof o[k] === 'string') { const v = planTerm(o[k]).replace(/\uFFFD\S*/g, '').replace(/[ \t]{2,}/g, ' ');   /* 판 -104: 깨진 글자('�make' 등)는 지워요 */ if (v !== o[k]) { o[k] = v; ch++; } } };
   f(p, 'name'); (p.it || []).forEach(x => { f(x, 'n'); f(x, 'm'); f(x, 'x'); }); (p.info || []).forEach(z => { f(z, 'h'); f(z, 'x'); }); if (p.meet) f(p.meet, 'n');
   return ch;
 }
@@ -8160,8 +8185,8 @@ async function viewTripRoom(code, title, planId) {
       el('div', { class: 'dt', text: '켜 둔 사람만 보여요. 앱이나 이 화면이 열려 있는 동안 1분마다 올라가요(화면을 끄면 멈춰요). 길을 잃었을 때 서로 찾기 좋아요.' }),
       mapEl, list);
     setTimeout(() => {
-      map = L.map(mapEl); const base = mdTileLayer().addTo(map); mlay = L.layerGroup().addTo(map); drawPins();
-      const c = S.tl.find(x => Number.isFinite(x.lat)); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
+      const c = S.tl.find(x => Number.isFinite(x.lat));
+      map = L.map(mapEl); const base = mdTileLayer({ vec: !(c && koInHanzi(c.lat, c.lng)) }).addTo(map); mlay = L.layerGroup().addTo(map); drawPins(); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
     }, 30);
   }
   function drawPins() {
@@ -8579,11 +8604,32 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      (() => { const miss = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length; if (!miss) return null;
-        const t0 = `📍 위치가 없거나 대략인 곳 ${miss}곳 · 찾기 ›`, bt = el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:#147FA0', text: t0, onclick: async () => {
-          if (bt.disabled) return; bt.disabled = true; const say = t => { bt.textContent = t.slice(0, 40); };
-          try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}${r.nb ? ` (식사·쇼 등 ${r.nb}곳은 앞뒤 장소 사이로)` : ''}`); location.reload(); }
-          catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); bt.disabled = false; bt.textContent = t0; } } }); return bt; })()); };
+      warnBox()); };
+  // 판 -104 (사용자 '사용자 확인 필요한 거면 시인성 높고 편하게, 핀 표시하면 알아먹냐?'): 확인이 필요한 곳을 맨 위 주황 상자에 한 곳씩 큰 단추로.
+  //   누르면 바로 지도가 열려 맞는 자리를 누르면 끝. '이 위치가 맞아요'로 경고만 지울 수도. 다 고치면 상자가 사라져요
+  const needChk = x => x.k !== 'move' && !(x.k === 'fly' && !Number.isFinite(x.lat)) && (!Number.isFinite(x.lat) || x.ap || x.near || x.vf);
+  const whyChk = x => !Number.isFinite(x.lat) ? '지도 위치가 아직 없어요' : x.vf ? x.vf.replace(/^⚠\s*/, '') : x.near ? '앱이 앞뒤 장소 사이로 짐작한 위치예요' : '앱이 짐작한 대략 위치예요 · 틀릴 수 있어요';
+  async function fixLoc(x) {
+    const r = await pickDest(Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng, n: x.n } : null, Number.isFinite(x.lat) ? [x.lat, x.lng] : centerOf(), true, `📍 '${x.n}' 위치 바로잡기`);
+    if (!r) return; x.lat = r.lat; x.lng = r.lng; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 고쳤어요`);
+  }
+  function okLoc(x) { x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 맞다고 표시했어요`); }
+  function warnBox() {
+    const L = p.it.filter(needChk); if (!L.length) return null;
+    const auto = el('button', { class: 'pw-auto', text: '앱이 자동으로 다시 찾아보기 (틀릴 수 있어요)', onclick: async () => {
+      if (auto.disabled) return; auto.disabled = true; const say = t => { auto.textContent = t.slice(0, 40); };
+      try { const r = await planFindPlaces(p, say); toastLater(`📍 위치를 찾았어요 · 정확 ${r.exact}곳 · 대략 ${r.approx}곳${r.none ? ` · 못 찾음 ${r.none}곳` : ''}`); location.reload(); }
+      catch (e) { toast('⚠ 위치를 찾지 못했어요 · ' + String(e && e.message || e).slice(0, 60)); auto.disabled = false; } } });
+    return el('div', { class: 'pw' },
+      el('div', { class: 'pw-h', text: `⚠ 확인이 필요한 곳 ${L.length}곳` }),
+      el('div', { class: 'pw-s', text: '지도에 찍힌 자리가 틀릴 수 있어요. 아래를 하나씩 눌러 지도에서 맞는 자리를 눌러 주세요.' }),
+      ...L.map(x => el('div', { class: 'pw-i' },
+        el('button', { class: 'pw-b', onclick: () => fixLoc(x) },
+          el('b', { text: `${p.nd > 1 ? x.d + 1 + '일차 · ' : ''}${planItems(p, x.d).indexOf(x) + 1}. ${x.n}` }),
+          el('span', { text: whyChk(x) }), el('em', { text: '눌러서 지도에서 고치기 ›' })),
+        Number.isFinite(x.lat) ? el('button', { class: 'pw-ok', text: '이 위치가 맞아요', onclick: () => okLoc(x) }) : null)),
+      auto);
+  }
   function moreSheet() {   // ⋯ 더보기: 자주 안 쓰는 것들
     const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(p.name,
@@ -8612,7 +8658,7 @@ function viewPlanOne(id) {
     const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: planXLab(p) }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
     const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
       kRow, mm, locL,
-      el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
+      el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
       isNew ? null : el('div', { class: 'row', style: 'gap:6px' },
         el('button', { class: 'btn line small grow', text: '↑ 앞으로', onclick: () => { move(x, -1); bg.remove(); } }),
@@ -8635,8 +8681,7 @@ function viewPlanOne(id) {
     return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => editItem(x),
       extra: [x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
-        x.vf ? el('div', { class: 'tv-w', text: x.vf }) : null,
-        !hasLoc && x.k !== 'fly' ? el('div', { class: 'tv-w', text: '📍 위치 없음 · 눌러서 정하기' }) : x.ap ? el('div', { class: 'tv-m', text: x.near ? '📍 앞뒤 장소 사이 대략 위치' : '📍 대략 위치' }) : null,
+        needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, el('b', { text: '⚠ 위치 확인 필요' }), el('span', { text: whyChk(x) + ' · 눌러서 지도에서 고치기' })) : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
       btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
@@ -8687,7 +8732,8 @@ function viewPlanOne(id) {
     el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` }))), tvBar(p, 'plan'));
   drawAll();
   setTimeout(() => {
-    map = L.map(mapEl); const base = mdTileLayer().addTo(map); drawMap();
+    const abroad = p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
+    map = L.map(mapEl); const base = mdTileLayer({ vec: !abroad }).addTo(map); drawMap();
     // 나라 밖 계획이면 지도 이름을 한글로(없으면 영어) — 기본 지도(OSM)는 그 나라 글자(중국은 한자)라서
     if (p.it.some(x => Number.isFinite(x.lat) && !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132))) koMapLayer(p.it.some(x => Number.isFinite(x.lat) && koInHanzi(x.lat, x.lng))).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
   }, 30);
@@ -12873,7 +12919,7 @@ function viewWalk() {
     if (ensureMap.busy) return; ensureMap.busy = true;   // 지도가 만들어지기 전에 두 번 불려도 한 번만 만들어요
     setTimeout(() => {
       map = L.map(mapEl).setView([37.5665, 126.978], 13);
-      mdTileLayer().addTo(map);
+      mdTileLayer({ vec: false }).addTo(map);   // 기록 중 지도는 배터리·산속 인터넷 때문에 그림 지도 그대로
       map.on('dragstart', () => { follow = false; draw(); });
       const fb = addFullBtn(map, mapEl);
       map.on('click', () => { if (M().k === 'run' && fb && !mapEl.classList.contains('map-full')) toggleFull(map, mapEl, fb); });   // 러닝: 작은 지도를 누르면 크게
