@@ -210,6 +210,7 @@
 - **① 홈 화면 웹앱 다듬기**: 기록 중 `lockWake`가 아이폰 웹(`IS_IOS && !IN_NATIVE`)이면 화면 켜두기(wakeLock)와 함께 `videoAwake()`(소리 없는 검은 2초 16px mp4 `MD_AWAKE_MP4`를 1px로 숨겨 되풀이, wakeLock이 없거나 홈 화면 앱에서 안 듣는 예전 iOS 대신)도 돌림. 화면 켜두기 줄 글 '주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기', 시작할 때 처음 3번 알림(`ls iosTipN`, 새 키). 화면이 꺼졌다 켜지면(앱이 아니면 모두) 마지막 위치 점에서 1분 넘게 비었으면 '⚠ n분 동안 기록이 끊겼어요 · 점선으로 이어요'(예전엔 2분·숨긴 시간 기준). **옆 버튼으로 화면을 끄면 아이폰 웹은 기록이 멈춤(못 고침)**. `toast(msg, top, ms)` 세 번째 값 = 떠 있는 시간, `toastLater` 긴 글은 7초
 - **② 다른 앱 기록(GPX) 가져오기**: 내 MPD 목록 위 카드 `gpxImportBtn`(아이폰은 .gpx가 회색으로 막힐 수 있어 accept 없음, 여러 파일) → `gpxImport`: `gpxRead`(trkpt 중 시각 있는 것만, 시각 순, 15m(`TRACK_MIN_M`) 안 점 빼고, 2만 점 넘으면 솎음, 높이 반올림) → 모드 `gpxModeGuess`(GPX `<type>` running/cycling/hiking/walking, 없으면 평균 13km/h 넘으면 자전거·6.8 넘으면 러닝·오른 높이 150m 넘으면 등산·그 밖 걷기) → `track:`·`walkMode:`·`trackName:`(GPX 이름, 'track/activity…'면 'n월 n일 모드') 새 `walk_` 기록. 시작 3분·끝 10분 안 겹치는 기록은 건너뜀, 시각 없는 GPX는 '시각 정보가 없어요'. 하나면 그 기록 보기로, 여럿이면 목록 다시. syncPush·cloudSync
 - **나중에 넣는 사진은 EXIF 찍은 시각·위치**: `addPhotos(…, later)`가 `photoTsOf`(famExif, JPEG만)로 찍은 시각·GPS를 먼저 씀(아이폰은 파일 날짜가 고른 때라 길 위 자리가 틀렸음), ✎ 수정하기에서 여러 날 여행의 날 고르기도 같은 시각
+- **판 -70(같은 날 사용자 '앱을 두 개 써야 하잖아' → '1번하자')**: 아이폰은 ①(MPD 하나, 화면 켜 두기 + 🔒 화면 잠그기)으로 쓰기로. GPX 가져오기 카드는 내 MPD 맨 아래(백업 위)로 옮기고, 아이폰용 '다른 앱으로 기록하라'는 글은 뺌(모든 기기 같은 설명)
 - 시험 scratchpad `ios/t.js`(아이폰 UA: 단추·가져오기·겹침·시각 없음·사진 시각·wakeLock 없을 때 숨은 영상)
 
 ## 앱 설정 (2026-10-20)
