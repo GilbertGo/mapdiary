@@ -2992,9 +2992,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-99-invite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-100-trip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 카카오톡 초대 카드에 여행지 사진이 들어가요 · 🖼 등산 계획 맨 위 사진은 정상 둘레 산 사진으로 · 마음에 안 들면 ↻ 다른 사진 · 📝 블로그 글로 계획 만들 때 지금 몇 번째 단계인지·몇 초 지났는지 보여요 · 정상 찾기는 20초 안에 끝나요 · 👋 여행 초대가 짧고 예뻐졌어요 · 계획 화면의 함께 갈 사람 초대를 누르면 여행지 사진 카드로 카카오톡에 가요 · 🔗 받은 계획 링크를 앱에 넣을 수 있어요(여행 계획 화면의 받은 계획 링크 넣기)';
+const UI_NOTES = '👋 일정 보내는 글을 일행용으로 바꿨어요 · 장가계 4박 5일 우리 여행 일정 · D-9처럼 남은 날도 보여요 · 단추 이름은 일행에게 일정 보내기';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4006,7 +4006,7 @@ async function viewRoomOne(p) {
     const invite = async () => {
       const url = roomLink({ pretty }), text = `[Map Photo Diary] '${name}' 모임방에 초대해요\n코드: ${pretty}\n${url}`;
       if (navigator.share && !IN_KAKAO) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-      navigator.clipboard.writeText(text).then(() => toast('초대 글을 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 글을 복사하세요', text));
+      navigator.clipboard.writeText(text).then(() => toast('일정 글을 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 글을 복사하세요', text));
     };
     top.replaceChildren(el('h1', { text: name }),
       el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:wrap' },
@@ -6946,20 +6946,21 @@ async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는�
   const d0 = planDate(p, 0), d1 = planDate(p, p.nd - 1);
   const md = x => x ? `${x.getMonth() + 1}월 ${x.getDate()}일(${'일월화수목금토'[x.getDay()]})` : '';
   const when = d0 ? `${md(d0)}${p.nd > 1 ? ' ~ ' + (d1.getMonth() === d0.getMonth() ? `${d1.getDate()}일(${'일월화수목금토'[d1.getDay()]})` : md(d1)) : ''}` : '';
-  const title = `✈️ ${sh(p.name).replace(/\s*·\s*하나투어$/, '')} 함께 가요!`;
-  const desc = [[planNights(p), when].filter(Boolean).join(' · '), pick.length ? '📍 ' + pick.join(' · ') : ''].filter(Boolean).join('\n');
+  const title = `✈️ ${sh(p.name).replace(/\s*·\s*하나투어$/, '')} · 우리 여행 일정`;   // 판 -100: 이미 함께 가기로 한 일행에게 보내는 글(사용자 '함께 가요 문구 고쳐')
+  const kD = planToday(p), dd = kD != null && kD < 0 ? `D-${-kD}` : kD != null && kD < p.nd ? `여행 ${kD + 1}일차` : '';
+  const desc = [[dd, planNights(p), when].filter(Boolean).join(' · '), pick.length ? '📍 ' + pick.join(' · ') : ''].filter(Boolean).join('\n');
   const textOf = url => [title, desc, '', '👉 일정 · 지도 · 여행 방 열기', url].join('\n');
   const hero = ls.get('planHero:' + p.id, null); let img = hero && hero.u ? hero.u : APP_BASE.replace(/[^/]*$/, '') + 'icon-512.png', kimg = null;   // kimg: 카카오에 직접 올린 그림(판 -97: 위키 사진 주소를 카카오가 못 읽어 카드에 사진이 빠졌음)
   const st = el('div', { class: 'sub', style: 'font-weight:700', text: '🔗 초대 링크를 만드는 중…' });
   let url = null;
-  const kb = kakaoOK() ? kakaoBtn(() => { if (!url) return; try { const r = Kakao.Share.sendDefault({ objectType: 'feed', content: { title, description: desc, imageUrl: kimg ? kimg.url : img, imageWidth: kimg ? kimg.width : 1280, imageHeight: kimg ? kimg.height : 853, link: { mobileWebUrl: url, webUrl: url } }, buttons: [{ title: '일정·여행 방 열기', link: { mobileWebUrl: url, webUrl: url } }] }); if (r && r.catch) r.catch(e => { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요 (' + String(e && e.message || e).slice(0, 60) + ')'; }); bg.remove(); } catch (e) { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요'; } }, '카카오톡으로 초대하기') : null;
-  const other = el('button', { class: 'btn line full', text: kb ? '문자 · 다른 앱으로 보내기' : '📤 초대 보내기', onclick: async () => { if (!url) return; const text = textOf(url);
+  const kb = kakaoOK() ? kakaoBtn(() => { if (!url) return; try { const r = Kakao.Share.sendDefault({ objectType: 'feed', content: { title, description: desc, imageUrl: kimg ? kimg.url : img, imageWidth: kimg ? kimg.width : 1280, imageHeight: kimg ? kimg.height : 853, link: { mobileWebUrl: url, webUrl: url } }, buttons: [{ title: '일정·여행 방 열기', link: { mobileWebUrl: url, webUrl: url } }] }); if (r && r.catch) r.catch(e => { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요 (' + String(e && e.message || e).slice(0, 60) + ')'; }); bg.remove(); } catch (e) { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요'; } }, '카카오톡으로 보내기') : null;
+  const other = el('button', { class: 'btn line full', text: kb ? '문자 · 다른 앱으로 보내기' : '📤 일정 보내기', onclick: async () => { if (!url) return; const text = textOf(url);
     try { if (navigator.share) { await navigator.share({ text }); bg.remove(); return; } } catch (e) { if (/abort|cancel/i.test(String(e && (e.name + e.message)))) return; }
     try { await navigator.clipboard.writeText(text); toast('초대 글을 복사했어요 · 카톡 입력칸을 길게 눌러 붙여 넣으세요', false, 6000); bg.remove(); } catch { prompt('이 글을 복사해 보내세요', text); } } });
   const prev = el('div', { style: 'border-radius:14px;overflow:hidden;background:#16273B;color:#fff' },
     el('div', { style: `height:140px;background:#25415F url("${img.replace(/"/g, '%22')}") center/cover` }),
     el('div', { style: 'padding:10px 12px' }, el('div', { style: 'font-weight:800;font-size:16px', text: title }), el('div', { style: 'white-space:pre-line;font-size:13px;color:#9FB0C2;margin-top:4px', text: desc })));
-  const bg = labSheet('👋 함께 갈 사람 초대', el('div', { class: 'sub', text: '받은 사람은 링크를 누르면 일정·지도·여행 방에 바로 들어와요. 로그인은 필요 없어요.' }), prev, st, ...(kb ? [kb] : []), other);
+  const bg = labSheet('👋 일행에게 일정 보내기', el('div', { class: 'sub', text: '받은 일행은 링크를 누르면 일정·지도·여행 방에 바로 들어와요. 로그인은 필요 없어요.' }), prev, st, ...(kb ? [kb] : []), other);
   [kb, other].forEach(b => b && (b.disabled = true));
   const prepImg = async () => {   // 여행지 사진(없으면 찾아서)을 카카오에 올려 둠
     try { if (!hero || !hero.u) { const im = await tvHeroImg(p); if (im && im.u) { img = im.u; prev.firstChild.style.backgroundImage = `url("${img.replace(/"/g, '%22')}")`; } } } catch {}
@@ -6968,7 +6969,7 @@ async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는�
       const up = await Kakao.Share.uploadImage({ file: [new File([b], 'trip.' + (/png/.test(b.type) ? 'png' : 'jpg'), { type: b.type })] });
       kimg = up && up.infos && up.infos.original || null; } catch {}
   };
-  try { st.textContent = '🔗 초대 링크와 여행지 사진을 준비하는 중…'; [url] = await Promise.all([planLink(p), prepImg()]); st.textContent = '✅ 초대 준비가 됐어요' + (kb && !kimg ? ' · 사진 없이 가요' : ''); [kb, other].forEach(b => b && (b.disabled = false)); }
+  try { st.textContent = '🔗 일정 링크와 여행지 사진을 준비하는 중…'; [url] = await Promise.all([planLink(p), prepImg()]); st.textContent = '✅ 보낼 준비가 됐어요' + (kb && !kimg ? ' · 사진 없이 가요' : ''); [kb, other].forEach(b => b && (b.disabled = false)); }
   catch (e) { st.textContent = '⚠ 링크를 만들지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'; }
 }
 // ---------- 여행사 일정 읽기 ----------
@@ -8415,7 +8416,7 @@ function viewPlanOne(id) {
     el('div', { class: 'tv-acts' },
       el('button', { class: 'btn line small', text: '✎ 이름·날짜', onclick: editMeta }),
       (() => { const k = planToday(p); return k != null && k >= -30 && k < p.nd ? el('a', { class: 'btn primary small', href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), text: k >= 0 ? '📅 오늘 화면' : '📅 여행 화면' }) : null; })(),
-      el('button', { class: 'btn line small', text: '👋 함께 갈 사람 초대', onclick: () => planShare(p) }),
+      el('button', { class: 'btn line small', text: '👋 일행에게 일정 보내기', onclick: () => planShare(p) }),
       (() => { const miss = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length; if (!miss) return null;
         const bt = el('button', { class: 'btn line small', text: `📍 위치 찾기 · ${miss}곳`, onclick: async () => {
           if (bt.disabled) return; bt.disabled = true; const say = t => { bt.textContent = t.slice(0, 40); };
