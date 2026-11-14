@@ -2940,9 +2940,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-87-prep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-88-room';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧳 여행 계획 맨 위에 여행 준비가 생겼어요(출발 미팅, 날마다 날씨와 산 위 기온, 입국신고서, 옷, 챙길 것, 음식 걱정 팁, 로밍, 급할 때 연락처) · 🗣 식당·택시에서 크게 보여 주는 중국어 · 📖 장소를 누르면 여행사 안내가 그대로 · 지명은 장가계·무릉원·천문산으로 통일';
+const UI_NOTES = '💬 여행 계획마다 여행 방이 생겼어요(일행 대화, 사진 모으기, 일행 위치) · 📤 일정 보내기를 받은 사람은 같은 방에 바로 들어와요(로그인 없이 이름만) · 📷 방 사진은 선명한 2,560픽셀, 원본과 동영상은 내 구글 드라이브에(웹 브라우저에서 연결) · 휴대폰 알림은 안 와요, 앱을 열면 새 글을 가져와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -3626,7 +3626,8 @@ function route() {
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
   if (LAB_QUIET) return setTimeout(viewLabCheck);   // 🔎 발견 점검 (읽기만, 2026-11-08)
   if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
-  if (qs.get('plan')) return setTimeout(viewPlan);   // 🗓 여행 계획 (2026-11-14)
+  if (qs.get('plan')) return setTimeout(viewPlan);
+  if (qs.get('troom')) return setTimeout(() => { const h = new URLSearchParams(location.hash.slice(1)), c = h.get('tr'); if (c) viewTripRoom(c, h.get('n') || '', null); else location.replace('./'); });   // 💬 여행 방(크롬에서 원본 올리기)   // 🗓 여행 계획 (2026-11-14)
   if (qs.get('film')) return setTimeout(viewFilm);   // 🎬 이동 기록 영상 만들기 (실험, 2026-11-12)
   if (qs.get('album')) return setTimeout(viewAlbum);   // 가족 앨범 (아래쪽 const가 준비된 뒤에)
   if (qs.get('room')) return viewRoom();
@@ -6573,7 +6574,7 @@ function planGap(a, b) {   // 두 곳 사이: 직선거리 + 대략 걸리는 �
 // ---------- 링크로 보내기 (서버 없이 링크 안에) ----------
 async function planPack(p) {
   const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0, x.x || '']) };
-  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info;
+  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code;
   const raw = new TextEncoder().encode(JSON.stringify(o));
   if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
   return 'j' + b64url(raw);
@@ -6587,7 +6588,8 @@ async function planUnpack(s) {
     it: (Array.isArray(o.i) ? o.i : []).slice(0, 300).map(a => ({ id: planNewId(), d: Math.max(0, Math.min(nd - 1, a[0] | 0)), t: /^\d{1,2}:\d{2}$/.test(a[1]) ? a[1] : '', n: str(a[2], 80) || '장소',
       k: PLAN_KINDS[a[3]] ? a[3] : 'spot', m: str(a[4], 300), lat: Number.isFinite(a[5]) ? a[5] : null, lng: Number.isFinite(a[6]) ? a[6] : null, ap: a[7] ? 1 : 0, x: str(a[8], 800) })),
     meet: o.mt && typeof o.mt === 'object' ? { d: /^\d{4}-\d{2}-\d{2}$/.test(o.mt.d) ? o.mt.d : '', t: /^\d{1,2}:\d{2}$/.test(o.mt.t) ? o.mt.t : '', n: str(o.mt.n, 200) } : null,
-    info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x) };
+    info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x),
+    room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null };
 }
 // 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
 //   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
@@ -6609,6 +6611,7 @@ async function planFromLink(hash) {   // #ps=번호.열쇠 → 계획
   return planUnpack(new TextDecoder().decode(await openBytes(o.enc, k)));
 }
 async function planShare(p) {
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }   // 받은 사람이 같은 여행 방에 들어오게
   toast('🔗 계획 링크를 만드는 중…');
   const url = await planLink(p);
   const lines = [`🗓 ${p.name}`, `${planNights(p)}${p.start ? ' · ' + planDayLabel(p, 0) + ' 출발' : ''}`, ''];
@@ -6874,13 +6877,14 @@ async function viewPlan() {
   if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
     try { const p = hs ? await planFromLink(location.hash) : await planUnpack(hm[1]); planTermFix(p); const same = planAll().find(x => x.name === p.name && x.start === p.start && (x.it || []).length === p.it.length);
       if (same) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
-        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
+        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
         for (const y of same.it) if (!y.x) { const z = p.it.find(q => q.n === y.n && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
         if (ch) planSave(same);
       }
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? '이미 넣어 둔 계획이에요' : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
+  if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode() }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
   const card = p => el('a', { class: 'member', href: './?plan=1&p=' + encodeURIComponent(p.id), style: 'text-decoration:none;color:inherit' },
@@ -7029,7 +7033,7 @@ function planPrepSheet(p, wx) {
   const chk = x => {
     const on = () => !!(st[x.id] || x.ok);
     const b = el('button', { style: 'display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;padding:8px 0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px solid var(--line)', onclick: () => { if (x.ok) return; st[x.id] = st[x.id] ? 0 : 1; ls.set('planPrep:' + p.id, st); paint(); } });
-    const paint = () => b.replaceChildren(el('span', { style: `flex:none;width:22px;height:22px;border-radius:6px;border:2px solid ${on() ? 'var(--pine)' : '#B8C7D6'};background:${on() ? 'var(--pine)' : '#fff'};color:#fff;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center`, text: on() ? '✓' : '' }),
+    const paint = () => faRc(b, el('span', { style: `flex:none;width:22px;height:22px;border-radius:6px;border:2px solid ${on() ? 'var(--pine)' : '#B8C7D6'};background:${on() ? 'var(--pine)' : '#fff'};color:#fff;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center`, text: on() ? '✓' : '' }),
       el('div', { style: 'flex:1;min-width:0' }, el('div', { style: `font-weight:700;${on() ? 'color:var(--muted);text-decoration:line-through' : ''}`, text: x.t + (x.ok ? ' (되어 있어요)' : '') }), x.w ? el('div', { class: 'dt', style: 'font-size:13px', text: x.w }) : null));
     paint();
     return el('div', {}, b, x.a ? el('a', { href: x.a, target: '_blank', rel: 'noopener', class: 'btn line small', style: 'margin:6px 0 4px 32px;display:inline-block', text: '↗ ' + x.al }) : null);
@@ -7078,7 +7082,7 @@ function planPrepCard(p, onWx) {
     const st = ls.get('planPrep:' + p.id, {}) || {}, all = planPrepList(p, wx).S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
     const W = (wx && wx.days || []).filter(Boolean), lo = W.length ? Math.round(Math.min(...W.map(w => w.me ? w.ml : w.lo))) : null, hi = W.length ? Math.round(Math.max(...W.map(w => w.hi))) : null;
     const left = p.start ? Math.round((planDate(p, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5) : null;
-    box.replaceChildren(el('span', { style: 'font-size:30px;flex:none', text: '🧳' }),
+    faRc(box, el('span', { style: 'font-size:30px;flex:none', text: '🧳' }),
       el('div', { style: 'flex:1;min-width:0' },
         el('div', { style: 'font-weight:800', text: `여행 준비${left != null && left > 0 ? ` · D-${left}` : ''} · ${done}/${all.length}` }),
         el('div', { class: 'dt', text: [lo != null ? `🌤 ${wx.src === 'fc' ? '예보' : '작년 이맘때'} ${lo}~${hi}°C${W.some(w => w.me) ? ' (산 위 포함)' : ''}` : '', '준비물·옷·음식·로밍·날씨'].filter(Boolean).join(' · ') })),
@@ -7089,6 +7093,294 @@ function planPrepCard(p, onWx) {
   planWeather(p).then(w => { if (w) { wx = w; paint(); onWx && onWx(w); } }).catch(() => {});
   return box;
 }
+// ---------- 💬 여행 방 (2026-11-14 사용자 '여행 멤버들의 채팅방도 사진 올리는 방도', 장가계 6명) ----------
+//   계획마다 방 하나(p.room={code}, 단어 코드). 계획 링크를 받으면 같은 방에 들어와요(로그인 없이 이름만).
+//   대화 rooms/{방}/tc/{번호} · 사진 정보 tp/{사진} · 사진 조각 tq/{사진}-{k} · 위치 tl/{나} · 함께하는 사람 tm/{나} — 모두 방 열쇠로 잠가요
+//   사진은 2,560픽셀(WebP가 되면 WebP, 아니면 JPEG)로 줄여 19만 자씩 나눠 올림(무료 저장 1GB 안이라 방 하나 TR_MAX장까지)
+//   원본은 구글 드라이브에(웹 브라우저에서 구글 로그인, drive.file 권한: 이 앱이 만든 파일만) → 방엔 드라이브 링크만
+//   알림(푸시)은 없음: 앱·화면을 열어 둔 동안만 새 글을 가져와요(10초마다)
+var TR_MAX = 800, TR_PIECE = 190000, DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+function trNewCode() { return 't' + rid(15); }   // 여행 방 코드: 길고 무작위(남이 짐작 못 하게), 계획 링크 안에만 들어가요
+function trMe() { let m = ls.get('tripMe', ''); if (!m) { m = rid(10); ls.set('tripMe', m); } return m; }
+function trName() { return String(ls.get('nick', '') || '').trim(); }
+function trRoom(code) { trRoom.c = trRoom.c || {}; return trRoom.c[code] || (trRoom.c[code] = roomOf(code)); }
+function trDb() { return trDb.p || (trDb.p = new Promise((res, rej) => { const r = indexedDB.open('mpdTrip', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); }
+async function trGet(k) { try { const db = await trDb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(undefined); }); } catch { return undefined; } }
+async function trSet(k, v) { try { const db = await trDb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = res; }); } catch {} }
+async function trPut(R, col, id, obj) { await fsPut(`rooms/${R.rid}/${col}/${id}`, JSON.stringify(await roomSeal(R.key, obj))); }
+async function trSince(R, col, t) {   // t 뒤에 바뀐 문서만 (읽기를 아끼려고)
+  const body = { structuredQuery: { from: [{ collectionId: col }], where: { fieldFilter: { field: { fieldPath: 't' }, op: 'GREATER_THAN', value: { integerValue: String(Math.max(0, Math.floor(t || 0))) } } }, orderBy: [{ field: { fieldPath: 't' } }], limit: 300 } };
+  const r = await fetchT(`${FS_URL}rooms/${R.rid}:runQuery?key=${FS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, 20000);
+  if (!r.ok) throw new Error('fs ' + r.status);
+  return (await r.json()).filter(x => x.document).map(x => ({ id: x.document.name.split('/').pop(), d: x.document.fields?.d?.stringValue || '', t: +(x.document.fields?.t?.integerValue || 0) }));
+}
+// 방 자료(대화·사진·위치·사람)를 이 휴대폰(IndexedDB mpdTrip)에 모아 두고, 서버엔 새로 바뀐 것만 물어봐요
+async function trLoad(R) { const S = await trGet('room:' + R.rid); return S && S.v === 1 ? S : { v: 1, tc: [], tp: [], tl: [], tm: [], last: {} }; }
+async function trSync(R, S, cols) {
+  let ch = 0;
+  for (const col of cols) {
+    let rows; try { rows = await trSince(R, col, (S.last[col] || 0) - 300000); } catch { S.err = Date.now(); continue; }   // 휴대폰 시계가 조금 달라도 놓치지 않게 5분 겹쳐 물어봄
+    S.err = 0;
+    for (const r of rows) {
+      S.last[col] = Math.max(S.last[col] || 0, r.t);
+      const arr = S[col], i = arr.findIndex(x => x.id === r.id); if (i >= 0 && arr[i]._t >= r.t) continue;
+      try { const o = await roomOpen(R.key, JSON.parse(r.d)); o.id = r.id; o._t = r.t; if (i >= 0) arr[i] = o; else arr.push(o); ch++; } catch {}
+    }
+  }
+  if (ch) { S.tc.sort((a, b) => a.t - b.t); S.tp.sort((a, b) => (a.ts || a.t) - (b.ts || b.t)); if (S.tc.length > 2000) S.tc = S.tc.slice(-2000); }
+  await trSet('room:' + R.rid, S); return ch;
+}
+async function trImg(f, max, q) {   // WebP가 되면 WebP(같은 화질에 30%쯤 작아요), 아니면 JPEG
+  const bmp = await createImageBitmap(f), s = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  let b = await new Promise(r => c.toBlob(r, 'image/webp', q)); if (!b || b.type !== 'image/webp') b = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+  return { b, w: c.width, h: c.height };
+}
+async function trSendPhoto(R, f, drv, say) {
+  const isV = /^video\//.test(f.type || '');
+  const ex = isV ? {} : await famExif(f).catch(() => ({}));
+  const pid = Date.now().toString(36) + rid(4), meta = { by: trMe(), nm: trName(), t: Date.now(), ts: ex.ts || f.lastModified || Date.now(), lat: ex.lat ?? null, lng: ex.lng ?? null };
+  if (isV) {   // 동영상은 방에 못 담아서 드라이브에만(연결돼 있을 때)
+    if (!drv) throw new Error('video');
+    meta.v = 1; meta.th = await videoPoster(f, 360).catch(() => '');
+  } else {
+    const { b, w, h } = await trImg(f, 2560, 0.82), buf = new Uint8Array(await b.arrayBuffer());
+    meta.th = await shrinkImage(f, 360, 'url', 0.62); meta.w = w; meta.h = h; meta.ty = b.type; meta.sz = buf.length;
+    const enc = await sealBytes(buf, R.key); meta.n = Math.ceil(enc.length / TR_PIECE);
+    for (let k = 0; k < meta.n; k++) { say && say(k + 1, meta.n); await fsPut(`rooms/${R.rid}/tq/${pid}-${k}`, enc.slice(k * TR_PIECE, (k + 1) * TR_PIECE)); }
+    await trSet('full:' + pid, b);
+  }
+  if (drv) { try { meta.dv = await driveUpload(drv, f); meta.dvs = f.size; } catch (e) { meta.dverr = String(e && e.message || e).slice(0, 60); if (isV) throw e; } }
+  await trPut(R, 'tp', pid, meta);
+  return Object.assign({ id: pid, _t: meta.t }, meta);
+}
+async function trFull(R, ph) {
+  const k0 = 'full:' + ph.id, c = await trGet(k0); if (c) return c;
+  let s = ''; for (let k = 0; k < ph.n; k++) { const d = await fsGet(`rooms/${R.rid}/tq/${ph.id}-${k}`); if (d == null) throw new Error(d === null ? 'gone' : 'net'); s += d; }
+  const b = new Blob([await openBytes(s, R.key)], { type: ph.ty || 'image/jpeg' }); trSet(k0, b); return b;
+}
+// ---- 구글 드라이브(원본) ----
+async function driveToken(interactive) {
+  try { const c = JSON.parse(sessionStorage.getItem('drvTok') || 'null'); if (c && c.exp > Date.now() + 60000) return c; } catch {}
+  if (!interactive) return null;
+  const [F, A] = await Promise.all([import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app.js`), import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth.js`)]);
+  const app = F.getApps().find(a => a.name === 'drive') || F.initializeApp(FB_CFG, 'drive');   // 로그인(☁ 기록 모으기)과 따로라 카카오 로그인은 그대로
+  const pv = new A.GoogleAuthProvider(); pv.addScope(DRIVE_SCOPE);
+  const res = await A.signInWithPopup(A.getAuth(app), pv), cr = A.GoogleAuthProvider.credentialFromResult(res);
+  if (!cr || !cr.accessToken) throw new Error('no token');
+  const o = { tok: cr.accessToken, exp: Date.now() + 55 * 60000, em: res.user && res.user.email || '' };
+  sessionStorage.setItem('drvTok', JSON.stringify(o)); ls.set('drvEmail', o.em); return o;
+}
+async function driveApi(d, url, opt = {}) {
+  const r = await fetchT(url, Object.assign({}, opt, { headers: Object.assign({ Authorization: 'Bearer ' + d.tok }, opt.headers || {}) }), 180000);
+  if (r.status === 401) { sessionStorage.removeItem('drvTok'); throw new Error('드라이브 로그인이 끝났어요 · 다시 연결해 주세요'); }
+  if (r.status === 403) { const t = await r.text(); throw new Error(/accessNotConfigured|has not been used|disabled/i.test(t) ? '드라이브 사용 설정이 아직 안 됐어요' : /storageQuota|quota/i.test(t) ? '구글 드라이브 저장 공간이 꽉 찼어요' : '드라이브가 거절했어요'); }
+  if (!r.ok) throw new Error('드라이브 ' + r.status);
+  return r.json();
+}
+async function driveFolder(d) {
+  const name = ls.get('drvFolderName', '') || 'MPD 여행 사진', cached = ls.get('drvFolder:' + d.em, ''); if (cached) return cached;
+  const q = encodeURIComponent(`name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const f = await driveApi(d, `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`);
+  const id = f.files && f.files[0] ? f.files[0].id : (await driveApi(d, 'https://www.googleapis.com/drive/v3/files', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder' }) })).id;
+  ls.set('drvFolder:' + d.em, id); return id;
+}
+async function driveUpload(d, file) {
+  const folder = await driveFolder(d), bd = 'mpd' + rid(12);
+  const meta = { name: file.name || `MPD_${Date.now()}.jpg`, parents: [folder] };
+  const body = new Blob([`--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${bd}\r\nContent-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`, file, `\r\n--${bd}--`]);
+  const up = await driveApi(d, 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'content-type': `multipart/related; boundary=${bd}` }, body });
+  // 링크를 아는 사람만 볼 수 있게(링크는 잠긴 방 안에만 있어요)
+  await driveApi(d, `https://www.googleapis.com/drive/v3/files/${up.id}/permissions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) });
+  return up.id;
+}
+function trAgo(t) { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; }
+function trHm(t) { return new Date(t).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }); }
+function trWebUrl(code, title) { return `${APP_BASE}?troom=1#tr=${encodeURIComponent(code)}&n=${encodeURIComponent(title || '')}`; }
+// 사진 크게 보기 (방 사진: 누르면 2,560픽셀을 받아 보여 줘요 · 원본은 드라이브 링크)
+function trViewer(R, list, i0) {
+  let i = i0, url = null;
+  const img = el('img', { style: 'max-width:100%;max-height:74vh;border-radius:10px;object-fit:contain' }), info = el('div', { style: 'color:#fff;font-size:14px;text-align:center' }), bar = el('div', { style: 'display:flex;gap:8px;justify-content:center;flex-wrap:wrap' });
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4400;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px' });
+  const nav = (dx) => { i = (i + dx + list.length) % list.length; show(); };
+  const show = async () => {
+    const ph = list[i]; if (url) URL.revokeObjectURL(url); url = null; img.src = ph.th || '';
+    info.textContent = `${i + 1} / ${list.length} · ${ph.nm || '일행'} · ${new Date(ph.ts || ph.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}${ph.v ? ' · 🎬 동영상' : ''}`;
+    faRc(bar, 
+      ph.n ? el('button', { class: 'btn small', text: '⬇ 저장', onclick: async e => { e.stopPropagation(); try { const b = await trFull(R, ph); savePhotos([{ id: ph.id, blob: b, ts: ph.ts || ph.t }], 'MPD_trip'); } catch { toast('⚠ 사진을 받지 못했어요'); } } }) : null,
+      ph.dv ? el('a', { class: 'btn small', href: `https://drive.google.com/file/d/${ph.dv}/view`, target: '_blank', rel: 'noopener', text: ph.v ? '▶ 드라이브에서 보기' : '🔍 원본 보기 (드라이브)', onclick: e => e.stopPropagation() }) : null,
+      ph.by === trMe() ? el('button', { class: 'btn small', text: '🗑 내 사진 지우기', onclick: async e => { e.stopPropagation(); if (!confirm('이 사진을 여행 방에서 지울까요? (일행 휴대폰에서도 사라져요)')) return;
+        try { await trPut(R, 'tp', ph.id, { del: 1, by: ph.by, t: Date.now() }); for (let k = 0; k < (ph.n || 0); k++) fsDel(`rooms/${R.rid}/tq/${ph.id}-${k}`).catch(() => {}); ph.del = 1; toast('지웠어요'); bg.remove(); document.dispatchEvent(new Event('tr-changed')); } catch { toast('⚠ 지우지 못했어요'); } } }) : null,
+      el('button', { class: 'btn small', text: '✕ 닫기', onclick: () => bg.remove() }));
+    if (ph.n) try { const b = await trFull(R, ph); if (list[i] !== ph) return; url = URL.createObjectURL(b); img.src = url; } catch (e) { info.textContent += ' · ⚠ 큰 사진을 못 받았어요(인터넷 확인)'; }
+  };
+  let sx = null;
+  bg.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+  bg.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) nav(dx < 0 ? 1 : -1); });
+  bg.append(img, info, el('div', { style: 'display:flex;gap:10px' }, el('button', { class: 'btn small', text: '‹', onclick: () => nav(-1) }), el('button', { class: 'btn small', text: '›', onclick: () => nav(1) })), bar);
+  document.body.append(bg); ovGuard(); show();
+}
+// 여행 방 화면: 계획에서(?plan=1&p=ID&room=1) 또는 방 주소로(?troom=1#tr=코드, 크롬에서 원본 올릴 때)
+async function viewTripRoom(code, title, planId) {
+  document.title = `여행 방 · ${title || ''}`;
+  const R = await trRoom(code), S = await trLoad(R), me = trMe();
+  let tab = ls.get('tripTab', 'chat'), photoBusy = false, map = null, mlay = null, locWatch = null, drv = await driveToken(false);
+  const p = planId ? planGet(planId) : null;
+  const top = el('div', { class: 'stack', style: 'gap:6px' }), body = el('div', { class: 'stack', style: 'gap:8px' }), foot = el('div');
+  const people = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && x.nm && !m.has(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
+  const live = () => S.tp.filter(x => !x.del);
+  const dayOf = ts => { if (!p || !p.start) return null; const d = Math.floor((new Date(ts).setHours(0, 0, 0, 0) - planDate(p, 0)) / 864e5); return d >= 0 && d < p.nd ? d : null; };
+  function drawTop() {
+    const pp = people(), nmIn = el('input', { type: 'text', maxlength: 12, placeholder: '예: 성식', value: trName(), style: 'flex:1;min-width:0' });
+    const tb = (k, t) => el('button', { class: 'btn small ' + (tab === k ? 'dark' : 'line'), style: 'flex:1', text: t, onclick: () => { tab = k; ls.set('tripTab', k); draw(); } });
+    faRc(top, 
+      p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
+      el('h1', { style: 'margin:0', text: `💬 ${title || '여행'} 여행 방` }),
+      el('div', { class: 'sub', text: `함께하는 사람 ${pp.size}명${pp.size ? ' · ' + [...pp.values()].join(', ') : ''}${S.err ? ' · ⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' : ''}` }),
+      trName() ? null : el('div', { class: 'card', style: 'padding:12px;border:2px solid var(--accent)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '일행에게 보일 내 이름을 적어 주세요' }),
+        el('div', { class: 'row', style: 'gap:6px' }, nmIn, el('button', { class: 'btn primary small', text: '저장', onclick: async () => { const v = nmIn.value.trim().slice(0, 12); if (!v) return; ls.set('nick', v); trPut(R, 'tm', me, { by: me, nm: v, t: Date.now() }).catch(() => {}); draw(); } }))),
+      el('div', { class: 'row', style: 'gap:6px' }, tb('chat', '💬 대화'), tb('photo', `📷 사진 ${live().length}`), tb('loc', '📍 위치')));
+  }
+  function bubble(m) {
+    const mine = m.by === me, phs = (m.ph || []).map(id => S.tp.find(x => x.id === id)).filter(x => x && !x.del);
+    return el('div', { style: `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px` },
+      mine ? null : el('div', { class: 'dt', style: 'font-weight:700', text: m.nm || '일행' }),
+      m.x ? el('div', { style: `max-width:82%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;${mine ? 'background:var(--pine);color:#fff;border-bottom-right-radius:4px' : 'background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px'}`, text: m.x }) : null,
+      phs.length ? el('div', { style: 'display:grid;grid-template-columns:repeat(3,72px);gap:4px' }, ...phs.slice(0, 9).map(ph => el('img', { src: ph.th, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer', onclick: () => { const L = live(); trViewer(R, L, Math.max(0, L.indexOf(ph))); } }))) : null,
+      phs.length > 9 ? el('div', { class: 'dt', text: `외 ${phs.length - 9}장 · 📷 사진에서 모두` }) : null,
+      el('div', { class: 'dt', style: 'font-size:11px', text: trHm(m.t) }));
+  }
+  const fileIn = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) upload(fs); } });
+  async function upload(files) {
+    if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
+    if (photoBusy) return toast('사진을 올리는 중이에요'); photoBusy = true;
+    const room = TR_MAX - live().length; if (room <= 0) { photoBusy = false; return toast(`이 방은 사진 ${TR_MAX}장까지예요 · 원본은 구글 드라이브로 올려 주세요`, false, 6000); }
+    const fs = files.slice(0, room), done = [], fail = [];
+    drv = await driveToken(false);
+    for (let i = 0; i < fs.length; i++) {
+      const say = (k, n) => setStatus(`📤 사진 올리는 중 ${i + 1}/${fs.length}${n > 1 ? ` (${k}/${n})` : ''}${drv ? ' · 원본도 드라이브에' : ''}`);
+      say(0, 0);
+      try { const ph = await trSendPhoto(R, fs[i], drv, say); S.tp.push(ph); done.push(ph.id); }
+      catch (e) { fail.push(String(e && e.message) === 'video' ? '동영상은 구글 드라이브를 연결해야 올라가요' : String(e && e.message || e).slice(0, 60)); }
+    }
+    if (done.length) { const m = { by: me, nm: trName(), x: '', ph: done, t: Date.now() }, id = Date.now().toString(36) + rid(4); try { await trPut(R, 'tc', id, m); S.tc.push(Object.assign({ id, _t: m.t }, m)); } catch {} }
+    await trSet('room:' + R.rid, S); photoBusy = false; setStatus('');
+    toast(`📷 사진 ${done.length}장을 올렸어요${fail.length ? ` · 못 올린 ${fail.length}장 (${fail[0]})` : ''}${files.length > fs.length ? ` · 방이 꽉 차서 ${files.length - fs.length}장은 못 올렸어요` : ''}`, false, 6000);
+    draw();
+  }
+  const status = el('div', { class: 'sub', style: 'font-weight:700' }); const setStatus = t => { status.textContent = t; };
+  function drawChat() {
+    const box = el('div', { class: 'stack', style: 'gap:10px;padding-bottom:90px' });
+    const msgs = S.tc.filter(m => m.x || (m.ph || []).length);
+    if (!msgs.length) box.append(el('div', { class: 'card sub', text: '아직 대화가 없어요. 첫 인사를 남겨 보세요. (앱이나 이 화면을 열어 두면 10초마다 새 글을 가져와요 · 휴대폰 알림은 오지 않아요)' }));
+    let lastDay = '';
+    for (const m of msgs.slice(-300)) { const dl = new Date(m.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (dl !== lastDay) { lastDay = dl; box.append(el('div', { class: 'dt', style: 'text-align:center;font-weight:700', text: dl })); } box.append(bubble(m)); }
+    const ta = el('textarea', { rows: 1, placeholder: trName() ? '메시지 보내기' : '먼저 위에 이름을 적어 주세요', style: 'flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
+    const send = async () => { const x = ta.value.trim(); if (!x) return; if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
+      const m = { by: me, nm: trName(), x: x.slice(0, 1000), t: Date.now() }, id = Date.now().toString(36) + rid(4); ta.value = '';
+      S.tc.push(Object.assign({ id, _t: m.t, pend: 1 }, m)); draw(true);
+      try { await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S); } catch { const q = S.tc.find(y => y.id === id); if (q) q.fail = 1; toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } };
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+    faRc(foot, el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:flex-end' },
+      el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', onclick: () => fileIn.click() }), ta, el('button', { class: 'btn primary small', text: '보내기', onclick: send })));
+    faRc(body, status, box);
+    setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
+  }
+  function drawPhoto() {
+    faRc(foot, );
+    const L = live(), groups = new Map();
+    for (const ph of L) { const d = dayOf(ph.ts || ph.t), k = d != null ? `${d + 1}일차 · ${planDayLabel(p, d)}` : new Date(ph.ts || ph.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(ph); }
+    const dEm = drv ? drv.em : '';
+    const drvBox = el('div', { class: 'card', style: 'padding:12px 14px' },
+      el('div', { style: 'font-weight:800', text: '☁ 원본은 내 구글 드라이브에' }),
+      el('div', { class: 'dt', text: drv ? `✅ 연결됨 · ${dEm} · 이제 올리는 사진은 원본도 드라이브 'MPD 여행 사진' 폴더에 들어가요(동영상도)` : '방에는 선명한 2,560픽셀로 올라가요. 원본(동영상 포함)까지 남기려면 구글 드라이브를 연결하세요(구글 계정 15GB 무료).' }),
+      drv ? null : IN_NATIVE
+        ? el('button', { class: 'btn line small', style: 'margin-top:8px', text: '크롬에서 열어 원본 올리기 ↗', onclick: () => { location.href = trWebUrl(code, title); } })
+        : el('button', { class: 'btn line small', style: 'margin-top:8px', text: '구글 드라이브 연결', onclick: async () => { try { drv = await driveToken(true); toast(`☁ 드라이브 연결됨 · ${drv.em}`); draw(); } catch (e) { toast(/popup|cancel|closed/i.test(String(e && (e.code || e.message))) ? '연결을 취소했어요' : IN_KAKAO ? '카카오톡 안에선 안 돼요 · 크롬에서 열어 주세요' : '⚠ 드라이브에 연결하지 못했어요 · ' + String(e && (e.code || e.message) || e).slice(0, 50), false, 6000); } } }));
+    faRc(body, status,
+      el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' },
+        el('button', { class: 'btn primary', text: '📷 사진 올리기', onclick: () => fileIn.click() }),
+        el('div', { class: 'dt', text: `${L.length}장 · 방에 ${Math.max(0, TR_MAX - L.length)}장 더 넣을 수 있어요` })),
+      drvBox,
+      ...(L.length ? [...groups].flatMap(([k, a]) => [el('div', { style: 'font-weight:800;margin-top:6px', text: `${k} · ${a.length}장` }),
+        el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:4px' }, ...a.map(ph => el('div', { style: 'position:relative;aspect-ratio:1;cursor:pointer', onclick: () => trViewer(R, L, L.indexOf(ph)) },
+          el('img', { src: ph.th || '', loading: 'lazy', style: 'width:100%;height:100%;object-fit:cover;border-radius:8px' }),
+          ph.v ? el('span', { style: 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;text-shadow:0 1px 4px #000', text: '▶' }) : null,
+          ph.dv ? el('span', { style: 'position:absolute;right:4px;top:4px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;font-size:10px;padding:1px 5px', text: '원본' }) : null,
+          el('span', { style: 'position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;font-size:10px;padding:1px 5px', text: ph.nm || '' }))))])
+        : [el('div', { class: 'card sub', text: '아직 사진이 없어요. 찍은 사진을 올리면 일행 모두가 같이 봐요.' })]),
+      L.length ? el('button', { class: 'btn line small', text: `⬇ 사진 ${L.filter(x => x.n).length}장 모두 내 휴대폰에 저장`, onclick: async () => { const out = []; let k = 0; for (const ph of L.filter(x => x.n)) { setStatus(`사진 받는 중 ${++k}/${L.length}`); try { out.push({ id: ph.id, blob: await trFull(R, ph), ts: ph.ts || ph.t }); } catch {} } setStatus(''); savePhotos(out, 'MPD_trip'); } }) : null);
+  }
+  function drawLoc() {
+    faRc(foot, );
+    const on = !!ls.get('tripLoc:' + R.rid, false), mapEl = el('div', { class: 'mapbox', style: 'height:52vh;min-height:280px' });
+    const list = el('div', { class: 'stack', style: 'gap:4px' });
+    for (const x of S.tl.slice().sort((a, b) => b.at - a.at)) { const old = Date.now() - x.at > 30 * 60000;
+      list.append(el('div', { class: 'card', style: `padding:8px 12px;display:flex;justify-content:space-between;${old ? 'opacity:.55' : ''}` }, el('b', { text: x.nm || '일행' }), el('span', { class: 'dt', text: x.off ? '위치 끔' : trAgo(x.at) }))); }
+    faRc(body, 
+      el('button', { class: 'btn ' + (on ? 'dark' : 'primary') + ' full', text: on ? '📍 내 위치 같이 보는 중 · 끄기' : '📍 내 위치 일행과 같이 보기', onclick: () => { ls.set('tripLoc:' + R.rid, !on); if (on) trPut(R, 'tl', me, { by: me, nm: trName(), at: Date.now(), off: 1 }).catch(() => {}); locStart(); draw(); } }),
+      el('div', { class: 'dt', text: '켜 둔 사람만 보여요. 앱이나 이 화면이 열려 있는 동안 1분마다 올라가요(화면을 끄면 멈춰요). 길을 잃었을 때 서로 찾기 좋아요.' }),
+      mapEl, list);
+    setTimeout(() => {
+      map = L.map(mapEl); const base = mdTileLayer().addTo(map); mlay = L.layerGroup().addTo(map); drawPins();
+      const c = S.tl.find(x => Number.isFinite(x.lat)); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
+    }, 30);
+  }
+  function drawPins() {
+    if (!map || !mlay) return; mlay.clearLayers(); const pts = [];
+    for (const x of S.tl) { if (x.off || !Number.isFinite(x.lat)) continue; const old = Date.now() - x.at > 30 * 60000; pts.push([x.lat, x.lng]);
+      L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${x.by === me ? 'var(--accent)' : '#0277BD'};color:#fff;font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);${old ? 'opacity:.55' : ''}">${String(x.nm || '일행').replace(/[<&]/g, '')} · ${trAgo(x.at)}</div>` }) }).addTo(mlay); }
+    if (pts.length === 1) map.setView(pts[0], 15); else if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 }); else map.setView([29.13, 110.48], 9);
+  }
+  function locStart() {
+    const on = !!ls.get('tripLoc:' + R.rid, false);
+    if (!on) { if (locWatch != null) navigator.geolocation.clearWatch(locWatch); locWatch = null; return; }
+    if (locWatch != null || !navigator.geolocation) return;
+    let lastSent = 0;
+    locWatch = navigator.geolocation.watchPosition(pos => {
+      if (Date.now() - lastSent < 60000 || document.hidden) return; lastSent = Date.now();
+      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now() };
+      trPut(R, 'tl', me, o).then(() => { const i = S.tl.findIndex(x => x.by === me); if (i >= 0) S.tl[i] = Object.assign(S.tl[i], o); else S.tl.push(Object.assign({ id: me }, o)); drawPins(); }).catch(() => {});
+    }, () => toast('⚠ 위치를 받지 못했어요 · 위치 권한을 확인해 주세요'), { enableHighAccuracy: true, maximumAge: 30000 });
+  }
+  function draw(keepScroll) {
+    map = null; mlay = null; drawTop();
+    if (tab === 'photo') drawPhoto(); else if (tab === 'loc') drawLoc(); else { drawChat(); if (!keepScroll) {} }
+    ls.set('tripSeen:' + R.rid, Date.now());
+  }
+  faRc(app, el('div', { class: 'stack' }, roleBar('member', '여행 방'), top, body, foot, fileIn));
+  draw();
+  if (trName()) trPut(R, 'tm', me, { by: me, nm: trName(), t: Date.now() }).catch(() => {});
+  locStart();
+  document.addEventListener('tr-changed', () => draw());
+  // 새 글 가져오기: 열려 있는 동안만 (대화 10초 · 사진 20초 · 위치 30초)
+  let n = 0;
+  const tick = async () => {
+    if (document.hidden) return; n++;
+    const cols = ['tc']; if (n % 2 === 0 || tab === 'photo') cols.push('tp'); if (n % 3 === 0 || tab === 'loc') cols.push('tl', 'tm');
+    const before = S.err; const ch = await trSync(R, S, cols);
+    if (ch || before !== S.err) { if (tab === 'loc') { drawTop(); drawPins(); } else { const ae = document.activeElement; if (ae && ae.tagName === 'TEXTAREA' && ae.value) { drawTop(); } else draw(); } }
+  };
+  await trSync(R, S, ['tc', 'tp', 'tl', 'tm']); draw();
+  setInterval(tick, 10000);
+}
+// 계획 화면의 여행 방 카드 (새 글 수)
+function planRoomCard(p) {
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
+  const box = el('a', { class: 'card', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', style: 'display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:12px 14px;border:2px solid var(--pine)' });
+  const paint = (S, R) => {
+    const seen = R ? ls.get('tripSeen:' + R.rid, 0) : 0, me = trMe(), nw = S ? S.tc.filter(m => m.t > seen && m.by !== me).length : 0, ph = S ? S.tp.filter(x => !x.del).length : 0;
+    const pp = new Set(S ? [...S.tm, ...S.tc, ...S.tp].map(x => x.by).filter(Boolean) : []);
+    faRc(box, el('span', { style: 'font-size:30px;flex:none', text: '💬' }),
+      el('div', { style: 'flex:1;min-width:0' }, el('div', { style: 'font-weight:800', text: `여행 방${nw ? ` · 새 글 ${nw}` : ''}` }),
+        el('div', { class: 'dt', text: S ? `함께하는 사람 ${pp.size}명 · 사진 ${ph}장 · 대화·사진·일행 위치` : '일행과 대화·사진·위치 · 📤 일정 보내기를 받은 사람이 같이 들어와요' })),
+      nw ? el('span', { style: 'flex:none;background:#E5383B;color:#fff;font-weight:800;border-radius:12px;padding:2px 9px', text: String(nw) }) : el('span', { style: 'font-weight:800;color:var(--pine)', text: '열기 ›' }));
+  };
+  paint(null);
+  (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R); paint(S, R); await trSync(R, S, ['tc', 'tp', 'tm']); paint(S, R); } catch {} })();
+  return box;
+}
+
 // 기록과 잇기 (2026-11-14): 여행 날짜 동안 MPD로 기록한 길이 계획 장소 가까이 지나갔으면 저절로 '✓ 다녀옴'(그 시각도)
 //   가까이 = 300m(대략 위치는 700m, 공항은 2km) · 직접 ○로 되돌린 곳(okNo)은 다시 표시하지 않아요 · 기록은 읽기만
 function planAutoVisit(p) {
@@ -7297,7 +7589,7 @@ function viewPlanOne(id) {
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'),
     el('a', { href: './?plan=1', class: 'sub', style: 'text-decoration:none', text: '‹ 여행 계획 목록' }),
-    head, planPrepCard(p, w => { wx = w; drawList(); }), mapEl, tabs, list,
+    head, planPrepCard(p, w => { wx = w; drawList(); }), planRoomCard(p), mapEl, tabs, list,
     el('div', { class: 'sub', style: 'font-size:12px', text: `지도 선은 갈 차례대로 이은 직선이에요(실제 길 아님). 시간은 직선거리로 짐작한 대략값이에요.${noLoc() ? ` 위치가 없는 곳 ${noLoc()}곳은 눌러서 정해 주세요.` : ''} 중국에선 길찾기가 가오더(Amap) 지도로 열려요.` })));
   drawAll();
   setTimeout(() => {
