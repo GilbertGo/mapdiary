@@ -943,11 +943,23 @@ function dist(a, b, c, d) { const R = 6371000, r = x => x * Math.PI / 180; const
 function fmtDist(m) { return m < 1000 ? `${Math.round(m / 10) * 10}m` : `${(m / 1000).toFixed(1)}km`; }
 let toastT;
 // 화면을 다시 불러온 뒤에 보여 줄 알림(창 대신, 2026-11-07 '귀찮게 하지 마')
+// 아이폰 화면 켜두기 대신 (2026-11-14): 소리 없는 검은 2초 영상(16px)을 1px로 숨겨 되풀이해요. 영상이 돌면 아이폰이 화면을 안 꺼요
+const MD_AWAKE_MP4 = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMrbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlV0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHNbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABeG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAThzdGJsAAAAuHN0c2QAAAAAAAAAAQAAAKhhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAALmF2Y0MBQsAK/+EAFmdCwArZHsBEAAADAAQAAAMACDxImSABAAVoy4PLIAAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAApAAAAKQAAAABhzdHRzAAAAAAAAAAEAAAACAABAAAAAABRzdHNzAAAAAAAAAAEAAAABAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAACAAAAAQAAABxzdHN6AAAAAAAAAAAAAAACAAAChgAAAAoAAAAUc3RjbwAAAAAAAAABAAADWwAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNjAuMTYuMTAwAAAACGZyZWUAAAKYbWRhdAAAAnAGBf//bNxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDE6MHgxMTEgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz0xIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBrZXlpbnRfbWluPTEgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAAOZYiEBb///w9FAAFPf4AAAAAGQZo4CvqA';
+async function videoAwake() {
+  try {
+    let v = videoAwake.v;
+    if (!v) { v = videoAwake.v = document.createElement('video'); v.muted = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.loop = true; v.src = MD_AWAKE_MP4;
+      v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      v.addEventListener('timeupdate', () => { if (v.currentTime > 1.5) v.currentTime = 0.1; }); document.body.append(v); }
+    await v.play();
+    return { fake: 1, release() { try { v.pause(); } catch {} }, addEventListener() {} };
+  } catch { return null; }
+}
 const toastLater = msg => { try { sessionStorage.setItem('toastNext', msg); } catch {} };
-function toast(msg, top) {   // top: 위쪽에 (아래 큰 단추를 가리지 않게)
+function toast(msg, top, ms) {   // top: 위쪽에 (아래 큰 단추를 가리지 않게) · ms: 떠 있는 시간(긴 글)
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const t = el('div', { class: 'toast' + (top ? ' top' : ''), role: 'status', text: msg });
-  document.body.append(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000);
+  document.body.append(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), ms || 3000);
 }
 // 휴대폰 뒤로가기: 사진 크게 보기, 아래에서 올라오는 창, 크게 본 지도가 떠 있으면 그것만 닫아요 (페이지를 빠져나가지 않게)
 // 창이 뜨면 방문 기록에 '창' 칸을 하나 쌓고, 뒤로가기로 그 칸이 빠지면 맨 위 창을 닫아요.
@@ -1245,8 +1257,10 @@ async function addPhotos(t, files, now, later) {
   const out = [];
   for (const f of files) {
     try {
-      const ts = f.lastModified && (later || Math.abs(Date.now() - f.lastModified) < 7 * 864e5) ? f.lastModified : Date.now();
-      const at = photoPlace(t, ts, now);
+      // 나중에 넣는 사진은 사진 속 찍은 시각·위치(EXIF)를 먼저 써요 (2026-11-14: 아이폰은 파일 날짜가 고른 때라 길 위 자리가 틀렸어요)
+      const ex = later ? await photoTsOf(f) : {};
+      const ts = ex.ts || (f.lastModified && (later || Math.abs(Date.now() - f.lastModified) < 7 * 864e5) ? f.lastModified : Date.now());
+      const at = ex.lat != null ? [ex.lat, ex.lng] : photoPlace(t, ts, now);
       let rec;
       if (/^video\//.test(f.type || '') || /\.(mp4|mov|webm|m4v|3gp)$/i.test(f.name || '')) {   // 동영상: 원본 그대로 + 첫 장면 그림
         if (f.size > VID_MAX) { toast(`동영상이 너무 커요(${Math.round(f.size / 1048576)}MB) · 300MB 아래로 잘라서 넣어 주세요`); continue; }
@@ -2893,9 +2907,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.14-68-film2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.14-69-ios';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '이동 영상의 길 선이 자전거·여행·데이트·일상·파크골프도 모두 산호색이에요';
+const UI_NOTES = '아이폰에서 기록하는 동안 화면이 저절로 꺼지지 않아요 · 화면이 꺼졌다 켜지면 끊긴 시간을 알려 드려요 · 내 MPD에서 다른 앱 기록(GPX 파일)을 가져올 수 있어요 · 나중에 넣는 사진은 사진 속 찍은 시각과 위치로 길 위에 놓여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4739,6 +4753,10 @@ function famBundles(photos) {
 }
 
 // ----- 사진 준비: 원본에서 찍은 날짜·위치를 먼저 읽고(줄이면 사라져요), 그다음 줄여요 -----
+async function photoTsOf(f) {   // 찍은 시각·위치: JPEG EXIF가 있으면 그것, 없으면 {} (동영상은 {})
+  if (!f || /^video\//.test(f.type || '')) return {};
+  const ex = await famExif(f); return ex && ex.ts > 0 ? ex : {};
+}
 async function famExif(file) {   // JPEG EXIF: 찍은 시각(DateTimeOriginal)·GPS. 없거나 못 읽으면 {}
   try {
     const buf = await file.slice(0, 256 * 1024).arrayBuffer(), dv = new DataView(buf);
@@ -6404,7 +6422,7 @@ function filmMapLook(style, dark) {
 route();
 if (!LAB_QUIET) cloudWatch();
 if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
-setTimeout(() => { try { const m = sessionStorage.getItem('toastNext'); if (m) { sessionStorage.removeItem('toastNext'); toast(m); } } catch {} }, 700);
+setTimeout(() => { try { const m = sessionStorage.getItem('toastNext'); if (m) { sessionStorage.removeItem('toastNext'); toast(m, false, m.length > 40 ? 7000 : 3000); } } catch {} }, 700);
 // 새 판이 기다리고 있는지 알려 줘요 (2026-10-29 사용자가 길 누르기가 안 된다고 했는데, 기록 중이라 앱이 화면을 안 바꾸고 있었음):
 // 서버의 UI_VER가 지금보다 새것이면 → 기록 중이면 '기록을 끝내면 바뀌어요' 알림(판마다 한 번), 웹이면 '새로고침' 알림. ⚙ 설정 맨 아래에도
 let uiLatest = null, uiLatestAt = 0;
@@ -6464,6 +6482,62 @@ function openPastTrips() {
 function mdLine(x) {   // 목록 한 줄의 작은 글: 모드 · 날짜 · 거리 · 시간
   const M = modeOfT(x.t), tr = trackLoad(x.t), st = trackStats(tr, M.car), d = new Date(x.info.startAt);
   return [ls.get('walkMode:' + x.t, null) ? M.label : '', x.album ? `${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${x.info.durText || '하루'}` : `${d.getMonth() + 1}월 ${d.getDate()}일`, `${M.did} ${fmtDist(st.walk)}`, x.album ? '' : fmtDur(st.ms), rxMiss(x.t) ? '⚠ 일부 데이터 미수신' : ''].filter(Boolean).join(' · ');
+}
+// ---------- 다른 앱 기록(GPX) 가져오기 (2026-11-14 '아이폰 버전' 대신): 트랭글·램블러·스트라바처럼 화면이 꺼져도 기록되는 앱에서 GPX로 내보내 MPD 기록으로 넣어요 ----------
+function gpxRead(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) return null;
+  const pts = [...doc.getElementsByTagName('trkpt')], rows = [];
+  for (const p of pts) {
+    const lat = +p.getAttribute('lat'), lng = +p.getAttribute('lon'); if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) continue;
+    const e = p.getElementsByTagName('ele')[0], tm = p.getElementsByTagName('time')[0], ts = tm ? Date.parse(tm.textContent.trim()) : NaN;
+    if (!Number.isFinite(ts)) continue;
+    const q = [+lat.toFixed(6), +lng.toFixed(6), ts], al = e ? parseFloat(e.textContent) : NaN; if (Number.isFinite(al)) q.push(Math.round(al));
+    rows.push(q);
+  }
+  rows.sort((a, b) => a[2] - b[2]);
+  const out = []; for (const q of rows) { const l = out[out.length - 1]; if (!l || (q[2] > l[2] && dist(l[0], l[1], q[0], q[1]) >= TRACK_MIN_M)) out.push(q); }
+  if (out.length > 20000) { const k = Math.ceil(out.length / 20000); out.splice(0, out.length, ...out.filter((q, i) => i % k === 0 || i === out.length - 1)); }
+  const trk = doc.getElementsByTagName('trk')[0], nm = (trk && trk.getElementsByTagName('name')[0]) || doc.getElementsByTagName('name')[0], ty = trk && trk.getElementsByTagName('type')[0];
+  return { rows: out, name: nm ? nm.textContent.trim().slice(0, 40) : '', type: ty ? ty.textContent.trim().toLowerCase() : '', nPts: pts.length };
+}
+function gpxModeGuess(g) {   // GPX 속 종류 글자 → 없으면 빠르기·오른 높이로 짐작 (내 MPD ✎ 수정하기에서 바꿀 수 있어요)
+  const t = g.type;
+  if (/run|러닝|달리/.test(t)) return 'run';
+  if (/cycl|bik|ride|자전거/.test(t)) return 'bike';
+  if (/hik|mountain|등산|산행/.test(t)) return 'hike';
+  if (/walk|걷기|산책/.test(t)) return 'trek';
+  const R = g.rows; let d = 0; for (let i = 1; i < R.length; i++) d += dist(R[i - 1][0], R[i - 1][1], R[i][0], R[i][1]);
+  const kmh = d / 1000 / Math.max(1 / 60, (R[R.length - 1][2] - R[0][2]) / 36e5), ev = elevStats(R);
+  return kmh > 13 ? 'bike' : kmh > 6.8 ? 'run' : ev && ev.gain >= 150 ? 'hike' : 'trek';
+}
+async function gpxImport(files) {
+  const have = pastTrips().filter(x => !x.album).map(x => { const tr = trackLoad(x.t); return [tr[0][2], tr[tr.length - 1][2]]; });
+  const made = [], skip = [], bad = [];
+  for (const f of files) {
+    let g = null; try { g = gpxRead(await f.text()); } catch {}
+    if (!g || g.rows.length < 2) { bad.push(`${f.name}${g && g.nPts ? ' (시각 정보가 없어요)' : ''}`); continue; }
+    const a = g.rows[0][2], b = g.rows[g.rows.length - 1][2];
+    if (have.some(([x, y]) => Math.abs(x - a) < 3 * 60000 && Math.abs(y - b) < 10 * 60000)) { skip.push(f.name); continue; }
+    const mode = gpxModeGuess(g), id = 'walk_' + rid(8), d = new Date(a);
+    ls.set('track:' + id, g.rows); ls.set('walkMode:' + id, mode);
+    ls.set('trackName:' + id, g.name && !/^(track|activity|gpx|untitled)/i.test(g.name) ? g.name : `${d.getMonth() + 1}월 ${d.getDate()}일 ${modeByK(mode).label}`);
+    have.push([a, b]); made.push(id);
+  }
+  if (made.length) { try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} }
+  const why = [skip.length ? `이미 있는 기록 ${skip.length}개는 건너뛰었어요` : '', bad.length ? `못 읽은 파일: ${bad.join(', ')}` : ''].filter(Boolean).join(' · ');
+  if (made.length === 1) { toastLater(`📥 기록을 가져왔어요 · 사진은 ✎ 수정하기 → 사진·동영상 더하기로 넣으면 찍은 시각대로 길 위에 놓여요${why ? ' · ' + why : ''}`); location.href = `./?my=1&t=${encodeURIComponent(made[0])}`; }
+  else if (made.length) { toastLater(`📥 기록 ${made.length}개를 가져왔어요${why ? ' · ' + why : ''}`); location.reload(); }
+  else toast(why || '가져올 기록이 없어요', false, 7000);
+}
+function gpxImportBtn() {
+  // 아이폰은 .gpx를 모르는 파일로 여겨 accept를 주면 회색으로 막힐 수 있어서 아이폰엔 accept를 안 줘요
+  const inp = el('input', Object.assign({ type: 'file', multiple: true, style: 'display:none', onchange: () => { const fs = [...inp.files]; inp.value = ''; if (fs.length) { toast('GPX 파일을 읽는 중이에요…'); gpxImport(fs); } } }, IS_IOS ? {} : { accept: '.gpx,application/gpx+xml,application/xml,text/xml' }));
+  return el('div', { class: 'card stack', style: 'gap:6px;padding:12px 14px' }, inp,
+    el('button', { class: 'btn line full', onclick: () => inp.click() }, '📥 다른 앱 기록(GPX) 가져오기'),
+    el('div', { class: 'sub', style: 'font-size:13px', text: IS_IOS && !IN_NATIVE
+      ? '아이폰은 화면이 꺼지면 이 웹앱 기록이 멈춰요. 트랭글·램블러·스트라바처럼 화면이 꺼져도 기록되는 앱으로 다닌 뒤 GPX 파일로 내보내 여기서 가져오면, 사진·공유 카드·이동 영상까지 모두 돼요.'
+      : '트랭글·램블러·스트라바 같은 앱에서 내보낸 GPX 파일을 MPD 기록으로 넣어요. 사진을 더하면 찍은 시각대로 길 위에 놓여요.' }));
 }
 // ---------- 백업: 내 MPD(기록·사진)를 파일 하나로 받아 두고, 다른 휴대폰·브라우저에서 불러와요 ----------
 // MD_KEYS는 아래 백업 칸에 있던 것을 route() 앞으로 옮겼어요(2026-11-07): 첫 화면을 그리는 중(시계 카드의 보류 안내 recAny)에도 써서, 뒤에 있으면 아직 준비 안 됨(TDZ) 오류가 나요
@@ -6990,6 +7064,7 @@ function viewMyList() {
     cloudCard(),   // 2026-10-19 사용자 '로그인 안 보여 어딨어?' → 맨 아래에서 맨 위로
     !watchGet() && !ls.get('watchAskHide', false) && !wearSelf() ? watchCard(viewMyList) : null,   // 시계 연결 전이면 맨 위에(2026-10-20). MPD Run 앱은 코드가 필요 없어 아래에
 
+    gpxImportBtn(),
     tabs, body,
     watchGet() || ls.get('watchAskHide', false) || wearSelf() ? watchCard(viewMyList) : null, backupCard(list.filter(x => !x.album).length)));
   draw();
@@ -7010,7 +7085,7 @@ function editMD(x) {
     toast('사진·동영상을 넣는 중이에요…');
     // 여러 날 여행이면 사진 찍은 날의 기록에 넣어요
     const recs = [];
-    for (const f of files) { const ts = f.lastModified || Date.now(); let day = days[days.length - 1];
+    for (const f of files) { const ts = (await photoTsOf(f)).ts || f.lastModified || Date.now(); let day = days[days.length - 1];
       for (const d of days) { const tr = trackLoad(d); if (tr.length && ts >= tr[0][2] - 36e5 && ts <= tr[tr.length - 1][2] + 36e5) day = d; }
       recs.push(...await addPhotos(day, [f], null, true)); }
     dispatchEvent(new Event('photo-changed')); reviewPhotos(recs);
@@ -10320,11 +10395,19 @@ function viewWalk() {
   const tTitle = el('h1', { style: 'font-size:21px' });   // 기록 제목 (자랑하기에서 바꾸면 여기도 바뀌어요)
   const root = el('div', { class: 'stack' });
   app.replaceChildren(root);
-  const lockWake = async () => { try { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; draw(); }); } catch { wake = null; } draw(); };
+  const lockWake = async () => {
+    try { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; draw(); }); } catch { wake = null; }
+    // 아이폰 (2026-11-14 '아이폰 버전'): 예전 iOS·홈 화면 앱은 화면 켜두기가 없거나 말을 안 들어서, 소리 없는 아주 작은 영상을 몰래 돌려 화면이 안 꺼지게 해요
+    if (IS_IOS && !IN_NATIVE) { const v = await videoAwake(); if (!wake && v) wake = v; }
+    draw(); };
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
-    if (id && !done && hiddenAt && Date.now() - hiddenAt > 2 * 60000) toast(`화면이 꺼져 있던 ${Math.round((Date.now() - hiddenAt) / 60000)}분 동안은 기록이 멈췄어요. 기록할 때는 화면을 켜 두세요`);
+    // 화면이 꺼졌다 켜지면: 마지막 위치 점에서 1분 넘게 비었으면 바로 알려요 (앱이 아니면 화면이 꺼진 동안 기록이 멈춰서)
+    if (id && !done && hiddenAt && !IN_NATIVE && Date.now() - hiddenAt > 60000) {
+      const tr = trackLoad(id), lt = tr.length ? tr[tr.length - 1][2] : hiddenAt, gap = Date.now() - Math.max(lt, hiddenAt - 15000);
+      if (gap > 60000) toast(`⚠ ${Math.round(gap / 60000)}분 동안 기록이 끊겼어요 · 그 사이 길은 점선으로 이어요${IS_IOS ? ' · 아이폰은 옆 버튼으로 화면을 끄지 말고 🔒 화면 잠그기를 써 주세요' : ' · 기록할 때는 화면을 켜 두세요'}`, true, 8000);
+    }
     hiddenAt = 0;
     if (id && wantWake && !wake && !askStale) lockWake();
   });
@@ -10504,6 +10587,7 @@ function viewWalk() {
     }
     if (pending) { guide = { name: pending.name, route: pending.route, spots: pending.spots || [], modeK: pending.modeK }; ls.set('walkGuide:' + id, guide); ls.set('guideNext', null); pending = null; }
     wantWake = true; lockWake(); startGps(); draw(); scrollTo(0, 0);   // 시작 화면에서 내려 둔 채로 남지 않게
+    if (IS_IOS && !IN_NATIVE && ls.get('iosTipN', 0) < 3) { ls.set('iosTipN', ls.get('iosTipN', 0) + 1); setTimeout(() => toast('📱 아이폰은 화면이 켜져 있을 때만 기록돼요 · 화면은 저절로 켜 둬요 · 주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기', true, 8000), 1500); }
   }
   // 끝내기: 먼저 '정말 끝낼까요?'를 물어보고(실수로 누를 때를 생각해 '계속 기록하기'를 크게), 그다음 이름·장소를 적어 저장해요
   function askEnd(title, text, yes) {
@@ -10745,7 +10829,7 @@ function viewWalk() {
       guide ? tGuide : null,
       stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
-        el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
+        el('span', { text: wake ? (IS_IOS && !IN_NATIVE ? '화면을 켜두고 있어요. 주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기를 눌러요.' : '화면을 켜두고 있어요. 기록이 계속돼요.') : '화면이 꺼지면 기록이 멈춰요.' }),
         wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠그기', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
       mapEl,
       guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,

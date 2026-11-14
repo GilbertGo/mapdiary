@@ -205,6 +205,13 @@
 - **시험판 사진 수 보이기**(2026-11-13 갤럭시 시험표가 두 번 다 '넣은 사진 0장(기록에 ?장)', 판 -43-test): 어디서 빠졌는지 화면에 — `filmPhCounts()`(baldojang 읽기만, 기록별 수) → 머리 '기록 n개 · 사진·동영상 n장', 백업 고를 때 파일을 먼저 세어 `ls filmTestImport`={at,name,rec,ph} → 다시 불러온 뒤 '파일 속 사진 n장 → 지금 n장 ✅/⚠'(파일에 0장이면 그렇게 알림), 기록 고르기 줄마다 '· 사진 n장', 사진 0장 기록은 사진 칸에 빨간 안내, '그 자리에서 찍은 사진'이 꺼져 있으면 경고. 시험표 기록에 `ver`(만든 판)·`phAll`='off'/'gpx'. 시험 `rf/tm4.js`·`tm5.js`(19개 통과, 남은 2개 실패는 고치기 전에도 같음: 장면 흐름 글자가 캔버스라 못 읽음·카카오 SDK가 머리에서 늘 불림)
 - 보고서 scratchpad `rf/MPD_RouteFly_1차보고.md`, 시험 `rf/t.js`(가짜 타일·사진)
 
+## 아이폰 (2026-11-14, 판 -69-ios)
+- 사용자 '이 앱을 아이폰 버전으로' → 아이폰 앱(Capacitor iOS)은 만들기는 무료(GitHub Actions 맥)지만 깔려면 애플 개발자 등록(1년 99달러)이 필요해서, 사용자가 '아니. 다른 방법' → 돈 안 드는 두 가지 '둘 다 만들어'
+- **① 홈 화면 웹앱 다듬기**: 기록 중 `lockWake`가 아이폰 웹(`IS_IOS && !IN_NATIVE`)이면 화면 켜두기(wakeLock)와 함께 `videoAwake()`(소리 없는 검은 2초 16px mp4 `MD_AWAKE_MP4`를 1px로 숨겨 되풀이, wakeLock이 없거나 홈 화면 앱에서 안 듣는 예전 iOS 대신)도 돌림. 화면 켜두기 줄 글 '주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기', 시작할 때 처음 3번 알림(`ls iosTipN`, 새 키). 화면이 꺼졌다 켜지면(앱이 아니면 모두) 마지막 위치 점에서 1분 넘게 비었으면 '⚠ n분 동안 기록이 끊겼어요 · 점선으로 이어요'(예전엔 2분·숨긴 시간 기준). **옆 버튼으로 화면을 끄면 아이폰 웹은 기록이 멈춤(못 고침)**. `toast(msg, top, ms)` 세 번째 값 = 떠 있는 시간, `toastLater` 긴 글은 7초
+- **② 다른 앱 기록(GPX) 가져오기**: 내 MPD 목록 위 카드 `gpxImportBtn`(아이폰은 .gpx가 회색으로 막힐 수 있어 accept 없음, 여러 파일) → `gpxImport`: `gpxRead`(trkpt 중 시각 있는 것만, 시각 순, 15m(`TRACK_MIN_M`) 안 점 빼고, 2만 점 넘으면 솎음, 높이 반올림) → 모드 `gpxModeGuess`(GPX `<type>` running/cycling/hiking/walking, 없으면 평균 13km/h 넘으면 자전거·6.8 넘으면 러닝·오른 높이 150m 넘으면 등산·그 밖 걷기) → `track:`·`walkMode:`·`trackName:`(GPX 이름, 'track/activity…'면 'n월 n일 모드') 새 `walk_` 기록. 시작 3분·끝 10분 안 겹치는 기록은 건너뜀, 시각 없는 GPX는 '시각 정보가 없어요'. 하나면 그 기록 보기로, 여럿이면 목록 다시. syncPush·cloudSync
+- **나중에 넣는 사진은 EXIF 찍은 시각·위치**: `addPhotos(…, later)`가 `photoTsOf`(famExif, JPEG만)로 찍은 시각·GPS를 먼저 씀(아이폰은 파일 날짜가 고른 때라 길 위 자리가 틀렸음), ✎ 수정하기에서 여러 날 여행의 날 고르기도 같은 시각
+- 시험 scratchpad `ios/t.js`(아이폰 UA: 단추·가져오기·겹침·시각 없음·사진 시각·wakeLock 없을 때 숨은 영상)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
