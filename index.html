@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-144-dest';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-145-apply';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📘 여행 계획에 \'○○ 여행 정보\' 한 페이지가 생겼어요: 소개(위키백과)·사진·여행 날 날씨·시차·환율·전기·긴급 전화·입국·둘레 볼거리·공식 사이트, 그리고 누르면 AI가 꼭 알 것(교통 패스·매너·음식)을 정리 · 📸 장소를 누르면 사진·소개·참고 링크';
+const UI_NOTES = '✨ 계획 도우미가 있던 일정을 바꾸자고 하면(시각 옮기기·빼기) 목록으로 보여 주고 \'✓ 반영하기\' 한 번 또는 \'반영해\'라고 적으면 일정에 바로 들어가요 · 📘 ○○ 여행 정보 한 페이지 · 📸 장소 사진·소개·링크';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9558,7 +9558,7 @@ function planMakeCtx(p) {
   for (let d = 0; d < p.nd; d++) {
     const its = planItems(p, d); L.push(`\n[${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}]`);
     if (!its.length) L.push('- (아직 일정 없음)');
-    its.forEach(x => L.push(`- ${x.t || '시각 없음'} · ${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1]} · ${x.n}${x.mine ? ' [내 일정]' : ''}${x.m ? ' · ' + String(x.m).replace(/\s+/g, ' ').slice(0, 140) : ''}${x.ai ? ' (AI 추천으로 넣은 곳)' : ''}`));
+    its.forEach(x => L.push(`- [#${p.it.indexOf(x) + 1}] ${x.t || '시각 없음'} · ${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1]} · ${x.n}${x.mine ? ' [내 일정]' : ''}${x.m ? ' · ' + String(x.m).replace(/\s+/g, ' ').slice(0, 140) : ''}${x.ai ? ' (AI 추천으로 넣은 곳)' : ''}`));
   }
   return L.join('\n');
 }
@@ -9570,40 +9570,53 @@ function planMakeSheet(p) {
   const empty = [...Array(p.nd).keys()].filter(d => !planItems(p, d).some(x => x.k !== 'fly'));
   const QUICK = [empty.length ? `빈 날(${empty.map(d => d + 1 + '일차').join('·')}) 일정 짜 줘` : '이 일정 무리 없어?', '꼭 가 볼 곳 추천', '맛집 추천', '비 오는 날 갈 곳', '교통 패스 뭐가 좋아?', '이 일정 무리 없어?', '준비할 것'].filter((x, i, a) => a.indexOf(x) === i);
   const say = t => { st.textContent = t; };
-  const addItems = async (m, picks, btn) => {
-    btn.disabled = true; btn.textContent = '넣는 중…';
+  // 판 -145 (사용자 계획 도우미 캡처 '반영해!라고 하고 싶은데'): 있던 일정 바꾸기(ch: 시각·날 옮기기·빼기) + 새 곳 넣기(items)를 한 번에
+  const applyAll = async (m, chs, picks, btn) => {
+    if (btn) { btn.disabled = true; btn.textContent = '반영하는 중…'; }
+    let nc = 0, nd = 0;
+    for (const c of chs) { const x = p.it.find(y => y.id === c.id); if (!x) continue;
+      if (c.del) { p.it.splice(p.it.indexOf(x), 1); nd++; continue; }
+      if (c.d != null) x.d = Math.max(0, Math.min(p.nd - 1, c.d)); if (c.t != null) x.t = c.t;
+      p.it.splice(p.it.indexOf(x), 1); planMineIns(p.it, x); nc++; }
     const add = picks.map(z => ({ id: planNewId(), d: Math.max(0, Math.min(p.nd - 1, +z.d || 0)), t: /^\d{1,2}:\d{2}$/.test(z.t || '') ? String(z.t).padStart(5, '0') : '', n: String(z.n || '장소').slice(0, 60), k: PLAN_KINDS[z.k] ? z.k : 'spot', m: String(z.why || '').slice(0, 200), q: String(z.q || '').slice(0, 100),
       lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1 }));
-    // 이미 있는 차례는 그대로 두고, 새 곳만 그날 시각에 맞는 자리에 끼움 (시각 없으면 그날 끝)
-    add.forEach(x => { x.ap = x.lat != null ? 1 : 0;
-      let endDay = -1, lastLE = -1, firstGT = -1; p.it.forEach((y, i) => { if (y.d <= x.d) endDay = i; if (y.d === x.d && x.t && y.t) { if (y.t <= x.t) lastLE = i; else if (firstGT < 0) firstGT = i; } });
-      p.it.splice(!x.t ? endDay + 1 : lastLE >= 0 ? lastLE + 1 : firstGT >= 0 ? firstGT : endDay + 1, 0, x); });
-    planSave(p); try { await planGeocode(p, say); } catch {}
-    planSave(p); const ok = add.filter(x => x.lat != null && !x.ap).length, ap = add.filter(x => x.ap).length, no = add.filter(x => x.lat == null).length;
-    m.added = add.length; ls.set(HK, hist.slice(-30));
-    say(`✅ ${add.length}곳을 일정에 넣었어요 · 위치 정확 ${ok}${ap ? ` · 대략 ${ap}` : ''}${no ? ` · 못 찾음 ${no}` : ''}`);
+    add.forEach(x => { x.ap = x.lat != null ? 1 : 0; planMineIns(p.it, x); });   // 있던 차례는 그대로, 새 곳은 그날 시각 자리에(시각 없으면 그날 끝)
+    planSave(p); if (add.length) { try { await planGeocode(p, say); } catch {} planSave(p); }
+    m.added = add.length; m.chDone = nc + nd; m.applied = 1; ls.set(HK, hist.slice(-30));
+    const ok = add.filter(x => x.lat != null && !x.ap).length, ap = add.filter(x => x.ap).length;
+    say(`✅ 반영했어요 · ${[nc ? `바꾼 곳 ${nc}` : '', nd ? `뺀 곳 ${nd}` : '', add.length ? `넣은 곳 ${add.length}(위치 정확 ${ok}${ap ? ` · 대략 ${ap}` : ''})` : ''].filter(Boolean).join(' · ') || '바꿀 게 없었어요'}`);
     if (window.mpdPlanRedraw) window.mpdPlanRedraw(); paint();
   };
+  const pending = () => { for (let i = hist.length - 1; i >= 0; i--) { const m = hist[i]; if (m.r !== 'a') continue; return !m.applied && ((m.ch && m.ch.length) || (m.items && m.items.length)) ? m : null; } return null; };
   hist.forEach(m => { if (m.r === 'a' && /"items"\s*:|^\s*(```|\{)/.test(m.x || '')) { const j = planAnsParse(m.x); m.x = String(j.text || '일정을 짜 봤어요. 아래에서 넣을 곳을 골라 주세요.'); if (!m.items || !m.items.length) m.items = (j.items || []).filter(z => z && z.n); } });   // 예전 판에서 날것으로 남은 답 고침
   const bubble = m => {
     if (m.r === 'u') return el('div', { style: 'align-self:flex-end;max-width:84%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: m.x });
     const box = el('div', { style: 'align-self:flex-start;max-width:94%;padding:10px 12px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;color:#15202B;line-height:1.5;display:flex;flex-direction:column;gap:6px' }, el('div', { style: 'white-space:pre-wrap', text: m.x }));
-    if (m.items && m.items.length) {
-      const chk = m.items.map(() => true);
-      box.append(el('div', { style: 'font-weight:800;font-size:13px;margin-top:4px', text: m.added ? `✅ ${m.added}곳 일정에 넣었어요` : '일정에 넣을 곳 (고르기)' }));
-      m.items.forEach((z, i) => box.append(el('label', { style: 'display:flex;gap:8px;align-items:flex-start;background:#fff;border-radius:10px;padding:7px 9px;font-size:13.5px' },
-        m.added ? null : el('input', { type: 'checkbox', checked: true, style: 'margin-top:3px', onchange: e => { chk[i] = e.target.checked; btn.textContent = `✓ 고른 ${chk.filter(Boolean).length}곳 일정에 넣기`; } }),
-        el('span', {}, el('b', { text: `${(+z.d || 0) + 1}일차${z.t ? ' ' + z.t : ''} · ${(PLAN_KINDS[z.k] || PLAN_KINDS.spot)[0]} ${z.n}` }), z.why ? el('span', { style: 'display:block;color:#6B7684;font-size:12.5px', text: z.why }) : null))));
-      const btn = el('button', { class: 'btn primary full', text: `✓ 고른 ${m.items.length}곳 일정에 넣기`, onclick: () => addItems(m, m.items.filter((_, i) => chk[i]), btn) });
-      if (!m.added) box.append(btn);
+    const CH = m.ch || [], IT = m.items || [];
+    if (CH.length || IT.length) {
+      const cOn = CH.map(() => true), iOn = IT.map(() => true), done = m.applied || m.added;
+      const lab = () => `✓ 반영하기${CH.length ? ` · 바꾸기 ${cOn.filter(Boolean).length}` : ''}${IT.length ? ` · 넣기 ${iOn.filter(Boolean).length}` : ''}`;
+      const btn = el('button', { class: 'btn primary full', text: lab(), onclick: () => applyAll(m, CH.filter((_, i) => cOn[i]), IT.filter((_, i) => iOn[i]), btn) });
+      const ck = (arr, i) => done ? null : el('input', { type: 'checkbox', checked: true, style: 'margin-top:3px', onchange: e => { arr[i] = e.target.checked; btn.textContent = lab(); } });
+      const line = (k, a, b2) => el('label', { style: 'display:flex;gap:8px;align-items:flex-start;background:#fff;border-radius:10px;padding:7px 9px;font-size:13.5px' }, k, el('span', {}, el('b', { text: a }), b2 ? el('span', { style: 'display:block;color:#6B7684;font-size:12.5px', text: b2 }) : null));
+      if (CH.length) { box.append(el('div', { style: 'font-weight:800;font-size:13px;margin-top:4px', text: done ? `✅ 있던 일정 ${m.chDone || 0}곳 반영했어요` : '있던 일정 바꾸기' }));
+        CH.forEach((c, i) => box.append(line(ck(cOn, i), c.del ? `🗑 빼기 · ${c.name}` : `${c.name} · ${c.from} → ${c.to}`, c.why))); }
+      if (IT.length) { box.append(el('div', { style: 'font-weight:800;font-size:13px;margin-top:4px', text: done ? `✅ ${m.added || 0}곳 일정에 넣었어요` : '새로 넣을 곳' }));
+        IT.forEach((z, i) => box.append(line(ck(iOn, i), `${(+z.d || 0) + 1}일차${z.t ? ' ' + z.t : ''} · ${(PLAN_KINDS[z.k] || PLAN_KINDS.spot)[0]} ${z.n}`, z.why))); }
+      if (!done) box.append(btn, el('div', { style: 'font-size:12px;color:#6B7684', text: "또는 아래에 '반영해'라고 적어도 돼요" }));
     }
     box.append(el('div', { style: 'font-size:11.5px;color:#8A94A0', text: 'AI 추천 · 일반 지식이라 영업시간·가격·휴무는 꼭 확인해 주세요' }));
     return box;
   };
   const paint = () => { faRc(list, ...(hist.length ? hist.slice(-20).map(bubble) : [el('div', { class: 'sub', style: 'line-height:1.6', text: '여행 전에 일정 짜기를 도와요. 넣어 둔 비행기 시각·날짜·이미 정한 곳을 보고 무리 없는 동선으로 추천하고, 고른 곳만 일정에 넣어요.' })])); list.scrollTop = list.scrollHeight; };
   const send = async (x) => {
-    x = String(x || ta.value).trim(); if (!x || busy) return; if (!key) return toast('Claude 열쇠를 먼저 넣어 주세요');
+    x = String(x || ta.value).trim(); if (!x || busy) return;
+    const pm = pending();
+    if (pm && /^(반영|적용|그대로|그렇게|좋아|오케이|ㅇㅋ|ok|네|응)\S*\s*(해|해줘|해 줘|하자|할게|해요)?[!.~ ]*$/i.test(x)) {   // 앞 제안을 AI 없이 바로 반영
+      ta.value = ''; hist.push({ r: 'u', x, t: Date.now() }); paint(); await applyAll(pm, pm.ch || [], pm.items || [], null); return; }
+    if (!key) return toast('Claude 열쇠를 먼저 넣어 주세요');
     busy = true; ta.value = ''; hist.push({ r: 'u', x, t: Date.now() }); paint(); say('✨ 답 쓰는 중…');
+    const ids = p.it.map(y => y.id);   // [#번호] → 일정 id (물을 때 그대로)
     try {
       const sys = `당신은 여행 전 일정 짜기를 돕는 '계획 도우미'예요. 휴대폰에서 읽으니 쉬운 한국어로 짧게(설명 6줄 안팎).
 - 실제로 있고 널리 알려진 확실한 곳만 추천하세요. 확실하지 않으면 추천하지 마세요. 지어내지 마세요.
@@ -9613,7 +9626,8 @@ function planMakeSheet(p) {
 - 일정에 넣을 곳을 제안할 때만 items에 넣고, 설명만 할 때는 items를 빈 배열로.
 - items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show|move, q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 25자 안.
 - text는 3~5줄로 짧게. 날마다 몇 곳인지·동선 요점만(일정 목록은 items에만, text에 되풀이하지 말 것).
-JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":""}]}`;
+- 계획의 일정 줄 앞 [#번호]가 그 일정 번호예요. 있던 일정의 시각·날을 바꾸거나 빼자고 제안할 때는 ch에 넣으세요(no=번호, t=새 시각 HH:MM, d=새 일차(0부터, 안 바뀌면 빼기), del=true면 빼기, why 25자 안). 사용자가 '반영해·바꿔 줘'라고 하면 앞에서 말한 제안을 ch·items로 만들어 주세요. 같은 곳을 items로 다시 넣지 마세요.
+JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":""}],"ch":[{"no":1,"t":"","d":null,"del":false,"why":""}]}`;
       const msgs = []; for (const m of hist.slice(-7, -1)) msgs.push({ role: m.r === 'u' ? 'user' : 'assistant', content: m.r === 'u' ? m.x : m.x + (m.items && m.items.length ? '\n(제안: ' + m.items.map(z => `${(+z.d || 0) + 1}일차 ${z.n}`).join(', ') + (m.added ? ' → 일정에 넣음' : '') + ')' : '') });
       while (msgs.length && msgs[0].role !== 'user') msgs.shift();
       for (let i = msgs.length - 1; i > 0; i--) if (msgs[i].role === msgs[i - 1].role) msgs.splice(i, 1);
@@ -9627,9 +9641,14 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
       const tb = (res.content || []).find(z => z.type === 'text'), raw = tb ? tb.text : '';
       const j = planAnsParse(raw), cut = res.stop_reason === 'max_tokens' || j.cut;
       const items = Array.isArray(j.items) ? j.items.filter(z => z && z.n).slice(0, 24) : [];
+      const ch = (Array.isArray(j.ch) ? j.ch : []).map(c => { const x = ids[(+c.no || 0) - 1] && p.it.find(y => y.id === ids[(+c.no || 0) - 1]); if (!x) return null;
+        const t = /^\d{1,2}:\d{2}$/.test(c.t || '') ? String(c.t).padStart(5, '0') : null, d = Number.isFinite(+c.d) && c.d !== null && c.d !== '' ? +c.d : null, del = c.del === true;
+        if (!del && (t == null || t === x.t) && (d == null || d === x.d)) return null;
+        const fmt = (dd, tt) => `${dd + 1}일차${tt ? ' ' + tt : ''}`;
+        return { id: x.id, name: x.n, t, d, del, from: fmt(x.d, x.t), to: fmt(d != null ? d : x.d, t != null ? t : x.t), why: String(c.why || '').slice(0, 60) }; }).filter(Boolean).slice(0, 20);
       // 판 -141 (사용자 캡처: 답이 잘려 JSON 글자가 그대로 보임): 날것 JSON은 절대 안 보여요
-      const txt = String(j.text || '').trim() || (items.length ? '일정을 짜 봤어요. 아래에서 넣을 곳을 골라 주세요.' : '⚠ 답을 제대로 못 받았어요 · 한 번 더 물어봐 주세요');
-      hist.push({ r: 'a', x: planTerm(txt) + (cut && items.length ? `\n(답이 길어 ${items.length}곳까지만 받았어요 · 나머지는 '남은 날도 짜 줘'라고 물어봐 주세요)` : ''), items, t: Date.now() }); say('');
+      const txt = String(j.text || '').trim() || (items.length || ch.length ? '이렇게 바꿔 보면 어때요? 아래에서 골라 반영해 주세요.' : '⚠ 답을 제대로 못 받았어요 · 한 번 더 물어봐 주세요');
+      hist.push({ r: 'a', x: planTerm(txt) + (cut && items.length ? `\n(답이 길어 ${items.length}곳까지만 받았어요 · 나머지는 '남은 날도 짜 줘'라고 물어봐 주세요)` : ''), items, ch, t: Date.now() }); say('');
     } catch (e) { const m = String(e && e.message || e); hist.push({ r: 'a', x: '⚠ 답을 못 받았어요 · ' + (/401|auth/i.test(m) ? 'Claude 열쇠를 확인해 주세요' : /fetch|network|Failed/i.test(m) ? '인터넷을 확인해 주세요' : m.slice(0, 80)), t: Date.now() }); say(''); }
     ls.set(HK, hist.slice(-30)); busy = false; paint();
   };
