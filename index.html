@@ -1211,6 +1211,14 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .iv-go{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:#191F28;color:#fff;font-size:16px;font-weight:600}
 .ai-lim{flex:none;font-size:13px;color:#6B7684;background:#F7F8FA;border-radius:12px;padding:8px 12px}.ai-lim summary{cursor:pointer;font-weight:600;color:#4E5968}.ai-lim ul{margin:6px 0 2px;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:1.45}
 .ai-sh{flex:none;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4E5968;background:#EEF7FA;border-radius:12px;padding:8px 12px}.ai-sh span{flex:1;min-width:0}.ai-sh button{flex:none;border:none;background:none;padding:0;font:600 12.5px Pretendard,sans-serif;color:#1D9EC0;text-decoration:underline;cursor:pointer}
+.pm-ls{display:flex;flex-direction:column;gap:2px;background:#fff;border-radius:16px;padding:4px 0}
+.pm-row{display:flex;align-items:center;gap:8px;padding:10px 12px}.pm-av{width:34px;height:34px;border-radius:50%;background:#E8F4F8;color:#1D9EC0;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.pm-nm{flex:1;min-width:0;display:flex;flex-direction:column}.pm-nm b{font-size:15px;font-weight:600;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pm-nm span{font-size:12px;color:#8B95A1}
+.pm-t{flex:none;border:1px solid #E5E8EB;background:#fff;color:#8B95A1;border-radius:999px;padding:6px 10px;font:500 13px Pretendard,sans-serif}.pm-t.on{background:#191F28;border-color:#191F28;color:#fff}.pm-t:disabled{opacity:.35}
+.pm-def{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F7F8FA;border-radius:14px;padding:10px 12px}.pm-def span{flex:1;font-size:13.5px;color:#4E5968;min-width:120px}
+.pm-note{margin:0;padding-left:18px;font-size:12.5px;color:#6B7684;line-height:1.5;display:flex;flex-direction:column;gap:4px}.pm-empty{font-size:13.5px;color:#8B95A1;padding:14px;background:#fff;border-radius:14px}.pm-me{font-size:14px;color:#191F28;background:#fff;border-radius:14px;padding:12px}
+.pm-ban{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:none;border-radius:14px;background:#FFF1EC;padding:10px 14px;font:inherit;cursor:pointer}.pm-ban b{font-size:14px;font-weight:600;color:#D2462A}.pm-ban span{font-size:12.5px;color:#6B7684}
+.pm-ban.ro{background:#F2F4F6;cursor:default}.pm-ban.ro b{color:#191F28}
 </style>
 </head>
 <body>
@@ -3315,9 +3323,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-200-aishare';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-201-perm';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8385,7 +8393,7 @@ async function planFromLink(hash) {   // #ps=번호.열쇠 → 계획
   return planUnpack(new TextDecoder().decode(await openBytes(o.enc, k)));
 }
 async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는데 너무 길다, 매력도 없고' → 날마다 목록 대신 짧은 초대 글 + 카카오톡이면 여행지 사진 카드
-  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }   // 받은 사람이 같은 여행 방에 들어오게
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode(), mk: 1 }; planSave(p); }   // 받은 사람이 같은 여행 방에 들어오게
   const sh = s => String(s || '').replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
   const top = [], seen = new Set();
   for (const x of (p.it || []).filter(x => x.k === 'spot' || x.k === 'show')) {
@@ -9247,7 +9255,7 @@ async function viewPlan() {
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
   if (qs.get('p') && qs.get('today')) { history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(qs.get('p'))); }   // 판 -129: 오늘 화면을 계획 화면 하나로 합침(옛 주소는 계획 화면으로)
-  if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode() }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
+  if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode(), mk: 1 }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p') && qs.get('info')) return viewPlanDest(qs.get('p'));   // 판 -144: 여행지 정보 한 페이지
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
   if (location.hash === '#plNew') setTimeout(() => document.getElementById('plNew')?.scrollIntoView({ block: 'start' }), 300);   // 판 -189: 첫 화면 '+ 새 계획'
@@ -9464,6 +9472,7 @@ function planPrepSheet(p, wx) {
   body.append(H('여행 정보'), grp(
     nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·환율' : '소개·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
     nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
+    p.room && p.room.code ? nrow('🔐', '일행 권한', (() => { const S = permCached(p); if (!S || !S.own) return '보기·고치기·AI'; if (S.own.by !== trMe()) { const P = permOf(S, trMe()); return P.w ? '보기·고치기' + (P.ai ? '·AI' : '') : P.r ? '보기만' : '볼 수 없음'; } return `${(S.tk || []).length}명`; })(), () => permSheet(p, rd)) : null,
     (p.chLog || []).length ? nrow('✎', '바뀐 기록', `${p.chLog[0].nm} · ${trAgo(p.chLog[0].t)}`, sub('✎ 일행이 바꾼 기록', el('div', { class: 'sub', text: '같이 고치기로 일행이 바꾼 것이에요 (내가 바꾼 것은 빼고, 최근 80개)' }),
       ...p.chLog.map(z => el('div', { style: 'display:flex;gap:10px;padding:9px 0;border-top:1px solid #F0F2F5;font-size:14px' }, el('b', { style: 'flex:none;font-weight:500;color:#191F28', text: z.nm }), el('span', { style: 'flex:1;color:#4E5968', text: z.w }), el('span', { style: 'flex:none;color:#8B95A1;font-size:12.5px', text: trAgo(z.t) }))))) : null,   // 판 -193
     planRefs(p).length || planAbroad(p) ? nrow('🧳', '참고 여행상품', planRefs(p).length ? planRefs(p).map(r => r.by).filter((v, i, A) => A.indexOf(v) === i).join(' · ') : '넣기', () => planRefSheet(p, rd)) : null,
@@ -9662,6 +9671,7 @@ function trViewer(R, list, i0) {
 // 여행 방 화면: 계획에서(?plan=1&p=ID&room=1) 또는 방 주소로(?troom=1#tr=코드, 크롬에서 원본 올릴 때)
 async function viewTripRoom(code, title, planId) {
   document.title = `여행 방 · ${title || ''}`;
+  { const pp = planId ? planGet(planId) : planOfRoom(code); if (pp && !permCanR(pp)) return viewPlanOne(pp.id); }   // 판 -201: 보기 권한이 꺼지면 방도 못 봐요
   const R = await trRoom(code), S = await trLoad(R), me = trMe();
   let tab = ls.get('tripTab', 'chat'), photoBusy = false, map = null, mlay = null, locWatch = null, drv = await driveToken(false), toAI = false;
   try { toAI = sessionStorage.getItem('tripTo:' + R.rid) === '1'; } catch {}
@@ -9837,7 +9847,7 @@ async function viewTripRoom(code, title, planId) {
 }
 // 계획 화면의 여행 방 카드 (새 글 수)
 function planRoomCard(p, tile) {
-  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode(), mk: 1 }; planSave(p); }
   const box = tile ? el('a', { class: 'tv-tile', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1' }) : el('a', { class: 'card', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', style: 'display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:12px 14px;border:2px solid var(--pine)' });
   const paint = (S, R) => {
     const seen = R ? ls.get('tripSeen:' + R.rid, 0) : 0, me = trMe(), nw = S ? S.tc.filter(m => m.t > seen && m.by !== me).length : 0, ph = S ? S.tp.filter(x => !x.del).length : 0;
@@ -9946,30 +9956,110 @@ function aiShared() { if (trOwnKey()) return null; const s = ls.get('tripAiKey',
 function aiSharedLeft() { const N = ls.get('tripAiN', null) || {}, d = new Date().toDateString(); return Math.max(0, AI_SHARE_MAX - (N.d === d ? N.n : 0)); }
 function aiCount() { if (!aiShared()) return; const N = ls.get('tripAiN', null) || {}, d = new Date().toDateString(); ls.set('tripAiN', { d, n: (N.d === d ? N.n : 0) + 1 }); }
 function trBotKey() { const o = trOwnKey(); if (o) return o; const s = aiShared(); return s && aiSharedLeft() > 0 ? s.k : ''; }
-async function aiKeySync(p, force) {
-  if (!p || !p.room || !p.room.code) return;
-  const R = await trRoom(p.room.code), path = `rooms/${R.rid}/x/aikey`, own = trOwnKey();
-  if (own) { const on = ls.get('tripAiShare:' + R.rid, true) !== false, sig = on ? 'k' + own.slice(-8) : 'off';
-    if (!force && ls.get('tripAiPut:' + R.rid, '') === sig) return;
-    try { await fsPut(path, JSON.stringify(await roomSeal(R.key, on ? { k: own, by: trMe(), nm: trName() || '일행', t: Date.now() } : { none: 1, t: Date.now() }))); ls.set('tripAiPut:' + R.rid, sig); } catch {}
-    return; }
-  aiKeySync.t = aiKeySync.t || {}; if (!force && Date.now() - (aiKeySync.t[R.rid] || 0) < 10 * 60000) return; aiKeySync.t[R.rid] = Date.now();
-  const d = await fsGet(path, 1); if (d === undefined) return;
-  let v = null; try { v = d ? await roomOpen(R.key, JSON.parse(d)) : null; } catch {}
-  const s = ls.get('tripAiKey', null);
-  if (v && v.k) { if (!s || s.k !== v.k) ls.set('tripAiKey', { k: v.k, nm: v.nm || '일행', rid: R.rid, at: Date.now() }); }
-  else if (s && s.rid === R.rid) { try { localStorage.removeItem('tripAiKey'); } catch {} }
-}
-function aiShareLine(p) {   // AI 묻기 창 머리 아래: 누구 열쇠로 답하는지 · 주인은 나눠 주기 켜고 끄기
-  const own = trOwnKey(), sh = aiShared(), hasRoom = p && p.room && p.room.code;
-  if (own && hasRoom) { const box = el('div', { class: 'ai-sh' }); const paint = async () => { const R = await trRoom(p.room.code), on = ls.get('tripAiShare:' + R.rid, true) !== false;
-      faRc(box, el('span', { text: on ? `일행도 내 열쇠로 AI를 써요 · 한 사람 하루 ${AI_SHARE_MAX}번 · 사용료는 내 계정` : '내 열쇠를 일행과 나눠 쓰지 않아요' }),
-        el('button', { type: 'button', text: on ? '나눠 쓰기 끄기' : '나눠 쓰기 켜기', onclick: async () => { ls.set('tripAiShare:' + R.rid, !on); await aiKeySync(p, true); paint(); toast(on ? '일행 휴대폰에서 다음에 열 때부터 AI를 못 써요' : '일행도 내 열쇠로 AI를 쓸 수 있어요'); } })); };
-    paint(); return box; }
+async function aiKeySync(p, force) { return permSync(p, force); }   // 판 -201: 모두에게 나눠 주기(-200) 대신 권한에서 허락한 사람에게만
+function aiShareLine(p) {   // AI 묻기 창 머리 아래: 누구 열쇠로 답하는지 · 주인은 일행 권한으로
+  const own = trOwnKey(), sh = aiShared(), hasRoom = p && p.room && p.room.code, S = permCached(p);
+  if (own && hasRoom && S && S.own && S.own.by === trMe()) { const n = (S.tk || []).filter(x => permOf(S, x.by).ai).length;
+    return el('div', { class: 'ai-sh' }, el('span', { text: n ? `일행 ${n}명이 내 열쇠로 AI를 써요 · 한 사람 하루 ${AI_SHARE_MAX}번 · 사용료는 내 계정` : '일행은 AI를 못 써요 · 권한에서 허락할 수 있어요' }), el('button', { type: 'button', text: '일행 권한', onclick: () => permSheet(p) })); }
   if (sh) return el('div', { class: 'ai-sh' }, el('span', { text: aiSharedLeft() > 0 ? `${sh.nm} 님 열쇠로 답해요 · 오늘 ${aiSharedLeft()}번 남음` : `오늘 쓸 수 있는 ${AI_SHARE_MAX}번을 다 썼어요 · 내일 다시 쓸 수 있어요` }));
   return null;
 }
 function trBotOn(R) { return !!trOwnKey() && ls.get('tripBot:' + R.rid, true) !== false; }
+// 판 -201 👥 일행 권한 (사용자 '들어온 사람에게 내가 권한을 주는 방법은 읽기·쓰기·AI 사용권 등'):
+//   주인 = 방을 만든 휴대폰(p.room.mk) 또는 열쇠 있는 휴대폰이 처음 연 때 rooms/{방}/x/own={by,nm} · 권한 x/perm={by:주인, m:{사람:{r,w,ai}}, def}
+//   들어온 사람은 tk/{나}={by,nm,pk(ECDH 공개 열쇠),t}로 이름을 남김 · 새로 들어온 사람은 def(처음엔 보기만)
+//   AI 열쇠는 허락한 사람에게만 x/ai_{사람} = 그 사람 공개 열쇠로 잠가서(다른 일행·링크 전달받은 사람은 못 풀어요). 끄면 지움
+//   고치기·보기는 앱이 지키는 것(링크를 가진 사람이 마음먹고 앱을 뜯으면 우회 가능 — 사용자에게 알림)
+//   이 휴대폰에 남기는 것: ls tripPk(내 열쇠 한 쌍), tripPerm:{방}(받은 권한), tripTk:{방}, tripAiG:{방}(누구에게 AI를 줬나) — 모두 새 키
+async function tkKeys() {
+  const A = { name: 'ECDH', namedCurve: 'P-256' }, s = ls.get('tripPk', null);
+  if (s && s.pub && s.prv) { try { return { pub: s.pub, prv: await crypto.subtle.importKey('jwk', s.prv, A, false, ['deriveKey']) }; } catch {} }
+  const k = await crypto.subtle.generateKey(A, true, ['deriveKey']), pub = await crypto.subtle.exportKey('jwk', k.publicKey), prv = await crypto.subtle.exportKey('jwk', k.privateKey);
+  ls.set('tripPk', { pub, prv }); return { pub, prv: k.privateKey };
+}
+async function tkShared(prv, pubJwk) { const pub = await crypto.subtle.importKey('jwk', pubJwk, { name: 'ECDH', namedCurve: 'P-256' }, false, []); return crypto.subtle.deriveKey({ name: 'ECDH', public: pub }, prv, { name: 'AES-GCM', length: 128 }, false, ['encrypt', 'decrypt']); }
+async function trXGet(R, n) { const d = await fsGet(`rooms/${R.rid}/x/${n}`, 1); if (d === undefined) throw new Error('net'); try { return d ? await roomOpen(R.key, JSON.parse(d)) : null; } catch { return null; } }
+async function trListOpen(R, col) { const L = await fsList(`rooms/${R.rid}/${col}`), out = []; for (const x of L) { try { out.push(Object.assign({ id: x.id }, await roomOpen(R.key, JSON.parse(x.d)))); } catch {} } return out; }
+var PERM_ALL = { r: 1, w: 1, ai: 0 };
+function permOf(S, id) { if (!S || !S.perm) return PERM_ALL; if (S.own && S.own.by === id) return { r: 1, w: 1, ai: 1 }; return Object.assign({}, S.perm.def || { r: 1, w: 0, ai: 0 }, (S.perm.m || {})[id] || {}); }
+function permCached(p) { return p && p.room && p.room.code ? (ls.get('tripPermC:' + p.room.code, null)) : null; }
+async function permSync(p, force) {
+  if (!p || !p.room || !p.room.code) return null;
+  const R = await trRoom(p.room.code), me = trMe(), CK = 'tripPermC:' + p.room.code;
+  permSync.t = permSync.t || {}; if (!force && Date.now() - (permSync.t[R.rid] || 0) < 60000) return ls.get(CK, null); permSync.t[R.rid] = Date.now();
+  const K = await tkKeys(), nm = trName() || '';
+  { const T = ls.get('tripTk:' + R.rid, null); if (!T || T.nm !== nm || Date.now() - T.at > 12 * 3600e3) { try { await trPut(R, 'tk', me, { by: me, nm, pk: K.pub, t: Date.now() }); ls.set('tripTk:' + R.rid, { nm, at: Date.now() }); } catch {} } }
+  let own, perm; try { own = await trXGet(R, 'own'); perm = await trXGet(R, 'perm'); } catch { return ls.get(CK, null); }
+  if (!own && (p.room.mk || trOwnKey())) { own = { by: me, nm, t: Date.now() }; try { await fsPut(`rooms/${R.rid}/x/own`, JSON.stringify(await roomSeal(R.key, own))); } catch { own = null; } }
+  const S = { own: own || null, perm: perm && own && perm.by === own.by ? perm : null, at: Date.now(), me };
+  if (own && own.by === me) {
+    S.tk = (await trListOpen(R, 'tk')).filter(x => x.by && x.by !== me);
+    if (!S.perm) {   // 처음: 이미 들어와 있던 일행(여행 방에 있던 사람)은 예전처럼 보기·고치기, AI는 허락해야
+      const m = {}; try { (await trListOpen(R, 'tm')).forEach(x => { if (x.by && x.by !== me) m[x.by] = { r: 1, w: 1, ai: 0 }; }); } catch {}
+      S.perm = { by: me, m, def: { r: 1, w: 0, ai: 0 }, t: Date.now() };
+      try { await fsPut(`rooms/${R.rid}/x/perm`, JSON.stringify(await roomSeal(R.key, S.perm))); } catch {}
+    }
+    await aiGrantSync(R, S, K);
+  } else await aiPickup(R, S, K);
+  ls.set(CK, S); return S;
+}
+async function aiGrantSync(R, S, K) {   // 주인: 허락한 사람에게만 내 AI 열쇠를 그 사람 열쇠로 잠가 둠
+  const own = trOwnKey(), G = ls.get('tripAiG:' + R.rid, null) || {}, want = {};
+  if (own) (S.tk || []).forEach(x => { if (x.pk && permOf(S, x.by).ai && permOf(S, x.by).r) want[x.by] = x; });
+  for (const id of Object.keys(want)) { const sig = own.slice(-8) + ':' + JSON.stringify(want[id].pk).length; if (G[id] === sig) continue;
+    try { const sk = await tkShared(K.prv, want[id].pk), enc = await sealBytes(new TextEncoder().encode(own), sk);
+      await fsPut(`rooms/${R.rid}/x/ai_${id}`, JSON.stringify(await roomSeal(R.key, { opk: K.pub, enc, nm: trName() || '일행', t: Date.now() }))); G[id] = sig; } catch {} }
+  for (const id of Object.keys(G)) if (!want[id]) { try { await fsPut(`rooms/${R.rid}/x/ai_${id}`, JSON.stringify(await roomSeal(R.key, { none: 1, t: Date.now() }))); delete G[id]; } catch {} }
+  ls.set('tripAiG:' + R.rid, G);
+  if (ls.get('tripAiPut:' + R.rid, '') !== 'off') { try { await fsPut(`rooms/${R.rid}/x/aikey`, JSON.stringify(await roomSeal(R.key, { none: 1, t: Date.now() }))); ls.set('tripAiPut:' + R.rid, 'off'); } catch {} }   // 판 -200 '모두에게 나눠 주기'는 없앰
+}
+async function aiPickup(R, S, K) {   // 일행: 주인이 나에게 잠가 둔 AI 열쇠
+  const me = trMe(); let v = null; try { v = await trXGet(R, 'ai_' + me); } catch { return; }
+  let k = ''; if (v && v.enc && v.opk) { try { k = new TextDecoder().decode(await openBytes(v.enc, await tkShared(K.prv, v.opk))); } catch {} }
+  const s = ls.get('tripAiKey', null);
+  if (k) { if (!s || s.k !== k) ls.set('tripAiKey', { k, nm: v.nm || (S.own && S.own.nm) || '일행', rid: R.rid, at: Date.now() }); }
+  else if (s && (s.rid === R.rid || !s.rid)) { try { localStorage.removeItem('tripAiKey'); } catch {} }
+}
+async function permSave(p, S) { const R = await trRoom(p.room.code); S.perm.t = Date.now(); await fsPut(`rooms/${R.rid}/x/perm`, JSON.stringify(await roomSeal(R.key, S.perm))); ls.set('tripPermC:' + p.room.code, S); await aiGrantSync(R, S, await tkKeys()); ls.set('tripPermC:' + p.room.code, S); }
+function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
+  let S = permCached(p); const box = el('div', { class: 'stack', style: 'gap:10px' });
+  const tg = (on, txt, fn, dis) => el('button', { type: 'button', class: 'pm-t' + (on ? ' on' : ''), disabled: !!dis, text: txt, onclick: fn });
+  const paint = () => {
+    if (!S || !S.own) return faRc(box, el('div', { class: 'dt', text: '여행 방 정보를 받는 중이에요…' }));
+    if (S.own.by !== trMe()) { const P = permOf(S, trMe()); return faRc(box, el('div', { class: 'dt', text: `이 여행의 주인은 ${S.own.nm || '일행'} 님이에요. 권한은 주인만 정해요.` }), el('div', { class: 'pm-me', text: `내 권한 · 보기 ${P.r ? '✓' : '✗'} · 고치기 ${P.w ? '✓' : '✗'} · AI ${P.ai ? '✓' : '✗'}` })); }
+    const L = (S.tk || []).slice().sort((a, b) => (b.t || 0) - (a.t || 0)), M = S.perm.m = S.perm.m || {}, D = S.perm.def = S.perm.def || { r: 1, w: 0, ai: 0 };
+    const set = async (id, k) => { const cur = permOf(S, id); M[id] = Object.assign({}, cur, { [k]: cur[k] ? 0 : 1 }); if (k === 'r' && !M[id].r) { M[id].w = 0; M[id].ai = 0; } paint(); try { await permSave(p, S); } catch { toast('⚠ 저장을 못 했어요 · 인터넷을 확인해 주세요'); } };
+    faRc(box,
+      el('div', { class: 'dt', text: '링크로 들어온 사람마다 정해요. 바꾸면 그 사람이 다음에 계획을 열 때부터 적용돼요.' }),
+      L.length ? el('div', { class: 'pm-ls' }, ...L.map(x => { const P = permOf(S, x.by), nw = !M[x.by];
+        return el('div', { class: 'pm-row' }, el('div', { class: 'pm-av', text: (x.nm || '?').slice(0, 1) }),
+          el('div', { class: 'pm-nm' }, el('b', { text: x.nm || '이름 없음' }), el('span', { text: (nw ? '새로 들어옴 · ' : '') + trAgo(x.t) })),
+          tg(P.r, '보기', () => set(x.by, 'r')), tg(P.w, '고치기', () => set(x.by, 'w'), !P.r), tg(P.ai, 'AI', () => set(x.by, 'ai'), !P.r || !trOwnKey())); }))
+        : el('div', { class: 'pm-empty', text: '아직 들어온 사람이 없어요. 초대 링크를 받은 사람이 계획을 열면 여기에 나와요.' }),
+      el('div', { class: 'pm-def' }, el('span', { text: '새로 들어온 사람 기본' }),
+        tg(D.r, '보기', async () => { D.r = D.r ? 0 : 1; if (!D.r) { D.w = 0; D.ai = 0; } paint(); await permSave(p, S).catch(() => {}); }),
+        tg(D.w, '고치기', async () => { D.w = D.w ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r),
+        tg(D.ai, 'AI', async () => { D.ai = D.ai ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r || !trOwnKey())),
+      el('ul', { class: 'pm-note' },
+        el('li', { text: 'AI는 내 Claude 열쇠를 허락한 사람의 휴대폰에만 잠가서 보내요(사용료는 내 계정, 한 사람 하루 ' + AI_SHARE_MAX + '번). 끄면 그 사람 휴대폰에서 지워져요.' }),
+        el('li', { text: '보기·고치기는 앱이 막는 거예요. 링크를 가진 사람이 마음먹고 앱을 뜯으면 우회할 수 있어요. 링크는 믿는 사람에게만 보내 주세요.' }),
+        trOwnKey() ? null : el('li', { text: '이 휴대폰에 Claude 열쇠가 없어서 AI 권한은 줄 수 없어요.' })));
+  };
+  paint();
+  const bg = labSheet('👥 일행 권한', box);
+  permSync(p, true).then(x => { if (x) { S = x; if (bg.isConnected) paint(); rd && rd(); } }).catch(() => {});
+  return bg;
+}
+function permLine(p, rd) {   // 계획 화면 맨 위 작은 줄: 주인 = 새로 들어온 사람 · 일행 = 내 권한
+  const S = permCached(p); if (!S || !S.own || !S.perm) return null;
+  if (S.own.by === trMe()) { const n = (S.tk || []).filter(x => !(S.perm.m || {})[x.by]).length; if (!n) return null;
+    return el('button', { type: 'button', class: 'pm-ban', onclick: () => permSheet(p, rd) }, el('b', { text: `👋 새로 들어온 사람 ${n}명` }), el('span', { text: '권한 정하기 ›' })); }
+  const P = permOf(S, trMe()); if (P.w) return null;
+  return el('div', { class: 'pm-ban ro' }, el('b', { text: P.r ? '👁 보기만 할 수 있어요' : '⛔ 이 여행을 볼 수 없어요' }), el('span', { text: P.r ? `일정 고치기는 ${S.own.nm || '주인'} 님 허락이 필요해요 · 고친 것은 내 일정으로만 남아요` : `${S.own.nm || '주인'} 님이 보기 권한을 껐어요` }));
+}
+function permCanW(p) { const S = permCached(p); return !S || !S.own || S.own.by === trMe() || !!permOf(S, trMe()).w; }
+function permCanR(p) { const S = permCached(p); return !S || !S.own || S.own.by === trMe() || !!permOf(S, trMe()).r; }
+
 // 판 -135 (개선 지시서 2번): 답해 줄 휴대폰 상태를 설정 용어 없이 · ok=지금 보내면 답이 올 수 있음
 // 판 -135: 위치가 3분 넘게 안 바뀌면 '현재 위치 아님' (1분마다 보내니 세 번 빠짐)
 function trLocOld(x) { return !x || Date.now() - x.at > 3 * 60000; }
@@ -10304,11 +10394,24 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
         p.it = sh; mine.forEach(y => planMineIns(p.it, y));
       }
     }
+    // 판 -201: 고치기 권한이 없으면 함께 일정은 방 것 그대로(내가 고친 것은 내 일정으로만 남음), 이름·날짜·일정을 올리지 않음
+    const canW = permCanW(p);
+    if (!canW) { let rv = 0;
+      const roomIt = rem.filter(r => !r.del && r.it).sort((a, b) => (a.it.d - b.it.d) || ((a.it.ord || 0) - (b.it.ord || 0)));
+      const next = roomIt.map(r => { const L = p.it.find(x => x.id === r.id), x = Object.assign({}, r.it); delete x.ord; x.id = r.id; if (L) { PL_PRIV.forEach(k => { if (L[k] != null) x[k] = L[k]; }); if (plSig(Object.assign(plPub(L), { ord: 0 })) !== plSig(Object.assign(plPub(x), { ord: 0 }))) rv++; } else rv++; st.sig[r.id] = plSig(r.it); return x; });
+      p.it.filter(x => !x.mine && !rem.some(r => r.id === x.id)).forEach(x => { x.mine = 1; next.push(x); });
+      const mine = p.it.filter(x => x.mine); p.it = next.filter(x => !x.mine); mine.concat(next.filter(x => x.mine)).forEach(y => planMineIns(p.it, y));
+      if (meta && meta.m && plSig(meta.m) !== plSig(plMeta(p))) { Object.assign(p, meta.m); st.m = plSig(meta.m); rv++; }
+      if (rv && !first) { local = true; if (opt.say) opt.say('👁 보기만 할 수 있어서 함께 일정은 그대로예요 · 내가 넣은 곳은 내 일정으로 남았어요'); }
+      if (rv && first) local = true;
+    }
     // 올리기: 내가 바꾼 칸, 지운 칸, 이름·날짜
     const by = trMe(), nm = trName() || '일행', ups = [];
+    if (canW) {
     if (!meta || plSig(plMeta(p)) !== st.m) { ups.push(trPut(R, 'pl', 'meta', { m: plMeta(p), by, nm })); st.m = plSig(plMeta(p)); }
     myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { ups.push(trPut(R, 'pl', o.id, { it: o, by, nm })); st.sig[o.id] = sg; } });
     Object.keys(st.sig).forEach(id => { if (!shd().some(x => x.id === id)) { ups.push(trPut(R, 'pl', id, { del: 1, by, nm })); delete st.sig[id]; } });
+    }
     // 함께 가는 사람
     p.mem = p.mem || []; st.mm = st.mm || {};
     for (const r of S.pm) {
@@ -10625,7 +10728,7 @@ function planGuideSheet(p) {
   paint();
 }
 function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 대화(스크롤) · 아래 자주 묻는 질문(옆으로 밀기) + 입력칸·보내기 (판 -114: 예전엔 한 줄로 쌓여 '물어보기' 단추가 휴대폰 아래 단추줄 밑에 깔려 안 눌렸음)
-  if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
+  if (!p.room || !p.room.code) { p.room = { code: trNewCode(), mk: 1 }; planSave(p); }
   const code = p.room.code, list = el('div', { class: 'stack', style: 'gap:10px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch' });
   const st = el('div', { style: 'font-size:13px;font-weight:700;padding:6px 10px;border-radius:12px;background:#F2F4F6' });
   const nmIn = el('input', { type: 'text', maxlength: 12, placeholder: '내 이름 (일행에게 보여요)', value: trName(), style: 'width:100%;box-sizing:border-box;padding:9px 12px;border-radius:12px;border:1px solid var(--line);font:inherit' });
@@ -11280,6 +11383,10 @@ async function koMapLayer(hanja) {
 function koInHanzi(lat, lng) { return planInChina(lat, lng) && !(lng > 128.5 && lat < 45.5); }
 function viewPlanOne(id) {
   const p = planGet(id); if (!p) { const to = (ls.get('planInto', {}) || {})[id]; location.replace(to && planGet(to) ? './?plan=1&p=' + encodeURIComponent(to) + location.search.replace(/^\?/, '&').replace(/&?plan=1|&?p=[^&]*/g, '') : './?plan=1'); return; }   // 판 -191: 합쳐져 없어진 계획 주소면 남은 계획으로
+  if (!permCanR(p)) { const S = permCached(p); document.title = (p.name || '여행 계획') + ' · Map Photo Diary';   // 판 -201: 보기 권한이 꺼진 일행
+    roleBar('member', '여행 계획'); faRc(app, el('div', { class: 'stack' }, el('a', { class: 'link', href: './?plan=1', text: '‹ 여행 계획' }),
+      el('div', { class: 'card' }, el('b', { style: 'font-size:18px', text: '⛔ 이 여행을 볼 수 없어요' }), el('div', { class: 'dt', style: 'margin-top:6px', text: `${(S && S.own && S.own.nm) || '주인'} 님이 보기 권한을 껐어요. 다시 보려면 그분께 말씀해 주세요.` }))));
+    permSync(p, true).then(() => { if (permCanR(planGet(id) || p)) viewPlanOne(id); }).catch(() => {}); return; }
   p.it = p.it || [];
   { const mf = planMoveFix(p); if (mf) setTimeout(() => toast(`이동 칸 ${mf}곳을 도착 장소 이름으로 바꿨어요 · 가는 방법은 일정 사이 줄에 있어요`, false, 6000), 1200); }
   { const before = JSON.stringify(p.it), r = planSelfCheck(p); if (JSON.stringify(p.it) !== before || r.fixed.length) { planSave(p); setTimeout(() => toast(`🔎 스스로 점검해서 ${r.fixed.length}가지를 고쳤어요 · ${r.fixed[0] || ''}${r.fixed.length > 1 ? ' 외' : ''}`, false, 7000), 700); } else planSave(p); }   // 판 -130·-131
@@ -11297,7 +11404,7 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: planEN(p) && p.nameEn ? p.nameEn : p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      chkLine(), warnBox()); };   // 여행 정보·함께 가는 사람·예약은 아래 메뉴 '여행 노트' 맨 위로 옮김(2026-11-15 사용자 '추천대로해')
+      permLine(p, () => drawAll()), chkLine(), warnBox()); };   // 여행 정보·함께 가는 사람·예약은 아래 메뉴 '여행 노트' 맨 위로 옮김(2026-11-15 사용자 '추천대로해')
   function destLine() {   // 판 -144: 📘 여행지 정보 한 페이지
     const nm = (p.dest && p.dest.n) || planDestName(p) || '여행지';
     return el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1', class: 'n-row', style: 'width:100%;box-sizing:border-box;text-decoration:none;color:inherit;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px' },
@@ -11595,7 +11702,8 @@ function viewPlanOne(id) {
     if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: p.it.some(x => x.k === 'stay' && Number.isFinite(x.lat)) ? [74, 34] : [28, 28], maxZoom: 15 });
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
-  window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };   // 판 -139: 계획 도우미가 일정을 넣은 뒤
+  window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };
+  permSync(p).then(S => { if (S) drawHead(); }).catch(() => {});   // 판 -201: 권한 받기 → 맨 위 줄   // 판 -139: 계획 도우미가 일정을 넣은 뒤
   // 판 -140: 같이 고치기 — 열 때 한 번, 화면을 보는 동안 15초마다 방과 맞춤
   if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; const n0 = (planGet(p.id) || p).chLog ? (planGet(p.id) || p).chLog.length : 0; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); const L = (p.chLog || []), nn = L.length - n0; if (nn > 0) { const who = [...new Set(L.slice(0, nn).map(z => z.nm))].join('·'); toast(`✎ ${who} 님이 일정을 ${nn}가지 바꿨어요 · 여행 노트 > 바뀐 기록`, false, 6000); } } }).catch(() => {}); };
     setTimeout(tick, 800); const iv = setInterval(() => { if (!document.body.contains(list)) return clearInterval(iv); tick(); }, 15000); }
