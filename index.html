@@ -943,6 +943,27 @@ html.vw-lt .gallery img{width:104px;height:104px;border-radius:14px;box-shadow:n
 /* ⚙ 나(설정) 새 디자인 (2026-11-15 시안 ④): 화면 가득 · 큰 제목 '나' · 프로필 칸 · 묶음 목록(색 네모 그림) */
 .sheet.st-full{position:fixed;inset:0;max-width:none;max-height:none;height:100%;border-radius:0;background:#F5F6F8;overflow:auto;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px));box-sizing:border-box;color:#15202B}
 .sheet.st-full>.st-in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.pn-sub{font-size:14px;color:#6B7684;margin:-6px 0 2px}
+.pn-h{font-size:13px;font-weight:700;color:#6B7684;margin:14px 6px 2px}
+.pn-ic{font-size:20px;width:30px;text-align:center;flex:none}
+.pn-sum{background:#15202B;color:#fff;border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.pn-sd{font-size:17px;font-weight:800}.pn-sw{font-size:14px;opacity:.85}
+.pn-pr{display:flex;align-items:center;gap:10px;margin-top:4px;font-size:13px}.pn-pr span{opacity:.8}.pn-pr b{font-size:14px;white-space:nowrap}
+.pn-bar{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.2);overflow:hidden}.pn-bar i{display:block;height:100%;background:#FF6B4A;border-radius:4px;transition:width .3s}
+.pn-wx{display:flex;gap:12px;padding:12px 16px;border-top:1px solid #ECEEF1}.pn-wx:first-child{border-top:none}
+.pn-wd{width:78px;flex:none;display:flex;flex-direction:column}.pn-wd b{font-size:14px}.pn-wd span{font-size:12px;color:#6B7684}
+.pn-wv{flex:1;min-width:0;font-size:14.5px}.pn-wv small{display:block;font-size:12px;color:#8B95A1;margin-top:2px}
+.pn-note{font-size:12px;color:#8B95A1;margin:4px 8px 0}
+.pn-fold{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05);overflow:hidden}
+.pn-fold summary{display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;list-style:none}.pn-fold summary::-webkit-details-marker{display:none}
+.pn-fold summary b{flex:1;font-size:15.5px}.pn-fold summary::after{content:'›';color:#C4CAD1;font-size:20px;transition:transform .2s}.pn-fold[open] summary::after{transform:rotate(90deg)}
+.pn-fc{font-size:13px;font-weight:700;color:#FF6B4A}.pn-fc.ok{color:#1D9EC0}
+.pn-fn{font-size:12.5px;color:#1D9EC0;font-weight:700;padding:0 16px 6px}
+.pn-ci{border-top:1px solid #ECEEF1}
+.pn-ck{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;padding:12px 16px;font:inherit;color:inherit;cursor:pointer}
+.pn-ck .bx{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid #C9D1DA;color:#fff;font-weight:900;font-size:13px;display:grid;place-items:center;margin-top:1px}.pn-ck .bx.on{background:#1D9EC0;border-color:#1D9EC0}
+.pn-ck .tt{font-weight:600;font-size:15px}.pn-ck .tt.on{color:#A0A8B2;text-decoration:line-through}.pn-ck .ww{font-size:12.5px;color:#8B95A1;margin-top:2px;line-height:1.45}
+.pn-sbw{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 12px 50px}.pn-sb{border:none;background:#EEF2F6;color:#15202B;font:700 13px Pretendard,sans-serif;border-radius:999px;padding:7px 12px;text-decoration:none;cursor:pointer}
 .pf{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 14px}
 .pf-ph{position:relative;border:none;background:none;padding:0;cursor:pointer}
 .pf-av{display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#1D9EC0,#0277BD) center/cover no-repeat;color:#fff;font-weight:800;box-shadow:0 4px 14px rgba(21,32,43,.12)}
@@ -3180,9 +3201,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-157-ai';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-158-note2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 여행 아래 메뉴 \'도우미\' 이름을 \'AI 묻기\'로 · 📒 \'준비\'는 \'여행 노트\'로, 여행 정보·함께 가는 사람·예약을 그 안으로 · 🖼 첫 화면 꾸미기 · 👤 나 화면 새로';
+const UI_NOTES = '📒 여행 노트를 다시 배치: 맨 위 요약(D-day·날짜·날씨·준비 진행) → 여행 정보 → 날씨(하루 한 줄) → 체크리스트 → 현지에서(보여 주는 말·통신·긴급 도움) · ✨ \'도우미\'는 \'AI 묻기\'로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8964,64 +8985,77 @@ var PLAN_SAY_CN = [
   ['不要香菜', '고수(샹차이) 빼 주세요', '부야오 샹차이'], ['不要辣', '안 맵게 해 주세요', '부야오 라'], ['洗手间在哪里？', '화장실이 어디예요?', '시서우젠 짜이 나리?'],
   ['多少钱？', '얼마예요?', '둬샤오 첸?'], ['请给我热水', '뜨거운 물 좀 주세요', '칭 게이워 러수이'], ['我不吃这个', '이건 못 먹어요', '워 부츠 저거'],
   ['我和团队走散了，请帮我给导游打电话', '일행을 잃어버렸어요. 가이드에게 전화해 주세요', ''], ['请帮帮我', '도와주세요', '칭 방방 워'], ['谢谢', '고맙습니다', '셰셰']];
+// 📒 여행 노트 (2026-11-15 사용자 '배치가 중구난방이다. 여기저기 흩어졌어' → 다시 배치):
+//   맨 위 요약(D-n·날짜·날씨 범위·체크 진행) → 여행 정보(여행지·함께 가는 사람·예약·출발 미팅·여행사 안내) → 날씨(하루 한 줄) → 체크리스트(묶음마다 접기) → 현지에서(보여 주는 말·통신·결제·긴급 도움)
+//   모든 칸이 같은 모양: 회색 작은 제목 + 흰 둥근 묶음 + 줄(이름 · 오른쪽 회색 값 · ›)
 function planPrepSheet(p, wx) {
   const st = ls.get('planPrep:' + p.id, {}) || {}, { S, cn, meet } = planPrepList(p, wx);
-  const body = el('div', { class: 'stack', style: 'gap:12px' });
+  const body = el('div', { class: 'stack pn', style: 'gap:6px' });
+  const rd = () => { try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} };
+  const H = t => el('div', { class: 'pn-h', text: t });
+  const grp = (...k) => el('div', { class: 'st-grp' }, ...k.filter(Boolean));
+  const nrow = (ic, t, v, on) => el(typeof on === 'string' ? 'a' : 'button', Object.assign({ class: 'st-row', style: 'text-decoration:none' }, typeof on === 'string' ? { href: on } : { type: 'button', onclick: on }),
+    el('span', { class: 'pn-ic', text: ic }), el('b', { class: 'grow', style: 'font-weight:600', text: t }), v ? el('span', { class: 'st-v', text: v }) : null, el('span', { class: 'st-go', text: '›' }));
+  const sub = (title, ...kids) => () => labSheet(title, ...kids);
+  const all = S.flatMap(s => s.it), done = () => all.filter(x => st[x.id] || x.ok).length;
+  const W = wx && wx.days || [], Wv = W.filter(Boolean), R = v => Math.round(v);
+  const left = p.start ? Math.round((planDate(p, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5) : null;
+  // 1) 요약
+  const bar = el('i'), cnt = el('b');
+  const paintTop = () => { const d = done(); cnt.textContent = `${d} / ${all.length}`; bar.style.width = (all.length ? Math.round(d / all.length * 100) : 0) + '%'; };
+  body.append(el('div', { class: 'pn-sum' },
+    el('div', { class: 'pn-sd' }, [left != null && left > 0 ? `D-${left}` : left != null && left <= 0 && left > -p.nd ? '여행 중' : '', p.start ? `${planDayLabel(p, 0)}${p.nd > 1 ? ' ~ ' + planDayLabel(p, p.nd - 1) : ''}` : '날짜 미정'].filter(Boolean).join(' · ')),
+    Wv.length ? el('div', { class: 'pn-sw', text: `${planWxLine(Wv[0], true).split(' ')[0]} ${R(Math.min(...Wv.map(w => w.lo)))}~${R(Math.max(...Wv.map(w => w.hi)))}°C ${wx.src === 'fc' ? '예보' : '· 작년 이맘때'}` }) : null,
+    el('div', { class: 'pn-pr' }, el('span', { text: '준비' }), el('div', { class: 'pn-bar' }, bar), cnt)));
+  // 2) 여행 정보
+  const nm0 = (p.dest && p.dest.n) || planDestName(p) || '여행지', nMem = (p.mem || []).length, nDoc = (p.docs || []).length;
+  body.append(H('여행 정보'), grp(
+    nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·환율' : '소개·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
+    nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
+    planAbroad(p) || nDoc ? nrow('🎫', '예약 · 항공권', nDoc ? `캡처 ${nDoc}장` : '없음', () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); rd(); })) : null,
+    meet ? nrow('🧭', '출발 미팅', `${meet.t || ''}`, sub('🧭 출발 미팅', el('div', { style: 'font-weight:800;font-size:18px', text: `${meet.d ? planDayLabel({ start: meet.d }, 0) + ' ' : ''}${meet.t || ''}` }), el('div', { style: 'white-space:pre-wrap', text: meet.n }), el('div', { class: 'dt', text: '여행사 안내 그대로예요' }))) : null,
+    ...(p.info || []).map(z => nrow('📄', z.h, '여행사', sub('📄 ' + z.h, el('div', { style: 'white-space:pre-wrap;font-size:14.5px;line-height:1.6', text: z.x }))))));
+  // 3) 날씨 — 하루 한 줄
+  body.append(H(`날씨${wx ? (wx.src === 'fc' ? ' · 일기 예보' : ' · 작년 이맘때') : ''}`));
+  if (W.length) body.append(grp(...Array.from({ length: p.nd }, (_, d) => el('div', { class: 'pn-wx' },
+    el('div', { class: 'pn-wd' }, el('b', { style: `color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차` }), el('span', { text: planDayLabel(p, d) })),
+    el('div', { class: 'pn-wv' }, el('div', { text: planWxLine(W[d]) || '정보 없음' }), el('small', { text: planSunLine(p, d).replace('🌅 ', '').replace('해 뜨는 ', '해 ').replace(' · 해 지는 ', ' – ') }))))),
+    el('div', { class: 'pn-note', text: wx.src === 'fc' ? 'Open-Meteo 일기 예보' : '출발 2주 전부터 일기 예보로 바뀌어요 · Open-Meteo' + (W.some(w => w && w.me) ? ' · 산 위는 높이로 짐작한 값' : '') }));
+  else body.append(grp(el('div', { class: 'pn-wx', style: 'color:#6B7684', text: wx === null ? '날짜와 장소 위치가 있어야 날씨를 볼 수 있어요' : '날씨를 받지 못했어요 · 인터넷이 되면 다시 열어 주세요' })));
+  // 4) 체크리스트
+  body.append(H('체크리스트'));
   const chk = x => {
     const on = () => !!(st[x.id] || x.ok);
-    const b = el('button', { style: 'display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;padding:8px 0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px solid var(--line)', onclick: () => { if (x.ok) return; st[x.id] = st[x.id] ? 0 : 1; ls.set('planPrep:' + p.id, st); paint(); } });
-    const paint = () => faRc(b, el('span', { style: `flex:none;width:22px;height:22px;border-radius:6px;border:2px solid ${on() ? 'var(--pine)' : '#B8C7D6'};background:${on() ? 'var(--pine)' : '#fff'};color:#fff;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center`, text: on() ? '✓' : '' }),
-      el('div', { style: 'flex:1;min-width:0' }, el('div', { style: `font-weight:700;${on() ? 'color:var(--muted);text-decoration:line-through' : ''}`, text: x.t + (x.ok ? ' (되어 있어요)' : '') }), x.w ? el('div', { class: 'dt', style: 'font-size:13px', text: x.w }) : null));
+    const b = el('button', { class: 'pn-ck', type: 'button', onclick: () => { if (x.ok) return; st[x.id] = st[x.id] ? 0 : 1; ls.set('planPrep:' + p.id, st); paint(); paintTop(); paintCnt(); } });
+    const paint = () => faRc(b, el('span', { class: 'bx' + (on() ? ' on' : ''), text: on() ? '✓' : '' }),
+      el('div', { style: 'flex:1;min-width:0' }, el('div', { class: 'tt' + (on() ? ' on' : ''), text: x.t + (x.ok ? ' · 되어 있어요' : '') }), x.w ? el('div', { class: 'ww', text: x.w }) : null));
     paint();
-    const mb = x.fn === 'map' ? el('button', { class: 'btn line small', style: 'margin:6px 0 4px 32px', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
-      if (mb.disabled) return; mb.disabled = true; try { const r = await planOffline(p, t => { if (t) mb.textContent = t; }); mb.textContent = `✅ 받아 뒀어요 · ${r.mb}MB`; x.ok = true; paint(); } catch (e) { mb.textContent = '⚠ 다 못 받았어요 · 다시 누르면 이어서'; } mb.disabled = false; } }) : null;
-    return el('div', {}, b, mb, x.a ? el('a', { href: x.a, target: '_blank', rel: 'noopener', class: 'btn line small', style: 'margin:6px 0 4px 32px;display:inline-block', text: '↗ ' + x.al }) : null);
+    const mb = x.fn === 'map' ? el('button', { class: 'pn-sb', type: 'button', text: ls.get('planMap:' + p.id, null) ? '↻ 다시 받기' : '📥 지금 받기', onclick: async () => {
+      if (mb.disabled) return; mb.disabled = true; try { const r = await planOffline(p, t => { if (t) mb.textContent = t; }); mb.textContent = `✅ 받아 뒀어요 · ${r.mb}MB`; x.ok = true; paint(); paintTop(); } catch (e) { mb.textContent = '⚠ 다 못 받았어요 · 다시 누르면 이어서'; } mb.disabled = false; } }) : null;
+    return el('div', { class: 'pn-ci' }, b, mb || x.a ? el('div', { class: 'pn-sbw' }, mb, x.a ? el('a', { href: x.a, target: '_blank', rel: 'noopener', class: 'pn-sb', text: '↗ ' + x.al }) : null) : null);
   };
-  const sec = (h, ...kids) => el('div', { class: 'card stack', style: 'gap:4px;padding:12px 14px' }, el('div', { style: 'font-weight:800;font-size:16px', text: h }), ...kids);
-  const all = S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
-  // 맨 위: 여행 정보 · 함께 가는 사람 · 예약(해외·캡처 있을 때) — 예전엔 계획 화면 일정 아래에 있었음
-  const rd = () => { try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} };
-  const nrow = (ic, t, v, on) => el(typeof on === 'string' ? 'a' : 'button', Object.assign({ class: 'st-row', style: 'text-decoration:none' }, typeof on === 'string' ? { href: on } : { type: 'button', onclick: on }),
-    el('span', { style: 'font-size:22px;width:32px;text-align:center;flex:none', text: ic }), el('b', { class: 'grow', style: 'font-weight:700', text: t }), v ? el('span', { class: 'st-v', text: v }) : null, el('span', { class: 'st-go', text: '›' }));
-  const nm0 = (p.dest && p.dest.n) || planDestName(p) || '여행지', nMem = (p.mem || []).length, nDoc = (p.docs || []).length;
-  body.append(el('div', { class: 'st-grp' },
-    nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·날씨·환율' : '소개·날씨·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
-    nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
-    planAbroad(p) || nDoc ? nrow('🎫', '예약 · 항공권', nDoc ? `캡처 ${nDoc}장` : '', () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); rd(); })) : null));
-  if (meet) body.append(sec('🧭 출발 미팅', el('div', { style: 'font-weight:700', text: `${meet.d ? planDayLabel({ start: meet.d }, 0) + ' ' : ''}${meet.t || ''}` }), el('div', { text: meet.n }), el('div', { class: 'dt', text: '여행사 안내 그대로 · 늦지 않게 공항엔 비행기 3시간 전쯤' })));
-  // 날씨
-  const W = wx && wx.days || [];
-  body.append(sec(`🌤 날씨 ${wx ? (wx.src === 'fc' ? '· 일기 예보' : '· 작년 이맘때 (출발 2주 전부터 예보로 바뀌어요)') : ''}`,
-    ...(W.length ? Array.from({ length: p.nd }, (_, d) => el('div', { style: 'padding:4px 0;border-bottom:1px solid var(--line)' },
-      el('div', { style: `font-weight:700;color:${PLAN_COLS[d % PLAN_COLS.length]}`, text: `${d + 1}일차 · ${planDayLabel(p, d)}` }),
-      el('div', { text: planWxLine(W[d]) || '날씨 정보 없음' }), el('div', { class: 'dt', text: planSunLine(p, d) })))
-      : [el('div', { class: 'sub', text: wx === null ? '날짜와 장소 위치가 있어야 날씨를 볼 수 있어요' : '날씨를 받지 못했어요 · 인터넷이 되면 다시 열어 주세요' })]),
-    W.some(w => w && w.me) ? el('div', { class: 'dt', text: '⛰ 산 위 기온은 그날 가장 높은 곳의 해발로 짐작한 값이에요(100m 오를 때마다 약 0.65°C 낮게). 바람이 불면 더 춥게 느껴져요' }) : null));
-  body.append(el('div', { style: 'font-weight:800;font-size:18px;margin:6px 2px 0', text: `✔ 체크리스트 ${done} / ${all.length}` }));
-  // 판 -135 (개선 지시서 6번): 묶음마다 접고 펴기 · 묶음 이름 옆에 한 것 수 · 아직 다 못 한 첫 묶음만 펴서 보여요
-  const fold = (h, cnt, open, ...kids) => el('details', { class: 'card', style: 'padding:12px 14px', open: open || null }, el('summary', { style: 'font-weight:800;font-size:16px;cursor:pointer;list-style-position:outside' }, h, cnt ? el('span', { style: `margin-left:6px;font-size:13px;font-weight:700;color:${cnt[0] === cnt[1] ? '#1D7FA0' : '#C2410C'}`, text: `${cnt[0]}/${cnt[1]}${cnt[0] === cnt[1] ? ' ✓' : ''}` }) : null), el('div', { class: 'stack', style: 'gap:4px;margin-top:6px' }, ...kids));
+  const cnts = []; const paintCnt = () => cnts.forEach(f => f());
   let opened = false;
-  for (const s of S) { const n = s.it.filter(x => st[x.id] || x.ok).length, op = !opened && n < s.it.length; if (op) opened = true;
-    body.append(fold(s.h, [n, s.it.length], op, s.note ? el('div', { class: 'dt', style: 'font-weight:700;color:var(--pine)', text: s.note }) : null, ...s.it.map(chk))); }
-  if (cn) {
-    body.append(fold('📶 통신·결제 (중국)', null, false,
-      el('div', { text: '중국에선 카카오톡·구글(지도·지메일)·유튜브·인스타그램이 막혀요.' }),
-      el('div', { text: '① 한국 통신사 로밍: 가장 쉬워요. 막힌 앱도 다 되고 MPD 링크·로그인도 돼요.' }),
-      el('div', { text: "② eSIM: 싸지만 '홍콩 경유(VPN 필요 없음)'라고 쓰인 상품만. 그냥 중국 유심은 카톡이 안 돼요." }),
-      el('div', { text: '③ 호텔 와이파이만 쓰면 카톡·MPD 공유가 안 될 수 있어요.' }),
-      el('div', { class: 'dt', text: '가족 중 한 명만 로밍하고 나머지는 핫스팟으로 같이 쓰는 방법도 있어요.' }),
-      el('div', { text: '돈: 알리페이에 내 카드를 연결하면 QR로 거의 다 돼요. 위안 현금은 조금만.' }),
-      el('div', { text: '시차: 중국은 한국보다 1시간 늦어요. 휴대폰 시계는 저절로 바뀌고, 일정표 시각은 현지 시각이에요.' }),
-      el('div', { text: '전기: 220V. 대부분 한국 플러그가 맞지만 멀티 어댑터 하나면 마음 편해요.' })));
-    body.append(el('button', { class: 'btn line full', text: '🗣 보여 주는 말 열기 ', onclick: () => planSaySheet(p) }));
-  } else { if (planJP(p)) body.append(el('button', { class: 'btn line full', text: '🗣 일본어 보여 주는 말 열기 ', onclick: () => planSaySheet(p) })); body.append(fold('📶 통신·결제', null, false, el('div', { text: '한국 통신사 로밍이 가장 쉬워요. 싸게 하려면 그 나라 eSIM. 도착하자마자 지도·연락이 되게 출발 전에 정해 두세요.' }))); }
-  body.append(fold('🆘 긴급 도움', null, false,
-    el('a', { href: 'tel:+82232100404', class: 'btn line', style: 'text-align:left', text: '📞 외교부 영사콜센터 +82-2-3210-0404 (24시간, 한국어)' }),
-    cn ? el('div', { text: '중국 경찰 110 · 구급차 120 · 불 119' }) : null,
-    el('div', { class: 'dt', text: '여권을 잃어버리면 영사콜센터에 먼저 전화 · 가이드 전화번호는 첫날 받아서 아래 메모나 계획 장소 메모에 적어 두세요' })));
-  for (const z of (p.info || [])) body.append(el('details', { class: 'card', style: 'padding:12px 14px' }, el('summary', { style: 'font-weight:800', text: '📄 여행사 안내 · ' + z.h }), el('div', { style: 'white-space:pre-wrap;font-size:14px;margin-top:8px', text: z.x })));
-  body.append(el('div', { class: 'dt', style: 'font-size:12px', text: '날씨는 Open-Meteo 자료예요. 입국·반입 규칙은 바뀔 수 있으니 출발 전에 여행사 안내를 한 번 더 확인해 주세요.' }));
-  return labSheet('📒 여행 노트 · ' + p.name, body);
+  for (const s of S) {
+    const n = () => s.it.filter(x => st[x.id] || x.ok).length, op = !opened && n() < s.it.length; if (op) opened = true;
+    const c = el('span', { class: 'pn-fc' }); const pc = () => { const k = n(); c.textContent = k === s.it.length ? '✓ 다 했어요' : `${k}/${s.it.length}`; c.classList.toggle('ok', k === s.it.length); }; pc(); cnts.push(pc);
+    body.append(el('details', { class: 'pn-fold', open: op || null }, el('summary', {}, el('b', { text: s.h }), c),
+      s.note ? el('div', { class: 'pn-fn', text: s.note }) : null, ...s.it.map(chk)));
+  }
+  // 5) 현지에서
+  const say = planCN(p) ? '중국어' : planJP(p) ? '일본어' : '';
+  body.append(H('현지에서'), grp(
+    say ? nrow('🗣', `${say} 보여 주는 말`, '누르면 크게', () => planSaySheet(p)) : null,
+    nrow('📶', '통신 · 결제', cn ? '로밍·알리페이' : '로밍·eSIM', cn ? sub('📶 통신 · 결제 (중국)',
+      ...['중국에선 카카오톡·구글(지도·지메일)·유튜브·인스타그램이 막혀요.', '① 한국 통신사 로밍: 가장 쉬워요. 막힌 앱도 다 되고 MPD 링크·로그인도 돼요.', "② eSIM: 싸지만 '홍콩 경유(VPN 필요 없음)'라고 쓰인 상품만. 그냥 중국 유심은 카톡이 안 돼요.", '③ 호텔 와이파이만 쓰면 카톡·MPD 공유가 안 될 수 있어요.', '가족 중 한 명만 로밍하고 나머지는 핫스팟으로 같이 쓰는 방법도 있어요.', '돈: 알리페이에 내 카드를 연결하면 QR로 거의 다 돼요. 위안 현금은 조금만.', '시차: 중국은 한국보다 1시간 늦어요. 일정표 시각은 현지 시각이에요.', '전기: 220V. 대부분 한국 플러그가 맞지만 멀티 어댑터 하나면 마음 편해요.'].map(t => el('div', { style: 'line-height:1.6', text: t })))
+      : sub('📶 통신 · 결제', el('div', { style: 'line-height:1.6', text: '한국 통신사 로밍이 가장 쉬워요. 싸게 하려면 그 나라 eSIM. 도착하자마자 지도·연락이 되게 출발 전에 정해 두세요.' }))),
+    nrow('🆘', '긴급 도움', '영사콜센터', sub('🆘 긴급 도움',
+      el('a', { href: 'tel:+82232100404', class: 'btn primary full', text: '📞 외교부 영사콜센터 +82-2-3210-0404' }),
+      el('div', { class: 'dt', text: '24시간 · 한국어' }), cn ? el('div', { text: '중국 경찰 110 · 구급차 120 · 불 119' }) : planJP(p) ? el('div', { text: '일본 경찰 110 · 구급차·불 119' }) : null,
+      el('div', { class: 'dt', text: '여권을 잃어버리면 영사콜센터에 먼저 전화 · 가이드 전화번호는 첫날 받아 두세요' })))));
+  body.append(el('div', { class: 'pn-note', style: 'margin-top:10px', text: '체크리스트는 앱이 일반적인 여행 준비로 만든 목록이에요. 입국·반입 규칙은 출발 전에 여행사 안내를 한 번 더 확인해 주세요.' }));
+  paintTop();
+  return labSheet('📒 여행 노트', el('div', { class: 'pn-sub', text: p.name }), body);
 }
 function planPrepCard(p, onWx, tile) {
   const box = tile ? el('button', { class: 'tv-tile', type: 'button' }) : el('button', { class: 'card', style: 'display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--accent);font:inherit;color:inherit;cursor:pointer;padding:12px 14px' });
