@@ -3135,9 +3135,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-135-trustdev2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-135-trustdev3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📏 여행 계획 지도 아래 이동 요약: 걷기와 차를 따로 보여 주고, 전날 밤 숙소에서 첫 장소까지도 셈해요. 위치 없는 곳·높이를 모르는 곳은 \'미계산\' · 🔎 스스로 점검 창에 앱이 살펴본 것과 살펴보지 않은 것(가격 포함·영업·호텔 확정 등)을 나눠 보여요 · ✨ 여행 방 입력칸 위에서 \'💬 일행에게 / ✨ AI 도우미에게\'를 골라요. 일반 대화는 AI로 가지 않아요 · ✨ AI에게 물을 때 지금 답할 수 있는지 먼저 보여 주고, 질문마다 대기 중·답변 중·실패·만료를 알려요(다시 묻기·취소) · ✨ 미팅·선택관광처럼 계획에 자료가 없는 건 짐작하지 않고 \'자료가 없어요\'라고 답해요. 근거를 누르면 원문이 보여요 · 👋 일행 초대를 찾기 쉽게: 여행 계획 사진 위 공유 단추에 \'초대\' 글자, 여행 방 위에도 \'👋 일행 초대\' 단추 · 🎬 카톡 안 화면에서 영상 화면을 열면 크롬으로 넘겨요(계획도 같이). 카톡 안에서는 영상을 저장·보낼 수 없어서예요 · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '📍 여행 방 위치: 3분 넘게 안 바뀐 위치는 \'현재 위치 아님 · 마지막 시각\'으로 회색 점선, 내 위치 같이 보기가 켜졌는지·화면을 끄면 멈춘다는 것·끄는 단추를 한 칸에 · 📷 여행 사진 저절로 올리기는 무엇이·누구에게·언제까지 올라가는지 보고 동의한 뒤에 켜져요(예전에 켠·끈 휴대폰은 그대로) · 🎨 여행 방 일행마다 늘 같은 색 점, 이름이 같으면 ①②로 구분, 이름 안 적은 사람도 수에 넣어요 · 📏 여행 계획 지도 아래 이동 요약: 걷기와 차를 따로 보여 주고, 전날 밤 숙소에서 첫 장소까지도 셈해요. 위치 없는 곳·높이를 모르는 곳은 \'미계산\' · 🔎 스스로 점검 창에 앱이 살펴본 것과 살펴보지 않은 것(가격 포함·영업·호텔 확정 등)을 나눠 보여요 · ✨ 여행 방 입력칸 위에서 \'💬 일행에게 / ✨ AI 도우미에게\'를 골라요. 일반 대화는 AI로 가지 않아요 · ✨ AI에게 물을 때 지금 답할 수 있는지 먼저 보여 주고, 질문마다 대기 중·답변 중·실패·만료를 알려요(다시 묻기·취소) · ✨ 미팅·선택관광처럼 계획에 자료가 없는 건 짐작하지 않고 \'자료가 없어요\'라고 답해요. 근거를 누르면 원문이 보여요 · 👋 일행 초대를 찾기 쉽게: 여행 계획 사진 위 공유 단추에 \'초대\' 글자, 여행 방 위에도 \'👋 일행 초대\' 단추 · 🎬 카톡 안 화면에서 영상 화면을 열면 크롬으로 넘겨요(계획도 같이). 카톡 안에서는 영상을 저장·보낼 수 없어서예요 · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8663,7 +8663,8 @@ async function viewTripRoom(code, title, planId) {
   try { toAI = sessionStorage.getItem('tripTo:' + R.rid) === '1'; } catch {}
   const p = planId ? planGet(planId) : null;
   const top = el('div', { class: 'stack', style: 'gap:6px' }), body = el('div', { class: 'stack', style: 'gap:8px' }), foot = el('div');
-  const people = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && x.nm && !m.has(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
+  const people = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && !m.has(x.by)) m.set(x.by, x.nm && x.nm !== '일행' ? x.nm : ''); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && x.nm && x.nm !== '일행' && !m.get(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
+  const nmOf = by => { const pp = people(), n = pp.get(by); if (!n) return '이름 없음'; const same = [...pp].filter(([, v]) => v === n).map(([k]) => k); return same.length > 1 ? `${n} ${'①②③④⑤⑥⑦⑧⑨'[same.indexOf(by)] || ''}` : n; };   // 판 -135: 동명이인은 ①②
   const live = () => S.tp.filter(x => !x.del);
   const dayOf = ts => { if (!p || !p.start) return null; const d = Math.floor((new Date(ts).setHours(0, 0, 0, 0) - planDate(p, 0)) / 864e5); return d >= 0 && d < p.nd ? d : null; };
   function drawTop() {
@@ -8672,7 +8673,9 @@ async function viewTripRoom(code, title, planId) {
     faRc(top, 
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
       el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
-        el('div', { class: 'sub', style: 'flex:1;min-width:0', text: `함께하는 사람 ${pp.size}명${pp.size ? ' · ' + [...pp.values()].join(', ') : ''}${S.err ? ' · ⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' : ''}` }),
+        el('div', { style: 'flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center' }, el('span', { class: 'sub', text: `함께하는 사람 ${pp.size}명${[...pp.values()].filter(v => !v).length ? ` (이름 안 적은 ${[...pp.values()].filter(v => !v).length}명 포함)` : ''}` }),
+          ...[...pp.keys()].map(k => el('span', { style: 'display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#4E5968' }, trDot(k, pp.get(k)), nmOf(k) + (k === me ? '(나)' : ''))),
+          S.err ? el('span', { class: 'sub', style: 'color:#C2410C', text: '⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' }) : null),
         (p || planOfRoom(code)) ? el('button', { class: 'btn line small', style: 'flex:none', text: '👋 일행 초대', onclick: () => planShare(p || planOfRoom(code)) }) : null),   // 판 -134 (사용자 '여행일행 초대는 어딨나?' → '둘 다 해')
       trName() ? null : el('div', { class: 'card', style: 'padding:12px;border:2px solid var(--accent)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: '일행에게 보일 내 이름을 적어 주세요' }),
         el('div', { class: 'row', style: 'gap:6px' }, nmIn, el('button', { class: 'btn primary small', text: '저장', onclick: async () => { const v = nmIn.value.trim().slice(0, 12); if (!v) return; ls.set('nick', v); trPut(R, 'tm', me, { by: me, nm: v, bot: trBotOn(R) ? Date.now() : 0, t: Date.now() }).catch(() => {}); draw(); } }))),
@@ -8682,7 +8685,7 @@ async function viewTripRoom(code, title, planId) {
     if (m.bot) return trBotBubble(m, S.tc.find(y => y.id === m.q), p || planOfRoom(code));
     const mine = m.by === me, phs = (m.ph || []).map(id => S.tp.find(x => x.id === id)).filter(x => x && !x.del);
     return el('div', { style: `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px` },
-      mine && !m.ask ? null : el('div', { class: 'dt', style: `font-weight:700${m.ask ? ';color:#D2462A' : ''}`, text: m.ask ? `${mine ? '나' : (m.nm || '일행')} → ✨ AI 도우미에게` : (m.nm || '일행') }),
+      mine && !m.ask ? null : el('div', { class: 'dt', style: `display:flex;align-items:center;gap:4px;font-weight:700${m.ask ? ';color:#D2462A' : ''}` }, mine ? null : trDot(m.by, m.nm), m.ask ? `${mine ? '나' : nmOf(m.by)} → ✨ AI 도우미에게` : nmOf(m.by)),
       m.x ? el('div', { style: `max-width:82%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;${mine ? 'background:var(--pine);color:#fff;border-bottom-right-radius:4px' : 'background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px'}`, text: m.x }) : null,
       phs.length ? el('div', { style: 'display:grid;grid-template-columns:repeat(3,72px);gap:4px' }, ...phs.slice(0, 9).map(ph => el('img', { src: ph.th, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer', onclick: () => { const L = live(); trViewer(R, L, Math.max(0, L.indexOf(ph))); } }))) : null,
       phs.length > 9 ? el('div', { class: 'dt', text: `외 ${phs.length - 9}장 · 📷 사진에서 모두` }) : null,
@@ -8747,11 +8750,11 @@ async function viewTripRoom(code, title, planId) {
       drv ? null : IN_NATIVE
         ? el('button', { class: 'btn line small', style: 'margin-top:8px', text: '크롬에서 열어 원본 올리기 ↗', onclick: () => { location.href = trWebUrl(code, title); } })
         : el('button', { class: 'btn line small', style: 'margin-top:8px', text: '구글 드라이브 연결', onclick: async () => { try { drv = await driveToken(true); toast(`☁ 드라이브 연결됨 · ${drv.em}`); draw(); } catch (e) { toast(/popup|cancel|closed/i.test(String(e && (e.code || e.message))) ? '연결을 취소했어요' : IN_KAKAO ? '카카오톡 안에선 안 돼요 · 크롬에서 열어 주세요' : '⚠ 드라이브에 연결하지 못했어요 · ' + String(e && (e.code || e.message) || e).slice(0, 50), false, 6000); } } }));
-    const autoOn = !!ls.get('tripAuto:' + R.rid, true), al = ls.get('tripAutoLast:' + R.rid, null);
-    const autoBox = p && p.start ? el('div', { class: 'card', style: 'padding:12px 14px' },
-      el('div', { style: 'font-weight:800', text: `📷 여행 사진 저절로 올리기 · ${autoOn ? '켜짐' : '꺼짐'}` }),
-      el('div', { class: 'dt', text: autoOn ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}에 ${window.mdNativePhotos ? '휴대폰 카메라로' : 'MPD로'} 찍은 사진이 방에 저절로 올라가요(2,560픽셀, 스크린샷 빼고)${al ? ` · 마지막 ${trAgo(al.at)} ${al.n}장` : ''}` : '끄면 직접 고른 사진만 올라가요' }),
-      el('button', { class: 'btn line small', style: 'margin-top:8px', text: autoOn ? '끄기' : '켜기', onclick: () => { ls.set('tripAuto:' + R.rid, !autoOn); draw(); } })) : null;
+    const aSt = trAutoState(R.rid), al = ls.get('tripAutoLast:' + R.rid, null), app = !!window.mdNativePhotos;
+    const autoBox = p && p.start ? el('div', { class: 'card', style: `padding:12px 14px${aSt === 'on' ? ';border:2px solid #FF8A6B' : ''}` },
+      el('div', { style: 'font-weight:800', text: `📷 여행 사진 저절로 올리기 · ${aSt === 'on' ? '켜짐' : aSt === 'off' ? '꺼짐' : '아직 안 켰어요'}` }),
+      el('div', { class: 'dt', style: 'line-height:1.5', text: aSt === 'on' ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}에 ${app ? '이 휴대폰 카메라로' : 'MPD로'} 찍은 사진이 이 방 일행 모두에게 저절로 올라가요(2,560픽셀 사본 · 원본은 휴대폰에 · 스크린샷·동영상 빼고)${al ? ` · 마지막 ${trAgo(al.at)} ${al.n}장` : ''}\n끄면 새로 올리지 않을 뿐, 이미 올라간 사진은 그대로예요(내 사진을 눌러 지울 수 있어요)` : aSt === 'off' ? '직접 고른 사진만 올라가요' : '켜면 여행 날짜에 찍은 사진이 방에 저절로 올라가요. 켜기 전에 무엇이 올라가는지 먼저 보여 드려요' }),
+      el('button', { class: 'btn line small', style: 'margin-top:8px', text: aSt === 'on' ? '끄기' : '켜기…', onclick: () => { if (aSt === 'on') { ls.set('tripAuto:' + R.rid, false); toast('📷 저절로 올리기를 껐어요 · 이미 올라간 사진은 그대로예요', false, 5000); draw(); } else trAutoConsent(p, R, on => { draw(); if (on) trAuto(p, t => setStatus(t)).then(r => { if (r && r.n) { toast(`📷 여행 사진 ${r.n}장을 올렸어요`); trLoad(R).then(x => { Object.assign(S, x); draw(); }); } }).catch(() => {}); }); } })) : null;
     faRc(body, status, autoBox,
       el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' },
         el('button', { class: 'btn primary', text: '📷 사진 올리기', onclick: () => fileIn.click() }),
@@ -8766,16 +8769,22 @@ async function viewTripRoom(code, title, planId) {
         : [el('div', { class: 'card sub', text: '아직 사진이 없어요. 찍은 사진을 올리면 일행 모두가 같이 봐요.' })]),
       L.length ? el('button', { class: 'btn line small', text: `⬇ 사진 ${L.filter(x => x.n).length}장 모두 내 휴대폰에 저장`, onclick: async () => { const out = []; let k = 0; for (const ph of L.filter(x => x.n)) { setStatus(`사진 받는 중 ${++k}/${L.length}`); try { out.push({ id: ph.id, blob: await trFull(R, ph), ts: ph.ts || ph.t }); } catch {} } setStatus(''); savePhotos(out, 'MPD_trip'); } }) : null);
   }
-  function drawLoc() {
+  function drawLoc() {   // 판 -135 (개선 지시서 5번): 3분 넘게 안 바뀐 위치는 '현재 위치 아님' + 마지막 시각 · 회색 점선 표시
     faRc(foot, );
     const on = !!ls.get('tripLoc:' + R.rid, false), mapEl = el('div', { class: 'mapbox', style: 'height:52vh;min-height:280px' });
-    const list = el('div', { class: 'stack', style: 'gap:4px' });
-    for (const x of S.tl.slice().sort((a, b) => b.at - a.at)) { const old = Date.now() - x.at > 30 * 60000;
-      list.append(el('div', { class: 'card', style: `padding:8px 12px;display:flex;justify-content:space-between;${old ? 'opacity:.55' : ''}` }, el('b', { text: x.nm || '일행' }), el('span', { class: 'dt', text: x.off ? '위치 끔' : trAgo(x.at) }))); }
-    faRc(body, 
-      el('button', { class: 'btn ' + (on ? 'dark' : 'primary') + ' full', text: on ? '📍 내 위치 같이 보는 중 · 끄기' : '📍 내 위치 일행과 같이 보기', onclick: () => { ls.set('tripLoc:' + R.rid, !on); if (on) trPut(R, 'tl', me, { by: me, nm: trName(), at: Date.now(), off: 1 }).catch(() => {}); locStart(); draw(); } }),
-      el('div', { class: 'dt', text: '켜 둔 사람만 보여요. 앱이나 이 화면이 열려 있는 동안 1분마다 올라가요(화면을 끄면 멈춰요). 길을 잃었을 때 서로 찾기 좋아요.' }),
-      mapEl, list);
+    const list = el('div', { class: 'stack', style: 'gap:4px' }), mine = S.tl.find(x => x.by === me);
+    for (const x of S.tl.slice().sort((a, b) => b.at - a.at)) { const old = trLocOld(x);
+      list.append(el('div', { class: 'card', style: `padding:8px 12px;display:flex;gap:8px;align-items:center;${old ? 'background:#F1F3F5' : ''}` },
+        trDot(x.by, x.nm), el('b', { style: 'flex:1;min-width:0', text: (x.nm || '일행') + (x.by === me ? ' (나)' : '') }),
+        el('span', { class: 'dt', style: old && !x.off ? 'color:#C2410C;font-weight:700' : '', text: x.off ? '위치 같이 보기 끔' : old ? `⚠ 현재 위치 아님 · 마지막 ${trHm(x.at)} (${trAgo(x.at)})` : `지금 · ${trAgo(x.at)}${x.acc ? ` · 오차 ${x.acc}m` : ''}` }))); }
+    faRc(body,
+      el('div', { class: 'card', style: `padding:12px 14px;${on ? 'border:2px solid #FF8A6B' : ''}` },
+        el('div', { style: 'font-weight:800', text: on ? '📍 내 위치를 일행에게 보여 주는 중' : '📍 내 위치 같이 보기 · 꺼짐' }),
+        el('div', { class: 'dt', style: 'line-height:1.5;white-space:pre-line', text: on
+          ? `${mine && !mine.off ? `마지막으로 보낸 때 ${trHm(mine.at)} (${trAgo(mine.at)})` : '아직 보내지 못했어요 · 위치 권한을 확인해 주세요'}\n⚠ 이 화면(앱)이 열려 있는 동안만 1분마다 보내요. 화면을 끄거나 다른 앱으로 가면 멈추고, 일행 화면엔 '현재 위치 아님'으로 보여요.\n끄려면 아래 단추를 누르세요.`
+          : '켜면 이 방 일행에게 내 위치가 보여요(켠 사람만). 이 화면이 열려 있는 동안만 1분마다 보내요.' }),
+        el('button', { class: 'btn ' + (on ? 'line' : 'primary') + ' full', style: 'margin-top:8px', text: on ? '내 위치 같이 보기 끄기' : '📍 내 위치 일행과 같이 보기 켜기', onclick: () => { ls.set('tripLoc:' + R.rid, !on); if (on) trPut(R, 'tl', me, { by: me, nm: trName(), at: Date.now(), off: 1 }).catch(() => {}); locStart(); draw(); } })),
+      mapEl, el('div', { class: 'dt', text: '색 점 = 지금 위치 · 회색 점선 = 3분 넘게 안 바뀐 위치(현재 위치 아님)' }), list);
     setTimeout(() => {
       const c = S.tl.find(x => Number.isFinite(x.lat));
       map = L.map(mapEl); const base = mdTileLayer({ vec: !(c && koInHanzi(c.lat, c.lng)) }).addTo(map); mlay = L.layerGroup().addTo(map); drawPins(); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
@@ -8783,8 +8792,8 @@ async function viewTripRoom(code, title, planId) {
   }
   function drawPins() {
     if (!map || !mlay) return; mlay.clearLayers(); const pts = [];
-    for (const x of S.tl) { if (x.off || !Number.isFinite(x.lat)) continue; const old = Date.now() - x.at > 30 * 60000; pts.push([x.lat, x.lng]);
-      L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${x.by === me ? 'var(--accent)' : '#0277BD'};color:#fff;font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);${old ? 'opacity:.55' : ''}">${String(x.nm || '일행').replace(/[<&]/g, '')} · ${trAgo(x.at)}</div>` }) }).addTo(mlay); }
+    for (const x of S.tl) { if (x.off || !Number.isFinite(x.lat)) continue; const old = trLocOld(x); pts.push([x.lat, x.lng]);
+      L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${old ? '#E9ECEF' : trCol(x.by)};color:${old ? '#4E5968' : '#fff'};font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px ${old ? 'dashed #8B95A1' : 'solid #fff'};box-shadow:0 1px 4px rgba(0,0,0,.35)">${String(x.nm || '일행').replace(/[<&]/g, '')}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · ' + trHm(x.at) : trAgo(x.at)}</div>` }) }).addTo(mlay); }
     if (pts.length === 1) map.setView(pts[0], 15); else if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 }); else map.setView([29.13, 110.48], 9);
   }
   function locStart() {
@@ -8925,6 +8934,12 @@ function planOfRoom(code) { return planAll().find(p => p.room && p.room.code ===
 function trBotKey() { return String(ls.get('claudeKey', '') || '').trim(); }
 function trBotOn(R) { return !!trBotKey() && ls.get('tripBot:' + R.rid, true) !== false; }
 // 판 -135 (개선 지시서 2번): 답해 줄 휴대폰 상태를 설정 용어 없이 · ok=지금 보내면 답이 올 수 있음
+// 판 -135: 위치가 3분 넘게 안 바뀌면 '현재 위치 아님' (1분마다 보내니 세 번 빠짐)
+function trLocOld(x) { return !x || Date.now() - x.at > 3 * 60000; }
+// 판 -135 (개선 지시서 6번): 일행마다 늘 같은 색 점 + 이름 첫 글자 — 이름이 같아도 사람(번호)마다 색이 달라요
+var TR_COLS = ['#0277BD', '#E8590C', '#7B61FF', '#D6336C', '#1D9EC0', '#5C3D2E', '#364FC7', '#C2255C'];
+function trCol(by) { let h = 0; for (const c of String(by || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return TR_COLS[h % TR_COLS.length]; }
+function trDot(by, nm) { return el('span', { title: nm || '', style: `flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${trCol(by)};color:#fff;font:800 11px Pretendard,sans-serif`, text: String(nm || '?').trim().slice(0, 1) || '?' }); }
 function trBotWho(S) {
   const me = trMe(), now = Date.now(), L = (S.tm || []).filter(x => x.bot).sort((a, b) => b.bot - a.bot);
   const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trBotKey();
@@ -9278,6 +9293,24 @@ function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 �
 //   여행 날짜(첫날 0시 ~ 끝날 24시)에 찍은 사진을 방에 올려요: 앱은 휴대폰 카메라 원본(mdNativePhotos, 스크린샷·MapDiary 앨범 빼고)을 2,560픽셀로,
 //   웹은 MPD로 찍은 사진(이 휴대폰 baldojang). 같은 사진(찍은 시각 3초 안)은 한 번만 · 보낸 것은 ls tripSent:{방}(새 키) · 끄기 ls tripAuto:{방}
 //   한 번에 30장까지(데이터·배터리), 다음에 열 때 이어서
+// 판 -135 (개선 지시서 5번): 저절로 올리기는 동의한 뒤에만. 예전 선택(켜기·끄기)은 그대로, 이미 저절로 올라간 적이 있는 휴대폰도 그대로 켜짐
+function trAutoState(rid) {   // 'on' | 'off' | 'ask'(아직 묻지 않음)
+  const v = ls.get('tripAuto:' + rid, null); if (v === true) return 'on'; if (v === false) return 'off';
+  const sent = ls.get('tripSent:' + rid, null); return sent && Object.keys(sent).length ? 'on' : 'ask';
+}
+function trAutoConsent(p, R, done) {   // 무엇을·누구에게·언제까지·끄면 어떻게 되는지 알리고 동의를 받아요
+  const app = !!window.mdNativePhotos;
+  labSheet('📷 여행 사진 저절로 올리기',
+    el('div', { style: 'font-size:14px;line-height:1.65;white-space:pre-line', text: [
+      `• 누구에게: 이 여행 방에 들어온 일행 모두가 봐요`,
+      `• 언제 찍은 사진: ${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)} (여행 날짜 안)`,
+      `• 무엇을: ${app ? '이 휴대폰 카메라로 찍은 사진 (스크린샷·MapDiary 앨범 빼고)' : 'MPD에서 찍은 사진'} · 동영상은 안 올라가요`,
+      `• 어떻게: 방에는 2,560픽셀 사본이 올라가요. 원본은 이 휴대폰에 그대로 있어요`,
+      `• 끄면: 그 뒤로 새로 올리지 않아요. 이미 올라간 사진은 지워지지 않아요 → 📷 사진 칸에서 내 사진을 눌러 하나씩 지울 수 있어요`].join('\n') }),
+    el('div', { style: 'display:flex;gap:8px;margin-top:6px' },
+      el('button', { class: 'btn primary', style: 'flex:1', text: '동의하고 켜기', onclick: e => { ls.set('tripAuto:' + R.rid, true); ls.set('tripAutoOk:' + R.rid, { at: Date.now() }); e.target.closest('.sheet-bg').remove(); done && done(true); } }),
+      el('button', { class: 'btn line', style: 'flex:1', text: '켜지 않기', onclick: e => { ls.set('tripAuto:' + R.rid, false); e.target.closest('.sheet-bg').remove(); done && done(false); } })));
+}
 async function trMpdPhotos(a, b) {
   try { const db = await photoDb(); return await new Promise(res => { const out = [], q = db.transaction('photos').objectStore('photos').openCursor();
     q.onsuccess = () => { const c = q.result; if (!c) return res(out); const v = c.value; if (v && v.ts >= a && v.ts < b && v.blob && !v.v) out.push(v); c.continue(); }; q.onerror = () => res(out); }); } catch { return []; }
@@ -9293,7 +9326,7 @@ async function trAutoCands(p, R) {
 }
 async function trAuto(p, say) {
   if (trAuto.busy || !p || !p.start || !p.room || !p.room.code || !trName()) return null;
-  const R = await trRoom(p.room.code); if (!ls.get('tripAuto:' + R.rid, true)) return null;
+  const R = await trRoom(p.room.code); if (trAutoState(R.rid) !== 'on') return null;
   trAuto.busy = true;
   try {
     const S = await trLoad(R), left = TR_MAX - S.tp.filter(x => !x.del).length; if (left <= 0) return { n: 0, full: 1 };
