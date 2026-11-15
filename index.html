@@ -722,7 +722,29 @@ html.tv-page .tv-hin h1{color:#fff}
 .tv-it .tv-b button,.tv-it .tv-b a{padding:5px 11px;border-radius:14px;border:none;font:600 12.5px Pretendard,sans-serif;background:#F2F4F6;color:#4E5968;cursor:pointer;text-decoration:none}
 .tv-it .tv-b .go{background:#15202B;color:#fff}
 .tv-leg{display:flex!important;align-items:center;gap:8px}.tv-lgt{flex:1;min-width:0;text-align:left;border:none;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}.tv-lgt small{display:block;font-weight:500;color:#8B95A1;font-size:11.5px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tv-lgo{flex:none;border:none;background:#F2F4F6;color:#333D4B;font:600 12px Pretendard,sans-serif;padding:5px 10px;border-radius:12px;cursor:pointer}
-.tv-leg{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;margin:0}.tv-leg .tv-lg{color:#B0B8C1;font-weight:500}.tv-leg.tight b{color:#E8613C}
+.tv-leg{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;margin:0}.tv-leg .tv-lg{color:#B0B8C1;font-weight:500}.tv-leg.tight b,.tv-leg b{color:#E8613C}
+.tv-tl{position:relative}
+.tv-tl::before{content:'';position:absolute;left:16px;top:22px;bottom:22px;border-left:2px dotted #D1D6DB}
+.tv-it{position:relative;gap:12px;margin-bottom:6px}
+.tv-it .tv-tm,.tv-it .tv-ic{display:none}
+.tv-it .tv-pn{width:34px;flex:none;display:flex;justify-content:center;padding-top:14px;position:relative;z-index:1}
+.tv-it .tv-pn span{min-width:24px;height:24px;border-radius:12px;background:var(--dc,#1D9EC0);color:#fff;font:700 12px/24px Pretendard,sans-serif;text-align:center;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #F5F6F8}
+.tv-it.fly .tv-pn span{background:#4E5968}
+.tv-it .tv-c{gap:12px;padding:12px 14px;border-radius:16px;box-shadow:0 1px 2px rgba(21,32,43,.06);align-items:flex-start}
+.tv-it .tv-n{font:600 16px/1.35 Pretendard,sans-serif;letter-spacing:-.3px}
+.tv-it .tv-mt{font:500 12.5px/1.4 Pretendard,sans-serif;color:#8B95A1;margin-top:2px}
+.tv-it .tv-m{font-size:13px;color:#4E5968;line-height:1.45;margin-top:4px}
+.tv-it .tv-th{width:68px;height:68px;flex:none;border-radius:12px;background:#EEF1F4 center/cover no-repeat}
+.tv-it .tv-b{margin-top:8px}
+.tv-it .tv-b button,.tv-it .tv-b a{background:none;padding:2px 0;margin-right:12px;color:#1D7FA0;font:600 13px Pretendard,sans-serif;border-radius:0}
+.tv-it .tv-b .go{background:none;color:#1D7FA0}
+.tv-leg{padding:2px 0 8px 46px!important;margin:-2px 0 4px!important;align-items:center;font:500 12.5px Pretendard,sans-serif;color:#6B7684}
+.tv-leg .tv-lgt{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tv-leg .tv-lgt .ico{color:#8B95A1;display:inline-flex}
+.tv-leg.w .tv-lgt .ico{color:#1D7FA0}
+.tv-leg .tv-lgt small{flex-basis:100%;padding-left:22px}
+.tv-leg .tv-lgo{background:none;color:#1D7FA0;padding:2px 0;font:600 12.5px Pretendard,sans-serif}
+.tv-leg .tv-lgo::before{content:'· ';color:#B0B8C1}
 .tv-leg{font:600 12.5px Pretendard,sans-serif;color:#6B7684;padding:0 0 8px 68px;margin-top:-2px}.tv-leg.w{color:#1D7FA0}
 .tv-gap{font-size:12px;color:#A3ABB5;padding:0 0 8px 68px;margin-top:-2px}
 .tv-add{background:none;border:1.5px dashed #D5DAE0;color:#6B7684;border-radius:14px;padding:9px 12px;font:700 13px Pretendard,sans-serif;cursor:pointer;margin:6px 0 4px 56px}
@@ -3206,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-164-zjj';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-165-tidy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗺 오사카에서 고친 것 모두 장가계에도: 일정 사이 거리·시간·길찾기(중국은 가오더 길찾기), 이동 칸은 장소 이름으로, 경비는 위안으로 · 🏨 둘째 날부터 전날 숙소에서 첫 곳까지 · 📍 대략 위치인 곳은 믿을 수 없는 거리를 안 보여요';
+const UI_NOTES = '🧭 길찾기는 이제 모두 일정 사이 줄 오른쪽에만 (카드 안 길찾기는 뺐어요) · 🖼 일정 칸을 다른 여행 앱처럼: 왼쪽 번호 핀과 점선, 장소 사진, 선 그림';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8018,14 +8040,15 @@ function planSumBox(p, day, onNav) {
 function planLegInfo(a, b, p) {
   const k = planLegMode(a, b, p); if (!k || k === 'none') return null;
   const st = dist(a.lat, a.lng, b.lat, b.lng), hike = !!(p && p.hike && p.hike.on), fm = mn => mn >= 60 ? `${Math.floor(mn / 60)}시간${mn % 60 ? ' ' + (mn % 60) + '분' : ''}` : `${Math.max(1, mn)}분`;
-  if (k === 'fly') return { k, m: st, ic: '✈', s: `비행 ${fmtDist(st)}`, real: 0 };
-  if (k === 'rail') { const m = st * 1.15; return { k, m, ic: '🚆', s: `전철 약 ${fmtDist(m)} · 약 ${fm(Math.round(m / 40000 * 60))}`, real: 0, note: '노선 아님' }; }
+  if (k === 'fly') return { k, m: st, ic: '✈', svg: 'plane', t: `비행 ${fmtDist(st)}`, s: `비행 ${fmtDist(st)}`, real: 0 };
+  if (k === 'rail') { const m = st * 1.15, mn = Math.round(m / 40000 * 60); return { k, m, ic: '🚆', svg: 'train', t: `전철 약 ${fm(mn)} · ${fmtDist(m)}`, s: `전철 약 ${fmtDist(m)} · 약 ${fm(mn)}`, real: 0, note: '노선 아님' }; }
   const car = k === 'car' || (k === 'line' && st > 1500);
   if (car) { const CR = k === 'car' && planRtGet(a, b, true), m = CR ? CR.m : st * 1.3, nm = b.lmn === 'taxi' ? ['🚕', '택시로'] : b.lmn === 'bus' ? ['🚌', '버스로'] : ['🚗', '차로'];
-    return { k: 'car', m, ic: nm[0], s: `${nm[1]} ${CR ? '' : '약 '}${fmtDist(m)} · 약 ${fm(Math.round(m / (b.lmn === 'bus' ? 25000 : 35000) * 60))}`, real: !!CR }; }
+    const mn = Math.round(m / (b.lmn === 'bus' ? 25000 : 35000) * 60);
+    return { k: 'car', m, ic: nm[0], svg: b.lmn === 'bus' ? 'bus' : 'car', t: `${b.lmn === 'taxi' ? '택시' : b.lmn === 'bus' ? '버스' : '차'} 약 ${fm(mn)} · ${fmtDist(m)}`, s: `${nm[1]} ${CR ? '' : '약 '}${fmtDist(m)} · 약 ${fm(mn)}`, real: !!CR }; }
   const R = planRtGet(a, b), e = R && R.up != null ? { up: R.up, dn: R.dn } : hike ? planHikeEst(a, b) : { up: 0, dn: 0 }, m = R ? R.m : hike ? st * 1.35 : st;
   const mn = Math.round((m / (hike ? 3500 : 4000) + (e.up || 0) / 600 + (e.dn || 0) / 1200) * 60);
-  return { k: 'walk', m, ic: '👣', s: `걸어서 ${R ? '' : '약 '}${fmtDist(m)} · ${fm(mn)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : ''}`, real: !!R };
+  return { k: 'walk', m, ic: '👣', svg: 'walk', t: `도보 ${fm(mn)} · ${fmtDist(m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : ''}`, s: `걸어서 ${R ? '' : '약 '}${fmtDist(m)} · ${fm(mn)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : ''}`, real: !!R };
 }
 // 판 -162 (사용자 '다른 여행앱과 비교하고 좋은 건 갖다 써' — Wanderlog·트리플·구글 지도에서): 구간 이동 방법 고르기 · 시간 빠듯 경고 · 동선 짧게
 function planLegTight(a, b, LI) {   // 앞 일정 시각과 이 일정 시각 사이가 이동 시간보다 짧으면 글
@@ -10708,14 +10731,28 @@ function tvHero(p, o = {}) {
 }
 function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
 // 일정 한 칸 (2026-11-15 새 디자인): 왼쪽 시각 · 흰 카드(종류 그림 칸 + 이름·메모·단추)
-function tvItem(o) {
+function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, 넌 촌스럽고' → Wanderlog·Stippl처럼): 왼쪽 번호 핀 + 이어진 점선, 흰 카드 안 이름 · 시각·종류 한 줄 · 설명, 오른쪽 장소 사진
   const kk = PLAN_KINDS[o.k] || PLAN_KINDS.spot;
-  return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') },
-    el('div', { class: 'tv-tm' }, o.t || '', o.no ? el('small', { text: o.no }) : null),
-    el('div', { class: 'tv-c' }, el('span', { class: 'tv-ic', 'aria-hidden': 'true', text: o.ic || kk[0] }),
+  return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') + (o.k === 'fly' ? ' fly' : '') },
+    el('div', { class: 'tv-pn' }, el('span', {}, o.k === 'fly' ? cSvg('plane', 14, '#fff') : o.k === 'stay' ? cSvg('home', 13, '#fff') : (o.no || ''))),
+    el('div', { class: 'tv-c' },
       el('div', { class: 'tv-bd' }, o.nx ? el('span', { class: 'tv-nx', text: o.nx }) : null,
-        el('button', { class: 'tv-n', text: o.n, onclick: o.onName }), ...(o.extra || []).filter(Boolean),
-        o.btns && o.btns.filter(Boolean).length ? el('div', { class: 'tv-b' }, ...o.btns.filter(Boolean)) : null)));
+        el('button', { class: 'tv-n', text: o.n, onclick: o.onName }),
+        el('div', { class: 'tv-mt', text: [o.t, kk[1], o.meta].filter(Boolean).join(' · ') }),
+        ...(o.extra || []).filter(Boolean),
+        o.btns && o.btns.filter(Boolean).length ? el('div', { class: 'tv-b' }, ...o.btns.filter(Boolean)) : null),
+      o.thumb || null));
+}
+// 일정 칸 오른쪽 장소 사진 (위키백과·위키미디어 공용, placeInfo 기억을 같이 씀) — 화면에 보일 때만 받아요, 동시에 2곳
+function planThumb(x) {
+  if (!['spot', 'show', 'peak'].includes(x.k) || !Number.isFinite(x.lat) || x.ap || x.near) return null;
+  const box = el('div', { class: 'tv-th' }), key = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, put = r => { const u = r && r.ph && r.ph[0] && r.ph[0].u; if (u) { box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); } else box.remove(); };
+  const c = (ls.get('placeInfo', {}) || {})[key]; if (c) { put(c); return box; }
+  if (!navigator.onLine) { return null; }
+  const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().finally(() => { Q.n--; run(); }); };
+    Q.L.push(() => placeInfo(x).then(put, () => box.remove())); run(); };
+  if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '200px' }); setTimeout(() => io.observe(box), 0); } else go();
+  return box;
 }
 // 뒤로 단추 이름(2026-11-15 사용자 '화살표만 있으면 어쩌라는 거야'): ‹ 만 두지 말고 어디로 가는지 글자로
 function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '이야기' : '뒤로'; }
@@ -11043,7 +11080,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ ic: mic, k: x.k, t: x.t, no: `${i + 1}`, n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ ic: mic, k: x.k, t: x.t, no: `${i + 1}`, meta: x.ai ? '✨ AI 추천' : x.opt ? '선택관광' : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
         x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
@@ -11054,11 +11091,11 @@ function viewPlanOne(id) {
         x.m && (x.k === 'fly' || x.bk) ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.bk && x.bk.ref ? el('div', { class: 'tv-m', style: 'font-weight:700', text: `🎫 예약번호 ${x.bk.ref}` }) : null,
         x.who ? el('div', { class: 'tv-m', style: 'font-weight:700;color:#4E5968', text: `👤 ${x.who}` }) : null,
-        x.ai ? el('div', { class: 'tv-m', style: 'color:#8A94A0', text: `✨ AI 추천${x.m ? ' · ' + x.m : ''} · 영업시간·가격은 확인해 주세요` }) : null,
+        x.ai && x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
-      btns: td === d || x.ok || (hasLoc && !legged) ? [hasLoc && !legged ? el('button', { class: isNx ? 'go' : '', text: '길찾기', onclick: () => planGo(x) }) : null,
+      btns: td === d || x.ok ? [
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
     return it;
   }
@@ -11088,17 +11125,24 @@ function viewPlanOne(id) {
       const exact = x => Number.isFinite(x.lat) && Number.isFinite(x.lng) && !x.ap && !x.near;
       let fromStay = null;
       if (d > 0) { const pv0 = planItems(p, d - 1).filter(exact), h = pv0[pv0.length - 1]; if (h && h.k === 'stay') { pv = h; fromStay = h; } }
+      // 판 -165 (사용자 '어떤 건 사이에 길찾기를 넣고 어떤 건 아니니 헷갈려'): 위치 있는 모든 장소 위에 구간 줄 하나 · 길찾기는 늘 그 줄 오른쪽에만(카드 안 길찾기 없음)
+      const pos = x => Number.isFinite(x.lat) && Number.isFinite(x.lng); let lastEx = pv && exact(pv) ? pv : null;
+      const legLine = (svg, txt, sub, go, cls, pick, warn) => tl.append(el('div', { class: 'tv-leg' + (cls ? ' ' + cls : '') },
+        el('button', { class: 'tv-lgt', onclick: pick || (() => {}) }, cSvg(svg, 16), el('span', { text: txt }), warn ? el('b', { text: ` · ⚠ ${warn}` }) : null, sub ? el('small', { text: sub }) : null),
+        go ? el('button', { class: 'tv-lgo', text: '길찾기', onclick: go }) : null));
       its.forEach((x, i) => {
-        if (x.k === 'move' && !Number.isFinite(x.lat) && pv) { hold.push(x); return; }
-        let legged = false;
-        if (exact(x)) { const LI = pv && planLegInfo(pv, x, p);
-          if (LI && LI.m >= 40) { const tm = planLegTight(pv, x, LI), a0 = pv, mv = hold.slice(), how = [pv === fromStay ? `🏨 ${pv.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
-            tl.append(el('div', { class: 'tv-leg' + (LI.k === 'walk' ? ' w' : '') + (tm ? ' tight' : '') },
-              el('button', { class: 'tv-lgt', onclick: () => planLegPick(p, a0, x, drawAll, mv, viewItem) }, el('span', { text: `${LI.ic} ${LI.s}${LI.note ? ' · ' + LI.note : ''}` }), tm ? el('b', { text: ` · ⚠ ${tm}` }) : null,
-                how ? el('small', { text: how }) : null),
-              LI.k === 'fly' ? null : el('button', { class: 'tv-lgo', text: '길찾기', onclick: () => planLegGo(a0, x, LI.k) }))); legged = LI.k !== 'fly'; hold = []; } pv = x; fromStay = null; }
+        if (x.k === 'move' && !pos(x) && pv) { hold.push(x); return; }
+        if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `🏨 ${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+          if (!a0) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', how, () => planGo(x));
+          else if (!exact(x)) legLine('route', '위치가 대략이에요 · 거리 모름', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
+          else if (!exact(a0) && !lastEx) legLine('route', '위치가 대략이에요 · 거리 모름', how, () => planLegGo(a0, x, 'car'), 'ap');
+          else { const b0 = exact(a0) ? a0 : lastEx, LI = planLegInfo(b0, x, p), how2 = b0 !== a0 ? [`${b0.n}에서`, how].filter(Boolean).join(' · ') : how;   // 바로 앞이 대략 위치면 마지막 정확한 곳에서
+            if (!LI || LI.m < 40) legLine('walk', '바로 옆', how2, () => planLegGo(b0, x, 'walk'), 'w');
+            else legLine(LI.svg || 'route', `${LI.t || LI.s}${LI.note ? ' · ' + LI.note : ''}`, how2, LI.k === 'fly' ? null : () => planLegGo(b0, x, LI.k), LI.k === 'walk' ? 'w' : '', () => planLegPick(p, b0, x, drawAll, mv, viewItem), b0 === a0 ? planLegTight(a0, x, LI) : ''); }
+          if (exact(x)) lastEx = x;
+          hold = []; pv = x; fromStay = null; }
         if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
-        tl.append(row(x, i, d, nx, legged)); });
+        tl.append(row(x, i, d, nx, true)); });
       hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx)));
       const canOpt = its.filter(x => PLAN_OPT_K.includes(x.k) && Number.isFinite(x.lat) && !x.ok).length >= 3;
       out.push(tl, el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'tv-add', style: 'flex:1', text: `+ 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }),
@@ -13478,7 +13522,13 @@ function cSvg(n, s = 22, c = 'currentColor') {
     bag: '<rect x="4" y="7" width="16" height="13" rx="3"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
     chat: '<path d="M4 5h16v11H9l-5 4z"/>',
     send: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
-    route: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>'
+    route: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>',
+    walk: '<circle cx="13" cy="4.5" r="1.8"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 2 3M12 8l-1 7"/>',
+    car: '<path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v2H3z"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/><path d="M5 11h14"/>',
+    bus: '<rect x="5" y="3" width="14" height="15" rx="2.5"/><path d="M5 11h14M8 18v2M16 18v2"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/>',
+    train: '<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 10h12M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9.5" cy="13.5" r=".9"/><circle cx="14.5" cy="13.5" r=".9"/>',
+    plane: '<path d="M10.5 20l1.5-6-6-2.5V9l6.5 1.5L14 4.5c.4-1 1.6-1 2 0l-1 6L21 12v2.5l-6-1.5-1.5 6.5z"/>',
+    ship: '<path d="M4 15l1.5 5h13L20 15H4z"/><path d="M7 15V9h10v6M12 9V4"/>'
   };
   const sp = el('span', { class: 'ico', 'aria-hidden': 'true' });
   sp.innerHTML = `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
