@@ -1210,6 +1210,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .iv-in:focus{border-color:#191F28;background:#fff}.iv-in.err{border-color:#E5383B}
 .iv-go{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:#191F28;color:#fff;font-size:16px;font-weight:600}
 .ai-lim{flex:none;font-size:13px;color:#6B7684;background:#F7F8FA;border-radius:12px;padding:8px 12px}.ai-lim summary{cursor:pointer;font-weight:600;color:#4E5968}.ai-lim ul{margin:6px 0 2px;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:1.45}
+.ai-sh{flex:none;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4E5968;background:#EEF7FA;border-radius:12px;padding:8px 12px}.ai-sh span{flex:1;min-width:0}.ai-sh button{flex:none;border:none;background:none;padding:0;font:600 12.5px Pretendard,sans-serif;color:#1D9EC0;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
@@ -3314,9 +3315,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-199-ailimit';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-200-aishare';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5143,7 +5144,7 @@ const FS_DB = 'projects/map-photo-diary/databases/(default)/documents/';
 const FA_MODEL = 'claude-haiku-5-5';   // 짧은 글귀라 빠르고 저렴한 모델
 // 여행 도우미·계획 읽기는 가장 똑똑한 모델(2026-11-15 사용자 '최고의 모델로 바꿔'). 생각하는 몫까지 넉넉히, 거절되면 서버가 다른 모델로 다시
 const TRIP_MODEL = 'claude-fable-5-2';
-function tripAiOpt(n) { return { model: TRIP_MODEL, max_tokens: Math.min(16000, Math.max(8000, n * 3)), betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', output_config: { effort: 'medium' } }; }
+function tripAiOpt(n) { try { aiCount(); } catch {} return { model: TRIP_MODEL, max_tokens: Math.min(16000, Math.max(8000, n * 3)), betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', output_config: { effort: 'medium' } }; }
 function fsv(v) {   // 자바스크립트 값 → Firestore 값
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean') return { booleanValue: v };
@@ -8438,7 +8439,7 @@ function planBasicParse(text) {   // AI 없이: 'n일차'·'DAY n'로 날을 나
   return { nd: maxD + 1, it: items };
 }
 async function planAiRead(text, file, say, o) {   // o.blog면 블로그 여행·등산 후기로 읽어요   // 넣어 둔 Claude 열쇠로: 글·사진·PDF에서 날마다 갈 곳을 뽑아요
-  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
+  const key = trBotKey(); if (!key) throw new Error('nokey');
   say('✨ AI(Claude)에게 일정을 보내 읽는 중…');
   const content = [];
   if (file) {
@@ -8497,7 +8498,7 @@ JSON 하나로만: {"items":[...],"say":"무엇을 바꿨는지 한 문장"}`;
   return JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || ['{}'])[0]);
 }
 function planDrawSheet(p, d, done) {
-  const key = String(ls.get('claudeKey', '') || '').trim();
+  const key = trBotKey();
   const st = el('div', { class: 'sub', style: 'white-space:pre-wrap' }), body = el('div', { class: 'stack', style: 'gap:10px' });
   const pick = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
   const bg = labSheet('🗺 그린 길로 일정 고치기',
@@ -8706,7 +8707,7 @@ function planFromHana(j) {
   const out = { name: `${city || '여행'} ${nd > 1 ? `${nd - 1}박 ${nd}일` : '당일'}`, start, nd, it: planFoldDup(it).it, meet, info }; planTermFix(out); return out;
 }
 async function planAiPlaces(p, city, say, redo) {   // Claude 열쇠가 있으면: 장소 이름 → 지도 검색어(현지어·영어)·대략 좌표 (이름만 보내요) · redo면 대략 위치인 곳도 다시
-  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) return false;
+  const key = trBotKey(); if (!key) return false;
   const L = (p.it || []).map((x, i) => [i, x]).filter(([, x]) => x.k !== 'move' && (redo ? (x.lat == null || x.ap) : (x.lat == null && !x.q)));
   if (!L.length) return true;
   say('✨ AI(Claude)에게 장소 위치를 묻는 중…');
@@ -9077,7 +9078,7 @@ function planImportSheet() {
   let file = null;
   const fIn = el('input', { type: 'file', accept: 'image/*,application/pdf,.txt', style: 'display:none', onchange: e => { file = e.target.files[0] || null; fLab.textContent = file ? `📎 ${file.name}` : ''; } });
   const fLab = el('div', { class: 'sub' }), stat = el('div', { class: 'sub', style: 'font-weight:700' });
-  const hasKey = !!String(ls.get('claudeKey', '') || '').trim();
+  const hasKey = !!trBotKey();
   // 진행 표시 (2026-11-15 사용자 '뭐하고 있는지 인지 곤란'): 지나온 단계는 ✓, 지금 단계는 ⏳ + 지난 초, 맨 위 전체 시간
   let steps = [], t0 = 0, tick = 0, busy = false;
   const paint = () => { if (!t0) return; const sec = Math.round((Date.now() - t0) / 1000);
@@ -9935,8 +9936,40 @@ function planHanaAuto(p, after) {   // 앱에서 계획을 열 때: 12시간마�
 //   하루 60번까지(ls tripBotN={d,n}), 끄기 ls tripBot:{방}=false(새 키), 쓸 때마다 알림·labAiLog
 var TB_DAY_MAX = 60;
 function planOfRoom(code) { return planAll().find(p => p.room && p.room.code === code) || null; }
-function trBotKey() { return String(ls.get('claudeKey', '') || '').trim(); }
-function trBotOn(R) { return !!trBotKey() && ls.get('tripBot:' + R.rid, true) !== false; }
+// 판 -200 (사용자 '일행 열쇠 없어도 AI 쓰게 해' → '열쇠 나눠 주기'): 열쇠 있는 사람이 여행 방에 열쇠를 방 열쇠로 잠가 두고(rooms/{방}/x/aikey),
+//   열쇠 없는 일행 휴대폰은 계획·방 화면을 열 때 받아 ls tripAiKey(새 키)에 둠 → 계획 도우미·길 도우미·여행지 정리 등 여행 AI를 씀
+//   사용료는 열쇠 주인 계정 · 일행은 하루 AI_SHARE_MAX번(ls tripAiN={d,n}, 새 키) · 주인이 끄면(ls tripAiShare:{방}=false, 새 키) 방에서 지우고 일행 것도 지워짐
+//   '일행 질문 답하기'(방 질문에 대신 답하는 휴대폰)는 내 열쇠가 있을 때만(나눠 받은 열쇠로는 안 함)
+var AI_SHARE_MAX = 30;
+function trOwnKey() { return String(ls.get('claudeKey', '') || '').trim(); }
+function aiShared() { if (trOwnKey()) return null; const s = ls.get('tripAiKey', null); return s && s.k ? s : null; }
+function aiSharedLeft() { const N = ls.get('tripAiN', null) || {}, d = new Date().toDateString(); return Math.max(0, AI_SHARE_MAX - (N.d === d ? N.n : 0)); }
+function aiCount() { if (!aiShared()) return; const N = ls.get('tripAiN', null) || {}, d = new Date().toDateString(); ls.set('tripAiN', { d, n: (N.d === d ? N.n : 0) + 1 }); }
+function trBotKey() { const o = trOwnKey(); if (o) return o; const s = aiShared(); return s && aiSharedLeft() > 0 ? s.k : ''; }
+async function aiKeySync(p, force) {
+  if (!p || !p.room || !p.room.code) return;
+  const R = await trRoom(p.room.code), path = `rooms/${R.rid}/x/aikey`, own = trOwnKey();
+  if (own) { const on = ls.get('tripAiShare:' + R.rid, true) !== false, sig = on ? 'k' + own.slice(-8) : 'off';
+    if (!force && ls.get('tripAiPut:' + R.rid, '') === sig) return;
+    try { await fsPut(path, JSON.stringify(await roomSeal(R.key, on ? { k: own, by: trMe(), nm: trName() || '일행', t: Date.now() } : { none: 1, t: Date.now() }))); ls.set('tripAiPut:' + R.rid, sig); } catch {}
+    return; }
+  aiKeySync.t = aiKeySync.t || {}; if (!force && Date.now() - (aiKeySync.t[R.rid] || 0) < 10 * 60000) return; aiKeySync.t[R.rid] = Date.now();
+  const d = await fsGet(path, 1); if (d === undefined) return;
+  let v = null; try { v = d ? await roomOpen(R.key, JSON.parse(d)) : null; } catch {}
+  const s = ls.get('tripAiKey', null);
+  if (v && v.k) { if (!s || s.k !== v.k) ls.set('tripAiKey', { k: v.k, nm: v.nm || '일행', rid: R.rid, at: Date.now() }); }
+  else if (s && s.rid === R.rid) { try { localStorage.removeItem('tripAiKey'); } catch {} }
+}
+function aiShareLine(p) {   // AI 묻기 창 머리 아래: 누구 열쇠로 답하는지 · 주인은 나눠 주기 켜고 끄기
+  const own = trOwnKey(), sh = aiShared(), hasRoom = p && p.room && p.room.code;
+  if (own && hasRoom) { const box = el('div', { class: 'ai-sh' }); const paint = async () => { const R = await trRoom(p.room.code), on = ls.get('tripAiShare:' + R.rid, true) !== false;
+      faRc(box, el('span', { text: on ? `일행도 내 열쇠로 AI를 써요 · 한 사람 하루 ${AI_SHARE_MAX}번 · 사용료는 내 계정` : '내 열쇠를 일행과 나눠 쓰지 않아요' }),
+        el('button', { type: 'button', text: on ? '나눠 쓰기 끄기' : '나눠 쓰기 켜기', onclick: async () => { ls.set('tripAiShare:' + R.rid, !on); await aiKeySync(p, true); paint(); toast(on ? '일행 휴대폰에서 다음에 열 때부터 AI를 못 써요' : '일행도 내 열쇠로 AI를 쓸 수 있어요'); } })); };
+    paint(); return box; }
+  if (sh) return el('div', { class: 'ai-sh' }, el('span', { text: aiSharedLeft() > 0 ? `${sh.nm} 님 열쇠로 답해요 · 오늘 ${aiSharedLeft()}번 남음` : `오늘 쓸 수 있는 ${AI_SHARE_MAX}번을 다 썼어요 · 내일 다시 쓸 수 있어요` }));
+  return null;
+}
+function trBotOn(R) { return !!trOwnKey() && ls.get('tripBot:' + R.rid, true) !== false; }
 // 판 -135 (개선 지시서 2번): 답해 줄 휴대폰 상태를 설정 용어 없이 · ok=지금 보내면 답이 올 수 있음
 // 판 -135: 위치가 3분 넘게 안 바뀌면 '현재 위치 아님' (1분마다 보내니 세 번 빠짐)
 function trLocOld(x) { return !x || Date.now() - x.at > 3 * 60000; }
@@ -9962,7 +9995,7 @@ function trBotGuard(x, ctxTxt, p) {
 }
 function trBotWho(S) {
   const me = trMe(), now = Date.now(), L = (S.tm || []).filter(x => x.bot).sort((a, b) => b.bot - a.bot);
-  const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trBotKey();
+  const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trOwnKey();
   if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '⏸ 이 휴대폰은 AI 답하기를 꺼 뒀어요', next: '켜기' };
   if (live) return live.by !== me && !trVerOk(live.v) ? { ok: 1, old: 1, t: `⚠ ${live.nm || '일행'} 님 휴대폰이 예전 판이라 답이 틀릴 수 있어요 · 그 휴대폰에서 MPD를 새로 켜 주세요` } : { ok: 1, t: live.by === me ? '✅ 지금 AI가 답할 수 있어요 · 이 휴대폰' : `✅ 지금 AI가 답할 수 있어요 · ${live.nm || '일행'} 님 휴대폰` };
   if (mine) return { ok: 1, t: '✅ 지금 AI가 답할 수 있어요 · 이 휴대폰' };
@@ -10061,7 +10094,7 @@ async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성
   toast(`✨ AI를 써요 · 여행 도우미${q.by !== me ? ` · ${q.nm || '일행'} 님 질문` : ''}`, true);
   try {
     const { default: Anthropic } = await import(TALK_SDK);
-    const client = new Anthropic({ apiKey: trBotKey(), dangerouslyAllowBrowser: true });
+    const client = new Anthropic({ apiKey: trOwnKey(), dangerouslyAllowBrowser: true });
     const res = await client.beta.messages.create({ ...tripAiOpt(700), system: sys, messages: [{ role: 'user', content: prompt }] });
     const u = res.usage || {}, log = ls.get('labAiLog', []);
     log.unshift({ at: Date.now(), kind: '여행 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
@@ -10094,7 +10127,8 @@ async function trBotTick(code, R, S) {   // 안 답한 질문 찾기 (하루 지
   return n;
 }
 function trBotStart(p) {   // 계획·오늘·여행 방 화면에서: 열쇠가 있으면 켜 둔 동안 15초마다 방을 봐요
-  if (!p || !p.room || !p.room.code || !trBotKey()) return;
+  aiKeySync(p).catch(() => {});   // 판 -200: 열쇠 나눠 쓰기
+  if (!p || !p.room || !p.room.code || !trOwnKey()) return;
   trBotStart.on = trBotStart.on || {}; if (trBotStart.on[p.room.code]) return; trBotStart.on[p.room.code] = 1;
   const code = p.room.code; let beat = 0;
   const go = async () => {
@@ -10310,7 +10344,7 @@ function planHasPersonal(p) { return false; }
 function planEN(p) { return ls.get('planLang:' + p.id, '') === 'en'; }
 function planEnDay(p, d) { const x = planDate(p, d); return x ? `Day ${d + 1} · ${x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : `Day ${d + 1}`; }
 async function planTranslate(p, say, force) {   // 영어가 없거나 한국어가 바뀐 곳만 · 쓸 때마다 알림 두 번
-  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
+  const key = trBotKey(); if (!key) throw new Error('nokey');
   const sg = x => String(x.n || '') + '|' + String(x.m || '');
   const todo = p.it.filter(x => force || !x.en || x.enS !== sg(x)), mem = (p.mem || []).filter(m => force || !m.en || m.enS !== m.n);
   const needName = force || !p.nameEn || p.nameEnS !== p.name;
@@ -10415,7 +10449,7 @@ function aiLimits(guide) {   // 판 -199 (사용자 'AI의 한계도 알려 주�
     '그럴듯하게 틀린 말을 할 수 있어요 · 시각·돈·안전에 관한 건 꼭 확인',
     '계획에 없는 여행사 정보(미팅 장소·포함 여부·가이드 연락처)는 몰라요 · 여행사·가이드에게',
     guide ? '위치는 휴대폰 GPS라 수십 m 틀릴 수 있고, 등산로·길은 공개 지도 자료라 현장 표지판이 우선이에요' : '추천 장소의 위치·이동 시간은 짐작이에요 · 반영 뒤 지도에서 확인',
-    '이 휴대폰에 Claude 열쇠가 있어야 하고, 물을 때마다 사용료가 들어요(가장 정확한 모델이라 비싼 편)'];
+    '물을 때마다 열쇠 주인 계정에 사용료가 들어요(가장 정확한 모델이라 비싼 편) · 열쇠를 나눠 받은 일행은 하루 ' + AI_SHARE_MAX + '번까지'];
   return el('details', { class: 'ai-lim' }, el('summary', { text: 'AI가 못 하는 것 · 한계 보기' }), el('ul', {}, ...L.map(t => el('li', { text: t }))));
 }
 function planMakeSheet(p) {
@@ -10517,8 +10551,8 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
     el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '일정 짜기·고치기 · 가장 정확한(비싼) Claude 모델' })),
       el('button', { class: 'btn line small', text: '길 안내로', onclick: () => { bg.remove(); trBotKey() ? planGuideSheet(p) : planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
-    key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) { bg.remove(); planMakeSheet(p); } } })),
-    aiLimits(false), st, list,
+    key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: aiSharedLeft() > 0 ? 'Claude 열쇠가 있어야 답해요' : `오늘 쓸 수 있는 ${AI_SHARE_MAX}번을 다 썼어요` }), el('div', { class: 'dt', style: 'margin-top:4px', text: '열쇠가 있는 일행이 이 계획을 MPD에서 한 번 열면, 이 휴대폰도 그 열쇠로 AI를 쓸 수 있어요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 내 Claude 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) { bg.remove(); planMakeSheet(p); } } })),
+    aiLimits(false), aiShareLine(p), st, list,
     el('div', { style: 'flex:none' },
       el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding-bottom:4px' }, ...QUICK.map(q => el('button', { class: 'btn line small', style: 'white-space:nowrap;flex:none', text: q, onclick: () => send(q) }))),
       el('div', { style: 'display:flex;gap:6px;align-items:flex-end;margin-top:6px' }, ta, el('button', { class: 'btn primary', style: 'flex:none', text: '보내기', onclick: () => send() })),
@@ -10578,8 +10612,8 @@ function planGuideSheet(p) {
       el('button', { class: 'btn line small', text: '일정 짜기로', onclick: () => { bg.remove(); planMakeSheet(p); } }),
       el('button', { class: 'btn line small', text: '👥 일행에게', onclick: () => { bg.remove(); planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
-    key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: () => talkKeySheet() })),
-    aiLimits(true), st, list,
+    key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: aiSharedLeft() > 0 ? 'Claude 열쇠가 있어야 답해요' : `오늘 쓸 수 있는 ${AI_SHARE_MAX}번을 다 썼어요` }), el('div', { class: 'dt', style: 'margin-top:4px', text: '열쇠가 있는 일행이 이 계획을 MPD에서 한 번 열면, 이 휴대폰도 그 열쇠로 AI를 쓸 수 있어요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 내 Claude 열쇠 넣기', onclick: () => talkKeySheet() })),
+    aiLimits(true), aiShareLine(p), st, list,
     el('div', { style: 'flex:none' },
       el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding-bottom:4px' }, ...QUICK.map(q => el('button', { class: 'btn line small', style: 'white-space:nowrap;flex:none', text: q, onclick: () => { if (/갈림길/.test(q) && !img) toast('📷 갈림길 사진을 같이 보내면 더 정확해요'); send(q); } }))),
       thumb,
@@ -10604,8 +10638,8 @@ function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 �
     const who = trBotWho(S), me = trMe(), qs = S.tc.filter(m => m.ask && !trQHidden(S, m)).slice(-20);
     const N = ls.get('tripBotN', null) || {}, n = N.d === new Date().toDateString() ? N.n : 0;
     faRc(st, el('span', { style: `color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t + (who.ok ? '' : ' · 지금 보내면 답이 늦거나 오지 않을 수 있어요') }),
-      trBotKey() ? el('span', { style: 'font-weight:500;color:#6B7684', text: ` · 오늘 ${n}/${TB_DAY_MAX}번 · ` }) : null,
-      trBotKey() ? el('button', { type: 'button', style: 'border:none;background:none;padding:0;font:600 13px Pretendard,sans-serif;color:#6B7684;text-decoration:underline;cursor:pointer', text: trBotOn(R) ? '일행 질문 답하기 끄기' : '일행 질문 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }) : null);
+      trOwnKey() ? el('span', { style: 'font-weight:500;color:#6B7684', text: ` · 오늘 ${n}/${TB_DAY_MAX}번 · ` }) : null,
+      trOwnKey() ? el('button', { type: 'button', style: 'border:none;background:none;padding:0;font:600 13px Pretendard,sans-serif;color:#6B7684;text-decoration:underline;cursor:pointer', text: trBotOn(R) ? '일행 질문 답하기 끄기' : '일행 질문 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }) : null);
     const atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     faRc(list, ...(qs.length ? qs.flatMap(q => { const a = S.tc.find(y => y.id === 'a_' + q.id);
       return [el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' }, q.by !== me ? el('div', { class: 'dt', style: 'font-weight:700', text: q.nm || '일행' }) : null,
@@ -10874,7 +10908,7 @@ async function viewPlanToday(p) {
 //   첫·마지막 비행 날짜가 계획 날짜와 다르면 '계획 날짜 맞추기' 단추
 function planDocKey(p, id) { const m = /^(.*)@([^@]+)$/.exec(String(id)); return m ? 'pdoc:' + m[2] + ':' + m[1] : 'pdoc:' + p.id + ':' + id; }   // 판 -190: 합친 계획에서 옮겨 온 캡처는 원래 번호로
 async function planBookRead(file) {
-  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
+  const key = trBotKey(); if (!key) throw new Error('nokey');
   const b = await new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(String(f.result).split(',')[1]); f.onerror = rej; f.readAsDataURL(file); });
   const src = /pdf/.test(file.type) ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b } } : { type: 'image', source: { type: 'base64', media_type: /png|webp|gif/.test(file.type) ? file.type : 'image/jpeg', data: b } };
   toast('✨ AI를 써요 · 예약 캡처 읽기 · 이 사진만 보내요', true);
@@ -10949,7 +10983,7 @@ function planDocSheet(p, redraw) {
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
         await trSet(planDocKey(p, id), f); const dc = { id, at: Date.now(), nm: '' }; p.docs.push(dc); planSave(p); await paint();
         st.append(el('div', { style: 'font-weight:800;font-size:13.5px', text: `✅ 이 휴대폰에 저장했어요 (${fs.length > 1 ? fs.indexOf(f) + 1 + '/' + fs.length : '인터넷 없어도 보여요'})` }));
-        if (!String(ls.get('claudeKey', '') || '').trim()) { st.append(el('div', { class: 'sub', style: 'font-size:13px', text: 'Claude 열쇠가 없어 사진만 저장했어요 · 비행기 시각은 일정에 직접 넣어 주세요' })); continue; }
+        if (!trBotKey()) { st.append(el('div', { class: 'sub', style: 'font-size:13px', text: 'Claude 열쇠가 없어 사진만 저장했어요 · 비행기 시각은 일정에 직접 넣어 주세요' })); continue; }
         try {
           say('✨ 예약 내용을 읽는 중…'); const R = await planBookRead(f);
           if (!R.flights.length && !R.stays.length) { say('⚠ 비행기·숙소 예약을 못 찾았어요 · 사진만 저장했어요'); continue; }
