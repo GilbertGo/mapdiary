@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-139-planbot';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-140-share';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 여행 전엔 아래 메뉴 \'도우미\'가 계획 도우미예요: 비행기 시각·날짜·정한 곳을 보고 일정을 추천하고, 고른 곳만 일정에 넣어요(AI 추천은 영업시간·가격 확인 필요) · 🎫 예약 · 항공권 캡처 저장도 있어요';
+const UI_NOTES = '👥 여행 계획에 \'함께 가는 사람\'이 생겼어요: 사람마다 출발하는 곳·오는 날·가는 날을 적으면 날마다 몇 명인지, 누가 합류·먼저 떠나는지 보여요 · \'일행과 같이 고치기\'를 켜면 초대받은 일행이 같은 계획을 함께 고쳐요(예약번호·다녀옴은 각자 휴대폰에만) · ✨ 여행 전엔 \'도우미\'가 계획 도우미';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7131,7 +7131,7 @@ var PLAN_KINDS = { spot: ['📍', '구경'], peak: ['⛰', '정상'], food: ['�
 var PLAN_COLS = ['#0277BD', '#FF6B4A', '#7B61FF', '#E8457A', '#1D9EC0', '#5B6B7F', '#C2412D', '#3D5AFE'];
 function planAll() { const a = ls.get('tripPlans', []); return Array.isArray(a) ? a : []; }
 function planGet(id) { return planAll().find(p => p.id === id) || null; }
-function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id); p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); }
+function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id); p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); if (p.shOn && !planShareSync.applying) planShareSoon(p.id); }
 function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); const g = ls.get('planGone', {}) || {}; g[id] = Date.now(); ls.set('planGone', g); }
 // 계획 합치기(백업 불러오기·로그인 모음): 같은 계획이면 나중에 고친 것(u), 지운 계획(planGone)은 되살리지 않아요
 function planMerge(list, gone) {
@@ -9210,6 +9210,122 @@ async function pgCtx(p, say) {
   L.push('\n[계획 전체]', planBotCtx(p).txt.split('\n[여행 준비 목록]')[0].slice(0, 30000));
   return { txt: L.join('\n'), nx, info, pos };
 }
+// 👥 일행과 같이 고치기 · 함께 가는 사람 (판 -140, 2026-11-15 사용자 '여행멤버와 공유하고 각자 여행계획 편집' + '7명, 출발일·출발지가 다 달라')
+//   켜면(planShareSync(p,{start:1})) 계획을 여행 방(rooms/{방}/pl)에 일정 한 칸마다 문서 하나로 잠가 올리고, 방 사람은 열 때·15초마다·고친 뒤 1.5초에 맞춤
+//   pl/meta = 이름·날짜·날 수·미팅·안내, pl/{일정 id} = {it, by, nm} 또는 {del:1}, pm/{사람 id} = {n, from, a(오는 날), b(가는 날), fl, del}
+//   맞추는 법: 마지막으로 맞춘 모양(ls plSync:{계획} = {sig:{id:모양}, m, mm:{}})과 견줘 — 내가 안 고친 칸만 남의 것으로 바꾸고, 내가 고친 칸은 올림(나중에 올린 쪽이 남음)
+//   내 것만: 예약(bk)·다녀옴(ok…)은 안 올림 · 처음 들어온 휴대폰은 방 일정으로 바꾸고(같은 날·같은 이름이면 내 예약·다녀옴을 옮겨 붙임), 내 예약이 있는 칸만 방에 올림
+const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q'];
+function plPub(x) { const o = Object.assign({}, x); PL_PRIV.forEach(k => delete o[k]); return o; }
+function plSig(o) { return JSON.stringify(o, Object.keys(o).sort()); }
+function plMeta(p) { return { name: p.name || '', start: p.start || '', nd: p.nd || 1, meet: p.meet || null, info: p.info || null }; }
+function planShareSoon(id) { clearTimeout(planShareSoon.tm); planShareSoon.tm = setTimeout(async () => { const p = planGet(id); if (p && await planShareSync(p) && window.mpdPlanRedraw) window.mpdPlanRedraw(); }, 1500); }
+async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바뀌었으면 true
+  if (!p || !p.room || !p.room.code || planShareSync.busy) return false; planShareSync.busy = 1; let local = false;
+  try {
+    const R = await trRoom(p.room.code), S = await trLoad(R); S.pl = S.pl || []; S.pm = S.pm || [];
+    await trSync(R, S, ['pl', 'pm']);
+    p = planGet(p.id) || p;   // 맞추는 동안 고친 것도 보게 가장 새것으로
+    const meta = S.pl.find(x => x.id === 'meta');
+    if (!meta && !opt.start) { if (p.shOn) { p.shOn = 0; local = true; } return local; }
+    const stK = 'plSync:' + p.id; let st = ls.get(stK, null); const first = !st || !st.sig; if (first) st = { sig: {}, m: '', mm: {} };
+    const myIt = () => p.it.map((x, i) => Object.assign(plPub(x), { ord: i }));
+    if (meta && !meta.del) {   // 이름·날짜
+      const ms = plSig(meta.m || {}), ls0 = plSig(plMeta(p));
+      if (ms !== ls0 && (first || ls0 === st.m)) { Object.assign(p, meta.m); local = true; st.m = ms; }
+      else if (ms === ls0) st.m = ms;
+    }
+    // 일정
+    const rem = S.pl.filter(x => x.id !== 'meta'), seen = new Set();
+    if (first && rem.length) {   // 처음 들어옴: 방 일정으로 (같은 날·같은 이름이면 내 예약·다녀옴을 옮겨 붙임)
+      const old = p.it; p.it = [];
+      rem.filter(r => !r.del && r.it).sort((a, b) => (a.it.d - b.it.d) || ((a.it.ord || 0) - (b.it.ord || 0))).forEach(r => {
+        const x = Object.assign({}, r.it); delete x.ord; x.id = r.id;
+        const o = old.find(y => y.d === x.d && String(y.n).replace(/\s/g, '') === String(x.n).replace(/\s/g, '')); if (o) PL_PRIV.forEach(k => { if (o[k] != null) x[k] = o[k]; });
+        p.it.push(x); st.sig[r.id] = plSig(Object.assign(plPub(x), { ord: r.it.ord || 0 })); seen.add(r.id); });
+      old.filter(y => y.bk && !p.it.some(x => x.d === y.d && String(x.n).replace(/\s/g, '') === String(y.n).replace(/\s/g, ''))).forEach(y => p.it.push(y));   // 내 예약(비행기·숙소)은 남겨서 올림
+      local = true;
+    } else {
+      for (const r of rem) {
+        const i = p.it.findIndex(x => x.id === r.id), L = i >= 0 ? p.it[i] : null;
+        if (r.del) { if (L && (plSig(Object.assign(plPub(L), { ord: i })) === st.sig[r.id] || !st.sig[r.id])) { p.it.splice(i, 1); local = true; } delete st.sig[r.id]; continue; }
+        if (!r.it) continue; const rs = plSig(r.it);
+        if (!L) { if (!(r.id in st.sig)) { const x = Object.assign({}, r.it); delete x.ord; x.id = r.id; p.it.push(x); st.sig[r.id] = rs; local = true; } continue; }
+        const lsg = plSig(Object.assign(plPub(L), { ord: i }));
+        if (lsg === rs) { st.sig[r.id] = rs; continue; }
+        if (lsg === st.sig[r.id]) { const keep = {}; PL_PRIV.forEach(k => { if (L[k] != null) keep[k] = L[k]; }); const x = Object.assign({}, r.it, keep); delete x.ord; x.id = r.id; p.it[i] = x; st.sig[r.id] = rs; local = true; }
+      }
+      if (local) {   // 차례(ord)대로
+        const ordOf = x => { const r = rem.find(z => z.id === x.id && z.it); return r ? (r.it.ord || 0) : p.it.indexOf(x); };
+        p.it = p.it.map((x, i) => ({ x, i, o: ordOf(x) })).sort((a, b) => (a.x.d - b.x.d) || (a.o - b.o) || (a.i - b.i)).map(z => z.x);
+      }
+    }
+    // 올리기: 내가 바꾼 칸, 지운 칸, 이름·날짜
+    const by = trMe(), nm = trName() || '일행', ups = [];
+    if (!meta || plSig(plMeta(p)) !== st.m) { ups.push(trPut(R, 'pl', 'meta', { m: plMeta(p), by, nm })); st.m = plSig(plMeta(p)); }
+    myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { ups.push(trPut(R, 'pl', o.id, { it: o, by, nm })); st.sig[o.id] = sg; } });
+    Object.keys(st.sig).forEach(id => { if (!p.it.some(x => x.id === id)) { ups.push(trPut(R, 'pl', id, { del: 1, by, nm })); delete st.sig[id]; } });
+    // 함께 가는 사람
+    p.mem = p.mem || []; st.mm = st.mm || {};
+    for (const r of S.pm) {
+      const i = p.mem.findIndex(x => x.id === r.id), L = i >= 0 ? p.mem[i] : null, rv = r.del ? null : { id: r.id, n: r.n || '', from: r.from || '', a: r.a || '', b: r.b || '', fl: r.fl || '' }, rs = rv ? plSig(rv) : 'del';
+      if (L && plSig(L) === rs) { st.mm[r.id] = rs; continue; }
+      if (!L) { if (rv && !(r.id in st.mm)) { p.mem.push(rv); st.mm[r.id] = rs; local = true; } else if (!rv) delete st.mm[r.id]; continue; }
+      if (first || plSig(L) === st.mm[r.id]) { if (rv) p.mem[i] = rv; else p.mem.splice(i, 1); st.mm[r.id] = rs; local = true; }
+    }
+    p.mem.forEach(m => { const sg = plSig(m); if (st.mm[m.id] !== sg) { ups.push(trPut(R, 'pm', m.id, Object.assign({ by, nm }, m))); st.mm[m.id] = sg; } });
+    Object.keys(st.mm).forEach(id => { if (st.mm[id] !== 'del' && !p.mem.some(m => m.id === id)) { ups.push(trPut(R, 'pm', id, { del: 1, by, nm })); st.mm[id] = 'del'; } });
+    const res = await Promise.allSettled(ups); const bad = res.filter(r => r.status === 'rejected').length;
+    if (bad) { st = ls.get(stK, null) || { sig: {}, m: '', mm: {} }; if (opt.say) opt.say(`⚠ ${bad}개를 못 올렸어요 · 인터넷을 확인해 주세요`); }   // 못 올린 건 다음에 다시
+    else ls.set(stK, st);
+    if (!p.shOn) { p.shOn = 1; local = true; }
+    p.shAt = Date.now(); planShareSync.applying = 1; try { planSave(p); } finally { planShareSync.applying = 0; }
+    return local;
+  } catch (e) { if (opt.say) opt.say('⚠ 같이 고치기 맞추기를 못 했어요 · ' + String(e && e.message || e).slice(0, 60)); return local; }
+  finally { planShareSync.busy = 0; }
+}
+function planMemDays(p, m) {   // 이 사람이 함께하는 날(0부터) 목록
+  const a = m.a ? planDayOfDate(p, m.a) : 0, b = m.b ? planDayOfDate(p, m.b) : p.nd - 1;
+  return [...Array(p.nd).keys()].filter(d => d >= (a == null ? 0 : a) && d <= (b == null ? p.nd - 1 : b));
+}
+function planMemSheet(p, redraw) {
+  p.mem = p.mem || []; const me = ls.get('planMe:' + p.id, '');
+  const st = el('div', { class: 'dt', style: 'font-weight:700;min-height:18px' }), box = el('div', { class: 'stack', style: 'gap:8px' });
+  const save = async () => { planSave(p); if (p.shOn) { st.textContent = '⏳ 일행과 맞추는 중…'; await planShareSync(p, { say: t => { st.textContent = t; } }); Object.assign(p, planGet(p.id) || {}); st.textContent = '✅ 일행과 맞췄어요'; } paint(); redraw && redraw(); };
+  const dl = d => d ? `${+d.slice(5, 7)}/${+d.slice(8)}` : '';
+  const edit = m => {
+    const isNew = !m; m = m || { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), n: '', from: '', a: p.start || '', b: '', fl: '' };
+    if (!m.b && p.start) { const z = planDate(p, p.nd - 1); m.b = z ? `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}` : ''; }
+    const I = (v, ph, t) => el('input', { type: t || 'text', value: v || '', placeholder: ph || '', style: 'width:100%;box-sizing:border-box' });
+    const n = I(m.n, '이름 (예: 아리)'), fr = I(m.from, '출발하는 곳 (예: 부산 김해공항)'), a = I(m.a, '', 'date'), b = I(m.b, '', 'date'), fl = I(m.fl, '비행기·교통 메모 (예: 제주항공 7C1351 09:00)');
+    const bg = labSheet(isNew ? '+ 함께 가는 사람' : '✎ ' + m.n, el('label', { class: 'sub', text: '이름' }), n, el('label', { class: 'sub', text: '출발하는 곳' }), fr,
+      el('label', { class: 'sub', text: '오는 날 (여행지에 닿는 날)' }), a, el('label', { class: 'sub', text: '가는 날 (여행지를 떠나는 날)' }), b, el('label', { class: 'sub', text: '메모' }), fl,
+      el('button', { class: 'btn primary full', text: '저장', onclick: async () => { m.n = n.value.trim().slice(0, 20); if (!m.n) return toast('이름을 적어 주세요'); m.from = fr.value.trim().slice(0, 40); m.a = a.value; m.b = b.value; m.fl = fl.value.trim().slice(0, 120); if (isNew) p.mem.push(m); bg.remove(); await save(); } }),
+      isNew ? null : el('button', { class: 'btn line full', text: '🗑 이 사람 빼기', onclick: async () => { if (!confirm(`${m.n} 님을 함께 가는 사람에서 뺄까요?`)) return; p.mem = p.mem.filter(x => x !== m); bg.remove(); await save(); } }));
+  };
+  const many = () => { const ta = el('textarea', { rows: 4, placeholder: '예: 성식, 아내, 유건, 아리, 유진, 아리 오빠, 아리 올케', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px' });
+    const bg = labSheet('👥 이름 여러 명 한 번에', el('div', { class: 'sub', text: '쉼표나 줄바꿈으로 나눠 적어 주세요. 출발하는 곳·날짜는 사람마다 눌러서 넣어요.' }), ta,
+      el('button', { class: 'btn primary full', text: '넣기', onclick: async () => { const L = ta.value.split(/[,\n、·]+/).map(x => x.trim()).filter(Boolean).slice(0, 30); let k = 0;
+        L.forEach(nm => { if (!p.mem.some(x => x.n === nm)) { p.mem.push({ id: 'm' + Date.now().toString(36) + (k++) + Math.random().toString(36).slice(2, 4), n: nm.slice(0, 20), from: '', a: '', b: '', fl: '' }); } }); bg.remove(); await save(); } })); };
+  const paint = () => {
+    const meNow = ls.get('planMe:' + p.id, '');
+    faRc(box,
+      p.shOn ? el('div', { style: 'background:#E8F6EF;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5' }, el('b', { text: '✅ 같이 고치기 켜짐' }), el('div', { text: `여행 방 사람 누구나 일정을 고칠 수 있고, 몇 초 안에 모두에게 맞춰져요${p.shAt ? ` · 마지막 맞춤 ${trHm(p.shAt)}` : ''} · 예약번호·예약 캡처·다녀옴 표시는 각자 휴대폰에만` }))
+        : el('div', { style: 'background:#FFF4E5;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5' }, el('b', { text: '지금은 내 휴대폰에서만 고쳐요' }), el('div', { text: '켜면 이 계획을 여행 방에 올려, 초대받은 일행이 같이 고칠 수 있어요(일행도 새 판 MPD가 있어야 해요).' }),
+          el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '👥 일행과 같이 고치기 켜기', onclick: async e => { e.target.disabled = true; e.target.textContent = '올리는 중…'; if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
+            await planShareSync(p, { start: 1, say: t => { st.textContent = t; } }); Object.assign(p, planGet(p.id) || {}); st.textContent = p.shOn ? '✅ 켰어요 · 이제 👋 초대로 일행에게 보내 주세요' : ''; paint(); redraw && redraw(); } })),
+      el('div', { style: 'font-weight:800;margin-top:4px', text: `👥 함께 가는 사람 ${p.mem.length}명` }),
+      ...p.mem.map(m => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer;background:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center', onclick: () => edit(m) },
+        el('span', { style: `width:30px;height:30px;border-radius:50%;background:${trCol(m.id)};color:#fff;display:grid;place-items:center;font-weight:800;flex:none`, text: m.n.slice(0, 1) }),
+        el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { text: m.n + (meNow === m.id ? ' (나)' : '') }),
+          el('span', { style: 'font-size:12.5px;color:#6B7684', text: [m.from ? m.from + ' 출발' : '출발하는 곳 아직', m.a || m.b ? `${dl(m.a) || '?'} ~ ${dl(m.b) || '?'}` : '날짜 아직', m.fl].filter(Boolean).join(' · ') })), el('span', { style: 'color:#A3ABB5', text: '✎' }))),
+      el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '+ 한 명', onclick: () => edit(null) }), el('button', { class: 'btn line', style: 'flex:1', text: '+ 여러 명 한 번에', onclick: many })),
+      p.mem.length ? el('label', { class: 'sub', style: 'display:flex;gap:8px;align-items:center' }, '이 휴대폰은', el('select', { onchange: e => { ls.set('planMe:' + p.id, e.target.value); paint(); } },
+        el('option', { value: '', text: '(고르기)' }), ...p.mem.map(m => el('option', { value: m.id, selected: meNow === m.id ? true : null, text: m.n }))), '의 휴대폰이에요') : null);
+  };
+  paint();
+  labSheet('👥 함께 가는 사람', st, box);
+}
 // ✨ 계획 도우미 (판 -139, 2026-11-15 사용자 '여행 계획도우미의 도움 받을 수 있게 해'): 여행 전 일정 짜기
 //   여행 전(또는 날짜 미정)에 아래 메뉴 '도우미' → 이 창 · 여행 중엔 길 도우미(그 창 머리에 '🗓 계획 도우미' 단추)
 //   AI(FA_MODEL, 사용자 열쇠)에게 계획 전체(날짜·비행기 시각·이미 넣은 곳)와 질문을 보냄 → 답 글 + 넣을 곳 제안(items)
@@ -9217,6 +9333,7 @@ async function pgCtx(p, say) {
 //   AI 추천은 일반 지식이라 영업시간·가격은 확인 필요 — 일정 줄에도 그렇게 표시 · 대화 ls planMake:{ID}(새 키, 30개)
 function planMakeCtx(p) {
   const L = [`여행 이름: ${p.name}`, `여행지: ${(p.dest && p.dest.n) || planDestName(p) || '모름'}`, p.start ? `날짜: ${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)} (${p.nd > 1 ? `${p.nd - 1}박 ${p.nd}일` : '당일'})` : `날 수: ${p.nd}일 (날짜 아직 안 정함)`];
+  if ((p.mem || []).length) L.push(`함께 가는 사람 ${p.mem.length}명 (사람마다 출발하는 곳·오는 날·가는 날이 달라요):\n` + p.mem.map(m => `- ${m.n}: ${m.from || '출발지 모름'} 출발 · 오는 날 ${m.a || '모름'} · 가는 날 ${m.b || '모름'}${m.fl ? ' · ' + m.fl : ''}`).join('\n'));
   for (let d = 0; d < p.nd; d++) {
     const its = planItems(p, d); L.push(`\n[${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}]`);
     if (!its.length) L.push('- (아직 일정 없음)');
@@ -9665,7 +9782,8 @@ async function planBookApply(p, R, docId, say) {   // 읽은 예약을 일정에
     const m = [f.dep && f.arr ? `${f.dep} 출발 → ${f.arr} 도착${f.arrDate && f.arrDate !== f.date ? ' (다음 날)' : ''}` : '', [f.fromAp, f.toAp].filter(Boolean).join(' → '), f.cls].filter(Boolean).join(' · ');
     let x = f.no ? p.it.find(y => y.k === 'fly' && nk(y.n).includes(nk(f.no))) : null; const isNew = !x;
     if (!x) x = { id: planNewId(), k: 'fly', lat: null, lng: null };
-    Object.assign(x, { d, t: f.dep, n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } });
+    const meM = (p.mem || []).find(z => z.id === ls.get('planMe:' + p.id, ''));
+    Object.assign(x, { d, t: f.dep, n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } }, meM && isNew ? { who: meM.n } : {});
     if (!Number.isFinite(x.lat)) { say && say(`📍 ${f.fromAp || f.from} 위치 찾는 중…`); const g = await geo(f.fromEn || (f.fromCode && f.fromCode + ' airport')); if (g) { x.lat = g[0]; x.lng = g[1]; x.ap = 0; } }
     if (isNew) p.it.push(x); out.n++; out.lines.push(`✈ ${f.date.slice(5).replace('-', '/')} ${f.dep} ${n}${f.ref ? ` · 예약번호 ${f.ref}` : ''}`);
   }
@@ -9944,7 +10062,13 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      docLine(), chkLine(), warnBox()); };
+      memLine(), docLine(), chkLine(), warnBox()); };
+  function memLine() {   // 판 -140: 👥 함께 가는 사람 · 같이 고치기
+    const n = (p.mem || []).length;
+    return el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px', onclick: () => planMemSheet(p, drawAll) },
+      el('span', { style: 'font-size:20px', text: '👥' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: n ? `함께 가는 사람 ${n}명` : '함께 가는 사람' }),
+        el('span', { style: 'font-size:12.5px;color:#6B7684', text: (p.shOn ? '✅ 일행과 같이 고치는 중' : '내 휴대폰에서만 고쳐요 · 같이 고치기 켜기') + (n ? '' : ' · 사람마다 출발지·날짜') })), el('span', { style: 'color:#A3ABB5', text: '›' }));
+  }
   function docLine() {   // 판 -138: 🎫 예약 · 항공권 (예약 캡처를 계획에 저장)
     const n = (p.docs || []).length;
     return el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px', onclick: () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); }) },
@@ -10121,6 +10245,7 @@ function viewPlanOne(id) {
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
         x.m && (x.k === 'fly' || x.bk) ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.bk && x.bk.ref ? el('div', { class: 'tv-m', style: 'font-weight:700', text: `🎫 예약번호 ${x.bk.ref}` }) : null,
+        x.who ? el('div', { class: 'tv-m', style: 'font-weight:700;color:#4E5968', text: `👤 ${x.who}` }) : null,
         x.ai ? el('div', { class: 'tv-m', style: 'color:#8A94A0', text: `✨ AI 추천${x.m ? ' · ' + x.m : ''} · 영업시간·가격은 확인해 주세요` }) : null,
         x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
@@ -10139,7 +10264,11 @@ function viewPlanOne(id) {
       const its = planItems(p, d), nx = nextIdx(d);
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
-        out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
+        out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') })));
+        const M = p.mem || []; if (M.length && p.start) {   // 판 -140: 이날 함께하는 사람 · 오는 사람 · 가는 사람
+          const inD = M.filter(m => planMemDays(p, m).includes(d)), arr = M.filter(m => m.a && planDayOfDate(p, m.a) === d && d > 0), lv = M.filter(m => m.b && planDayOfDate(p, m.b) === d && d < p.nd - 1), unk = M.filter(m => !m.a && !m.b).length;
+          out.push(el('button', { style: 'display:block;width:100%;text-align:left;border:none;background:none;padding:0 2px;font:600 13px Pretendard,sans-serif;color:#4E5968;cursor:pointer', onclick: () => planMemSheet(p, drawAll) },
+            `👥 이날 ${inD.length}명${unk ? ` (날짜 모르는 ${unk}명 포함)` : ''}`, arr.length ? el('span', { style: 'color:#1D9EC0', text: ` · 🛬 ${arr.map(m => m.n + (m.from ? `(${m.from})` : '')).join(', ')} 합류` }) : null, lv.length ? el('span', { style: 'color:#C2410C', text: ` · 🛫 ${lv.map(m => m.n).join(', ')} 먼저 떠나요` }) : null)); } }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
       its.forEach((x, i) => tl.append(row(x, i, d, nx)));   // 판 -120: 줄 사이 거리 글은 뺌(사용자 '경로 안내문을 글로 할 필요?') · 지도와 요약 칸으로
       out.push(tl, el('button', { class: 'tv-add', text: `+ 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));   // 판 -129: '그린 길 캡처로 고치기'는 ⋯ 더보기에만
@@ -10176,6 +10305,9 @@ function viewPlanOne(id) {
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };   // 판 -139: 계획 도우미가 일정을 넣은 뒤
+  // 판 -140: 같이 고치기 — 열 때 한 번, 화면을 보는 동안 15초마다 방과 맞춤
+  if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); } }).catch(() => {}); };
+    setTimeout(tick, 800); const iv = setInterval(() => { if (!document.body.contains(list)) return clearInterval(iv); tick(); }, 15000); }
   function navGo() { const td0 = planToday(p); planNav(p, day >= 0 ? day : td0 >= 0 && td0 < p.nd ? td0 : 0, () => drawAll()); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
