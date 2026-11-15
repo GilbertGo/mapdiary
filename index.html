@@ -3134,9 +3134,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-131-selfchk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-132-optask';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '✨ 여행 방에서 ?로 끝나는 말은 도우미도 봐요(✨ 단추를 안 눌러도) · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7795,7 +7795,9 @@ function planFromHana(j) {
         if (/출입국|입국 정보/.test(nm)) { const t = full(ci.cmsCntntCont, 2500); if (t && !info.some(z => z.h === nm)) info.push({ h: nm, x: t }); continue; }   // 출입국 안내는 '🧳 여행 준비'에
         if (!nm || /코스$/.test(nm) || nm === city) continue;   // 안내 머리글(…코스·도시 소개)만 뺌
         const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(nm) ? 'show' : /다방|카페|커피/.test(nm) ? 'food' : 'spot';
-        add(d, { n: nm.slice(0, 80), k, m: first(ci.cmsCntntCont || m.memoCont), x: full(ci.cmsCntntCont || m.memoCont) });
+        // 판 -132: 원본 분류 '선택관광'(schdCatgCd 005)·'스페셜포함' 딱지를 그대로 남김 (사용자 '선택관광은 뭐있어?'에 도우미가 몰랐음)
+        const opt = c === '005' ? (/스페셜포함/.test(String(m.cardCntntMbl || '') + String(m.cardCntnt || '')) ? 2 : 1) : 0;
+        add(d, Object.assign({ n: nm.slice(0, 80), k, m: first(ci.cmsCntntCont || m.memoCont), x: full(ci.cmsCntntCont || m.memoCont) }, opt ? { opt } : {}));
       }
     }
     (fq[d] || []).splice(0).forEach(f => add(d, f));   // 자리를 못 찾은 비행은 그날 끝에
@@ -8674,9 +8676,10 @@ async function viewTripRoom(code, title, planId) {
     if (!msgs.length) box.append(el('div', { class: 'card sub', text: '아직 대화가 없어요. 첫 인사를 남겨 보세요. (앱이나 이 화면을 열어 두면 10초마다 새 글을 가져와요 · 휴대폰 알림은 오지 않아요)' }));
     let lastDay = '';
     for (const m of msgs.slice(-300)) { const dl = new Date(m.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (dl !== lastDay) { lastDay = dl; box.append(el('div', { class: 'dt', style: 'text-align:center;font-weight:700', text: dl })); } box.append(bubble(m)); }
-    const ta = el('textarea', { rows: 1, placeholder: trName() ? '메시지 보내기' : '먼저 위에 이름을 적어 주세요', style: 'flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
+    const ta = el('textarea', { rows: 1, placeholder: trName() ? '메시지 · ?로 끝나면 ✨도우미도 답해요' : '먼저 위에 이름을 적어 주세요', style: 'flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
     const send = async () => { const x = ta.value.trim(); if (!x) return; if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
-      const m = { by: me, nm: trName(), x: x.slice(0, 1000), t: Date.now() }, id = Date.now().toString(36) + rid(4); ta.value = '';
+      // 판 -132 (사용자 캡처: '선택관광은 뭐있어?'를 보내기로 보내서 도우미가 못 봄): '?'로 끝나는 말은 도우미도 봐요(답해 줄 휴대폰이 있을 때)
+      const m = Object.assign({ by: me, nm: trName(), x: x.slice(0, 1000), t: Date.now() }, /[?？]\s*$/.test(x) ? { ask: 1 } : {}), id = Date.now().toString(36) + rid(4); ta.value = '';
       S.tc.push(Object.assign({ id, _t: m.t, pend: 1 }, m)); draw(true);
       try { await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S); } catch { const q = S.tc.find(y => y.id === id); if (q) q.fail = 1; toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } };
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
@@ -8819,6 +8822,7 @@ function planHanaMerge(p, r) {   // 바뀐 것만 고치고 바뀐 줄을 돌려
       if (ren) { ch.push(`${z.k === 'stay' ? '🏨' : '✎'} ${D} ${y.n} → ${z.n}`); y.n = z.n; if (!y.man) { y.lat = null; y.lng = null; delete y.ap; delete y.near; delete y.vf; if (z.q) y.q = z.q; } }
       if (z.x && z.x !== (y.x || '')) { if (y.x && !ren) ch.push(`📖 ${D} ${z.n} · 여행사 안내 글이 바뀌었어요`); y.x = z.x; }
       if (z.m && z.m !== (y.m || '')) y.m = z.m;
+      if (z.opt) y.opt = z.opt; else delete y.opt;   // 판 -132 선택관광 표시
       out.push(y);
     } else { const n = Object.assign({}, z, { id: planNewId() }); used.add(n); out.push(n); ch.push(`➕ ${D} 새 일정 · ${z.n}`); }
   }
@@ -8833,7 +8837,7 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
   if (!p.code) throw new Error('nocode');
   if (!IN_NATIVE) throw new Error('web');
   const j = await planHanaFetch(p.code), r = planFromHana(j); planTermFix(r);
-  const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour';
+  const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour'; p.optV = 1;
   if (ch.length) { planNeighborFill(p); await planGeocode(p, () => {}).catch(() => {}); }
   p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planSave(p);
   return { ch };
@@ -8859,7 +8863,7 @@ function planHanaSheet(p, after) {   // ⋯ 더보기 '🔗 하나투어 일정 
 }
 function planHanaAuto(p, after) {   // 앱에서 계획을 열 때: 12시간마다 · 여행이 끝나면 안 함
   if (!IN_NATIVE || !p.code) return; const k = planToday(p); if (k != null && k >= p.nd) return;
-  if (p.hanaAt && Date.now() - p.hanaAt < 12 * 3600e3) return;
+  if (p.hanaAt && Date.now() - p.hanaAt < 12 * 3600e3 && p.optV) return;   // 판 -132: 선택관광 표시가 없는 예전 계획은 한 번 바로 다시 받음
   planHanaRefresh(p, true).then(r => { if (r.ch.length) { toast(`🔗 하나투어 일정이 바뀌어 ${r.ch.length}가지를 고쳤어요 · ⋯ 더보기에서 보기`, false, 7000); after && after(); } }).catch(() => {});
 }
 // ---------- ✨ 여행 도우미 (2026-11-15 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게') ----------
@@ -8892,10 +8896,11 @@ function planBotCtx(p) {   // 계획 자료를 글로 (Claude에게 보낼 것)
     const w = wx && wx.days && wx.days[d]; if (w) L.push(`날씨(${wx.src === 'fc' ? '예보' : '작년 같은 날'}): ${planWxLine(w)}`);
     for (const x of planItems(p, d)) {
       const kk = (PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1];
-      L.push(`- ${x.t || '시각 없음'} [${kk}] ${x.n}${x.m ? ` — ${cut(x.m, 200)}` : ''}${x.ok ? ' (다녀옴)' : ''}`);
+      L.push(`- ${x.t || '시각 없음'} [${kk}${x.opt ? ` · 선택관광${x.opt === 2 ? "(하나투어 표기 '스페셜포함')" : ''}` : ''}] ${x.n}${x.m ? ` — ${cut(x.m, 200)}` : ''}${x.ok ? ' (다녀옴)' : ''}`);
       if (x.x) L.push(`  ${planXLab(p).replace(/^\S+\s*/, '')}: ${cut(x.x, 700).replace(/\n/g, ' / ')}`);
     }
   }
+  { const O = (p.it || []).filter(x => x.opt); L.push(O.length ? `\n[선택관광 · 여행사 일정표 분류 그대로] ${O.map(x => `${x.d + 1}일차 ${x.n}${x.opt === 2 ? "('스페셜포함')" : ''}`).join(' / ')} · 비용은 자료에 없음 · '스페셜포함'은 하나투어가 쓴 표기 그대로이고 상품 값에 들어 있다는 뜻으로 보이지만 확정은 여행사·가이드에게 확인하라고 답할 것` : (planIsHana(p) ? '\n[선택관광] 이 계획엔 선택관광 표시가 아직 없어요(하나투어 일정을 다시 받으면 생겨요)' : '')); }
   try { const P = planPrepList(p, wx).S; L.push('\n[여행 준비 목록]'); for (const s of P) L.push(`${s.h}: ${s.it.map(i => i.t + (i.w ? ` (${cut(i.w, 120)})` : '')).join(' / ')}`); } catch {}
   return { txt: L.join('\n').slice(0, 60000), today: K != null && K >= 0 && K < p.nd ? `오늘은 ${K + 1}일차(${planDayLabel(p, K)})예요.` : K != null && K < 0 ? `오늘은 출발 ${-K}일 전이에요.` : '여행 날짜가 지났거나 정해지지 않았어요.' };
 }
@@ -9624,6 +9629,7 @@ function viewPlanOne(id) {
     return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => editItem(x),
       extra: [
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
+        x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
       btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
