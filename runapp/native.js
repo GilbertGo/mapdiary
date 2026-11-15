@@ -28,14 +28,18 @@ if (Capacitor.isNativePlatform()) {
   // 알림 창에 "기록 중"을 띄워 두는 동안 안드로이드가 앱을 멈추지 않아요
   const BG = registerPlugin('BackgroundGeolocation');
   const watchers = new Map(); let seq = 0, askedNoti = false;
-  navigator.geolocation.watchPosition = (ok, err) => {
-    const key = ++seq;
+  // 화면을 옮기면(주소가 바뀌면) 웹 화면이 새로 열려 지난 화면의 위치 받기가 주인 없이 남아요 → 지난 것은 지우고, 지금 것만 적어 둬요(2026-11-15 자동 기록)
+  const BGK = 'mdBgIds', bgKeep = () => { try { sessionStorage.setItem(BGK, JSON.stringify([...watchers.values()].filter(v => v !== 'gone'))); } catch {} };
+  try { const old = JSON.parse(sessionStorage.getItem(BGK) || '[]'); sessionStorage.removeItem(BGK); (Array.isArray(old) ? old : []).forEach(id => BG.removeWatcher({ id }).catch(() => {})); } catch {}
+  // opt.mdBg = { title, message, distanceFilter }: 자동 기록은 알림 글을 'MPD 자동 기록 중'으로, 20m 움직일 때만 받아 배터리를 아껴요
+  navigator.geolocation.watchPosition = (ok, err, opt) => {
+    const key = ++seq, mb = (opt && opt.mdBg) || {};
     (async () => {
       if (!askedNoti) { askedNoti = true; try { await LocalNotifications.requestPermissions(); } catch {} }   // 안드로이드 13+: 알림 허락이 있어야 화면이 꺼져도 기록돼요
       const id = await BG.addWatcher({
-        backgroundTitle: `${APP.name} 기록 중`,
-        backgroundMessage: `화면을 꺼도 ${APP.noti}을 계속 기록해요`,
-        requestPermissions: true, stale: false, distanceFilter: 0,
+        backgroundTitle: mb.title || `${APP.name} 기록 중`,
+        backgroundMessage: mb.message || `화면을 꺼도 ${APP.noti}을 계속 기록해요`,
+        requestPermissions: true, stale: false, distanceFilter: mb.distanceFilter || 0,
       }, (loc, e) => {
         if (e) {
           // 묻지 않고 바로 설정을 열어요(2026-11-07 '귀찮게 하지 마'). 한 번 켜는 동안 한 번만
@@ -48,12 +52,14 @@ if (Capacitor.isNativePlatform()) {
         ok({ coords: { latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, altitude: loc.altitude ?? null, altitudeAccuracy: loc.altitudeAccuracy ?? null, speed: loc.speed ?? null, heading: loc.bearing ?? null }, timestamp: loc.time || Date.now() });
       });
       if (watchers.has(key) && watchers.get(key) === 'gone') { BG.removeWatcher({ id }); watchers.delete(key); } else watchers.set(key, id);
+      bgKeep();
     })().catch(e => err && err({ code: 2, message: String(e) }));
     return key;
   };
   navigator.geolocation.clearWatch = key => {
     const id = watchers.get(key);
     if (id && id !== 'gone') { BG.removeWatcher({ id }); watchers.delete(key); } else watchers.set(key, 'gone');   // 아직 시작 중이면 시작하자마자 끄기
+    bgKeep();
   };
 
   // ---------- 목소리 안내: 안드로이드 웹뷰에는 speechSynthesis가 없어서 휴대폰 TTS로 ----------
