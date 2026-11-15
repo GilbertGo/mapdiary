@@ -1162,6 +1162,7 @@ html.tv-page .tv-tile b{font-weight:600!important}
 html.tv-page .tv-tile .av span{font-weight:600!important}
 html.tv-page .tv-topbar .n-ib.pill,html.tv-page .tv-swap{font-weight:500!important}
 html.tv-page .tv-leg b{font-weight:500!important}
+html.tv-page .tv-it .tv-b button,html.tv-page .tv-it .tv-b a{font:500 13px Pretendard,sans-serif!important;color:#1D7FA0}
 </style>
 </head>
 <body>
@@ -3266,9 +3267,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-178-light';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-179-fix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✍ 여행 일정 글자를 가볍게: 굵은 글씨는 큰 제목만 · 🎨 사진을 못 찾은 일정 칸과 숙소 칸에는 종류별 그림 타일을 넣어요 · 🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사와 마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기, 자전거, 차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기는 나 → 자동 기록, 웹과 아이폰과 MPD Run은 지금처럼 눌러서 기록';
+const UI_NOTES = '🍳 숙소 뒤에 붙어 있던 아침 식사는 그날 맨 앞으로 옮겨요 · 공연 칸에 엉뚱한 우주 사진이 나오지 않게 · ✍ 여행 일정 글자를 가볍게: 굵은 글씨는 큰 제목만 · 🎨 사진을 못 찾은 일정 칸과 숙소 칸에는 종류별 그림 타일을 넣어요 · 🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사와 마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기, 자전거, 차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기는 나 → 자동 기록, 웹과 아이폰과 MPD Run은 지금처럼 눌러서 기록';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8556,6 +8557,9 @@ function planSelfCheck(p) {
   { const keep = []; for (const x of it) { const y = keep.find(z => z.d === x.d && z.k === x.k && nz(z.n) === nz(x.n) && (!z.t || !x.t || z.t === x.t));
       if (y && !x.ok && !x.man) { if (!y.x && x.x) y.x = x.x; if (!y.m && x.m) y.m = x.m; if (!Number.isFinite(y.lat) && Number.isFinite(x.lat)) { y.lat = x.lat; y.lng = x.lng; y.ap = x.ap; } fixed.push(`${x.d + 1}일차 '${x.n}'이(가) 두 번 있어 하나로`); continue; }
       keep.push(x); } p.it = keep; }
+  // ⑥ 판 -179 (사용자 2일차 캡처: '호텔 조식 07:00 · 천문산 가기 전 든든히'가 그날 숙소 뒤 맨 끝에): 아침 식사(이름 조식·아침, 또는 10시 전 식사)가 그날 숙소 뒤에 있으면 그날 맨 앞으로
+  for (let d = 0; d < p.nd; d++) { const L = p.it.filter(x => x.d === d), si = L.findIndex(x => x.k === 'stay'); if (si < 0) continue;
+    L.slice(si + 1).filter(x => x.k === 'food' && !x.ok && !x.man && (/조식|아침|브런치|breakfast/i.test(x.n || '') || /^0\d:/.test(x.t || ''))).forEach(x => { const f = p.it.findIndex(y => y.d === d); p.it.splice(p.it.indexOf(x), 1); p.it.splice(f, 0, x); fixed.push(`${d + 1}일차 '${x.n}'(아침)을 숙소 뒤에서 그날 맨 앞으로`); }); }
   // ④ 앞 묶음 일정에 이미 든 이름(여행사 설명 카드) → 앞 일정에 합침
   { const r = planFoldDup(p.it); if (r.n) { p.it = r.it; r.drop.forEach(x => fixed.push(`${x.d + 1}일차 '${x.n}'은(는) 앞 일정에 들어 있어 합침`)); } }
   // ⑤ 사람이 봐야 할 것
@@ -10868,7 +10872,7 @@ function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, �
 // 정확한 위치면 그 자리 둘레 사진(예전대로) → 없거나 대략 위치면 '이름'으로 위키백과 대표 사진 → 식사·마사지처럼 그 가게 사진을 못 구하는 곳은 메뉴·종류로 위키미디어 공용 사진 + '예시' 딱지. 못 찾으면 칸 없음(그림으로 채우지 않음)
 var PLAN_TH_EN = [[/발\s*마사지|족욕/, 'foot massage'], [/마사지|안마|스파/, 'massage therapy'], [/닭백숙|백숙|삼계탕/, 'samgyetang'], [/훠궈|샤브/, 'hot pot chinese'], [/삼겹|돼지/, 'samgyeopsal'], [/버섯/, 'mushroom hot pot'], [/딤섬/, 'dim sum'], [/국수|면/, 'chinese noodles'],
   [/한식|비빔밥/, 'korean food bibimbap'], [/라멘/, 'ramen'], [/스시|초밥/, 'sushi'], [/오코노미/, 'okonomiyaki'], [/타코야키/, 'takoyaki'], [/규카츠|돈카츠/, 'tonkatsu'], [/야키니쿠|고기/, 'yakiniku'],
-  [/현지식|중식|특식|중국/, 'Hunan cuisine dishes'], [/일식|가정식/, 'Japanese cuisine'], [/조식|아침/, 'breakfast buffet'], [/카페|다방|커피/, 'cafe coffee'], [/야경/, 'night view city lights']];
+  [/현지식|중식|특식|중국/, 'Hunan cuisine dishes'], [/일식|가정식/, 'Japanese cuisine'], [/조식|아침/, 'breakfast buffet'], [/카페|다방|커피/, 'cafe coffee'], [/매력상서/, 'Charming Xiangxi show'], [/천문호선|천문호|호선/, 'Tianmen Fox Fairy show'], [/쇼|공연/, 'theatre stage performance']];
 function planThQ(x) {   // 이름에서 찾을 말: 첫 이름만 (' + '·'·'·괄호·[ ] 앞), VIP 좌석 같은 말 빼고
   const n = String(x.n || '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ');
   if (x.k === 'food') { const m = n.split(/\s*·\s*/).slice(1).join(' ').trim(); return { menu: m || n, q: n.split(/\s*·\s*/)[0].trim() }; }
@@ -10884,10 +10888,10 @@ async function planThName(x) {
       if (hit) return { u: hit.thumbnail.source }; } catch {}
   }
   // ② 식사·마사지·그 밖: 메뉴·종류로 위키미디어 공용 사진 (그 가게 사진이 아니라 '예시')
-  const txt = (Q.menu || '') + ' ' + x.n, en = (PLAN_TH_EN.find(([re]) => re.test(txt)) || [])[1] || (x.k === 'food' ? 'Chinese cuisine dishes' : x.k === 'show' ? 'stage performance show' : '');
+  const txt = (Q.menu || '') + ' ' + x.n, en = (PLAN_TH_EN.find(([re]) => re.test(txt)) || [])[1] || (x.k === 'food' ? 'Chinese cuisine dishes' : x.k === 'show' ? 'theatre stage performance' : '');
   if (!en) return { u: '' };
   try { const d = await J('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=' + encodeURIComponent(en + ' filetype:bitmap') + '&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=480');
-    const ps = Object.values((d.query && d.query.pages) || {}).sort((a, b) => a.index - b.index).map(p0 => p0.imageinfo && p0.imageinfo[0]).filter(i => i && /jpeg/.test(i.mime) && i.width >= 600 && i.width >= i.height * .8 && i.thumburl);
+    const ps = Object.values((d.query && d.query.pages) || {}).sort((a, b) => a.index - b.index).filter(p0 => !/earth|nasa|space|satellite|orbit|planet|map|diagram|logo|flag|chart|night lights/i.test(p0.title || '')).map(p0 => p0.imageinfo && p0.imageinfo[0]).filter(i => i && /jpeg/.test(i.mime) && i.width >= 600 && i.width >= i.height * .8 && i.thumburl);
     const U = planThumb.used || new Set(), f = ps.find(i => !U.has(i.thumburl)) || ps[0]; if (f) return { u: f.thumburl, ex: 1 }; } catch {}
   return { u: '' };
 }
@@ -10904,9 +10908,9 @@ function planThumb(x) {
   const exact = Number.isFinite(x.lat) && !x.ap && !x.near && x.k !== 'food';
   const box = el('div', { class: 'tv-th' }), U = () => planThumb.used || (planThumb.used = new Set());
   let show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: '예시' })); return true; };
-  const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName', {}) || {};
+  const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName2', {}) || {};
   const byName = async () => { const c = NC()[nkey]; if (c && (c.u || Date.now() - c.at < 3 * 864e5)) return c; const r = await planThName(x); const all = NC(); all[nkey] = { u: r.u || '', ex: r.ex || 0, at: Date.now() };
-    const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName', all); return all[nkey]; };
+    const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName2', all); return all[nkey]; };
   const pkey = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, pc = exact ? (ls.get('placeInfo', {}) || {})[pkey] : null, pu = r => r && r.ph && r.ph[0] && r.ph[0].u;
   const nc = NC()[nkey];
   if (pc && show(pu(pc))) return box;
