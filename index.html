@@ -677,6 +677,7 @@ html.tv-page a{color:inherit}
 .tv-topbar{position:absolute;top:0;left:0;right:0;z-index:30;display:flex;gap:10px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0}
 .tv-topbar .sp{flex:1}
 .tv-topbar .n-ib{background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.n-ib.pill{width:auto;padding:0 14px 0 11px;border-radius:999px;display:flex;align-items:center;gap:5px;font:700 14px Pretendard,sans-serif;color:#15202B}
 .tv-topbar .n-ib.pill{width:auto;padding:0 14px 0 11px;border-radius:999px;display:flex;align-items:center;gap:5px;font:700 14px Pretendard,sans-serif}
 .tv-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.tv-chips::-webkit-scrollbar{display:none}
 .tv-chips button{flex:none;padding:8px 14px;border-radius:20px;background:#fff;color:#6B7684;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(21,32,43,.05)}
@@ -1374,7 +1375,8 @@ async function photoList(t) {
   if (String(t).startsWith('album_')) { const a = albumGet(t); return a ? (await Promise.all(a.days.map(photoList))).flat() : []; }   // 날마다 순서 그대로 (날은 차례대로)   // 여행 전체: 모든 날의 사진
   try {
     const db = await photoDb();
-    return phOrdered(t, await new Promise((res, rej) => { const q = db.transaction('photos').objectStore('photos').index('t').getAll(t); q.onsuccess = () => res(q.result.sort((a, b) => a.ts - b.ts)); q.onerror = () => rej(q.error); }));
+    const G = phGoneAll();
+    return phOrdered(t, await new Promise((res, rej) => { const q = db.transaction('photos').objectStore('photos').index('t').getAll(t); q.onsuccess = () => res(q.result.filter(r => !(String(r.id) in G)).sort((a, b) => a.ts - b.ts)); q.onerror = () => rej(q.error); }));
   } catch { return []; }
 }
 // 사진 순서(2026-11-13 사용자 '편집화면에 사진 순서 바꾸기'): walkPhOrder:{기록ID} = [사진 id] 차례, 없으면 찍은 시각 순, 나중에 넣은 사진은 맨 뒤
@@ -1405,11 +1407,22 @@ function videoPoster(file, max) {
   });
 }
 const fmtVidDur = s => s > 0 ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '';
+// 🗑 지운 사진 묘비(2026-11-15 사용자 경고 '지운 사진이 자꾸 살아나'): phGone = { 사진id: 지운 시각 }. 클라우드·백업·앱끼리 넘기기 어디서 와도 다시 넣지 않아요
+function phGoneAll() { const g = ls.get('phGone', {}); return g && typeof g === 'object' && !Array.isArray(g) ? g : {}; }
+function phIsGone(id) { return id != null && String(id) in phGoneAll(); }
+function phGoneAdd(ids, more) {
+  const g = Object.assign({}, more && typeof more === 'object' && !Array.isArray(more) ? more : {}, phGoneAll()), now = Date.now();
+  (ids || []).forEach(id => { if (id != null && !(String(id) in g)) g[String(id)] = now; });
+  const k = Object.keys(g); if (k.length > 5000) k.sort((a, b) => g[a] - g[b]).slice(0, k.length - 5000).forEach(x => delete g[x]);
+  ls.set('phGone', g); return g;
+}
 async function photoPut(rec) {
+  if (rec && phIsGone(rec.id)) return;   // 지운 사진은 어디서 와도 다시 안 넣어요
   const db = await photoDb();
   return new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(rec); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
 }
-async function photoDel(id) {
+async function photoDel(id, keep) {
+  if (!keep) phGoneAdd([id]);   // 지운 표시를 먼저 남겨요(다른 기기·클라우드에서 다시 오지 않게)
   const db = await photoDb();
   return new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete = res; tx.onerror = res; });
 }
@@ -3142,9 +3155,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-152-apply2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-153-gone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 계획 도우미의 반영하기 단추를 산호색으로 눈에 띄게 · 같은 제안이 두 번 보이지 않게 가장 마지막 제안만 목록과 단추를 보여 줘요 · 여행 계획·이야기 목록은 사진과 이름을 흰 카드 하나로 묶어 어느 사진의 이름인지 헷갈리지 않게';
+const UI_NOTES = '🗑 지운 사진·기록이 다시 살아나지 않게 고쳤어요 · 로그인한 다른 휴대폰·클라우드·백업에서도 지운 것은 다시 안 들어오고, 클라우드 사본도 지워요 · 첫 화면을 깔끔하게: 사진 위 여행 알약·겹치는 설명 글·연 곳 알약을 뺐어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4389,13 +4402,31 @@ async function cloudSync(quiet) {
     const gone = ls.get('cloudGone', []);
     for (const id of gone) { await cfetch(`recs/${id}`, { method: 'DELETE' }).catch(() => {}); delete sig[id]; }
     if (gone.length) ls.set('cloudGone', []);
+    // 🗑 지운 사진: 다른 기기에서 지운 것까지 모아(x/one의 phGone) 이 휴대폰에서도 지우고, 클라우드 사본(ph/{id})도 지워요
+    const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}') || {}; } catch {}
+    const PG = phGoneAdd([], one.phGone), pgCl = ls.get('phGoneCl', {}) || {};
+    for (const pid of Object.keys(PG)) {
+      try { const db = await photoDb(); await new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(pid); tx.oncomplete = res; tx.onerror = res; }); } catch {}
+      delete phSent[pid];
+      if (!pgCl[pid]) { try { await cfetch(`ph/${pid}`, { method: 'DELETE' }); pgCl[pid] = 1; } catch {} }
+    }
+    ls.set('phGoneCl', pgCl);
+    // 🗑 지운 기록도 같은 식으로: 다른 기기에서 지운 것은 여기서도 지우고, 클라우드에서도 지워요(되살아나지 않게)
+    if (one.recGone && typeof one.recGone === 'object' && !Array.isArray(one.recGone)) ls.set('recGone', Object.assign({}, one.recGone, goneAll()));
+    { const RG = goneAll(), rgCl = ls.get('recGoneCl', {}) || {};
+      for (const id of Object.keys(RG)) {
+        if (id === live) continue;
+        if (localStorage.getItem('track:' + id) != null) await recWipe(id);
+        if (!rgCl[id]) { try { await cfetch(`recs/${id}`, { method: 'DELETE' }); rgCl[id] = 1; delete sig[id]; } catch {} }
+      }
+      ls.set('recGoneCl', rgCl); }
     const remote = new Map((await cList('recs')).map(x => [x.id, x]));
     const local = new Set(); pastTrips().forEach(x => { if (!x.album) local.add(x.t); else (albumGet(x.t)?.days || []).forEach(d => local.add(d)); });
     // 1) 가져오기: 클라우드에만 있거나, 여기선 안 고쳤는데 클라우드가 바뀐 것
     let k = 0;
     for (const [id, r] of remote) {
       k++; if (k % 3 === 1) cloudProgSet(`맞추는 중… 받아 보는 중 ${k}/${remote.size}`);
-      if (id === live) continue;
+      if (id === live || isGone(id)) continue;
       let d; try { d = JSON.parse(r.d); } catch { continue; }
       if (!d || typeof d.ls !== 'object') continue;
       const has = local.has(id), mine = has ? recSig(recPack(id), (await photoImgs(id)).map(p => p.id).sort()) : null;
@@ -4403,7 +4434,7 @@ async function cloudSync(quiet) {
       for (const k of MD_KEYS) { const v = d.ls[k]; if (typeof v === 'string') localStorage.setItem(k + id, v); else localStorage.removeItem(k + id); }
       const havePh = new Set((await photoImgs(id)).map(p => p.id));
       for (const pid of Array.isArray(d.ph) ? d.ph : []) {
-        if (havePh.has(pid)) continue;
+        if (havePh.has(pid) || phIsGone(pid)) continue;
         try { const s = await cGet(`ph/${pid}`); if (!s) continue; const ph = JSON.parse(s); if (typeof ph.blob !== 'string' || !ph.blob.startsWith('data:image/')) continue;
           await photoPut({ id: pid, t: id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob() });
           phSent[pid] = 1; phDown++; cloudProgSet(`맞추는 중… 받는 중 ${k}/${remote.size} · 사진 ${phDown}장`); } catch {}
@@ -4427,13 +4458,12 @@ async function cloudSync(quiet) {
       ls.set('cloudSig', sig); ls.set('cloudPh', phSent);
     }
     // 3) 여행 묶음·모임방 목록·이름 등 (합치기)
-    const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}'); } catch {}
     if (Array.isArray(one.albums)) { const m = albumsLoad(); one.albums.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); }
     if (Array.isArray(one.rooms)) ls.set('rooms', [...roomsLoad(), ...one.rooms.filter(x => x && !roomsLoad().some(y => y.code === x.code))]);
     if (Array.isArray(one.myPosts)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...one.myPosts])].slice(-300));
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone);   // 🗓 여행 계획도 모음에(2026-11-14)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}) });
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), phGone: phGoneAll(), recGone: goneAll() });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
@@ -4609,10 +4639,14 @@ function rxSet(id, miss, src, sig) {   // 저장 공간이 꽉 차 recRx도 못 
 function goneAll() { const g = ls.get('recGone', {}); return g && typeof g === 'object' && !Array.isArray(g) ? g : {}; }
 function isGone(id) { return Object.prototype.hasOwnProperty.call(goneAll(), id); }
 function goneAdd(ids) { if (!ids.length) return; const g = goneAll(), day = Math.floor(Date.now() / 864e5); ids.forEach(id => { if (!(id in g)) g[id] = day; }); ls.set('recGone', g); }
-// 지우는 기록 중 바깥(시계·다른 앱)에서 온 것만 남겨요. 이 휴대폰에서 만든 기록은 다시 올 곳이 없어서 남길 필요가 없어요
-function goneMark(ids) {
-  const sg = Object.keys(ls.get('syncGot', {}) || {}), wg = ls.get('watchGot', {}) || {};
-  goneAdd(ids.filter(id => /^run_w/.test(id) || id in wg || sg.some(k => k.endsWith('/' + id))));
+// 지운 기록은 모두 묘비를 남겨요(2026-11-15 사용자 경고: 로그인한 다른 기기가 다시 올려 되살아날 수 있어서). 클라우드 맞추기 때 x/one으로 다른 기기에도 퍼져요
+function goneMark(ids) { goneAdd(ids); }
+// 다른 기기에서 지운 기록을 이 휴대폰에서도 지워요(사진·별표 포함, 여행 묶음에서도 빼요)
+async function recWipe(id) {
+  for (const p of await photoList(id)) await photoDel(p.id);
+  MD_KEYS.forEach(k => { try { localStorage.removeItem(k + id); } catch {} });
+  const aid = ls.get('walkAlbum:' + id, null), al = aid && albumGet(aid);
+  if (al) { al.days = al.days.filter(z => z !== id); if (al.days.length) albumSave(al); else ls.set('albums', albumsLoad().filter(a => a.id !== aid)); }
 }
 // recHeld = { 기록ID: { src, at } }: '예전에 받았는데 지금 길이 없음'은 지운 것 같지만 확정하지 않아요(명시적으로 지운 이력이 없으니까).
 // 가져오지 않고 보류만 해 두고, 시계 카드의 '다시 가져오기'로 언제든 되돌릴 수 있어요. recGone(확정)은 내 MPD에서 직접 지운 것만
@@ -6126,7 +6160,7 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
   const warns = [planMiss ? '이 계획을 이 휴대폰(지금 연 앱·브라우저)에서 찾지 못했어요. 계획을 만든 곳(MPD 앱 또는 크롬)에서 🗓 여행 계획 → 🎬 미리 보기 영상을 눌러 주세요.' : null,
     S.plan && !filmSrc(S) ? `'${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요. 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요.` : null].filter(Boolean);
   app.replaceChildren(el('div', { class: 'fm' },
-    FILM_TEST ? filmTestHead() : el('div', { class: 'n-top' }, el('a', { class: 'n-ib', href: back, 'aria-label': S.plan ? '여행 계획으로' : '내 MPD로' }, cSvg('back', 20)), el('span', { class: 'sp' })),
+    FILM_TEST ? filmTestHead() : el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: back, 'aria-label': backLbl(back) + '(으)로' }, cSvg('back', 18), el('span', { text: backLbl(back) })), el('span', { class: 'sp' })),
     IN_KAKAO && !FILM_TEST ? (() => { const kb = el('button', { class: 'fm-go', type: 'button', text: '🌐 크롬에서 열기', onclick: () => filmKakaoOut(S.plan, t => { kb.textContent = t; }) });
       return el('div', { class: 'fm-card', style: 'background:#FFF6EE' }, el('div', { style: 'font-weight:800', text: '카톡 안 화면에서는 만든 영상을 저장하거나 보낼 수 없어요' }),
         el('div', { class: 'sub', text: S.plan ? '크롬으로 넘어가면 이 계획도 같이 가서 바로 영상을 만들 수 있어요.' : '크롬에서 열어 주세요. 기록은 지금 연 곳(카톡 안 화면)에만 있을 수 있어요 — MPD 앱이나 기록한 브라우저에서 만들어 주세요.' }), kb); })() : null,
@@ -8713,11 +8747,11 @@ async function viewPlan() {
   document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15)
   roleBar('member', '여행 계획');
   app.replaceChildren(el('div', { class: 'stack' },
-    el('div', { class: 'n-top' }, el('a', { class: 'n-ib', href: './', 'aria-label': '처음으로' }, cSvg('back', 20)), el('span', { class: 'sp' })),
+    el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' }),
+      el('button', { class: 'n-ib pill', type: 'button', onclick: () => document.getElementById('plNew')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, el('span', { text: '+ 새 계획' }))),
     el('h1', { class: 'n-lt', text: '여행 계획' }),
-    el('div', { class: 'n-ls', text: '날마다 갈 곳을 지도에 놓아 두고, 여행 중엔 오늘 갈 곳과 길찾기를 바로 봐요' }),
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
-    el('div', { class: 'n-gh', text: '새 계획' }),
+    el('div', { class: 'n-gh', id: 'plNew', text: '새 계획' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
@@ -10156,10 +10190,9 @@ function planHomeCard() {
   const st = ls.get('planPrep:' + p.id, {}) || {}, done = Object.values(st).filter(Boolean).length;
   return el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), style: 'display:block;text-decoration:none;color:#fff;border-radius:20px;padding:16px 18px;background:linear-gradient(135deg,#0277BD,#1D9EC0);box-shadow:0 6px 18px rgba(2,119,189,.25)' },
     el('div', { style: 'font-size:13px;opacity:.9;font-weight:700', text: on ? `여행 중 · ${k + 1}일차 · ${planDayLabel(p, k)}` : `D-${-k} · ${planDayLabel(p, 0)} 출발` }),
-    el('div', { style: 'font-size:22px;font-weight:900;margin:2px 0 6px', text: p.name }),
-    on ? el('div', { style: 'font-size:15px;font-weight:700', text: nx ? `▶ 다음: ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : el('div', { style: 'font-size:15px', text: `🧳 준비 ${done}개 체크 · 날씨·준비물·입국신고서 보기` }),
-    w[on ? k : 0] ? el('div', { style: 'font-size:14px;opacity:.95;margin-top:4px', text: planWxLine(w[on ? k : 0], true) }) : null,
-    el('div', { style: 'font-size:13px;font-weight:800;margin-top:8px', text: on ? '📅 오늘 화면 열기 ›' : '📅 여행 화면 열기 ›' }));
+    el('div', { style: 'font-size:22px;font-weight:900;margin:2px 0 4px', text: p.name }),
+    on ? el('div', { style: 'font-size:15px;font-weight:700', text: nx ? `▶ 다음: ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null,
+    el('div', { style: 'font-size:14px;opacity:.95;margin-top:4px', text: [on ? '' : (done ? `🧳 준비 ${done}개 했어요` : '🧳 여행 준비'), w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : ''].filter(Boolean).join('  ·  ') + ' ›' }));   // 2026-11-15 '중복된 정보 빼': 설명·'여행 화면 열기' 줄 뺌
 }
 // 판 -135 (개선 지시서 6번): 보여 주는 말은 한 곳(PLAN_SAY_CN)에서 — 준비 창·🗣 중국어 메뉴가 같은 자료를 씀
 //   호텔 가는 말: 확정된 호텔(‘예정 호텔 n곳 중 한 곳’이 아님)이고 이름에 중국어(한자)가 있을 때만 이름을 넣어요. 아니면 '확인 안 된 호텔'이라고 알려요
@@ -10419,11 +10452,13 @@ function tvItem(o) {
         el('button', { class: 'tv-n', text: o.n, onclick: o.onName }), ...(o.extra || []).filter(Boolean),
         o.btns && o.btns.filter(Boolean).length ? el('div', { class: 'tv-b' }, ...o.btns.filter(Boolean)) : null)));
 }
+// 뒤로 단추 이름(2026-11-15 사용자 '화살표만 있으면 어쩌라는 거야'): ‹ 만 두지 말고 어디로 가는지 글자로
+function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '이야기' : '뒤로'; }
 function tvTop(back, ...acts) {   // 사진 위 동그란 단추 줄 (뒤로 · 오른쪽 단추들)
   // 넷째 값(글자)이 있으면 그림 + 글자 알약 (판 -134: 공유 단추가 초대인 줄 몰라서 '초대')
   const ib = (svg, label, on, txt) => { const cls = 'n-ib' + (txt ? ' pill' : ''), kids = [cSvg(svg, 20), txt ? el('span', { text: txt }) : null].filter(Boolean);
     return typeof on === 'string' ? el('a', { class: cls, href: on, 'aria-label': label, title: label }, ...kids) : el('button', { class: cls, type: 'button', 'aria-label': label, title: label, onclick: on }, ...kids); };
-  return el('div', { class: 'tv-topbar' }, ib('back', '뒤로', back), el('span', { class: 'sp' }), ...acts.filter(Boolean).map(a => ib(a[0], a[1], a[2], a[3])));
+  return el('div', { class: 'tv-topbar' }, ib('back', backLbl(back) + '(으)로', back, typeof back === 'string' ? backLbl(back) : '뒤로'), el('span', { class: 'sp' }), ...acts.filter(Boolean).map(a => ib(a[0], a[1], a[2], a[3])));
 }
 function tvBar(p, on) {   // 여행 화면 아래 메뉴
   const id = encodeURIComponent(p.id), nw = el('span', { class: 'n', style: 'display:none' });
@@ -10978,7 +11013,8 @@ function backupLs(ids) {
   for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) out[k + id] = v; }
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
   for (const k of ['tripPlans', 'planGone']) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }   // 🗓 여행 계획도 백업에
-  const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
+  const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;
+  const pg = localStorage.getItem('phGone'); if (pg != null) out.phGone = pg;   // 지운 사진 목록도(불러온 휴대폰에서 되살아나지 않게)   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
   return out;
 }
 const backupPh = async ph => ph.v && ph.blob && ph.blob.size > 60 * 1048576 ? null   // 60MB 넘는 동영상은 백업 파일에서 빼요(파일이 너무 커져서)
@@ -11066,13 +11102,15 @@ async function backupLoad(file) {
       else if (cur == null) localStorage.setItem(k, v);
     } else if (k === 'albums') { const a = parse(v); if (Array.isArray(a)) { const m = albumsLoad(); a.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); } }
     else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
+    else if (k === 'phGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) phGoneAdd([], a); }
     else if (k === 'recGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) ls.set('recGone', Object.assign({}, a, goneAll())); }
     else if (k === 'tripPlans') planMerge(parse(v), parse(data.ls.planGone));
     else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
+  { const pg = data.ls && parse(data.ls.phGone); if (pg && typeof pg === 'object' && !Array.isArray(pg)) phGoneAdd([], pg); }
   for (const ph of Array.isArray(data.photos) ? data.photos : []) {
-    try { if (!ph || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob)) continue;
+    try { if (!ph || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob) || phIsGone(ph.id)) continue;
       const vid = ph.blob.startsWith('data:video/');
       await photoPut({ id: String(ph.id), t: String(ph.t), ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) }); nPh++; } catch {}
   }
@@ -11126,7 +11164,7 @@ async function syncPull() {
       const how = same ? 'fill' : WEAR_SELF ? 'merge' : 'over';
       const { want, wrote } = recMerge(it.id, d.ls, how), phIds = [], have = new Set((await photoList(it.id)).map(p => p.id)); let phNew = 0;
       for (const ph of Array.isArray(d.photos) ? d.photos : []) {
-        try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob)) continue;
+        try { if (!ph || String(ph.t) !== it.id || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob) || phIsGone(ph.id)) continue;
           phIds.push(String(ph.id)); if (same && have.has(String(ph.id))) continue;
           const vid = ph.blob.startsWith('data:video/');
           await photoPut({ id: String(ph.id), t: it.id, ts: +ph.ts || 0, lat: num(ph.lat), lng: num(ph.lng), m: typeof ph.m === 'string' ? ph.m.slice(0, 80) : undefined, thumb: String(ph.thumb || ''), blob: await (await fetch(ph.blob)).blob(), ...(vid ? { v: 1, dur: +ph.dur || 0 } : {}) });
@@ -13764,31 +13802,25 @@ function viewLanding() {
   document.documentElement.classList.add('c-page', 'c-home'); document.title = 'Map Photo Diary';
   // 시안 한 화면 아래(스크롤): 예전 첫 화면에 있던 들어가는 길은 그대로 한 줄씩
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
-    el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), el('small', { text: sub })), el('span', { class: 'go', text: '›' }));
+    el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), ...(sub ? [el('small', { text: sub })] : [])), el('span', { class: 'go', text: '›' }));
+  const tripCard = (() => { try { return planHomeCard(); } catch { return null; } })();
   const heroEl = cHomePhoto();
-  try {   // 여행 중·여행 30일 전이면 첫 화면 사진 위에도 작은 알약(누르면 오늘 화면)
-    const pc = planCur(); if (pc) { const k = planToday(pc), its = k >= 0 ? planItems(pc, k) : [], ni = k >= 0 ? planNext(pc, k) : -1, nx = ni >= 0 ? its[ni] : null;
-      if (getComputedStyle(heroEl).position === 'static') heroEl.style.position = 'relative';
-      heroEl.append(el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(pc.id), style: 'position:absolute;left:16px;right:16px;top:calc(122px + env(safe-area-inset-top,0px));z-index:5;display:block;text-decoration:none;color:#102A43;background:rgba(255,255,255,.92);border-radius:16px;padding:10px 14px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2)' },
-        el('div', { style: 'font-size:12px;color:#0277BD', text: k >= 0 ? `🗓 ${pc.name} · ${k + 1}일차` : `🗓 ${pc.name} · D-${-k}` }),
-        el('div', { style: 'font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: k >= 0 ? (nx ? `▶ 다음 ${nx.t ? nx.t + ' ' : ''}${nx.n} ›` : '오늘 일정 끝 · 오늘 화면 ›') : '🧳 여행 준비 · 날씨 · 지도 받기 ›' }))); }
-  } catch {}
+  // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
   app.replaceChildren(heroEl,
     el('div', { class: 'stack c-ui', style: 'gap:16px;margin-top:18px' },
-      (() => { try { return planHomeCard(); } catch { return null; } })(),
+      tripCard,
       memSlot,
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
-        row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `지금까지 남긴 기록 ${n}개 · 목록과 달력` : '남긴 기록을 목록과 달력으로'; })(), './?my=1'),
-        row('🗓', '여행 계획', (() => { try { const a = planAll(), on = a.find(p => { const k = planToday(p); return k != null && k >= 0 && k < p.nd; }), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0];
-          return on ? `${on.name} · ${planStatus(on)}` : up ? `${up.name} · ${planStatus(up)}` : '여행사 일정을 넣으면 날마다 갈 곳이 지도에'; } catch { return '여행 전 일정 계획'; } })(), './?plan=1'),
-        row('👥', '모임방', '코드를 아는 사람끼리 MPD 모아 보기', './?room=1'),
-        row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', './?album=1'),
-        row('🧪', '추억 만들기', '고른 사진으로 추억 카드 (실험실)', './?lab=mem'),
-        row('🎮', '게임', '밥값 내기 · 2048 · 오목', './?game=1'),
-        row('🎙', '대화 정리', '대화를 듣고 정리해서 공유', './?talk=1')),
+        row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
+        row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
+        row('👥', '모임방', '', './?room=1'),
+        row('📸', '가족 앨범', '', './?album=1'),
+        row('🧪', '추억 만들기', '', './?lab=mem'),
+        row('🎮', '게임', '', './?game=1'),
+        row('🎙', '대화 정리', '', './?talk=1')),
       installSlot,
-      el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' }, wherePill(false, true),
+      el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' },   // '지금 연 곳' 알약은 뺌(아래 판 줄에 앱/바탕화면이 같이 나와서)
         // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
         el('span', { text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }))),
     cTabs('home'));
