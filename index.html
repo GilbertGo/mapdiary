@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-170-nav';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-171-nosum';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧭 여행 계획 요약 칸의 큰 "길 안내 시작"은 뺐어요(등산 계획에만) · 다른 계획은 ⋯ 더보기에서 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🧭 여행 계획 지도 아래 이동 요약 칸과 "길 안내 시작"을 뺐어요 · 구간 거리·시간은 일정 사이 줄에 · 길 안내는 ⋯ 더보기에서 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11239,8 +11239,8 @@ function viewPlanOne(id) {
         for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, col, 5); }
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
-    sumEl.replaceChildren(...[planSumBox(p, day, planNavOk(p) ? navGo : null)].filter(Boolean));
-    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; eh = await planSumEle(p, day); } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } else if (eh) sumEl.replaceChildren(...[planSumBox(p, day, planNavOk(p) ? navGo : null)].filter(Boolean)); })(); }
+    sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
+    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
     const real = pts.filter(q => q[1] > -180);
     if (!real.length) {   // 판 -138: 장소가 없으면 계획 이름의 여행지 둘레로
       if (p.dest) { map.setView([p.dest.lat, p.dest.lng], p.dest.z || 11); return; }
