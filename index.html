@@ -3134,9 +3134,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-132-optask';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-133-filmkakao';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 여행 방에서 ?로 끝나는 말은 도우미도 봐요(✨ 단추를 안 눌러도) · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🎬 카톡 안 화면에서 영상 화면을 열면 크롬으로 넘겨요(계획도 같이). 카톡 안에서는 영상을 저장·보낼 수 없어서예요 · ✨ 여행 방에서 ?로 끝나는 말은 도우미도 봐요(✨ 단추를 안 눌러도) · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5996,6 +5996,13 @@ function filmPlayLen(blob) {   // 브라우저가 실제로 읽은 길이 (못 �
     vd.preload = 'metadata'; vd.muted = true; vd.onloadedmetadata = () => fin(Number.isFinite(vd.duration) ? vd.duration : null); vd.onerror = () => fin(null); setTimeout(() => fin(null), 8000); vd.src = u; });
 }
 // 화면
+// 판 -133 (사용자 카톡 안 화면 캡처 '공유하지 못했어요 (navigator.share is not a function)'): 카톡 안 브라우저는 공유·저장이 막혀 만든 영상을 내보낼 수 없어요
+//   → 영상 화면을 카톡 안에서 열면 기본 브라우저(크롬)로 넘겨요. 계획 영상이면 계획을 링크에 담아 같이 넘겨 크롬에서도 바로 그 영상 화면(&mk=film)
+async function filmKakaoOut(plan, say) {
+  let u = location.href;
+  if (plan) { say && say('크롬으로 넘길 계획 링크를 만드는 중…'); try { u = (await planLink(plan)).replace('?plan=1#', '?plan=1&mk=film#'); } catch {} }
+  location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(u);
+}
 function viewFilm() {
   document.title = '이동 기록 영상 · MPD'; { const H = document.documentElement.classList; H.remove('vw-page'); H.add('n-page'); }   // 새 디자인(2026-11-15 판 -105): 밝은 바탕 · 흰 카드 · 미리보기 먼저 · 자주 안 쓰는 건 접기 · 아래 고정 단추
   if (!document.getElementById('film-css')) document.head.append(el('style', { id: 'film-css', text: `
@@ -6053,7 +6060,8 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
   filmDims(opt);
   const S = { rec: qs.get('t') || '', gpx: null, file: null, busy: false, stop: false, ph: {}, plan: qs.get('plan') ? planGet(qs.get('plan')) : null };
   const recs = filmRecs(); if (!S.rec && recs.length && !S.plan && !qs.get('plan')) S.rec = recs[0].t;
-  const planMiss = qs.get('plan') && !S.plan;   // 계획 영상 주소인데 이 휴대폰(이 브라우저)에 그 계획이 없을 때 → 기록으로 넘어가지 않게
+  const planMiss = qs.get('plan') && !S.plan;
+  if (IN_KAKAO && !FILM_TEST && S.plan) { try { if (!sessionStorage.getItem('filmKakaoOut')) { sessionStorage.setItem('filmKakaoOut', '1'); setTimeout(() => filmKakaoOut(S.plan), 400); } } catch {} }   // 계획 영상 주소인데 이 휴대폰(이 브라우저)에 그 계획이 없을 때 → 기록으로 넘어가지 않게
   if (planMiss) S.rec = '';
   if (S.plan) { S.rec = ''; const po = ls.get('filmOptPlan', null); if (po) Object.assign(opt, po); else { opt.style = 'trip'; opt.sec = Math.max(opt.sec, 60); } opt.hide = false; }   // 🗓 계획 영상: 처음엔 여행 스타일·1분
   const KEEP = ['style', 'ratio', 'map', 'sec', 'vol', 'title', 'date', 'stats', 'elev', 'places', 'photos', 'rhythm', 'height', 'phTime', 'info'];
@@ -6108,6 +6116,9 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
     S.plan && !filmSrc(S) ? `'${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요. 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요.` : null].filter(Boolean);
   app.replaceChildren(el('div', { class: 'fm' },
     FILM_TEST ? filmTestHead() : el('div', { class: 'n-top' }, el('a', { class: 'n-ib', href: back, 'aria-label': S.plan ? '여행 계획으로' : '내 MPD로' }, cSvg('back', 20)), el('span', { class: 'sp' })),
+    IN_KAKAO && !FILM_TEST ? (() => { const kb = el('button', { class: 'fm-go', type: 'button', text: '🌐 크롬에서 열기', onclick: () => filmKakaoOut(S.plan, t => { kb.textContent = t; }) });
+      return el('div', { class: 'fm-card', style: 'background:#FFF6EE' }, el('div', { style: 'font-weight:800', text: '카톡 안 화면에서는 만든 영상을 저장하거나 보낼 수 없어요' }),
+        el('div', { class: 'sub', text: S.plan ? '크롬으로 넘어가면 이 계획도 같이 가서 바로 영상을 만들 수 있어요.' : '크롬에서 열어 주세요. 기록은 지금 연 곳(카톡 안 화면)에만 있을 수 있어요 — MPD 앱이나 기록한 브라우저에서 만들어 주세요.' }), kb); })() : null,
     el('div', {}, el('h1', { class: 'n-lt', text: S.plan ? '미리 보기 영상' : '영상 만들기' }),
       el('div', { class: 'n-ls', text: S.plan ? `'${S.plan.name}' 일정대로 장소를 차례로 지나가요` : '다닌 길을 하늘에서 따라가는 영상이에요' })),
     ...warns.map(w => el('div', { class: 'fm-warn', text: '⚠ ' + w })),
@@ -6906,8 +6917,12 @@ function filmResult(U, blob, fname, out, T, playSec, logId, mkShort) {
   const SH0 = '📤 공유하기 (카톡·인스타 등)', shSay = t => { shBtn.textContent = t; };
   let shBusy = false;
   const shBtn = el('button', { class: 'fm-go', type: 'button', text: SH0, onclick: async () => {
-    if (shBusy) return; shBusy = true; shSay('공유 창을 여는 중…');
+    if (shBusy) return;
     const C = window.Capacitor, nat = window.mdNativeSave && C && C.Plugins;
+    if (!nat && typeof navigator.share !== 'function') {   // 판 -133: 공유가 없는 브라우저(카톡 안 등)
+      if (IN_KAKAO) { stLine(null, '카톡 안 화면은 영상을 보낼 수 없어서 크롬으로 넘겨요 · 크롬에서 영상 만들기를 한 번 더 눌러 주세요'); return filmKakaoOut(plan, shSay); }
+      stLine(false, '이 브라우저는 영상 보내기를 못 해요 · 아래 \'휴대폰에 저장\'으로 저장한 뒤 카톡·갤러리에서 보내 주세요'); return; }
+    shBusy = true; shSay('공유 창을 여는 중…');
     try {
       if (nat) {
         const SH = C.Plugins.Share || (C.registerPlugin && C.registerPlugin('Share'));
@@ -8273,7 +8288,9 @@ async function viewPlan() {
         }
         if (ch) planSave(same); filled += ch;
       }
-      const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요'); return viewPlanOne(id); }
+      const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요');
+      if (qs.get('mk') === 'film') { location.replace('./?film=1&plan=' + encodeURIComponent(id)); return; }   // 판 -133: 카톡에서 크롬으로 넘어온 계획 영상
+      return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
   if (qs.get('p') && qs.get('today')) { history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(qs.get('p'))); }   // 판 -129: 오늘 화면을 계획 화면 하나로 합침(옛 주소는 계획 화면으로)
