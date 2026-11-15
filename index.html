@@ -3134,9 +3134,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-130-nodup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-131-selfchk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7721,6 +7721,37 @@ function planFoldDup(it) {
   }
   return { it: out, n, drop };
 }
+// 판 -131 (사용자 '이런거 자체 검증하는 로직도 넣어'): 계획을 열 때마다 스스로 점검 —
+//   고칠 수 있는 건 저절로 고치고(겹친 일정·같은 이름 두 번·없는 날에 있는 일정·같은 번호), 사람이 봐야 할 것은 목록으로 남겨요
+//   (시각 거꾸로·빈 날·잘 곳 없는 밤·여러 날 같은 곳·하나투어 원본에서 빠진 일정·위치 없음)
+function planSelfCheck(p) {
+  const fixed = [], warn = [], it = p.it = p.it || [], nz = t => String(t || '').replace(/\s+/g, '');
+  // ① 날 밖 일정 → 마지막 날로
+  it.forEach(x => { if (!(x.d >= 0)) { x.d = 0; fixed.push(`'${x.n}' 날이 비어 있어 1일차로`); } if (x.d >= p.nd) { fixed.push(`'${x.n}' ${x.d + 1}일차 → ${p.nd}일차(여행 날 수 밖)`); x.d = p.nd - 1; } });
+  // ② 같은 번호(id) 두 개 → 새 번호
+  { const ids = new Set(); it.forEach(x => { if (!x.id || ids.has(x.id)) { x.id = planNewId(); fixed.push(`'${x.n}' 번호가 겹쳐 새 번호로`); } ids.add(x.id); }); }
+  // ③ 같은 날 같은 이름 두 번(완전히 같음) → 하나로(설명·위치는 있는 쪽)
+  { const keep = []; for (const x of it) { const y = keep.find(z => z.d === x.d && z.k === x.k && nz(z.n) === nz(x.n) && (!z.t || !x.t || z.t === x.t));
+      if (y && !x.ok && !x.man) { if (!y.x && x.x) y.x = x.x; if (!y.m && x.m) y.m = x.m; if (!Number.isFinite(y.lat) && Number.isFinite(x.lat)) { y.lat = x.lat; y.lng = x.lng; y.ap = x.ap; } fixed.push(`${x.d + 1}일차 '${x.n}'이(가) 두 번 있어 하나로`); continue; }
+      keep.push(x); } p.it = keep; }
+  // ④ 앞 묶음 일정에 이미 든 이름(여행사 설명 카드) → 앞 일정에 합침
+  { const r = planFoldDup(p.it); if (r.n) { p.it = r.it; r.drop.forEach(x => fixed.push(`${x.d + 1}일차 '${x.n}'은(는) 앞 일정에 들어 있어 합침`)); } }
+  // ⑤ 사람이 봐야 할 것
+  const hm = t => /^\d{1,2}:\d{2}$/.test(t || '') ? +t.split(':')[0] * 60 + +t.split(':')[1] : null;
+  for (let d = 0; d < p.nd; d++) {
+    const L = planItems(p, d);
+    if (!L.length) warn.push({ t: `${d + 1}일차에 일정이 없어요`, d });
+    let last = null, lastN = '';
+    for (const x of L) { const m = hm(x.t); if (m == null) continue; if (last != null && m < last && !(x.k === 'fly' && m < 360)) warn.push({ t: `${d + 1}일차 '${x.n}'(${x.t})이(가) 앞 일정 '${lastN}'보다 이른 시각이에요 · 차례나 시각을 확인해 주세요`, d, id: x.id }); last = m; lastN = x.n; }
+    if (d < p.nd - 1 && L.length && !L.some(x => x.k === 'stay') && !L.some(x => x.k === 'fly' && /출발/.test(x.n) && d === p.nd - 2)) warn.push({ t: `${d + 1}일차 밤에 잘 곳(숙소)이 없어요`, d });
+  }
+  { const seen = {}; p.it.filter(x => x.k === 'spot' || x.k === 'show').forEach(x => { const k = nz(x.n); (seen[k] = seen[k] || new Set()).add(x.d); });
+    Object.entries(seen).forEach(([k, ds]) => { if (ds.size > 1) { const x = p.it.find(y => nz(y.n) === k); warn.push({ t: `'${x.n}'이(가) ${[...ds].map(d => d + 1 + '일차').join('·')}에 모두 있어요 · 한 번만 가는 곳이면 하나를 빼 주세요`, id: x.id }); } }); }
+  const hg = p.it.filter(x => x.hg); if (hg.length) warn.push({ t: `하나투어 원본 일정에서 빠진 일정 ${hg.length}곳: ${hg.map(x => x.n).join(' · ').slice(0, 80)} · 여행사에 확인해 주세요` });
+  const nl = p.it.filter(x => x.k !== 'move' && x.k !== 'fly' && !Number.isFinite(x.lat)); if (nl.length) warn.push({ t: `지도 위치가 없는 곳 ${nl.length}곳: ${nl.map(x => x.n).join(' · ').slice(0, 80)}` });
+  p.selfChk = { at: Date.now(), fixed: fixed.slice(0, 30), warn: warn.slice(0, 30) };
+  return p.selfChk;
+}
 function planFromHana(j) {
   const D = j && j.data || {}, days = Array.isArray(D.schdInfoList) ? D.schdInfoList : [];
   if (!days.length) throw new Error('일정이 비어 있어요');
@@ -9454,7 +9485,7 @@ function koInHanzi(lat, lng) { return planInChina(lat, lng) && !(lng > 128.5 && 
 function viewPlanOne(id) {
   const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
   p.it = p.it || [];
-  if (planIsHana(p)) { const r = planFoldDup(p.it); if (r.n) { p.it = r.it; planSave(p); setTimeout(() => toast(`🧹 겹치던 일정 ${r.n}곳을 앞 일정에 합쳤어요(${r.drop.map(x => x.n).join(' · ').slice(0, 40)}) · 설명은 그 일정 안내에 남겨 뒀어요`, false, 7000), 700); } }   // 판 -130
+  { const before = JSON.stringify(p.it), r = planSelfCheck(p); if (JSON.stringify(p.it) !== before || r.fixed.length) { planSave(p); setTimeout(() => toast(`🔎 스스로 점검해서 ${r.fixed.length}가지를 고쳤어요 · ${r.fixed[0] || ''}${r.fixed.length > 1 ? ' 외' : ''}`, false, 7000), 700); } else planSave(p); }   // 판 -130·-131
   { const n = planAutoVisit(p); if (n) setTimeout(() => toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`), 600); }
   setInterval(() => { if (document.hidden) return; const n = planAutoVisit(p); if (n) { toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`); drawAll(); } }, 120000);   // 여행 중 화면을 열어 두면 2분마다
   const td = planToday(p);
@@ -9469,7 +9500,20 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      warnBox()); };
+      chkLine(), warnBox()); };
+  // 판 -131: 스스로 점검 결과 — 작은 회색 한 줄, 누르면 '고친 것 / 확인해 주세요' 창
+  function chkLine() {
+    const c = p.selfChk; if (!c) return null; const W = c.warn.filter(w => !/지도 위치가 없는/.test(w.t));   // 위치는 아래 '위치 확인' 줄에
+    if (!W.length && !c.fixed.length) return el('div', { style: 'font:600 12.5px Pretendard,sans-serif;color:#8B95A1;padding:6px 2px', text: '🔎 스스로 점검 · 이상 없어요' });
+    return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:600 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: () => {
+      labSheet('🔎 스스로 점검',
+        el('div', { class: 'sub', style: 'font-size:13px', text: '계획을 열 때마다 앱이 일정을 스스로 훑어봐요. 확실한 건 저절로 고치고, 사람이 봐야 할 건 여기에 남겨요.' }),
+        W.length ? el('div', { style: 'font-weight:800', text: `확인해 주세요 ${W.length}` }) : null,
+        ...W.map(w => el('div', { style: 'padding:8px 10px;border-radius:10px;background:#FFF6EE;font-size:13.5px;line-height:1.5', text: '• ' + w.t })),
+        c.fixed.length ? el('div', { style: 'font-weight:800;margin-top:6px', text: `저절로 고친 것 ${c.fixed.length}` }) : null,
+        ...c.fixed.map(t => el('div', { style: 'padding:6px 10px;border-radius:10px;background:#F1F3F5;font-size:13px;color:#4E5968', text: '✓ ' + t })));
+    } }, el('span', { style: 'flex:1', text: `🔎 스스로 점검 · ${W.length ? `확인할 것 ${W.length}` : ''}${W.length && c.fixed.length ? ' · ' : ''}${c.fixed.length ? `고친 것 ${c.fixed.length}` : ''}` }), el('span', { text: '›' }));
+  }
   // 판 -104 (사용자 '사용자 확인 필요한 거면 시인성 높고 편하게, 핀 표시하면 알아먹냐?'): 확인이 필요한 곳을 맨 위 주황 상자에 한 곳씩 큰 단추로.
   //   누르면 바로 지도가 열려 맞는 자리를 누르면 끝. '이 위치가 맞아요'로 경고만 지울 수도. 다 고치면 상자가 사라져요
   const needChk = x => x.k !== 'move' && !(x.k === 'fly' && !Number.isFinite(x.lat)) && (!Number.isFinite(x.lat) || x.ap || x.near || x.vf);
