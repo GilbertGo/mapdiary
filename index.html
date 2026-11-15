@@ -3300,9 +3300,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-193-who';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-194-name';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8332,7 +8332,7 @@ function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐�
 // ---------- 링크로 보내기 (서버 없이 링크 안에) ----------
 async function planPack(p) {
   const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0, x.x || '']) };
-  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code; if (p.code) o.hc = p.code;
+  if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code; if (p.code) o.hc = p.code; if ((p.mem || []).length) o.mb = p.mem.filter(m => m.n).slice(0, 30).map(m => [m.id, String(m.n).slice(0, 20)]);   // 판 -194: 함께 가는 사람 이름(받는 사람이 자기를 고르게)
   const raw = new TextEncoder().encode(JSON.stringify(o));
   if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
   return 'j' + b64url(raw);
@@ -8348,7 +8348,7 @@ async function planUnpack(s) {
     meet: o.mt && typeof o.mt === 'object' ? { d: /^\d{4}-\d{2}-\d{2}$/.test(o.mt.d) ? o.mt.d : '', t: /^\d{1,2}:\d{2}$/.test(o.mt.t) ? o.mt.t : '', n: str(o.mt.n, 200) } : null,
     info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x),
     room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null,
-    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined, rd: o.rd ? 1 : 0 };
+    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined, rd: o.rd ? 1 : 0, mem: (Array.isArray(o.mb) ? o.mb : []).slice(0, 30).filter(m => Array.isArray(m) && typeof m[0] === 'string' && typeof m[1] === 'string').map(m => ({ id: m[0].slice(0, 20), n: m[1].slice(0, 20), from: '', a: '', b: '', fl: '' })) };
 }
 // 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
 //   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
@@ -9153,6 +9153,26 @@ function planDedupe() {   // 판 -190 (사용자 첫 화면 캡처: 오사카가
   ls.set('tripPlans', A.filter(p => !drop.has(p.id))); const g = ls.get('planGone', {}) || {}; drop.forEach(id => { g[id] = Date.now(); }); ls.set('planGone', g); ls.set('planInto', into);   // 판 -191: 합쳐진 계획 번호 → 남은 계획 번호
   return n;
 }
+// 판 -194 (사용자 '초대받은 사람이 들어오면서 자기 이름 쓰게 하고'): 받은 계획 링크로 들어왔는데 이 휴대폰에 이름(nick)이 없으면 바로 묻기
+//   함께 가는 사람 목록에 있는 이름은 눌러서 고름(→ planMe 그 사람) · 적은 이름은 nick(바뀐 기록·여행 방·도우미에 쓰임) · 목록에 없으면 함께 가는 사람에 더함(같이 고치기면 일행에게도)
+function planAskName(p, force) {
+  if (!p || (!force && trName())) return;
+  const inp = el('input', { type: 'text', placeholder: '예: 아리', maxlength: 20, value: trName(), style: 'width:100%;box-sizing:border-box;font-size:17px;padding:12px 14px' });
+  const M = (p.mem || []).filter(m => m.n);
+  let pick = null;
+  const chips = el('div', { style: 'display:flex;flex-wrap:wrap;gap:8px' }, ...M.map(m => el('button', { class: 'btn small line', text: m.n, onclick: e => { pick = m; inp.value = m.n; [...chips.children].forEach(c => c.classList.replace('dark', 'line')); e.target.classList.replace('line', 'dark'); } })));
+  const save = () => { const v = inp.value.trim().slice(0, 20); if (!v) { inp.focus(); return toast('이름을 적어 주세요'); }
+    ls.set('nick', v); const q = planGet(p.id) || p; q.mem = q.mem || [];
+    let m = pick || q.mem.find(x => String(x.n).replace(/\s/g, '') === v.replace(/\s/g, ''));
+    if (!m) { m = { id: 'm' + rid(6), n: v, from: '', a: '', b: '', fl: '' }; q.mem.push(m); planSave(q); }
+    ls.set('planMe:' + q.id, m.id); bg.remove(); toast(`${v} 님으로 들어왔어요 · 바꾸면 일행에게 이 이름으로 보여요`); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} };
+  const bg = labSheet(`👋 ${p.name || '여행'}에 오신 걸 환영해요`,
+    el('div', { class: 'sub', text: '일행에게 보일 이름을 적어 주세요. 일정을 고치면 이 이름으로 누가 고쳤는지 보여요.' }),
+    M.length ? el('div', { class: 'sub', style: 'margin-top:4px', text: '함께 가는 사람 중 나를 눌러도 돼요' }) : null, M.length ? chips : null,
+    inp, el('button', { class: 'btn primary full', text: '이 이름으로 들어가기', onclick: save }));
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) save(); });
+  setTimeout(() => inp.focus(), 200);
+}
 async function viewPlan() {
   document.title = '여행 계획 · Map Photo Diary';
   planTermsAll();
@@ -9172,7 +9192,7 @@ async function viewPlan() {
       } const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
       const same = cands.find(x => x.name === p.name && (x.it || []).length === p.it.length) || cands.find(x => x.name === p.name) || cands[0];
       for (const same of cands) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
-        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.code && !same.code) { same.code = p.code; same.src = 'hanatour'; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
+        let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if ((p.mem || []).length && !(same.mem || []).length) { same.mem = p.mem; ch++; } if (p.room && (!same.room || same.room.code !== p.room.code)) { same.room = p.room; ch++; } if (p.code && !same.code) { same.code = p.code; same.src = 'hanatour'; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
         for (const y of same.it) if (!y.x) { const sp = v => String(v || '').replace(/\s+/g, ''), z = p.it.find(q => sp(q.n) === sp(y.n) && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
         {   // 판 -92: 위치도 채워요. 내 계획에 위치가 없거나 대략인 곳 ← 링크 속 같은 날 같은 이름(띄어쓰기 무시), 장소 수가 같으면 같은 차례의 같은 날 장소(예전엔 설명만 채워 '위치 없음'이 그대로 남았음)
           const nm = v => String(v || '').replace(/\s+/g, ''), eq = same.it.length === p.it.length;
@@ -9186,6 +9206,7 @@ async function viewPlan() {
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요');
       if (qs.get('mk') === 'film') { location.replace('./?film=1&plan=' + encodeURIComponent(id)); return; }   // 판 -133: 카톡에서 크롬으로 넘어온 계획 영상
       if (qs.get('en')) ls.set('planLang:' + id, 'en');   // 판 -141: 영어 초대 링크
+      setTimeout(() => planAskName(planGet(id)), 2200);   // 판 -194 (같이 고치기 첫 맞추기 뒤라 함께 가는 사람 목록이 들어와 있음): 초대받아 들어온 사람이 이름 적기
       return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
