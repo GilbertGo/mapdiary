@@ -3313,9 +3313,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-196-invite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-197-howto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9177,7 +9177,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
     ls.set('nick', v); const q = planGet(p.id) || p; q.mem = q.mem || [];
     let m = q.mem.find(x => String(x.n).replace(/\s/g, '') === v.replace(/\s/g, ''));
     if (!m) { m = { id: 'm' + rid(6), n: v, from: '', a: '', b: '', fl: '' }; q.mem.push(m); planSave(q); }
-    ls.set('planMe:' + q.id, m.id); bg.remove(); toast(`${v} 님, 반가워요`); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} };
+    ls.set('planMe:' + q.id, m.id); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} howTo(v); };
   const li = (ic, t, d) => el('div', { class: 'iv-li' }, el('span', { class: 'iv-ic' }, cSvg(ic, 20)), el('div', {}, el('b', { text: t }), el('span', { text: d })));
   const card = el('div', { class: 'iv' },
     el('div', { class: 'iv-img' + (hero && hero.u ? '' : ' none'), style: hero && hero.u ? `background-image:url("${hero.u}")` : '' }),
@@ -9185,9 +9185,24 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
       el('div', { class: 'iv-k', text: '여행 초대' }),
       el('div', { class: 'iv-t', text: nm }),
       el('div', { class: 'iv-s', text: [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : ''].filter(Boolean).join(' · ') }),
-      el('div', { class: 'iv-ls' }, li('cal', '일정·지도', '날마다 갈 곳과 길을 같이 봐요'), li('chat', '여행 방', '일행과 이야기하고 사진을 모아요'), li('spark', 'AI 묻기', '일정에 대해 궁금한 걸 물어봐요')),
-      el('label', { class: 'iv-lb', text: '일행에게 보일 이름' }), inp,
-      el('button', { class: 'iv-go', text: '시작하기', onclick: save })));
+            el('label', { class: 'iv-lb', style: 'margin-top:18px', text: '일행에게 보일 이름' }), inp,
+      el('button', { class: 'iv-go', text: '다음', onclick: save })));
+  const howTo = v => {   // 판 -197 (사용자 '간단한 사용법도 띄우고 나서 시작'): 이름 다음에 사용법 한 장
+    const lg = (() => { try { return planCN(p) ? '중국어' : planJP(p) ? '일본어' : ''; } catch { return ''; } })();
+    card.querySelector('.iv-img') && card.querySelector('.iv-img').remove();
+    card.querySelector('.iv-b').replaceChildren(
+      el('div', { class: 'iv-k', text: `${v} 님, 반가워요` }),
+      el('div', { class: 'iv-t', text: '이렇게 써요' }),
+      el('div', { class: 'iv-ls' },
+        li('cal', '일정', '날을 고르면 그날 갈 곳과 지도'),
+        li('route', '길찾기', '장소 사이 줄을 누르면 지도 앱 길 안내'),
+        li('chat', '여행 방', '일행과 대화하고 사진을 함께 모아요'),
+        li('book', '여행 노트', '날씨·준비물·경비 정산' + (lg ? ` · ${lg} 보여 주는 말` : '')),
+        li('spark', 'AI 묻기', '일정·준비에 대해 궁금한 걸 물어봐요'),
+        li('user', '같이 고치기', '고치면 일행에게도 바로, 누가 고쳤는지 보여요')),
+      el('button', { class: 'iv-go', text: '시작하기', onclick: () => bg.remove() }));
+    card.scrollTop = 0;
+  };
   const bg = el('div', { class: 'iv-bg' }, card);
   inp.addEventListener('keydown', e => { inp.classList.remove('err'); if (e.key === 'Enter' && !e.isComposing) save(); });
   document.body.append(bg); setTimeout(() => inp.focus(), 250);
