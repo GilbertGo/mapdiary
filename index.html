@@ -3206,9 +3206,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-163-movename';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-164-zjj';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📍 일정 이름은 장소만 ("공항에서 난바로 이동" → "난바") · 가는 방법은 일정 사이 줄에 · 🧭 길찾기도 일정 사이 줄에서 (앞 장소 → 이 장소) · 💰 여행 경비·정산 · ⇅ 동선 짧게';
+const UI_NOTES = '🗺 오사카에서 고친 것 모두 장가계에도: 일정 사이 거리·시간·길찾기(중국은 가오더 길찾기), 이동 칸은 장소 이름으로, 경비는 위안으로 · 🏨 둘째 날부터 전날 숙소에서 첫 곳까지 · 📍 대략 위치인 곳은 믿을 수 없는 거리를 안 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8064,7 +8064,7 @@ function planOptimize(p, d, done) {   // 구경 장소끼리만 순서를 바꿔
 }
 // 판 -162 💰 함께 쓰는 여행 가계부 (트리플·Wanderlog처럼): p.exp=[{id,d,what,c(분류),amt,cur,kr(1단위 원),by(사람 id),fr:[사람 id],at,u}] · 지운 것 p.expGone={id:시각}(되살아나지 않게) · 같이 고치기면 여행 방 px로 일행과 맞춤
 const EXP_CAT = [['meal', '🍽', '식사'], ['cafe', '☕', '카페·간식'], ['move', '🚕', '교통'], ['ticket', '🎫', '입장료'], ['shop', '🛍', '쇼핑'], ['stay', '🏨', '숙소'], ['etc', '💳', '기타']];
-function expCur(p) { const c = DEST_CC[(p.dest && p.dest.cc) || (planJP(p) ? 'jp' : planInChina && planInChina(p) ? 'cn' : '')]; return c ? c.cur : ''; }
+function expCur(p) { const c = DEST_CC[(p.dest && p.dest.cc) || (planJP(p) ? 'jp' : planCN(p) ? 'cn' : '')]; return c ? c.cur : ''; }
 function expWho(p) { const M = (p.mem || []).filter(m => m.n); return M.length ? M.map(m => ({ id: m.id, n: m.n })) : [{ id: 'me', n: trName() || '나' }]; }
 function expWon(e, rate) { if (!e.cur || e.cur === 'KRW') return e.amt; const r = e.kr || rate; return r ? e.amt * r : null; }
 function expFmt(v, cur) { return cur && cur !== 'KRW' ? `${(+v).toLocaleString('ko-KR', { maximumFractionDigits: 2 })} ${(Object.values(DEST_CC).find(c => c.cur === cur) || {}).curN || cur}` : `₩${Math.round(v).toLocaleString('ko-KR')}`; }
@@ -8136,7 +8136,9 @@ function planMoveFix(p) {
   return n;
 }
 function planLegGo(a, b, k) {   // 구간 길찾기: 출발 = 앞 장소, 도착 = 이 장소 · 한국은 네이버, 중국은 가오더, 그 밖은 구글 지도(일본 전철도 나와요)
-  if (planInChina(b.lat, b.lng)) return planGo(b);
+  if (planInChina(b.lat, b.lng)) {   // 중국: 가오더 지도 길찾기 (앞 장소 → 이 장소)
+    const md = k === 'walk' ? 'walk' : k === 'rail' ? 'bus' : 'car';
+    window.open(`https://uri.amap.com/navigation?from=${a.lng},${a.lat},${encodeURIComponent(a.n)}&to=${b.lng},${b.lat},${encodeURIComponent(b.n)}&mode=${md}&coordinate=wgs84&callnative=1`, '_blank', 'noopener'); return; }
   if (geoidOff(b.lat, b.lng) != null && geoidOff(a.lat, a.lng) != null) {
     const ty = k === 'walk' ? 'walk' : k === 'car' ? 'car' : 'public', q = `?slat=${a.lat}&slng=${a.lng}&sname=${encodeURIComponent(a.n)}&dlat=${b.lat}&dlng=${b.lng}&dname=${encodeURIComponent(b.n)}&appname=${encodeURIComponent(location.hostname || 'mapdiary')}`;
     const web = `https://map.naver.com/p/directions/${a.lng},${a.lat},${encodeURIComponent(a.n)}/${b.lng},${b.lat},${encodeURIComponent(b.n)}/-/${ty === 'public' ? 'transit' : ty}`;
@@ -11082,15 +11084,19 @@ function viewPlanOne(id) {
           out.push(el('div', { style: 'display:flex;gap:6px' }, ...[['all', EN ? 'Everyone' : '모든 일정'], ['me', EN ? 'Mine + group' : '내 일정 + 함께']].map(([k, t]) => el('button', { class: 'btn small ' + (v === k ? 'dark' : 'line'), text: t, onclick: () => { if (k === 'me' && !me) { toast('👥 함께 가는 사람에서 \'이 휴대폰은 ○○\'을 먼저 골라 주세요'); return planMemSheet(p, drawAll); } ls.set('planView:' + p.id, k); drawList(); drawMap(); } })))); } }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
       let pv = null, hold = [];   // 판 -161·-163: 위치 있는 앞 장소와의 구간 한 줄 (👣 걸어서 650m · 9분 · 길찾기) · 위치 없는 이동 칸은 카드 대신 이 줄에
+      // 판 -164 (장가계에 맞춰 보며): 대략 위치(ap·near)인 곳은 구간 거리를 믿을 수 없어 건너뛰고 정확한 곳끼리만 · 둘째 날부터는 전날 밤 숙소에서 첫 곳까지도
+      const exact = x => Number.isFinite(x.lat) && Number.isFinite(x.lng) && !x.ap && !x.near;
+      let fromStay = null;
+      if (d > 0) { const pv0 = planItems(p, d - 1).filter(exact), h = pv0[pv0.length - 1]; if (h && h.k === 'stay') { pv = h; fromStay = h; } }
       its.forEach((x, i) => {
         if (x.k === 'move' && !Number.isFinite(x.lat) && pv) { hold.push(x); return; }
         let legged = false;
-        if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) { const LI = pv && planLegInfo(pv, x, p);
-          if (LI && LI.m >= 40) { const tm = planLegTight(pv, x, LI), a0 = pv, mv = hold.slice(), how = [...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+        if (exact(x)) { const LI = pv && planLegInfo(pv, x, p);
+          if (LI && LI.m >= 40) { const tm = planLegTight(pv, x, LI), a0 = pv, mv = hold.slice(), how = [pv === fromStay ? `🏨 ${pv.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
             tl.append(el('div', { class: 'tv-leg' + (LI.k === 'walk' ? ' w' : '') + (tm ? ' tight' : '') },
               el('button', { class: 'tv-lgt', onclick: () => planLegPick(p, a0, x, drawAll, mv, viewItem) }, el('span', { text: `${LI.ic} ${LI.s}${LI.note ? ' · ' + LI.note : ''}` }), tm ? el('b', { text: ` · ⚠ ${tm}` }) : null,
                 how ? el('small', { text: how }) : null),
-              LI.k === 'fly' ? null : el('button', { class: 'tv-lgo', text: '길찾기', onclick: () => planLegGo(a0, x, LI.k) }))); legged = LI.k !== 'fly'; hold = []; } pv = x; }
+              LI.k === 'fly' ? null : el('button', { class: 'tv-lgo', text: '길찾기', onclick: () => planLegGo(a0, x, LI.k) }))); legged = LI.k !== 'fly'; hold = []; } pv = x; fromStay = null; }
         if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
         tl.append(row(x, i, d, nx, legged)); });
       hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx)));
