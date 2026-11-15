@@ -3267,9 +3267,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-182-agency';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-183-verify';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8565,6 +8565,9 @@ function planSelfCheck(p) {
     p.it.filter(x => x.d === d && x.k === 'food' && !x.man && !x.ok && /호텔\s*조식|조식|breakfast/i.test(x.n || '') && /호텔|조식/.test((x.n || '') + (x.m || '') + (x.lt || ''))).forEach(x => {
       if (Number.isFinite(x.lat) && Math.abs(x.lat - st.lat) < 1e-4 && Math.abs(x.lng - st.lng) < 1e-4) return;
       x.lat = st.lat; x.lng = st.lng; x.ap = st.ap || 0; delete x.near; delete x.vf; fixed.push(`${d + 1}일차 '${x.n}' 위치를 전날 밤 숙소(${st.n}) 자리로`); }); }
+  // ⑧ 판 -183: 여행사 일정에 조식이 생기면 예전에 AI가 넣은 '호텔 조식'은 겹침 → 여행사 칸 하나로(AI 메모는 옮김)
+  for (let d = 0; d < p.nd; d++) { const ag = p.it.find(x => x.d === d && x.k === 'food' && !x.ai && /^조식/.test(x.n || '')); if (!ag) continue;
+    p.it.filter(x => x.d === d && x.k === 'food' && x.ai && /조식|아침|breakfast/i.test(x.n || '') && !x.ok).forEach(x => { if (!ag.m && x.m) ag.m = x.m; if (!ag.t && x.t) ag.t = x.t; p.it.splice(p.it.indexOf(x), 1); fixed.push(`${d + 1}일차 AI가 넣은 '${x.n}'은(는) 여행사 일정 '${ag.n}'과 같아 하나로`); }); }
   // ④ 앞 묶음 일정에 이미 든 이름(여행사 설명 카드) → 앞 일정에 합침
   { const r = planFoldDup(p.it); if (r.n) { p.it = r.it; r.drop.forEach(x => fixed.push(`${x.d + 1}일차 '${x.n}'은(는) 앞 일정에 들어 있어 합침`)); } }
   // ⑤ 사람이 봐야 할 것
@@ -8601,7 +8604,7 @@ function planFromHana(j) {
   const hm = v => /^\d{4}$/.test(String(v || '')) ? `${String(v).slice(0, 2)}:${String(v).slice(2)}` : '';
   const air = Array.isArray(D.pkgAirSeqList) ? D.pkgAirSeqList : [];
   const city = (air[0] && air[0].arrAptCityNm) || '';
-  const it = [], seen = new Set(), nd = days.length;
+  const it = [], seen = new Set(), nd = days.length, stayImg = {};
   const add = (d, x) => { const key = d + '|' + x.n; if (!x.n || seen.has(key)) return; seen.add(key); it.push(Object.assign({ id: planNewId(), d, t: '', m: '', lat: null, lng: null }, x)); };
   // 비행: 출발 날·도착 날(depBassFlxbDt·arrBassFlxbDt = 첫날부터 며칠째), 일정의 '도시간이동' 자리에 차례로 놓음
   const fq = {}; const fpush = (d, x) => (fq[d] = fq[d] || []).push(x);
@@ -8618,17 +8621,21 @@ function planFromHana(j) {
       if (c === '002') { const f = (fq[d] || []).shift(); if (f) add(d, f); continue; }
       if (c === '004') {
         const mt = clean(m.mealTypeNm), cont = clean(m.mealCont), card = clean(m.cardNm);
-        if (!cont && /호텔식|기내식|자유식/.test(mt) && !/특식/.test(m.dtlMealDvNm || '')) continue;
+        // 판 -183 (사용자 '여행사에서 제공한 대로 정리된 건지 검증해'): 예전엔 호텔식·기내식을 버려서 조식이 빠졌고, 그 자리에 AI가 '호텔 조식'을 넣었음 → 여행사 표기 그대로 넣음 · 기내식은 그 비행 칸 메모에
+        if (!cont && /기내식/.test(mt)) { const f = [...it].reverse().find(z => z.d === d && z.k === 'fly'); if (f) { f.m = [f.m, `${clean(m.dtlMealDvNm) || '식사'} 기내식`].filter(Boolean).join(' · '); continue; } }
         const what = cont || card || mt || '식사';   // 여행사 글 그대로 (2026-11-14 사용자 '지명이나 용어는 여행사에서 안내한 것과 동일하게')
         const mi = Array.isArray(m.cmsInfoList) && m.cmsInfoList[0] ? full(m.cmsInfoList[0].cmsCntntCont) : '';
         { const im = cardImgs(m, ''); add(d, Object.assign({ n: `${clean(m.dtlMealDvNm) || '식사'} · ${what}`.slice(0, 80), k: 'food', m: card && card !== what ? card.slice(0, 120) : mt && mt !== what ? mt : '', x: mi }, im.length ? { img: im } : {})); }
         continue;
       }
+      if (c === '099') { const t = full(m.memoCont, 600); if (t) add(d, { n: clean(t.split('\n')[0]).replace(/^[☞🛫🛬\s]+/u, '').slice(0, 70), k: 'move', x: t }); continue; }   // 판 -183: 여행사 안내 줄(도착 뒤 가이드 미팅·이동 시간) 그대로
+      if (c === '006') { const im = cardImgs(m, ''); if (im.length) stayImg[d] = (stayImg[d] || []).concat(im).slice(0, 8); continue; }   // 판 -183: 호텔 소개 카드 사진 → 그날 숙소 칸
       if (c !== '001' && c !== '005') continue;
       const L = Array.isArray(m.cmsInfoList) && m.cmsInfoList.length ? m.cmsInfoList : [{ cmsCntntNm: m.cardNm, cmsCntntCont: m.memoCont }];
       for (const ci of L) {
         const nm = clean(ci.cmsCntntNm || m.cardNm);   // 여행사가 쓴 이름 그대로(나누거나 줄이지 않음)
         if (/출입국|입국 정보/.test(nm)) { const t = full(ci.cmsCntntCont, 2500); if (t && !info.some(z => z.h === nm)) info.push({ h: nm, x: t }); continue; }   // 출입국 안내는 '🧳 여행 준비'에
+        if (nm && nm === city) { const t = full(ci.cmsCntntCont, 2500); if (t && !info.some(z => z.h === nm + ' 소개')) info.push({ h: nm + ' 소개', x: t }); continue; }   // 판 -183: 도시 소개 글도 안내에
         if (!nm || /코스$/.test(nm) || nm === city) continue;   // 안내 머리글(…코스·도시 소개)만 뺌
         const k = /마사지|쇼|공연|VR|체험|매력상서|야경 바/.test(nm) ? 'show' : /다방|카페|커피/.test(nm) ? 'food' : 'spot';
         // 판 -132: 원본 분류 '선택관광'(schdCatgCd 005)·'스페셜포함' 딱지를 그대로 남김 (사용자 '선택관광은 뭐있어?'에 도우미가 몰랐음)
@@ -8641,7 +8648,7 @@ function planFromHana(j) {
     if (H.length && d < nd - 1) {
       const h = H[0];
       const fx = H.some(x => x.htlFixYn === 'Y'), cands = H.map(x => ({ n: x.htlKoNm || x.htlEnNm || '', en: x.htlEnNm || '', zh: x.htlAplcLangNm || '', adr: String(x.enAdrs || '').trim(), tel: x.mainTel || '', url: x.hmpgUrlAdrs || '', g: x.htlGradCd || '', loc: x.locaDesc || '', fix: x.htlFixYn === 'Y' ? 1 : 0 })).filter(x => x.n);
-      add(d, { n: `${h.htlKoNm || h.htlEnNm}`.slice(0, 80), k: 'stay', m: H.length > 1 && !fx ? `예정 호텔 ${H.length}곳 중 한 곳 · 출발 전 확정 · ` + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '', cands, hfix: fx ? 1 : 0 });
+      add(d, { n: `${h.htlKoNm || h.htlEnNm}`.slice(0, 80), k: 'stay', m: H.length > 1 && !fx ? `예정 호텔 ${H.length}곳 중 한 곳 · 출발 전 확정 · ` + H.slice(0, 5).map(x => x.htlKoNm || x.htlEnNm).join(', ') : '', q: h.htlEnNm || '', cands, hfix: fx ? 1 : 0, ...(stayImg[d] ? { img: stayImg[d] } : {}) });
     }
   });
   const M = D.meetInfoBcVo || {}, md = String(M.sndgMeetDt || ''), mtm = String(M.sndgMeetTm || '');
@@ -9739,7 +9746,7 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
   if (!p.code) throw new Error('nocode');
   if (!IN_NATIVE) throw new Error('web');
   const j = await planHanaFetch(p.code), r = planFromHana(j); planTermFix(r);
-  const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour'; p.optV = 1; p.imgV = 1;
+  const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour'; p.optV = 1; p.imgV = 2;
   if (ch.length) { planNeighborFill(p); await planGeocode(p, () => {}).catch(() => {}); }
   p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planSave(p);
   return { ch };
@@ -9765,7 +9772,7 @@ function planHanaSheet(p, after) {   // ⋯ 더보기 '🔗 하나투어 일정 
 }
 function planHanaAuto(p, after) {   // 앱에서 계획을 열 때: 12시간마다 · 여행이 끝나면 안 함
   if (!IN_NATIVE || !p.code) return; const k = planToday(p); if (k != null && k >= p.nd) return;
-  if (p.hanaAt && Date.now() - p.hanaAt < 12 * 3600e3 && p.optV && p.imgV) return;   // 판 -182: 여행사 사진·호텔 후보가 없는 계획은 한 번 바로 다시 받음   // 판 -132: 선택관광 표시가 없는 예전 계획은 한 번 바로 다시 받음
+  if (p.hanaAt && Date.now() - p.hanaAt < 12 * 3600e3 && p.optV && p.imgV === 2) return;   // 판 -182: 여행사 사진·호텔 후보가 없는 계획은 한 번 바로 다시 받음   // 판 -132: 선택관광 표시가 없는 예전 계획은 한 번 바로 다시 받음
   planHanaRefresh(p, true).then(r => { if (r.ch.length) { toast(`🔗 하나투어 일정이 바뀌어 ${r.ch.length}가지를 고쳤어요 · ⋯ 더보기에서 보기`, false, 7000); after && after(); } }).catch(() => {});
 }
 // ---------- ✨ 여행 도우미 (2026-11-15 사용자 '이 상품을 잘 알고 있는 챗봇' → '일행도 질문가능하게') ----------
@@ -11275,7 +11282,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + ' 출발' : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + (/도착(\s|$)/.test(x.n || '') && !/출발/.test(x.n || '') ? ' 도착' : ' 출발') : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
         x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
@@ -11327,7 +11334,7 @@ function viewPlanOne(id) {
         el('button', { class: 'tv-lgt', onclick: pick || (() => {}) }, cSvg(svg, 16), el('span', { text: txt }), warn ? el('b', { text: ` · ⚠ ${warn}` }) : null, sub ? el('small', { text: sub }) : null),
         go ? el('button', { class: 'tv-lgo', text: '길찾기', onclick: go }) : null));
       its.forEach((x, i) => {
-        if (x.k === 'move' && !pos(x) && pv) { hold.push(x); return; }
+        if (x.k === 'move' && !pos(x) && pv && !x.x) { hold.push(x); return; }   // 판 -183: 여행사 안내(x 있음)는 줄 글로 숨기지 않고 칸으로
         if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
           if (!a0) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', how, () => planGo(x));
           else if (!exact(x)) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
