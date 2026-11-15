@@ -3180,9 +3180,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-155-deco';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-156-note';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🖼 첫 화면 꾸미기: 첫 화면 오른쪽 위 꾸미기(또는 나 → 첫 화면 꾸미기)에서 사진을 끌어 옮기고, 누르면 크기, ✕로 빼고, 사진 넣기(휴대폰 사진·내 기록 사진)·바탕 바꾸기 · 👤 나 화면: 프로필 사진·이름·한 줄 소개';
+const UI_NOTES = '📒 여행 아래 메뉴 \'준비\' 이름을 \'여행 노트\'로 · 여행 정보·함께 가는 사람·예약·항공권을 여행 노트 맨 위로 옮겨 일정 화면이 깔끔해요 · 그 아래 체크리스트·날씨·긴급 도움 · 🖼 첫 화면 꾸미기 · 👤 나 화면 새로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8979,6 +8979,15 @@ function planPrepSheet(p, wx) {
   };
   const sec = (h, ...kids) => el('div', { class: 'card stack', style: 'gap:4px;padding:12px 14px' }, el('div', { style: 'font-weight:800;font-size:16px', text: h }), ...kids);
   const all = S.flatMap(s => s.it), done = all.filter(x => st[x.id] || x.ok).length;
+  // 맨 위: 여행 정보 · 함께 가는 사람 · 예약(해외·캡처 있을 때) — 예전엔 계획 화면 일정 아래에 있었음
+  const rd = () => { try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} };
+  const nrow = (ic, t, v, on) => el(typeof on === 'string' ? 'a' : 'button', Object.assign({ class: 'st-row', style: 'text-decoration:none' }, typeof on === 'string' ? { href: on } : { type: 'button', onclick: on }),
+    el('span', { style: 'font-size:22px;width:32px;text-align:center;flex:none', text: ic }), el('b', { class: 'grow', style: 'font-weight:700', text: t }), v ? el('span', { class: 'st-v', text: v }) : null, el('span', { class: 'st-go', text: '›' }));
+  const nm0 = (p.dest && p.dest.n) || planDestName(p) || '여행지', nMem = (p.mem || []).length, nDoc = (p.docs || []).length;
+  body.append(el('div', { class: 'st-grp' },
+    nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·날씨·환율' : '소개·날씨·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
+    nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
+    planAbroad(p) || nDoc ? nrow('🎫', '예약 · 항공권', nDoc ? `캡처 ${nDoc}장` : '', () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); rd(); })) : null));
   if (meet) body.append(sec('🧭 출발 미팅', el('div', { style: 'font-weight:700', text: `${meet.d ? planDayLabel({ start: meet.d }, 0) + ' ' : ''}${meet.t || ''}` }), el('div', { text: meet.n }), el('div', { class: 'dt', text: '여행사 안내 그대로 · 늦지 않게 공항엔 비행기 3시간 전쯤' })));
   // 날씨
   const W = wx && wx.days || [];
@@ -8988,7 +8997,7 @@ function planPrepSheet(p, wx) {
       el('div', { text: planWxLine(W[d]) || '날씨 정보 없음' }), el('div', { class: 'dt', text: planSunLine(p, d) })))
       : [el('div', { class: 'sub', text: wx === null ? '날짜와 장소 위치가 있어야 날씨를 볼 수 있어요' : '날씨를 받지 못했어요 · 인터넷이 되면 다시 열어 주세요' })]),
     W.some(w => w && w.me) ? el('div', { class: 'dt', text: '⛰ 산 위 기온은 그날 가장 높은 곳의 해발로 짐작한 값이에요(100m 오를 때마다 약 0.65°C 낮게). 바람이 불면 더 춥게 느껴져요' }) : null));
-  body.append(el('div', { class: 'sub', style: 'font-weight:700', text: `✔ 준비 ${done} / ${all.length}` }));
+  body.append(el('div', { style: 'font-weight:800;font-size:18px;margin:6px 2px 0', text: `✔ 체크리스트 ${done} / ${all.length}` }));
   // 판 -135 (개선 지시서 6번): 묶음마다 접고 펴기 · 묶음 이름 옆에 한 것 수 · 아직 다 못 한 첫 묶음만 펴서 보여요
   const fold = (h, cnt, open, ...kids) => el('details', { class: 'card', style: 'padding:12px 14px', open: open || null }, el('summary', { style: 'font-weight:800;font-size:16px;cursor:pointer;list-style-position:outside' }, h, cnt ? el('span', { style: `margin-left:6px;font-size:13px;font-weight:700;color:${cnt[0] === cnt[1] ? '#1D7FA0' : '#C2410C'}`, text: `${cnt[0]}/${cnt[1]}${cnt[0] === cnt[1] ? ' ✓' : ''}` }) : null), el('div', { class: 'stack', style: 'gap:4px;margin-top:6px' }, ...kids));
   let opened = false;
@@ -9004,15 +9013,15 @@ function planPrepSheet(p, wx) {
       el('div', { text: '돈: 알리페이에 내 카드를 연결하면 QR로 거의 다 돼요. 위안 현금은 조금만.' }),
       el('div', { text: '시차: 중국은 한국보다 1시간 늦어요. 휴대폰 시계는 저절로 바뀌고, 일정표 시각은 현지 시각이에요.' }),
       el('div', { text: '전기: 220V. 대부분 한국 플러그가 맞지만 멀티 어댑터 하나면 마음 편해요.' })));
-    body.append(el('button', { class: 'btn line full', text: '🗣 보여 주는 말 열기 (아래 메뉴 \'중국어\'와 같아요)', onclick: () => planSaySheet(p) }));
-  } else { if (planJP(p)) body.append(el('button', { class: 'btn line full', text: '🗣 일본어 보여 주는 말 열기 (아래 메뉴 \'일본어\'와 같아요)', onclick: () => planSaySheet(p) })); body.append(fold('📶 통신·결제', null, false, el('div', { text: '한국 통신사 로밍이 가장 쉬워요. 싸게 하려면 그 나라 eSIM. 도착하자마자 지도·연락이 되게 출발 전에 정해 두세요.' }))); }
+    body.append(el('button', { class: 'btn line full', text: '🗣 보여 주는 말 열기 ', onclick: () => planSaySheet(p) }));
+  } else { if (planJP(p)) body.append(el('button', { class: 'btn line full', text: '🗣 일본어 보여 주는 말 열기 ', onclick: () => planSaySheet(p) })); body.append(fold('📶 통신·결제', null, false, el('div', { text: '한국 통신사 로밍이 가장 쉬워요. 싸게 하려면 그 나라 eSIM. 도착하자마자 지도·연락이 되게 출발 전에 정해 두세요.' }))); }
   body.append(fold('🆘 긴급 도움', null, false,
     el('a', { href: 'tel:+82232100404', class: 'btn line', style: 'text-align:left', text: '📞 외교부 영사콜센터 +82-2-3210-0404 (24시간, 한국어)' }),
     cn ? el('div', { text: '중국 경찰 110 · 구급차 120 · 불 119' }) : null,
     el('div', { class: 'dt', text: '여권을 잃어버리면 영사콜센터에 먼저 전화 · 가이드 전화번호는 첫날 받아서 아래 메모나 계획 장소 메모에 적어 두세요' })));
   for (const z of (p.info || [])) body.append(el('details', { class: 'card', style: 'padding:12px 14px' }, el('summary', { style: 'font-weight:800', text: '📄 여행사 안내 · ' + z.h }), el('div', { style: 'white-space:pre-wrap;font-size:14px;margin-top:8px', text: z.x })));
   body.append(el('div', { class: 'dt', style: 'font-size:12px', text: '날씨는 Open-Meteo 자료예요. 입국·반입 규칙은 바뀔 수 있으니 출발 전에 여행사 안내를 한 번 더 확인해 주세요.' }));
-  return labSheet('🧳 여행 준비 · ' + p.name, body);
+  return labSheet('📒 여행 노트 · ' + p.name, body);
 }
 function planPrepCard(p, onWx, tile) {
   const box = tile ? el('button', { class: 'tv-tile', type: 'button' }) : el('button', { class: 'card', style: 'display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--accent);font:inherit;color:inherit;cursor:pointer;padding:12px 14px' });
@@ -10534,7 +10543,7 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     // 판 -129 (사용자 '화면 구성 체계적으로, 중복 없이 딱 필요한 기능만'): 일정 · 여행 방(대화·사진·위치) · 준비 · 중국어(중국일 때) · 도우미, 칸마다 한 가지
     el('a', { href: `./?plan=1&p=${id}`, class: on === 'today' || on === 'plan' ? 'on' : '' }, el('b', { text: '📅' }), isOn && k >= 0 ? '오늘' : '일정'),
     room,
-    el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '🧳' }), '준비'),
+    el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '📒' }), '여행 노트'),   // 2026-11-15 '준비 메뉴 이름은 딴것으로' — 여행 정보·함께 가는 사람·예약·체크리스트·날씨·긴급 도움을 모은 곳
     planCN(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', { text: '🗣' }), '중국어') : planJP(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', { text: '🗣' }), '일본어') : null,
     el('button', { onclick: () => (k == null || k < 0) ? planMakeSheet(p) : trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', { text: k == null || k < 0 ? '✨' : '🧭' }), '도우미'));   // 판 -139: 여행 전엔 계획 도우미
   trBotStart(p);
@@ -10654,7 +10663,7 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: planEN(p) && p.nameEn ? p.nameEn : p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      destLine(), memLine(), (planAbroad(p) || (p.docs || []).length) ? docLine() : null, chkLine(), warnBox()); };   // 국내 여행이면 '예약 · 항공권' 줄 안 보임
+      chkLine(), warnBox()); };   // 여행 정보·함께 가는 사람·예약은 아래 메뉴 '여행 노트' 맨 위로 옮김(2026-11-15 사용자 '추천대로해')
   function destLine() {   // 판 -144: 📘 여행지 정보 한 페이지
     const nm = (p.dest && p.dest.n) || planDestName(p) || '여행지';
     return el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1', class: 'n-row', style: 'width:100%;box-sizing:border-box;text-decoration:none;color:inherit;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px' },
