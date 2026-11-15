@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-115-draw';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-116-askui';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8560,7 +8560,7 @@ async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성
     toast(`✨ AI 사용 끝 · 여행 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
     const tb = (res.content || []).find(x => x.type === 'text'); if (!tb || res.stop_reason === 'refusal') throw new Error('빈 답');
     let j; try { j = JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || [tb.text])[0]); } catch { j = { text: tb.text, src: [] }; }
-    const a = { by: me, nm: '✨ 여행 도우미', bot: 1, q: q.id, ow: trName(), x: String(j.text || '').trim().slice(0, 1500) || '답을 만들지 못했어요', src: (Array.isArray(j.src) ? j.src : []).map(s => String(s).slice(0, 40)).slice(0, 5), t: Date.now() };
+    const a = { by: me, nm: '✨ 여행 도우미', bot: 1, q: q.id, ow: trName(), x: planTerm(String(j.text || '').trim().slice(0, 1500)) || '답을 만들지 못했어요', src: (Array.isArray(j.src) ? j.src : []).map(s => planTerm(String(s)).slice(0, 40)).slice(0, 5), t: Date.now() };
     await trPut(R, 'tc', aid, a);
     const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); else S.tc.push(Object.assign({ id: aid, _t: a.t }, a));
     await trSet('room:' + R.rid, S); return true;
@@ -8604,7 +8604,7 @@ async function trAsk(R, S, x) {   // 질문 올리기 (누구나)
   return id;
 }
 function trBotBubble(a, q, p) {   // 도우미 답 말풍선 (여행 자료로 답 못 하면 하나투어 AI로 넘기는 단추)
-  const miss = !a.wait && (a.err || /여행 자료엔 없|자료에 없/.test(a.x || ''));
+  const miss = !a.wait && (a.err || /자료(에|엔|에는|에도)?[^.\n]{0,40}없/.test(a.x || ''));
   return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px' },
     el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '✨ 여행 도우미' }),
     el('div', { style: 'max-width:88%;padding:10px 13px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;border:1px solid #FFD3C6;white-space:pre-wrap;word-break:break-word;line-height:1.55', text: a.wait ? '답을 쓰는 중이에요…' : a.x }),
@@ -8613,39 +8613,48 @@ function trBotBubble(a, q, p) {   // 도우미 답 말풍선 (여행 자료로 �
     miss && q && planIsHana(p) ? el('button', { class: 'btn line small', style: 'margin-top:4px', text: '하나투어 AI에게 물어보기 ↗', onclick: () => hanaAskOpen(p, q.x) }) : null);
 }
 var TB_QUICK = ['오늘 일정 알려 줘', '내일은 뭘 챙겨야 해?', '첫날 미팅 장소랑 시간은?', '식사는 어떻게 나와?', '날씨랑 옷차림은?', '선택 관광은 뭐가 있어?'];
-function planAskSheet(p) {
+function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 대화(스크롤) · 아래 자주 묻는 질문(옆으로 밀기) + 입력칸·보내기 (판 -114: 예전엔 한 줄로 쌓여 '물어보기' 단추가 휴대폰 아래 단추줄 밑에 깔려 안 눌렸음)
   if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
-  const code = p.room.code, list = el('div', { class: 'stack', style: 'gap:10px' }), st = el('div', { class: 'card', style: 'padding:10px 12px;font-weight:700;font-size:14px' });
-  const nmIn = el('input', { type: 'text', maxlength: 12, placeholder: '내 이름 (일행에게 보여요)', value: trName(), style: 'width:100%' });
-  const ta = el('textarea', { rows: 2, placeholder: '예: 3일차 점심은 뭐예요?', style: 'width:100%;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
-  const chips = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px' }, ...TB_QUICK.map(t => el('button', { class: 'btn line small', text: t, onclick: () => send(t) })));
-  let R = null, S = null, busy = false;
+  const code = p.room.code, list = el('div', { class: 'stack', style: 'gap:10px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch' });
+  const st = el('div', { style: 'font-size:13px;font-weight:700;padding:6px 10px;border-radius:12px;background:#F2F4F6' });
+  const nmIn = el('input', { type: 'text', maxlength: 12, placeholder: '내 이름 (일행에게 보여요)', value: trName(), style: 'width:100%;box-sizing:border-box;padding:9px 12px;border-radius:12px;border:1px solid var(--line);font:inherit' });
+  const ta = el('textarea', { rows: 1, placeholder: '궁금한 걸 물어보세요', style: 'flex:1;min-width:0;resize:none;font:inherit;font-size:16px;padding:10px 12px;border-radius:20px;border:1px solid var(--line);max-height:96px' });
+  const goB = el('button', { type: 'button', 'aria-label': '보내기', style: 'flex:none;width:44px;height:44px;border-radius:50%;border:none;background:#FF6B4A;color:#fff;font-size:20px;font-weight:900;cursor:pointer', text: '↑', onclick: () => send() });
+  const chips = el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none' }, ...TB_QUICK.map(t => el('button', { type: 'button', style: 'flex:none;white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 12px;font:600 13.5px Pretendard,sans-serif;color:#15202B;cursor:pointer', text: t, onclick: () => send(t) })));
+  let R = null, S = null, busy = false, lastN = -1;
   const paint = () => {
     if (!S) return;
     const who = trBotWho(S), me = trMe(), qs = S.tc.filter(m => m.ask).slice(-20);
-    st.textContent = who.t; st.style.borderLeft = `4px solid ${who.ok ? '#1D9EC0' : '#FF9F43'}`;
-    if (trBotKey()) st.append(el('div', { class: 'dt', style: 'font-weight:500;margin-top:4px', text: `${trBotOn(R) ? '일행이 물어도 이 휴대폰이 답해요(MPD를 켜 둔 동안) · 오늘 ' + (((ls.get('tripBotN', null) || {}).d === new Date().toDateString() ? ls.get('tripBotN').n : 0)) + '/' + TB_DAY_MAX + '번 · 한 번에 몇 원' : '일행 질문엔 답하지 않아요'}` }),
-      el('button', { class: 'btn line small', style: 'margin-top:6px', text: trBotOn(R) ? '일행 질문에 답하기 끄기' : '일행 질문에 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }));
+    const N = ls.get('tripBotN', null) || {}, n = N.d === new Date().toDateString() ? N.n : 0;
+    faRc(st, el('span', { style: `color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t }),
+      trBotKey() ? el('span', { style: 'font-weight:500;color:#6B7684', text: ` · 오늘 ${n}/${TB_DAY_MAX}번 · ` }) : null,
+      trBotKey() ? el('button', { type: 'button', style: 'border:none;background:none;padding:0;font:600 13px Pretendard,sans-serif;color:#6B7684;text-decoration:underline;cursor:pointer', text: trBotOn(R) ? '일행 질문 답하기 끄기' : '일행 질문 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }) : null);
+    const atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     faRc(list, ...(qs.length ? qs.flatMap(q => { const a = S.tc.find(y => y.id === 'a_' + q.id);
       return [el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' }, q.by !== me ? el('div', { class: 'dt', style: 'font-weight:700', text: q.nm || '일행' }) : null,
-          el('div', { style: 'max-width:82%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:var(--pine);color:#fff;white-space:pre-wrap', text: q.x })),
+          el('div', { style: 'max-width:82%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: q.x })),
         a ? trBotBubble(a, q, p) : el('div', { class: 'dt', text: q.pend ? '보내는 중…' : `⏳ 답을 기다려요 · ${who.ok ? '곧 와요' : '답해 줄 휴대폰이 켜지면 와요'}` })]; })
-      : [el('div', { class: 'sub', text: '이 여행 일정·여행사 안내를 다 알고 있어요. 궁금한 걸 물어보세요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' })]));
-    list.scrollTop = list.scrollHeight;
+      : [el('div', { class: 'sub', style: 'padding:8px 4px', text: '이 여행 일정과 여행사 안내를 다 알고 있어요. 아래 질문을 누르거나 직접 물어보세요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' })]));
+    if (atEnd || qs.length !== lastN) list.scrollTop = list.scrollHeight; lastN = qs.length;
   };
   const send = async (x) => {
-    x = String(x || ta.value).trim(); if (!x || busy) return;
-    const nm = nmIn.value.trim().slice(0, 12); if (!trName()) { if (!nm) { nmIn.focus(); return toast('먼저 내 이름을 적어 주세요'); } ls.set('nick', nm); }
+    x = String(x || ta.value).trim(); if (!x) { ta.focus(); return toast('궁금한 걸 적어 주세요'); } if (busy) return toast('앞 질문을 보내는 중이에요');
+    if (!trName()) { const nm = nmIn.value.trim().slice(0, 12); if (!nm) { nmIn.focus(); return toast('먼저 내 이름을 적어 주세요'); } ls.set('nick', nm); nmIn.remove(); }
     if (!R) return toast('잠깐만요, 여행 방에 들어가는 중이에요');
-    busy = true; ta.value = '';
-    try { await trAsk(R, S, x); paint(); if (trBotOn(R)) { await trBotTick(code, R, S); paint(); } }
+    busy = true; ta.value = ''; goB.disabled = true; goB.style.opacity = '.5';
+    try { const pr = trAsk(R, S, x); paint(); await pr; paint(); if (trBotOn(R)) { await trBotTick(code, R, S); paint(); } }
     catch { toast('⚠ 질문을 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; }
-    busy = false;
+    busy = false; goB.disabled = false; goB.style.opacity = '';
   };
   ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
-  const bg = labSheet('✨ 여행 도우미 · ' + p.name, st, list, chips, trName() ? null : nmIn, ta,
-    el('button', { class: 'btn primary full', text: '물어보기', onclick: () => send() }),
-    el('div', { class: 'dt', style: 'font-size:12px', text: '여행사 일정·안내·날씨 자료로만 답하고, 자료에 없으면 없다고 해요. 열쇠를 넣은 휴대폰이 Claude에 일정 글만 보내요(사진·위치·이름은 안 보내요).' }));
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
+  bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('h2', { style: 'margin:0;flex:1;font-size:19px', text: '✨ 여행 도우미' }), el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
+    st, list,
+    el('div', { style: 'flex:none' }, chips, trName() ? null : nmIn,
+      el('div', { style: 'display:flex;gap:8px;align-items:flex-end;margin-top:6px' }, ta, goB),
+      el('div', { class: 'dt', style: 'font-size:11.5px;margin-top:6px', text: '여행사 일정·안내·날씨 자료로만 답해요. 사진·위치·이름은 보내지 않아요.' }))));
+  document.body.append(bg); ovGuard();
   (async () => { try { R = await trRoom(code); S = await trLoad(R); paint(); await trSync(R, S, ['tc', 'tm']); paint();
     trBotStart(p);
     const iv = setInterval(async () => { if (!bg.isConnected) return clearInterval(iv); if (document.hidden) return; if (await trSync(R, S, ['tc', 'tm'])) paint(); }, 5000);
