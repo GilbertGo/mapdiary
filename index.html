@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-116-askui';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-117-guide';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8613,6 +8613,127 @@ function trBotBubble(a, q, p) {   // 도우미 답 말풍선 (여행 자료로 �
     miss && q && planIsHana(p) ? el('button', { class: 'btn line small', style: 'margin-top:4px', text: '하나투어 AI에게 물어보기 ↗', onclick: () => hanaAskOpen(p, q.x) }) : null);
 }
 var TB_QUICK = ['오늘 일정 알려 줘', '내일은 뭘 챙겨야 해?', '첫날 미팅 장소랑 시간은?', '식사는 어떻게 나와?', '날씨랑 옷차림은?', '선택 관광은 뭐가 있어?'];
+// 🧭 길 도우미 (2026-11-15 사용자 '여기도 챗봇 넣자. 계획 도우미. 길가다 헷갈리면 도와주기. 주변 안내 등등')
+//   여행 방(일행) 도우미와 달리 이 휴대폰 혼자 바로 묻고 답해요 · 물을 때마다 지금 위치·휴대폰 방향·다음 갈 곳까지 걷는 길 안내(OSRM)·
+//   주변 시설(Overpass 500m)·해 지는 시각·계획 전체를 같이 보내요 · 갈림길·표지판 사진도 함께 보낼 수 있어요
+var PG_DIR = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+function pgDir(b) { return PG_DIR[Math.round(((b % 360) + 360) % 360 / 45) % 8] + '쪽'; }
+function pgM(m) { return m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m) + 'm'; }
+function pgPos() { return new Promise(res => { if (!navigator.geolocation) return res(null); let done = 0; const t = setTimeout(() => { if (!done) { done = 1; res(null); } }, 9000);
+  navigator.geolocation.getCurrentPosition(q => { if (done) return; done = 1; clearTimeout(t); res({ lat: q.coords.latitude, lng: q.coords.longitude, acc: q.coords.accuracy, alt: q.coords.altitude, at: Date.now() }); },
+    () => { if (!done) { done = 1; clearTimeout(t); res(null); } }, { enableHighAccuracy: true, timeout: 8500, maximumAge: 15000 }); }); }
+function pgHeading() { return new Promise(res => { let done = 0; const fin = v => { if (done) return; done = 1; removeEventListener('deviceorientationabsolute', h); removeEventListener('deviceorientation', h); res(v); };
+  const h = e => { const v = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.absolute && e.alpha != null ? (360 - e.alpha) % 360 : null); if (v != null) fin(Math.round(v)); };
+  addEventListener('deviceorientationabsolute', h); addEventListener('deviceorientation', h); setTimeout(() => fin(null), 1200); }); }
+async function pgNear(pos) {   // 주변 500m 시설 (10분 기억)
+  const k = pos.lat.toFixed(3) + ',' + pos.lng.toFixed(3), C = pgNear.c || (pgNear.c = {});
+  if (C[k] && Date.now() - C[k].at < 600000) return C[k].L;
+  const a = `around:500,${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
+  const q = `[out:json][timeout:12];(nwr(${a})[amenity~"^(toilets|drinking_water|cafe|restaurant|fast_food|pharmacy|hospital|police|shelter|bench|parking)$"];nwr(${a})[shop~"^(convenience|supermarket|bakery)$"];nwr(${a})[highway~"^(bus_stop|trailhead)$"];nwr(${a})[railway~"^(station|subway_entrance)$"];nwr(${a})[tourism~"^(viewpoint|information|attraction|museum)$"];nwr(${a})[natural~"^(peak|spring|saddle)$"];nwr(${a})[historic];);out center 60;`;
+  const KO = { toilets: '화장실', drinking_water: '식수대', cafe: '카페', restaurant: '식당', fast_food: '분식·패스트푸드', pharmacy: '약국', hospital: '병원', police: '경찰', shelter: '쉼터', bench: '벤치', parking: '주차장', convenience: '편의점', supermarket: '마트', bakery: '빵집', bus_stop: '버스 정류장', trailhead: '등산로 입구', station: '역', subway_entrance: '지하철 출입구', viewpoint: '전망대', information: '안내판·안내소', attraction: '볼거리', museum: '박물관', peak: '봉우리', spring: '약수터', saddle: '고개' };
+  let L = [];
+  try { const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 15000)).json();
+    for (const e of j.elements || []) { const t = e.tags || {}, la = e.lat != null ? e.lat : e.center && e.center.lat, lo = e.lon != null ? e.lon : e.center && e.center.lon; if (la == null) continue;
+      const ty = t.amenity || t.shop || t.highway || t.railway || t.tourism || t.natural || (t.historic ? 'historic' : ''), nm = t['name:ko'] || t.name || '';
+      if (ty === 'bench' && !nm) continue;
+      L.push({ k: KO[ty] || (ty === 'historic' ? '유적' : ty), n: nm, d: dist(pos.lat, pos.lng, la, lo), b: bearing(pos.lat, pos.lng, la, lo), ele: t.ele, x: t.opening_hours || '' }); }
+    L.sort((a, b) => a.d - b.d); L = L.slice(0, 30); C[k] = { at: Date.now(), L };
+  } catch {}
+  return L;
+}
+async function pgSteps(pos, x) {   // 지금 자리 → 다음 갈 곳 걷는 길 안내
+  const TY = { turn: '돌기', 'new name': '길 이름 바뀜', depart: '출발', arrive: '도착', merge: '합류', fork: '갈림길', 'end of road': '길 끝', continue: '계속', roundabout: '로터리', 'on ramp': '진입', 'off ramp': '나감' };
+  const MO = { left: '왼쪽', right: '오른쪽', 'slight left': '살짝 왼쪽', 'slight right': '살짝 오른쪽', 'sharp left': '크게 왼쪽', 'sharp right': '크게 오른쪽', straight: '곧장', uturn: '되돌아' };
+  try { const j = await planRtJson(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${pos.lng.toFixed(6)},${pos.lat.toFixed(6)};${x.lng.toFixed(6)},${x.lat.toFixed(6)}?overview=false&steps=true`);
+    const r = j && j.routes && j.routes[0]; if (!r) return null;
+    const st = (r.legs[0].steps || []).slice(0, 10).map(s => { const m = s.maneuver || {}; return `${TY[m.type] || m.type || ''}${m.modifier ? ' ' + (MO[m.modifier] || m.modifier) : ''}${s.name ? ` '${s.name}'` : ''} → ${pgM(s.distance)} (${pgDir(m.bearing_after || 0)}으로)`; });
+    return { m: r.distance, st };
+  } catch { return null; }
+}
+async function pgCtx(p, say) {
+  const K = planToday(p), d = K >= 0 && K < p.nd ? K : 0, its = planItems(p, d).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng)), L = [], now = new Date();
+  L.push(`지금 시각: ${now.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })}`);
+  say('📍 내 위치 확인 중…'); const [pos, hd] = await Promise.all([pgPos(), pgHeading()]);
+  let nx = null, info = '위치를 못 받았어요';
+  if (pos) {
+    const asl = pos.alt != null ? Math.round(pos.alt - (typeof geoidOff === 'function' ? geoidOff(pos.lat, pos.lng) || 0 : 0)) : null;
+    L.push(`내 위치: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)} (오차 약 ${Math.round(pos.acc)}m)${asl != null ? ` · 해발 약 ${asl}m` : ''}${typeof kgrid === 'function' ? ` · 국가지점번호 ${kgrid(pos.lat, pos.lng) || '-'}` : ''}`);
+    if (hd != null) L.push(`휴대폰이 향한 방향(사용자가 보는 쪽): ${hd}° (${pgDir(hd)})`);
+    const ni = planNext(p, d), all = planItems(p, d); nx = ni >= 0 && Number.isFinite(all[ni].lat) ? all[ni] : null;
+    L.push(`\n[오늘(${d + 1}일차) 장소와 지금 자리에서 거리·방향]`);
+    for (const x of its) L.push(`- ${x.t || ''} ${x.n}${x.ok ? ' (다녀옴)' : ''}${x === nx ? ' ← 다음 갈 곳' : ''}: ${pgDir(bearing(pos.lat, pos.lng, x.lat, x.lng))} 직선 ${pgM(dist(pos.lat, pos.lng, x.lat, x.lng))}${x.ap ? ' (위치는 대략)' : ''}`);
+    if (nx) { say('🧭 다음 갈 곳까지 길 확인 중…'); const r = await pgSteps(pos, nx);
+      if (r) L.push(`\n[지금 자리 → 다음 갈 곳 '${nx.n}' 걷는 길 ${pgM(r.m)} (지도 자료 OSM 길찾기, 등산로는 틀릴 수 있음)]`, ...r.st.map((z, i) => `${i + 1}. ${z}`)); }
+    say('🏪 주변 시설 찾는 중…'); const N = await pgNear(pos);
+    if (N.length) L.push(`\n[주변 500m 안 시설 (OpenStreetMap)]`, ...N.map(z => `- ${z.k}${z.n ? ` '${z.n}'` : ''}: ${pgDir(z.b)} ${pgM(z.d)}${z.ele ? ` · 해발 ${z.ele}m` : ''}${z.x ? ` · 영업 ${z.x}` : ''}`));
+    const sn = sunTimes(pos.lat, pos.lng); if (sn) { const left = Math.round((sn.set - Date.now()) / 60000); L.push(`\n해 지는 시각: ${new Date(sn.set).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}${left > 0 ? ` (${Math.floor(left / 60)}시간 ${left % 60}분 남음)` : ' (이미 졌음)'}`); }
+    info = `📍 오차 ${Math.round(pos.acc)}m${nx ? ` · 다음 '${nx.n}' ${pgDir(bearing(pos.lat, pos.lng, nx.lat, nx.lng))} ${pgM(dist(pos.lat, pos.lng, nx.lat, nx.lng))}` : ''}`;
+  } else L.push('내 위치: 받지 못했어요(위치 권한·GPS 확인 필요)');
+  L.push('\n[계획 전체]', planBotCtx(p).txt.split('\n[여행 준비 목록]')[0].slice(0, 30000));
+  return { txt: L.join('\n'), nx, info, pos };
+}
+function planGuideSheet(p) {
+  const key = trBotKey(), HK = 'planGuide:' + p.id, hist = ls.get(HK, []) || [];
+  const list = el('div', { class: 'stack', style: 'gap:8px;max-height:46vh;overflow:auto;padding:2px' }), st = el('div', { class: 'dt', style: 'font-weight:700;min-height:18px' });
+  const ta = el('textarea', { rows: 1, placeholder: '예: 이 갈림길 어느 쪽이야?', style: 'flex:1;resize:none;font:inherit;padding:10px 12px;border-radius:18px;border:1px solid var(--line);min-width:0' });
+  const pick = el('input', { type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none' });
+  const thumb = el('div', { style: 'display:none;align-items:center;gap:8px' }); let img = null, busy = false, lastNx = null;
+  const QUICK = ['지금 어디쯤이야?', '다음 갈 곳 어떻게 가?', '이 갈림길 어느 쪽?', '근처 화장실', '근처 먹을 곳·편의점', '해 지기 전에 내려갈 수 있어?', '주변에 볼거리'];
+  const bubble = m => m.r === 'u' ? el('div', { style: 'align-self:flex-end;max-width:84%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: (m.img ? '📷 ' : '') + m.x })
+    : el('div', { style: 'align-self:flex-start;max-width:90%;padding:10px 12px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;color:#15202B;white-space:pre-wrap;line-height:1.5', text: m.x });
+  const paint = () => { faRc(list, ...(hist.length ? hist.slice(-20).map(bubble) : [el('div', { class: 'sub', text: '길을 걷다 헷갈리면 물어보세요. 물을 때마다 지금 위치·보는 방향·다음 갈 곳까지 길·주변 시설·해 지는 시각을 같이 봐요. 갈림길이나 표지판은 📷 사진을 찍어 같이 보내면 더 정확해요.' })]),
+      lastNx ? el('button', { class: 'btn line small', style: 'align-self:flex-start', text: `🧭 '${lastNx.n}' 길찾기 열기`, onclick: () => planGo(lastNx) }) : null); list.scrollTop = list.scrollHeight; };
+  pick.onchange = async () => { const f = pick.files && pick.files[0]; if (!f) return; try { const u = await shrinkImage(f, 1280, 'url', .85); img = u.split(',')[1];
+    thumb.replaceChildren(el('img', { src: u, style: 'height:52px;border-radius:8px' }), el('span', { class: 'dt', text: '이 사진도 같이 보내요' }), el('button', { class: 'btn line small', text: '✕', onclick: () => { img = null; thumb.style.display = 'none'; } })); thumb.style.display = 'flex'; } catch { toast('사진을 못 읽었어요'); } pick.value = ''; };
+  const send = async (x) => {
+    x = String(x || ta.value).trim(); if (!x && img) x = '이 사진 보고 알려 줘'; if (!x || busy) return;
+    if (!key) return toast('Claude 열쇠를 먼저 넣어 주세요');
+    busy = true; ta.value = ''; const sentImg = img; img = null; thumb.style.display = 'none';
+    hist.push({ r: 'u', x, img: sentImg ? 1 : 0, t: Date.now() }); paint();
+    try {
+      const C = await pgCtx(p, t => { st.textContent = t; }); lastNx = C.nx; st.textContent = C.info + ' · ✨ 답 쓰는 중…';
+      const sys = `당신은 걷는 여행·등산 중인 한국 사용자의 '길 도우미'예요. 휴대폰 화면에서 읽으니 짧게(5줄 안팎), 쉬운 한국어로, 바로 할 일부터 말하세요.
+- 방향은 '북동쪽 약 200m'처럼. '휴대폰이 향한 방향'이 있으면 그 기준으로 '왼쪽/오른쪽/앞/뒤'도 같이.
+- 아래 자료(내 위치, 계획, 길 안내, 주변 시설)와 사진에 있는 것만 말하세요. 없으면 모른다고 하고 확인 방법(표지판·현지 안내소·길찾기 앱)을 말하세요. 가게 영업 여부·가격은 확인 못 했다고.
+- OSM 길 안내는 등산로에서 틀릴 수 있으니 표지판·리본과 견줘 보라고 하세요.
+- 다쳤거나 길을 완전히 잃었거나 해가 지면 위험: 119와 국가지점번호(있으면)를 알려 주세요.
+- 사진이 오면 표지판 글자·화살표·갈림길 모양을 읽고 계획의 다음 갈 곳과 이어서 판단하세요.
+- 지명·장소 이름은 계획에 적힌 글자 그대로.`;
+      const msgs = []; for (const m of hist.slice(-7, -1)) msgs.push({ role: m.r === 'u' ? 'user' : 'assistant', content: m.x });
+      while (msgs.length && msgs[0].role !== 'user') msgs.shift();
+      const cont = []; if (sentImg) cont.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: sentImg } });
+      cont.push({ type: 'text', text: `[지금 자료]\n${C.txt}\n\n[질문]\n${x}` });
+      for (let i = msgs.length - 1; i > 0; i--) if (msgs[i].role === msgs[i - 1].role) msgs.splice(i, 1);
+      if (msgs.length && msgs[msgs.length - 1].role === 'user') msgs.pop();
+      msgs.push({ role: 'user', content: cont });
+      toast('✨ AI를 써요 · 길 도우미 · 위치·계획' + (sentImg ? '·사진' : '') + '을 보내요', true);
+      const { default: Anthropic } = await import(TALK_SDK);
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 700, system: sys, messages: msgs });
+      const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '길 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+      toast(`✨ AI 사용 끝 · 길 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+      const tb = (res.content || []).find(z => z.type === 'text'); hist.push({ r: 'a', x: tb ? tb.text.trim() : '(빈 답)', t: Date.now() }); st.textContent = C.info;
+    } catch (e) { const m = String(e && e.message || e); hist.push({ r: 'a', x: '⚠ 답을 못 받았어요 · ' + (/401|auth/i.test(m) ? 'Claude 열쇠를 확인해 주세요' : /fetch|network|Failed/i.test(m) ? '인터넷이 약해요' : m.slice(0, 80)), t: Date.now() }); st.textContent = ''; }
+    ls.set(HK, hist.slice(-30)); busy = false; paint();
+  };
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
+  list.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch';
+  bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('h2', { style: 'margin:0;flex:1;font-size:19px', text: '🧭 길 도우미' }),
+      el('button', { class: 'btn line small', text: '👥 일행에게', onclick: () => { bg.remove(); planAskSheet(p); } }),
+      el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
+    key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: () => talkKeySheet() })),
+    st, list,
+    el('div', { style: 'flex:none' },
+      el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding-bottom:4px' }, ...QUICK.map(q => el('button', { class: 'btn line small', style: 'white-space:nowrap;flex:none', text: q, onclick: () => { if (/갈림길/.test(q) && !img) toast('📷 갈림길 사진을 같이 보내면 더 정확해요'); send(q); } }))),
+      thumb,
+      el('div', { style: 'display:flex;gap:6px;align-items:flex-end;margin-top:6px' }, el('button', { class: 'btn line', style: 'flex:none;padding:10px 12px', 'aria-label': '사진', text: '📷', onclick: () => pick.click() }), ta,
+        el('button', { class: 'btn primary', style: 'flex:none', text: '보내기', onclick: () => send() })), pick,
+      el('div', { class: 'dt', style: 'font-size:11.5px;margin-top:6px' }, '물을 때 위치·계획(사진도)을 Claude에게 보내요 · 길·시설은 OpenStreetMap 자료라 틀릴 수 있어요',
+        hist.length ? el('a', { href: '#', style: 'margin-left:6px', text: '대화 지우기', onclick: e => { e.preventDefault(); hist.length = 0; ls.set(HK, []); lastNx = null; paint(); } }) : null))));
+  document.body.append(bg); ovGuard();
+  paint();
+}
 function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 대화(스크롤) · 아래 자주 묻는 질문(옆으로 밀기) + 입력칸·보내기 (판 -114: 예전엔 한 줄로 쌓여 '물어보기' 단추가 휴대폰 아래 단추줄 밑에 깔려 안 눌렸음)
   if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); }
   const code = p.room.code, list = el('div', { class: 'stack', style: 'gap:10px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch' });
@@ -8902,7 +9023,7 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     el('a', { href: `./?plan=1&p=${id}`, class: on === 'plan' ? 'on' : '' }, el('b', { text: '🗺' }), '전체 일정'),
     room,
     el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'photo' ? 'on' : '', onclick: () => ls.set('tripTab', 'photo') }, el('b', { text: '📷' }), '사진'),
-    el('button', { onclick: () => planAskSheet(p) }, el('b', { text: '✨' }), '물어보기'),
+    el('button', { onclick: () => trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', { text: '🧭' }), '도우미'),
     planCN(p) ? el('button', { onclick: planSaySheet }, el('b', { text: '🗣' }), '중국어') : el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '🧳' }), '준비'));
   trBotStart(p);
   if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
