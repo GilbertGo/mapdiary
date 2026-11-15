@@ -1100,6 +1100,8 @@ html.n-page .role.r3-bar .who{background:rgba(255,255,255,.9);color:#15202B!impo
 @media(max-width:360px){.md-real-concept .md-rc-photo{height:343px;margin:8px 8px 0}.md-rc-mapcard{margin-left:15px;margin-right:15px}.md-rc-photo-copy h1{font-size:27px}.md-rc-mapcard .c-hero{height:195px;min-height:195px}}
 /* END MPD REAL MAP CONCEPT */
 
+.pl-leg{transform:translate(-50%,-50%);white-space:nowrap;background:rgba(255,255,255,.94);color:#4E5968;font:600 11.5px Pretendard,sans-serif;padding:3px 8px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.18);pointer-events:none}
+.pl-leg.ic{padding:2px 5px;font-size:15px;line-height:1.2;border-radius:50%}
 </style>
 </head>
 <body>
@@ -3201,9 +3203,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-159-type';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-160-leg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔤 여행 일정 화면 글씨를 덜 굵게, 요약 숫자는 한 색으로, 아래 메뉴는 선 그림으로 깔끔하게 · 📒 여행 노트 다시 배치 · ✨ AI 묻기';
+const UI_NOTES = '✈ 여행 계획 이동 요약에서 비행기 구간을 차로 잘못 세던 것 고침 · 🚆 지도의 전철 구간에 이름표 · 🔤 일정 화면 글씨 정리';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7849,7 +7851,9 @@ const PLAN_RX = { W: /도보|걸어|걷기|산책|walk/i, R: /전철|지하철|�
 function planLegMode(a, b, p) {
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat)) return null;
   const st = dist(a.lat, a.lng, b.lat, b.lng), hike = !!(p && p.hike && p.hike.on), t = planLegText(a, b, p), X = PLAN_RX;
-  if (b.k === 'fly' || (a.k === 'fly' && !t.trim())) return 'fly';   // 비행기 칸 뒤라도 사이에 이동 칸 글이 있으면 그 글대로 (공항 → 시내)
+  // 판 -160 (오사카 캡처 '차 1,116km'): 비행 칸 위치는 출발 공항이라, 비행 칸에서 멀리(150km 넘게) 떨어진 다음 곳까지가 비행 · 비행 칸으로 가는 짧은 길은 땅 위 이동
+  const fy = a.k === 'fly' || b.k === 'fly';
+  if ((fy && st > 150000) || (st > 700000 && !X.F.test(t))) return 'fly';
   if (st < 40) return 'none'; if (b.st) return 'line';
   if (t.trim()) {
     if (X.W.test(t) && st < 3000) return 'walk';
@@ -7867,11 +7871,17 @@ function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk'
 // 지도에 두 곳 사이 선 하나: 받은 걷는 길·도로 길은 흰 테 굵은 실선, 전철은 점점선(노선 아님), 그 밖은 직선 점선
 function planLegLine(layer, a, b, p, col, w) {
   const k = planLegMode(a, b, p), R = planLegR(a, b, p); if (k === 'none') return; w = w || 5;
+  // 판 -160 (사용자 '걷는 거는 두 발, 차 이동은 차 이모티콘'): 선 가운데에 어떻게 가는지 표시
+  const tag = (t, at, ic) => L.marker(at || [(a.lat + b.lat) / 2, (a.lng + b.lng) / 2], { interactive: false, keyboard: false, icon: L.divIcon({ className: '', iconSize: null, html: `<div class="pl-leg${ic ? ' ic' : ''}">${t}</div>` }) }).addTo(layer);
+  const big = dist(a.lat, a.lng, b.lat, b.lng) >= 120;   // 아주 가까운 두 곳은 핀과 겹쳐서 표시 안 함
   if (R && R.c && R.c.length > 1) { L.polyline(R.c, { color: '#fff', weight: w + 3, opacity: .9 }).addTo(layer);
-    const ln = L.polyline(R.c, { color: col, weight: k === 'car' ? w - 1 : w, opacity: .95 }).addTo(layer); if (k === 'car') ln.bindTooltip('🚗 차·버스 도로 길 (대략)'); return; }
+    const ln = L.polyline(R.c, { color: col, weight: k === 'car' ? w - 1 : w, opacity: .95 }).addTo(layer); if (k === 'car') ln.bindTooltip('🚗 차·버스 도로 길 (대략)');
+    if (big && (k === 'walk' || k === 'car')) tag(k === 'car' ? '🚗' : '👣', R.c[Math.floor(R.c.length / 2)], 1); return; }
   const ll = [[a.lat, a.lng], [b.lat, b.lng]];
-  if (k === 'rail') { L.polyline(ll, { color: '#fff', weight: 6, opacity: .7 }).addTo(layer); L.polyline(ll, { color: col, weight: 4, opacity: .9, dashArray: '1 9', lineCap: 'round' }).bindTooltip('🚆 전철 · 직선은 실제 노선이 아니에요').addTo(layer); return; }
-  L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).bindTooltip(k === 'fly' ? '✈ 비행' : k === 'car' ? '🚗 도로 길을 받는 중이거나 못 받았어요' : '직선 (실제 길 아님)').addTo(layer);
+  if (big && (k === 'walk' || k === 'car')) tag(k === 'car' ? '🚗' : '👣', null, 1);
+  if (k === 'rail') { L.polyline(ll, { color: '#fff', weight: 5, opacity: .8 }).addTo(layer); L.polyline(ll, { color: '#4E5968', weight: 2.5, opacity: .9 }).addTo(layer); tag('🚆 전철 · 실제 노선 아님'); return; }   // 판 -160 '점선은 뭐야?': 가는 회색 선 + 이름표
+  if (k === 'fly') { L.polyline(ll, { color: '#0277BD', weight: 2.5, opacity: .8, dashArray: '2 7', lineCap: 'round' }).addTo(layer); tag('✈ 비행'); return; }
+  L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).bindTooltip(k === 'car' ? '🚗 도로 길을 받는 중이거나 못 받았어요' : '직선 (실제 길 아님)').addTo(layer);
 }
 async function planCarRoute(a, b) {   // 도로 길 (OSRM 차 → 안 되면 Valhalla auto)
   const st = dist(a.lat, a.lng, b.lat, b.lng), A = `${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}`; let pts = null, m = 0;
