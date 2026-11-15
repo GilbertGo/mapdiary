@@ -721,6 +721,7 @@ html.tv-page .tv-hin h1{color:#fff}
 .tv-it .tv-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 .tv-it .tv-b button,.tv-it .tv-b a{padding:5px 11px;border-radius:14px;border:none;font:600 12.5px Pretendard,sans-serif;background:#F2F4F6;color:#4E5968;cursor:pointer;text-decoration:none}
 .tv-it .tv-b .go{background:#15202B;color:#fff}
+.tv-leg{display:flex!important;align-items:center;gap:8px}.tv-lgt{flex:1;min-width:0;text-align:left;border:none;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}.tv-lgt small{display:block;font-weight:500;color:#8B95A1;font-size:11.5px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tv-lgo{flex:none;border:none;background:#F2F4F6;color:#333D4B;font:600 12px Pretendard,sans-serif;padding:5px 10px;border-radius:12px;cursor:pointer}
 .tv-leg{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;margin:0}.tv-leg .tv-lg{color:#B0B8C1;font-weight:500}.tv-leg.tight b{color:#E8613C}
 .tv-leg{font:600 12.5px Pretendard,sans-serif;color:#6B7684;padding:0 0 8px 68px;margin-top:-2px}.tv-leg.w{color:#1D7FA0}
 .tv-gap{font-size:12px;color:#A3ABB5;padding:0 0 8px 68px;margin-top:-2px}
@@ -3205,9 +3206,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-162-apps';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-163-movename';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '💰 여행 경비·정산 (여행 노트 → 일행과 같이 적고, 누가 누구에게 얼마 보낼지) · ⇅ 동선 짧게 (구경 장소 순서를 이동 거리 짧게, 되돌리기 있음) · 🚕 구간 줄을 눌러 걸어서·택시·버스·전철 고르기 · ⚠ 일정 시각 사이가 이동 시간보다 짧으면 표시';
+const UI_NOTES = '📍 일정 이름은 장소만 ("공항에서 난바로 이동" → "난바") · 가는 방법은 일정 사이 줄에 · 🧭 길찾기도 일정 사이 줄에서 (앞 장소 → 이 장소) · 💰 여행 경비·정산 · ⇅ 동선 짧게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7846,7 +7847,7 @@ async function planFilmRoutes(p, say) {
 //   walk 걷는 길 · car 도로 길(차·버스·택시) · rail 전철(노선은 무료 길찾기에 없어 점선 그대로) · fly 비행 · line 그 밖 직선 · none 너무 가까움
 function planLegText(a, b, p) {
   const L = (p && p.it) || [], ia = L.indexOf(a), ib = L.indexOf(b), T = [];
-  if (a.k === 'move') T.push(a); if (ia >= 0 && ib > ia) L.slice(ia + 1, ib).forEach(x => { if (x.d === b.d && (x.k === 'move' || !Number.isFinite(x.lat))) T.push(x); }); if (b.k === 'move') T.push(b);
+  if (a.k === 'move') T.push(a); if (ia >= 0 && ib > ia) L.slice(ia + 1, ib).forEach(x => { if (x.d === b.d && (x.k === 'move' || !Number.isFinite(x.lat))) T.push(x); }); if (b.k === 'move') T.push(b); if (b.lt) T.push({ n: b.lt, m: b.m || '' });   // 판 -163 b.lt: 장소로 바꾼 이동 칸의 원래 글
   return T.map(x => `${x.n || ''} ${x.m || ''}`).join(' ');
 }
 const PLAN_RX = { W: /도보|걸어|걷기|산책|walk/i, R: /전철|지하철|라피트|JR|열차|기차|신칸센|메트로|난카이|한큐|한신|케이한|긴테츠|모노레일|철도|트램|노면|train|subway|metro|rapi|monorail/i, C: /버스|택시|차량|자동차|렌터카|렌트카|셔틀|리무진|승용차|드라이브|bus|taxi|shuttle/i, F: /페리|배편|유람선|여객선|ferry/i };
@@ -8028,16 +8029,17 @@ function planLegInfo(a, b, p) {
 }
 // 판 -162 (사용자 '다른 여행앱과 비교하고 좋은 건 갖다 써' — Wanderlog·트리플·구글 지도에서): 구간 이동 방법 고르기 · 시간 빠듯 경고 · 동선 짧게
 function planLegTight(a, b, LI) {   // 앞 일정 시각과 이 일정 시각 사이가 이동 시간보다 짧으면 글
-  if (!a.t || !b.t || a.d !== b.d || !LI || LI.k === 'fly') return '';
+  if (!a.t || !b.t || a.d !== b.d || !LI || LI.k === 'fly' || b.lt) return '';   // b.lt: 이동 칸에서 바꾼 장소라 시각이 '떠나는 때'일 수 있어서 안 견줌
   const mn = s => { const m = /^(\d{1,2}):(\d{2})/.exec(s); return m ? +m[1] * 60 + +m[2] : null; }, gap = mn(b.t) - mn(a.t); if (gap == null || isNaN(gap) || gap < 0) return '';
   const need = Math.round(LI.k === 'rail' ? LI.m * 1 / 40000 * 60 + 10 : LI.k === 'car' ? LI.m / 35000 * 60 : LI.m / 4000 * 60);
   return need > gap ? `일정 사이 ${gap}분, 이동 약 ${need}분` : '';
 }
-function planLegPick(p, a, b, done) {
+function planLegPick(p, a, b, done, mv, open) {
   const cur = planLegMode(a, b, p), opt = [['walk', '', '👣 걸어서'], ['car', 'taxi', '🚕 택시'], ['car', 'bus', '🚌 버스'], ['car', 'car', '🚗 차·렌터카'], ['rail', '', '🚆 전철·기차'], ['line', 'ship', '⛴ 배'], ['fly', '', '✈ 비행기']];
   const bg = labSheet(`${a.n} → ${b.n}`, el('div', { class: 'sub', text: '어떻게 가요? 고르면 거리·시간·지도 선이 그대로 바뀌어요' }),
     ...opt.map(([k, n, t]) => el('button', { class: 'btn ' + (cur === k && (b.lmn || '') === n && b.lm ? 'dark' : 'line') + ' full', style: 'text-align:left', text: t, onclick: () => { b.lm = k; if (n) b.lmn = n; else delete b.lmn; planSave(p); bg.remove(); done && done(); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} } })),
-    b.lm ? el('button', { class: 'btn line full', text: '↺ 앱이 정하게 (일정 글대로)', onclick: () => { delete b.lm; delete b.lmn; planSave(p); bg.remove(); done && done(); } }) : null);
+    b.lm ? el('button', { class: 'btn line full', text: '↺ 앱이 정하게 (일정 글대로)', onclick: () => { delete b.lm; delete b.lmn; planSave(p); bg.remove(); done && done(); } }) : null,
+    ...(mv || []).map(z => el('button', { class: 'btn line full', style: 'text-align:left', text: `✎ 이동 칸 고치기 · ${z.n}`, onclick: () => { bg.remove(); open && open(z); } })));
 }
 const PLAN_OPT_K = ['spot', 'show', 'peak'];
 function planOptimize(p, d, done) {   // 구경 장소끼리만 순서를 바꿔 이동 거리를 줄임 · 비행·숙소·식사·이동 칸·위치 없는 곳·다녀온 곳은 제자리 · 시각은 칸 자리에 그대로 남김
@@ -8119,6 +8121,31 @@ async function planExpSheet(p, redraw) {
     draw(); setTimeout(() => { try { amt.focus(); } catch {} }, 200);
   }
   paint(); return bg;
+}
+// 판 -163 (사용자 '"공항에서 난바로 이동" 이렇게 쓰지 말고 그냥 "난바"로 써야 혼선 없지. 길안내도 이동 정보에 넣고'):
+//   위치 있는 이동 칸('A에서 B로 이동' · 'A → B (도보)')은 장소 'B'로 바꾸고, 원래 글은 x.lt(구간 줄이 가는 방법으로 읽음) · 위치 없는 이동 칸은 카드 대신 구간 줄에 붙임
+function planMoveDest(n) {
+  n = String(n || '').trim(); let m = /^(.+?)\s*(?:→|->|➡|⇒)\s*(.+?)$/.exec(n) || /^(.+?)에서\s+(.+?)(?:으로|로)\s*(?:이동|가기|가요|향해요|향하기)?(?:\s*\(.*\))?$/.exec(n);
+  if (!m) return ''; let d = m[2].replace(/\s*\([^)]*\)\s*$/, '').replace(/\s*(?:으로|로)?\s*(?:이동|도착|가기)$/, '').trim(); return d.length >= 1 && d.length <= 30 ? d : '';
+}
+function planMoveFix(p) {
+  let n = 0; (p.it || []).forEach(x => { if (x.k !== 'move' || !Number.isFinite(x.lat) || x.lt || x.mvf) return; const d = planMoveDest(x.n);
+    if (d) { x.lt = [x.n, x.m].filter(Boolean).join(' · '); x.n = d; x.k = 'spot'; x.mvf = 1; delete x.m; n++; return; }   // 가는 방법 메모도 구간 줄로
+    const m = /^(.+?)\s*도착(?:\s*[·,·]\s*(.+))?$/.exec(String(x.n || '').trim());   // '간사이 국제공항 도착' → '간사이 국제공항' · '인천공항 도착·탑승 수속' → 메모에 '탑승 수속'
+    if (m && m[1].length <= 30) { x.n = m[1].trim(); if (m[2]) x.m = [m[2].trim(), x.m].filter(Boolean).join(' · '); x.k = 'spot'; x.mvf = 1; n++; } });
+  return n;
+}
+function planLegGo(a, b, k) {   // 구간 길찾기: 출발 = 앞 장소, 도착 = 이 장소 · 한국은 네이버, 중국은 가오더, 그 밖은 구글 지도(일본 전철도 나와요)
+  if (planInChina(b.lat, b.lng)) return planGo(b);
+  if (geoidOff(b.lat, b.lng) != null && geoidOff(a.lat, a.lng) != null) {
+    const ty = k === 'walk' ? 'walk' : k === 'car' ? 'car' : 'public', q = `?slat=${a.lat}&slng=${a.lng}&sname=${encodeURIComponent(a.n)}&dlat=${b.lat}&dlng=${b.lng}&dname=${encodeURIComponent(b.n)}&appname=${encodeURIComponent(location.hostname || 'mapdiary')}`;
+    const web = `https://map.naver.com/p/directions/${a.lng},${a.lat},${encodeURIComponent(a.n)}/${b.lng},${b.lat},${encodeURIComponent(b.n)}/-/${ty === 'public' ? 'transit' : ty}`;
+    if (/Android/i.test(navigator.userAgent)) { location.href = `intent://route/${ty}${q}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(web)};end`; return; }
+    if (IS_IOS) { location.href = `nmap://route/${ty}${q}`; return; }
+    window.open(web, '_blank', 'noopener'); return;
+  }
+  const tm = k === 'walk' ? 'walking' : k === 'car' ? 'driving' : 'transit';
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=${tm}`, '_blank', 'noopener');
 }
 function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
@@ -10087,7 +10114,7 @@ function planMakeSheet(p) {
       if (c.d != null) x.d = Math.max(0, Math.min(p.nd - 1, c.d)); if (c.t != null) x.t = c.t;
       p.it.splice(p.it.indexOf(x), 1); planMineIns(p.it, x); nc++; }
     const add = picks.map(z => ({ id: planNewId(), d: Math.max(0, Math.min(p.nd - 1, +z.d || 0)), t: /^\d{1,2}:\d{2}$/.test(z.t || '') ? String(z.t).padStart(5, '0') : '', n: String(z.n || '장소').slice(0, 60), k: PLAN_KINDS[z.k] ? z.k : 'spot', m: String(z.why || '').slice(0, 200), q: String(z.q || '').slice(0, 100),
-      lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1 }));
+      lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1, lt: z.how ? String(z.how).slice(0, 80) : undefined }));
     add.forEach(x => { x.ap = x.lat != null ? 1 : 0; planMineIns(p.it, x); });   // 있던 차례는 그대로, 새 곳은 그날 시각 자리에(시각 없으면 그날 끝)
     planSave(p); if (add.length) { try { await planGeocode(p, say); } catch {} planSave(p); }
     m.added = add.length; m.chDone = nc + nd; m.applied = 1; ls.set(HK, hist.slice(-30));
@@ -10135,10 +10162,10 @@ function planMakeSheet(p) {
 - 이미 정해진 일정, 특히 비행기 출발·도착 시각을 지키세요. 도착 뒤 입국·공항에서 시내까지 이동 시간, 돌아가는 비행기는 출발 2시간 반 전 공항 도착을 넣어 계산하세요.
 - 같은 날은 가까운 곳끼리 묶고 하루 4~6곳 안팎으로 무리 없게. 식사 시간도 넣으세요.
 - 일정에 넣을 곳을 제안할 때만 items에 넣고, 설명만 할 때는 items를 빈 배열로.
-- items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show|move, q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 25자 안.
+- items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show (이동은 따로 일정으로 만들지 말고 n에 도착할 장소 이름만 쓰고 가는 방법은 how에, 예 n '난바' how '난카이 라피트 약 40분'), q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 25자 안.
 - text는 3~5줄로 짧게. 날마다 몇 곳인지·동선 요점만(일정 목록은 items에만, text에 되풀이하지 말 것).
 - 계획의 일정 줄 앞 [#번호]가 그 일정 번호예요. 있던 일정의 시각·날을 바꾸거나 빼자고 제안할 때는 ch에 넣으세요(no=번호, t=새 시각 HH:MM, d=새 일차(0부터, 안 바뀌면 빼기), del=true면 빼기, why 25자 안). 사용자가 '반영해·바꿔 줘'라고 하면 앞에서 말한 제안을 ch·items로 만들어 주세요. 같은 곳을 items로 다시 넣지 마세요.
-JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":""}],"ch":[{"no":1,"t":"","d":null,"del":false,"why":""}]}`;
+JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":"","how":""}],"ch":[{"no":1,"t":"","d":null,"del":false,"why":""}]}`;
       const msgs = []; for (const m of hist.slice(-7, -1)) msgs.push({ role: m.r === 'u' ? 'user' : 'assistant', content: m.r === 'u' ? m.x : m.x + (m.items && m.items.length ? '\n(제안: ' + m.items.map(z => `${(+z.d || 0) + 1}일차 ${z.n}`).join(', ') + (m.added ? ' → 일정에 넣음' : '') + ')' : '') });
       while (msgs.length && msgs[0].role !== 'user') msgs.shift();
       for (let i = msgs.length - 1; i > 0; i--) if (msgs[i].role === msgs[i - 1].role) msgs.splice(i, 1);
@@ -10810,6 +10837,7 @@ function koInHanzi(lat, lng) { return planInChina(lat, lng) && !(lng > 128.5 && 
 function viewPlanOne(id) {
   const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
   p.it = p.it || [];
+  { const mf = planMoveFix(p); if (mf) setTimeout(() => toast(`이동 칸 ${mf}곳을 도착 장소 이름으로 바꿨어요 · 가는 방법은 일정 사이 줄에 있어요`, false, 6000), 1200); }
   { const before = JSON.stringify(p.it), r = planSelfCheck(p); if (JSON.stringify(p.it) !== before || r.fixed.length) { planSave(p); setTimeout(() => toast(`🔎 스스로 점검해서 ${r.fixed.length}가지를 고쳤어요 · ${r.fixed[0] || ''}${r.fixed.length > 1 ? ' 외' : ''}`, false, 7000), 700); } else planSave(p); }   // 판 -130·-131
   { const n = planAutoVisit(p); if (n) setTimeout(() => toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`), 600); }
   setInterval(() => { if (document.hidden) return; const n = planAutoVisit(p); if (n) { toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`); drawAll(); } }, 120000);   // 여행 중 화면을 열어 두면 2분마다
@@ -11010,7 +11038,7 @@ function viewPlanOne(id) {
     const bg = labSheet('가이드 연락처', el('div', { class: 'sub', text: '이 휴대폰의 계획에만 적혀요. 일행에게는 여행 방 대화로 알려 주세요.' }), n, t,
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { const v = { n: n.value.trim(), tel: t.value.trim() }; if (v.n || v.tel) p.guide = v; else delete p.guide; planSave(p); bg.remove(); drawAll(); } }));
   }
-  function row(x, i, d, nx) {   // ✈ 일정 한 칸 (새 디자인 tvItem)
+  function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
     const it = tvItem({ ic: mic, k: x.k, t: x.t, no: `${i + 1}`, n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
@@ -11028,7 +11056,7 @@ function viewPlanOne(id) {
         x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
-      btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '길찾기', onclick: () => planGo(x) }) : null,
+      btns: td === d || x.ok || (hasLoc && !legged) ? [hasLoc && !legged ? el('button', { class: isNx ? 'go' : '', text: '길찾기', onclick: () => planGo(x) }) : null,
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
     return it;
   }
@@ -11053,12 +11081,19 @@ function viewPlanOne(id) {
         if (d === day && planHasPersonal(p)) { const v = ls.get('planView:' + p.id, 'all'), me = ls.get('planMe:' + p.id, ''), EN = planEN(p);
           out.push(el('div', { style: 'display:flex;gap:6px' }, ...[['all', EN ? 'Everyone' : '모든 일정'], ['me', EN ? 'Mine + group' : '내 일정 + 함께']].map(([k, t]) => el('button', { class: 'btn small ' + (v === k ? 'dark' : 'line'), text: t, onclick: () => { if (k === 'me' && !me) { toast('👥 함께 가는 사람에서 \'이 휴대폰은 ○○\'을 먼저 골라 주세요'); return planMemSheet(p, drawAll); } ls.set('planView:' + p.id, k); drawList(); drawMap(); } })))); } }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
-      let pv = null;   // 판 -161: 위치 있는 앞 장소와의 구간 한 줄 (👣 걸어서 650m · 9분)
-      its.forEach((x, i) => { if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) { const LI = pv && planLegInfo(pv, x, p);
-          if (LI && LI.m >= 40) { const tm = planLegTight(pv, x, LI);   // 판 -162: 누르면 이동 방법 고르기 · 일정 시각 사이가 이동 시간보다 짧으면 ⚠
-            const a0 = pv; tl.append(el('button', { class: 'tv-leg' + (LI.k === 'walk' ? ' w' : '') + (tm ? ' tight' : ''), title: LI.real ? '받아 둔 실제 길로 셈' : '직선으로 짐작', onclick: () => planLegPick(p, a0, x, drawAll) },
-              `${LI.ic} ${LI.s}${LI.note ? ' · ' + LI.note : ''}`, tm ? el('b', { text: ` · ⚠ ${tm}` }) : null, el('span', { class: 'tv-lg', text: ' 바꾸기 ›' }))); } pv = x; }
-        tl.append(row(x, i, d, nx)); });
+      let pv = null, hold = [];   // 판 -161·-163: 위치 있는 앞 장소와의 구간 한 줄 (👣 걸어서 650m · 9분 · 길찾기) · 위치 없는 이동 칸은 카드 대신 이 줄에
+      its.forEach((x, i) => {
+        if (x.k === 'move' && !Number.isFinite(x.lat) && pv) { hold.push(x); return; }
+        let legged = false;
+        if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) { const LI = pv && planLegInfo(pv, x, p);
+          if (LI && LI.m >= 40) { const tm = planLegTight(pv, x, LI), a0 = pv, mv = hold.slice(), how = [...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+            tl.append(el('div', { class: 'tv-leg' + (LI.k === 'walk' ? ' w' : '') + (tm ? ' tight' : '') },
+              el('button', { class: 'tv-lgt', onclick: () => planLegPick(p, a0, x, drawAll, mv, viewItem) }, el('span', { text: `${LI.ic} ${LI.s}${LI.note ? ' · ' + LI.note : ''}` }), tm ? el('b', { text: ` · ⚠ ${tm}` }) : null,
+                how ? el('small', { text: how }) : null),
+              LI.k === 'fly' ? null : el('button', { class: 'tv-lgo', text: '길찾기', onclick: () => planLegGo(a0, x, LI.k) }))); legged = LI.k !== 'fly'; hold = []; } pv = x; }
+        if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
+        tl.append(row(x, i, d, nx, legged)); });
+      hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx)));
       const canOpt = its.filter(x => PLAN_OPT_K.includes(x.k) && Number.isFinite(x.lat) && !x.ok).length >= 3;
       out.push(tl, el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'tv-add', style: 'flex:1', text: `+ 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }),
         canOpt ? el('button', { class: 'tv-add', style: 'flex:1', text: '⇅ 동선 짧게', onclick: () => planOptimize(p, d, drawAll) }) : null));   // 판 -129: '그린 길 캡처로 고치기'는 ⋯ 더보기에만
