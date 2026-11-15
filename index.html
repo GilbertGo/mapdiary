@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-114-descent';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-115-draw';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7302,6 +7302,71 @@ ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
   const hk = j.hike && typeof j.hike === 'object' ? { km: +j.hike.km > 0 ? +(+j.hike.km).toFixed(1) : null, h: +j.hike.h > 0 ? +(+j.hike.h).toFixed(1) : null, lv: j.hike.lv ? String(j.hike.lv).slice(0, 20) : null } : null;
   return { name: String(j.name || '').slice(0, 60), start: /^\d{4}-\d{2}-\d{2}$/.test(j.start || '') ? j.start : '', nd: Math.max(1, days.length), it, hike: hk };
 }
+// 그린 길 사진으로 계획 고치기 (2026-11-15 사용자: 네이버 지도에 빨간 선으로 그린 하산길 캡처 → '이거 넣어주면 몇가지 질문 후 알아서 수정하게')
+//   ① AI가 그림을 읽고 헷갈리는 것만 2~3가지 물어요 ② 고른 답으로 그날 일정을 다시 짜요(있던 곳은 그대로 두고, 새 곳은 지도에서 찾음 → 못 찾으면 '확인 필요'로)
+async function planDrawAi(key, img, p, d, step, ans) {
+  const L = planItems(p, d), list = L.map((x, i) => `${i + 1}. ${x.n} [${PLAN_KINDS[x.k] ? PLAN_KINDS[x.k][1] : x.k}]${Number.isFinite(x.lat) ? ` (${(+x.lat).toFixed(5)}, ${(+x.lng).toFixed(5)})` : ''}${x.m ? ' · ' + String(x.m).slice(0, 60) : ''}`).join('\n');
+  const head = `계획 '${p.name}'${p.nd > 1 ? ` ${d + 1}일차` : ''}의 지금 일정(차례대로):\n${list || '(아직 없음)'}\n\n사용자가 지도 앱 캡처에 손가락으로 선(보통 빨간 선)을 그려 '이 길로 가고 싶다'고 보냈어요. 선이 지나는 지도 글자(봉우리·갈림길·성문·계곡·건물·역)와 방향을 읽으세요.`;
+  const text = step === 1 ? head + `\n\n아직 고치지 말고, 고치기 전에 꼭 물어야 할 것만 0~3가지 물으세요(예: 선의 어느 끝이 출발인지, 일정 전체를 바꿀지 일부(예: 하산만)만 바꿀지, 그림의 같은 이름 '갈림길'처럼 헷갈리는 곳). 답이 뻔하면 묻지 마세요. 선택지는 2~4개, 첫 번째가 가장 그럴듯한 것.
+JSON 하나로만: {"read":"그린 길을 한 문장으로(지나는 곳 차례대로)","qs":[{"q":"질문","opts":["",""]}]}`
+    : head + `\n\n사용자의 답:\n${ans.map(a => `- ${a.q} → ${a.a}`).join('\n') || '(질문 없음)'}\n\n이제 그날의 새 일정을 처음부터 끝까지 차례대로 주세요. 지금 일정에 있는 곳을 그대로 쓰면 {"keep":번호}, 새 곳(그린 길의 갈림길·성문·계곡·끝 지점 등)은 {"n":"짧은 이름(지도 글자 그대로, 같은 이름이 여럿이면 '정상 북쪽 갈림길'처럼 구분)","k":"spot|peak|food|move","m":"한 줄 안내(예: 여기서 오른쪽 계단으로)","q":"지도 검색어(산·동네 이름 포함)","lat":대략,"lng":대략}. 대략 좌표는 지금 일정의 좌표와 그림 속 위치를 견줘 짐작(모르면 null). 그림과 답에 맞지 않는 옛 곳은 빼세요. 지어내지 말 것.
+JSON 하나로만: {"items":[...],"say":"무엇을 바꿨는지 한 문장"}`;
+  toast(`✨ AI를 써요 · 그린 길 읽기 ${step}/2 · 사진과 일정 이름만 보내요`, true);
+  const { default: Anthropic } = await import(TALK_SDK);
+  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 3000,
+    messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: img.t, data: img.b } }, { type: 'text', text }] }] });
+  const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '그린 길 읽기', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+  toast(`✨ AI 사용 끝 · 그린 길 읽기 ${step}/2 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+  const tb = (res.content || []).find(x => x.type === 'text'); if (!tb) throw new Error('빈 답');
+  return JSON.parse((/\{[\s\S]*\}/.exec(tb.text) || ['{}'])[0]);
+}
+function planDrawSheet(p, d, done) {
+  const key = String(ls.get('claudeKey', '') || '').trim();
+  const st = el('div', { class: 'sub', style: 'white-space:pre-wrap' }), body = el('div', { class: 'stack', style: 'gap:10px' });
+  const pick = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
+  const bg = labSheet('🗺 그린 길로 일정 고치기',
+    el('div', { class: 'sub', text: `네이버·카카오 지도에서 가고 싶은 길에 손가락으로 선을 그리고 캡처해서 넣어 주세요. AI가 그림을 읽고 헷갈리는 것만 몇 가지 물은 뒤 ${p.nd > 1 ? (d + 1) + '일차' : '이 계획'} 일정을 알아서 고쳐요.` }),
+    key ? el('button', { class: 'btn primary full', text: '📷 캡처 사진 넣기', onclick: () => pick.click() })
+      : el('button', { class: 'btn primary full', text: '🔑 Claude 열쇠 넣기 (AI가 그림을 읽어요)', onclick: () => { bg.remove(); talkKeySheet(); } }),
+    pick, st, body);
+  const say = t => { st.textContent = t; };
+  pick.onchange = async () => {
+    const f = pick.files && pick.files[0]; if (!f) return; body.replaceChildren(); say('사진을 줄이는 중…');
+    try {
+      const b = await new Promise((res, rej) => { const im = new Image(); im.onload = () => { const s = Math.min(1, 1568 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(im.src); res(c.toDataURL('image/jpeg', .88).split(',')[1]); }; im.onerror = rej; im.src = URL.createObjectURL(f); });
+      const img = { t: 'image/jpeg', b };
+      body.append(el('img', { src: 'data:image/jpeg;base64,' + b, style: 'width:100%;max-height:34vh;object-fit:contain;border-radius:12px;background:#eee' }));
+      say('✨ AI가 그린 길을 읽는 중… (10~20초)');
+      const j1 = await planDrawAi(key, img, p, d, 1);
+      const qs = (Array.isArray(j1.qs) ? j1.qs : []).slice(0, 3).filter(q => q && q.q && Array.isArray(q.opts) && q.opts.length), ans = qs.map(q => ({ q: String(q.q), a: String(q.opts[0]) }));
+      say('');
+      body.append(el('div', { class: 'card', style: 'background:#EAF6FB' }, el('b', { text: '🗺 이렇게 읽었어요' }), el('div', { text: String(j1.read || '') })));
+      qs.forEach((q, i) => { const row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px' });
+        const paint = () => [...row.children].forEach(c => { const on = c.textContent === ans[i].a; c.style.background = on ? '#15202B' : '#fff'; c.style.color = on ? '#fff' : '#15202B'; });
+        q.opts.slice(0, 4).forEach(o => row.append(el('button', { class: 'chip', style: 'border:1px solid #CBD5DF;padding:8px 12px;border-radius:999px;font:inherit;font-weight:700', text: String(o), onclick: () => { ans[i].a = String(o); paint(); } })));
+        body.append(el('div', { class: 'stack', style: 'gap:6px' }, el('b', { text: `${i + 1}. ${q.q}` }), row)); paint(); });
+      const go = el('button', { class: 'btn primary full big', text: '✓ 이대로 일정 고치기', onclick: async () => {
+        go.disabled = true; say('✨ AI가 새 일정을 짜는 중…');
+        try {
+          const j2 = await planDrawAi(key, img, p, d, 2, ans), L = planItems(p, d), used = new Set(), out = [];
+          for (const x of (Array.isArray(j2.items) ? j2.items : []).slice(0, 40)) {
+            const k = +x.keep; if (k >= 1 && k <= L.length && !used.has(k)) { used.add(k); out.push(L[k - 1]); continue; }
+            if (!x.n) continue; const lat = x.lat != null && Number.isFinite(+x.lat) ? +x.lat : null, lng = x.lng != null && Number.isFinite(+x.lng) ? +x.lng : null;
+            out.push({ id: planNewId(), d, t: '', n: String(x.n).slice(0, 60), k: PLAN_KINDS[x.k] ? x.k : 'spot', m: String(x.m || '').slice(0, 300), q: String(x.q || '').slice(0, 100), lat, lng, ap: 1, src: 'ai' });
+          }
+          if (out.length < 2) throw new Error('새 일정을 못 만들었어요');
+          const tmp = { it: out.filter(x => x.q) }, near = out.find(x => Number.isFinite(x.lat) && !x.q) || out.find(x => Number.isFinite(x.lat));
+          for (const x of tmp.it) { const keep = { lat: x.lat, lng: x.lng }; x.lat = null; await planGeocode({ it: [x] }, say);   // 지도 검색: 계획 둘레 3km 안일 때만 정확한 위치로
+            if (Number.isFinite(x.lat) && (Number.isFinite(keep.lat) ? dist(x.lat, x.lng, keep.lat, keep.lng) < 250 : near && dist(x.lat, x.lng, near.lat, near.lng) < 3000)) /* AI가 짐작한 자리 250m 안일 때만: 산 이름만 찾혀 정상에 붙는 것 막기 */ x.ap = 0; else { x.lat = keep.lat; x.lng = keep.lng; x.ap = 1; } }
+          out.forEach(x => delete x.q);
+          p.it = p.it.filter(x => x.d !== d).concat(out); p.u = Date.now(); planSave(p);
+          bg.remove(); toast('🗺 ' + (j2.say || '그린 길대로 일정을 고쳤어요') + (out.some(x => x.ap) ? ' · ⚠ 위치가 대략인 곳은 위 주황 상자에서 확인해 주세요' : ''), false, 8000); done && done();
+        } catch (e) { go.disabled = false; say('⚠ 못 고쳤어요 · ' + (e && e.message || e)); }
+      } });
+      body.append(go);
+    } catch (e) { say('⚠ 그림을 못 읽었어요 · ' + (/401|auth/i.test(String(e && e.message)) ? 'Claude 열쇠를 확인해 주세요' : (e && e.message || e))); }
+  };
+}
 async function planGeocode(p, say) {   // 위치를 지도 자료(OSM Nominatim)에서 찾아요 · 1초에 한 번(지도 자료 규칙)
   const todo = (p.it || []).filter(x => x.q && x.k !== 'fly' && (x.lat == null || x.ap));
   let k = 0; const memo = new Map();   // 같은 검색어(같은 호텔 여러 밤)는 한 번만 물어봐요
@@ -8989,6 +9054,7 @@ function viewPlanOne(id) {
     const bg = labSheet(p.name,
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go('👋 일행에게 일정 보내기', () => planShare(p)),
+      go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
       go('✎ 이름 · 날짜 고치기', editMeta),
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
@@ -9055,7 +9121,7 @@ function viewPlanOne(id) {
         out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
       its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x, p); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
-      out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));
+      out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }), el('button', { class: 'tv-add', text: `🗺 지도에 그린 길 캡처로 ${d + 1}일차 고치기`, onclick: () => planDrawSheet(p, d, drawAll) }));
     }
     list.replaceChildren(...out);
   }
