@@ -238,6 +238,25 @@ if (Capacitor.isNativePlatform()) {
     if (document.visibilityState === 'visible' && Date.now() - luAt > 3 * 60000) setTimeout(() => liveUpdate().catch(() => {}), 1200);
   });
 
+  // ---------- 🎙 알림 창 '대화 기록' 단추 (2026-11-15 '내가 나눈 대화도 자동으로'): 자동 기록이 켜져 있는 동안 조용한 알림 하나 → 누르면 앱이 열리며 바로 받아 적기 ----------
+  const TALK_NID = 7707;
+  window.mdNativeTalkNoti = async on => {
+    try {
+      if (!on) { await LocalNotifications.cancel({ notifications: [{ id: TALK_NID }] }); return; }
+      await LocalNotifications.createChannel({ id: 'mdtalk', name: '대화 기록 단추', description: '누르면 바로 대화를 받아 적어요', importance: 2, vibration: false, visibility: 1 }).catch(() => {});
+      await LocalNotifications.registerActionTypes({ types: [{ id: 'MD_TALK', actions: [{ id: 'talk', title: '🎙 대화 기록 시작' }] }] }).catch(() => {});
+      const { notifications } = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
+      const shown = await LocalNotifications.getDeliveredNotifications().catch(() => ({ notifications: [] }));
+      if ([...(notifications || []), ...((shown && shown.notifications) || [])].some(n => n.id === TALK_NID)) return;
+      await LocalNotifications.schedule({ notifications: [{ id: TALK_NID, title: '🎙 대화 기록', body: '누르면 바로 받아 적고, 끝나면 정리해서 그 시간 MPD에 붙여요', channelId: 'mdtalk', ongoing: true, autoCancel: false, actionTypeId: 'MD_TALK' }] });
+    } catch {}
+  };
+  LocalNotifications.addListener('localNotificationActionPerformed', a => {
+    if (!a || !a.notification || a.notification.id !== TALK_NID) return;
+    if (/[?&]talk=1/.test(location.search)) return;   // 이미 대화 화면
+    location.href = location.pathname + '?talk=1&go=1';
+  }).catch(() => {});
+
   // ---------- 갤러리 사진: 기록한 시간에 휴대폰 카메라로 찍은 사진 찾기 ----------
   window.mdNativePhotos = {
     between: async (from, to) => (await MdApp.photosBetween({ from: Math.round(from), to: Math.round(to) })).items || [],

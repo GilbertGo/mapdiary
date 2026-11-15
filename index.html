@@ -871,7 +871,8 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
-.c-ph-auto{position:absolute;left:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:7px;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;text-decoration:none;max-width:calc(100% - 140px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-ph-auto i{flex:none;width:8px;height:8px;border-radius:50%;background:#3FD0D9;box-shadow:0 0 0 3px rgba(63,208,217,.35)}
+.c-ph-chips{position:absolute;left:16px;right:120px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}.c-ph-chips>*{pointer-events:auto}
+.c-ph-auto,.c-ph-talk{display:flex;align-items:center;gap:7px;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;text-decoration:none;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-ph-auto i{flex:none;width:8px;height:8px;border-radius:50%;background:#3FD0D9;box-shadow:0 0 0 3px rgba(63,208,217,.35)}
 .c-ph-deco{position:absolute;right:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:5px;border:none;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;cursor:pointer}.c-ph-deco svg{stroke:#fff}
 .deco{position:fixed;inset:0;z-index:4500;background:#0B1520;overflow:hidden;touch-action:none}
 .deco-bg{position:absolute;inset:0;background:#123 center/cover no-repeat}.deco-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.12)}
@@ -11601,11 +11602,13 @@ function autoStart() {
   const S = autoSt();
   if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', { c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }); }
   if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
+  try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(true); } catch {}   // 알림 창 🎙 대화 기록 단추(새 APK부터)
   autoWatch = navigator.geolocation.watchPosition(g => autoFix(g.coords.latitude, g.coords.longitude, g.coords.accuracy, g.coords.altitude, g.timestamp || Date.now()), () => {},
     { enableHighAccuracy: true, mdBg: { title: 'MPD 자동 기록 중', message: '다닌 길을 저절로 기록해요 · 끄기: MPD → 나 → 자동 기록', distanceFilter: 20 } });
 }
 function autoStop() {
   if (autoWatch != null) { navigator.geolocation.clearWatch(autoWatch); autoWatch = null; }
+  try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(false); } catch {}
   const S = autoSt(); if (S.seg) autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', {});
 }
 // 첫 화면·설정에 보이는 지금 상태
@@ -12459,7 +12462,7 @@ async function viewMyOne(t) {
       el('div', { class: 'vw-ttl' }, title, el('button', { type: 'button', 'aria-label': '제목 바꾸기', text: '✎', onclick: rename })),
       wp.start || wp.end ? el('div', { class: 'sub', style: 'font-size:14px;margin-top:-6px', text: `${wp.start || '출발'} → ${wp.end || '도착'} · ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}` }) : null,
       big3, off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
-      acts, whereEl, wxEl, noteEl,
+      acts, whereEl, wxEl, noteEl, talkBox(t),
       ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })(),
       phBox, legEl, pickEl,
     agBox,   // ↻ 다시 가기 (2026-11-09 P1): 이 길 다시 가기 · 길찾기
@@ -13543,6 +13546,24 @@ function viewLabCheck() {
       el('div', { class: 'stack', style: 'gap:6px;margin-top:8px' }, ...res.none.map(x => el('div', { style: 'font-size:13px' }, el('b', { text: x.rule }), el('div', { class: 'sub', text: x.why }))))));
   }, 50);
 }
+// 🎙 대화를 그 시간 MPD에 (2026-11-15 사용자 '내가 나눈 대화도 자동으로 기록 되게해' → '내가 낀 대화만'·법·배터리 까닭으로 늘 듣기는 안 하고, 시작만 한 번 누르면 나머지는 저절로)
+// 대화마다 같은 날 기록 중 시간이 가장 가까운 하나(겹치면 그것)에 붙여 보여요. 대화 시각 = 첫 말~마지막 말(t0~t1), 예전 정리는 정리한 때(at)
+function talkSpan(n) { return [n.t0 || n.at, n.t1 || n.at]; }
+function talkRecOf(n, trips) {
+  const [a, b] = talkSpan(n), day = new Date(a).toDateString(); let best = null, bd = Infinity;
+  for (const x of trips) { if (x.album) continue; const s0 = x.info.startAt, e0 = x.info.meetAt;
+    if (new Date(s0).toDateString() !== day && new Date(e0).toDateString() !== day) continue;
+    const gap = b < s0 ? s0 - b : a > e0 ? a - e0 : 0; if (gap < bd) { bd = gap; best = x.t; } }
+  return best;
+}
+function talkBox(t) {
+  const all = (ls.get('talkNotes', []) || []).filter(n => n && n.at); if (!all.length) return null;
+  const trips = pastTrips(), list = all.filter(n => talkRecOf(n, trips) === t); if (!list.length) return null;
+  return el('div', { class: 'card', style: 'gap:4px' }, el('b', { text: `🎙 이 때 나눈 대화 ${list.length}개` }),
+    ...list.map(n => el('a', { class: 'member', href: `./?talk=1&n=${n.at}`, style: 'text-decoration:none;color:inherit' },
+      el('div', { class: 'grow' }, el('div', { class: 'nm', text: n.title || '대화' }),
+        el('div', { class: 'dt', text: `${fmtClock(talkSpan(n)[0])} · ${String((Array.isArray(n.final) && n.final[0]) || n.summary || '').slice(0, 60)}` })), el('span', { text: '›' }))));
+}
 function viewTalk() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let segs = ls.get('talkDraft', []), rec = null, on = false, interim = '', wake = null, note = null, busy = false;
@@ -13573,10 +13594,11 @@ function viewTalk() {
     try { wake = await navigator.wakeLock.request('screen'); } catch {}
     draw();
   };
-  const stop = () => { on = false; interim = ''; try { rec && rec.stop(); } catch {} try { wake && wake.release(); } catch {} wake = null; draw(); };
-  const organize = async () => {
+  // 그만 들으면 저절로 정리해서 그 시간 MPD에 붙여요(2026-11-15 '내가 나눈 대화도 자동으로 기록 되게해')
+  const stop = auto => { on = false; interim = ''; try { rec && rec.stop(); } catch {} try { wake && wake.release(); } catch {} wake = null; draw(); if (auto && segs.length && !busy) organize(true); };
+  const organize = async auto => {
     if (!segs.length) return toast('받아 적은 말이 없어요');
-    if (!ls.get('claudeKey', '')) { note = Object.assign(talkBasic(segs), { at: Date.now() }); return keep(); }
+    if (!ls.get('claudeKey', '')) { note = Object.assign(talkBasic(segs), { at: Date.now() }); return keep(auto); }
     busy = true; draw();
     try { note = Object.assign(await talkAI(segs), { at: Date.now() }); }
     catch (e) {
@@ -13584,9 +13606,13 @@ function viewTalk() {
       toast(m === '401' ? 'AI 열쇠가 맞지 않아요. 열쇠를 다시 넣어 주세요' : m === 'refusal' ? 'AI가 이 대화를 정리하지 않았어요. 기본 정리로 보여 드려요' : m === 'too-long' ? '대화가 너무 길어요. 나눠서 정리해 주세요' : 'AI 정리를 못 했어요(인터넷 확인). 기본 정리로 보여 드려요');
       note = Object.assign(talkBasic(segs), { at: Date.now() });
     }
-    busy = false; keep();
+    busy = false; keep(auto);
   };
-  const keep = () => { const list = ls.get('talkNotes', []); list.unshift(Object.assign({ raw: talkText(segs) }, note)); ls.set('talkNotes', list.slice(0, 30)); draw(); scrollTo(0, 0); };
+  // t0·t1 = 첫 말·마지막 말 시각(그 시간 MPD 찾기). auto(그만 듣기로 저절로)면 받아 적은 말을 비워 다음 🎙는 새 대화로(원문은 정리 안 raw에)
+  const keep = auto => { const list = ls.get('talkNotes', []); note = Object.assign({ raw: talkText(segs), t0: segs[0].t, t1: segs[segs.length - 1].t }, note); list.unshift(note); ls.set('talkNotes', list.slice(0, 30));
+    if (auto) { segs = []; save(); }
+    const r = talkRecOf(note, pastTrips()); toast(r ? `정리해서 '${ls.get('trackName:' + r, '그 시간 기록')}' MPD에 붙였어요` : '정리했어요 · 그 시간 MPD 기록이 생기면 거기에도 보여요');
+    draw(); scrollTo(0, 0); };
   const toMD = n => { const w = ls.get('walkNow', null); if (!w) return; const old = ls.get('walkNote:' + w, '');
     ls.set('walkNote:' + w, `${old ? old + '\n\n' : ''}${talkShareText(n).replace(/\n— Map Photo Diary 대화 정리$/, '')}`.slice(0, 1000)); toast('지금 기록 중인 MPD 메모에 붙였어요'); };
   function draw() {
@@ -13598,7 +13624,7 @@ function viewTalk() {
       note ? el('h2', { style: 'margin-top:8px', text: '받아 적은 말' }) : null,
       el('div', { class: 'card tk-card' + (on ? ' on' : '') }, live,
         el('div', { class: 'row', style: 'gap:8px' },
-          el('button', { class: 'btn big grow ' + (on ? 'line' : 'primary'), text: on ? '■ 그만 듣기' : segs.length ? '🎙 이어서 듣기' : '🎙 듣기 시작', onclick: () => on ? stop() : start() }),
+          el('button', { class: 'btn big grow ' + (on ? 'line' : 'primary'), text: on ? '■ 그만 듣기 · 정리' : segs.length ? '🎙 이어서 듣기' : '🎙 듣기 시작', onclick: () => on ? stop(true) : start() }),
           segs.length && !on ? el('button', { class: 'btn line', 'aria-label': '받아 적은 말 고치기', text: '✎', onclick: async () => { const v = await askLong('받아 적은 말 고치기', segs.map(s => s.x).join('\n'), '', '한 줄이 한 마디예요. 잘못 알아들은 말을 고쳐요', 20000); if (v == null) return; const lines = v.split('\n').map(x => x.trim()).filter(Boolean), t0 = segs[0].t, t1 = segs[segs.length - 1].t;
             segs = lines.map((x, i) => ({ t: segs[i] ? segs[i].t : t1 + i, x })); if (!segs.length) segs = []; else segs[0].t = t0; save(); drawLive(); } }) : null)),
       on ? el('div', { class: 'sub center', text: '🔴 듣는 중 · 화면을 켜 두세요(꺼지면 멈춰요) · 같이 있는 사람에게 알리고 써 주세요' }) : null,
@@ -13616,9 +13642,11 @@ function viewTalk() {
     drawLive();
   }
   leaveWarn = () => on ? '듣는 중이에요. 나가면 듣기가 멈춰요(받아 적은 말은 남아요). 갈까요?' : null;
+  { const nAt = +qs.get('n'); if (nAt) note = (ls.get('talkNotes', []) || []).find(x => x && x.at === nAt) || null; }   // MPD 기록에서 '이 때 나눈 대화'를 눌렀을 때
   app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '대화 정리'), el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
     el('h1', { text: '🎙 대화 정리' }), el('div', { class: 'sub', text: '대화를 듣고 받아 적은 뒤, 화제별로 나눠 정한 것·할 일을 정리해 공유해요. 받아 적은 말은 이 휴대폰에만 남아요.' }), box));
   draw();
+  if (qs.get('go')) { history.replaceState(null, '', location.pathname + '?talk=1'); if (!note) start(); }   // 첫 화면·알림 창 🎙: 바로 듣기
 }
 // ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
 // 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
@@ -14332,7 +14360,12 @@ function cHomePhoto() {
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   { const D = ls.get('homeDeco', null); if (D && Array.isArray(D.pins)) setTimeout(() => decoDraw(layer, box, D.pins, null), 0); }
   // 꾸미기 단추(2026-11-15 사용자 '바탕화면 꾸미기 메뉴하나 만들고 사진 이동·추가·삭제 되게해')
-  if (!wNow && autoOn()) { const at = el('span'); box.append(el('a', { class: 'c-ph-auto', href: './?my=1', 'aria-label': '자동 기록 · 내 기록 보기' }, el('i'), at)); cLiveTick(at, () => { at.textContent = autoStatus(); }); }   // 🛰 자동 기록 켜짐(MPD 앱)
+  if (!wNow) {   // 🛰 자동 기록 알약(MPD 앱) · 🎙 대화 기록(누르면 바로 받아 적고, 끝나면 정리해서 그 시간 MPD에)
+    const chips = el('div', { class: 'c-ph-chips' });
+    if (autoOn()) { const at = el('span'); chips.append(el('a', { class: 'c-ph-auto', href: './?my=1', 'aria-label': '자동 기록 · 내 기록 보기' }, el('i'), at)); cLiveTick(at, () => { at.textContent = autoStatus(); }); }
+    chips.append(el('a', { class: 'c-ph-talk', href: './?talk=1&go=1', 'aria-label': '대화 기록 시작' }, '🎙 대화 기록'));
+    box.append(chips);
+  }
   if (!wNow) box.append(el('button', { class: 'c-ph-deco', type: 'button', 'aria-label': '첫 화면 꾸미기', onclick: () => homeDecoEdit() }, cSvg('palette', 16), '꾸미기'));
   setTimeout(async () => {
     // 사진 있는 기록이 말풍선 수만큼 모일 때까지 최근 것부터 차례로 봄(사진 없는 기록이 많아도 4개 채우게)
