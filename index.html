@@ -1494,13 +1494,14 @@ function pickDest(cur, near, world, title, ex) {   // ex(판 -106): { box: 판�
     document.body.append(sb); ovGuard(); paint();
     setTimeout(() => {
       m = L.map(mapBox); mdTileLayer().addTo(m);
-      if (near) L.circleMarker(near, { radius: 7, color: '#fff', weight: 3, fillColor: '#0A84FF', fillOpacity: 1 }).addTo(m);
       const xp = (ex && ex.pts || []).filter(p => Number.isFinite(p.lat));
+      if (near && !(ex && ex.pts)) L.circleMarker(near, { radius: 7, color: '#fff', weight: 3, fillColor: '#0A84FF', fillOpacity: 1 }).addTo(m);   // 판 -124: 계획 고치기에선 🏁와 겹쳐 앞 장소 번호를 가려서 뺌
       if (xp.length > 1) L.polyline(xp.map(p => [p.lat, p.lng]), { color: '#6B7684', weight: 3, opacity: .8, dashArray: '6 6' }).addTo(m);
-      xp.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-13px,-13px);display:flex;align-items:center;gap:4px;white-space:nowrap"><b style="width:26px;height:26px;border-radius:50%;background:#15202B;color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${p.no}</b><span style="background:#fff;color:#15202B;font:700 12px Pretendard,sans-serif;padding:2px 7px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.25)">${String(p.n || '').replace(/[<&]/g, '').slice(0, 14)}</span></div>` }) }).addTo(m));
+      xp.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-13px,-13px);display:flex;align-items:center;gap:4px;white-space:nowrap"><b style="width:26px;height:26px;border-radius:50%;background:${p.warn ? '#E8892B' : '#15202B'};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${p.no}</b><span style="background:#fff;color:#15202B;font:700 12px Pretendard,sans-serif;padding:2px 7px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.25)">${String(p.n || '').replace(/[<&]/g, '').slice(0, 14)}</span></div>` }) }).addTo(m));
       if (xp.length) { const b = L.latLngBounds(xp.map(p => [p.lat, p.lng])); if (at) b.extend(at); m.fitBounds(b, { paddingTopLeft: [30, 30], paddingBottomRight: [120, 30], maxZoom: 16 }); if (at) put(at, name); }
       else if (at) { m.setView(at, 15); put(at, name); } else m.setView(near || [37.5665, 126.978], near ? 15 : 12);
       m.on('click', e => put([e.latlng.lat, e.latlng.lng]));
+      if (ex && ex.ready) ex.ready(m, put);
     }, 30);
   });
 }
@@ -3133,9 +3134,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-123-photoadd';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-126-nobar';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5824,11 +5825,16 @@ function filmCamTrack(o) {
   const RUNS = (plan.runs || []).filter(r => Number.isFinite(r.zoom));
   if (RUNS.length) {
     const fol = [], f0 = Math.ceil(plan.tIn * FILM_FPS), f1 = Math.min(N, Math.ceil(runEnd * FILM_FPS));
+    // 판 -125 (사용자 '차량이동의 경우 전체일정이 다 보이는 정도의 축척을 유지… 북쪽 고정, 보이는 면적도 고정. 도보이동은 지금처럼'):
+    //   차·비행 구간에선 카메라가 일정 전체가 보이는 한 자리(full)에 멈춰 있고(위에서 내려다봄·북쪽 위), 탈것 그림만 지도 위를 움직여요. 걷는 곳은 예전처럼 가까이 따라가요
+    const FULL = o.full || over, FCAR = o.fullCar || FULL;
     for (let f = f0; f < f1; f++) { const tt = f / FILM_FPS, dh = plan.dOfT(tt), r = RUNS.find(q => dh >= q.a && dh < q.b) || null;
-      fol.push({ f, tt, dh, zt: r ? r.zoom : zBase + st.zoomHL * Math.min(1, plan.hlAt(dh) * Math.max(adv.rh, 0.5)), pt: r ? (r.k === 'fly' ? 22 : 38) : pitch, nb: r ? (r.k === 'fly' ? 1 : 0.65) : 0 }); }
+      fol.push({ f, tt, dh, zt: zBase + st.zoomHL * Math.min(1, plan.hlAt(dh) * Math.max(adv.rh, 0.5)), pt: pitch, nb: 0, cw: r ? 1 : 0, fw: r && r.k === 'fly' ? 1 : 0 }); }
     const sig = 0.45 * FILM_FPS, R2 = Math.ceil(sig * 2.5), gw = []; for (let j = -R2; j <= R2; j++) gw.push(Math.exp(-(j * j) / (2 * sig * sig)));
     const sm = key => fol.map((_, i) => { let s = 0, w = 0; for (let j = -R2; j <= R2; j++) { const q = fol[Math.max(0, Math.min(fol.length - 1, i + j))]; s += q[key] * gw[j + R2]; w += gw[j + R2]; } return s / w; });
-    const Z = sm('zt'), PT = sm('pt'), NB = sm('nb');
+    const Z = sm('zt'), CW = (() => { const g = Math.ceil(sig * 1.6), raw = fol.map(q => q.cw), fw0 = fol.map(q => q.fw); fol.forEach((q, i) => { let m = 0, mf = 0; for (let j = Math.max(0, i - g); j <= Math.min(fol.length - 1, i + g); j++) { m = Math.max(m, raw[j]); mf = Math.max(mf, fw0[j]); } q.cw = m; q.fw = mf; }); return sm('cw'); })(), PT = Z.map((_, i) => pitch * (1 - CW[i])), NB = CW, FW = sm('fw');
+    // 고정 화면(차면 FCAR, 비행이면 FULL)도 배율로 섞어 부드럽게 넘어가요
+    const FX = FW.map(w => { const zc = FCAR.zoom + (FULL.zoom - FCAR.zoom) * w; return { lng: FCAR.center.lng + (FULL.center.lng - FCAR.center.lng) * w, lat: FCAR.center.lat + (FULL.center.lat - FCAR.center.lat) * w, zoom: zc }; });
     let zz = Z.length ? Z[0] : zBase;
     for (let f = 0; f < N; f++) {
       const tt = f / FILM_FPS;
@@ -5840,8 +5846,11 @@ function filmCamTrack(o) {
       } else if (tt < runEnd && f - f0 < fol.length) {
         const i = f - f0, F = fol[i], s = camAt(F.dh);
         bear = (bear + Math.max(-MAXT, Math.min(MAXT, filmAng(bear, s.br) * st.follow)) + 360) % 360;
-        const zr = Math.abs(Z[i] - zz) > 1 ? 0.16 : 0.05; zz += Math.max(-zr, Math.min(zr, Z[i] - zz)); z = zz;
-        out.push({ center: [s.a.lng, s.a.lat], zoom: zz, pitch: PT[i], bearing: (bear + filmAng(bear, 0) * NB[i] + 360) % 360, dh: F.dh });
+        const zr = Math.abs(Z[i] - zz) > 1 ? 0.16 : 0.05; zz += Math.max(-zr, Math.min(zr, Z[i] - zz));
+        // 확대는 고르게(직선) 바꾸고, 가운데는 '보이는 넓이'가 바뀐 만큼만 옮겨요 → 가까이 있을 때 화면이 휙 미끄러지지 않아요
+        const c = CW[i], X = FX[i], ez = zz + (X.zoom - zz) * c, den = Math.pow(2, -X.zoom) - Math.pow(2, -zz), cc = Math.abs(den) > 1e-12 ? Math.max(0, Math.min(1, (Math.pow(2, -ez) - Math.pow(2, -zz)) / den)) : c;
+        z = ez;
+        out.push({ center: [s.a.lng + (X.lng - s.a.lng) * cc, s.a.lat + (X.lat - s.a.lat) * cc], zoom: ez, pitch: PT[i], bearing: (bear + filmAng(bear, 0) * NB[i] + 360) % 360, dh: F.dh });
       } else {
         const e = filmEase(Math.min(1, (tt - runEnd) / (plan.tOut * 0.6))), s = filmAt(P, D), o2 = Math.max(0, (tt - runEnd - plan.tOut * 0.6) / (plan.tOut * 0.4)), pl = PT.length ? PT[PT.length - 1] : pitch, nbl = NB.length ? NB[NB.length - 1] : 0, bl = (bear + filmAng(bear, 0) * nbl + 360) % 360;
         out.push({ center: [s.lng + (over.center.lng - s.lng) * e, s.lat + (over.center.lat - s.lat) * e], zoom: z + (over.zoom - z) * e + 0.12 * o2, pitch: pl - (pl - 30) * e + 6 * o2, bearing: (bl + filmAng(bl, 0) * e - 7 * o2 + 360) % 360, dh: D });
@@ -6398,7 +6407,16 @@ async function filmMake(S, opt, U) {
     // 처음·끝 전체 길: 길은 위(세로)·왼쪽(가로)에, 글자 판은 아래·오른쪽에 (2026-11-13 사용자 화담숲 캡처: 제목이 길 위에 겹침 → '마지막 장면을 확 새롭게')
     const over = map.cameraForBounds(bounds, { padding: LAND ? { top: Math.round(H * 0.16), bottom: Math.round(H * 0.16), left: Math.round(W * 0.05), right: Math.round(W * 0.47) } : { top: Math.round(H * 0.13), bottom: Math.round(H * (st.k === 'memo' ? 0.58 : 0.47)), left: Math.round(W * 0.08), right: Math.round(W * 0.08) } }) || { center: bounds.getCenter(), zoom: 12 };
     const look = plan.runs.length ? Math.max(150, Math.min(500, walkMed * 0.1)) : Math.max(250, Math.min(2500, D * st.look));
-    const cams = filmCamTrack({ P, D, plan, st, adv, over, zRun, pitch: PITCH, N, look, fly: path.fly });
+    // 차·비행 구간 화면: 일정 전체가 보이게, 위에서 내려다봄(기울기 0)·북쪽 위. 아래 글자(거리·높이 그림) 자리는 비워 둠
+    //   🚗 차: 땅에서 다닌 일정 전체(비행 구간 빼고) · ✈ 비행: 비행까지 일정 전체 — 장가계처럼 비행기로 간 여행에서 차 구간이 동아시아 크기로 작아지지 않게
+    const fpad = LAND ? { top: Math.round(H * 0.14), bottom: Math.round(H * 0.22), left: Math.round(W * 0.06), right: Math.round(W * 0.06) } : { top: Math.round(H * 0.14), bottom: Math.round(H * 0.3), left: Math.round(W * 0.08), right: Math.round(W * 0.08) };
+    const full = map.cameraForBounds(bounds, { padding: fpad }) || over;
+    let fullCar = full; { const fl = plan.runs.filter(r => r.k === 'fly'), gc = coords.filter((_, i) => !fl.some(r => i > r.ia && i < r.ib));
+      if (fl.length && gc.length > 1) { const gb = gc.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(gc[0], gc[0])); fullCar = map.cameraForBounds(gb, { padding: fpad }) || full;
+        // 출발·도착 공항(한국)도 땅 위 점이라 들어가요 → 가장 많이 다닌 곳만 보이게: 비행 사이(현지) 점으로 다시
+        const mid = coords.filter((_, i) => { const f0 = fl[0], f1 = fl[fl.length - 1]; return fl.length > 1 ? i > f0.ib && i < f1.ia : i > f0.ib; });
+        if (mid.length > 1) { const mb = mid.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(mid[0], mid[0])); fullCar = map.cameraForBounds(mb, { padding: fpad }) || fullCar; } } }
+    const cams = filmCamTrack({ P, D, plan, st, adv, over, full, fullCar, zRun, pitch: PITCH, N, look, fly: path.fly });
     // 영상 굳히기 (조각은 모아 두었다가 ①영상만 ②음악 넣은 판 두 번 묶어요)
     const chunks = []; let encErr = null;
     const enc = new VideoEncoder({ output: (ch, meta) => chunks.push({ ch, meta }), error: e => { encErr = e; } });
@@ -9310,8 +9328,8 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
   const room = el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'room' ? 'on' : '', onclick: () => ls.set('tripTab', 'chat') }, el('b', { text: '💬' }), '여행 방', nw);
   const k = planToday(p), isOn = k != null && k >= -30 && k < p.nd;
   const bar = el('nav', { class: 'tv-bar' },
-    isOn ? el('a', { href: `./?plan=1&today=1&p=${id}`, class: on === 'today' ? 'on' : '' }, el('b', { text: '📅' }), k >= 0 ? '오늘' : '여행') : null,
-    el('a', { href: `./?plan=1&p=${id}`, class: on === 'plan' ? 'on' : '' }, el('b', { text: '🗺' }), '전체 일정'),
+    // 판 -126 (사용자 캡처 '전체일정이 필요한가? 왠만하면 지워'): '전체 일정' 칸을 뺌. 지도·일정 고치기 화면은 여행 화면 왼쪽 위 ‹ 로 가요(여행이 30일 넘게 남았거나 끝났으면 이 칸이 그 화면으로)
+    el('a', { href: isOn ? `./?plan=1&today=1&p=${id}` : `./?plan=1&p=${id}`, class: on === 'today' || on === 'plan' ? 'on' : '' }, el('b', { text: '📅' }), isOn && k >= 0 ? '오늘' : '여행'),
     room,
     el('a', { href: `./?plan=1&p=${id}&room=1`, class: on === 'photo' ? 'on' : '', onclick: () => ls.set('tripTab', 'photo') }, el('b', { text: '📷' }), '사진'),
     el('button', { onclick: () => trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', { text: '🧭' }), '도우미'),
@@ -9444,13 +9462,31 @@ function viewPlanOne(id) {
     const no = y => its.indexOf(y) + 1, src = p.src === 'blog' ? '블로그' : p.src === 'hana' ? '여행사 일정표' : '일정표';
     const said = [x.m, x.x].filter(Boolean).join('\n').trim().slice(0, 400);
     const sec = (h, t, c) => el('div', { style: `padding:7px 10px;border-radius:10px;background:${c || '#fff'};font-size:13px;line-height:1.45` }, el('b', { text: h + ' ' }), el('span', { style: 'white-space:pre-wrap', text: t }));
+    // 판 -124 (사용자 '앞뒤를 보여줘 결정하기쉽게'): 앞 2곳·뒤 2곳을 시각·종류·설명·🏁에서 거리와 함께 카드로. 카드를 누르면 지도가 그곳으로, '이 근처로'를 누르면 그 옆에 🏁
+    const nb = []; for (let j = Math.max(0, i - 2); j <= Math.min(its.length - 1, i + 2); j++) if (its[j] === x || its[j].k !== 'move') nb.push(its[j]);
+    let mp = null, flag = Number.isFinite(x.lat) ? [x.lat, x.lng] : null;
+    const kd = y => (PLAN_KINDS[y.k] || PLAN_KINDS.spot)[0];
+    const card = y => {
+      const me = y === x, has = loc(y), unsure = !me && has && needChk(y);
+      const d = (y.m || y.x || '').replace(/\s+/g, ' ').trim();
+      const far = !me && has && flag ? `🏁에서 ${fmtDist(dist(flag[0], flag[1], y.lat, y.lng))}` : '';
+      return el('div', { style: `display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:12px;background:${me ? '#FFF0E6' : '#fff'};border:${me ? '2px solid #FF8A4C' : '1px solid #E6EAEF'};cursor:${has && !me ? 'pointer' : 'default'}`,
+        onclick: () => { if (mp && has && !me) { mp.getContainer().scrollIntoView({ block: 'center', behavior: 'smooth' }); mp.flyTo([y.lat, y.lng], 15, { duration: .5 }); } } },
+        el('b', { style: `flex:none;width:24px;height:24px;border-radius:50%;background:${me ? '#FF8A4C' : unsure ? '#E8892B' : '#15202B'};color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center`, text: me ? '?' : String(no(y)) }),
+        el('div', { style: 'flex:1;min-width:0' },
+          el('div', { style: 'font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: `${y.t ? y.t + ' ' : ''}${kd(y)} ${y.n}${me ? ' · 지금 고치는 곳' : ''}` }),
+          el('div', { style: 'font-size:12px;color:#6B7684;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: [!has && !me ? '지도 위치 없음' : unsure ? '⚠ 이 장소도 위치 확인 필요' : '', far, d.slice(0, 60)].filter(Boolean).join(' · ') || ' ' })),
+        has && !me ? el('button', { class: 'btn line small', style: 'flex:none;padding:4px 9px;font-size:12px', text: '이 근처로', onclick: e => { e.stopPropagation(); if (mp && mp.mdPut) { const ll = [y.lat, y.lng]; mp.mdPut(ll, ''); mp.getContainer().scrollIntoView({ block: 'center', behavior: 'smooth' }); mp.flyTo(ll, 16, { duration: .5 }); toast(`🏁를 '${y.n}' 자리에 놓았어요 · 지도를 눌러 더 정확히`); } } }) : null);
+    };
     const box = el('div', { style: 'display:flex;flex-direction:column;gap:5px;margin-top:6px' },
       sec('⚠ 까닭:', whyChk(x) + (Number.isFinite(x.lat) ? ' · 지금 위치는 🏁' : ''), '#FFF0E6'),
       sec(`📝 ${src}:`, said ? `“${said.length > 140 ? said.slice(0, 140) + '…' : said}”` : '설명 없이 이름만 있어요'),
-      (a || b) ? sec('🧭 앞뒤:', `${a ? `${no(a)}. ${a.n}` : '처음'} → 여기 → ${b ? `${no(b)}. ${b.n}` : '끝'} (지도 검은 번호) · 보통 그 사이 길 위예요`) : null,
+      nb.length > 1 ? el('div', { style: 'font-size:12.5px;font-weight:800;color:#15202B;margin-top:2px', text: `🧭 ${p.nd > 1 ? x.d + 1 + '일차 ' : ''}앞뒤 일정 · 누르면 지도가 그곳으로` }) : null,
+      ...(nb.length > 1 ? nb.map(card) : []),
       el('div', { style: 'font-size:12.5px;color:#6B7684', text: "👇 맞는 자리를 지도에서 누르고 '여기로 정하기'" }));
     const r = await pickDest(Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng, n: x.n } : null, Number.isFinite(x.lat) ? [x.lat, x.lng] : centerOf(), true, `📍 '${x.n}' 위치 바로잡기`,
-      { box, pts: [a, b].filter(Boolean).map(y => ({ lat: y.lat, lng: y.lng, no: no(y), n: y.n })) });
+      { box, ready: (m, put) => { mp = m; m.mdPut = (ll, n) => { flag = ll; put(ll, n); }; m.on('click', e => { flag = [e.latlng.lat, e.latlng.lng]; }); },
+        pts: nb.filter(y => y !== x && loc(y)).map(y => ({ lat: y.lat, lng: y.lng, no: no(y), n: y.n, warn: needChk(y) })) });
     if (!r) return; x.lat = r.lat; x.lng = r.lng; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 고쳤어요`);
   }
   function okLoc(x) { x.ap = 0; x.near = 0; x.man = 1; delete x.vf; planSave(p); drawAll(); toast(`✓ '${x.n}' 위치를 맞다고 표시했어요`); }
