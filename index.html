@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-149-noslogan';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-150-sights';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏠 첫 화면의 큰 글(일상을 발견하고, 행복을 넓히다)을 뺐어요 · 사진과 여행 카드가 가리지 않고 보여요';
+const UI_NOTES = '📍 여행지 정보의 둘레 볼거리를 일정 속 장소마다 찾아 훨씬 많이 보여 줘요 · 사진도 휴대폰에 저장돼 비행기에서도 보여요 · 📚 읽을거리에 엉뚱한 곳(예: 어필봉에 합천 필봉) 글이 붙지 않게 고치고 다시 받아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6285,12 +6285,19 @@ async function destFx(cur) {   // 1 단위가 몇 원인지 · 12시간 기억
   const j = await (await fetchT(`https://open.er-api.com/v6/latest/${cur}`, {}, 10000)).json(); if (!j || !j.rates || !j.rates.KRW) throw new Error('fx');
   const o = { at: Date.now(), krw: j.rates.KRW, day: j.time_last_update_utc || '' }; ls.set(k, o); return o;
 }
-async function destSights(D, nm) {   // 여행지 10km 안 위키백과 글(사진 있는 것 먼저) · 한국어 먼저, 모자라면 영어
-  const one = async lang => { const r = await fetchT(`https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${D.lat}%7C${D.lng}&ggsradius=10000&ggslimit=30&prop=extracts%7Cpageimages%7Cinfo&exintro=1&explaintext=1&exsentences=1&exlimit=20&piprop=thumbnail&pithumbsize=500&inprop=url`, {}, 15000);
-    if (!r.ok) return []; return Object.values(((await r.json()).query || {}).pages || {}).filter(pg => pg.thumbnail && pg.extract && !/역$|Station|구$|시$|Ward|District|高校|学校|School|University|Hospital|병원/i.test(pg.title) && pg.title !== nm)
-      .sort((a, b) => (a.index || 99) - (b.index || 99)).map(pg => ({ t: pg.title, x: pg.extract.slice(0, 140), img: pg.thumbnail.source, url: pg.fullurl, lang })); };
-  let L = []; try { L = await one('ko'); } catch {} if (L.length < 6) try { L = L.concat(await one('en')); } catch {}
-  return L.slice(0, 10);
+// 판 -150 (사용자 '장가계 둘레볼거리가 하나밖에 없어?'): 위키백과 위치 검색은 한 번에 10km까지라 여행지 한 점 둘레만 보면 넓게 흩어진 볼거리를 놓침
+//   → 여행지 가운데 + 일정 속 구경·공연·정상 자리(정확한 위치, 5km 안 겹치면 하나, 8곳까지)마다 한국어·영어로 찾아 합침 · 역·호텔·학교·행정구역 뺌 · 같은 제목·같은 글(언어 연결) 한 번만
+async function destSights(D, nm, p) {
+  const C = [[D.lat, D.lng]];
+  (p && p.it || []).filter(x => (x.k === 'spot' || x.k === 'show' || x.k === 'peak') && Number.isFinite(+x.lat) && !x.ap && !x.near).forEach(x => { if (C.length < 9 && !C.some(c => dist(c[0], c[1], +x.lat, +x.lng) < 5000)) C.push([+x.lat, +x.lng]); });
+  const bad = /역$|Station|Railway|Hotel|호텔|School|University|College|Hospital|병원|학교|대학|District|County|Subdistrict|Township|Village|Province|Prefecture|^.{1,6}[구시현]$|Expressway|Highway|Airport|공항/i;
+  const one = async (lang, c) => { const r = await fetchT(`https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${c[0]}%7C${c[1]}&ggsradius=10000&ggslimit=30&prop=extracts%7Cpageimages%7Cinfo%7Clanglinks&lllang=${lang === 'ko' ? 'en' : 'ko'}&exintro=1&explaintext=1&exsentences=1&exlimit=20&piprop=thumbnail&pithumbsize=500&inprop=url`, {}, 15000);
+    if (!r.ok) return []; return Object.values(((await r.json()).query || {}).pages || {}).filter(pg => pg.thumbnail && pg.extract && !bad.test(pg.title) && pg.title !== nm)
+      .sort((a, b) => (a.index || 99) - (b.index || 99)).map(pg => ({ t: pg.title, x: pg.extract.slice(0, 140), img: pg.thumbnail.source, url: pg.fullurl, lang, ll: pg.langlinks && pg.langlinks[0] && pg.langlinks[0]['*'] })); };
+  const out = [], seen = new Set();
+  const add = L => L.forEach(z => { const k1 = z.lang + ':' + z.t, k2 = z.ll ? (z.lang === 'ko' ? 'en:' : 'ko:') + z.ll : ''; if (seen.has(k1) || (k2 && seen.has(k2))) return; seen.add(k1); if (k2) seen.add(k2); out.push(z); });
+  for (const c of C) { try { add(await one('ko', c)); } catch {} try { add(await one('en', c)); } catch {} if (out.length >= 30) break; }
+  return out.slice(0, 30);
 }
 // 📚 여행지 읽을거리 (판 -148, 2026-11-15 사용자 장가계 정보 캡처 '소개 더 풍부하게. 정확하게. 사진도 많이. 볼거리 읽을거리 많이. 가면서 비행기에서 읽을 거야')
 //   주제 = 여행지 + 계획의 구경·공연 장소(' + '로 묶인 이름은 나눔) · 글 = 위키백과 본문 전체(한국어 먼저, 없거나 짧으면 영어 원문 · 참고 문헌 등 뺌)
@@ -6305,8 +6312,12 @@ async function rdApi(host, q) { const r = await fetchT(`https://${host}/w/api.ph
 const rdNorm = s => String(s || '').toLowerCase().replace(/\(.*?\)|\[.*?\]|[\s·,.'"\-–—]/g, '').replace(/(국가삼림공원|풍경구|관광지|국가공원|투어|관광|코스|시)$/, '');
 async function rdFind(nm, lat, lng, rad, used) {
   const has = Number.isFinite(lat) && Number.isFinite(lng), n0 = rdNorm(nm); let ko = null, en = null;
-  const okC = pg => { const c = (pg.coordinates || [])[0]; if (has && c) return dist(lat, lng, c.lat, c.lon) <= rad; const t = rdNorm(pg.title); return !!n0 && n0.length >= 2 && (t.includes(n0) || n0.includes(t)); };
-  try { const P = Object.values((await rdApi('ko.wikipedia.org', `generator=search&gsrsearch=${encodeURIComponent(nm)}&gsrlimit=6&prop=coordinates%7Clanglinks&lllang=en&redirects=1`)).pages || {}).sort((a, b) => (a.index || 9) - (b.index || 9));
+  // 판 -150 (사용자 캡처 '합천이 왜나와?': '어필봉'에 합천 '필봉' 글이 붙음): 좌표 없는 글은 제목이 이름과 똑같을 때만, 여행지가 한국 밖이면 첫머리에 한국 땅이 나오는 글은 버림
+  const abroad = has && !(lat > 33 && lat < 39 && lng > 124 && lng < 132);
+  const KR = /대한민국|한국의|경상[남북]도|전라[남북]도|충청[남북]도|강원(특별자치)?도|경기도|제주(특별자치)?도|특별시|광역시/;
+  const okC = pg => { if (abroad && KR.test(String(pg.extract || '').slice(0, 160))) return false;
+    const c = (pg.coordinates || [])[0]; if (has && c) return dist(lat, lng, c.lat, c.lon) <= rad; return !!n0 && n0.length >= 2 && rdNorm(pg.title) === n0; };
+  try { const P = Object.values((await rdApi('ko.wikipedia.org', `generator=search&gsrsearch=${encodeURIComponent(nm)}&gsrlimit=6&prop=coordinates%7Clanglinks%7Cextracts&lllang=en&exintro=1&explaintext=1&exsentences=2&exlimit=6&redirects=1`)).pages || {}).sort((a, b) => (a.index || 9) - (b.index || 9));
     const pg = P.find(x => okC(x) && !RD_BADT.test(x.title) && !used.has('ko:' + x.title)); if (pg) { ko = pg.title; en = pg.langlinks && pg.langlinks[0] && pg.langlinks[0]['*'] || null; } } catch {}
   if (!ko && has) try {   // 이름으로 못 찾으면 그 자리 둘레 영어 글 (가장 가까운 것)
     const P = Object.values((await rdApi('en.wikipedia.org', `generator=geosearch&ggscoord=${lat}%7C${lng}&ggsradius=${Math.min(10000, rad >= 60000 ? 10000 : 1500)}&ggslimit=10&prop=langlinks&lllang=ko`)).pages || {}).sort((a, b) => (a.index || 99) - (b.index || 99));
@@ -6360,7 +6371,7 @@ async function rdBuild(p, D, nm, say) {
   const all = out.filter(x => x.ph).flatMap(x => x.ph); let i = 0, ok = 0;
   for (const z of all) { i++; say && say(`💾 사진 저장 중 ${i}/${all.length}`);
     try { const r = await fetchT(z.u, {}, 30000); if (r.ok) { const b = await r.blob(); if (b.size > 2000) { z.k = 'rdi:' + p.id + ':' + i; await trSet(z.k, b); ok++; } } } catch {} }
-  const R = { at: Date.now(), v: 1, nm, T: out, phN: all.length, phOk: ok }; await trSet('rd:' + p.id, R); return R;
+  const R = { at: Date.now(), v: 2, nm, T: out, phN: all.length, phOk: ok }; await trSet('rd:' + p.id, R); return R;
 }
 // 읽는 화면 (화면 가득): 사진 넘겨 보기(설명·작가·라이선스) · 본문(소제목) · 영어면 AI로 옮기기 · 원문 링크
 async function rdReader(p, R, ti, bg0) {
@@ -6434,7 +6445,7 @@ function rdSection(p, D, nm) {
   let busy = false;
   const run = async force => { if (busy) return; busy = true;
     try { const R0 = force ? null : await trGet('rd:' + p.id);
-      if (R0 && R0.T && (!navigator.onLine || Date.now() - R0.at < 7 * 864e5)) { await paint(R0); return; }
+      if (R0 && R0.T && (!navigator.onLine || (R0.v >= 2 && Date.now() - R0.at < 7 * 864e5))) { await paint(R0); return; }   // v 1(판 -148)은 잘못 붙은 글이 있을 수 있어 다시 받음
       if (!navigator.onLine) { st.textContent = '⚠ 아직 저장된 읽을거리가 없어요 · 인터넷이 될 때 이 화면을 한 번 열어 두면 저절로 저장돼요'; return; }
       if (R0 && R0.T) await paint(R0);
       st.replaceChildren(el('b', { text: '⏳ 비행기에서 읽게 저장하는 중이에요' }), el('br'), el('span', { text: '' }));
@@ -6459,7 +6470,7 @@ async function viewPlanDest(id) {
   const sAbout = rdSection(p, D, nm);
   const sBasic = sec('🧭 기본 정보', '', wait());
   const sWx = sec('🌤 여행 날 날씨', 'Open-Meteo', wait());
-  const sSee = sec('📍 둘레 볼거리', '위키백과 · 10km 안', wait());
+  const sSee = sec('📍 둘레 볼거리', '위키백과 · 장소마다 10km 안', wait());
   const sAi = sec('✨ 꼭 알아 둘 것', 'AI 정리 · 확인 필요', el('div', { class: 'sub', style: 'font-size:13px', text: '교통 패스·매너·음식·주의할 점을 AI가 일반 지식으로 정리해요(누를 때만, Claude 열쇠 필요)' }));
   const sLink = sec('🔗 공식·참고 사이트', '', wait());
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1&p=' + encodeURIComponent(p.id)), hero, el('div', { class: 'tv-sheet', style: 'gap:12px' }, sAbout, sBasic, sWx, sSee, sAi, sLink)), tvBar(p, 'plan'));
@@ -6488,10 +6499,25 @@ async function viewPlanDest(id) {
     put(sWx, el('div', { class: 'sub', style: 'font-size:12.5px', text: w.src === 'fc' ? '출발 2주 안이라 일기예보예요' : '아직 먼 날이라 작년 같은 날 실제 날씨예요(예보 아님)' }),
       ...w.days.map((d, i) => d ? row(`${i + 1}일차`, `${planDayLabel(p, i)} · ${planWxLine(d)}`) : null)); }).catch(() => put(sWx, wait('⚠ 날씨를 못 받았어요')));
   // 볼거리
-  destSights(D, nm).then(L => put(sSee, L.length ? el('div', { class: 'stack', style: 'gap:8px' }, ...L.map(z => el('a', { href: z.url, target: '_blank', rel: 'noopener', style: 'display:flex;gap:10px;text-decoration:none;color:inherit;align-items:center' },
-      el('img', { src: z.img, alt: '', loading: 'lazy', style: 'flex:none;width:72px;height:72px;object-fit:cover;border-radius:12px;background:#EEF2F5' }),
-      el('span', { style: 'flex:1;min-width:0' }, el('b', { style: 'display:block;font-size:15px', text: z.t + (z.lang === 'en' ? ' (영어)' : '') }), el('span', { style: 'font-size:12.5px;color:#6B7684;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: z.x }))))) : wait('둘레 위키백과 글을 못 찾았어요'),
-    el('div', { style: 'font-size:11.5px;color:#8A94A0', text: '위키백과에 위치가 적힌 글 중 사진 있는 것 · 추천 순위가 아니에요 · 일정에 넣으려면 ✨ 도우미에게 물어보세요' }))).catch(() => put(sSee, wait('⚠ 볼거리를 못 받았어요')));
+  // 볼거리: 이 휴대폰에 저장한 것(IndexedDB 'rds:{계획}', 사진 'rdsi:{계획}:{n}') 먼저 · 인터넷 되고 7일 지났으면 다시 받아 저장 → 비행기에서도 보임
+  (async () => {
+    const key = 'rds:' + p.id, urls = [];
+    const paint = async (L, at) => { const rows = [];
+      for (const z of L) { let u = ''; if (z.k) { const b = await trGet(z.k); if (b) { u = URL.createObjectURL(b); urls.push(u); } } if (!u && navigator.onLine) u = z.img;
+        rows.push(el('a', { href: z.url, target: '_blank', rel: 'noopener', style: 'display:flex;gap:10px;text-decoration:none;color:inherit;align-items:center' },
+          u ? el('img', { src: u, alt: '', loading: 'lazy', style: 'flex:none;width:72px;height:72px;object-fit:cover;border-radius:12px;background:#EEF2F5' }) : el('span', { style: 'flex:none;width:72px;height:72px;border-radius:12px;background:#EEF2F5' }),
+          el('span', { style: 'flex:1;min-width:0' }, el('b', { style: 'display:block;font-size:15px', text: z.t + (z.lang === 'en' ? ' (영어)' : '') }), el('span', { style: 'font-size:12.5px;color:#6B7684;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: z.x })))); }
+      put(sSee, rows.length ? el('div', { class: 'stack', style: 'gap:8px' }, ...rows) : wait('둘레 위키백과 글을 못 찾았어요'),
+        el('div', { style: 'font-size:11.5px;color:#8A94A0', text: `일정 속 장소들 둘레 10km 안 위키백과 글 중 사진 있는 것 ${rows.length}곳 · 추천 순위가 아니에요${at ? ' · ' + new Date(at).toLocaleDateString('ko-KR') + ' 받음 · 사진은 이 휴대폰에 저장' : ''}` })); };
+    try { const R0 = await trGet(key);
+      if (R0 && R0.L && (!navigator.onLine || Date.now() - R0.at < 7 * 864e5)) return paint(R0.L, R0.at);
+      if (!navigator.onLine) return put(sSee, wait('인터넷이 될 때 한 번 열어 두면 볼거리도 저장돼요'));
+      if (R0 && R0.L) await paint(R0.L, R0.at);
+      const L = await destSights(D, nm, p); let n = 0;
+      for (const z of L) { n++; try { const r = await fetchT(z.img, {}, 20000); if (r.ok) { const b = await r.blob(); if (b.size > 1000) { z.k = 'rdsi:' + p.id + ':' + n; await trSet(z.k, b); } } } catch {} }
+      const R = { at: Date.now(), L }; await trSet(key, R); await paint(L, R.at);
+    } catch { put(sSee, wait('⚠ 볼거리를 못 받았어요')); }
+  })();
   // AI 정리 (누를 때만, 받은 건 p.destAi에 남김)
   const aiPaint = A => put(sAi, ...A.map(g => el('div', {}, el('b', { style: 'font-size:14.5px', text: g.h }), el('ul', { style: 'margin:4px 0 0;padding-left:18px;font-size:14px;line-height:1.6' }, ...(g.items || []).map(t => el('li', { text: t }))))),
     el('div', { style: 'font-size:11.5px;color:#8A94A0', text: `AI(Claude)가 일반 지식으로 정리한 글이에요 · 가격·운영 시간·규정은 바뀔 수 있어 공식 사이트에서 확인해 주세요${p.destAi && p.destAi.at ? ' · ' + new Date(p.destAi.at).toLocaleDateString('ko-KR') + ' 정리' : ''}` }),
