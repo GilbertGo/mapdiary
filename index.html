@@ -844,6 +844,17 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
+.c-ph-deco{position:absolute;right:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:5px;border:none;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;cursor:pointer}.c-ph-deco svg{stroke:#fff}
+.deco{position:fixed;inset:0;z-index:4500;background:#0B1520;overflow:hidden;touch-action:none}
+.deco-bg{position:absolute;inset:0;background:#123 center/cover no-repeat}.deco-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.12)}
+.deco-top{position:absolute;left:0;right:0;top:0;z-index:8;display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px;background:linear-gradient(rgba(0,0,0,.45),transparent);color:#fff}
+.deco-top b{font-size:16px}.deco-tx{border:none;background:rgba(255,255,255,.18);color:#fff;font:700 14px Pretendard,sans-serif;border-radius:999px;padding:8px 14px;cursor:pointer}.deco-tx.ok{background:#fff;color:#15202B}
+.deco-tip{position:absolute;left:0;right:0;top:calc(62px + env(safe-area-inset-top,0px));z-index:8;text-align:center;color:#fff;font-size:12.5px;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.deco-bar{position:absolute;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;display:flex;gap:6px;background:rgba(255,255,255,.95);border-radius:22px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.deco-bar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:#15202B;font:700 12.5px Pretendard,sans-serif;padding:6px 0;border-radius:14px;cursor:pointer}.deco-bar svg{stroke:#15202B}
+.c-ph-pin.ed{cursor:grab;touch-action:none}.c-ph-pin.ed.drag{cursor:grabbing;transform:scale(1.06);z-index:5}
+.c-ph-pin .dx{position:absolute;top:-10px;left:-10px;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:#15202B;color:#fff;font:700 13px sans-serif;display:grid;place-items:center;cursor:pointer;padding:0;z-index:2}
+.deco-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.deco-grid button{aspect-ratio:1;border:none;border-radius:10px;background:#eee center/cover no-repeat;cursor:pointer}
 .c-ph-line{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
 .c-ph-pin{position:absolute;display:block;border-radius:24px;background:#fff;padding:6px;box-shadow:0 8px 22px rgba(0,0,0,.28);box-sizing:border-box}
 .c-ph-pin::after{content:'';position:absolute;left:50%;bottom:-13px;margin-left:-12px;border:12px solid transparent;border-top:14px solid #fff;border-bottom:0}
@@ -3169,9 +3180,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-154-me';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-155-deco';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👤 나 화면을 새로: 프로필 사진·이름·한 줄 소개, 기록 수를 한눈에 · 설정 줄은 이름과 값만 짧게 · 첫 화면 오른쪽 위 동그라미에 내 사진 · 국내 여행엔 예약·항공권 줄이 안 보여요 · 지운 사진·기록은 다시 살아나지 않아요';
+const UI_NOTES = '🖼 첫 화면 꾸미기: 첫 화면 오른쪽 위 꾸미기(또는 나 → 첫 화면 꾸미기)에서 사진을 끌어 옮기고, 누르면 크기, ✕로 빼고, 사진 넣기(휴대폰 사진·내 기록 사진)·바탕 바꾸기 · 👤 나 화면: 프로필 사진·이름·한 줄 소개';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4087,7 +4098,7 @@ function appSettings() {
     const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
     const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내 사진' : '기본', () => runHeroPick(done));
     photoRow.firstChild.replaceWith(thumb);
-    const homeRow = row('', '첫 화면 사진', ls.get('homeHero', '') ? '내 사진' : '저절로', () => runHeroPick(done, 'homeHero'));
+    const homeRow = row('', '첫 화면 꾸미기', ls.get('homeDeco', null) ? '내가 꾸밈' : '저절로', () => { cb.remove(); homeDecoEdit(); });
     homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
     body.replaceChildren(
@@ -13703,6 +13714,67 @@ function cSearch() {
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg); draw(); setTimeout(() => inp.focus(), 50);
 }
+// ---------- 🖼 첫 화면 꾸미기 (2026-11-15) ----------
+// ls homeDeco = { pins: [{ k:'r'(내 기록 사진: t, pid) | 'g'(휴대폰 사진: img dataURL 480px), x, y(말풍선 가운데·위 %), s(크기 px), a(날짜) }] }
+//   없으면 예전처럼 최근 기록 사진이 저절로. 바탕 사진은 homeHero(예전 키) 그대로
+async function phGet(id) { try { const db = await photoDb(); return await new Promise(res => { const q = db.transaction('photos').objectStore('photos').get(id); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch { return null; } }
+async function decoDraw(layer, box, pins, edit) {
+  layer.replaceChildren(); const W = box.clientWidth || innerWidth, H = box.clientHeight || innerHeight, pts = [];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'c-ph-line'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); layer.append(svg);
+  const line = () => { const ord = pins.filter(q => !q.gone).map(q => [q.x * W / 100, q.y * H / 100 + q.s * Math.min(1.12, W / 393) + 26, q.a || 0]).sort((a, b) => a[2] - b[2]);
+    if (ord.length < 2) { svg.innerHTML = ''; return; } let dd = `M${ord[0][0]} ${ord[0][1]}`; for (let i = 1; i < ord.length; i++) { const a = ord[i - 1], b = ord[i], mx = (a[0] + b[0]) / 2; dd += ` C${mx} ${a[1]} ${mx} ${b[1]} ${b[0]} ${b[1]}`; }
+    svg.innerHTML = `<path d="${dd}" fill="none" stroke="#3FD0D9" stroke-width="3" stroke-linecap="round" opacity=".9"/>`; };
+  for (const q of pins) {
+    let src = q.img || '', r = null;
+    if (q.k === 'r') { r = await phGet(q.pid); if (!r || phIsGone(q.pid)) { q.gone = 1; continue; } src = phSrc(r); }
+    const s = Math.round(q.s * Math.min(1.12, W / 393)), d = new Date(q.a || Date.now());
+    const pin = el(edit || !q.t ? 'div' : 'a', Object.assign({ class: 'c-ph-pin' + (edit ? ' ed' : ''), style: `left:${q.x}%;top:${q.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` }, !edit && q.t ? { href: `./?my=1&t=${encodeURIComponent(q.t)}` } : {}),
+      el('i', { style: `background-image:url('${src}')` }));
+    const dot = el('span', { class: 'c-ph-dot' }), dt = el('span', { class: 'c-ph-dt', text: q.a ? `${d.getMonth() + 1}.${d.getDate()}` : '' });
+    const place = () => { pin.style.left = q.x + '%'; pin.style.top = q.y + '%'; const top = q.y * H / 100 + s + 26; dot.style.left = dt.style.left = q.x + '%'; dot.style.top = dt.style.top = top + 'px'; };
+    place(); layer.append(pin, dot, dt);
+    if (!edit) continue;
+    pin.append(el('button', { class: 'dx', type: 'button', 'aria-label': '이 사진 빼기', onclick: e => { e.stopPropagation(); q.gone = 1; pin.remove(); dot.remove(); dt.remove(); line(); edit.changed(); } }, '✕'));
+    let st = null;
+    pin.addEventListener('pointerdown', e => { if (e.target.closest('.dx')) return; e.preventDefault(); pin.setPointerCapture(e.pointerId); st = { x: e.clientX, y: e.clientY, qx: q.x, qy: q.y, moved: 0 }; pin.classList.add('drag'); });
+    pin.addEventListener('pointermove', e => { if (!st) return; const dx = e.clientX - st.x, dy = e.clientY - st.y; if (Math.abs(dx) + Math.abs(dy) > 6) st.moved = 1;
+      q.x = Math.max(8, Math.min(92, st.qx + dx / W * 100)); q.y = Math.max(8, Math.min(78, st.qy + dy / H * 100)); place(); line(); });
+    pin.addEventListener('pointerup', () => { if (!st) return; pin.classList.remove('drag');
+      if (!st.moved) { q.s = q.s >= 130 ? 84 : q.s + 24; const ns = Math.round(q.s * Math.min(1.12, W / 393)); pin.style.width = pin.style.height = ns + 'px'; pin.style.marginLeft = -ns / 2 + 'px'; decoDraw(layer, box, pins, edit); }   // 누르면 크기 바뀜
+      st = null; line(); edit.changed(); });
+  }
+  line();
+}
+function homeDecoEdit() {
+  const D = ls.get('homeDeco', null);
+  let pins = JSON.parse(JSON.stringify(D && Array.isArray(D.pins) ? D.pins : (window.__cHomeAuto || []))).filter(q => !q.gone), dirty = false;
+  const bgUrl = () => ls.get('homeHero', '') || (document.querySelector('.c-ph-bg')?.style.backgroundImage || '').replace(/^url\(["']?|["']?\)$/g, '') || homeHeroUrl();
+  const wrap = el('div', { class: 'deco' }), bg = el('div', { class: 'deco-bg' }), layer = el('div', { class: 'c-ph-pins' });
+  const paintBg = () => { bg.style.backgroundImage = `url("${bgUrl()}")`; };
+  const edit = { changed: () => { dirty = true; } };
+  const redraw = () => decoDraw(layer, wrap, pins, edit);
+  const close = () => { wrap.remove(); };
+  const save = () => { ls.set('homeDeco', { pins: pins.filter(q => !q.gone).map(({ gone, ...q }) => q), at: Date.now() }); close(); try { history.scrollRestoration = 'manual'; } catch {} scrollTo(0, 0); location.reload(); };
+  const addSheet = () => {
+    if (pins.filter(q => !q.gone).length >= 8) return toast('사진은 8장까지 놓을 수 있어요');
+    const put = q => { pins.push(Object.assign({ x: 30 + Math.random() * 40, y: 25 + Math.random() * 30, s: 100, a: Date.now() }, q)); dirty = true; redraw(); };
+    const inp = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none', onchange: async () => { sb.remove();
+      for (const f of [...(inp.files || [])].slice(0, 8)) { try { let a = f.lastModified || Date.now(); try { const ts = await photoTsOf(f); if (ts && ts.ts) a = ts.ts; } catch {} put({ k: 'g', img: await shrinkImage(f, 480, 'url', .82), a }); } catch { toast('이 사진은 열 수 없어요'); } } } });
+    const grid = el('div', { class: 'deco-grid' });
+    const sb = labSheet('사진 넣기', el('button', { class: 'btn primary full', text: '휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
+      el('div', { class: 'pf-lb', text: '내 기록 사진' }), grid); sb.style.zIndex = '4700';   // 꾸미기 화면(4500) 위로
+    (async () => { for (const r of cRecs(20)) { for (const ph of (await photoImgs(r.t)).slice(0, 6)) {
+      grid.append(el('button', { type: 'button', style: `background-image:url('${ph.thumb || phSrc(ph)}')`, onclick: () => { sb.remove(); put({ k: 'r', t: r.t, pid: ph.id, a: ph.ts || r.a }); } })); } } if (!grid.children.length) grid.append(el('div', { class: 'sub', text: '사진이 있는 기록이 아직 없어요' })); })();
+  };
+  wrap.append(bg, layer,
+    el('div', { class: 'deco-top' }, el('button', { class: 'deco-tx', type: 'button', text: '취소', onclick: () => { if (!dirty || confirm('바꾼 것을 버릴까요?')) close(); } }), el('b', { text: '첫 화면 꾸미기' }), el('button', { class: 'deco-tx ok', type: 'button', text: '완료', onclick: save })),
+    el('div', { class: 'deco-tip', text: '끌어서 옮기기 · 누르면 크기 · ✕ 빼기' }),
+    el('div', { class: 'deco-bar' },
+      el('button', { type: 'button', onclick: addSheet }, cSvg('img', 20), el('span', { text: '사진 넣기' })),
+      el('button', { type: 'button', onclick: () => { runHeroPick(() => { paintBg(); dirty = true; }, 'homeHero'); const L = [...document.querySelectorAll('.sheet-bg')].pop(); if (L) L.style.zIndex = '4700'; } }, cSvg('palette', 20), el('span', { text: '바탕 바꾸기' })),
+      el('button', { type: 'button', onclick: () => { pins = JSON.parse(JSON.stringify(window.__cHomeAuto || [])); ls.set('homeDeco', null); dirty = true; redraw(); toast('처음 모습(최근 기록 사진)으로 돌렸어요'); } }, cSvg('again', 20), el('span', { text: '처음 모습' }))));
+  document.body.append(wrap); paintBg(); setTimeout(redraw, 30); ovGuard && ovGuard();
+}
 function cHomePhoto() {
   const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
   const wNow = ls.get('walkNow', null);
@@ -13738,6 +13810,9 @@ function cHomePhoto() {
   // 판 -149 (사용자 홈 캡처 '일상을 발견하고… 이 글이 방해되네'): 슬로건은 그리지 않음(사진·말풍선·여행 카드를 가려서)
   box.append(bg, layer, top, ...(sr ? [staleBox(sr, 'c-ph-stale')] : []), rec); if (bar) box.append(bar);
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
+  { const D = ls.get('homeDeco', null); if (D && Array.isArray(D.pins)) setTimeout(() => decoDraw(layer, box, D.pins, null), 0); }
+  // 꾸미기 단추(2026-11-15 사용자 '바탕화면 꾸미기 메뉴하나 만들고 사진 이동·추가·삭제 되게해')
+  if (!wNow) box.append(el('button', { class: 'c-ph-deco', type: 'button', 'aria-label': '첫 화면 꾸미기', onclick: () => homeDecoEdit() }, cSvg('palette', 16), '꾸미기'));
   setTimeout(async () => {
     // 사진 있는 기록이 말풍선 수만큼 모일 때까지 최근 것부터 차례로 봄(사진 없는 기록이 많아도 4개 채우게)
     const all = cRecs(80); if (!all.length) return;
@@ -13752,6 +13827,8 @@ function cHomePhoto() {
     const mp = memoryPick(); let memR = null;
     if (mp) { memR = { t: mp.x.t, name: mp.x.info.name, a: mp.x.info.startAt, M: modeOfT(mp.x.t), mem: mp }; try { await cPhotos(memR); } catch {} }
     const bub = [...(memR ? [memR] : []), ...(chosen ? withPh : withPh.slice(1)).filter(r => !memR || r.t !== memR.t)].slice(0, C_SPOTS.length);
+    window.__cHomeAuto = bub.map((r, i) => ({ k: 'r', t: r.t, pid: r.first && r.first.id, x: C_SPOTS[i].x, y: C_SPOTS[i].y, s: C_SPOTS[i].s, a: r.a }));
+    if (Array.isArray((ls.get('homeDeco', null) || {}).pins)) return;   // 내가 꾸민 첫 화면이면 아래 저절로 고른 말풍선 대신 decoDraw
     if (!bub.length) return;
     const W = box.clientWidth, H = box.clientHeight, pts = [];
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'c-ph-line'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
