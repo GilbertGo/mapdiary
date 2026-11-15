@@ -932,6 +932,20 @@ html.vw-lt .gallery img{width:104px;height:104px;border-radius:14px;box-shadow:n
 /* ⚙ 나(설정) 새 디자인 (2026-11-15 시안 ④): 화면 가득 · 큰 제목 '나' · 프로필 칸 · 묶음 목록(색 네모 그림) */
 .sheet.st-full{position:fixed;inset:0;max-width:none;max-height:none;height:100%;border-radius:0;background:#F5F6F8;overflow:auto;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px));box-sizing:border-box;color:#15202B}
 .sheet.st-full>.st-in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.pf{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 14px}
+.pf-ph{position:relative;border:none;background:none;padding:0;cursor:pointer}
+.pf-av{display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#1D9EC0,#0277BD) center/cover no-repeat;color:#fff;font-weight:800;box-shadow:0 4px 14px rgba(21,32,43,.12)}
+.pf-cam{position:absolute;right:0;bottom:2px;width:30px;height:30px;border-radius:50%;background:#15202B;display:grid;place-items:center;border:3px solid #F5F6F8}.pf-cam svg{stroke:#fff}
+.pf-nm{font-size:24px;font-weight:800;color:#15202B;margin-top:12px;letter-spacing:-.4px}
+.pf-bio{font-size:14px;color:#6B7684;margin-top:3px}
+.pf-st{display:flex;gap:0;margin:16px 0 4px;background:#fff;border-radius:18px;width:100%;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+.pf-st>div{flex:1;display:flex;flex-direction:column;padding:12px 0}.pf-st>div+div{border-left:1px solid #ECEEF1}
+.pf-st b{font-size:20px;font-weight:800;color:#15202B}.pf-st span{font-size:12px;color:#6B7684;margin-top:2px}
+.pf-ed{margin-top:10px;border:none;background:#E9EDF1;color:#15202B;font:700 14px Pretendard,sans-serif;border-radius:999px;padding:9px 18px;cursor:pointer}
+.pf-lnk{border:none;background:none;color:#1D9EC0;font:700 14px Pretendard,sans-serif;cursor:pointer}
+.pf-lb{font-size:13px;font-weight:700;color:#6B7684;margin:8px 2px 4px}
+.pf-in{width:100%;box-sizing:border-box;border:1px solid #E1E5EA;border-radius:12px;padding:12px 14px;font:16px Pretendard,sans-serif}
+.st-v{color:#8B95A1;font-size:14px;white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
 .st-pf{display:flex;align-items:center;gap:14px;background:#fff;border:none;border-radius:20px;padding:16px;width:100%;text-align:left;font:inherit;color:#15202B;cursor:pointer;box-shadow:0 1px 3px rgba(21,32,43,.05);margin:6px 0 8px}
 .st-pf .av{width:56px;height:56px;border-radius:50%;background:#1D9EC0;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:800;flex:none}
 .st-grp{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(21,32,43,.05)}
@@ -3155,9 +3169,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-153-gone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-154-me';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗑 지운 사진·기록이 다시 살아나지 않게 고쳤어요 · 로그인한 다른 휴대폰·클라우드·백업에서도 지운 것은 다시 안 들어오고, 클라우드 사본도 지워요 · 첫 화면을 깔끔하게: 사진 위 여행 알약·겹치는 설명 글·연 곳 알약을 뺐어요';
+const UI_NOTES = '👤 나 화면을 새로: 프로필 사진·이름·한 줄 소개, 기록 수를 한눈에 · 설정 줄은 이름과 값만 짧게 · 첫 화면 오른쪽 위 동그라미에 내 사진 · 국내 여행엔 예약·항공권 줄이 안 보여요 · 지운 사진·기록은 다시 살아나지 않아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4019,52 +4033,89 @@ function runHeroPick(after, key = 'runHero') {
 }
 // 앱 설정 (2026-10-20 사용자 '앱 설정 메뉴를 만들고 메인 화면 사진 선택은 거기로'): 맨 위 띠 '내 기록' 옆 톱니바퀴 → 이 창.
 // 바꾼 게 있으면 닫을 때 화면을 다시 그려요(기록 중이 아닐 때만)
+// 👤 프로필(2026-11-15 사용자 '내 정보도 이름에 더해 정체성 사진 추가 등등'): 사진(ls myPhoto, 정사각 400px)·이름(nick)·한 줄 소개(myBio). 로그인하면 x/one으로 다른 기기에도
+function profileAv(size) {
+  const ph = ls.get('myPhoto', ''), nk = String(ls.get('nick', '') || '').trim();
+  const a = el('span', { class: 'pf-av', style: `width:${size}px;height:${size}px;font-size:${Math.round(size * .4)}px` + (ph ? `;background-image:url("${ph}")` : ''), text: ph ? '' : (nk || '나').slice(0, 1) });
+  return a;
+}
+function profileHead(done) {
+  const nk = String(ls.get('nick', '') || '').trim(), bio = String(ls.get('myBio', '') || '').trim();
+  let n = 0, yr = 0; try { const T = pastTrips(), y = new Date().getFullYear(); n = T.filter(x => !x.album).length; yr = T.filter(x => !x.album && new Date(x.info.startAt).getFullYear() === y).length; } catch {}
+  let pl = 0; try { pl = planAll().length; } catch {}
+  const acc = cloudAcct();
+  return el('div', { class: 'pf' },
+    el('button', { class: 'pf-ph', type: 'button', 'aria-label': '프로필 사진 바꾸기', onclick: () => profileEdit(done, true) }, profileAv(96), el('span', { class: 'pf-cam' }, cSvg('img', 15))),
+    el('div', { class: 'pf-nm', text: nk || '이름을 정해 주세요' }),
+    el('div', { class: 'pf-bio', text: bio || (acc ? `${acc.via} · ${acc.name}` : '한 줄 소개를 적어 보세요') }),
+    el('div', { class: 'pf-st' }, ...[[n, '기록'], [yr, '올해'], [pl, '여행 계획']].map(([v, k]) => el('div', {}, el('b', { text: String(v) }), el('span', { text: k })))),
+    el('button', { class: 'pf-ed', type: 'button', text: '프로필 편집', onclick: () => profileEdit(done) }));
+}
+function profileEdit(done, pick) {
+  let photo = ls.get('myPhoto', '');
+  const av = el('span'), drawAv = () => { const a = profileAv(88); if (photo) { a.style.backgroundImage = `url("${photo}")`; a.textContent = ''; } else { a.style.backgroundImage = ''; a.textContent = (nm.value.trim() || '나').slice(0, 1); } av.replaceChildren(a); };
+  const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => { const f = inp.files && inp.files[0]; if (!f) return;
+    try { const bmp = await imgDecode(f), w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, m = Math.min(w, h), c = document.createElement('canvas'); c.width = c.height = 400;
+      c.getContext('2d').drawImage(bmp, (w - m) / 2, (h - m) / 2, m, m, 0, 0, 400, 400); try { bmp.close && bmp.close(); } catch {} photo = c.toDataURL('image/jpeg', .85); drawAv(); } catch { toast('이 사진은 열 수 없어요'); } } });
+  const nm = el('input', { class: 'pf-in', maxlength: 20, value: ls.get('nick', '') || '', placeholder: '이름' });
+  const bio = el('input', { class: 'pf-in', maxlength: 40, value: ls.get('myBio', '') || '', placeholder: '한 줄 소개 (예: 주말엔 산, 평일엔 러닝)' });
+  drawAv();
+  const sb = labSheet('프로필 편집',
+    el('div', { style: 'display:flex;flex-direction:column;align-items:center;gap:8px;margin:4px 0 6px' }, el('button', { class: 'pf-ph', type: 'button', onclick: () => inp.click() }, av, el('span', { class: 'pf-cam' }, cSvg('img', 15))),
+      el('div', { style: 'display:flex;gap:14px' }, el('button', { class: 'pf-lnk', type: 'button', text: '사진 고르기', onclick: () => inp.click() }), el('button', { class: 'pf-lnk', type: 'button', text: '사진 빼기', onclick: () => { photo = ''; drawAv(); } }))),
+    el('div', { class: 'pf-lb', text: '이름' }), nm, el('div', { class: 'pf-lb', text: '한 줄 소개' }), bio, inp,
+    el('button', { class: 'btn primary full', style: 'margin-top:12px', text: '저장', onclick: () => {
+      ls.set('nick', nm.value.trim().slice(0, 20)); ls.set('myBio', bio.value.trim().slice(0, 40)); ls.set('myPhoto', photo || ''); ls.set('myAt', Date.now());
+      try { if (cloudUser) cloudSync(true); } catch {}
+      (sb && sb.remove ? sb : document.querySelector('.sheet-bg:last-of-type'))?.remove(); toast('프로필을 저장했어요'); done && done(); } }));
+  if (pick) setTimeout(() => inp.click(), 50);
+}
 function appSettings() {
   let changed = false;
   const cb = el('div', { class: 'sheet-bg', style: 'z-index:3100', onclick: e => { if (e.target === cb) close(); } });
   const close = () => { cb.remove(); if (changed && !ls.get('walkNow', null)) location.reload(); };
   const done = () => { changed = true; paint(); };
   const IC = { '🎨': ['palette', '#7B61FF'], '💬': ['key', '#F2A600'], '🔑': ['key', '#8A94A0'], '👤': ['user', '#3A7BD5'], '⚖️': ['scale', '#3A7BD5'], '🎯': ['flag', '#F2665E'], '🔊': ['vol', '#F2665E'], '🧪': ['flask', '#7B61FF'], '📸': ['heart', '#E8457A'], '⌚': ['watch', '#15202B'], '☁️': ['cloud', '#1D9EC0'] };
+  // 2026-11-15 사용자 '가장 심플하게 현대적 디자인으로': 줄마다 이름 왼쪽 · 지금 값 오른쪽 회색 한 줄(설명 글 없음)
   const row = (ic, t, v, on) => el('button', { class: 'st-row', onclick: on }, IC[ic] ? el('span', { class: 'st-ic', style: `background:${IC[ic][1]}` }, cSvg(IC[ic][0], 18)) : el('span', { class: 'st-ic', text: ic }),
-    el('span', { class: 'grow' }, el('b', { style: 'font-weight:600', text: t }), v ? el('div', { class: 'sub', style: 'font-size:13px;margin-top:2px', text: v }) : null), el('span', { class: 'st-go', text: '›' }));
+    el('b', { class: 'grow', style: 'font-weight:600', text: t }), v ? el('span', { class: 'st-v', text: v }) : null, el('span', { class: 'st-go', text: '›' }));
   const head = t => el('div', { class: 'st-h', text: t });
   const grp = (...r) => el('div', { class: 'st-grp' }, ...r.filter(Boolean));
   const body = el('div', { class: 'stack', style: 'gap:6px' });
   const paint = () => {
     const sea = ls.get('theme', 'sea') === 'sea', wg = ls.get('weekGoal', 0), voice = ls.get('runVoice', true), w = whereNow();
     const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
-    const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내가 고른 사진' + (watchGet() ? ' · 시계에도 보내요' : '') : '기본 사진', () => runHeroPick(done));
+    const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내 사진' : '기본', () => runHeroPick(done));
     photoRow.firstChild.replaceWith(thumb);
-    const homeRow = row('', '첫 화면 사진', ls.get('homeHero', '') ? '내가 고른 사진' : '러닝 첫 화면 사진과 같아요', () => runHeroPick(done, 'homeHero'));
+    const homeRow = row('', '첫 화면 사진', ls.get('homeHero', '') ? '내 사진' : '저절로', () => runHeroPick(done, 'homeHero'));
     homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
     body.replaceChildren(
-      el('button', { class: 'st-pf', onclick: () => nickEdit(done) }, el('span', { class: 'av', text: (nk || '나').slice(0, 1) }), el('span', { class: 'grow' }, el('b', { style: 'font-size:18px;display:block', text: nk || '이름을 정해 주세요' }), el('span', { class: 'sub', style: 'font-size:13px', text: acc ? `${acc.via}로 로그인${L0 && L0.ok && !L0.bad ? ` · 기록 ${L0.n}개 모두 모음` : ''}` : '로그인 안 함 · 이 휴대폰에만 저장' })), el('span', { class: 'st-go', text: '›' })),
+      profileHead(done),
       head('화면'), grp(homeRow, photoRow,
-      row('🎨', '화면 분위기', sea ? '바닷가 · 누르면 산으로' : '산 · 누르면 바닷가로', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
-      head('나'), grp( (() => { const a = cloudAcct();
-        return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인한 계정', a ? `${a.via} 계정 · ${a.name}` : '로그인 안 함 · 누르면 카카오·구글로 로그인', () => { location.href = './?my=1'; }); })(),
-      row('👤', '내 이름', ls.get('nick', '') || '아직 없어요 · 같이 달리기·모임방에 보여요', () => nickEdit(done)),
-      row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg · 칼로리 셈에 써요` : '정하지 않았어요 · 칼로리를 65kg로 셈해요', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
+      row('🎨', '화면 분위기', sea ? '바닷가' : '산', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
+      head('계정'), grp( (() => { const a = cloudAcct();
+        return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? a.via : '안 함', () => { location.href = './?my=1'; }); })(),
+      row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg` : '안 정함', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
       ),
       head('러닝'), grp(
-      row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '정하지 않았어요', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
-      row('🔊', '1km 음성 안내', voice ? '켜짐 · 누르면 꺼져요' : '꺼짐 · 누르면 켜져요', () => { ls.set('runVoice', !voice); done(); }),
+      row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '안 정함', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
+      row('🔊', '1km 음성 안내', voice ? '켬' : '끔', () => { ls.set('runVoice', !voice); done(); }),
       ),
       head('실험실'), grp(
-      row('🧪', 'AI 추억 발견', '사진을 골라 MPD 기록과 이어 추억 카드 만들기 · 시험 중', () => { location.href = './?lab=mem'; }),
+      row('🧪', 'AI 추억 발견', '시험 중', () => { location.href = './?lab=mem'; }),
       ),
       head('연결'), grp(
-      row('📸', '가족 앨범', '가족끼리 사진 모으고 댓글 달기', () => { location.href = './?album=1'; }),
-      row('⌚', '시계 연결', watchGet() ? '연결됨 · 코드 ' + watchGet().pretty : '갤럭시워치 MPD Run 기록 받기', () => { location.href = './?my=1'; }),
-      row('☁️', '로그인 · 기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '카카오·구글로 앱·크롬 기록을 하나로';
-        const L = ls.get('cloudLast', null), a = cloudAcct(), who = a ? `${a.via} · ${a.name}` : '로그인돼 있어요'; return `${who} · ${!L ? '아직 맞추지 않음' : !L.ok || L.bad ? '⚠ 다시 맞춰 주세요' : `✅ 기록 ${L.n}개 모두 모음`}`; })(), () => { location.href = './?my=1'; })),
-      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `지금 연 곳: ${w.t} · 화면 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` }));
+      row('📸', '가족 앨범', '', () => { location.href = './?album=1'; }),
+      row('⌚', '시계 연결', watchGet() ? '연결됨' : '안 함', () => { location.href = './?my=1'; }),
+      row('☁️', '기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '안 함';
+        const L = ls.get('cloudLast', null); return !L ? '아직' : !L.ok || L.bad ? '⚠ 다시' : `✅ ${L.n}개`; })(), () => { location.href = './?my=1'; })),
+      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `${w.t} · 판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` }));
   };
   paint();
   cb.append(el('div', { class: 'sheet st-full', role: 'dialog', 'aria-label': '나 · 설정' }, el('div', { class: 'st-in' },
     el('div', { class: 'n-top' }, el('span', { class: 'sp' }), el('button', { class: 'n-ib', type: 'button', 'aria-label': '닫기', onclick: close }, cSvg('x', 20))),
-    el('h1', { class: 'n-lt', style: 'margin-bottom:4px', text: '나' }), body)));
+    body)));   // 큰 '나' 제목은 뺌(프로필이 머리)
   document.body.append(cb);
 }
 // MPD를 모임방에 올려요. o = 공유 카드 내용(openBrag의 cardOpts)
@@ -4462,8 +4513,9 @@ async function cloudSync(quiet) {
     if (Array.isArray(one.rooms)) ls.set('rooms', [...roomsLoad(), ...one.rooms.filter(x => x && !roomsLoad().some(y => y.code === x.code))]);
     if (Array.isArray(one.myPosts)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...one.myPosts])].slice(-300));
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
+    if (one.me && typeof one.me === 'object' && (+one.me.at || 0) > (ls.get('myAt', 0) || 0)) { ls.set('nick', String(one.me.nick || ls.get('nick', '')).slice(0, 20)); ls.set('myBio', String(one.me.bio || '').slice(0, 40)); ls.set('myPhoto', /^data:image\//.test(one.me.ph || '') ? one.me.ph : ''); ls.set('myAt', +one.me.at); }
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone);   // 🗓 여행 계획도 모음에(2026-11-14)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), phGone: phGoneAll(), recGone: goneAll() });
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), phGone: phGoneAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
@@ -8780,6 +8832,8 @@ function planCenter(p, d) {
   const nb = a.filter(x => dist(c[0], c[1], x.lat, x.lng) < 300000); if (nb.length && nb.length < a.length) return planCenter({ it: nb }, null);
   return c;
 }
+// 해외 여행인지(2026-11-15 사용자 인왕산 계획 캡처 '해외여행도 아닌데'): 위치가 하나라도 한국 밖이거나 비행 일정이 있으면
+function planAbroad(p) { const pl = (p.it || []).filter(x => Number.isFinite(+x.lat)).concat(p.dest && Number.isFinite(+p.dest.lat) ? [p.dest] : []); return (p.it || []).some(x => x.k === 'fly') || pl.some(x => geoidOff(+x.lat, +x.lng) == null); }
 function planCN(p) { const c = planCenter(p); return !!(c && planInChina(c[0], c[1]) && koInHanzi(c[0], c[1])); }
 // 판 -151 (사용자 오사카 계획 '오사카에서 쓰거나 보여줄 기본적 일본어 추가'): 일본 여행이면 🗣 일본어
 function planJP(p) { const c = planCenter(p) || (p && p.dest && [p.dest.lat, p.dest.lng]); return !!((p && p.dest && p.dest.cc === 'jp') || (c && c[0] > 24 && c[0] < 46 && c[1] > 122.9 && c[1] < 146 && !(c[0] > 33 && c[0] < 38.7 && c[1] > 124 && c[1] < 130) && !(c[0] > 37.2 && c[0] < 37.6 && c[1] > 130.7 && c[1] < 131.1))); }
@@ -10589,22 +10643,22 @@ function viewPlanOne(id) {
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
     hero.repaint({ title: planEN(p) && p.nameEn ? p.nameEn : p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
-      destLine(), memLine(), docLine(), chkLine(), warnBox()); };
+      destLine(), memLine(), (planAbroad(p) || (p.docs || []).length) ? docLine() : null, chkLine(), warnBox()); };   // 국내 여행이면 '예약 · 항공권' 줄 안 보임
   function destLine() {   // 판 -144: 📘 여행지 정보 한 페이지
     const nm = (p.dest && p.dest.n) || planDestName(p) || '여행지';
     return el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1', class: 'n-row', style: 'width:100%;box-sizing:border-box;text-decoration:none;color:inherit;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px' },
-      el('span', { style: 'font-size:20px', text: '📘' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: `${nm} 여행 정보` }), el('span', { style: 'font-size:12.5px;color:#6B7684', text: '소개·날씨·시차·환율·전기·볼거리·꼭 알 것 한 페이지' })), el('span', { style: 'color:#A3ABB5', text: '›' }));
+      el('span', { style: 'font-size:20px', text: '📘' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: `${nm} 여행 정보` }), el('span', { style: 'font-size:12.5px;color:#6B7684', text: planAbroad(p) ? '소개 · 날씨 · 환율 · 볼거리' : '소개 · 날씨 · 볼거리' })), el('span', { style: 'color:#A3ABB5', text: '›' }));
   }
   function memLine() {   // 판 -140: 👥 함께 가는 사람 · 같이 고치기
     const n = (p.mem || []).length;
     return el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px', onclick: () => planMemSheet(p, drawAll) },
       el('span', { style: 'font-size:20px', text: '👥' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: n ? `함께 가는 사람 ${n}명` : '함께 가는 사람' }),
-        el('span', { style: 'font-size:12.5px;color:#6B7684', text: (p.shOn ? '✅ 일행과 같이 고치는 중' : '내 휴대폰에서만 고쳐요 · 같이 고치기 켜기') + (n ? '' : ' · 사람마다 출발지·날짜') })), el('span', { style: 'color:#A3ABB5', text: '›' }));
+        el('span', { style: 'font-size:12.5px;color:#6B7684', text: p.shOn ? '일행과 같이 고치는 중' : '나 혼자 · 누르면 일행 초대' })), el('span', { style: 'color:#A3ABB5', text: '›' }));
   }
   function docLine() {   // 판 -138: 🎫 예약 · 항공권 (예약 캡처를 계획에 저장)
     const n = (p.docs || []).length;
     return el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer;background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px', onclick: () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); }) },
-      el('span', { style: 'font-size:20px', text: '🎫' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: '예약 · 항공권' }), el('span', { style: 'font-size:12.5px;color:#6B7684', text: n ? `캡처 ${n}장 저장됨 · 인터넷 없어도 보여요` : '항공권·숙소 예약 캡처를 넣어 두세요' })), el('span', { style: 'color:#A3ABB5', text: '›' }));
+      el('span', { style: 'font-size:20px', text: '🎫' }), el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:15px', text: '예약 · 항공권' }), el('span', { style: 'font-size:12.5px;color:#6B7684', text: n ? `캡처 ${n}장` : '캡처를 넣어 두세요' }), el('span', { style: 'font-size:12.5px;color:#6B7684', text: n ? `캡처 ${n}장 저장됨 · 인터넷 없어도 보여요` : '항공권·숙소 예약 캡처를 넣어 두세요' })), el('span', { style: 'color:#A3ABB5', text: '›' }));
   }
   // 판 -131: 스스로 점검 결과 — 작은 회색 한 줄, 누르면 '고친 것 / 확인해 주세요' 창
   function chkLine() {
@@ -13662,7 +13716,9 @@ function cHomePhoto() {
   // 시안 그대로 오른쪽 위: 🔍 검색(cSearch) · 🔔 알림(아직 없음 → 만들 예정 창) · 프로필(누르면 '나' = 설정)
   const nick = String(ls.get('nick', '') || '').trim();
   const avatar = el('button', { class: 'c-ph-av', type: 'button', 'aria-label': '나 · 설정', title: '나', onclick: appSettings }, nick ? nick.slice(0, 1) : null);
-  if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
+  const myPh = ls.get('myPhoto', '');
+  if (myPh) { avatar.textContent = ''; avatar.style.cssText = `background:#fff center/cover no-repeat;background-image:url("${myPh}")`; }
+  else if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
   const top = el('div', { class: 'c-ph-top' }, logo, el('span', { style: 'flex:1' }),
     icBtn('검색', `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`, { type: 'button', onclick: cSearch }),
     icBtn('알림', `<svg ${S}><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`, { type: 'button', onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
