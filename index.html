@@ -3287,9 +3287,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-187-notab';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-188-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10677,9 +10677,9 @@ function planHomeCard() {
   const k = planToday(p), on = k >= 0, w = (ls.get('planWx:' + p.id, null) || {}).days || [], its = on ? planItems(p, k) : [], ni = on ? planNext(p, k) : -1, nx = ni >= 0 ? its[ni] : null;
   const st = ls.get('planPrep:' + p.id, {}) || {}, done = Object.values(st).filter(Boolean).length;
   return el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(p.id), style: 'display:block;text-decoration:none;color:#fff;border-radius:20px;padding:16px 18px;background:linear-gradient(135deg,#0277BD,#1D9EC0);box-shadow:0 6px 18px rgba(2,119,189,.25)' },
-    el('div', { style: 'font-size:13px;opacity:.9;font-weight:700', text: on ? `여행 중 · ${k + 1}일차 · ${planDayLabel(p, k)}` : `D-${-k} · ${planDayLabel(p, 0)} 출발` }),
-    el('div', { style: 'font-size:22px;font-weight:900;margin:2px 0 4px', text: p.name }),
-    on ? el('div', { style: 'font-size:15px;font-weight:700', text: nx ? `▶ 다음: ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null,
+    el('div', { style: 'font-size:13px;opacity:.9;font-weight:500', text: on ? `여행 중 · ${k + 1}일차 · ${planDayLabel(p, k)}` : `D-${-k} · ${planDayLabel(p, 0)} 출발` }),
+    el('div', { style: 'font-size:21px;font-weight:700;margin:2px 0 4px', text: p.name }),
+    on ? el('div', { style: 'font-size:15px;font-weight:500', text: nx ? `▶ 다음: ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null,
     el('div', { style: 'font-size:14px;opacity:.95;margin-top:4px', text: [on ? '' : (done ? `🧳 준비 ${done}개 했어요` : '🧳 여행 준비'), w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : ''].filter(Boolean).join('  ·  ') + ' ›' }));   // 2026-11-15 '중복된 정보 빼': 설명·'여행 화면 열기' 줄 뺌
 }
 // 판 -135 (개선 지시서 6번): 보여 주는 말은 한 곳(PLAN_SAY_CN)에서 — 준비 창·🗣 중국어 메뉴가 같은 자료를 씀
@@ -14623,12 +14623,12 @@ function viewLanding() {
         row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
         row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
         row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
-        row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
+        tripCard ? null : row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
         row('👥', '모임방', '', './?room=1'),
         row('📸', '가족 앨범', '', './?album=1'),
         row('🧪', '추억 만들기', '', './?lab=mem'),
         row('🎮', '게임', '', './?game=1'),
-        row('🎙', '대화 정리', '', './?talk=1')),
+        null),   // 판 -188: '대화 정리'는 사진 위 '🎙 대화 기록' 알약과 겹쳐 뺌
       installSlot,
       el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' },   // '지금 연 곳' 알약은 뺌(아래 판 줄에 앱/바탕화면이 같이 나와서)
         // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
