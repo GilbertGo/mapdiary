@@ -871,6 +871,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-sl svg{display:block;margin-top:2px;width:min(230px,58vw);height:auto}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
+.c-ph-auto{position:absolute;left:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:7px;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;text-decoration:none;max-width:calc(100% - 140px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-ph-auto i{flex:none;width:8px;height:8px;border-radius:50%;background:#3FD0D9;box-shadow:0 0 0 3px rgba(63,208,217,.35)}
 .c-ph-deco{position:absolute;right:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:5px;border:none;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;cursor:pointer}.c-ph-deco svg{stroke:#fff}
 .deco{position:fixed;inset:0;z-index:4500;background:#0B1520;overflow:hidden;touch-action:none}
 .deco-bg{position:absolute;inset:0;background:#123 center/cover no-repeat}.deco-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.12)}
@@ -3241,9 +3242,12 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.16-175-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+// 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
+const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
+const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
+const UI_VER = '2026.11.16-176-auto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 같은 장소가 일정에 두 번 보이던 것을 하나로 합쳐요 · ✂ 여행 일정 칸을 덜어냈어요: 장소 사이 거리 줄은 작고 옅게, 긴 여행사 이름은 첫 이름만 크게 · 같은 사진이 두 칸에 나오지 않게 · 지도 출처 글자 작게 · 📅 여행 일정의 날 탭을 지도 아래, 일정 바로 위로 옮겼어요 · 일정을 내려 보면 날 탭이 위에 붙어 따라와서 바로 다른 날로 · 큰 \'n일차\' 줄 대신 날짜와 날씨 한 줄 · 🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기·자전거·차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기: 나 → 자동 기록 · 웹·아이폰·MPD Run은 지금처럼 눌러서 기록';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4147,7 +4151,7 @@ function appSettings() {
   const cb = el('div', { class: 'sheet-bg', style: 'z-index:3100', onclick: e => { if (e.target === cb) close(); } });
   const close = () => { cb.remove(); if (changed && !ls.get('walkNow', null)) location.reload(); };
   const done = () => { changed = true; paint(); };
-  const IC = { '🎨': ['palette', '#7B61FF'], '💬': ['key', '#F2A600'], '🔑': ['key', '#8A94A0'], '👤': ['user', '#3A7BD5'], '⚖️': ['scale', '#3A7BD5'], '🎯': ['flag', '#F2665E'], '🔊': ['vol', '#F2665E'], '🧪': ['flask', '#7B61FF'], '📸': ['heart', '#E8457A'], '⌚': ['watch', '#15202B'], '☁️': ['cloud', '#1D9EC0'] };
+  const IC = { '🎨': ['palette', '#7B61FF'], '💬': ['key', '#F2A600'], '🔑': ['key', '#8A94A0'], '👤': ['user', '#3A7BD5'], '⚖️': ['scale', '#3A7BD5'], '🎯': ['flag', '#F2665E'], '🔊': ['vol', '#F2665E'], '🧪': ['flask', '#7B61FF'], '📸': ['heart', '#E8457A'], '⌚': ['watch', '#15202B'], '☁️': ['cloud', '#1D9EC0'], '🛰': ['pin', '#1D9EC0'] };
   // 2026-11-15 사용자 '가장 심플하게 현대적 디자인으로': 줄마다 이름 왼쪽 · 지금 값 오른쪽 회색 한 줄(설명 글 없음)
   const row = (ic, t, v, on) => el('button', { class: 'st-row', onclick: on }, IC[ic] ? el('span', { class: 'st-ic', style: `background:${IC[ic][1]}` }, cSvg(IC[ic][0], 18)) : el('span', { class: 'st-ic', text: ic }),
     el('b', { class: 'grow', style: 'font-weight:600', text: t }), v ? el('span', { class: 'st-v', text: v }) : null, el('span', { class: 'st-go', text: '›' }));
@@ -4170,6 +4174,10 @@ function appSettings() {
         return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? a.via : '안 함', () => { location.href = './?my=1'; }); })(),
       row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg` : '안 정함', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
       ),
+      AUTO_OK ? head('기록') : null, AUTO_OK ? grp(
+      row('🛰', '자동 기록', autoOn() ? '켬' : '끔', () => { const on = !autoOn(); ls.set('autoRec', on);
+        if (on) { autoStart(); toast('🛰 자동 기록을 켰어요 · 다닌 길이 저절로 기록돼요'); } else { autoStop(); toast('자동 기록을 껐어요 · 지금까지 모은 길은 기록으로 남겼어요'); } paint(); }),
+      ) : null,
       head('러닝'), grp(
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '안 정함', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
       row('🔊', '1km 음성 안내', voice ? '켬' : '끔', () => { ls.set('runVoice', !voice); done(); }),
@@ -11468,6 +11476,81 @@ async function autoBackup() {
   } catch {}
 }
 if (window.mdNativeBackup && !LAB_QUIET) setTimeout(autoBackup, 20000);
+// ---------- 🛰 자동 기록 (2026-11-15 사용자 'MPD앱을 자동 기록 앱으로 전환해 보자' → '추천대로해': MPD 전체 앱(안드로이드)만) ----------
+// 누르지 않아도 다닌 길이 저절로 기록이 돼요. 앱을 켜면 알림 창에 'MPD 자동 기록 중'을 띄우고 위치를 계속 받아요.
+//   앱을 최근 앱에서 밀어 닫거나 휴대폰을 껐다 켜면 멈춰요 → 앱을 다시 켜면 이어서(그동안 다닌 길은 없음). 웹·아이폰·MPD Run·파크골프는 안 함(누르는 기록 그대로)
+// 나누기: 한곳(150m 안)에 10분 넘게 머물거나 위치가 10분 넘게 끊기면 그 길을 한 기록으로 끝내요. 500m·3분 넘게 움직인 것만 남겨요(집 안·가게 안 흔들림은 버림)
+// 종류: 움직인 빠르기 가운데값이 시속 7km 이하 = 걷기(trek), 22km 이하 = 자전거(bike), 그보다 빠르면 일상(daily, 이름 '차로 이동')
+// 손으로 시작한 기록(walkNow)이 있으면 자동 기록은 쉬어요(그때까지 모은 길은 그때까지로 끝내요). 끄기: 나 → 자동 기록
+// autoSt = { seg: 지금 모으는 길 [[lat,lng,ts,alt?]] | null, c: 머무는 곳 [lat,lng,ts(처음 온 때)], ci: seg 안에서 c의 자리, last: 마지막 위치 }
+// autoIds = [{ id, ts }] 자동으로 만든 기록(첫 화면 '오늘 n개'용, 이 휴대폰에만)
+// AUTO_OK·AUTO_* 값은 route() 앞(IN_NATIVE 아래)에 있어요: 첫 화면이 이 줄보다 먼저 그려져서(TDZ)
+function autoOn() { return AUTO_OK && ls.get('autoRec', true) !== false; }
+let autoWatch = null;
+function autoSt() { const s = ls.get('autoSt', null); return s && typeof s === 'object' && !Array.isArray(s) ? s : {}; }
+function autoKind(tr) {
+  const v = [];
+  for (let i = 1; i < tr.length; i++) { const dt = (tr[i][2] - tr[i - 1][2]) / 1000; if (dt > 0 && dt < 300) v.push(dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) / dt * 3.6); }
+  v.sort((a, b) => a - b); const mid = v.length ? v[v.length >> 1] : 0;
+  return mid <= 7 ? { k: 'trek', n: '걷기' } : mid <= 22 ? { k: 'bike', n: '자전거' } : { k: 'daily', n: '차로 이동' };
+}
+// 모은 길(0~i번 점)을 기록 하나로 남겨요. 짧으면 버려요. 남긴 기록 ID(없으면 null)
+function autoSave(seg, i) {
+  const tr = (seg || []).slice(0, i + 1); if (tr.length < 2) return null;
+  let d = 0; for (let j = 1; j < tr.length; j++) d += dist(tr[j - 1][0], tr[j - 1][1], tr[j][0], tr[j][1]);
+  if (d < AUTO_MIN_M || tr[tr.length - 1][2] - tr[0][2] < AUTO_MIN_MS) return null;
+  const id = 'walk_' + rid(8), K = autoKind(tr);
+  ls.set('track:' + id, tr); ls.set('walkMode:' + id, K.k); ls.set('trackName:' + id, `${fmtClock(tr[0][2])} ${K.n}`);
+  ls.set('autoIds', [...(ls.get('autoIds', []) || []).filter(x => Date.now() - x.ts < 30 * 864e5), { id, ts: tr[0][2] }].slice(-300));
+  setTimeout(async () => { try { await placeName(id, tr); } catch {} try { await galleryOffer([id]); } catch {} try { if (cloudUser) cloudSync(true); } catch {} }, 500);   // 동네 이름 · 그 시간 사진 · 클라우드
+  return id;
+}
+// 위치 하나가 올 때마다
+function autoFix(lat, lng, acc, alt, ts) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (Number.isFinite(acc) && acc > 60)) return;
+  const S = autoSt(), p = [+lat.toFixed(6), +lng.toFixed(6), ts]; if (Number.isFinite(alt)) p.push(Math.round(alt));
+  const fresh = () => { S.seg = null; S.c = p; S.ci = 0; S.last = p; S.rb = [p]; ls.set('autoSt', S); };
+  if (ls.get('walkNow', null)) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 손으로 하는 기록 중엔 쉬어요
+  if (!S.c || !S.last || ts - S.last[2] > AUTO_STAY_MS) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 처음이거나 위치가 오래 끊겼다가 다시
+  if (ts <= S.last[2]) return;
+  if (S.seg && ts - S.seg[0][2] > AUTO_MAX_MS) { autoSave(S.seg, S.seg.length - 1); S.seg = [S.last]; S.ci = 0; }   // 12시간 넘으면 나눠요
+  const add = () => { const e = S.seg[S.seg.length - 1]; if (dist(e[0], e[1], p[0], p[1]) >= 10) S.seg.push(p); };
+  if (dist(S.c[0], S.c[1], p[0], p[1]) <= AUTO_STAY_M) {   // 머무는 곳 둘레
+    if (S.seg) { add(); if (ts - S.c[2] >= AUTO_STAY_MS) {   // 10분 머물렀으면 도착한 때까지로 끝: 그 뒤 점이 모두 60m 안에 드는 첫 점 = 도착(머무는 동안 흔들린 점은 빼요)
+      let j = S.ci; while (j < S.seg.length - 1 && S.seg.slice(j + 1).some(q => dist(S.seg[j][0], S.seg[j][1], q[0], q[1]) > 60)) j++;
+      autoSave(S.seg, j); S.seg = null; } }
+  } else {   // 둘레를 벗어남 = 움직이는 중
+    if (!S.seg) {   // 출발: 머무는 곳(60m 안)에 마지막으로 있던 점부터 이어요(첫 150m가 빠지지 않게)
+      const rb = Array.isArray(S.rb) && S.rb.length ? S.rb : [S.last]; let j = rb.length - 1;
+      while (j > 0 && dist(rb[j][0], rb[j][1], S.c[0], S.c[1]) > 60) j--;
+      S.seg = rb.slice(j);
+    }
+    add(); S.c = p; S.ci = S.seg.length - 1;
+  }
+  S.rb = S.seg ? [] : [...(S.rb || []), p].slice(-40);   // 머무는 동안 최근 점(출발한 곳 찾기용)
+  S.last = p; ls.set('autoSt', S);
+}
+// 앱을 켤 때: 오래 쉬던 길은 먼저 끝내고, 위치 받기를 켜요
+function autoStart() {
+  if (!autoOn() || autoWatch != null) return;
+  const S = autoSt();
+  if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', { c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }); }
+  if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
+  autoWatch = navigator.geolocation.watchPosition(g => autoFix(g.coords.latitude, g.coords.longitude, g.coords.accuracy, g.coords.altitude, g.timestamp || Date.now()), () => {},
+    { enableHighAccuracy: true, mdBg: { title: 'MPD 자동 기록 중', message: '다닌 길을 저절로 기록해요 · 끄기: MPD → 나 → 자동 기록', distanceFilter: 20 } });
+}
+function autoStop() {
+  if (autoWatch != null) { navigator.geolocation.clearWatch(autoWatch); autoWatch = null; }
+  const S = autoSt(); if (S.seg) autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', {});
+}
+// 첫 화면·설정에 보이는 지금 상태
+function autoStatus() {
+  const S = autoSt(), moving = S.seg && S.last && Date.now() - S.last[2] < AUTO_STAY_MS;
+  const day = new Date().toDateString(), n = (ls.get('autoIds', []) || []).filter(x => new Date(x.ts).toDateString() === day && localStorage.getItem('track:' + x.id)).length;
+  if (moving) { let d = 0; for (let j = 1; j < S.seg.length; j++) d += dist(S.seg[j - 1][0], S.seg[j - 1][1], S.seg[j][0], S.seg[j][1]); return `자동 기록 중 · 이동 ${fmtDist(d)}`; }
+  return `자동 기록 중 · 오늘 ${n}개`;
+}
+if (AUTO_OK && !LAB_QUIET) setTimeout(autoStart, 1500);
 // 갤러리 사진 넣기 (안드로이드 앱만): 기록한 시간에 휴대폰 카메라로 찍은 사진을 찾아, 찍은 시각에 있던 곳에 붙여요
 // days: 기록 ID들(여러 날 여행이면 날마다), manual: 수정하기에서 직접 눌렀을 때(없으면 알려 줘요)
 async function galleryOffer(days, manual) {
@@ -14179,6 +14262,7 @@ function cHomePhoto() {
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   { const D = ls.get('homeDeco', null); if (D && Array.isArray(D.pins)) setTimeout(() => decoDraw(layer, box, D.pins, null), 0); }
   // 꾸미기 단추(2026-11-15 사용자 '바탕화면 꾸미기 메뉴하나 만들고 사진 이동·추가·삭제 되게해')
+  if (!wNow && autoOn()) { const at = el('span'); box.append(el('a', { class: 'c-ph-auto', href: './?my=1', 'aria-label': '자동 기록 · 내 기록 보기' }, el('i'), at)); cLiveTick(at, () => { at.textContent = autoStatus(); }); }   // 🛰 자동 기록 켜짐(MPD 앱)
   if (!wNow) box.append(el('button', { class: 'c-ph-deco', type: 'button', 'aria-label': '첫 화면 꾸미기', onclick: () => homeDecoEdit() }, cSvg('palette', 16), '꾸미기'));
   setTimeout(async () => {
     // 사진 있는 기록이 말풍선 수만큼 모일 때까지 최근 것부터 차례로 봄(사진 없는 기록이 많아도 4개 채우게)
