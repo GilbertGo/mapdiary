@@ -873,6 +873,7 @@ html.c-tabbed.c-live body{padding-bottom:calc(140px + env(safe-area-inset-bottom
 @media (prefers-reduced-motion:reduce){.c-lv-dot,.c-ph-rec.live{animation:none}}
 html.c-home .c-tabs{background:rgba(255,255,255,.97)}
 /* ── 새 디자인 공통 (2026-11-15 시안 ①~④ 승인): 옅은 회색 바탕 · 흰 카드(테두리 없음) · 짙은 남색 글 · 청록 강조 하나 · 큰 제목 · 아래 메뉴 ── */
+html.n-page .mode.on{background:#15202B;color:#fff}
 html.n-page{--ground:#F5F6F8;--card:#fff;--ink:#15202B;--muted:#6B7684;--line:#ECEEF1;--soft:#EEF2F5;--grey-soft:#EEF2F5;--pine:#1D9EC0;--accent:#1D9EC0;--forest:#1D9EC0;--forest-ink:#147FA0;--forest-soft:#E4F2F7;--blue-ink:#147FA0;--shadow:0 1px 3px rgba(21,32,43,.05);color-scheme:light;background:#F5F6F8}
 html.n-page body{background:#F5F6F8!important;color:#15202B}
 html.n-page .sky-clouds{display:none!important}
@@ -1404,11 +1405,23 @@ async function photoDel(id) {
   const db = await photoDb();
   return new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete = res; tx.onerror = res; });
 }
+// 판 -123: 큰 사진(5천만 화소 등)은 createImageBitmap이 메모리 부족으로 실패할 수 있어 <img>로 한 번 더 시도
+async function imgDecode(file) {
+  try { return await createImageBitmap(file); } catch (e1) {
+    const u = URL.createObjectURL(file);
+    try { const im = new Image(); im.decoding = 'async'; im.src = u; await im.decode(); return im; }
+    catch { const e = new Error(/heic|heif/i.test((file.type || '') + (file.name || '')) ? 'heic' : 'decode'); throw e; }
+    finally { setTimeout(() => URL.revokeObjectURL(u), 5000); }
+  }
+}
+function imgCanvas(src, max) {
+  const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  const s = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height); return c;
+}
 async function shrinkImage(file, max, type, q) {
-  const bmp = await createImageBitmap(file);
-  const s = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
-  c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const bmp = await imgDecode(file), c = imgCanvas(bmp, max); try { bmp.close && bmp.close(); } catch {}
   return type === 'url' ? c.toDataURL('image/jpeg', q) : new Promise(r => c.toBlob(r, 'image/jpeg', q));
 }
 // 사진 위치: 방금 잡힌 위치가 있으면 그곳, 아니면 이동 기록에서 찍은 시각과 가장 가까운 지점
@@ -1432,9 +1445,13 @@ async function addPhotos(t, files, now, later) {
         if (f.size > VID_MAX) { toast(`동영상이 너무 커요(${Math.round(f.size / 1048576)}MB) · 300MB 아래로 잘라서 넣어 주세요`); continue; }
         const po = await videoPoster(f, 320);
         rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob: f.type ? f : new Blob([f], { type: 'video/mp4' }), thumb: po.url, v: 1, dur: Number.isFinite(po.dur) ? Math.round(po.dur) : 0 };
-      } else rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob: await shrinkImage(f, 1280, 'blob', 0.82), thumb: await shrinkImage(f, 160, 'url', 0.7) };
+      } else {   // 판 -123: 한 번만 풀어서 큰 것·작은 것을 만듦(예전엔 두 번 풀어 느리고 큰 사진에서 실패)
+        const bmp = await imgDecode(f), big = imgCanvas(bmp, 1280); try { bmp.close && bmp.close(); } catch {}
+        const blob = await new Promise(r => big.toBlob(r, 'image/jpeg', 0.82)); if (!blob) throw new Error('decode');
+        rec = { id: rid(10), t, ts, lat: at ? at[0] : null, lng: at ? at[1] : null, blob, thumb: imgCanvas(big, 160).toDataURL('image/jpeg', 0.7) };
+      }
       await photoPut(rec); out.push(rec);
-    } catch {}
+    } catch (e) { out.fail = out.fail || []; out.fail.push(e && e.message === 'heic' ? 'heic' : e && /quota|space/i.test(String(e.name) + e.message) ? 'full' : 'decode'); }
   }
   return out;
 }
@@ -3116,9 +3133,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-122-navrec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-123-photoadd';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10262,15 +10279,26 @@ function editMD(x) {
   const grid = el('div');
   const drawGrid = () => grid.replaceChildren(modeGrid(mode, k => { mode = k; drawGrid(); }));
   drawGrid();
+  // 판 -123(사용자 '사진 추가가 잘 안된다'): 넣는 동안 단추에 'n/m', 끝나면 결과 알림·사진 순서 목록 바로 새로, 못 넣은 사진은 까닭
+  let addBtn = null, adding = false;
   const inp = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: async () => {
-    const files = [...inp.files]; inp.value = ''; if (!files.length) return;
-    toast('사진·동영상을 넣는 중이에요…');
+    const files = [...inp.files]; inp.value = ''; if (!files.length || adding) return;
+    adding = true; const lab = addBtn ? addBtn.innerHTML : ''; if (addBtn) addBtn.disabled = true;
     // 여러 날 여행이면 사진 찍은 날의 기록에 넣어요
-    const recs = [];
-    for (const f of files) { const ts = (await photoTsOf(f)).ts || f.lastModified || Date.now(); let day = days[days.length - 1];
-      for (const d of days) { const tr = trackLoad(d); if (tr.length && ts >= tr[0][2] - 36e5 && ts <= tr[tr.length - 1][2] + 36e5) day = d; }
-      recs.push(...await addPhotos(day, [f], null, true)); }
-    dispatchEvent(new Event('photo-changed')); reviewPhotos(recs);
+    const recs = [], fail = [];
+    try {
+      for (let i = 0; i < files.length; i++) { const f = files[i];
+        if (addBtn) addBtn.textContent = `넣는 중… ${i + 1}/${files.length}`;
+        const ts = (await photoTsOf(f)).ts || f.lastModified || Date.now(); let day = days[days.length - 1];
+        for (const d of days) { const tr = trackLoad(d); if (tr.length && ts >= tr[0][2] - 36e5 && ts <= tr[tr.length - 1][2] + 36e5) day = d; }
+        const r = await addPhotos(day, [f], null, true); recs.push(...r); if (r.fail) fail.push(...r.fail);
+        if (r.length && (i % 3 === 2 || i === files.length - 1)) dispatchEvent(new Event('photo-changed')); }
+    } finally { adding = false; if (addBtn) { addBtn.disabled = false; addBtn.innerHTML = lab; } }
+    dispatchEvent(new Event('photo-changed'));
+    const why = fail.includes('heic') ? 'HEIC 사진이라 못 읽었어요 · 카메라 설정에서 \'고효율 사진\'을 끄거나 JPG로 바꿔 넣어 주세요' : fail.includes('full') ? '휴대폰 저장 공간이 모자라요' : fail.length ? '사진을 열지 못했어요' : '';
+    const noLoc = recs.filter(r => r.lat == null).length;
+    toast(recs.length ? `✅ ${recs.length}개 넣었어요${noLoc ? ` · 위치 모르는 ${noLoc}개` : ''}${fail.length ? ` · ⚠ ${fail.length}개 못 넣음: ${why}` : ''}` : `⚠ 넣지 못했어요 · ${why || '파일을 확인해 주세요'}`, true, fail.length ? 8000 : 4000);
+    if (noLoc) reviewPhotos(recs);
   } });
   const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 수정하기', style: 'max-height:88vh;overflow:auto' },
@@ -10278,7 +10306,7 @@ function editMD(x) {
     el('b', { text: '모드' }), grid,
     el('div', { class: 'two' }, el('label', { class: 'f', for: 'em-s' }, '출발한 곳', iS), el('label', { class: 'f', for: 'em-e' }, '도착한 곳', iE)),
     el('div', { class: 'two' },
-      el('button', { class: 'btn line', onclick: () => inp.click() }, ico('camera', 18), '사진·동영상 더하기'),
+      addBtn = el('button', { class: 'btn line', onclick: () => { if (!adding) inp.click(); } }, ico('camera', 18), '사진·동영상 더하기'),
       x.album ? el('button', { class: 'btn line', disabled: true, text: '경로 자르기(하루치에서)' }) : el('button', { class: 'btn line', text: '✂ 경로 앞뒤 자르기', onclick: () => { sb.remove(); trimTrack(t); } })),
     phOrderBox(days),
     window.mdNativePhotos ? el('button', { class: 'btn line full', text: '📱 그 시간에 휴대폰으로 찍은 사진 찾기', onclick: async () => { sb.remove(); const recs = await galleryOffer(days, true); if (recs && recs.length) reviewPhotos(recs); } }) : null,
@@ -10317,7 +10345,10 @@ function phOrderBox(days) {
         any ? el('button', { class: 'btn line small', text: '찍은 시각 순으로', onclick: () => { days.forEach(d => localStorage.removeItem('walkPhOrder:' + d)); dispatchEvent(new Event('photo-changed')); draw(); } }) : el('span', { class: 'sub', text: '↑ ↓로 바꾸면 바로 저장돼요' })),
       ...parts);
   };
-  draw(); return box;
+  draw();
+  const onCh = () => { if (!box.isConnected) { removeEventListener('photo-changed', onCh); return; } clearTimeout(onCh.t); onCh.t = setTimeout(draw, 250); };
+  setTimeout(() => addEventListener('photo-changed', onCh), 0);   // 판 -123: 사진을 더하면 순서 목록도 바로 새로
+  return box;
 }
 // 경로 앞뒤 자르기: 끝내기를 늦게 눌러 더 기록된 부분이나, 처음에 GPS가 튄 부분을 잘라내요. 처음 한 번은 원래 경로를 trackOrig:{ID}에 남겨 되돌릴 수 있어요
 // 러닝에서 실제로 달린 앞뒤 끝 찾기: 1분 평균 속도가 초속 1.6m(10분 25초/km)를 넘은 처음과 마지막 자리. 끝내기를 늦게 눌러 결승 뒤 몇 시간이 더 기록된 걸 잘라내려고
