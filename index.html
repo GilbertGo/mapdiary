@@ -1225,6 +1225,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .tr-n{font-size:12px;font-weight:600;color:#FF6B4A}.tr-tip b{display:block;font-size:18px;font-weight:700;color:#191F28;margin-top:2px}.tr-tip p{margin:6px 0 12px;font-size:14.5px;color:#4E5968;line-height:1.5}
 .tr-bt{display:flex;gap:8px;justify-content:flex-end}.tr-sk{border:none;background:none;color:#8B95A1;font:500 14px Pretendard,sans-serif;padding:10px}.tr-go{border:none;background:#191F28;color:#fff;border-radius:12px;padding:10px 20px;font:600 15px Pretendard,sans-serif}
 @media (prefers-reduced-motion:reduce){.tr-hole{transition:none}}
+.iv-segs{display:flex;background:#F2F4F6;border-radius:12px;padding:3px;gap:2px}.iv-seg{flex:1;border:none;background:none;border-radius:10px;padding:9px;font:600 14px Pretendard,sans-serif;color:#6B7684}.iv-seg.on{background:#fff;color:#191F28;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 </style>
 </head>
 <body>
@@ -3329,9 +3330,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-204-planen';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-205-invlang';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '👋 초대 보낼 때 한국어·English를 골라요 · 🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8411,21 +8412,44 @@ async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는�
   const d0 = planDate(p, 0), d1 = planDate(p, p.nd - 1);
   const md = x => x ? `${x.getMonth() + 1}월 ${x.getDate()}일(${'일월화수목금토'[x.getDay()]})` : '';
   const when = d0 ? `${md(d0)}${p.nd > 1 ? ' ~ ' + (d1.getMonth() === d0.getMonth() ? `${d1.getDate()}일(${'일월화수목금토'[d1.getDay()]})` : md(d1)) : ''}` : '';
-  const title = `✈️ ${sh(p.name).replace(/\s*·\s*하나투어$/, '')} · 우리 여행 일정`;   // 판 -100: 이미 함께 가기로 한 일행에게 보내는 글(사용자 '함께 가요 문구 고쳐')
-  const kD = planToday(p), dd = kD != null && kD < 0 ? `D-${-kD}` : kD != null && kD < p.nd ? `여행 ${kD + 1}일차` : '';
-  const desc = [[dd, planNights(p), when].filter(Boolean).join(' · '), pick.length ? '📍 ' + pick.join(' · ') : ''].filter(Boolean).join('\n');
-  const textOf = url => [title, desc, '', '👉 일정 · 지도 · 여행 방 열기', url].join('\n');
+  // 판 -205 (사용자 '초대를 앱에서 보낼 때 영어·한글 선택하면 되겠네'): 보내는 창 맨 위 '한국어 | English' — English면 링크에 &en=1(받은 휴대폰이 이름 창·둘러보기·계획 화면을 영어로), 글·카카오 카드도 영어
+  let lang = 'ko';
+  const kD = planToday(p), WD = '일월화수목금토';
+  const T = () => {
+    const en = lang === 'en';
+    const pk = [], sn = new Set();   // 볼 곳 이름 (영어면 영어 이름이 있는 곳만)
+    for (let r = 0; pk.length < 4 && r < 6; r++) for (let d = 0; d < p.nd && pk.length < 4; d++) { const z = (p.it || []).filter(x => (x.k === 'spot' || x.k === 'show') && x.d === d)[r]; if (!z) continue; const n = en ? (z.en || '') : sh(z.n).split(/\s*[+·,\/]\s*/)[0].replace(/VIP.*$/, '').trim(); if (n && n.length <= (en ? 28 : 12) && !sn.has(n) && !/이동|공항|호텔|마사지/.test(n)) { sn.add(n); pk.push(n); } }
+    const ed = x => x ? x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+    const when = !d0 ? '' : en ? ed(d0) + (p.nd > 1 ? ' – ' + ed(d1) : '') : `${md(d0)}${p.nd > 1 ? ' ~ ' + (d1.getMonth() === d0.getMonth() ? `${d1.getDate()}일(${WD[d1.getDay()]})` : md(d1)) : ''}`;
+    const dd = kD != null && kD < 0 ? `D-${-kD}` : kD != null && kD < p.nd ? (en ? `Day ${kD + 1} of the trip` : `여행 ${kD + 1}일차`) : '';
+    const nights = en ? (p.nd > 1 ? `${p.nd - 1} night${p.nd > 2 ? 's' : ''} ${p.nd} days` : 'Day trip') : planNights(p);
+    const title = en ? `✈️ ${p.nameEn || sh(p.name).replace(/\s*·\s*하나투어$/, '')} · our trip plan` : `✈️ ${sh(p.name).replace(/\s*·\s*하나투어$/, '')} · 우리 여행 일정`;
+    const desc = [[dd, nights, when].filter(Boolean).join(' · '), pk.length ? '📍 ' + pk.join(' · ') : ''].filter(Boolean).join('\n');
+    const how = en ? ['1. Tap the link (no install needed)', '2. Type your name or nickname → Next', '3. Follow the short guided tour', '', 'At first you can view only. Ask me if you want to edit or use the AI.', 'Please keep this link within our group 🙏']
+      : ['1. 링크 누르기 (설치 필요 없어요)', '2. 이름이나 별명 적고 ‘다음’', '3. 화면을 짚어 주는 짧은 안내 따라 보기', '', '처음엔 ‘보기’만 돼요. 고치기·AI가 필요하면 말해 주세요.', '카톡 안에서 잘 안 열리면 ⋮ → 다른 브라우저로 열기', '링크는 우리끼리만 써 주세요 🙏'];
+    return { en, title, desc, text: u => [title, desc, '', ...how, '', '👉 ' + u].join('\n'), btn: en ? 'Open plan' : '일정·여행 방 열기' };
+  };
+  const urlOf = () => url ? (lang === 'en' ? url.replace(/(\?[^#]*)/, '$1&en=1') : url) : null;
   const hero = ls.get('planHero:' + p.id, null); let img = hero && hero.u ? hero.u : APP_BASE.replace(/[^/]*$/, '') + 'icon-512.png', kimg = null;   // kimg: 카카오에 직접 올린 그림(판 -97: 위키 사진 주소를 카카오가 못 읽어 카드에 사진이 빠졌음)
   const st = el('div', { class: 'sub', style: 'font-weight:700', text: '🔗 초대 링크를 만드는 중…' });
   let url = null;
-  const kb = kakaoOK() ? kakaoBtn(() => { if (!url) return; try { const r = Kakao.Share.sendDefault({ objectType: 'feed', content: { title, description: desc, imageUrl: kimg ? kimg.url : img, imageWidth: kimg ? kimg.width : 1280, imageHeight: kimg ? kimg.height : 853, link: { mobileWebUrl: url, webUrl: url } }, buttons: [{ title: '일정·여행 방 열기', link: { mobileWebUrl: url, webUrl: url } }] }); if (r && r.catch) r.catch(e => { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요 (' + String(e && e.message || e).slice(0, 60) + ')'; }); bg.remove(); } catch (e) { st.textContent = '⚠ 카카오톡으로 못 보냈어요 · 아래 다른 앱으로 보내 주세요'; } }, '카카오톡으로 보내기') : null;
-  const other = el('button', { class: 'btn line full', text: kb ? '문자 · 다른 앱으로 보내기' : '📤 일정 보내기', onclick: async () => { if (!url) return; const text = textOf(url);
+  const kb = kakaoOK() ? kakaoBtn(() => { const u = urlOf(); if (!u) return; const t = T(); try { const r = Kakao.Share.sendDefault({ objectType: 'feed', content: { title: t.title, description: t.desc, imageUrl: kimg ? kimg.url : img, imageWidth: kimg ? kimg.width : 1280, imageHeight: kimg ? kimg.height : 853, link: { mobileWebUrl: u, webUrl: u } }, buttons: [{ title: t.btn, link: { mobileWebUrl: u, webUrl: u } }] }); if (r && r.catch) r.catch(() => {}); } catch (e) { toast('⚠ 카카오톡을 못 열었어요 · 아래 ‘다른 앱으로 보내기’를 써 주세요'); } }) : null;
+  const other = el('button', { class: 'btn line full', text: kb ? '문자 · 다른 앱으로 보내기' : '📤 일정 보내기', onclick: async () => { const u = urlOf(); if (!u) return; const text = T().text(u);
     try { if (navigator.share) { await navigator.share({ text }); bg.remove(); return; } } catch (e) { if (/abort|cancel/i.test(String(e && (e.name + e.message)))) return; }
     try { await navigator.clipboard.writeText(text); toast('초대 글을 복사했어요 · 카톡 입력칸을 길게 눌러 붙여 넣으세요', false, 6000); bg.remove(); } catch { prompt('이 글을 복사해 보내세요', text); } } });
+  const pT = el('div', { style: 'font-weight:800;font-size:16px' }), pD = el('div', { style: 'white-space:pre-line;font-size:13px;color:#9FB0C2;margin-top:4px' });
   const prev = el('div', { style: 'border-radius:14px;overflow:hidden;background:#16273B;color:#fff' },
-    el('div', { style: `height:140px;background:#25415F url("${img.replace(/"/g, '%22')}") center/cover` }),
-    el('div', { style: 'padding:10px 12px' }, el('div', { style: 'font-weight:800;font-size:16px', text: title }), el('div', { style: 'white-space:pre-line;font-size:13px;color:#9FB0C2;margin-top:4px', text: desc })));
-  const bg = labSheet('👋 일행에게 일정 보내기', el('div', { class: 'sub', text: '받은 일행은 링크를 누르면 일정·지도·여행 방에 바로 들어와요. 로그인은 필요 없어요.' }), prev, st, ...(kb ? [kb] : []), other);
+    el('div', { style: `height:140px;background:#25415F url("${img.replace(/"/g, '%22')}") center/cover` }), el('div', { style: 'padding:10px 12px' }, pT, pD));
+  const enNote = el('div');
+  const segB = (v, t) => el('button', { type: 'button', class: 'iv-seg' + (lang === v ? ' on' : ''), text: t, onclick: () => { lang = v; paint(); } });
+  const seg = el('div', { class: 'iv-segs' });
+  const paint = () => { const t = T(); pT.textContent = t.title; pD.textContent = t.desc; faRc(seg, segB('ko', '한국어'), segB('en', 'English'));
+    const miss = t.en ? (p.it || []).filter(x => x.k !== 'move' && !x.en).length + (p.nameEn ? 0 : 1) : 0;
+    faRc(enNote, !t.en ? null : el('div', { class: 'dt', style: 'line-height:1.5' }, '받는 사람 화면(이름 창·둘러보기·계획 화면)이 영어로 나와요.',
+      miss ? el('div', { style: 'margin-top:6px;color:#D2462A' }, `장소 ${miss}곳이 아직 영어 이름이 없어 한국어로 보여요. `,
+        trBotKey() ? el('button', { type: 'button', class: 'btn line small', style: 'margin-top:6px', text: '🌐 AI로 영어 이름 만들기', onclick: async e => { e.target.disabled = true; try { await planTranslate(p, x => { e.target.textContent = x; }); Object.assign(p, planGet(p.id) || {}); url = null; st.textContent = '🔗 영어 이름을 넣어 링크를 다시 만드는 중…'; [kb, other].forEach(b => b && (b.disabled = true)); url = await planLink(planGet(p.id) || p); st.textContent = '✅ 보낼 준비가 됐어요'; [kb, other].forEach(b => b && (b.disabled = false)); paint(); } catch (er) { e.target.disabled = false; e.target.textContent = '⚠ 못 했어요 · 다시'; } } }) : el('span', { text: 'Claude 열쇠가 있으면 AI로 만들 수 있어요.' })) : null)); };
+  const bg = labSheet('👋 일행에게 일정 보내기', seg, el('div', { class: 'sub', text: '받은 일행은 링크를 누르면 일정·지도·여행 방에 바로 들어와요. 로그인은 필요 없어요.' }), enNote, prev, st, ...(kb ? [kb] : []), other);
+  paint();
   [kb, other].forEach(b => b && (b.disabled = true));
   const prepImg = async () => {   // 여행지 사진(없으면 찾아서)을 카카오에 올려 둠
     try { if (!hero || !hero.u) { const im = await tvHeroImg(p); if (im && im.u) { img = im.u; prev.firstChild.style.backgroundImage = `url("${img.replace(/"/g, '%22')}")`; } } } catch {}
