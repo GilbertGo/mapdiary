@@ -3180,9 +3180,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-156-note';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-157-ai';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📒 여행 아래 메뉴 \'준비\' 이름을 \'여행 노트\'로 · 여행 정보·함께 가는 사람·예약·항공권을 여행 노트 맨 위로 옮겨 일정 화면이 깔끔해요 · 그 아래 체크리스트·날씨·긴급 도움 · 🖼 첫 화면 꾸미기 · 👤 나 화면 새로';
+const UI_NOTES = '✨ 여행 아래 메뉴 \'도우미\' 이름을 \'AI 묻기\'로 · 📒 \'준비\'는 \'여행 노트\'로, 여행 정보·함께 가는 사람·예약을 그 안으로 · 🖼 첫 화면 꾸미기 · 👤 나 화면 새로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10004,8 +10004,8 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
   ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
-    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('h2', { style: 'margin:0;flex:1;font-size:19px', text: '✨ 계획 도우미' }),
-      el('button', { class: 'btn line small', text: '🧭 길 도우미', onclick: () => { bg.remove(); trBotKey() ? planGuideSheet(p) : planAskSheet(p); } }),
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '일정 짜기' })),
+      el('button', { class: 'btn line small', text: '길 안내로', onclick: () => { bg.remove(); trBotKey() ? planGuideSheet(p) : planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
     key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) { bg.remove(); planMakeSheet(p); } } })),
     st, list,
@@ -10064,8 +10064,8 @@ function planGuideSheet(p) {
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
   list.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch';
   bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
-    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('h2', { style: 'margin:0;flex:1;font-size:19px', text: '🧭 길 도우미' }),
-      el('button', { class: 'btn line small', text: '🗓 계획', onclick: () => { bg.remove(); planMakeSheet(p); } }),
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '길 안내 · 지금 위치로' })),
+      el('button', { class: 'btn line small', text: '일정 짜기로', onclick: () => { bg.remove(); planMakeSheet(p); } }),
       el('button', { class: 'btn line small', text: '👥 일행에게', onclick: () => { bg.remove(); planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
     key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: () => talkKeySheet() })),
@@ -10545,7 +10545,7 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     room,
     el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', { text: '📒' }), '여행 노트'),   // 2026-11-15 '준비 메뉴 이름은 딴것으로' — 여행 정보·함께 가는 사람·예약·체크리스트·날씨·긴급 도움을 모은 곳
     planCN(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', { text: '🗣' }), '중국어') : planJP(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', { text: '🗣' }), '일본어') : null,
-    el('button', { onclick: () => (k == null || k < 0) ? planMakeSheet(p) : trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', { text: k == null || k < 0 ? '✨' : '🧭' }), '도우미'));   // 판 -139: 여행 전엔 계획 도우미
+    el('button', { onclick: () => (k == null || k < 0) ? planMakeSheet(p) : trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', { text: '✨' }), 'AI 묻기'));   // 2026-11-15 사용자 '도우미가 무슨 기능인지 잘 모르겠다' → 이름을 'AI 묻기'로, 창 머리에 한 줄 설명   // 판 -139: 여행 전엔 계획 도우미
   trBotStart(p);
   if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
   return bar;
