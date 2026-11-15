@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-119-plansum';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-120-nav';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7179,6 +7179,109 @@ function planMapEdit(p, d0, done) {
   paintChips(); paint();
   setTimeout(() => { map = L.map(mapEl); mdTileLayer({ vec: true }).addTo(map); map.on('click', e => { if (mode === 'add') addAt(e.latlng.lat, e.latlng.lng); else if (sel) { sel = null; paint(); draw(false); } }); draw(true); route(); }, 30);
 }
+// 판 -120 🧭 길 안내 (2026-11-15 사용자 '네비게이션 기능 넣고'): 계획 지도에 그려 둔 길(받아 둔 걷는 길, 없으면 직선)을 따라 지금 위치로 안내.
+//   다음 꺾는 곳(길 모양에서 35° 넘게 꺾이는 곳, 인터넷 없이 셈)·남은 거리·도착 예정 · 길에서 50m 넘게 15초 벗어나면 진동·목소리 · 장소 30m 안이면 '다녀옴'(okNav) 표시하고 다음 곳으로
+//   지도는 내 위치를 따라감(손으로 움직이면 멈추고 ◎로 다시) · 화면 켜 둠 · 🔊 목소리 켜고 끄기(ls navVoice)
+function planNav(p, d0, done) {
+  const d = Math.max(0, Math.min(p.nd - 1, d0 | 0)), hike = !!(p.hike && p.hike.on), spd = hike ? 3.5 : 4;
+  const L2 = planItems(p, d).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng) && x.k !== 'fly');
+  if (L2.length < 2) return toast('위치가 있는 장소가 두 곳은 있어야 길 안내를 할 수 있어요');
+  const toXY = (o, q) => [(q[1] - o[1]) * 111320 * Math.cos(o[0] * Math.PI / 180), (q[0] - o[0]) * 110540];
+  const mkLeg = (a, b) => { const R = planWalkPair(a, b, p) && planRtGet(a, b); let P = (R && R.c && R.c.length > 1 ? R.c : [[a.lat, a.lng], [b.lat, b.lng]]).map(q => [+q[0], +q[1]]);
+    const S = [0]; for (let i = 1; i < P.length; i++) S.push(S[i - 1] + dist(P[i - 1][0], P[i - 1][1], P[i][0], P[i][1]));
+    const T = []; const Q = [P[0]]; for (let i = 1; i < P.length; i++) if (dist(Q[Q.length - 1][0], Q[Q.length - 1][1], P[i][0], P[i][1]) > 10 || i === P.length - 1) Q.push(P[i]);
+    let qs = 0; for (let i = 1; i < Q.length - 1; i++) { qs += dist(Q[i - 1][0], Q[i - 1][1], Q[i][0], Q[i][1]);
+      let dl = bearing(Q[i][0], Q[i][1], Q[i + 1][0], Q[i + 1][1]) - bearing(Q[i - 1][0], Q[i - 1][1], Q[i][0], Q[i][1]); dl = ((dl + 540) % 360) - 180;
+      if (Math.abs(dl) >= 35) { const t = { s: qs, dir: dl > 0 ? 'r' : 'l', big: Math.abs(dl) >= 120 }; if (T.length && qs - T[T.length - 1].s < 12) T[T.length - 1] = t; else T.push(t); } }
+    return { a, b, P, S, len: S[S.length - 1], T, real: !!R, up: R && R.up || 0 }; };
+  const legs = []; for (let i = 1; i < L2.length; i++) legs.push(mkLeg(L2[i - 1], L2[i]));
+  let ti = L2.findIndex(x => !x.ok); if (ti < 0) ti = 0;
+  let pos = null, follow = true, wid = null, wake = null, offT = 0, offSaid = 0, said = {}, map = null, me = null, ac = null, lay = null, hd = null, closed = 0;
+  const voiceOn = () => ls.get('navVoice', true);
+  const say = t => { if (!voiceOn()) return; try { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch {} };
+  const buzz = pat => { try { navigator.vibrate && navigator.vibrate(pat); } catch {} };
+  const fmM = m => m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.max(0, Math.round(m / 10) * 10) + 'm';
+  const sayM = m => m >= 1000 ? (m / 1000).toFixed(1) + '킬로미터' : Math.max(10, Math.round(m / 10) * 10) + '미터';
+  const proj = (leg, q) => { let best = { off: 1e9, s: 0 }; for (let i = 1; i < leg.P.length; i++) { const A = leg.P[i - 1], B = toXY(A, leg.P[i]), X = toXY(A, q), L = B[0] * B[0] + B[1] * B[1];
+      const t = L ? Math.max(0, Math.min(1, (X[0] * B[0] + X[1] * B[1]) / L)) : 0, dx = X[0] - t * B[0], dy = X[1] - t * B[1], o = Math.hypot(dx, dy);
+      if (o < best.off) best = { off: o, s: leg.S[i - 1] + t * (leg.S[i] - leg.S[i - 1]) }; } return best; };
+  const arrow = el('div', { style: 'flex:none;width:58px;height:58px;border-radius:16px;background:#1D9EC0;color:#fff;display:flex;align-items:center;justify-content:center;font:900 34px Pretendard,sans-serif', text: '↑' });
+  const big = el('div', { style: 'font:800 22px Pretendard,sans-serif;line-height:1.2', text: '내 위치를 찾는 중…' });
+  const sub = el('div', { style: 'font-size:13.5px;color:#C9D3DD;margin-top:3px;line-height:1.35' });
+  const warn = el('div', { style: 'display:none;background:#E5383B;color:#fff;font:800 14px Pretendard,sans-serif;padding:8px 12px;border-radius:12px;margin-top:8px' });
+  const bot = el('div', { style: 'font:800 17px Pretendard,sans-serif;color:#15202B' }), bot2 = el('div', { style: 'font-size:12.5px;color:#6B7684;margin-top:2px' });
+  const vB = el('button', { class: 'btn line small', onclick: () => { ls.set('navVoice', !voiceOn()); vB.textContent = voiceOn() ? '🔊 소리 켬' : '🔇 소리 끔'; } });
+  vB.textContent = voiceOn() ? '🔊 소리 켬' : '🔇 소리 끔';
+  const reB = el('button', { style: 'position:absolute;right:12px;bottom:12px;z-index:900;border:none;border-radius:999px;background:#fff;color:#15202B;font:800 14px Pretendard,sans-serif;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none', text: '◎ 내 위치로', onclick: () => { follow = true; reB.style.display = 'none'; if (pos) map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 17)); } });
+  const mapEl = el('div', { style: 'position:absolute;inset:0' });
+  const close = () => { if (closed) return; closed = 1; try { navigator.geolocation.clearWatch(wid); } catch {} try { wake && wake.release(); } catch {} removeEventListener('deviceorientationabsolute', onOri); removeEventListener('deviceorientation', onOri); try { speechSynthesis.cancel(); } catch {} bg.remove(); done && done(); };
+  const skip = () => { if (ti < L2.length - 1) { ti++; said = {}; toast(`다음 곳: ${L2[ti].n}`); drawRoute(); upd(); } };
+  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4400' });
+  bg.addEventListener('click', e => { if (e.target === bg) close(); });
+  bg.append(el('div', { style: `position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;padding-bottom:calc(${IN_NATIVE ? 56 : 0}px + env(safe-area-inset-bottom,0px))` },
+    el('div', { style: 'background:#15202B;color:#fff;padding:12px 14px 12px;border-radius:0 0 18px 18px;z-index:2' },
+      el('div', { style: 'display:flex;gap:12px;align-items:center' }, arrow, el('div', { style: 'flex:1;min-width:0' }, big, sub),
+        el('button', { class: 'n-ib', style: 'flex:none;background:rgba(255,255,255,.14);color:#fff', 'aria-label': '끝내기', onclick: close }, cSvg('x', 18))), warn),
+    el('div', { style: 'position:relative;flex:1;min-height:0;margin-top:-18px' }, mapEl, reB),
+    el('div', { style: 'padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;background:#fff' }, el('div', {}, bot, bot2),
+      el('div', { style: 'display:flex;gap:6px' }, vB, el('button', { class: 'btn line small', style: 'white-space:nowrap', text: '다음 곳 ›', onclick: skip }), el('span', { style: 'flex:1' }), el('button', { class: 'btn small', style: 'background:#15202B;color:#fff;white-space:nowrap', text: '끝내기', onclick: close })))));
+  document.body.append(bg); ovGuard();
+  const onOri = e => { const h = e.webkitCompassHeading != null ? e.webkitCompassHeading : e.absolute && e.alpha != null ? (360 - e.alpha) % 360 : null; if (h != null) { hd = h; paintMe(); } };
+  addEventListener('deviceorientationabsolute', onOri); addEventListener('deviceorientation', onOri);
+  const paintMe = () => { if (!me) return; const ic = me.getElement && me.getElement(); const a = ic && ic.querySelector('.nv-hd'); if (a) { a.style.display = hd == null ? 'none' : ''; a.style.transform = `rotate(${hd || 0}deg)`; } };
+  const drawRoute = () => { if (!map) return; if (lay) lay.remove(); lay = L.layerGroup().addTo(map);
+    legs.forEach((g, i) => { const done_ = i + 1 < ti, cur = i + 1 === ti; L.polyline(g.P, { color: '#fff', weight: cur ? 11 : 8, opacity: .95 }).addTo(lay);
+      L.polyline(g.P, { color: done_ ? '#A3ABB5' : cur ? '#1D9EC0' : '#7FB8D0', weight: cur ? 7 : 5, dashArray: g.real ? null : '8 8' }).addTo(lay); });
+    L2.forEach((x, i) => L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${i === ti ? '#FF6B4A' : x.ok ? '#A3ABB5' : '#15202B'};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${i + 1}</div>` }) }).addTo(lay)); };
+  function upd() {
+    const tg = L2[ti], leg = ti > 0 ? legs[ti - 1] : null;
+    const later = legs.slice(ti).reduce((s, g) => s + g.len, 0), upL = legs.slice(ti).reduce((s, g) => s + g.up, 0);
+    if (!pos) { big.textContent = '내 위치를 찾는 중…'; sub.textContent = `다음: ${ti + 1}. ${tg.n}`; return; }
+    let rem, off, s = 0;
+    if (leg) { const r = proj(leg, [pos.lat, pos.lng]); s = r.s; off = r.off; rem = Math.max(0, leg.len - s); if (off > 80) rem = Math.max(rem, dist(pos.lat, pos.lng, tg.lat, tg.lng)); }
+    else { rem = dist(pos.lat, pos.lng, tg.lat, tg.lng); off = 0; }
+    const toT = dist(pos.lat, pos.lng, tg.lat, tg.lng);
+    if (toT < Math.max(30, Math.min(60, pos.acc || 0))) {   // 도착
+      tg.ok = 1; tg.okT = Date.now(); tg.okA = 0; tg.okNo = 0; tg.okNav = 1; planSave(p); buzz([200, 100, 200]);
+      if (ti < L2.length - 1) { const nx = L2[ti + 1], g = legs[ti]; say(`${tg.n}에 도착했어요. 다음은 ${nx.n}, ${sayM(g.len)}예요.`); toast(`✓ ${tg.n} 도착 · 다음 ${nx.n}`); ti++; said = {}; drawRoute(); return upd(); }
+      say(`${tg.n}에 도착했어요. 오늘 길 안내를 마쳤어요.`); big.textContent = '🎉 다 왔어요'; sub.textContent = `${tg.n} 도착 · 오늘 일정 끝`; arrow.textContent = '✓'; bot.textContent = '안내를 마쳤어요'; bot2.textContent = ''; drawRoute(); return;
+    }
+    let tn = null; if (leg && off < 60) tn = leg.T.find(t => t.s > s + 3);
+    const tdist = tn ? tn.s - s : rem;
+    if (tn && tdist < 120) { arrow.textContent = tn.dir === 'l' ? (tn.big ? '↶' : '↰') : (tn.big ? '↷' : '↱'); big.textContent = `${fmM(tdist)} 뒤 ${tn.big ? '크게 ' : ''}${tn.dir === 'l' ? '왼쪽' : '오른쪽'}으로`;
+      const k = 'tn' + Math.round(tn.s); if (tdist < 35 && !said[k]) { said[k] = 1; say(`${tn.big ? '크게 ' : ''}${tn.dir === 'l' ? '왼쪽' : '오른쪽'}으로 가세요`); buzz(80); } }
+    else if (!leg || off >= 60) { const b = bearing(pos.lat, pos.lng, tg.lat, tg.lng); arrow.textContent = '➤'; arrow.style.transform = `rotate(${(b - (hd || 0)) - 90}deg)`; big.textContent = `${tg.n}까지 직선 ${fmM(toT)}`; }
+    else { arrow.textContent = '↑'; big.textContent = `${fmM(tdist)} 앞으로`; }
+    if (arrow.textContent !== '➤') arrow.style.transform = '';
+    sub.textContent = `다음: ${ti + 1}. ${tg.n} · ${fmM(rem)}${leg && !leg.real ? ' (직선)' : ''}`;
+    if (rem < 150 && !said.near) { said.near = 1; say(`${tg.n}까지 ${sayM(rem)} 남았어요`); }
+    const bad = leg && off > 50 && (pos.acc || 0) < 45;
+    if (bad) { if (!offT) offT = Date.now(); } else offT = 0;
+    if (offT && Date.now() - offT > 15000) { warn.style.display = ''; warn.textContent = `⚠ 길에서 ${fmM(off)} 벗어났어요 · 지도의 파란 길로 돌아가세요`; if (Date.now() - offSaid > 60000) { offSaid = Date.now(); buzz([300, 150, 300]); say('길에서 벗어났어요. 파란 길로 돌아가세요.'); } }
+    else warn.style.display = 'none';
+    const tot = rem + later, mins = Math.round((tot / (spd * 1000) + upL / 600) * 60), eta = new Date(Date.now() + mins * 60000);
+    bot.textContent = `남은 ${fmM(tot)} · 약 ${mins >= 60 ? Math.floor(mins / 60) + '시간 ' + (mins % 60) + '분' : mins + '분'}`;
+    bot2.textContent = `도착 예정 ${eta.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} · ${ti + 1}/${L2.length}곳 · ${d + 1}일차${legs.some(g => !g.real) ? ' · 점선은 길을 못 받아 직선' : ''}`;
+  }
+  const onPos = g => { if (closed) return; pos = { lat: g.coords.latitude, lng: g.coords.longitude, acc: g.coords.accuracy };
+    if (g.coords.heading != null && !isNaN(g.coords.heading) && (g.coords.speed || 0) > 0.6) { hd = g.coords.heading; }
+    if (map) { const ll = [pos.lat, pos.lng];
+      if (!me) { me = L.marker(ll, { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: '', iconSize: [44, 44], iconAnchor: [22, 22], html: '<div style="position:relative;width:44px;height:44px"><div class="nv-hd" style="position:absolute;inset:0;display:none"><div style="position:absolute;left:14px;top:-2px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #1D9EC0"></div></div><div style="position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:#1D9EC0;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4)"></div></div>' }) }).addTo(map); ac = L.circle(ll, { radius: pos.acc || 10, color: '#1D9EC0', weight: 1, fillOpacity: .1, interactive: false }).addTo(map); map.setView(ll, 17); }
+      else { me.setLatLng(ll); ac.setLatLng(ll).setRadius(pos.acc || 10); if (follow) map.panTo(ll, { animate: true }); }
+      paintMe(); }
+    upd(); };
+  setTimeout(async () => {
+    map = L.map(mapEl, { zoomControl: false }); mdTileLayer({ vec: true }).addTo(map);
+    map.fitBounds(L2.map(x => [x.lat, x.lng]), { padding: [40, 40], maxZoom: 17 });
+    map.on('dragstart', () => { follow = false; reB.style.display = ''; });
+    drawRoute(); upd();
+    if (!navigator.geolocation) { big.textContent = '이 기기는 위치를 쓸 수 없어요'; return; }
+    wid = navigator.geolocation.watchPosition(onPos, e => { if (!pos) { big.textContent = e && e.code === 1 ? '위치 권한이 꺼져 있어요' : '위치를 못 받고 있어요'; sub.textContent = e && e.code === 1 ? '휴대폰 설정에서 위치를 허용해 주세요' : '하늘이 보이는 곳에서 잠시 기다려 주세요'; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+    try { wake = await navigator.wakeLock.request('screen'); } catch {}
+    say(`${L2[ti].n}${ti ? '까지' : '부터'} 길 안내를 시작할게요`);
+    try { (async () => { if (await planRoutes(p, d)) { for (let i = 1; i < L2.length; i++) legs[i - 1] = mkLeg(L2[i - 1], L2[i]); drawRoute(); upd(); } })(); } catch {}
+  }, 30);
+}
 // 판 -105 (사용자 '앱에서도 경로 지도 나오게'): 걸어서 가는 두 곳 사이는 OSRM 도보 길찾기(routing.openstreetmap.de)로 실제 길을 받아 지도에 그려요.
 //   걸어서 갈 사이만(등산 계획 15km, 그 밖 1.5km 아래, 이동·비행 빼고) · 받은 길은 ls planRt에 두 곳 좌표로 저장(300개) · 못 받으면 예전처럼 직선 점선
 const planRtKey = (a, b) => `${a.lat.toFixed(5)},${a.lng.toFixed(5)}>${b.lat.toFixed(5)},${b.lng.toFixed(5)}`;
@@ -7295,16 +7398,17 @@ async function planSumEle(p, day) {   // 높이 받기 (없을 때만): 장소 �
         R.up = Math.round(up); R.dn = Math.round(dn); if (top > -1e9) R.top = Math.round(top); rc = ch = true; } catch {} } }
   if (rc) ls.set('planRt', c); return ch;
 }
-function planSumBox(p, day) {
+function planSumBox(p, day, onNav) {
   const o = planSumCalc(p, day); if (o.n < 2) return null;
   const fm = mn => { const h = Math.floor(mn / 60), m = mn % 60; return h ? `${h}시간${m ? ' ' + m + '분' : ''}` : `${Math.max(1, m)}분`; };
-  const cell = (v, k, col) => el('div', { style: 'flex:1;min-width:0;text-align:center;padding:2px 0' }, el('div', { style: `font:800 19px Pretendard,sans-serif;color:${col || '#15202B'};white-space:nowrap`, text: v }), el('div', { style: 'font-size:11.5px;color:#6B7684;margin-top:2px', text: k }));
-  const C = [cell(o.walk ? fmtDist(o.walk) : '-', '걷는 거리', '#1D7FC0'), cell(o.min ? '약 ' + fm(o.min) : '-', o.car ? '이동 시간' : '걸어서', '#E8613C'),
+  const cell = (v, k, col) => el('div', { style: 'flex:1 1 0;min-width:0;text-align:center;padding:2px 2px' }, el('div', { style: `font:800 ${v.length > 6 ? 15 : 18}px/1.2 Pretendard,sans-serif;color:${col || '#15202B'};word-break:keep-all`, text: v }), el('div', { style: 'font-size:11.5px;color:#6B7684;margin-top:2px', text: k }));
+  const C = [cell(o.walk ? fmtDist(o.walk) : '-', '걷는 거리', '#1D7FC0'), cell(o.min ? fm(o.min) : '-', o.car ? '이동 시간 (약)' : '걸어서 (약)', '#E8613C'),
     cell(o.up >= 5 ? `↑${Math.round(o.up)}m` : '-', o.dn >= 5 ? `오르막 · ↓${Math.round(o.dn)}m` : '오르막', '#7B61FF'), cell(o.top != null ? `${Math.round(o.top)}m` : '-', '최고 높이', '#15202B')];
   const tail = [o.car ? `🚗 차 약 ${fmtDist(o.car)}` : '', o.fly ? `✈ 비행 ${fmtDist(o.fly)}` : '', o.guess ? `직선으로 짐작한 구간 ${o.guess}곳 포함` : o.real ? '실제 걷는 길로 셈' : '', '머무는 시간 빼고 · 대략값'].filter(Boolean).join(' · ');
   return el('div', { class: 'pl-sum', style: 'background:#fff;border-radius:18px;padding:12px 8px 10px;margin-top:-4px' },
     el('div', { style: 'font:700 13px Pretendard,sans-serif;color:#15202B;padding:0 8px 8px', text: `${day === -1 && p.nd > 1 ? '전체' : (day === -1 ? 0 : day) + 1 + '일차'} 요약 · ${o.n}곳` }),
-    el('div', { style: 'display:flex;gap:2px' }, ...C), el('div', { style: 'font-size:11.5px;color:#8B95A1;padding:8px 8px 0;line-height:1.45', text: tail }));
+    el('div', { style: 'display:flex;gap:2px' }, ...C), el('div', { style: 'font-size:11.5px;color:#8B95A1;padding:8px 8px 0;line-height:1.45', text: tail }),
+    onNav ? el('div', { style: 'padding:10px 6px 0' }, el('button', { class: 'btn', style: 'width:100%;background:#15202B;color:#fff;font-size:16px;padding:13px', text: '🧭 길 안내 시작', onclick: onNav })) : null);
 }
 function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
@@ -9283,7 +9387,7 @@ function viewPlanOne(id) {
   let day = ls.get('planDay:' + id, null);
   if (td != null && td >= 0 && td < p.nd) day = td;   // 여행 중이면 오늘
   if (day == null || day >= p.nd) day = -1;   // -1 = 전체
-  const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' }), sumEl = el('div');
+  const mapEl = el('div', { class: 'mapbox', style: 'height:58vh;min-height:320px' }), sumEl = el('div');
   document.documentElement.classList.add('tv-page');   // ✈ B안 '여행 매거진'
   const tabs = el('div', { class: 'tv-chips' }), list = el('div', { class: 'stack', style: 'gap:2px' });
   let map = null, layer = null, wx = ls.get('planWx:' + id, null);
@@ -9380,8 +9484,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx) {   // ✈ 일정 한 칸 (새 디자인 tvItem)
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx;
     return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => editItem(x),
-      extra: [x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
-        x.x ? el('div', { class: 'tv-x', text: planXLab(p) + ' · 누르면 보여요' }) : null,
+      extra: [
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, el('b', { text: '⚠ 위치 확인 필요' }), el('span', { text: whyChk(x) + ' · 눌러서 지도에서 고치기' })) : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
@@ -9400,7 +9503,7 @@ function viewPlanOne(id) {
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') }))); }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
-      its.forEach((x, i) => { if (i) { const g = planGap(its[i - 1], x, p); if (g) tl.append(el('div', { class: 'tv-gap', text: g })); } tl.append(row(x, i, d, nx)); });
+      its.forEach((x, i) => tl.append(row(x, i, d, nx)));   // 판 -120: 줄 사이 거리 글은 뺌(사용자 '경로 안내문을 글로 할 필요?') · 지도와 요약 칸으로
       out.push(tl, el('button', { class: 'tv-add', text: `+ ${d + 1}일차에 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }), el('button', { class: 'tv-add', text: `🗺 지도에 그린 길 캡처로 ${d + 1}일차 고치기`, onclick: () => planDrawSheet(p, d, drawAll) }));
     }
     list.replaceChildren(...out);
@@ -9419,8 +9522,8 @@ function viewPlanOne(id) {
           if (R) { L.polyline(R.c, { color: '#fff', weight: 8, opacity: .9 }).addTo(layer); L.polyline(R.c, { color: col, weight: 5, opacity: .95 }).addTo(layer); }
           else L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).addTo(layer); } }
     }
-    sumEl.replaceChildren(...[planSumBox(p, day)].filter(Boolean));
-    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; eh = await planSumEle(p, day); } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } else if (eh) sumEl.replaceChildren(...[planSumBox(p, day)].filter(Boolean)); })(); }
+    sumEl.replaceChildren(...[planSumBox(p, day, navGo)].filter(Boolean));
+    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; eh = await planSumEle(p, day); } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } else if (eh) sumEl.replaceChildren(...[planSumBox(p, day, navGo)].filter(Boolean)); })(); }
     const real = pts.filter(q => q[1] > -180);
     if (!real.length) { map.setView([37.5665, 126.978], 5); return; }
     // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
@@ -9429,6 +9532,7 @@ function viewPlanOne(id) {
     if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: [28, 28], maxZoom: 15 });
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
+  function navGo() { const td0 = planToday(p); planNav(p, day >= 0 ? day : td0 >= 0 && td0 < p.nd ? td0 : 0, () => drawAll()); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
   const noPrep = p.hike && p.hike.on && p.nd === 1 && !p.start;
