@@ -682,6 +682,8 @@ html.tv-page a{color:inherit}
 .tv-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.tv-chips::-webkit-scrollbar{display:none}
 .tv-chips button{flex:none;padding:8px 14px;border-radius:20px;background:#fff;color:#6B7684;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(21,32,43,.05)}
 .tv-chips button.on{background:#15202B;color:#fff}
+.tv-chips.pn-days{position:sticky;top:0;z-index:20;margin:0 -20px;padding:calc(8px + env(safe-area-inset-top)) 20px 8px;background:#F5F6F8}
+.tv-dln{font:600 14px Pretendard,sans-serif;color:#4E5968;margin:2px 2px 0}
 .tv-credit{position:absolute;right:16px;bottom:36px;z-index:3;font-size:10px;color:rgba(255,255,255,.7);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 70px);right:16px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
 .tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0}
 .tv-wg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1127,6 +1129,17 @@ html.n-page .role.r3-bar .who{background:rgba(255,255,255,.9);color:#15202B!impo
 
 .pl-leg{transform:translate(-50%,-50%);white-space:nowrap;background:rgba(255,255,255,.94);color:#4E5968;font:600 11.5px Pretendard,sans-serif;padding:3px 8px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.18);pointer-events:none}
 .pl-leg.ic{padding:2px 5px;font-size:15px;line-height:1.2;border-radius:50%}
+/* 판 -174 일정 칸 덜어내기: 구간 줄은 작고 옅게, 카드는 이름 중심, 이모지·점 빼기 */
+.tv-leg{font:500 12px Pretendard,sans-serif!important;color:#8B95A1!important;padding:0 0 6px 46px!important;margin:-2px 0 2px!important}
+.tv-leg .tv-lgt{gap:5px;flex-wrap:nowrap;overflow:hidden}.tv-leg .tv-lgt>span{white-space:nowrap}
+.tv-leg .tv-lgt .ico,.tv-leg.w .tv-lgt .ico{color:#B0B8C1}.tv-leg .tv-lgt .ico svg{width:14px;height:14px}
+.tv-leg .tv-lgt small{flex-basis:auto;padding-left:0;margin:0;font-size:12px;color:#B0B8C1;min-width:0}.tv-leg .tv-lgt small::before{content:'· '}
+.tv-leg .tv-lgo{font:500 12px Pretendard,sans-serif!important;color:#1D7FA0!important}.tv-leg .tv-lgo::before{content:none}
+.tv-leg.ap .tv-lgt>span{color:#B0B8C1}
+.tv-it .tv-c{padding:12px 14px;align-items:center}.tv-it .tv-th{width:56px;height:56px;border-radius:10px}
+.tv-it .tv-n{font:600 16px/1.35 Pretendard,sans-serif}.tv-it .tv-n2{font:500 12.5px/1.4 Pretendard,sans-serif;color:#6B7684;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tv-it .tv-mt{font-size:12.5px;color:#8B95A1}
+html.tv-page .leaflet-control-attribution{font-size:9px!important;line-height:1.4;padding:0 4px!important;background:rgba(255,255,255,.55)!important;color:#8B95A1}html.tv-page .leaflet-control-attribution a{color:#8B95A1}
 </style>
 </head>
 <body>
@@ -3228,9 +3241,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-173-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-175-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 여행 일정에 같은 장소가 두 번 보이던 것을 하나로 합쳐요 · 🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🗓 같은 장소가 일정에 두 번 보이던 것을 하나로 합쳐요 · ✂ 여행 일정 칸을 덜어냈어요: 장소 사이 거리 줄은 작고 옅게, 긴 여행사 이름은 첫 이름만 크게 · 같은 사진이 두 칸에 나오지 않게 · 지도 출처 글자 작게 · 📅 여행 일정의 날 탭을 지도 아래, 일정 바로 위로 옮겼어요 · 일정을 내려 보면 날 탭이 위에 붙어 따라와서 바로 다른 날로 · 큰 \'n일차\' 줄 대신 날짜와 날씨 한 줄 · 🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10806,14 +10819,17 @@ function tvHero(p, o = {}) {
 }
 function tvDayLabel(p, d) { const x = planDate(p, d); return x ? `DAY ${d + 1} · ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()]} ${x.getDate()}` : `DAY ${d + 1}`; }
 // 일정 한 칸 (2026-11-15 새 디자인): 왼쪽 시각 · 흰 카드(종류 그림 칸 + 이름·메모·단추)
+// 판 -174: 여행사 이름 '천문산사 + 귀곡잔도 + 유리잔도 +천문산 [서선코스+동선코스]'는 글자는 그대로 두고 첫 이름만 크게, 나머지는 작은 줄로 ([ ] 안의 +는 안 나눔)
+function tvNameSplit(n) { n = String(n || ''); const P = []; let b = '', dep = 0; for (const ch of n) { if ('[(（'.includes(ch)) dep++; if ('])）'.includes(ch)) dep = Math.max(0, dep - 1); if (ch === '+' && !dep) { P.push(b.trim()); b = ''; } else b += ch; } P.push(b.trim());
+  const L = P.filter(Boolean); return L.length > 1 && n.length > 12 ? [L[0], '+ ' + L.slice(1).join(' · ')] : [n, '']; }
 function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, 넌 촌스럽고' → Wanderlog·Stippl처럼): 왼쪽 번호 핀 + 이어진 점선, 흰 카드 안 이름 · 시각·종류 한 줄 · 설명, 오른쪽 장소 사진
   const kk = PLAN_KINDS[o.k] || PLAN_KINDS.spot;
   return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') + (o.k === 'fly' ? ' fly' : '') },
     el('div', { class: 'tv-pn' }, el('span', {}, o.k === 'fly' ? cSvg('plane', 14, '#fff') : o.k === 'stay' ? cSvg('home', 13, '#fff') : (o.no || ''))),
     el('div', { class: 'tv-c' },
       el('div', { class: 'tv-bd' }, o.nx ? el('span', { class: 'tv-nx', text: o.nx }) : null,
-        el('button', { class: 'tv-n', text: o.n, onclick: o.onName }),
-        el('div', { class: 'tv-mt', text: [o.t, kk[1], o.meta].filter(Boolean).join(' · ') }),
+        ...(nm => [el('button', { class: 'tv-n', text: nm[0], onclick: o.onName }), nm[1] ? el('div', { class: 'tv-n2', text: nm[1] }) : null])(tvNameSplit(o.n)),
+        (mt => mt ? el('div', { class: 'tv-mt', text: mt }) : null)([o.t, o.meta].filter(Boolean).join(' · ') || (['stay', 'move'].includes(o.k) ? kk[1] : '')),   // 판 -174: 종류 글자(구경·식사)는 빼고, 숙소·이동만 시각·딱지가 없을 때
         ...(o.extra || []).filter(Boolean),
         o.btns && o.btns.filter(Boolean).length ? el('div', { class: 'tv-b' }, ...o.btns.filter(Boolean)) : null),
       o.thumb || null));
@@ -10821,8 +10837,8 @@ function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, �
 // 일정 칸 오른쪽 장소 사진 (위키백과·위키미디어 공용, placeInfo 기억을 같이 씀) — 화면에 보일 때만 받아요, 동시에 2곳
 function planThumb(x) {
   if (!['spot', 'show', 'peak'].includes(x.k) || !Number.isFinite(x.lat) || x.ap || x.near) return null;
-  const box = el('div', { class: 'tv-th' }), key = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, put = r => { const u = r && r.ph && r.ph[0] && r.ph[0].u; if (u) { box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); } else box.remove(); };
-  const c = (ls.get('placeInfo', {}) || {})[key]; if (c) { put(c); return box; }
+  const box = el('div', { class: 'tv-th' }), key = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, put = r => { const u = r && r.ph && r.ph[0] && r.ph[0].u, U = planThumb.used || (planThumb.used = new Set()); if (u && !U.has(u)) { U.add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); } else box.remove(); };
+  const c = (ls.get('placeInfo', {}) || {})[key]; if (c) { put(c); return box.classList.contains('on') ? box : null; }
   if (!navigator.onLine) { return null; }
   const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().finally(() => { Q.n--; run(); }); };
     Q.L.push(() => placeInfo(x).then(put, () => box.remove())); run(); };
@@ -10961,7 +10977,7 @@ function viewPlanOne(id) {
   if (day == null || day < 0 || day >= p.nd) day = 0;   // 판 -127 (사용자 '이게 아직 보이네'): '전체' 칸을 빼서 늘 하루씩, 처음엔 1일차
   const mapEl = el('div', { class: 'mapbox', style: 'height:42vh;min-height:260px' })   /* 판 -129: 그날 일정이 더 빨리 보이게 */, sumEl = el('div');
   document.documentElement.classList.add('tv-page');   // ✈ B안 '여행 매거진'
-  const tabs = el('div', { class: 'tv-chips' }), list = el('div', { class: 'stack', style: 'gap:2px' });
+  const tabs = el('div', { class: 'tv-chips pn-days' }), list = el('div', { class: 'stack', style: 'gap:2px' });
   let map = null, layer = null, base = null, wx = ls.get('planWx:' + id, null);
   const hero = tvHero(p, {});
   const head = el('div', { class: 'stack', style: 'gap:4px' });
@@ -11172,24 +11188,26 @@ function viewPlanOne(id) {
         x.who ? el('div', { class: 'tv-m', style: 'font-weight:700;color:#4E5968', text: `👤 ${x.who}` }) : null,
         x.ai && x.m ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
-        needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
+        needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '대략 위치 · 고치기 ›') : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
       btns: td === d || x.ok || x.k === 'stay' ? [x.k === 'stay' ? el('button', { text: x.url ? `${x.bkSite || bookSite(x.url)}에서 보기 ↗` : '예약 앱에서 찾기', onclick: () => x.url ? bookOpen(x) : bookSearch(x, p) }) : null, x.k === 'stay' && !x.url ? el('button', { text: '예약 링크 붙이기', onclick: () => planStayLinkAsk(p, x, drawAll) }) : null, 
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
     return it;
   }
   function drawTabs() {
-    const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
+    const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { const stuck = tabs.getBoundingClientRect().top < 2; day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap();
+      if (stuck) scrollBy(0, list.getBoundingClientRect().top - tabs.offsetHeight - 6); } });   // 판 -173: 내려 본 채로 다른 날을 누르면 그날 일정 처음으로
     tabs.replaceChildren(...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘' : `${d + 1}일`}${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
   }
   function drawList() {
-    const out = [];
+    const out = []; planThumb.used = new Set();   // 판 -174: 같은 날 같은 사진이 두 칸에 나오지 않게
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
       const all = planItems(p, d), nxI = all[nextIdx(d)], its = planUniq(all.filter(x => planVis(p, x))), nx = its.indexOf(nxI);   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(planEN(p) ? el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), planEnDay(p, d) + (td === d ? ' · Today' : ''))
+          : day === d ? el('div', { class: 'tv-dln' }, [td === d ? '오늘' : '', p.start ? planDayLabel(p, d) : `${d + 1}일차`, ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · '))   // 판 -173: 위 날 탭과 겹치는 큰 'n일차' 대신 날짜·날씨 한 줄
           : el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') })));
         const M = p.mem || []; if (M.some(m => m.a || m.b) && p.start) {   // 판 -140: 이날 함께하는 사람 · 오는 사람 · 가는 사람
           const inD = M.filter(m => planMemDays(p, m).includes(d)), arr = M.filter(m => m.a && planDayOfDate(p, m.a) === d && d > 0), lv = M.filter(m => m.b && planDayOfDate(p, m.b) === d && d < p.nd - 1), unk = M.filter(m => !m.a && !m.b).length;
@@ -11211,10 +11229,10 @@ function viewPlanOne(id) {
         go ? el('button', { class: 'tv-lgo', text: '길찾기', onclick: go }) : null));
       its.forEach((x, i) => {
         if (x.k === 'move' && !pos(x) && pv) { hold.push(x); return; }
-        if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `🏨 ${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+        if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
           if (!a0) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', how, () => planGo(x));
-          else if (!exact(x)) legLine('route', '위치가 대략이에요 · 거리 모름', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
-          else if (!exact(a0) && !lastEx) legLine('route', '위치가 대략이에요 · 거리 모름', how, () => planLegGo(a0, x, 'car'), 'ap');
+          else if (!exact(x)) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
+          else if (!exact(a0) && !lastEx) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap');
           else { const b0 = exact(a0) ? a0 : lastEx, LI = planLegInfo(b0, x, p), how2 = b0 !== a0 ? [`${b0.n}에서`, how].filter(Boolean).join(' · ') : how;   // 바로 앞이 대략 위치면 마지막 정확한 곳에서
             if (!LI || LI.m < 40) legLine('walk', '바로 옆', how2, () => planLegGo(b0, x, 'walk'), 'w');
             else legLine(LI.svg || 'route', `${LI.t || LI.s}${LI.note ? ' · ' + LI.note : ''}`, how2, LI.k === 'fly' ? null : () => planLegGo(b0, x, LI.k), LI.k === 'walk' ? 'w' : '', () => planLegPick(p, b0, x, drawAll, mv, viewItem), b0 === a0 ? planLegTight(a0, x, LI) : ''); }
@@ -11267,7 +11285,7 @@ function viewPlanOne(id) {
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['film', '미리 보기 영상 만들기', './?film=1&plan=' + encodeURIComponent(p.id)], ['share', '일행 초대 · 일정 보내기', () => planShare(p), '초대'], ['more', '더보기', moreSheet]), hero,
     el('div', { class: 'tv-sheet' },
     // 판 -129: 한 화면 차례 = 날 고르기 → 그날 지도·요약 → 그날 일정 → (작게) 위치 확인. 준비·여행 방은 아래 메뉴에만
-    tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, sumEl, list, head)), tvBar(p, 'plan'));
+    mapEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), sumEl, list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
   drawAll();
   planHanaAuto(p, () => drawAll());
   // 판 -129: 오늘 화면에서 하던 일(날씨 받기·여행 사진 저절로 올리기)을 여기서
