@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-145-apply';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-146-best';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 계획 도우미가 있던 일정을 바꾸자고 하면(시각 옮기기·빼기) 목록으로 보여 주고 \'✓ 반영하기\' 한 번 또는 \'반영해\'라고 적으면 일정에 바로 들어가요 · 📘 ○○ 여행 정보 한 페이지 · 📸 장소 사진·소개·링크';
+const UI_NOTES = '✨ 여행 도우미·계획 도우미·길 도우미·예약 캡처 읽기·일정 읽기가 가장 똑똑한 AI 모델로 바뀌었어요 · 답이 더 꼼꼼한 대신 조금 더 걸리고, 열쇠 사용료가 한 번 묻는 데 약 100~500원으로 올라가요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4906,6 +4906,9 @@ function watchAnalysis(t) {
 const faRc = (node, ...k) => node.replaceChildren(...k.flat().filter(x => x != null && x !== false));
 const FS_DB = 'projects/map-photo-diary/databases/(default)/documents/';
 const FA_MODEL = 'claude-haiku-5-5';   // 짧은 글귀라 빠르고 저렴한 모델
+// 여행 도우미·계획 읽기는 가장 똑똑한 모델(2026-11-15 사용자 '최고의 모델로 바꿔'). 생각하는 몫까지 넉넉히, 거절되면 서버가 다른 모델로 다시
+const TRIP_MODEL = 'claude-fable-5-2';
+function tripAiOpt(n) { return { model: TRIP_MODEL, max_tokens: Math.min(16000, Math.max(8000, n * 3)), betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', output_config: { effort: 'medium' } }; }
 function fsv(v) {   // 자바스크립트 값 → Firestore 값
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean') return { booleanValue: v };
@@ -6351,7 +6354,7 @@ async function viewPlanDest(id) {
     try {
       toast('✨ AI를 써요 · 여행지 정리 · 여행지 이름·날짜·일정 이름만 보내요', true);
       const { default: Anthropic } = await import(TALK_SDK);
-      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 3000, messages: [{ role: 'user', content: `한국 가족 여행자를 위해 '${nm}' 여행에서 꼭 알아 둘 것을 쉬운 한국어로 정리해 주세요. 여행 날짜: ${p.start || '미정'}, ${p.nd}일. 일정에 있는 곳: ${(p.it || []).filter(x => x.k !== 'fly').map(x => x.n).slice(0, 30).join(', ')}.
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(3000), messages: [{ role: 'user', content: `한국 가족 여행자를 위해 '${nm}' 여행에서 꼭 알아 둘 것을 쉬운 한국어로 정리해 주세요. 여행 날짜: ${p.start || '미정'}, ${p.nd}일. 일정에 있는 곳: ${(p.it || []).filter(x => x.k !== 'fly').map(x => x.n).slice(0, 30).join(', ')}.
 묶음 5개 안팎(예: 교통·패스, 돈·결제, 음식, 매너·문화, 안전·주의, 그 계절 팁), 묶음마다 2~4줄, 줄마다 40자 안.
 확실한 것만 쓰고, 가격·운영 시간처럼 바뀌는 숫자는 쓰지 말거나 '확인 필요'라고 하세요. JSON 하나로만: {"groups":[{"h":"","items":[""]}]}` }] });
       const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '여행지 정리', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
@@ -7792,7 +7795,7 @@ ${text ? '\n일정표 글:\n' + text.slice(0, 60000) : ''}` });
   toast(o && o.blog ? '✨ AI를 써요 · 블로그 글 읽기 · 블로그 글만 보내요' : '✨ AI를 써요 · 여행 일정 읽기 · 넣은 글·사진만 보내요', true);
   const { default: Anthropic } = await import(TALK_SDK);
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
-  const res = await client.messages.create({ model: FA_MODEL, max_tokens: 8000, messages: [{ role: 'user', content }] });
+  const res = await client.beta.messages.create({ ...tripAiOpt(8000), messages: [{ role: 'user', content }] });
   const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '여행 일정 읽기', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
   toast(`✨ AI 사용 끝 · 여행 일정 읽기 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
   const tb = (res.content || []).find(x => x.type === 'text'); if (!tb) throw new Error('빈 답');
@@ -7817,7 +7820,7 @@ JSON 하나로만: {"read":"그린 길을 한 문장으로(지나는 곳 차례�
 JSON 하나로만: {"items":[...],"say":"무엇을 바꿨는지 한 문장"}`;
   toast(`✨ AI를 써요 · 그린 길 읽기 ${step}/2 · 사진과 일정 이름만 보내요`, true);
   const { default: Anthropic } = await import(TALK_SDK);
-  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 3000,
+  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(3000),
     messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: img.t, data: img.b } }, { type: 'text', text }] }] });
   const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '그린 길 읽기', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
   toast(`✨ AI 사용 끝 · 그린 길 읽기 ${step}/2 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
@@ -8017,7 +8020,7 @@ async function planAiPlaces(p, city, say, redo) {   // Claude 열쇠가 있으�
   toast('✨ AI를 써요 · 여행 장소 위치 찾기 · 장소 이름만 보내요', true);
   const { default: Anthropic } = await import(TALK_SDK);
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
-  const res = await client.messages.create({ model: FA_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: `${city || ''} 단체여행 일정의 장소 목록이에요. 장소마다 지도 검색어(그 나라 글자 이름(중국이면 간체자)이나 영어, 도시 이름 포함, 예 "天门山, 张家界")와 대략 좌표를 JSON 배열 하나로만 답하세요.
+  const res = await client.beta.messages.create({ ...tripAiOpt(4000), messages: [{ role: 'user', content: `${city || ''} 단체여행 일정의 장소 목록이에요. 장소마다 지도 검색어(그 나라 글자 이름(중국이면 간체자)이나 영어, 도시 이름 포함, 예 "天门山, 张家界")와 대략 좌표를 JSON 배열 하나로만 답하세요.
 식당 이름이 있으면 그 식당, 식당 이름 없는 식사·마사지는 q는 빈칸이고 lat/lng는 null(앞뒤 장소로 앱이 채워요). 모르면 null. 지어내지 말 것.
 형식: [{"i":번호,"q":"","lat":null,"lng":null}]
 ${L.map(([i, x]) => `${i}. ${x.n}`).join('\n')}` }] });
@@ -9226,7 +9229,7 @@ async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성
   try {
     const { default: Anthropic } = await import(TALK_SDK);
     const client = new Anthropic({ apiKey: trBotKey(), dangerouslyAllowBrowser: true });
-    const res = await client.messages.create({ model: FA_MODEL, max_tokens: 700, system: sys, messages: [{ role: 'user', content: prompt }] });
+    const res = await client.beta.messages.create({ ...tripAiOpt(700), system: sys, messages: [{ role: 'user', content: prompt }] });
     const u = res.usage || {}, log = ls.get('labAiLog', []);
     log.unshift({ at: Date.now(), kind: '여행 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
     ls.set('tripBotN', { d: day, n: (N.d === day ? N.n : 0) + 1 });
@@ -9470,7 +9473,7 @@ async function planTranslate(p, say, force) {   // 영어가 없거나 한국어
   say && say(`🌐 영어로 옮기는 중… ${todo.length}곳`);
   toast('✨ AI를 써요 · 일정 영어로 옮기기 · 일정 이름·메모만 보내요', true);
   const { default: Anthropic } = await import(TALK_SDK);
-  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 6000, messages: [{ role: 'user', content: `Translate this Korean travel itinerary into natural, short English for English-speaking family members. Keep place names as commonly known in English (e.g. 도톤보리 → Dotonbori, 간사이 국제공항 → Kansai Int'l Airport). Keep flight numbers, times and codes exactly. Do not add anything that is not in the Korean text. Names of people: romanize (e.g. 아리 → Ari, 아내 → Seongsik's wife if it is a relation word).
+  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(6000), messages: [{ role: 'user', content: `Translate this Korean travel itinerary into natural, short English for English-speaking family members. Keep place names as commonly known in English (e.g. 도톤보리 → Dotonbori, 간사이 국제공항 → Kansai Int'l Airport). Keep flight numbers, times and codes exactly. Do not add anything that is not in the Korean text. Names of people: romanize (e.g. 아리 → Ari, 아내 → Seongsik's wife if it is a relation word).
 Return JSON only: {"name":"","items":[{"id":"","en":"","enm":""}],"mem":[{"id":"","en":""}]}
 Trip name: ${p.name}
 Items:
@@ -9635,7 +9638,7 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
       msgs.push({ role: 'user', content: `[지금 계획]\n${planMakeCtx(p)}\n\n[부탁]\n${x}` });
       toast('✨ AI를 써요 · 계획 도우미 · 계획(일정·날짜)을 보내요', true);
       const { default: Anthropic } = await import(TALK_SDK);
-      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 8000, system: sys, messages: msgs });
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(8000), system: sys, messages: msgs });
       const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '계획 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
       toast(`✨ AI 사용 끝 · 계획 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
       const tb = (res.content || []).find(z => z.type === 'text'), raw = tb ? tb.text : '';
@@ -9704,7 +9707,7 @@ function planGuideSheet(p) {
       msgs.push({ role: 'user', content: cont });
       toast('✨ AI를 써요 · 길 도우미 · 위치·계획' + (sentImg ? '·사진' : '') + '을 보내요', true);
       const { default: Anthropic } = await import(TALK_SDK);
-      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 700, system: sys, messages: msgs });
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(700), system: sys, messages: msgs });
       const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '길 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
       toast(`✨ AI 사용 끝 · 길 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
       const tb = (res.content || []).find(z => z.type === 'text'); hist.push({ r: 'a', x: tb ? tb.text.trim() : '(빈 답)', t: Date.now() }); st.textContent = C.info;
@@ -9998,7 +10001,7 @@ async function planBookRead(file) {
   toast('✨ AI를 써요 · 예약 캡처 읽기 · 이 사진만 보내요', true);
   const { default: Anthropic } = await import(TALK_SDK);
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
-  const res = await client.messages.create({ model: FA_MODEL, max_tokens: 3000, messages: [{ role: 'user', content: [src, { type: 'text', text: `이건 항공권·숙소 예약 화면이에요. 화면에 적힌 것만 JSON 하나로 답하세요. 적혀 있지 않은 칸은 빈칸. 지어내지 말 것.
+  const res = await client.beta.messages.create({ ...tripAiOpt(3000), messages: [{ role: 'user', content: [src, { type: 'text', text: `이건 항공권·숙소 예약 화면이에요. 화면에 적힌 것만 JSON 하나로 답하세요. 적혀 있지 않은 칸은 빈칸. 지어내지 말 것.
 시각은 24시간 HH:MM(오후 6:10 → 18:10). 날짜는 YYYY-MM-DD. 이름·도시는 화면 글자 그대로.
 fromEn/toEn은 공항의 영어 정식 이름(예 "Incheon International Airport"), stays의 en은 숙소 영어 이름과 도시.
 형식: {"flights":[{"air":"","no":"","date":"","dep":"","arr":"","arrDate":"","from":"","fromCode":"","fromAp":"","fromEn":"","to":"","toCode":"","toAp":"","toEn":"","ref":"","cls":""}],"stays":[{"n":"","in":"","out":"","ref":"","addr":"","en":""}]}` }] }] });
