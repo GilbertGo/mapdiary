@@ -3313,9 +3313,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-197-howto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-198-aimodel';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9198,7 +9198,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
         li('route', '길찾기', '장소 사이 줄을 누르면 지도 앱 길 안내'),
         li('chat', '여행 방', '일행과 대화하고 사진을 함께 모아요'),
         li('book', '여행 노트', '날씨·준비물·경비 정산' + (lg ? ` · ${lg} 보여 주는 말` : '')),
-        li('spark', 'AI 묻기', '일정·준비에 대해 궁금한 걸 물어봐요'),
+        li('spark', 'AI 묻기', '일정을 짜거나 고쳐 달라면 반영까지 · 가장 정확한(비싼) AI 모델'),
         li('user', '같이 고치기', '고치면 일행에게도 바로, 누가 고쳤는지 보여요')),
       el('button', { class: 'iv-go', text: '시작하기', onclick: () => bg.remove() }));
     card.scrollTop = 0;
@@ -10505,7 +10505,7 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
   ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
   bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
-    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '일정 짜기' })),
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '일정 짜기·고치기 · 가장 정확한(비싼) Claude 모델' })),
       el('button', { class: 'btn line small', text: '길 안내로', onclick: () => { bg.remove(); trBotKey() ? planGuideSheet(p) : planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
     key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: 'Claude 열쇠가 있어야 답해요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 Claude 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) { bg.remove(); planMakeSheet(p); } } })),
@@ -10565,7 +10565,7 @@ function planGuideSheet(p) {
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
   list.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch';
   bg.append(el('div', { class: 'sheet', style: `display:flex;flex-direction:column;gap:8px;height:86vh;max-height:86vh;overflow:hidden;padding-bottom:calc(${IN_NATIVE ? 60 : 12}px + env(safe-area-inset-bottom,0px))` },
-    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '길 안내 · 지금 위치로' })),
+    el('div', { style: 'display:flex;align-items:center;gap:8px' }, el('div', { style: 'flex:1;min-width:0' }, el('h2', { style: 'margin:0;font-size:19px', text: '✨ AI에게 묻기' }), el('div', { style: 'font-size:13px;color:#6B7684;margin-top:2px', text: '길 안내 · 지금 위치로 · 가장 정확한(비싼) Claude 모델' })),
       el('button', { class: 'btn line small', text: '일정 짜기로', onclick: () => { bg.remove(); planMakeSheet(p); } }),
       el('button', { class: 'btn line small', text: '👥 일행에게', onclick: () => { bg.remove(); planAskSheet(p); } }),
       el('button', { type: 'button', 'aria-label': '닫기', class: 'n-ib', style: 'width:36px;height:36px', onclick: () => bg.remove() }, cSvg('x', 18))),
