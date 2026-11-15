@@ -743,6 +743,10 @@
 ## 판 -202 영어 초대 창 (2026-11-16, 사용자 '이름 창도 영어로 나오게 해')
 - `planAskName`: `planEN(p)`(영어 초대 링크 `&en=1`로 연 휴대폰)이면 환영 창·사용법 모두 영어(TRIP INVITATION · nameEn · 'n nights m days · from 날짜' · Name shown to the group · Next → Welcome · How to use · 아래 메뉴 이름은 'Trip room (여행 방)'처럼 영어 + 한국어 · Start). 일행 '보기만' 줄(`permLine`)도 영어. 계획 링크에 영어 이름(`o.ne` → nameEn)도 넣음(예전엔 같이 고치기로 받기 전까지 한국어 이름), 영어 초대 글의 'You can edit it too' 뺌(처음엔 보기만)
 
+## 판 -203 ❓ 사용법 둘러보기 (2026-11-16, 사용자 '튜토리얼 만들어')
+- `planTour(p)`: 계획 화면 위에 어두운 막 + 실제 칸을 밝게 뚫고(`.tr-hole`, box-shadow) 아래·위에 설명 카드(`.tr-tip`: 'n / m' · 제목 · 한 줄 · 건너뛰기 / 다음 → 다 봤어요). 차례: 날 고르기(.pn-days) → 지도 → 장소(.tv-it) → 장소 사이·길찾기(.tv-leg) → 아래 메뉴 여행 방 → 여행 노트 → 중국어/일본어(그 나라일 때) → AI 묻기 → 더보기. 없는 칸은 건너뜀, 아무 데나 눌러도 다음. 영어 초대(`planEN`)면 영어
+- 초대받아 이름을 적고 'Next/다음'을 누르면 판 -197 글 목록(howTo) 대신 바로 둘러보기. ⋯ 더보기 '❓ 사용법 둘러보기'로 누구나 다시. 본 뒤 `ls planTourSeen`(새 키)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
