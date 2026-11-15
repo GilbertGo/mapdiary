@@ -740,6 +740,9 @@
 - 고치기 없음: `planShareSync`가 함께 일정·이름·날짜를 방 것 그대로 두고 올리지 않음(내가 넣은 곳은 내 일정으로), 보기 없음: `viewPlanOne`·`viewTripRoom`이 '⛔ 이 여행을 볼 수 없어요'. **보기·고치기는 앱이 막는 것**(링크를 가진 사람이 앱을 뜯으면 우회 가능, 화면에 적음)
 - 화면: 계획 맨 위 `permLine`(주인 '👋 새로 들어온 사람 n명 · 권한 정하기 ›' / 일행 '👁 보기만 할 수 있어요'), 여행 노트 '🔐 일행 권한' → `permSheet`(사람마다 보기·고치기·AI 알약 + 새로 들어온 사람 기본), AI 묻기 창 `aiShareLine`(주인 '일행 n명이 내 열쇠로 AI를 써요 · 일행 권한'). 시험 scratchpad `q135/t201.js` 15/15(주인·일행·링크 전달받은 사람 세 휴대폰, 가짜 Firestore)
 
+## 판 -202 영어 초대 창 (2026-11-16, 사용자 '이름 창도 영어로 나오게 해')
+- `planAskName`: `planEN(p)`(영어 초대 링크 `&en=1`로 연 휴대폰)이면 환영 창·사용법 모두 영어(TRIP INVITATION · nameEn · 'n nights m days · from 날짜' · Name shown to the group · Next → Welcome · How to use · 아래 메뉴 이름은 'Trip room (여행 방)'처럼 영어 + 한국어 · Start). 일행 '보기만' 줄(`permLine`)도 영어. 계획 링크에 영어 이름(`o.ne` → nameEn)도 넣음(예전엔 같이 고치기로 받기 전까지 한국어 이름), 영어 초대 글의 'You can edit it too' 뺌(처음엔 보기만)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
