@@ -736,7 +736,7 @@ html.tv-page .tv-hin h1{color:#fff}
 .tv-it .tv-n{font:600 16px/1.35 Pretendard,sans-serif;letter-spacing:-.3px}
 .tv-it .tv-mt{font:500 12.5px/1.4 Pretendard,sans-serif;color:#8B95A1;margin-top:2px}
 .tv-it .tv-m{font-size:13px;color:#4E5968;line-height:1.45;margin-top:4px}
-.tv-it .tv-th{width:68px;height:68px;flex:none;border-radius:12px;background:#EEF1F4 center/cover no-repeat;position:relative;overflow:hidden}.tv-it .tv-th .ex{position:absolute;right:4px;bottom:4px;font:600 9px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:1px 4px;border-radius:4px}
+.tv-it .tv-th{width:68px;height:68px;flex:none;border-radius:12px;background:#EEF1F4 center/cover no-repeat;position:relative;overflow:hidden}.tv-it .tv-th.art{display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}.tv-it .tv-th.art .ico{display:flex;opacity:.95}.tv-it .tv-th .ex{position:absolute;right:4px;bottom:4px;font:600 9px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:1px 4px;border-radius:4px}
 .tv-it .tv-b{margin-top:8px}
 .tv-it .tv-b button,.tv-it .tv-b a{background:none;padding:2px 0;margin-right:12px;color:#1D7FA0;font:600 13px Pretendard,sans-serif;border-radius:0}
 .tv-it .tv-b .go{background:none;color:#1D7FA0}
@@ -1141,6 +1141,26 @@ html.n-page .role.r3-bar .who{background:rgba(255,255,255,.9);color:#15202B!impo
 .tv-it .tv-n{font:600 16px/1.35 Pretendard,sans-serif}.tv-it .tv-n2{font:500 12.5px/1.4 Pretendard,sans-serif;color:#6B7684;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tv-it .tv-mt{font-size:12.5px;color:#8B95A1}
 html.tv-page .leaflet-control-attribution{font-size:9px!important;line-height:1.4;padding:0 4px!important;background:rgba(255,255,255,.55)!important;color:#8B95A1}html.tv-page .leaflet-control-attribution a{color:#8B95A1}
+
+/* 판 -178 (사용자 '굵은 글씨 촌스럽다' · '유명 앱 좀 보고'): 애플 기본 글자 규칙처럼 목록 글자는 보통 굵기, 굵게는 화면 제목 하나만.
+   이름 500 · 설명·시각 400 회색 · 날 칸·단추 500 · 숫자 딱지 600 · 큰 제목(사진 위) 700 */
+html.tv-page .tv-n{font:500 16px/1.4 Pretendard,sans-serif!important;letter-spacing:-.2px;color:#191F28}
+html.tv-page .tv-mt,html.tv-page .tv-it .tv-m{font-weight:400!important;color:#8B95A1}
+html.tv-page .tv-dln{font-weight:500!important;color:#6B7684}
+html.tv-page .tv-day{font-weight:600!important}
+html.tv-page .tv-chips button{font-weight:500!important}
+html.tv-page .tv-chips button.on{font-weight:600!important}
+html.tv-page .tv-add{font-weight:500!important}
+html.tv-page .tv-bar a,html.tv-page .tv-bar button{font-weight:400!important}html.tv-page .tv-bar a:not(.on),html.tv-page .tv-bar button:not(.on){color:#6B7684!important}html.tv-page .tv-bar .on{font-weight:600!important}
+html.tv-page .tv-it .tv-pn span{font-weight:600!important}
+html.tv-page .tv-it .tv-nx{font-weight:600!important}
+html.tv-page .tv-it .tv-x{font-weight:500!important}
+html.tv-page .tv-hin h1{font-weight:700!important}
+html.tv-page .tv-hl .dd,html.tv-page .tv-d{font-weight:600!important}
+html.tv-page .tv-tile b{font-weight:600!important}
+html.tv-page .tv-tile .av span{font-weight:600!important}
+html.tv-page .tv-topbar .n-ib.pill,html.tv-page .tv-swap{font-weight:500!important}
+html.tv-page .tv-leg b{font-weight:500!important}
 </style>
 </head>
 <body>
@@ -3245,9 +3265,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-176-thumb';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-178-light';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사·마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기·자전거·차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기: 나 → 자동 기록 · 웹·아이폰·MPD Run은 지금처럼 눌러서 기록';
+const UI_NOTES = '✍ 여행 일정 글자를 가볍게: 굵은 글씨는 큰 제목만 · 🎨 사진을 못 찾은 일정 칸과 숙소 칸에는 종류별 그림 타일을 넣어요 · 🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사와 마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기, 자전거, 차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기는 나 → 자동 기록, 웹과 아이폰과 MPD Run은 지금처럼 눌러서 기록';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10870,11 +10890,19 @@ async function planThName(x) {
     const U = planThumb.used || new Set(), f = ps.find(i => !U.has(i.thumburl)) || ps[0]; if (f) return { u: f.thumburl, ex: 1 }; } catch {}
   return { u: '' };
 }
+// 판 -177 (사용자 '고급 그림 있으면 넣고'): 사진을 못 찾은 칸은 비우지 않고 종류별 고급 타일(부드러운 두 색 그라데이션 + 위쪽 빛 + 흰 가는 선 그림)
+var PLAN_ART = { food: ['fork', '#FF9A7A', '#E8546B'], show: ['ticket', '#9C8CFF', '#5B4BDB'], spa: ['spa', '#F4A6C0', '#C8558A'], spot: ['cam', '#5CCFE0', '#1D7FC0'], peak: ['mount', '#8CA3C0', '#3E5675'], stay: ['bed', '#5B6B8A', '#1F2A3D'] };
+function planArt(x, box) {
+  const k = /마사지|안마|스파|족욕/.test(x.n || '') ? 'spa' : x.k, A = PLAN_ART[k] || PLAN_ART.spot;
+  box = box || el('div', { class: 'tv-th' }); box.classList.add('art'); box.style.backgroundImage = `radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.38), rgba(255,255,255,0) 55%), linear-gradient(145deg, ${A[1]}, ${A[2]})`;
+  box.replaceChildren(cSvg(A[0], 28, '#fff')); return box;
+}
 function planThumb(x) {
+  if (x.k === 'stay') return planArt(x);
   if (!['spot', 'show', 'peak', 'food'].includes(x.k)) return null;
   const exact = Number.isFinite(x.lat) && !x.ap && !x.near && x.k !== 'food';
   const box = el('div', { class: 'tv-th' }), U = () => planThumb.used || (planThumb.used = new Set());
-  const show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: '예시' })); return true; };
+  let show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: '예시' })); return true; };
   const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName', {}) || {};
   const byName = async () => { const c = NC()[nkey]; if (c && (c.u || Date.now() - c.at < 3 * 864e5)) return c; const r = await planThName(x); const all = NC(); all[nkey] = { u: r.u || '', ex: r.ex || 0, at: Date.now() };
     const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName', all); return all[nkey]; };
@@ -10882,9 +10910,10 @@ function planThumb(x) {
   const nc = NC()[nkey];
   if (pc && show(pu(pc))) return box;
   if (nc && nc.u && show(nc.u, nc.ex)) return box;
-  if (!navigator.onLine) return null;
-  const work = async () => { if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (!(r && show(r.u, r.ex))) box.remove(); };
-  const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => box.remove()).finally(() => { Q.n--; run(); }); };
+  planArt(x, box); const show0 = show; show = (u, ex) => { const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
+  if (!navigator.onLine) return box;
+  const work = async () => { if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
+  const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => {}).finally(() => { Q.n--; run(); }); };
     Q.L.push(work); run(); };
   if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '200px' }); setTimeout(() => io.observe(box), 0); } else go();
   return box;
@@ -11047,7 +11076,7 @@ function viewPlanOne(id) {
   // 판 -131: 스스로 점검 결과 — 작은 회색 한 줄, 누르면 '고친 것 / 확인해 주세요' 창
   function chkLine() {
     const c = p.selfChk; if (!c) return null; const W = c.warn.filter(w => !/지도 위치가 없는/.test(w.t));   // 위치는 아래 '위치 확인' 줄에
-    return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:600 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: () => {
+    return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:400 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: () => {
       labSheet('🔎 스스로 점검',
         el('div', { class: 'sub', style: 'font-size:13px', text: '계획을 열 때마다 앱이 일정을 스스로 훑어봐요. 확실한 건 저절로 고치고, 사람이 봐야 할 건 여기에 남겨요.' }),
         W.length ? el('div', { style: 'font-weight:800', text: `확인해 주세요 ${W.length}` }) : null,
@@ -11115,7 +11144,7 @@ function viewPlanOne(id) {
             el('span', { text: whyChk(x) }), el('em', { text: '지도에서 고치기 ›' })),
           Number.isFinite(x.lat) ? el('button', { class: 'pw-ok', text: '이 위치가 맞아요', onclick: () => { sh(); okLoc(x); } }) : null)),
         auto); };
-    return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:600 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: open },
+    return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:400 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: open },
       el('span', { style: 'flex:1', text: `📍 위치 확인 ${L.length}곳 (대략 위치)` }), el('span', { text: '›' }));
   }
   function moreSheet() {   // ⋯ 더보기: 자주 안 쓰는 것들
@@ -13744,7 +13773,12 @@ function cSvg(n, s = 22, c = 'currentColor') {
     bus: '<rect x="5" y="3" width="14" height="15" rx="2.5"/><path d="M5 11h14M8 18v2M16 18v2"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/>',
     train: '<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 10h12M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9.5" cy="13.5" r=".9"/><circle cx="14.5" cy="13.5" r=".9"/>',
     plane: '<path d="M10.5 20l1.5-6-6-2.5V9l6.5 1.5L14 4.5c.4-1 1.6-1 2 0l-1 6L21 12v2.5l-6-1.5-1.5 6.5z"/>',
-    ship: '<path d="M4 15l1.5 5h13L20 15H4z"/><path d="M7 15V9h10v6M12 9V4"/>'
+    ship: '<path d="M4 15l1.5 5h13L20 15H4z"/><path d="M7 15V9h10v6M12 9V4"/>',
+    fork: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 3c-2 1.5-3 4-3 7h3v11"/>',
+    ticket: '<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 8v1.5M14 11.5v1M14 14.5V16"/>',
+    mount: '<path d="M3 19l6.5-11 4 6.5 2.5-4L21 19z"/><path d="M8 11l1.5 1.5L11 11"/>',
+    spa: '<path d="M12 20c-4 0-8-3-8-7 3 0 6 2 8 5 2-3 5-5 8-5 0 4-4 7-8 7z"/><path d="M12 18c-2-3-2-8 0-12 2 4 2 9 0 12z"/>',
+    bed: '<path d="M3 18V7M3 13h18v5M21 18v-3a3 3 0 0 0-3-3h-8v1"/><circle cx="6.5" cy="10.3" r="1.6"/>'
   };
   const sp = el('span', { class: 'ico', 'aria-hidden': 'true' });
   sp.innerHTML = `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
