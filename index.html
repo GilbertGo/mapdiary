@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-148-read';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-149-noslogan';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '📚 여행 계획의 여행지 정보에 읽을거리가 생겼어요 · 여행지와 일정 속 구경 장소마다 위키백과 본문 전체와 사진(설명과 작가 표시) · 인터넷이 될 때 한 번 열어 두면 이 휴대폰에 저장돼 비행기 안에서도 읽어요 · 영어 글은 ✨ 한국어로 옮기기(AI)';
+const UI_NOTES = '🏠 첫 화면의 큰 글(일상을 발견하고, 행복을 넓히다)을 뺐어요 · 사진과 여행 카드가 가리지 않고 보여요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13592,7 +13592,8 @@ function cHomePhoto() {
     cLiveTick(rec, () => { const v = cLiveTime(wNow); bt.textContent = `기록 중 · ${cLiveName(wNow)}`; bs.textContent = v; tm.textContent = v; });
     try { new IntersectionObserver(es => { const lv = document.querySelector('.c-tabs-live'); if (lv) lv.classList.toggle('hide', es[0].intersectionRatio > .5); }, { threshold: [0, .5, 1] }).observe(rec); } catch {}
   } else rec = el('button', { class: 'c-ph-rec', type: 'button', 'aria-label': '기록하기', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
-  box.append(bg, layer, top, sr ? staleBox(sr, 'c-ph-stale') : slogan, rec); if (bar) box.append(bar);
+  // 판 -149 (사용자 홈 캡처 '일상을 발견하고… 이 글이 방해되네'): 슬로건은 그리지 않음(사진·말풍선·여행 카드를 가려서)
+  box.append(bg, layer, top, ...(sr ? [staleBox(sr, 'c-ph-stale')] : []), rec); if (bar) box.append(bar);
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   setTimeout(async () => {
     // 사진 있는 기록이 말풍선 수만큼 모일 때까지 최근 것부터 차례로 봄(사진 없는 기록이 많아도 4개 채우게)
@@ -13719,7 +13720,7 @@ function viewLanding() {
   try {   // 여행 중·여행 30일 전이면 첫 화면 사진 위에도 작은 알약(누르면 오늘 화면)
     const pc = planCur(); if (pc) { const k = planToday(pc), its = k >= 0 ? planItems(pc, k) : [], ni = k >= 0 ? planNext(pc, k) : -1, nx = ni >= 0 ? its[ni] : null;
       if (getComputedStyle(heroEl).position === 'static') heroEl.style.position = 'relative';
-      heroEl.append(el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(pc.id), style: 'position:absolute;left:16px;right:16px;top:262px;z-index:5;display:block;text-decoration:none;color:#102A43;background:rgba(255,255,255,.92);border-radius:16px;padding:10px 14px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2)' },
+      heroEl.append(el('a', { href: './?plan=1&today=1&p=' + encodeURIComponent(pc.id), style: 'position:absolute;left:16px;right:16px;top:calc(122px + env(safe-area-inset-top,0px));z-index:5;display:block;text-decoration:none;color:#102A43;background:rgba(255,255,255,.92);border-radius:16px;padding:10px 14px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2)' },
         el('div', { style: 'font-size:12px;color:#0277BD', text: k >= 0 ? `🗓 ${pc.name} · ${k + 1}일차` : `🗓 ${pc.name} · D-${-k}` }),
         el('div', { style: 'font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: k >= 0 ? (nx ? `▶ 다음 ${nx.t ? nx.t + ' ' : ''}${nx.n} ›` : '오늘 일정 끝 · 오늘 화면 ›') : '🧳 여행 준비 · 날씨 · 지도 받기 ›' }))); }
   } catch {}
