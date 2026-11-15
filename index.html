@@ -1176,6 +1176,13 @@ html.tv-page .tv-it .tv-b button,html.tv-page .tv-it .tv-b a{font:500 13px Prete
 .c-ph-deco svg{width:15px;height:15px}
 html.c-home.c-live .c-ph-top{top:calc(40px + env(safe-area-inset-top,0px))}
 html.c-home.c-live .c-ph-chips,html.c-home.c-live .c-ph-deco{top:calc(88px + env(safe-area-inset-top,0px))!important}
+
+/* 판 -187: 아래 메뉴 없앰 */
+.c-hback{position:fixed;left:14px;top:calc(12px + env(safe-area-inset-top,0px));z-index:1200;display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 2px 10px rgba(0,0,0,.12);color:#191F28;font:500 13.5px Pretendard,sans-serif;text-decoration:none}
+.c-tabs-live{bottom:calc(16px + env(safe-area-inset-bottom,0px))!important}
+.c-ph-rec{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
+html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.c-find{padding-top:calc(52px + env(safe-area-inset-top,0px))}
 </style>
 </head>
 <body>
@@ -3280,9 +3287,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-186-top';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-187-notab';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13934,11 +13941,13 @@ function cLiveName(id) { return ls.get('trackName:' + id, `${modeOfT(id).label} 
 // 1초마다 글자를 바꿈. 화면에서 빠지면 멈춤
 function cLiveTick(node, fn) { fn(); const iv = setInterval(() => { if (!node.isConnected) return clearInterval(iv); fn(); }, 1000); }
 function cTabs(on) {
-  document.documentElement.classList.add('c-tabbed');
+  document.documentElement.classList.remove('c-tabbed');
   const wNow = ls.get('walkNow', null);
   document.documentElement.classList.toggle('c-live', !!wNow);
   const it = (k, label, href, click) => el(href ? 'a' : 'button', Object.assign({ class: on === k ? 'on' : null, 'aria-current': on === k ? 'page' : null }, href ? { href } : { type: 'button', onclick: click }), cSvg(k, 24), label);
-  const nav = el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
+  // 판 -187 (사용자 홈 캡처 '맨 아래는 지워. 꼭 필요한 기능은 다른데로 옮겨'): 아래 메뉴(홈·지도·발견·이야기·나)를 없앰 → 지도·발견은 홈 목록 줄로, 이야기는 '내 MPD 보기', 나는 오른쪽 위 프로필. 다른 화면엔 왼쪽 위 '‹ 처음 화면'
+  const nav = on === 'home' ? document.createDocumentFragment() : el('a', { class: 'c-hback', href: './' }, '‹ 처음 화면');
+  // (예전) const nav = el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
   if (!wNow) return nav;
   // 기록 중이면 아래 메뉴 바로 위에 빨간 띠(홈은 큰 빨간 단추가 화면에 있을 땐 숨김)
   const b = el('b'), t = el('span'), live = el('a', { class: 'c-tabs-live' + (on === 'home' ? ' hide' : ''), href: '?walk=1', 'aria-label': '기록 중 · 이어서' }, el('i', { class: 'c-lv-dot' }), b, t);
@@ -14612,6 +14621,8 @@ function viewLanding() {
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
         row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
+        row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
+        row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
         row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
         row('👥', '모임방', '', './?room=1'),
         row('📸', '가족 앨범', '', './?album=1'),
