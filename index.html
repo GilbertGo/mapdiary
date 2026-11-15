@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-168-flytime';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-169-stay';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7681,9 +7681,9 @@ function planMapEdit(p, d0, done) {
     const L2 = L0.filter(x => Number.isFinite(x.lat));
     for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, c, 5);
     const NOE = planNoMap(L0); L0.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); const on = sel && x.id === sel.id, sz = on ? 36 : 30;
-      const mk = L.marker([x.lat, x.lng], { draggable: true, autoPan: true, icon: L.divIcon({ className: '', iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2],
+      const mk = L.marker([x.lat, x.lng], { draggable: true, autoPan: true, zIndexOffset: x.k === 'stay' ? 500 : 0, icon: x.k === 'stay' ? planStayIcon(x, on) : L.divIcon({ className: '', iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2],
         html: `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${on ? '#15202B' : c};color:#fff;font:800 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)${x.ap || x.near || x.vf ? ';outline:3px dashed #FF9F43' : ''}">${NOE.get(x) || i + 1}</div>` }) })
-        .bindTooltip(el('span', { text: x.n }), { direction: 'top', offset: [0, -sz / 2], permanent: on || L0.length <= 8 }).addTo(layer);
+        .bindTooltip(el('span', { text: x.n }), { direction: 'top', offset: [0, -sz / 2], permanent: x.k !== 'stay' && (on || L0.length <= 8) }).addTo(layer);
       mk.on('click', () => { if (mode === 'add') return; sel = x; paint(); draw(false); });
       mk.on('dragend', () => { const q = mk.getLatLng(); snap(); x.lat = +q.lat.toFixed(6); x.lng = +q.lng.toFixed(6); x.ap = 0; x.man = 1; delete x.near; delete x.vf; sel = x; save(); draw(false); paint(); toast(`📍 '${x.n}' 자리를 옮겼어요`); });
     });
@@ -7786,7 +7786,7 @@ function planNav(p, d0, done) {
     legs.forEach((g, i) => { const done_ = i + 1 < ti, cur = i + 1 === ti; L.polyline(g.P, { color: '#fff', weight: cur ? 11 : 8, opacity: .95 }).addTo(lay);
       L.polyline(g.P, { color: done_ ? '#A3ABB5' : cur ? '#1D9EC0' : '#7FB8D0', weight: cur ? 7 : 5, dashArray: g.real ? null : '8 8' }).addTo(lay); });
     if (tl) tl.bringToFront();
-    L2.forEach((x, i) => L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${i === ti ? '#E5383B' : x.ok ? '#A3ABB5' : '#15202B'};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${NOL.get(x) || i + 1}</div>` }) }).addTo(lay)); };
+    L2.forEach((x, i) => L.marker([x.lat, x.lng], { icon: x.k === 'stay' && i !== ti ? planStayIcon(x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${i === ti ? '#E5383B' : x.ok ? '#A3ABB5' : '#15202B'};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${NOL.get(x) || i + 1}</div>` }) }).addTo(lay)); };
   function upd() {
     const tg = L2[ti], leg = ti > 0 ? legs[ti - 1] : null;
     const later = legs.slice(ti).reduce((s, g) => s + g.len, 0), upL = legs.slice(ti).reduce((s, g) => s + g.up, 0);
@@ -8178,6 +8178,11 @@ function planLegGo(a, b, k) {   // 구간 길찾기: 출발 = 앞 장소, 도착
   window.open(`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=${tm}`, '_blank', 'noopener');
 }
 // 판 -166: 일정 번호 = 위치 없는 이동 칸(구간 줄 글로 들어감)을 빼고 차례대로 — 일정 칸과 지도 핀이 같은 번호
+// 판 -169 (사용자 '지도에서 숙소는 색깔을 눈에 띄게 해'): 숙소 핀은 날 색 동그라미 대신 짙은 알약 + 흰 집 그림 + 이름(어느 날 색과도 안 겹치고 모양도 달라서 바로 보임)
+var PLAN_STAY_COL = '#191F28';
+function planStayIcon(x, big) { const nm = String(x.n || '숙소').replace(/\s*[(（].*$/, ''), t = nm.length > 11 ? nm.slice(0, 10) + '…' : nm, h = big ? 34 : 30;
+  const html = `<div style="display:inline-flex;align-items:center;gap:5px;height:${h}px;padding:0 11px 0 8px;border-radius:${h / 2}px;background:${PLAN_STAY_COL};color:#fff;font:700 12.5px Pretendard,sans-serif;white-space:nowrap;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);transform:translateX(-50%)${x.ap || x.near || x.vf ? ';outline:3px dashed #FF9F43' : ''}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>${t.replace(/[<>&"]/g, '')}</span></div>`;
+  return L.divIcon({ className: 'pl-stay', iconSize: [0, h], iconAnchor: [0, h / 2], html }); }
 function planNoMap(its) { const m = new Map(); let n = 0; its.forEach(x => { if (!(x.k === 'move' && !Number.isFinite(x.lat))) m.set(x, ++n); }); return m; }
 // 판 -167 (사용자 '숙소는 숙소 예약 앱과 연결시켜' + 아고다 공유 글 '아크 호텔 오사카 신사이바시 확인하기 https://www.agoda.com/sh-app/…'): 숙소 일정에 예약 앱 링크 x.url · 앱 이름 x.bkSite
 var BOOK_SITES = [[/agoda\./i, '아고다'], [/booking\.com/i, '부킹닷컴'], [/airbnb\./i, '에어비앤비'], [/hotels\.com/i, '호텔스닷컴'], [/expedia\./i, '익스피디아'], [/trip\.com|ctrip/i, '트립닷컴'], [/yanolja/i, '야놀자'], [/goodchoice|yeogi/i, '여기어때'], [/interpark/i, '인터파크'], [/myrealtrip/i, '마이리얼트립'], [/hanatour/i, '하나투어'], [/klook/i, '클룩'], [/rakuten/i, '라쿠텐 트래블'], [/jalan\.net/i, '자란'], [/naver\.(me|com)/i, '네이버']];
@@ -10738,7 +10743,10 @@ async function planDest(p) {
 }
 async function tvHeroCands(p) {
   const its = p.it || [], pk = its.find(x => x.k === 'peak' && Number.isFinite(x.lat)), hike = !!(pk || (p.hike && p.hike.on));
-  const sp = pk || its.find(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap) || its.find(x => Number.isFinite(x.lat) && x.k !== 'fly') || (p.dest && Number.isFinite(p.dest.lat) ? p.dest : null); if (!sp) return [];
+  // 판 -169 (사용자 오사카 계획 캡처 '이거 사진은 별론데?': 첫 장소 '인천공항'(출발지) 둘레 갯벌 사진이 나왔음): 여행지(dest) 둘레 80km 안 구경 장소만, 공항·역·터미널은 빼고
+  const C = p.dest && Number.isFinite(+p.dest.lat) ? { lat: +p.dest.lat, lng: +p.dest.lng } : null, notHub = x => !/공항|airport|터미널|terminal|역$|station/i.test(x.n || '');
+  const inDest = x => !C || dist(C.lat, C.lng, x.lat, x.lng) < 80000;
+  const sp = pk || its.find(x => /spot|show/.test(x.k) && Number.isFinite(x.lat) && !x.ap && notHub(x) && inDest(x)) || C || its.find(x => Number.isFinite(x.lat) && x.k !== 'fly' && notHub(x)); if (!sp) return [];
   const out = [], bad = /map|karte|logo|sign|plan|diagram|flag|locator|seal|emblem|svg|ticket|menu|screenshot|construction|scaffold|ipark|apartment|badminton|court|station|car|interior|지도|안내|아파트|공사/i;
   if (hike) {   // 위치로 찾으면 둘레 아무 사진(자동차·아파트)이 섞여서 산 이름으로 찾아요
     const nm = String(pk ? pk.n : (p.name || '')).replace(/\s*정상.*$/, '').replace(/\s.*$/, '').trim(); let en = '';
@@ -10754,7 +10762,7 @@ async function tvHeroCands(p) {
         P.slice(0, 8).forEach(({ pg, ii }) => { if (!out.some(x => x.u === (ii.thumburl || ii.url))) out.push({ u: ii.thumburl || ii.url, t: String(pg.title), src: 'cm', page: ii.descriptionurl }); }); }
     } catch {}
   }
-  if (!hike && !its.some(x => x.k === 'spot' && Number.isFinite(x.lat) && !x.ap)) {   // 판 -139 (사용자 오사카 계획 캡처: 시내 백화점 건물 사진이 나옴): 구경 장소가 아직 없으면 여행지 이름의 한국어 위키백과 대표 사진 먼저
+  if (!hike) {   // 여행지 이름 글의 대표 사진을 늘 맨 앞에   // 판 -139 (사용자 오사카 계획 캡처: 시내 백화점 건물 사진이 나옴): 구경 장소가 아직 없으면 여행지 이름의 한국어 위키백과 대표 사진 먼저
     const nm = (p.dest && p.dest.n) || planDestName(p);
     if (nm) try { const r = await fetchT(`https://ko.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(nm)}&redirects=1&prop=pageimages&piprop=original%7Cthumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
       if (r.ok) { const pg = Object.values(((await r.json()).query || {}).pages || {})[0] || {}, o = pg.original; if (o && o.width >= 900 && o.width > o.height * 1.1 && !bad.test(o.source)) out.push({ u: (pg.thumbnail && pg.thumbnail.source) || o.source, t: pg.title, src: 'kw' }); } } catch {}
@@ -10769,11 +10777,11 @@ async function tvHeroCands(p) {
 async function tvHeroImg(p, again) {
   try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
     for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
-  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 4 && Date.now() - c.at < 30 * 864e5) return c;
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 5 && Date.now() - c.at < 30 * 864e5) return c;
   const skip = ls.get('planHeroSkip:' + p.id, []) || [];
   const L = await tvHeroCands(p); let cand = L.filter(x => !skip.includes(x.u));
   if (!cand.length && L.length) { ls.set('planHeroSkip:' + p.id, []); cand = L; }   // 다 넘겼으면 처음부터
-  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 4 }, x); ls.set(k, o); return o; }
+  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 5 }, x); ls.set(k, o); return o; }
   return null;
 }
 function tvImgOk(u) { return new Promise(res => { const im = new Image(), tm = setTimeout(() => res(false), 15000); im.onload = () => { clearTimeout(tm); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(tm); res(false); }; im.src = u; }); }
@@ -11222,7 +11230,7 @@ function viewPlanOne(id) {
       if (day !== -1 && day !== d) continue;
       const col = PLAN_COLS[d % PLAN_COLS.length], its = planItems(p, d).filter(x => planVis(p, x)), ll = [];
       const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1;
-        L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
+        L.marker([x.lat, x.lng], { zIndexOffset: x.k === 'stay' ? 500 : 0, icon: x.k === 'stay' ? planStayIcon(x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
       { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
         for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, col, 5); }
@@ -11239,7 +11247,7 @@ function viewPlanOne(id) {
     // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
     const c = real.reduce((s, q) => [s[0] + q[0] / real.length, s[1] + q[1] / real.length], [0, 0]);
     let near = real.filter(q => dist(c[0], c[1], q[0], q[1]) < 300000); if (near.length < 2) near = real;
-    if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: [28, 28], maxZoom: 15 });
+    if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: p.it.some(x => x.k === 'stay' && Number.isFinite(x.lat)) ? [74, 34] : [28, 28], maxZoom: 15 });
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };   // 판 -139: 계획 도우미가 일정을 넣은 뒤
