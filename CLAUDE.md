@@ -457,6 +457,13 @@
 - `TRIP_MODEL` 'claude-fable-5-2' + `tripAiOpt(n)`(max_tokens = n×3, 8,000~16,000 · 생각하는 몫, `client.beta.messages.create` + betas server-side-fallback · fallbacks 'default' · effort medium): 여행 도우미 봇(`trBotAnswer`)·계획 도우미·길 도우미·여행지 정리·일정/블로그 읽기·장소 검색어·그린 길 읽기·영어 옮기기·예약 캡처 읽기. 가족 앨범 글귀 등 나머지는 `FA_MODEL`(haiku) 그대로
 - 값: 입력 100만 토큰 $8·출력 $40(haiku의 80배). 실제 모델로는 이 클라우드에서 확인 못 함(가짜 SDK에 beta.messages 더해 시험)
 
+## 판 -147 계획 지도: 이동 칸 글로 길 종류 (2026-11-15, 사용자 오사카 계획 캡처 '교통편 넣었는데 왜 지도에선 직선이자?' → '고쳐')
+- 까닭: 계획 지도는 1.5km 안 도보만 실제 길로 그리고 '이동'(move) 칸 앞뒤·1.5km 넘는 구간은 직선 점선이었음
+- `planLegMode(a, b, p)`: 두 곳 사이 글(`planLegText`: a·b가 이동 칸이면 그 글 + 사이의 이동 칸·위치 없는 칸의 이름·메모)을 `PLAN_RX`로 읽음 → 'walk'(도보·걸어, 3km 안) / 'rail'(전철·지하철·라피트·JR·난카이…, 또는 '역' 두 번) / 'car'(버스·택시·차·셔틀…) / 'line'(배·그 밖) / 'fly'(다음 칸이 비행, 또는 비행 칸 뒤인데 사이 글 없음). 글이 없으면 예전대로 1.5km(등산 15km) 안 도보, 그 밖 직선
+- `planWalkPair` = walk, `planCarPair` = car(300km 안) → `planRoutes`가 차 구간은 `planCarRoute`(OSRM routed-car → Valhalla auto, 'car:' 키 같은 `planRt` 저장). 그리기 `planLegLine`(계획 지도·경로 고치기): 받은 길 흰 테 실선(차는 조금 가늘게·툴팁) / 전철 점점선 '1 9'(툴팁 '실제 노선이 아니에요') / 그 밖 점선
+- 요약 `planSumCalc`·`planSumBox`: 차는 받은 도로 거리, 전철 따로 '🚆 전철 약 n km · 약 n분 (직선 ×1.15 · 시속 40km 짐작 · 갈아타기·기다림 빠짐)', 비행은 planLegMode로. `planGap`도 도로·전철 글. 일정 줄의 이동 칸에 '🚆 전철 · 지도의 점점선은 실제 노선이 아니에요' / '🚗 지도에 도로 길로 그려요 (대략)' / '🚶 지도에 걷는 길로 그려요'
+- 전철 노선 모양은 무료 길찾기에 없어 못 그림. 시험 scratchpad `leg/t.js`(가짜 OSRM) 5/5. 실제 오사카 계획·실제 길찾기 서버로는 확인 못 함
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 

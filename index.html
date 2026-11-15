@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-146-best';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-147-legs';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '✨ 여행 도우미·계획 도우미·길 도우미·예약 캡처 읽기·일정 읽기가 가장 똑똑한 AI 모델로 바뀌었어요 · 답이 더 꼼꼼한 대신 조금 더 걸리고, 열쇠 사용료가 한 번 묻는 데 약 100~500원으로 올라가요';
+const UI_NOTES = '🗺 여행 계획 지도가 이동 칸 글을 읽어 길을 그려요 · 도보는 걷는 길로, 버스와 택시는 도로 길로 · 전철과 라피트는 점점선(실제 노선은 무료 지도에 없어 직선) · 일정 줄에도 🚆 🚗 🚶 표시';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7360,9 +7360,7 @@ function planMapEdit(p, d0, done) {
     const L0 = its(), c = col(), ll = [];
     for (let k = 0; k < p.nd; k++) if (k !== d) planItems(p, k).forEach(x => { if (Number.isFinite(x.lat)) L.circleMarker([x.lat, x.lng], { radius: 4, color: '#8A94A0', weight: 1, fillOpacity: .5 }).addTo(layer); });
     const L2 = L0.filter(x => Number.isFinite(x.lat));
-    for (let i = 1; i < L2.length; i++) { const a = L2[i - 1], b = L2[i], R = planWalkPair(a, b, p) && planRtGet(a, b);
-      if (R) { L.polyline(R.c, { color: '#fff', weight: 9, opacity: .95 }).addTo(layer); L.polyline(R.c, { color: c, weight: 5 }).addTo(layer); }
-      else L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: c, weight: 3, opacity: .8, dashArray: '7 7' }).addTo(layer); }
+    for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, c, 5);
     L0.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); const on = sel && x.id === sel.id, sz = on ? 36 : 30;
       const mk = L.marker([x.lat, x.lng], { draggable: true, autoPan: true, icon: L.divIcon({ className: '', iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2],
         html: `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${on ? '#15202B' : c};color:#fff;font:800 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)${x.ap || x.near || x.vf ? ';outline:3px dashed #FF9F43' : ''}">${i + 1}</div>` }) })
@@ -7548,15 +7546,59 @@ async function planFilmRoutes(p, say) {
   if (got) { const ks = Object.keys(c); if (ks.length > 300) ks.sort((x, y) => (c[x].at || 0) - (c[y].at || 0)).slice(0, ks.length - 300).forEach(k => delete c[k]); ls.set('planRt', c); }
   return { got, ok, all: pairs.length };
 }
-function planWalkPair(a, b, p) {
-  if (!a || !b || b.st || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly' || a.k === 'move' || b.k === 'move') return false;
-  const m = dist(a.lat, a.lng, b.lat, b.lng); return m >= 40 && m < (p && p.hike && p.hike.on ? 15000 : 1500);
+// 판 -147 (사용자 '교통편 넣었는데 왜 지도에선 직선이야?'): 두 곳 사이 '어떻게 가나'를 이동 칸 글(이름·메모)로 읽음
+//   walk 걷는 길 · car 도로 길(차·버스·택시) · rail 전철(노선은 무료 길찾기에 없어 점선 그대로) · fly 비행 · line 그 밖 직선 · none 너무 가까움
+function planLegText(a, b, p) {
+  const L = (p && p.it) || [], ia = L.indexOf(a), ib = L.indexOf(b), T = [];
+  if (a.k === 'move') T.push(a); if (ia >= 0 && ib > ia) L.slice(ia + 1, ib).forEach(x => { if (x.d === b.d && (x.k === 'move' || !Number.isFinite(x.lat))) T.push(x); }); if (b.k === 'move') T.push(b);
+  return T.map(x => `${x.n || ''} ${x.m || ''}`).join(' ');
+}
+const PLAN_RX = { W: /도보|걸어|걷기|산책|walk/i, R: /전철|지하철|라피트|JR|열차|기차|신칸센|메트로|난카이|한큐|한신|케이한|긴테츠|모노레일|철도|트램|노면|train|subway|metro|rapi|monorail/i, C: /버스|택시|차량|자동차|렌터카|렌트카|셔틀|리무진|승용차|드라이브|bus|taxi|shuttle/i, F: /페리|배편|유람선|여객선|ferry/i };
+function planLegMode(a, b, p) {
+  if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat)) return null;
+  const st = dist(a.lat, a.lng, b.lat, b.lng), hike = !!(p && p.hike && p.hike.on), t = planLegText(a, b, p), X = PLAN_RX;
+  if (b.k === 'fly' || (a.k === 'fly' && !t.trim())) return 'fly';   // 비행기 칸 뒤라도 사이에 이동 칸 글이 있으면 그 글대로 (공항 → 시내)
+  if (st < 40) return 'none'; if (b.st) return 'line';
+  if (t.trim()) {
+    if (X.W.test(t) && st < 3000) return 'walk';
+    if (X.F.test(t)) return 'line';
+    if (X.R.test(t) || (t.match(/역/g) || []).length >= 2) return 'rail';
+    if (X.C.test(t)) return st < 300 ? 'walk' : 'car';
+    if (X.W.test(t) && st < 8000) return 'walk';
+  }
+  if (st < (hike ? 15000 : 1500)) return 'walk';
+  return 'line';
+}
+function planWalkPair(a, b, p) { return planLegMode(a, b, p) === 'walk'; }
+function planCarPair(a, b, p) { return planLegMode(a, b, p) === 'car' && dist(a.lat, a.lng, b.lat, b.lng) <= 300000; }
+function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk' ? planRtGet(a, b) : k === 'car' ? planRtGet(a, b, true) : null; }
+// 지도에 두 곳 사이 선 하나: 받은 걷는 길·도로 길은 흰 테 굵은 실선, 전철은 점점선(노선 아님), 그 밖은 직선 점선
+function planLegLine(layer, a, b, p, col, w) {
+  const k = planLegMode(a, b, p), R = planLegR(a, b, p); if (k === 'none') return; w = w || 5;
+  if (R && R.c && R.c.length > 1) { L.polyline(R.c, { color: '#fff', weight: w + 3, opacity: .9 }).addTo(layer);
+    const ln = L.polyline(R.c, { color: col, weight: k === 'car' ? w - 1 : w, opacity: .95 }).addTo(layer); if (k === 'car') ln.bindTooltip('🚗 차·버스 도로 길 (대략)'); return; }
+  const ll = [[a.lat, a.lng], [b.lat, b.lng]];
+  if (k === 'rail') { L.polyline(ll, { color: '#fff', weight: 6, opacity: .7 }).addTo(layer); L.polyline(ll, { color: col, weight: 4, opacity: .9, dashArray: '1 9', lineCap: 'round' }).bindTooltip('🚆 전철 · 직선은 실제 노선이 아니에요').addTo(layer); return; }
+  L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).bindTooltip(k === 'fly' ? '✈ 비행' : k === 'car' ? '🚗 도로 길을 받는 중이거나 못 받았어요' : '직선 (실제 길 아님)').addTo(layer);
+}
+async function planCarRoute(a, b) {   // 도로 길 (OSRM 차 → 안 되면 Valhalla auto)
+  const st = dist(a.lat, a.lng, b.lat, b.lng), A = `${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}`; let pts = null, m = 0;
+  try { const j = await planRtJson(`https://routing.openstreetmap.de/routed-car/route/v1/driving/${A}?overview=full&geometries=geojson`);
+    const rt = j && j.routes && j.routes[0]; if (rt && rt.geometry) { pts = rt.geometry.coordinates.map(q => [+q[1].toFixed(5), +q[0].toFixed(5)]); m = rt.distance; } } catch {}
+  if (!pts) try { const j = await planRtJson('https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify({ locations: [{ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }], costing: 'auto', directions_type: 'none' })));
+    const lg = j && j.trip && j.trip.legs && j.trip.legs[0]; if (lg && lg.shape) { pts = planPoly6(lg.shape); m = (j.trip.summary && j.trip.summary.length || 0) * 1000; } } catch {}
+  if (!pts || pts.length < 2 || m > st * 4 + 5000) return null;
+  if (pts.length > 400) { const k = Math.ceil(pts.length / 400); pts = pts.filter((q, i) => i % k === 0 || i === pts.length - 1); }
+  return { pts, m };
 }
 async function planRoutes(p, d) {   // 그날 걸어서 갈 사이마다 길 받기 · 새로 받은 게 있으면 true
   // 판 -110: 위치 없는 장소는 건너뛰고 이음(예전엔 3→(위치 없음)→5 사이를 못 받았어요) · 앱도 먼저 fetch(CapacitorHttp는 길찾기 서버가 막을 수 있어서) · OSRM이 안 되면 Valhalla(같은 OSM 자료)
   const its = planItems(p, d).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng)), c = planRtGet.c || (planRtGet.c = ls.get('planRt', {}) || {}); let got = 0;
   const S = planRoutes.st || (planRoutes.st = {}); S.fail = S.fail || {};
-  for (let i = 1; i < its.length; i++) { const a = its[i - 1], b = its[i], key = planRtKey(a, b); if (!planWalkPair(a, b, p) || c[key] || S.fail[key] > Date.now()) continue;
+  for (let i = 1; i < its.length; i++) { const a = its[i - 1], b = its[i];
+    if (planCarPair(a, b, p)) { const ck = 'car:' + planRtKey(a, b); if (c[ck] || S.fail[ck] > Date.now()) continue; const r = await planCarRoute(a, b);
+      if (r) { c[ck] = { m: Math.round(r.m), c: r.pts, at: Date.now() }; got++; } else S.fail[ck] = Date.now() + 5 * 60000; await new Promise(z => setTimeout(z, 250)); continue; }
+    const key = planRtKey(a, b); if (!planWalkPair(a, b, p) || c[key] || S.fail[key] > Date.now()) continue;
     const st = dist(a.lat, a.lng, b.lat, b.lng); let pts = null, m = 0;
     try { const j = await planRtJson(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng.toFixed(6)},${a.lat.toFixed(6)};${b.lng.toFixed(6)},${b.lat.toFixed(6)}?overview=full&geometries=geojson`);
       const rt = j && j.routes && j.routes[0]; if (rt && rt.geometry) { pts = rt.geometry.coordinates.map(q => [+q[1].toFixed(5), +q[0].toFixed(5)]); m = rt.distance; } } catch {}
@@ -7618,11 +7660,13 @@ function planSumCalc(p, day) {   // 판 -135 (개선 지시서 4번): 걷기·�
     }
     L2.forEach((x, j) => { if (o.from && j === 0) return; const h = x.bEle ?? x.ele ?? x.ele2; if (h != null) { o.eleN++; if (o.top == null || h > o.top) o.top = h; } });
     for (let i = 1; i < L2.length; i++) { const a = L2[i - 1], b = L2[i], st = dist(a.lat, a.lng, b.lat, b.lng); if (st < 20) continue;
-      if (a.k === 'fly' || b.k === 'fly') { o.fly += st; continue; }
+      if (planLegMode(a, b, p) === 'fly') { o.fly += st; continue; }
       const R = planWalkPair(a, b, p) && planRtGet(a, b), du = a.ele2 != null && b.ele2 != null ? b.ele2 - a.ele2 : 0;
       let m, up, dn;
       if (R) { m = R.m; up = R.up != null ? R.up : Math.max(0, du); dn = R.dn != null ? R.dn : Math.max(0, -du); if (R.top != null && (o.top == null || R.top > o.top)) o.top = R.top; o.real++; }
-      else if (!b.st && (a.k === 'move' || b.k === 'move' || st > (hike ? 15000 : 1500))) { o.car += st * 1.3; o.cMin += st * 1.3 / 35000 * 60; o.cLeg++; continue; }
+      else if (!b.st && !planWalkPair(a, b, p)) { const CR = planCarPair(a, b, p) && planRtGet(a, b, true), rl = planLegMode(a, b, p) === 'rail', cm = CR ? CR.m : st * (rl ? 1.15 : 1.3);
+        if (rl) { o.rail = (o.rail || 0) + cm; o.rMin = (o.rMin || 0) + cm / 40000 * 60; o.rLeg = (o.rLeg || 0) + 1; o.cMin += cm / 40000 * 60; continue; }
+        o.car += cm; o.cMin += cm / 35000 * 60; o.cLeg++; if (CR) o.cReal = (o.cReal || 0) + 1; continue; }
       else { m = hike && !b.st ? st * 1.35 : st; up = Math.max(0, du); dn = Math.max(0, -du); o.guess++; }
       o.walk += m; o.up += up; o.dn += dn; o.wLeg++; o.wMin += (m / (hike ? 3500 : 4000) + up / 600 + dn / 1200) * 60; } }
   o.wMin = Math.round(o.wMin); o.cMin = Math.round(o.cMin); o.min = o.wMin + o.cMin; return o;
@@ -7651,7 +7695,8 @@ function planSumBox(p, day, onNav) {
     cell(o.up >= 5 ? `↑${Math.round(o.up)}m` : o.eleN >= 2 ? '거의 없음' : '미계산', o.dn >= 5 ? `오르막 · ↓${Math.round(o.dn)}m` : '오르막', '#7B61FF'), cell(o.top != null ? `${Math.round(o.top)}m` : '미계산', '최고 높이', '#15202B')];
   const L = [
     o.wLeg ? `🚶 걷기 ${fmtDist(o.walk)} · 약 ${fm(o.wMin)} (${o.real ? `실제 길 ${o.real}구간` : ''}${o.real && o.guess ? ' · ' : ''}${o.guess ? `직선으로 짐작 ${o.guess}구간` : ''})` : '',
-    o.cLeg ? `🚗 차 약 ${fmtDist(o.car)} · 약 ${fm(o.cMin)} (직선 거리 ×1.3 · 시속 35km로 짐작 ${o.cLeg}구간)` : '',
+    o.cLeg ? `🚗 차 약 ${fmtDist(o.car)} (${o.cReal === o.cLeg ? '도로 길' : o.cReal ? `도로 길 ${o.cReal}구간 · 직선 ×1.3 짐작 ${o.cLeg - o.cReal}구간` : `직선 거리 ×1.3 짐작 ${o.cLeg}구간`} · 시속 35km로 셈)` : '',
+    o.rLeg ? `🚆 전철 약 ${fmtDist(o.rail)} · 약 ${fm(Math.round(o.rMin))} (직선 ×1.15 · 시속 40km 짐작 ${o.rLeg}구간 · 갈아타기·기다림 빠짐)` : '',
     o.fly ? `✈ 비행 ${fmtDist(o.fly)} (시간은 항공편 시각대로)` : '',
     o.from ? `전날 밤 숙소 '${o.from}'에서 첫 장소까지 포함` : '',
     o.miss ? `⚠ 위치 없는 ${o.miss}곳은 미계산(거리·시간에 안 들어가요)` : ''].filter(Boolean);
@@ -7671,6 +7716,9 @@ function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐�
       return `↓ 걷는 길 ${fmtDist(R.m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : e.dn > 20 ? ` · ↓${Math.round(e.dn)}m` : ''} · 걸어서 약 ${h ? h + '시간 ' : ''}${min % 60 || !h ? (min % 60) + '분' : ''}`; } }
   if (p && p.hike && p.hike.on && a.k !== 'move' && b.k !== 'move' && m < 15000) { const e = planHikeEst(a, b), h = Math.floor(e.min / 60);
     return `↓ 등산로 약 ${fmtDist(e.m)}${e.up > 20 ? ` · ↑${Math.round(e.up)}m` : e.dn > 20 ? ` · ↓${Math.round(e.dn)}m` : ''} · 걸어서 약 ${h ? h + '시간 ' : ''}${e.min % 60 || !h ? (e.min % 60) + '분' : ''} (짐작)`; }
+  { const k = planLegMode(a, b, p), CR = k === 'car' && planRtGet(a, b, true);
+    if (CR) { const mn = Math.max(1, Math.round(CR.m / 35000 * 60)); return `↓ 🚗 도로 ${fmtDist(CR.m)} · 차로 약 ${mn >= 60 ? Math.floor(mn / 60) + '시간 ' + (mn % 60 ? (mn % 60) + '분' : '') : mn + '분'}`; }
+    if (k === 'rail') { const mn = Math.max(1, Math.round(m * 1.15 / 40000 * 60)); return `↓ 🚆 전철 · 직선 ${fmtDist(m)} · 약 ${mn >= 60 ? Math.floor(mn / 60) + '시간 ' + (mn % 60 ? (mn % 60) + '분' : '') : mn + '분'} (노선 시간 아님)`; } }
   const car = m > 1500, min = Math.max(1, Math.round(m / (car ? 35000 : 4000) * 60));
   return `↓ 직선 ${fmtDist(m)} · ${car ? '차로' : '걸어서'} 약 ${min >= 60 ? Math.floor(min / 60) + '시간 ' + (min % 60 ? (min % 60) + '분' : '') : min + '분'}`;
 }
@@ -10501,6 +10549,9 @@ function viewPlanOne(id) {
         x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
+        x.k === 'move' && !EN ? (t => { const X = PLAN_RX, w = X.W.test(t), r = X.R.test(t) || (t.match(/역/g) || []).length >= 2, c = X.C.test(t);
+          const v = r && !(w && !/라피트|신칸센|JR/.test(t)) ? '🚆 전철 · 지도의 점점선은 실제 노선이 아니에요' : c ? '🚗 지도에 도로 길로 그려요 (대략)' : w ? '🚶 지도에 걷는 길로 그려요' : X.F.test(t) ? '⛴ 배 · 지도엔 직선' : '';
+          return v ? el('div', { class: 'tv-m', style: 'color:#4E5968', text: v }) : null; })(`${x.n || ''} ${x.m || ''}`) : null,
         x.m && (x.k === 'fly' || x.bk) ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.bk && x.bk.ref ? el('div', { class: 'tv-m', style: 'font-weight:700', text: `🎫 예약번호 ${x.bk.ref}` }) : null,
         x.who ? el('div', { class: 'tv-m', style: 'font-weight:700;color:#4E5968', text: `👤 ${x.who}` }) : null,
@@ -10548,9 +10599,7 @@ function viewPlanOne(id) {
         L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
       { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
-        for (let i = 1; i < L2.length; i++) { const a = L2[i - 1], b = L2[i], R = planWalkPair(a, b, p) && planRtGet(a, b);
-          if (R) { L.polyline(R.c, { color: '#fff', weight: 8, opacity: .9 }).addTo(layer); L.polyline(R.c, { color: col, weight: 5, opacity: .95 }).addTo(layer); }
-          else L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).addTo(layer); } }
+        for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, col, 5); }
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
     sumEl.replaceChildren(...[planSumBox(p, day, navGo)].filter(Boolean));
