@@ -3267,7 +3267,7 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-179-fix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-180-fix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = '🍳 숙소 뒤에 붙어 있던 아침 식사는 그날 맨 앞으로 옮겨요 · 공연 칸에 엉뚱한 우주 사진이 나오지 않게 · ✍ 여행 일정 글자를 가볍게: 굵은 글씨는 큰 제목만 · 🎨 사진을 못 찾은 일정 칸과 숙소 칸에는 종류별 그림 타일을 넣어요 · 🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사와 마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기, 자전거, 차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기는 나 → 자동 기록, 웹과 아이폰과 MPD Run은 지금처럼 눌러서 기록';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -8557,7 +8557,7 @@ function planSelfCheck(p) {
   { const keep = []; for (const x of it) { const y = keep.find(z => z.d === x.d && z.k === x.k && nz(z.n) === nz(x.n) && (!z.t || !x.t || z.t === x.t));
       if (y && !x.ok && !x.man) { if (!y.x && x.x) y.x = x.x; if (!y.m && x.m) y.m = x.m; if (!Number.isFinite(y.lat) && Number.isFinite(x.lat)) { y.lat = x.lat; y.lng = x.lng; y.ap = x.ap; } fixed.push(`${x.d + 1}일차 '${x.n}'이(가) 두 번 있어 하나로`); continue; }
       keep.push(x); } p.it = keep; }
-  // ⑥ 판 -179 (사용자 2일차 캡처: '호텔 조식 07:00 · 천문산 가기 전 든든히'가 그날 숙소 뒤 맨 끝에): 아침 식사(이름 조식·아침, 또는 10시 전 식사)가 그날 숙소 뒤에 있으면 그날 맨 앞으로
+  // ⑥ 판 -180 (사용자 2일차 캡처: '호텔 조식 07:00 · 천문산 가기 전 든든히'가 그날 숙소 뒤 맨 끝에): 아침 식사(이름 조식·아침, 또는 10시 전 식사)가 그날 숙소 뒤에 있으면 그날 맨 앞으로
   for (let d = 0; d < p.nd; d++) { const L = p.it.filter(x => x.d === d), si = L.findIndex(x => x.k === 'stay'); if (si < 0) continue;
     L.slice(si + 1).filter(x => x.k === 'food' && !x.ok && !x.man && (/조식|아침|브런치|breakfast/i.test(x.n || '') || /^0\d:/.test(x.t || ''))).forEach(x => { const f = p.it.findIndex(y => y.d === d); p.it.splice(p.it.indexOf(x), 1); p.it.splice(f, 0, x); fixed.push(`${d + 1}일차 '${x.n}'(아침)을 숙소 뒤에서 그날 맨 앞으로`); }); }
   // ④ 앞 묶음 일정에 이미 든 이름(여행사 설명 카드) → 앞 일정에 합침
