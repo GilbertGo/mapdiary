@@ -3267,9 +3267,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-180-fix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-181-watchtalk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🍳 숙소 뒤에 붙어 있던 아침 식사는 그날 맨 앞으로 옮겨요 · 공연 칸에 엉뚱한 우주 사진이 나오지 않게 · ✍ 여행 일정 글자를 가볍게: 굵은 글씨는 큰 제목만 · 🎨 사진을 못 찾은 일정 칸과 숙소 칸에는 종류별 그림 타일을 넣어요 · 🖼 여행 일정 칸마다 대표 사진: 대략 위치인 곳은 이름으로 찾고, 식사와 마사지는 메뉴 사진(예시 표시) · 🛰 MPD 앱이 이제 다닌 길을 저절로 기록해요(누르지 않아도) · 10분 넘게 한곳에 머물면 한 기록으로 남고, 걷기, 자전거, 차 이동을 알아서 나눠요 · 그 시간 사진도 저절로 붙어요 · 첫 화면 왼쪽 위에 "자동 기록 중" · 끄기는 나 → 자동 기록, 웹과 아이폰과 MPD Run은 지금처럼 눌러서 기록';
+const UI_NOTES = '⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11726,7 +11726,7 @@ function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) 
 function wearSelf() { return !!(window.mdNativeSync && window.MD_APP && window.MD_APP.mode === 'run'); }   // function: 라우팅이 먼저 돌아도 되게(TDZ)
 async function syncPull() {
   const S = window.mdNativeSync, WEAR_SELF = wearSelf(); if (!S || !window.MD_APP || (window.MD_APP.mode && !WEAR_SELF) || syncBusy) return;
-  syncBusy = true; let n = 0, u = 0; const from = new Set();
+  syncBusy = true; let n = 0, u = 0, nTalk = 0; const from = new Set();
   try {
     const got = ls.get('syncGot', {}), chk = ls.get('syncChk', {}) || {};
     for (const it of await S.list()) {
@@ -11734,6 +11734,10 @@ async function syncPull() {
       if (WEAR_SELF && (it.app !== 'io.github.gilbertgo.mdrun' || !/^run_w/.test(it.id))) continue;
       // 이미 받고 새 확인까지 마친 파일(syncChk = 확인한 파일 시각)은 건너뛰어요. 파일이 바뀌면(시각이 다르면) 다시 확인해요
       if (same && chk[key] === it.mtime && !rx) continue;
+      if (/^talk_w/.test(it.id)) {   // ⌚ 시계에서 받아 적은 대화: 기록이 아니라 대화 정리로 (MPD 앱에서만)
+        if (!WEAR_SELF) { try { const d = JSON.parse(await S.read(it.app, it.id)); if (d && d.app === 'mapdiary' && await talkFromWatch(it.id, d.talk)) nTalk++; } catch {} }
+        got[key] = it.mtime; chk[key] = it.mtime; ls.set('syncGot', got); ls.set('syncChk', chk); continue;
+      }
       if (rx && rx.sig === it.mtime && Date.now() - rx.at < 10 * 60000) continue;   // 못 받은 기록은 같은 파일이면 10분에 한 번만 다시
       const exists = localStorage.getItem('track:' + it.id) != null;
       // 지운 기록: recGone(직접 지움)은 건너뛰고, 예전에 받았는데 지금 없으면 '보류'(가져오지 않지만 확정하지 않음, 다시 가져오기 가능)
@@ -11763,6 +11767,7 @@ async function syncPull() {
     ls.set('syncChk', chk);
     ls.set('syncGot', got);
   } catch {} finally { syncBusy = false; }
+  if (nTalk) toast(`⌚ 시계에서 대화 ${nTalk}개를 받아 정리했어요 · 그 시간 MPD 기록에 붙어요`);
   if (!n && !u) return;
   const msg = n ? `${[...from].join('·')}에서 기록 ${n}개를 가져왔어요${WEAR_SELF ? ' · 내 MPD에서 볼 수 있어요' : ''}` : '';
   const qs0 = new URLSearchParams(location.search);
@@ -13559,6 +13564,20 @@ function talkRecOf(n, trips) {
     if (new Date(s0).toDateString() !== day && new Date(e0).toDateString() !== day) continue;
     const gap = b < s0 ? s0 - b : a > e0 ? a - e0 : 0; if (gap < bd) { bd = gap; best = x.t; } }
   return best;
+}
+// ⌚ 시계에서 받아 적은 대화(2026-11-15 '와치 써'): 시계 'MPD 대화' → 블루투스 → 휴대폰 MPD Run(mdsync/talk_w{시각}.json) → 여기 syncPull이 talk_w를 알아보고
+// 정리(열쇠 있으면 AI, 없거나 실패하면 기본)해서 talkNotes에(src = 파일 ID, watch:1). 받은 ID는 talkGot에 남겨 지워도 되살아나지 않게
+async function talkFromWatch(id, T) {
+  const got = ls.get('talkGot', {}) || {}; if (got[id]) return false;
+  const segs = (T && Array.isArray(T.segs) ? T.segs : []).filter(x => x && Number.isFinite(+x.t) && typeof x.x === 'string' && x.x.trim()).map(x => ({ t: +x.t, x: x.x.trim().slice(0, 2000) })).slice(0, 3000);
+  got[id] = Date.now(); ls.set('talkGot', got);
+  if (!segs.length) return false;
+  let note = null;
+  if (ls.get('claudeKey', '')) { try { note = await talkAI(segs); } catch {} }
+  if (!note) note = talkBasic(segs);
+  note = Object.assign({ raw: talkText(segs), t0: segs[0].t, t1: segs[segs.length - 1].t, src: id, watch: 1 }, note, { at: Date.now() });
+  const list = ls.get('talkNotes', []) || []; list.unshift(note); ls.set('talkNotes', list.slice(0, 30));
+  return true;
 }
 function talkBox(t) {
   const all = (ls.get('talkNotes', []) || []).filter(n => n && n.at); if (!all.length) return null;

@@ -59,6 +59,30 @@ object Wear {
             finally { busy = false; done?.let { android.os.Handler(android.os.Looper.getMainLooper()).post(it) } }
         }
     }
+    // 🎙 시계로 받아 적은 대화(TalkActivity, files/talks/talk_w{시각}.json)를 기록과 같은 길(/mpd/run/{ID})로 보내요.
+    // 휴대폰 MPD Run이 mdsync에 두면 휴대폰 MPD가 talk_w로 알아보고 정리해서 그 시간 MPD에 붙여요(index.html syncPull → talkFromWatch)
+    @Volatile var talkStatus = ""
+    fun pushTalks(c: Context, done: (() -> Unit)? = null) {
+        val app = c.applicationContext
+        thread {
+            var n = 0
+            try {
+                val dc = Wearable.getDataClient(app)
+                val sent = prefs(app).getStringSet("talkSent", emptySet())!!.toMutableSet()
+                for (f in java.io.File(app.filesDir, "talks").listFiles() ?: emptyArray()) {
+                    val id = f.name.removeSuffix(".json")
+                    if (!f.name.endsWith(".json") || !id.matches(Regex("talk_w[0-9]{1,20}")) || id in sent) continue
+                    val req = PutDataMapRequest.create("/mpd/run/$id").apply { dataMap.putAsset("d", Asset.createFromBytes(gzip(f.readText()))); dataMap.putLong("t", System.currentTimeMillis()) }
+                        .asPutDataRequest().setUrgent()
+                    Tasks.await(dc.putDataItem(req), 20, TimeUnit.SECONDS)
+                    sent.add(id); n++
+                }
+                prefs(app).edit().putStringSet("talkSent", sent).apply()
+                talkStatus = if (n > 0) "휴대폰으로 보냈어요 · 휴대폰 MPD를 열면 정리돼요" else "모두 보냈어요"
+            } catch (e: Exception) { talkStatus = "시계에 저장했어요 · 휴대폰과 이어지면 보내요" }
+            finally { done?.let { android.os.Handler(android.os.Looper.getMainLooper()).post(it) } }
+        }
+    }
     fun sent(c: Context, id: String) = prefs(c).getStringSet("wearSent", emptySet())!!.any { it.startsWith("$id:") }
 
     // 휴대폰에 받는 앱(MPD Run)이 있고 지금 이어져 있는지: true/false, 알 수 없으면 null

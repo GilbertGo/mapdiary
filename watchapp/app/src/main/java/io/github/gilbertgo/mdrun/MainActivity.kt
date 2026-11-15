@@ -150,6 +150,7 @@ class MainActivity : ComponentActivity() {
                 row("최대 심박 · 존2 ${Run.zoneLo(1)}~${Run.zoneLo(2) - 1}", "${Run.hrMaxSet}") { showHrMax() },
                 row("존2 지키기 알림", if (Run.z2Alert) "켬" else "끔") { Run.z2Alert = !Run.z2Alert; Store.setZ2Alert(this, Run.z2Alert); showStart() }),
             "기록" to listOf(
+                row("🎙 대화 기록", "누르면 바로 듣기") { startActivity(android.content.Intent(this, TalkActivity::class.java)) },
                 row("지난 기록", "${Store.list(this).size}개") { showHistory() },
                 row("주간 목표", "${Store.weekGoal(this)}km") { val cur = Store.weekGoal(this); Store.setWeekGoal(this, wg[(wg.indexOf(cur) + 1) % wg.size]); showStart() },
                 row("휴대폰으로 보내기", "저절로 · 블루투스") { showPhone() }),
@@ -166,6 +167,7 @@ class MainActivity : ComponentActivity() {
         // 새 판은 시작 화면을 처음 열 때 한 번 알아봐요(달리는 중엔 안 봐요)
         if (!updChecked) { updChecked = true; checkNow(false) }
         Wear.pushAll(this)   // 휴대폰으로 저절로(블루투스): 못 보낸 기록이 있으면 보내요
+        Wear.pushTalks(this)   // 🎙 못 보낸 대화도
         Link.pushAll(this)   // 예전 연결 코드 방식(켜 둔 경우만)
         Link.pullBg(this) { home?.reloadPhoto() }   // 휴대폰에서 바탕 사진을 바꿨으면 받아요
         Link.pullDest(this) { if (Run.id == null) showStart() }   // 휴대폰에서 고른 목표 지점
