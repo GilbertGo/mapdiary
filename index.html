@@ -682,6 +682,8 @@ html.tv-page a{color:inherit}
 .tv-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.tv-chips::-webkit-scrollbar{display:none}
 .tv-chips button{flex:none;padding:8px 14px;border-radius:20px;background:#fff;color:#6B7684;font:700 13px Pretendard,sans-serif;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(21,32,43,.05)}
 .tv-chips button.on{background:#15202B;color:#fff}
+.tv-chips.pn-days{position:sticky;top:0;z-index:20;margin:0 -20px;padding:calc(8px + env(safe-area-inset-top)) 20px 8px;background:#F5F6F8}
+.tv-dln{font:600 14px Pretendard,sans-serif;color:#4E5968;margin:2px 2px 0}
 .tv-credit{position:absolute;right:16px;bottom:36px;z-index:3;font-size:10px;color:rgba(255,255,255,.7);text-decoration:none}.tv-swap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 70px);right:16px;z-index:3;font:700 12px Pretendard,sans-serif;color:#fff;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 11px;backdrop-filter:blur(4px)}
 .tv-acts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0}
 .tv-wg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -3228,9 +3230,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-172-nonav';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-173-daytabs';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '📅 여행 일정의 날 탭을 지도 아래, 일정 바로 위로 옮겼어요 · 일정을 내려 보면 날 탭이 위에 붙어 따라와서 바로 다른 날로 · 큰 \'n일차\' 줄 대신 날짜와 날씨 한 줄 · 🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10957,7 +10959,7 @@ function viewPlanOne(id) {
   if (day == null || day < 0 || day >= p.nd) day = 0;   // 판 -127 (사용자 '이게 아직 보이네'): '전체' 칸을 빼서 늘 하루씩, 처음엔 1일차
   const mapEl = el('div', { class: 'mapbox', style: 'height:42vh;min-height:260px' })   /* 판 -129: 그날 일정이 더 빨리 보이게 */, sumEl = el('div');
   document.documentElement.classList.add('tv-page');   // ✈ B안 '여행 매거진'
-  const tabs = el('div', { class: 'tv-chips' }), list = el('div', { class: 'stack', style: 'gap:2px' });
+  const tabs = el('div', { class: 'tv-chips pn-days' }), list = el('div', { class: 'stack', style: 'gap:2px' });
   let map = null, layer = null, base = null, wx = ls.get('planWx:' + id, null);
   const hero = tvHero(p, {});
   const head = el('div', { class: 'stack', style: 'gap:4px' });
@@ -11175,7 +11177,8 @@ function viewPlanOne(id) {
     return it;
   }
   function drawTabs() {
-    const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
+    const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { const stuck = tabs.getBoundingClientRect().top < 2; day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap();
+      if (stuck) scrollBy(0, list.getBoundingClientRect().top - tabs.offsetHeight - 6); } });   // 판 -173: 내려 본 채로 다른 날을 누르면 그날 일정 처음으로
     tabs.replaceChildren(...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘' : `${d + 1}일`}${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
   }
   function drawList() {
@@ -11186,6 +11189,7 @@ function viewPlanOne(id) {
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(planEN(p) ? el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), planEnDay(p, d) + (td === d ? ' · Today' : ''))
+          : day === d ? el('div', { class: 'tv-dln' }, [td === d ? '오늘' : '', p.start ? planDayLabel(p, d) : `${d + 1}일차`, ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · '))   // 판 -173: 위 날 탭과 겹치는 큰 'n일차' 대신 날짜·날씨 한 줄
           : el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') })));
         const M = p.mem || []; if (M.some(m => m.a || m.b) && p.start) {   // 판 -140: 이날 함께하는 사람 · 오는 사람 · 가는 사람
           const inD = M.filter(m => planMemDays(p, m).includes(d)), arr = M.filter(m => m.a && planDayOfDate(p, m.a) === d && d > 0), lv = M.filter(m => m.b && planDayOfDate(p, m.b) === d && d < p.nd - 1), unk = M.filter(m => !m.a && !m.b).length;
@@ -11263,7 +11267,7 @@ function viewPlanOne(id) {
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['film', '미리 보기 영상 만들기', './?film=1&plan=' + encodeURIComponent(p.id)], ['share', '일행 초대 · 일정 보내기', () => planShare(p), '초대'], ['more', '더보기', moreSheet]), hero,
     el('div', { class: 'tv-sheet' },
     // 판 -129: 한 화면 차례 = 날 고르기 → 그날 지도·요약 → 그날 일정 → (작게) 위치 확인. 준비·여행 방은 아래 메뉴에만
-    tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), mapEl, sumEl, list, head)), tvBar(p, 'plan'));
+    mapEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), sumEl, list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
   drawAll();
   planHanaAuto(p, () => drawAll());
   // 판 -129: 오늘 화면에서 하던 일(날씨 받기·여행 사진 저절로 올리기)을 여기서
