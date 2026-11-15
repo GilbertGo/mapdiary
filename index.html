@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-169-stay';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-170-nav';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🧭 여행 계획 요약 칸의 큰 "길 안내 시작"은 뺐어요(등산 계획에만) · 다른 계획은 ⋯ 더보기에서 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8183,6 +8183,8 @@ var PLAN_STAY_COL = '#191F28';
 function planStayIcon(x, big) { const nm = String(x.n || '숙소').replace(/\s*[(（].*$/, ''), t = nm.length > 11 ? nm.slice(0, 10) + '…' : nm, h = big ? 34 : 30;
   const html = `<div style="display:inline-flex;align-items:center;gap:5px;height:${h}px;padding:0 11px 0 8px;border-radius:${h / 2}px;background:${PLAN_STAY_COL};color:#fff;font:700 12.5px Pretendard,sans-serif;white-space:nowrap;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);transform:translateX(-50%)${x.ap || x.near || x.vf ? ';outline:3px dashed #FF9F43' : ''}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>${t.replace(/[<>&"]/g, '')}</span></div>`;
   return L.divIcon({ className: 'pl-stay', iconSize: [0, h], iconAnchor: [0, h / 2], html }); }
+// 판 -170 (사용자 '이 길안내는 빼는게 어때' → '둘 다 고쳐'): 요약 칸 큰 '길 안내 시작'은 등산 계획(정상 있음)에서만 · 다른 계획은 구간 줄 길찾기(구글·네이버·가오더)가 낫고 ⋯ 더보기에만
+function planNavOk(p) { return !!((p.it || []).some(x => x.k === 'peak') || (p.hike && p.hike.on)); }
 function planNoMap(its) { const m = new Map(); let n = 0; its.forEach(x => { if (!(x.k === 'move' && !Number.isFinite(x.lat))) m.set(x, ++n); }); return m; }
 // 판 -167 (사용자 '숙소는 숙소 예약 앱과 연결시켜' + 아고다 공유 글 '아크 호텔 오사카 신사이바시 확인하기 https://www.agoda.com/sh-app/…'): 숙소 일정에 예약 앱 링크 x.url · 앱 이름 x.bkSite
 var BOOK_SITES = [[/agoda\./i, '아고다'], [/booking\.com/i, '부킹닷컴'], [/airbnb\./i, '에어비앤비'], [/hotels\.com/i, '호텔스닷컴'], [/expedia\./i, '익스피디아'], [/trip\.com|ctrip/i, '트립닷컴'], [/yanolja/i, '야놀자'], [/goodchoice|yeogi/i, '여기어때'], [/interpark/i, '인터파크'], [/myrealtrip/i, '마이리얼트립'], [/hanatour/i, '하나투어'], [/klook/i, '클룩'], [/rakuten/i, '라쿠텐 트래블'], [/jalan\.net/i, '자란'], [/naver\.(me|com)/i, '네이버']];
@@ -11059,6 +11061,7 @@ function viewPlanOne(id) {
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
       go('🏨 숙소 예약 링크 넣기 (아고다·부킹닷컴…)', () => planDocSheet(p, drawAll)),
+      go('🧭 길 안내 시작 (걷는 길 · MPD 기록)', navGo),
       go('✎ 이름 · 날짜 고치기', editMeta),
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
@@ -11236,8 +11239,8 @@ function viewPlanOne(id) {
         for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, col, 5); }
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
-    sumEl.replaceChildren(...[planSumBox(p, day, navGo)].filter(Boolean));
-    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; eh = await planSumEle(p, day); } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } else if (eh) sumEl.replaceChildren(...[planSumBox(p, day, navGo)].filter(Boolean)); })(); }
+    sumEl.replaceChildren(...[planSumBox(p, day, planNavOk(p) ? navGo : null)].filter(Boolean));
+    if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; eh = await planSumEle(p, day); } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } else if (eh) sumEl.replaceChildren(...[planSumBox(p, day, planNavOk(p) ? navGo : null)].filter(Boolean)); })(); }
     const real = pts.filter(q => q[1] > -180);
     if (!real.length) {   // 판 -138: 장소가 없으면 계획 이름의 여행지 둘레로
       if (p.dest) { map.setView([p.dest.lat, p.dest.lng], p.dest.z || 11); return; }
