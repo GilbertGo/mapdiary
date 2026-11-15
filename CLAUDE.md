@@ -372,6 +372,9 @@
 - 까닭 ①: 두 말을 ✨가 아니라 '보내기'로 보내 일반 대화(ask 없음)가 되어 도우미가 안 봄 → 여행 방 보내기에서 `?`/`？`로 끝나면 `ask:1`(입력칸 안내 '?로 끝나면 ✨도우미도 답해요'). 답은 여전히 열쇠 있는 휴대폰이 켜져 있을 때
 - 까닭 ②: 하나투어 원본 분류 '선택관광'(schdCatgCd 005)·카드 딱지 '스페셜포함'을 버리고 있었음 → `planFromHana`가 `x.opt`(1 선택관광, 2 '스페셜포함' 딱지), 일정 줄 회색 '선택관광 · 스페셜포함 (하나투어 표기)', `planBotCtx`에 항목마다·모아서 목록(비용은 자료에 없음, '스페셜포함' 뜻은 여행사 확인하라고). 원본(scratchpad `hl/itnr.json`): 2일차 천문산사+귀곡잔도+유리잔도·전신마사지·매력상서, 4일차 대협곡·황룡동굴, 5일차 보봉호수 6곳 모두 '스페셜포함'. 예전 계획은 앱에서 열면 `planHanaAuto`가 `p.optV` 없으면 바로 다시 받아 `planHanaMerge`가 opt 채움(웹은 CORS로 못 받음). 시험 scratchpad `nb/t9.js`
 
+## 판 -133 영상: 카톡 안 화면이면 크롬으로 (2026-11-15, 사용자 카톡 안 화면 캡처 '⚠ 공유하지 못했어요 (navigator.share is not a function)' 여러 번)
+- 카톡 안 브라우저엔 navigator.share가 없고 저장도 막힘. `filmKakaoOut(plan)`: 계획 영상이면 `planLink` 주소를 `?plan=1&mk=film#ps=…`로 바꿔 `kakaotalk://web/openExternal` → 크롬에서 계획을 넣은 뒤(`viewPlan` 링크 받기) `mk=film`이면 `?film=1&plan=ID`로. 계획 영상을 카톡 안에서 열면 세션에 한 번 저절로(`sessionStorage.filmKakaoOut`), 영상 화면 맨 위 주황 카드 '🌐 크롬에서 열기'. 공유 단추는 공유가 없으면 오류 대신: 카톡이면 크롬으로, 그 밖은 '휴대폰에 저장' 안내. 기록 영상은 기록이 카톡 쪽 저장소에만 있을 수 있어 저절로 넘기지 않고 카드만
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
