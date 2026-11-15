@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-172-nonav';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-173-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '🗓 여행 일정에 같은 장소가 두 번 보이던 것을 하나로 합쳐요 · 🧭 여행 계획에서 이동 요약 칸과 길 안내를 모두 뺐어요 · 구간 거리·시간과 길찾기는 일정 사이 줄에 · 🖼 여행 계획 맨 위 사진은 여행지(오사카 등) 사진으로 · 출발 공항 둘레 사진이 나오던 것 고침 · 🏨 지도에서 숙소는 짙은 알약 + 집 그림 + 이름으로 바로 보여요 · ✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8185,6 +8185,7 @@ function planStayIcon(x, big) { const nm = String(x.n || '숙소').replace(/\s*[
   return L.divIcon({ className: 'pl-stay', iconSize: [0, h], iconAnchor: [0, h / 2], html }); }
 // 판 -170 (사용자 '이 길안내는 빼는게 어때' → '둘 다 고쳐'): 요약 칸 큰 '길 안내 시작'은 등산 계획(정상 있음)에서만 · 다른 계획은 구간 줄 길찾기(구글·네이버·가오더)가 낫고 ⋯ 더보기에만
 function planNavOk(p) { return !!((p.it || []).some(x => x.k === 'peak') || (p.hike && p.hike.on)); }
+function planUniq(its) { const s = new Set(); return its.filter(x => { const { id, ...r } = x, k = JSON.stringify(r); if (s.has(x) || s.has('i' + id) || s.has(k)) return false; s.add(x); s.add('i' + id); s.add(k); return true; }); }   // 판 -173: 같은 일정이 두 번 그려지지 않게
 function planNoMap(its) { const m = new Map(); let n = 0; its.forEach(x => { if (!(x.k === 'move' && !Number.isFinite(x.lat))) m.set(x, ++n); }); return m; }
 // 판 -167 (사용자 '숙소는 숙소 예약 앱과 연결시켜' + 아고다 공유 글 '아크 호텔 오사카 신사이바시 확인하기 https://www.agoda.com/sh-app/…'): 숙소 일정에 예약 앱 링크 x.url · 앱 이름 x.bkSite
 var BOOK_SITES = [[/agoda\./i, '아고다'], [/booking\.com/i, '부킹닷컴'], [/airbnb\./i, '에어비앤비'], [/hotels\.com/i, '호텔스닷컴'], [/expedia\./i, '익스피디아'], [/trip\.com|ctrip/i, '트립닷컴'], [/yanolja/i, '야놀자'], [/goodchoice|yeogi/i, '여기어때'], [/interpark/i, '인터파크'], [/myrealtrip/i, '마이리얼트립'], [/hanatour/i, '하나투어'], [/klook/i, '클룩'], [/rakuten/i, '라쿠텐 트래블'], [/jalan\.net/i, '자란'], [/naver\.(me|com)/i, '네이버']];
@@ -8505,6 +8506,9 @@ function planSelfCheck(p) {
   // ① 날 밖 일정 → 마지막 날로
   it.forEach(x => { if (!(x.d >= 0)) { x.d = 0; fixed.push(`'${x.n}' 날이 비어 있어 1일차로`); } if (x.d >= p.nd) { fixed.push(`'${x.n}' ${x.d + 1}일차 → ${p.nd}일차(여행 날 수 밖)`); x.d = p.nd - 1; } });
   // ② 같은 번호(id) 두 개 → 새 번호
+  { const seen = new Set(), sig = x => { const { id, ...r } = x; return JSON.stringify(r); }, sg = new Set(), keep0 = [];   // 판 -173: 같은 일정이 두 번(같은 칸을 두 번 가리키거나 번호만 다르고 똑같음) → 하나만
+    for (const x of it) { if (!x || seen.has(x)) { fixed.push(`'${x && x.n}'이(가) 두 번 들어가 있어 하나로`); continue; } seen.add(x); const k = sig(x); if (sg.has(k)) { fixed.push(`${x.d + 1}일차 '${x.n}'이(가) 두 번 있어 하나로`); continue; } sg.add(k); keep0.push(x); }
+    if (keep0.length !== it.length) { it.length = 0; it.push(...keep0); } }
   { const ids = new Set(); it.forEach(x => { if (!x.id || ids.has(x.id)) { x.id = planNewId(); fixed.push(`'${x.n}' 번호가 겹쳐 새 번호로`); } ids.add(x.id); }); }
   // ③ 같은 날 같은 이름 두 번(완전히 같음) → 하나로(설명·위치는 있는 쪽)
   { const keep = []; for (const x of it) { const y = keep.find(z => z.d === x.d && z.k === x.k && nz(z.n) === nz(x.n) && (!z.t || !x.t || z.t === x.t));
@@ -11182,7 +11186,7 @@ function viewPlanOne(id) {
     const out = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const all = planItems(p, d), nxI = all[nextIdx(d)], its = all.filter(x => planVis(p, x)), nx = its.indexOf(nxI);   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
+      const all = planItems(p, d), nxI = all[nextIdx(d)], its = planUniq(all.filter(x => planVis(p, x))), nx = its.indexOf(nxI);   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(planEN(p) ? el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), planEnDay(p, d) + (td === d ? ' · Today' : ''))
@@ -11230,7 +11234,7 @@ function viewPlanOne(id) {
     const pts = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const col = PLAN_COLS[d % PLAN_COLS.length], its = planItems(p, d).filter(x => planVis(p, x)), ll = [];
+      const col = PLAN_COLS[d % PLAN_COLS.length], its = planUniq(planItems(p, d).filter(x => planVis(p, x))), ll = [];
       const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1;
         L.marker([x.lat, x.lng], { zIndexOffset: x.k === 'stay' ? 500 : 0, icon: x.k === 'stay' ? planStayIcon(x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
