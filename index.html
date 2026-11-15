@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-166-num';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-167-hotel';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔢 일정 번호가 건너뛰지 않게 (3 → 5 같은 것), 일정·지도·경로 고치기·길 안내 번호를 똑같이 · 🧭 길찾기는 모두 일정 사이 줄에 · 🖼 번호 핀·장소 사진';
+const UI_NOTES = '🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8174,6 +8174,55 @@ function planLegGo(a, b, k) {   // 구간 길찾기: 출발 = 앞 장소, 도착
 }
 // 판 -166: 일정 번호 = 위치 없는 이동 칸(구간 줄 글로 들어감)을 빼고 차례대로 — 일정 칸과 지도 핀이 같은 번호
 function planNoMap(its) { const m = new Map(); let n = 0; its.forEach(x => { if (!(x.k === 'move' && !Number.isFinite(x.lat))) m.set(x, ++n); }); return m; }
+// 판 -167 (사용자 '숙소는 숙소 예약 앱과 연결시켜' + 아고다 공유 글 '아크 호텔 오사카 신사이바시 확인하기 https://www.agoda.com/sh-app/…'): 숙소 일정에 예약 앱 링크 x.url · 앱 이름 x.bkSite
+var BOOK_SITES = [[/agoda\./i, '아고다'], [/booking\.com/i, '부킹닷컴'], [/airbnb\./i, '에어비앤비'], [/hotels\.com/i, '호텔스닷컴'], [/expedia\./i, '익스피디아'], [/trip\.com|ctrip/i, '트립닷컴'], [/yanolja/i, '야놀자'], [/goodchoice|yeogi/i, '여기어때'], [/interpark/i, '인터파크'], [/myrealtrip/i, '마이리얼트립'], [/hanatour/i, '하나투어'], [/klook/i, '클룩'], [/rakuten/i, '라쿠텐 트래블'], [/jalan\.net/i, '자란'], [/naver\.(me|com)/i, '네이버']];
+function bookSite(u) { const f = BOOK_SITES.find(([r]) => r.test(u || '')); return f ? f[1] : '예약 사이트'; }
+function bookParse(t) {   // 공유 글 → {url, site, name}
+  t = String(t || '').trim(); const m = /https?:\/\/[^\s<>"']+/i.exec(t); if (!m) return null;
+  const name = t.replace(m[0], ' ').replace(/(을|를)?\s*(확인하기|확인해 ?보세요|확인|보기|예약하기|예약 확인|살펴보기)\s*$/,'').replace(/(check out|view|on agoda|on booking\.com)\b.*$/i, '').replace(/[“”"'「」]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  return { url: m[0].replace(/[).,]+$/, ''), site: bookSite(m[0]), name };
+}
+function bookOpen(x) { if (x && x.url) window.open(x.url, '_blank', 'noopener'); }
+function bookSearch(x, p) {   // 링크가 없는 숙소: 예약 앱에서 찾기
+  const q = [String(x.n || '').replace(/\(.*?\)|예정 호텔.*$/g, '').trim(), (p && p.dest && p.dest.n) || ''].filter(Boolean).join(' ');
+  const L = [['아고다', `https://www.agoda.com/ko-kr/search?textToSearch=${encodeURIComponent(q)}`], ['부킹닷컴', `https://www.booking.com/searchresults.ko.html?ss=${encodeURIComponent(q)}`], ['트립닷컴', `https://kr.trip.com/hotels/list?keyword=${encodeURIComponent(q)}`], ['구글 지도', `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`]];
+  labSheet('🏨 예약 앱에서 찾기', el('div', { class: 'sub', text: `'${q}'(으)로 찾아요 · 예약한 뒤 앱의 '공유'로 링크를 복사해 '예약 링크 붙이기'에 넣으면 숙소에 붙어요` }),
+    ...L.map(([n, u]) => el('a', { class: 'btn line full', href: u, target: '_blank', rel: 'noopener', text: n + '에서 찾기 ↗' })));
+}
+function planStayLinkAsk(p, x, done) {   // 숙소 칸의 '예약 링크 붙이기': 그 숙소 이름을 미리 넣어 붙여 넣기 창
+  const ta = el('textarea', { rows: 3, placeholder: '예약 앱에서 공유 → 복사한 글을 붙여 넣어 주세요', style: 'width:100%;box-sizing:border-box;font:inherit' });
+  const go = () => { const b = bookParse(ta.value); if (!b) { toast('링크(https://…)가 들어 있지 않아요'); return; } bg.remove(); planStayLink(p, (b.name ? '' : x.n + ' ') + ta.value, done); };
+  const bg = labSheet('🏨 ' + x.n + ' 예약 링크', ta, el('div', { style: 'display:flex;gap:8px' },
+    el('button', { class: 'btn line', style: 'flex:1', text: '📋 복사한 것 붙여 넣기', onclick: async () => { try { ta.value = await navigator.clipboard.readText(); go(); } catch { toast('칸을 길게 눌러 붙여 넣어 주세요'); } } }),
+    el('button', { class: 'btn primary', style: 'flex:1', text: '붙이기', onclick: go })));
+}
+function planStayLink(p, text, done) {   // 붙여 넣은 예약 링크 → 고른 밤마다 숙소 일정에 붙임(있으면 이름·링크 바꿈, 없으면 새로)
+  const b = bookParse(text); if (!b) { toast('링크(https://…)가 들어 있지 않아요'); return; }
+  const nm = el('input', { type: 'text', value: b.name, placeholder: '숙소 이름 (예: 아크 호텔 오사카 신사이바시)', style: 'width:100%;box-sizing:border-box' });
+  const nights = Math.max(1, p.nd - 1), stays = d => (p.it || []).filter(x => x.d === d && x.k === 'stay');
+  const pick = new Set([...Array(nights).keys()]);
+  const chips = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' });
+  const paint = () => faRc(chips, ...[...Array(nights).keys()].map(d => { const s0 = stays(d)[0];
+    return el('button', { class: 'btn small ' + (pick.has(d) ? 'dark' : 'line'), text: `${d + 1}일차 밤${p.start ? ' · ' + planDayLabel(p, d).replace(/ \(.\)/, '') : ''}${s0 ? ' (지금: ' + String(s0.n).slice(0, 10) + ')' : ''}`, onclick: () => { pick.has(d) ? pick.delete(d) : pick.add(d); paint(); } }); }));
+  paint();
+  const st = el('div', { class: 'sub' });
+  const bg = labSheet('🏨 숙소 예약 링크', el('div', { style: 'font-weight:700', text: `${b.site} 링크` }), el('div', { class: 'sub', style: 'word-break:break-all;font-size:12px', text: b.url }), nm,
+    el('div', { class: 'sub', text: '어느 밤에 묵어요?' }), chips,
+    el('button', { class: 'btn primary full', text: '숙소에 붙이기', onclick: async () => {
+      const n = nm.value.trim() || b.name || '숙소'; if (!pick.size) { toast('묵는 밤을 골라 주세요'); return; }
+      const q = [n, (p.dest && p.dest.n) || planDestName(p) || ''].filter(Boolean).join(' ');
+      [...pick].sort((a, c) => a - c).forEach(d => { let x = stays(d)[0];
+        if (!x) { x = { id: planNewId(), d, t: '', n, k: 'stay', m: '', lat: null, lng: null }; planMineIns(p.it, x); }
+        else if (String(x.n).replace(/\s/g, '') !== n.replace(/\s/g, '')) { x.m = [x.m, `예전 이름: ${x.n}`].filter(Boolean).join(' · ').slice(0, 300); x.n = n; if (!x.man) { x.lat = null; x.lng = null; x.ap = 0; delete x.near; } }
+        x.url = b.url; x.bkSite = b.site; if (x.lat == null) x.q = q; });
+      planSave(p); st.textContent = '📍 지도에서 숙소 자리 찾는 중…';
+      try { await planAiPlaces(p, (p.dest && p.dest.n) || '', t => { st.textContent = t; }); } catch {}
+      try { await planGeocode(p, t => { st.textContent = t; }); } catch {}
+      try { planNeighborFill(p); } catch {}
+      planSave(p); const miss = (p.it || []).filter(x => x.k === 'stay' && x.url === b.url && !Number.isFinite(x.lat)).length;
+      bg.remove(); toast(`🏨 ${n} · ${pick.size}밤에 붙였어요${miss ? ' · 지도 위치는 못 찾았어요(숙소를 눌러 정해 주세요)' : ''}`, false, 6000); done && done(); } }), st);
+  setTimeout(() => { if (!b.name) nm.focus(); }, 80);
+}
 function planGap(a, b, p) {   // 두 곳 사이 (등산 계획이면 등산 짐작: planHikeEst): 직선거리 + 대략 걸리는 시간(1.5km 넘으면 차 시속 35km, 아니면 걸어서 시속 4km)
   if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(b.lat) || a.k === 'fly' || b.k === 'fly') return '';
   const m = dist(a.lat, a.lng, b.lat, b.lng); if (m < 80) return '';
@@ -10658,6 +10707,11 @@ function planDocSheet(p, redraw) {
   } });
   const addB = el('button', { class: 'btn primary full', text: '+ 예약 캡처 넣기 (항공권·숙소)', onclick: () => inp.click() });
   const bg = labSheet('🎫 예약 · 항공권',
+    (() => { const ta = el('textarea', { rows: 2, placeholder: '숙소 예약 링크 붙여 넣기 (예: 아고다·부킹닷컴 앱의 공유 → 복사)', style: 'width:100%;box-sizing:border-box;font:inherit' });   // 판 -167
+      const go = () => planStayLink(p, ta.value, () => { Object.assign(p, planGet(p.id) || {}); redraw && redraw(); });
+      return el('div', { class: 'st-grp', style: 'padding:12px 14px;display:flex;flex-direction:column;gap:8px' }, el('div', { style: 'font:700 15px Pretendard,sans-serif', text: '🏨 숙소 예약 앱과 잇기' }), ta,
+        el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '📋 복사한 것 붙여 넣기', onclick: async () => { try { ta.value = await navigator.clipboard.readText(); if (bookParse(ta.value)) go(); } catch { toast('붙여 넣기 칸을 길게 눌러 붙여 넣어 주세요'); } } }),
+          el('button', { class: 'btn primary', style: 'flex:1', text: '숙소에 붙이기', onclick: go }))); })(),
     el('div', { class: 'sub', style: 'font-size:13px;line-height:1.5', text: '예약 화면을 캡처해서 넣어 두면 이 휴대폰에 저장돼요. 인터넷이 없어도 보여요. 일행·계획 링크로는 안 가요.' + (String(ls.get('claudeKey', '') || '').trim() ? ' AI가 비행기·숙소를 읽어 일정에도 넣어요.' : '') }),
     addB, inp, st, grid);
   paint();
@@ -10991,6 +11045,7 @@ function viewPlanOne(id) {
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
+      go('🏨 숙소 예약 링크 넣기 (아고다·부킹닷컴…)', () => planDocSheet(p, drawAll)),
       go('✎ 이름 · 날짜 고치기', editMeta),
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
@@ -11017,6 +11072,7 @@ function viewPlanOne(id) {
         el('div', { style: 'font-weight:800;font-size:13px;color:#4E5968', text: '🎫 예약 (예약 캡처에서 AI가 읽음)' }), el('div', { style: 'font-size:15px', text: x.bk.ref ? `예약번호 ${x.bk.ref}` : '예약번호 없음' }), el('div', { style: 'font-size:12.5px;color:#6B7684', text: '예약 캡처 보기 ›' })) : null,
       el('div', { style: 'font-size:13.5px;color:#4E5968', text: locTxt + (x.ok ? ` · ✓ 다녀옴${x.okT ? ' ' + trHm(x.okT) : ''}` : '') }),
       el('div', { style: 'display:flex;gap:8px' },
+        x.k === 'stay' ? el('button', { class: 'btn line', style: 'flex:1', text: x.url ? `🏨 ${x.bkSite || bookSite(x.url)}에서 보기` : '🏨 예약 앱에서 찾기', onclick: () => x.url ? bookOpen(x) : bookSearch(x, p) }) : null,
         has ? el('button', { class: 'btn primary', style: 'flex:1', text: '🧭 길찾기', onclick: () => planGo(x) }) : el('button', { class: 'btn line', style: 'flex:1', text: '📍 위치 정하기', onclick: () => { bg.remove(); fixLoc(x); } }),
         el('button', { class: 'btn line', style: 'flex:1', text: '✎ 편집', onclick: () => { bg.remove(); editItem(x); } })));
     return bg;
@@ -11083,7 +11139,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ ic: mic, k: x.k, t: x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.ai ? '✨ AI 추천' : x.opt ? '선택관광' : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ ic: mic, k: x.k, t: x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.ai ? '✨ AI 추천' : x.opt ? '선택관광' : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
         x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
@@ -11098,7 +11154,7 @@ function viewPlanOne(id) {
         x.opt ? el('div', { class: 'tv-m', style: 'color:#6B7684;font-weight:700', text: x.opt === 2 ? '선택관광 · 스페셜포함 (하나투어 표기)' : '선택관광' }) : null,
         needChk(x) ? el('button', { class: 'tv-warn', onclick: e => { e.stopPropagation(); fixLoc(x); } }, '📍 대략 위치 · 고치기 ›') : null,
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
-      btns: td === d || x.ok ? [
+      btns: td === d || x.ok || x.k === 'stay' ? [x.k === 'stay' ? el('button', { text: x.url ? `${x.bkSite || bookSite(x.url)}에서 보기 ↗` : '예약 앱에서 찾기', onclick: () => x.url ? bookOpen(x) : bookSearch(x, p) }) : null, x.k === 'stay' && !x.url ? el('button', { text: '예약 링크 붙이기', onclick: () => planStayLinkAsk(p, x, drawAll) }) : null, 
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
     return it;
   }
