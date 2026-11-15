@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-147-legs';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-148-read';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗺 여행 계획 지도가 이동 칸 글을 읽어 길을 그려요 · 도보는 걷는 길로, 버스와 택시는 도로 길로 · 전철과 라피트는 점점선(실제 노선은 무료 지도에 없어 직선) · 일정 줄에도 🚆 🚗 🚶 표시';
+const UI_NOTES = '📚 여행 계획의 여행지 정보에 읽을거리가 생겼어요 · 여행지와 일정 속 구경 장소마다 위키백과 본문 전체와 사진(설명과 작가 표시) · 인터넷이 될 때 한 번 열어 두면 이 휴대폰에 저장돼 비행기 안에서도 읽어요 · 영어 글은 ✨ 한국어로 옮기기(AI)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6292,18 +6292,171 @@ async function destSights(D, nm) {   // 여행지 10km 안 위키백과 글(사�
   let L = []; try { L = await one('ko'); } catch {} if (L.length < 6) try { L = L.concat(await one('en')); } catch {}
   return L.slice(0, 10);
 }
+// 📚 여행지 읽을거리 (판 -148, 2026-11-15 사용자 장가계 정보 캡처 '소개 더 풍부하게. 정확하게. 사진도 많이. 볼거리 읽을거리 많이. 가면서 비행기에서 읽을 거야')
+//   주제 = 여행지 + 계획의 구경·공연 장소(' + '로 묶인 이름은 나눔) · 글 = 위키백과 본문 전체(한국어 먼저, 없거나 짧으면 영어 원문 · 참고 문헌 등 뺌)
+//   주제 찾기: 이름으로 한국어 위키백과 → 그 글 좌표가 장소 25km(여행지 60km) 안일 때만 / 아니면 장소 자리 1.5km 안 영어 위키백과 글(가장 가까운 것) → 서로 다른 말 판은 위키백과 언어 연결로
+//   사진 = 그 글에 실린 사진(위키미디어 공용, 설명·작가·라이선스) + 모자라면 그 자리 1km 안 공용 사진 · 주제마다 10장까지
+//   인터넷이 될 때 화면을 열면 저절로 이 휴대폰(IndexedDB mpdTrip 'rd:{계획}', 사진 'rdi:{계획}:{n}')에 저장 → 비행기 안(인터넷 없음)에서도 글·사진 그대로 · 7일 지나면 다시 받음
+//   영어 글은 '✨ 한국어로 옮기기'(AI, 누를 때만, 원문 그대로 옮기라고 함) → 저장 · 위키백과 글도 틀릴 수 있어 출처·원문 링크를 늘 붙임
+const RD_SKIP = /^(참고 ?문헌|각주|외부 ?링크|같이 ?보기|참고|출처|주석|더 ?읽을거리|References|See also|External links|Notes|Further reading|Bibliography|Sources|Gallery|Citations|Footnotes)$/i;
+const RD_BADT = /Station|Railway|Hotel|School|University|College|Hospital|District|County|Subdistrict|Township|Village|Province|Prefecture|Expressway|Highway|역$|호텔|학교|대학|병원|고속도로/i;
+const RD_BADF = /map|karte|locator|logo|flag|seal|emblem|icon|symbol|diagram|plan|sign|ticket|svg|commons-logo|wiki|location|地図|位置/i;
+async function rdApi(host, q) { const r = await fetchT(`https://${host}/w/api.php?action=query&format=json&origin=*&${q}`, {}, 15000); if (!r.ok) throw new Error('wiki ' + r.status); return (await r.json()).query || {}; }
+const rdNorm = s => String(s || '').toLowerCase().replace(/\(.*?\)|\[.*?\]|[\s·,.'"\-–—]/g, '').replace(/(국가삼림공원|풍경구|관광지|국가공원|투어|관광|코스|시)$/, '');
+async function rdFind(nm, lat, lng, rad, used) {
+  const has = Number.isFinite(lat) && Number.isFinite(lng), n0 = rdNorm(nm); let ko = null, en = null;
+  const okC = pg => { const c = (pg.coordinates || [])[0]; if (has && c) return dist(lat, lng, c.lat, c.lon) <= rad; const t = rdNorm(pg.title); return !!n0 && n0.length >= 2 && (t.includes(n0) || n0.includes(t)); };
+  try { const P = Object.values((await rdApi('ko.wikipedia.org', `generator=search&gsrsearch=${encodeURIComponent(nm)}&gsrlimit=6&prop=coordinates%7Clanglinks&lllang=en&redirects=1`)).pages || {}).sort((a, b) => (a.index || 9) - (b.index || 9));
+    const pg = P.find(x => okC(x) && !RD_BADT.test(x.title) && !used.has('ko:' + x.title)); if (pg) { ko = pg.title; en = pg.langlinks && pg.langlinks[0] && pg.langlinks[0]['*'] || null; } } catch {}
+  if (!ko && has) try {   // 이름으로 못 찾으면 그 자리 둘레 영어 글 (가장 가까운 것)
+    const P = Object.values((await rdApi('en.wikipedia.org', `generator=geosearch&ggscoord=${lat}%7C${lng}&ggsradius=${Math.min(10000, rad >= 60000 ? 10000 : 1500)}&ggslimit=10&prop=langlinks&lllang=ko`)).pages || {}).sort((a, b) => (a.index || 99) - (b.index || 99));
+    const pg = P.find(x => !RD_BADT.test(x.title) && !used.has('en:' + x.title)); if (pg) { en = pg.title; ko = pg.langlinks && pg.langlinks[0] && pg.langlinks[0]['*'] || null; } } catch {}
+  return ko || en ? { ko, en } : null;
+}
+async function rdPage(lang, title) {
+  const q = await rdApi(lang + '.wikipedia.org', `prop=extracts%7Cimages%7Cinfo%7Ccoordinates&explaintext=1&exsectionformat=wiki&imlimit=60&inprop=url&redirects=1&titles=${encodeURIComponent(title)}`);
+  const pg = Object.values(q.pages || {})[0]; if (!pg || pg.missing != null || !pg.extract) return null;
+  const out = []; let skip = false, n = 0;
+  for (const raw of pg.extract.split('\n')) { const line = raw.trim(), h = /^(=+)\s*(.+?)\s*\1$/.exec(line);
+    if (h) { skip = RD_SKIP.test(h[2]); if (skip && h[1].length <= 2) break; if (!skip) out.push('## ' + h[2]); continue; }
+    if (skip || !line) continue; out.push(line); n += line.length; if (n > 16000) { out.push('…(글이 길어 여기까지 · 원문에서 이어 읽기)'); break; } }
+  while (out.length && /^## /.test(out[out.length - 1])) out.pop();
+  const txt = out.filter((l, i) => !(/^## /.test(l) && /^## /.test(out[i + 1] || '## '))).join('\n');
+  const c = (pg.coordinates || [])[0];
+  return { lang, t: pg.title, url: pg.fullurl || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(pg.title)}`, txt, n: txt.replace(/^## .*$/gm, '').length, files: (pg.images || []).map(x => x.title), lat: c && c.lat, lng: c && c.lon };
+}
+async function rdImgs(files, lat, lng) {
+  const txt = h => String(h || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const meta = (pg, ii) => { const md = ii.extmetadata || {}; return { u: ii.thumburl || ii.url, w: ii.thumbwidth || ii.width, h: ii.thumbheight || ii.height, by: txt(md.Artist && md.Artist.value).slice(0, 60) || '작가 미상', lic: txt(md.LicenseShortName && md.LicenseShortName.value).slice(0, 30), desc: txt(md.ImageDescription && md.ImageDescription.value).slice(0, 160), page: ii.descriptionurl || '' }; };
+  const good = (pg, ii) => ii && /jpeg/.test(ii.mime) && ii.width >= 700 && ii.height >= 450 && !RD_BADF.test(pg.title);
+  const L = []; const F = files.filter(f => /\.jpe?g$/i.test(f) && !RD_BADF.test(f)).slice(0, 40);
+  for (let i = 0; i < F.length; i += 20) try {
+    const q = await rdApi('commons.wikimedia.org', `prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=1100&titles=${encodeURIComponent(F.slice(i, i + 20).join('|'))}`);
+    Object.values(q.pages || {}).forEach(pg => { const ii = (pg.imageinfo || [])[0]; if (good(pg, ii)) L.push(meta(pg, ii)); }); } catch {}
+  if (L.length < 5 && Number.isFinite(lat) && Number.isFinite(lng)) try {
+    const q = await rdApi('commons.wikimedia.org', `generator=geosearch&ggscoord=${(+lat).toFixed(5)}%7C${(+lng).toFixed(5)}&ggsradius=1000&ggsnamespace=6&ggslimit=40&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=1100`);
+    Object.values(q.pages || {}).map(pg => [pg, (pg.imageinfo || [])[0]]).filter(([pg, ii]) => good(pg, ii)).sort((a, b) => b[1].width * b[1].height - a[1].width * a[1].height).forEach(([pg, ii]) => { const m = meta(pg, ii); m.near = 1; L.push(m); }); } catch {}
+  const seen = new Set(); return L.filter(z => !seen.has(z.u) && seen.add(z.u)).slice(0, 10);
+}
+function rdTopics(p, D, nm) {   // 여행지 + 구경·공연 장소 (이름 나누기·같은 이름 빼기)
+  const T = [{ nm, lat: D && D.lat, lng: D && D.lng, rad: 60000, main: 1 }], seen = new Set([rdNorm(nm)]);
+  (p.it || []).filter(x => (x.k === 'spot' || x.k === 'show' || x.k === 'peak') && !x.mine).forEach(x => {
+    const parts = String(planTerm(x.n || '')).replace(/\[.*?\]|\(.*?\)/g, ' ').split(/\s*\+\s*|,\s*|·/).map(s => s.replace(/(VIP.*|투어|관광|야경투어)$/, '').trim()).filter(s => s.length >= 2 && !/공항|호텔|식당|마사지|쇼핑|면세|휴게|이동|미팅|센터$/.test(s));
+    parts.forEach(s => { const k = rdNorm(s); if (!k || seen.has(k)) return; seen.add(k); const ex = Number.isFinite(x.lat) && !x.ap && !x.near; T.push({ nm: s, lat: ex ? x.lat : D && D.lat, lng: ex ? x.lng : D && D.lng, rad: ex ? 25000 : 60000, d: x.d }); }); });
+  return T.slice(0, 16);
+}
+async function rdBuild(p, D, nm, say) {
+  const T = rdTopics(p, D, nm), used = new Set(), out = []; let k = 0;
+  for (const tp of T) { k++; say && say(`📖 글 찾는 중 ${k}/${T.length} · ${tp.nm}`);
+    const f = await rdFind(tp.nm, tp.lat, tp.lng, tp.rad, used); if (!f) { out.push({ nm: tp.nm, miss: 1 }); continue; }
+    const ko = f.ko ? await rdPage('ko', f.ko).catch(() => null) : null, en = f.en ? await rdPage('en', f.en).catch(() => null) : null;
+    if (!ko && !en) { out.push({ nm: tp.nm, miss: 1 }); continue; }
+    if (ko) used.add('ko:' + ko.t); if (en) used.add('en:' + en.t);
+    const files = [...(ko ? ko.files : []), ...(en ? en.files : [])], c = (ko && Number.isFinite(ko.lat) ? ko : en && Number.isFinite(en.lat) ? en : tp);
+    say && say(`📸 사진 찾는 중 ${k}/${T.length} · ${tp.nm}`);
+    const ph = await rdImgs([...new Set(files)], c.lat, c.lng);
+    out.push({ nm: tp.nm, main: tp.main, d: tp.d, ko: ko && { t: ko.t, url: ko.url, txt: ko.txt, n: ko.n }, en: en && { t: en.t, url: en.url, txt: en.txt, n: en.n }, ph }); }
+  // 사진을 이 휴대폰에 (비행기 안에서도 보게)
+  const all = out.filter(x => x.ph).flatMap(x => x.ph); let i = 0, ok = 0;
+  for (const z of all) { i++; say && say(`💾 사진 저장 중 ${i}/${all.length}`);
+    try { const r = await fetchT(z.u, {}, 30000); if (r.ok) { const b = await r.blob(); if (b.size > 2000) { z.k = 'rdi:' + p.id + ':' + i; await trSet(z.k, b); ok++; } } } catch {} }
+  const R = { at: Date.now(), v: 1, nm, T: out, phN: all.length, phOk: ok }; await trSet('rd:' + p.id, R); return R;
+}
+// 읽는 화면 (화면 가득): 사진 넘겨 보기(설명·작가·라이선스) · 본문(소제목) · 영어면 AI로 옮기기 · 원문 링크
+async function rdReader(p, R, ti, bg0) {
+  const tp = R.T[ti], urls = []; const bg = bg0 || el('div', { class: 'sheet-bg', style: 'z-index:4300' });
+  (rdReader.urls || []).forEach(u => URL.revokeObjectURL(u)); rdReader.urls = urls;
+  const go = j => { let k = j; while (R.T[k] && R.T[k].miss) k += j > ti ? 1 : -1; if (R.T[k]) rdReader(p, R, k, bg); };
+  const nx = (() => { for (let k = ti + 1; k < R.T.length; k++) if (!R.T[k].miss) return k; return -1; })(), pv = (() => { for (let k = ti - 1; k >= 0; k--) if (!R.T[k].miss) return k; return -1; })();
+  const src = async z => { if (z.k) { const b = await trGet(z.k); if (b) { const u = URL.createObjectURL(b); urls.push(u); return u; } } return navigator.onLine ? z.u : ''; };
+  const body = el('div', { style: 'position:fixed;inset:0;background:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:70px' });
+  const top = el('div', { style: 'position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.96);border-bottom:1px solid #EEF0F3' },
+    el('button', { class: 'n-ib', 'aria-label': '닫기', onclick: () => history.back() }, cSvg('back', 20)), el('b', { style: 'flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: tp.nm }),
+    pv >= 0 ? el('button', { class: 'btn line small', text: '‹ 앞', onclick: () => go(pv) }) : null,
+    nx >= 0 ? el('button', { class: 'btn line small', text: '다음 ›', onclick: () => go(nx) }) : null);
+  const strip = el('div', { style: 'display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 16px 4px;scrollbar-width:none' });
+  const txtBox = el('div', { style: 'padding:6px 18px 10px;font-size:16px;line-height:1.8;color:#15202B;word-break:keep-all' });
+  const paint = (t, note) => { txtBox.replaceChildren(...(note ? [note] : []), ...String(t || '').split('\n').filter(Boolean).map(l => /^## /.test(l) ? el('h3', { style: 'font-size:18px;margin:22px 0 6px;color:#15202B', text: l.slice(3) }) : el('p', { style: 'margin:0 0 12px', text: l }))); };
+  const W = tp.ko && tp.ko.n >= 600 ? tp.ko : tp.ko && !tp.en ? tp.ko : tp.en || tp.ko, isEn = W && W.url.includes('//en.'), ai = tp.koAi;
+  const head = el('div', { style: 'padding:4px 18px 0' },
+    el('div', { style: 'font-size:12px;color:#6B7684;font-weight:700', text: `${isEn && !ai ? '영어' : '한국어'} 위키백과 '${W.t}'${ai ? ' · AI가 영어 원문을 옮긴 글' : ''} · 원문 그대로` }),
+    tp.ko && W !== tp.ko ? el('div', { style: 'font-size:12px;color:#8A94A0', text: `한국어 위키백과 '${tp.ko.t}'는 글이 짧아 영어 원문을 보여 드려요` }) : null);
+  const tools = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;padding:6px 18px 0' },
+    el('a', { class: 'btn line small', href: W.url, target: '_blank', rel: 'noopener', style: 'text-decoration:none', text: '원문 보기 ↗' }),
+    tp.ko && W !== tp.ko ? el('a', { class: 'btn line small', href: tp.ko.url, target: '_blank', rel: 'noopener', style: 'text-decoration:none', text: '한국어 글 ↗' }) : null);
+  const trBtn = isEn ? el('button', { class: 'btn primary small', text: ai ? '영어 원문 보기' : '✨ 한국어로 옮기기 (AI)', onclick: () => trRun() }) : null; if (trBtn) tools.append(trBtn);
+  let showAi = !!ai;
+  const show = () => showAi && tp.koAi ? paint(tp.koAi, el('p', { style: 'font-size:12.5px;color:#C2410C;margin:0 0 10px', text: '✨ AI(Claude)가 영어 위키백과를 한국어로 옮긴 글이에요 · 고유 이름·숫자는 원문과 견줘 보세요' })) : paint(W.txt);
+  const trRun = async () => {
+    if (tp.koAi) { showAi = !showAi; trBtn.textContent = showAi ? '영어 원문 보기' : '한국어로 보기'; return show(); }
+    if (!navigator.onLine) return toast('인터넷이 될 때 옮길 수 있어요 · 옮긴 글은 저장돼서 비행기에서도 보여요');
+    const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) { if (await talkKeySheet()) trRun(); return; }
+    trBtn.disabled = true; trBtn.textContent = '✨ 옮기는 중… (1분쯤)';
+    try { toast('✨ AI를 써요 · 위키백과 글 옮기기 · 위키백과 영어 글만 보내요', true);
+      const { default: Anthropic } = await import(TALK_SDK);
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.create({ ...tripAiOpt(5000), messages: [{ role: 'user', content: `아래 영어 위키백과 글을 한국 여행자가 읽기 좋은 자연스러운 한국어로 옮겨 주세요. 원문에 없는 내용은 절대 더하지 말고, 숫자·연도·이름은 원문 그대로. '## '로 시작하는 줄은 소제목이니 '## 한국어 소제목'으로. 중국 지명은 한국에서 흔히 쓰는 한자 읽기(예: 장가계, 천문산, 무릉원, 원가계, 천자산)로 쓰고 처음 한 번만 괄호에 영어를 붙이세요. 옮긴 글만 답하세요.\n\n${W.txt.slice(0, 9000)}` }] });
+      const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '위키백과 글 옮기기', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+      toast(`✨ AI 사용 끝 · 글 옮기기 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+      const tb = (res.content || []).find(z => z.type === 'text'); if (!tb || tb.text.trim().length < 50) throw new Error('빈 답');
+      tp.koAi = planTerm(tb.text.trim()); await trSet('rd:' + p.id, R); showAi = true; trBtn.disabled = false; trBtn.textContent = '영어 원문 보기'; show();
+    } catch (e) { trBtn.disabled = false; trBtn.textContent = '✨ 한국어로 옮기기 (AI)'; toast('⚠ 못 옮겼어요 · ' + String(e && e.message || e).slice(0, 60)); } };
+  const cap = el('div', { style: 'padding:0 18px;font-size:11.5px;color:#8A94A0', text: tp.ph && tp.ph.length ? `📸 사진 ${tp.ph.length}장 · 위키미디어 공용 · 사진을 누르면 크게` : '이 글엔 저장된 사진이 없어요' });
+  body.append(top, strip, cap, head, tools, txtBox);
+  bg.replaceChildren(body); if (!bg0) { document.body.append(bg); ovGuard(); } show();
+  for (const z of tp.ph || []) { const u = await src(z); if (!u) continue;
+    strip.append(el('figure', { style: 'flex:none;width:86%;max-width:520px;margin:0;scroll-snap-align:center' },
+      el('img', { src: u, alt: z.desc || '', loading: 'lazy', style: 'width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:14px;background:#EEF2F5;display:block', onclick: () => labSheet(tp.nm, el('img', { src: u, alt: '', style: 'width:100%;border-radius:12px' }), z.desc ? el('div', { style: 'font-size:14px;line-height:1.5', text: z.desc }) : null, el('div', { class: 'sub', style: 'font-size:12px', text: `${z.by}${z.lic ? ' · ' + z.lic : ''} · 위키미디어 공용${z.near ? ' · 이 자리 둘레 사진' : ''}` }), z.page && navigator.onLine ? el('a', { href: z.page, target: '_blank', rel: 'noopener', style: 'font-size:13px', text: '사진 원본 ↗' }) : null) }),
+      el('figcaption', { style: 'font-size:12px;color:#6B7684;margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: (z.desc ? z.desc + ' · ' : '') + z.by + (z.lic ? ' · ' + z.lic : '') }))); }
+}
+// 여행지 정보 화면의 '📚 읽을거리' 칸: 저장돼 있으면 바로(인터넷 없어도), 없거나 7일 지났으면 인터넷 될 때 저절로 받아 저장
+function rdSection(p, D, nm) {
+  const box = el('div', { class: 'card', style: 'padding:14px 16px;border-radius:18px;display:flex;flex-direction:column;gap:10px' });
+  const st = el('div', { style: 'font-size:12.5px;color:#4E5968;line-height:1.5' }), list = el('div', { class: 'stack', style: 'gap:12px' });
+  box.append(el('div', { style: 'display:flex;align-items:baseline;gap:8px' }, el('b', { style: 'font-size:17px', text: `📚 ${nm} 읽을거리` }), el('span', { style: 'margin-left:auto;font-size:11px;color:#8A94A0', text: '위키백과 · 위키미디어 공용' })), st, list);
+  const urls = [];
+  const paint = async R => {
+    urls.splice(0).forEach(u => URL.revokeObjectURL(u));
+    const T = R.T.filter(x => !x.miss), miss = R.T.filter(x => x.miss), phS = T.reduce((a, x) => a + (x.ph || []).filter(z => z.k).length, 0);
+    faRc(st, el('b', { style: 'color:#1D7A4E', text: `✅ 비행기 안(인터넷 없음)에서도 읽을 수 있어요` }), el('br'), `글 ${T.length}편 · 사진 ${phS}장 저장 · ${new Date(R.at).toLocaleDateString('ko-KR')} 받음 · 위키백과 글도 틀릴 수 있어요(원문 링크를 붙여 뒀어요)`,
+      navigator.onLine ? el('button', { class: 'btn line small', style: 'margin-left:6px', text: '↻ 다시 받기', onclick: () => run(true) }) : null);
+    const cards = [];
+    for (let i = 0; i < R.T.length; i++) { const tp = R.T[i]; if (tp.miss) continue; const W = tp.ko && tp.ko.n >= 600 ? tp.ko : tp.ko && !tp.en ? tp.ko : tp.en || tp.ko, isEn = W.url.includes('//en.') && !tp.koAi;
+      const z = (tp.ph || []).find(q => q.k) || (tp.ph || [])[0]; let u = ''; if (z && z.k) { const b = await trGet(z.k); if (b) { u = URL.createObjectURL(b); urls.push(u); } } if (!u && z && navigator.onLine) u = z.u;
+      const prev = String(tp.koAi || W.txt).split('\n').filter(l => l && !/^## /.test(l)).join(' ').slice(0, 120), min = Math.max(1, Math.round((tp.koAi || W.txt).length / 500));
+      cards.push(el('button', { style: 'display:block;width:100%;text-align:left;border:none;background:#fff;padding:0;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(16,24,40,.08)', onclick: () => rdReader(p, R, i) },
+        u ? el('img', { src: u, alt: '', loading: 'lazy', style: 'width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#EEF2F5' }) : null,
+        el('div', { style: 'padding:10px 12px 12px' }, el('div', { style: 'font-size:12px;color:#6B7684;font-weight:700', text: `${tp.main ? '여행지' : tp.d != null ? `${tp.d + 1}일차 일정` : '일정'} · 사진 ${(tp.ph || []).length}장 · 약 ${min}분 읽기${isEn ? ' · 영어 원문' : ''}` }),
+          el('b', { style: 'display:block;font-size:17px;margin:2px 0 4px', text: (T0 => tp.nm + (T0 && rdNorm(T0) !== rdNorm(tp.nm) ? ` — ${T0}` : ''))((tp.ko || W).t) }),
+          el('div', { style: 'font-size:13.5px;color:#4E5968;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden', text: prev })))); }
+    faRc(list, ...cards, miss.length ? el('div', { style: 'font-size:12px;color:#8A94A0', text: `위키백과에서 못 찾은 곳: ${miss.map(x => x.nm).join(', ')}` }) : null,
+      T.some(x => !x.koAi && !(x.ko && x.ko.n >= 600)) ? el('div', { style: 'font-size:12px;color:#8A94A0', text: '영어 원문 글은 글을 열고 \'✨ 한국어로 옮기기\'를 누르면 AI가 옮겨 저장해요(열쇠 사용료가 들어요) · 인터넷이 될 때 미리 해 두세요' }) : null);
+  };
+  let busy = false;
+  const run = async force => { if (busy) return; busy = true;
+    try { const R0 = force ? null : await trGet('rd:' + p.id);
+      if (R0 && R0.T && (!navigator.onLine || Date.now() - R0.at < 7 * 864e5)) { await paint(R0); return; }
+      if (!navigator.onLine) { st.textContent = '⚠ 아직 저장된 읽을거리가 없어요 · 인터넷이 될 때 이 화면을 한 번 열어 두면 저절로 저장돼요'; return; }
+      if (R0 && R0.T) await paint(R0);
+      st.replaceChildren(el('b', { text: '⏳ 비행기에서 읽게 저장하는 중이에요' }), el('br'), el('span', { text: '' }));
+      const R = await rdBuild(p, D, nm, t => { if (st.lastChild) st.lastChild.textContent = t + ' · 화면을 켜 두세요'; });
+      if (R0 && R0.T) R.T.forEach(x => { const o = R0.T.find(y => y.nm === x.nm && y.koAi && y.en && x.en && y.en.t === x.en.t); if (o) x.koAi = o.koAi; });
+      await trSet('rd:' + p.id, R); await paint(R);
+    } catch (e) { st.textContent = '⚠ 읽을거리를 못 받았어요 · ' + String(e && e.message || e).slice(0, 60); } finally { busy = false; } };
+  run(false);
+  return box;
+}
 async function viewPlanDest(id) {
   const p = planGet(id); if (!p) { location.replace('./?plan=1'); return; }
   document.documentElement.classList.add('tv-page'); roleBar('member', '여행지 정보');
   const nm = (p.dest && p.dest.n) || planDestName(p) || p.name;
   let D = p.dest || null;
   if (!D) { const L = (p.it || []).filter(x => Number.isFinite(x.lat) && x.k !== 'fly'); if (L.length) D = { n: nm, lat: L.reduce((a, x) => a + x.lat, 0) / L.length, lng: L.reduce((a, x) => a + x.lng, 0) / L.length }; else D = await planDest(p); }
-  const hero = tvHero(p, { d: 'DESTINATION GUIDE', title: nm, line: '여행 전에 한 번 훑어보는 여행지 정보' });
+  const hero = tvHero(p, { d: 'DESTINATION GUIDE', title: nm, line: '읽을거리·사진은 이 휴대폰에 저장돼 비행기에서도 보여요' });
   const sec = (t, src, ...kids) => el('div', { class: 'card', style: 'padding:14px 16px;border-radius:18px;display:flex;flex-direction:column;gap:8px' }, el('div', { style: 'display:flex;align-items:baseline;gap:8px' }, el('b', { style: 'font-size:17px', text: t }), src ? el('span', { style: 'margin-left:auto;font-size:11px;color:#8A94A0', text: src }) : null), ...kids.filter(Boolean));
   const wait = t => el('div', { class: 'sub', style: 'font-size:13px', text: t || '⏳ 찾는 중…' });
   const row = (k, v) => el('div', { style: 'display:flex;gap:10px;font-size:14px;line-height:1.5' }, el('span', { style: 'flex:none;width:72px;color:#6B7684;font-weight:700', text: k }), el('span', { style: 'flex:1', text: v }));
   const aLink = (t, u) => el('a', { href: u, target: '_blank', rel: 'noopener', class: 'btn line small', style: 'text-decoration:none', text: t });
-  const sAbout = sec('📖 ' + nm + ' 소개', '위키백과', wait());
+  const sAbout = rdSection(p, D, nm);
   const sBasic = sec('🧭 기본 정보', '', wait());
   const sWx = sec('🌤 여행 날 날씨', 'Open-Meteo', wait());
   const sSee = sec('📍 둘레 볼거리', '위키백과 · 10km 안', wait());
@@ -6311,12 +6464,7 @@ async function viewPlanDest(id) {
   const sLink = sec('🔗 공식·참고 사이트', '', wait());
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1&p=' + encodeURIComponent(p.id)), hero, el('div', { class: 'tv-sheet', style: 'gap:12px' }, sAbout, sBasic, sWx, sSee, sAi, sLink)), tvBar(p, 'plan'));
   const put = (box, ...kids) => { box.replaceChildren(box.firstChild, ...kids.filter(Boolean)); };
-  if (!D) { put(sAbout, el('div', { class: 'sub', text: `'${nm}' 위치를 못 찾았어요 · 계획에 장소를 넣거나 이름을 여행지로 바꿔 주세요` })); return; }
-  // 소개 + 사진
-  placeInfo({ n: nm, lat: D.lat, lng: D.lng }, '').then(r => put(sAbout,
-    r.ph.length ? el('div', { style: 'display:flex;gap:8px;overflow-x:auto;scrollbar-width:none' }, ...r.ph.slice(0, 6).map(z => el('img', { src: z.u, alt: '', loading: 'lazy', style: 'flex:none;width:200px;height:130px;object-fit:cover;border-radius:12px;background:#EEF2F5', onclick: () => labSheet(nm, el('img', { src: z.u, alt: '', style: 'width:100%;border-radius:12px' }), el('div', { class: 'sub', style: 'font-size:12.5px' }, `사진 ${z.by}${z.lic ? ' · ' + z.lic : ''} · 위키미디어 공용 `, z.page ? el('a', { href: z.page, target: '_blank', rel: 'noopener', text: '원본' }) : null)) }))) : null,
-    r.w ? el('div', { style: 'font-size:14.5px;line-height:1.65;white-space:pre-wrap', text: r.w.x }) : el('div', { class: 'sub', text: '위키백과 글을 못 찾았어요' }),
-    r.w ? el('a', { href: r.w.url, target: '_blank', rel: 'noopener', style: 'font-size:13px', text: `${r.w.lang === 'ko' ? '한국어' : '영어'} 위키백과 '${r.w.t}' 전체 읽기 ›` }) : null)).catch(() => put(sAbout, wait('⚠ 소개를 못 받았어요 (인터넷 확인)')));
+  if (!D) { put(sBasic, el('div', { class: 'sub', text: `'${nm}' 위치를 못 찾았어요 · 계획에 장소를 넣거나 이름을 여행지로 바꿔 주세요` })); return; }
   // 기본 정보 (나라 · 시차 · 돈 · 전기 · 긴급 · 입국 · 해)
   destCountry(D).then(async cc => {
     const C = DEST_CC[cc], st = sunTimes(D.lat, D.lng, p.start ? planDate(p, 0).getTime() + 12 * 3600e3 : Date.now()), tz = C && C.tz;
