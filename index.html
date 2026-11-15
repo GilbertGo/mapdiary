@@ -1163,6 +1163,19 @@ html.tv-page .tv-tile .av span{font-weight:600!important}
 html.tv-page .tv-topbar .n-ib.pill,html.tv-page .tv-swap{font-weight:500!important}
 html.tv-page .tv-leg b{font-weight:500!important}
 html.tv-page .tv-it .tv-b button,html.tv-page .tv-it .tv-b a{font:500 13px Pretendard,sans-serif!important;color:#1D7FA0}
+
+/* 판 -186 (사용자 첫 화면 캡처 '맨 위를 좀 올려. 글씨 크기는 줄이고'): 머리 줄을 위로·작게 */
+.c-ph-top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;gap:2px}
+.c-ph-logo{gap:7px}.c-ph-logo svg{width:26px!important;height:auto!important}
+.c-ph-logo b{font-size:22px!important}.c-ph-logo small{font-size:10.5px!important;font-weight:500!important;margin-top:2px!important;opacity:.92}
+.c-ph-ib{width:38px!important;height:38px!important}.c-ph-ib svg{width:22px;height:22px}
+.c-ph-av{width:34px!important;height:34px!important;border-width:2px!important;font-size:14px!important}
+.c-ph-chips,.c-ph-deco{top:calc(54px + env(safe-area-inset-top,0px))!important}
+.c-ph-chips{gap:6px!important}
+.c-ph-auto,.c-ph-talk,.c-ph-deco{font:500 12px Pretendard,sans-serif!important;padding:6px 11px!important}
+.c-ph-deco svg{width:15px;height:15px}
+html.c-home.c-live .c-ph-top{top:calc(40px + env(safe-area-inset-top,0px))}
+html.c-home.c-live .c-ph-chips,html.c-home.c-live .c-ph-deco{top:calc(88px + env(safe-area-inset-top,0px))!important}
 </style>
 </head>
 <body>
@@ -3267,9 +3280,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-185-dedupe';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-186-top';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
