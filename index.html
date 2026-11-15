@@ -3116,9 +3116,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-121-trail';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-122-navrec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 여행 일정과 여행사 안내를 다 아는 도우미에게 물어봐요. 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7198,6 +7198,19 @@ function planNav(p, d0, done) {
   let ti = L2.findIndex(x => !x.ok); if (ti < 0) ti = 0;
   let pos = null, follow = true, wid = null, wake = null, offT = 0, offSaid = 0, said = {}, map = null, me = null, ac = null, lay = null, hd = null, closed = 0, tl = null;
   // 판 -121: 실제로 지나온 길(산호색)을 따로 남김 · ls navTrail:{계획}:{일차} = {at, c:[[lat,lng]]} · 20시간 지나면 새로 · 8m 넘게 움직이고 오차 50m 아래일 때만
+  // 판 -122: 길 안내를 켜면 MPD 기록도 같이(사용자 '길안내 시작하면 mpd기록 되게해') · 이미 기록 중이면 그 기록에 이어 붙이고 끝낼 때도 그대로 둠
+  let recId = ls.get('walkNow', null), recMine = false;
+  if (!recId) { recId = 'walk_' + rid(8); recMine = true; const mk = p.hike && p.hike.on || (p.it || []).some(x => x.k === 'peak') ? 'hike' : 'trek';
+    ls.set('walkNow', recId); ls.set('walkAt', Date.now()); ls.set('walkMode:' + recId, mk); ls.set('lastMode', mk);
+    ls.set('trackName:' + recId, (p.nd > 1 ? `${p.name} ${d + 1}일차` : p.name).slice(0, 40)); ls.set('navRecOf:' + recId, { p: p.id, d }); }
+  const recNote = el('div', { style: 'display:flex;align-items:center;gap:6px;font:800 12.5px Pretendard,sans-serif;color:#FFB4A6;margin-top:8px' }, el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#E5383B;box-shadow:0 0 0 3px rgba(229,56,59,.3)' }), `MPD 기록 중 · ${ls.get('trackName:' + recId, '')}${recMine ? '' : ' (이어서)'}`);
+  const recEnd = () => { if (!recMine) { toast('길 안내를 끝냈어요 · 기록은 계속 이어지고 있어요'); return; }
+    const tr = trackLoad(recId); ls.set('walkNow', null);
+    if (tr.length < 2) { ['track:', 'trackName:', 'walkMode:', 'navRecOf:'].forEach(k => localStorage.removeItem(k + recId)); toast('움직인 길이 없어 기록은 남기지 않았어요'); return; }
+    const ok = L2.filter(x => x.ok); ls.set('walkPlaces:' + recId, { start: (ok[0] || L2[0]).n || '', end: ok.length ? ok[ok.length - 1].n : '' });
+    setTimeout(() => { try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} }, 300);
+    const t = el('div', { class: 'toast', style: 'pointer-events:auto' }, '✅ MPD 기록으로 저장했어요 · ', el('a', { href: './?my=1&t=' + recId, style: 'color:#fff;font-weight:800;text-decoration:underline' }, '기록 보기 ›'));
+    document.body.append(t); setTimeout(() => t.remove(), 7000); };
   const tKey = 'navTrail:' + p.id + ':' + d; let trail = ls.get(tKey, null); if (!trail || !Array.isArray(trail.c) || Date.now() - (trail.at || 0) > 20 * 3600000) trail = { at: Date.now(), c: [] };
   const trailM = () => { let m = 0; for (let i = 1; i < trail.c.length; i++) m += dist(trail.c[i - 1][0], trail.c[i - 1][1], trail.c[i][0], trail.c[i][1]); return m; };
   const voiceOn = () => ls.get('navVoice', true);
@@ -7217,14 +7230,14 @@ function planNav(p, d0, done) {
   vB.textContent = voiceOn() ? '🔊 소리 켬' : '🔇 소리 끔';
   const reB = el('button', { style: 'position:absolute;right:12px;bottom:12px;z-index:900;border:none;border-radius:999px;background:#fff;color:#15202B;font:800 14px Pretendard,sans-serif;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none', text: '◎ 내 위치로', onclick: () => { follow = true; reB.style.display = 'none'; if (pos) map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 17)); } });
   const mapEl = el('div', { style: 'position:absolute;inset:0' });
-  const close = () => { if (closed) return; closed = 1; try { navigator.geolocation.clearWatch(wid); } catch {} try { wake && wake.release(); } catch {} removeEventListener('deviceorientationabsolute', onOri); removeEventListener('deviceorientation', onOri); try { speechSynthesis.cancel(); } catch {} bg.remove(); done && done(); };
+  const close = () => { if (closed) return; closed = 1; try { navigator.geolocation.clearWatch(wid); } catch {} try { wake && wake.release(); } catch {} removeEventListener('deviceorientationabsolute', onOri); removeEventListener('deviceorientation', onOri); try { speechSynthesis.cancel(); } catch {} recEnd(); bg.remove(); done && done(); };
   const skip = () => { if (ti < L2.length - 1) { ti++; said = {}; toast(`다음 곳: ${L2[ti].n}`); drawRoute(); upd(); } };
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4400' });
   bg.addEventListener('click', e => { if (e.target === bg) close(); });
   bg.append(el('div', { style: `position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;padding-bottom:calc(${IN_NATIVE ? 56 : 0}px + env(safe-area-inset-bottom,0px))` },
     el('div', { style: 'background:#15202B;color:#fff;padding:12px 14px 12px;border-radius:0 0 18px 18px;z-index:2' },
       el('div', { style: 'display:flex;gap:12px;align-items:center' }, arrow, el('div', { style: 'flex:1;min-width:0' }, big, sub),
-        el('button', { class: 'n-ib', style: 'flex:none;background:rgba(255,255,255,.14);color:#fff', 'aria-label': '끝내기', onclick: close }, cSvg('x', 18))), warn),
+        el('button', { class: 'n-ib', style: 'flex:none;background:rgba(255,255,255,.14);color:#fff', 'aria-label': '끝내기', onclick: close }, cSvg('x', 18))), recNote, warn),
     el('div', { style: 'position:relative;flex:1;min-height:0;margin-top:-18px' }, mapEl, reB),
     el('div', { style: 'padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;background:#fff' }, el('div', {}, bot, bot2),
       el('div', { style: 'display:flex;gap:6px' }, vB, el('button', { class: 'btn line small', style: 'white-space:nowrap', text: '다음 곳 ›', onclick: skip }), el('span', { style: 'flex:1' }), el('button', { class: 'btn small', style: 'background:#15202B;color:#fff;white-space:nowrap', text: '끝내기', onclick: close })))));
@@ -7269,6 +7282,7 @@ function planNav(p, d0, done) {
   }
   const onPos = g => { if (closed) return; pos = { lat: g.coords.latitude, lng: g.coords.longitude, acc: g.coords.accuracy };
     { const lc = trail.c[trail.c.length - 1]; if ((pos.acc || 0) <= 50 && (!lc || dist(lc[0], lc[1], pos.lat, pos.lng) >= 8)) { trail.c.push([+pos.lat.toFixed(6), +pos.lng.toFixed(6)]); if (trail.c.length > 5000) trail.c.splice(0, trail.c.length - 5000); trail.at = Date.now(); ls.set(tKey, trail); if (tl) tl.setLatLngs(trail.c); } }
+    if (ls.get('walkNow', null) === recId) try { trackAdd(recId, pos.lat, pos.lng, pos.acc, null, g.coords.altitude); } catch {}
     if (g.coords.heading != null && !isNaN(g.coords.heading) && (g.coords.speed || 0) > 0.6) { hd = g.coords.heading; }
     if (map) { const ll = [pos.lat, pos.lng];
       if (!me) { me = L.marker(ll, { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: '', iconSize: [44, 44], iconAnchor: [22, 22], html: '<div style="position:relative;width:44px;height:44px"><div class="nv-hd" style="position:absolute;inset:0;display:none"><div style="position:absolute;left:14px;top:-2px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #1D9EC0"></div></div><div style="position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:#1D9EC0;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4)"></div></div>' }) }).addTo(map); ac = L.circle(ll, { radius: pos.acc || 10, color: '#1D9EC0', weight: 1, fillOpacity: .1, interactive: false }).addTo(map); map.setView(ll, 17); }
