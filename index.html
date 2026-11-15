@@ -3135,9 +3135,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-134-invite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-135-trustdev';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 일행 초대를 찾기 쉽게: 여행 계획 사진 위 공유 단추에 \'초대\' 글자, 여행 방 위에도 \'👋 일행 초대\' 단추 · 🎬 카톡 안 화면에서 영상 화면을 열면 크롬으로 넘겨요(계획도 같이). 카톡 안에서는 영상을 저장·보낼 수 없어서예요 · ✨ 여행 방에서 ?로 끝나는 말은 도우미도 봐요(✨ 단추를 안 눌러도) · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
+const UI_NOTES = '✨ 여행 방 입력칸 위에서 \'💬 일행에게 / ✨ AI 도우미에게\'를 골라요. 일반 대화는 AI로 가지 않아요 · ✨ AI에게 물을 때 지금 답할 수 있는지 먼저 보여 주고, 질문마다 대기 중·답변 중·실패·만료를 알려요(다시 묻기·취소) · ✨ 미팅·선택관광처럼 계획에 자료가 없는 건 짐작하지 않고 \'자료가 없어요\'라고 답해요. 근거를 누르면 원문이 보여요 · 👋 일행 초대를 찾기 쉽게: 여행 계획 사진 위 공유 단추에 \'초대\' 글자, 여행 방 위에도 \'👋 일행 초대\' 단추 · 🎬 카톡 안 화면에서 영상 화면을 열면 크롬으로 넘겨요(계획도 같이). 카톡 안에서는 영상을 저장·보낼 수 없어서예요 · 하나투어 일정의 \'선택관광\'·\'스페셜포함\' 표시를 원본 그대로 남기고, 도우미도 알아요(앱에서 계획을 열면 한 번 다시 받아 채워요) · 🔎 여행 계획을 열 때마다 앱이 스스로 점검해요: 겹친 일정·같은 이름 두 번·날 밖 일정은 저절로 고치고, 시각이 거꾸로인 곳·빈 날·잘 곳 없는 밤·여러 날 같은 곳·여행사 일정에서 빠진 곳은 \'🔎 스스로 점검\' 줄에 남겨요 · 🧹 하나투어 일정에서 겹치던 장소(유리잔도·귀곡잔도·천문산사·무릉원 야경투어)를 앞의 묶음 일정에 합쳤어요. 여행사 설명 카드가 장소로 잘못 들어가 있었어요 · 🧹 여행 화면을 하나로 정리했어요: 오늘 화면과 계획 화면을 합치고(여행 중엔 오늘이 먼저), 여행 준비·여행 방 카드는 아래 메뉴로만(📅 일정 · 💬 여행 방 · 🧳 준비 · 🗣 중국어 · 🧭 도우미), 사진은 여행 방 안에, 지도 미리 받기·영사콜센터는 준비 안에 · 🤫 계획 화면 맨 위 큰 주황 \'확인이 필요한 곳\' 상자를 작은 회색 한 줄로 줄였어요(누르면 고치는 창), 일정 줄의 주황 상자도 작은 회색 글자로 · ✂ 여행 계획 화면의 \'전체\' 칸도 뺐어요(하루씩 봐요) · ✂ 여행 화면 아래 메뉴에서 \'전체 일정\'을 뺐어요(지도·일정 고치기는 왼쪽 위 ‹) · 🎬 이동 영상에서 차·비행기로 가는 동안은 지도가 움직이지 않아요: 일정 전체가 보이는 크기로 멈추고(북쪽 위), 탈것 그림만 움직여요(비행기로 간 여행은 현지 일정 전체 크기). 걷는 곳은 예전처럼 가까이 · 🧭 위치 확인 창에 앞 2곳·뒤 2곳을 카드로: 시각·종류·설명·🏁에서 거리, 누르면 지도가 그곳으로, \'이 근처로\'를 누르면 그 옆에 🏁 · 📷 MPD 수정하기의 \'사진·동영상 더하기\' 고침: 넣는 동안 단추에 진행(3/12), 끝나면 몇 장 넣었는지 알림, 사진 순서 목록도 바로 새로. 큰 사진도 넣어지게 했고, 못 넣은 사진은 까닭을 알려요 · 수정하기 창에서 고른 모드가 빈 파란 네모로 보이던 것 고침 · ● 길 안내를 시작하면 MPD 기록도 같이 시작돼요(등산 계획이면 등산, 아니면 걷기). 끝내기를 누르면 내 MPD에 저장되고 \'기록 보기\'로 바로 갈 수 있어요. 이미 기록 중이면 그 기록에 이어 붙여요 · 🧡 길 안내 중 실제로 지나온 길을 산호색으로 그리고 남겨 둬요(계획 지도에도 보여요) · 🧭 계획 지도 아래 \'길 안내 시작\': 내 위치를 따라 다음 꺾는 곳·남은 거리·도착 예정을 알려 주고, 길에서 벗어나면 진동·목소리로 알려요. 장소에 닿으면 저절로 다녀옴 · 🗺 계획 지도를 크게, 일정 줄의 긴 설명 글·줄 사이 거리 글은 뺐어요(장소 이름을 누르면 설명이 보여요) · 📏 계획 지도 바로 아래 요약: 걷는 거리 · 예상 시간 · 오르막 · 최고 높이(실제 길 위 높이로 셈) · 🥾 길찾기가 엉뚱하게 돌던 구간은 둘레 등산로·계단을 직접 이어 그려 봐요 · 🗺 계획 지도 오른쪽 위 \'⛶ 크게 보고 고치기\': 핀을 끌어 옮기고, 지도를 눌러 장소를 넣고, 차례·이름·직선 구간을 바로 고쳐요 · 🧭 계획 화면 아래 메뉴 \'도우미\': 길 가다 헷갈리면 물어보세요(지금 위치·다음 갈 곳·주변 시설·갈림길 사진까지 보고 답해요) · ✨ 여행 도우미 창을 채팅처럼: 대화는 가운데, 자주 묻는 질문은 옆으로 밀어 보고, 입력칸 옆 ↑ 단추로 보내요 (예전엔 \'물어보기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌렸어요) · ✨ 도우미 답의 지명도 여행사 표기 그대로(장가계) · 🗺 지도에 길을 그려 캡처해 넣으면 AI가 몇 가지 묻고 일정을 고쳐요 (⋯ 더보기) · ⛰ 받은 링크 하나로 오늘 등산 계획의 하산길을 바꿀 수 있어요 · 🥾 계획 지도에서 크게 돌아가는 엉뚱한 길은 그리지 않고 직선 점선으로 · ✨ 여행 도우미 그림을 반짝이로 바꿨어요 · 🔗 도우미가 여행 자료로 답하지 못하면 \'하나투어 AI에게 물어보기\' 단추로 질문을 복사해 하나투어로 넘겨요 · 🔗 하나투어 일정 다시 받기: 호텔 확정·시각 변경 같은 바뀐 점을 계획에 반영해요(앱은 12시간마다 저절로, ⋯ 더보기에서 바뀐 것 보기) · ✨ 여행 도우미가 생겼어요: 여행 계획 아래 메뉴 \'물어보기\'에서 이 계획에 담긴 일정·안내로 답하는 도우미에게 물어봐요(계획에 없는 건 몰라요). 일행도 물을 수 있고, 질문과 답은 여행 방에 같이 남아요 · 🛣 여행 계획 미리 보기 영상이 실제 길을 따라가요: 차는 도로로, 걷는 곳은 걷는 길로 (예전엔 직선이라 길이 없는 데로 다녔어요) · 🥾 계획 지도에 걷는 길이 안 그려지던 것 고침(앱에서도 받고, 안 되면 다른 길찾기 서버로) · 📍 위치 고치기 창의 \'여기로 정하기\' 단추가 휴대폰 아래 단추줄에 가려 안 눌리던 것 고침 · 🎬 여행 계획 화면 맨 위에 영상 단추가 생겼어요: 공유 단추 옆 동그라미를 누르면 바로 미리 보기 영상을 만들어요 · ⚠ 위치 확인 창을 한 화면에: 까닭·블로그 글·앞뒤 장소를 짧게 줄이고 지도가 바로 보여요 · 🥾 계획 지도에 실제 걷는 길 · 🗺 지도 선명하게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8643,7 +8643,8 @@ function trViewer(R, list, i0) {
 async function viewTripRoom(code, title, planId) {
   document.title = `여행 방 · ${title || ''}`;
   const R = await trRoom(code), S = await trLoad(R), me = trMe();
-  let tab = ls.get('tripTab', 'chat'), photoBusy = false, map = null, mlay = null, locWatch = null, drv = await driveToken(false);
+  let tab = ls.get('tripTab', 'chat'), photoBusy = false, map = null, mlay = null, locWatch = null, drv = await driveToken(false), toAI = false;
+  try { toAI = sessionStorage.getItem('tripTo:' + R.rid) === '1'; } catch {}
   const p = planId ? planGet(planId) : null;
   const top = el('div', { class: 'stack', style: 'gap:6px' }), body = el('div', { class: 'stack', style: 'gap:8px' }), foot = el('div');
   const people = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && x.nm && !m.has(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
@@ -8665,11 +8666,12 @@ async function viewTripRoom(code, title, planId) {
     if (m.bot) return trBotBubble(m, S.tc.find(y => y.id === m.q), p || planOfRoom(code));
     const mine = m.by === me, phs = (m.ph || []).map(id => S.tp.find(x => x.id === id)).filter(x => x && !x.del);
     return el('div', { style: `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px` },
-      mine && !m.ask ? null : el('div', { class: 'dt', style: 'font-weight:700', text: (mine ? '' : (m.nm || '일행') + ' · ') + (m.ask ? '✨ 도우미에게' : '') }),
+      mine && !m.ask ? null : el('div', { class: 'dt', style: `font-weight:700${m.ask ? ';color:#D2462A' : ''}`, text: m.ask ? `${mine ? '나' : (m.nm || '일행')} → ✨ AI 도우미에게` : (m.nm || '일행') }),
       m.x ? el('div', { style: `max-width:82%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;${mine ? 'background:var(--pine);color:#fff;border-bottom-right-radius:4px' : 'background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px'}`, text: m.x }) : null,
       phs.length ? el('div', { style: 'display:grid;grid-template-columns:repeat(3,72px);gap:4px' }, ...phs.slice(0, 9).map(ph => el('img', { src: ph.th, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer', onclick: () => { const L = live(); trViewer(R, L, Math.max(0, L.indexOf(ph))); } }))) : null,
       phs.length > 9 ? el('div', { class: 'dt', text: `외 ${phs.length - 9}장 · 📷 사진에서 모두` }) : null,
-      el('div', { class: 'dt', style: 'font-size:11px', text: trHm(m.t) + (m.ask && !S.tc.some(y => y.id === 'a_' + m.id) ? ' · ⏳ ' + trBotWho(S).t.replace(/^\S+\s*/, '') : '') }));
+      el('div', { class: 'dt', style: 'font-size:11px', text: trHm(m.t) }),
+      m.ask ? trQFoot(R, S, m, () => draw(true), x => { toAI = false; try { sessionStorage.setItem('tripTo:' + R.rid, '0'); } catch {} draw(true); setTimeout(() => { const t = document.querySelector('.tr-in'); if (t) { t.value = x; t.focus(); } }, 50); }, code) : null);
   }
   const fileIn = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, style: 'display:none', onchange: e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) upload(fs); } });
   async function upload(files) {
@@ -8691,22 +8693,30 @@ async function viewTripRoom(code, title, planId) {
   }
   const status = el('div', { class: 'sub', style: 'font-weight:700' }); const setStatus = t => { status.textContent = t; };
   function drawChat() {
-    const box = el('div', { class: 'stack', style: 'gap:10px;padding-bottom:90px' });
-    const msgs = S.tc.filter(m => m.x || m.wait || (m.ph || []).length);
+    const box = el('div', { class: 'stack', style: `gap:10px;padding-bottom:${IN_NATIVE ? 200 : 150}px` });
+    const msgs = S.tc.filter(m => (m.x || (m.ph || []).length) && !m.wait && !trQHidden(S, m));   // 답변 중은 질문 아래 상태 줄로
     if (!msgs.length) box.append(el('div', { class: 'card sub', text: '아직 대화가 없어요. 첫 인사를 남겨 보세요. (앱이나 이 화면을 열어 두면 10초마다 새 글을 가져와요 · 휴대폰 알림은 오지 않아요)' }));
     let lastDay = '';
     for (const m of msgs.slice(-300)) { const dl = new Date(m.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (dl !== lastDay) { lastDay = dl; box.append(el('div', { class: 'dt', style: 'text-align:center;font-weight:700', text: dl })); } box.append(bubble(m)); }
-    const ta = el('textarea', { rows: 1, placeholder: trName() ? '메시지 · ?로 끝나면 ✨도우미도 답해요' : '먼저 위에 이름을 적어 주세요', style: 'flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
-    const send = async () => { const x = ta.value.trim(); if (!x) return; if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
-      // 판 -132 (사용자 캡처: '선택관광은 뭐있어?'를 보내기로 보내서 도우미가 못 봄): '?'로 끝나는 말은 도우미도 봐요(답해 줄 휴대폰이 있을 때)
-      const m = Object.assign({ by: me, nm: trName(), x: x.slice(0, 1000), t: Date.now() }, /[?？]\s*$/.test(x) ? { ask: 1 } : {}), id = Date.now().toString(36) + rid(4); ta.value = '';
+    // 판 -135 (개선 지시서 2번): 받는 사람을 입력칸 위에서 글자로 고름 — 💬 일행에게 / ✨ AI 도우미에게 (판 -132의 '?로 끝나면 AI에게'는 없앰: 일반 대화는 AI로 가지 않아요)
+    const who = trBotWho(S);
+    const ta = el('textarea', { class: 'tr-in', rows: 1, placeholder: !trName() ? '먼저 위에 이름을 적어 주세요' : toAI ? 'AI 도우미에게 물어볼 것 (일행도 같이 봐요)' : '일행에게 보낼 말', style: `flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:${toAI ? '2px solid #FF8A6B' : '1px solid var(--line)'}` });
+    const seg = (on, t, f) => el('button', { type: 'button', style: `flex:1;border:none;border-radius:10px;padding:8px 6px;font:700 14px Pretendard,sans-serif;cursor:pointer;${on ? 'background:#15202B;color:#fff' : 'background:#F1F3F5;color:#4E5968'}`, text: t, onclick: f });
+    const setTo = v => { toAI = v; try { sessionStorage.setItem('tripTo:' + R.rid, v ? '1' : '0'); } catch {} const keep = ta.value; draw(true); setTimeout(() => { const t = document.querySelector('.tr-in'); if (t) { t.value = keep; t.focus(); } }, 30); };
+    const ask = async () => { const x = ta.value.trim(); if (!x) return toast('물어볼 것을 적어 주세요'); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); if (ask.busy) return; ask.busy = 1; ta.value = '';
+      try { await trAsk(R, S, x); draw(true); if (trBotOn(R)) { await trBotTick(code, R, S); draw(true); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } ask.busy = 0; };
+    const send = async () => { if (toAI) return ask(); const x = ta.value.trim(); if (!x) return; if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
+      const m = { by: me, nm: trName(), x: x.slice(0, 1000), t: Date.now() }, id = Date.now().toString(36) + rid(4); ta.value = '';
       S.tc.push(Object.assign({ id, _t: m.t, pend: 1 }, m)); draw(true);
       try { await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S); } catch { const q = S.tc.find(y => y.id === id); if (q) q.fail = 1; toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } };
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
-    faRc(foot, el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:flex-end' },
-      el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', onclick: () => fileIn.click() }), ta,
-      el('button', { class: 'btn line small', text: '✨', title: '여행 도우미에게 묻기', onclick: async () => { const x = ta.value.trim(); if (!x) return toast('✨ 궁금한 걸 적고 누르면 여행 도우미가 답해요 · ' + trBotWho(S).t.replace(/^\S+\s*/, ''), false, 5000); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); ta.value = ''; try { await trAsk(R, S, x); draw(true); if (trBotOn(R)) { await trBotTick(code, R, S); draw(true); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); ta.value = x; } } }),
-      el('button', { class: 'btn primary small', text: '보내기', onclick: send })));
+    try { const dr = sessionStorage.getItem('tripDraft'); if (dr) { sessionStorage.removeItem('tripDraft'); ta.value = dr; } } catch {}
+    faRc(foot, el('div', { style: `position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(${IN_NATIVE ? 56 : 8}px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px` },
+      el('div', { style: 'display:flex;gap:6px' }, seg(!toAI, '💬 일행에게', () => setTo(false)), seg(toAI, '✨ AI 도우미에게', () => setTo(true))),
+      toAI ? el('div', { style: `font-size:12.5px;font-weight:700;color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t + (who.ok ? '' : ' · 지금 보내면 답이 늦거나 오지 않을 수 있어요') }) : null,
+      el('div', { style: 'display:flex;gap:6px;align-items:flex-end' },
+        toAI ? null : el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', 'aria-label': '사진 올리기', onclick: () => fileIn.click() }), ta,
+        el('button', { class: 'btn primary small', text: toAI ? '질문하기' : '보내기', onclick: send }))));
     faRc(body, status, box);
     setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
   }
@@ -8897,39 +8907,92 @@ var TB_DAY_MAX = 60;
 function planOfRoom(code) { return planAll().find(p => p.room && p.room.code === code) || null; }
 function trBotKey() { return String(ls.get('claudeKey', '') || '').trim(); }
 function trBotOn(R) { return !!trBotKey() && ls.get('tripBot:' + R.rid, true) !== false; }
-function trBotWho(S) {   // 답해 줄 휴대폰 상태 (일행 화면에 보여 줄 글)
+// 판 -135 (개선 지시서 2번): 답해 줄 휴대폰 상태를 설정 용어 없이 · ok=지금 보내면 답이 올 수 있음
+function trBotWho(S) {
   const me = trMe(), now = Date.now(), L = (S.tm || []).filter(x => x.bot).sort((a, b) => b.bot - a.bot);
   const live = L.find(x => now - x.bot < 5 * 60000), any = L[0], mine = !!trBotKey();
-  if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '✨ 이 휴대폰은 답하기를 꺼 뒀어요' };
-  if (live) return { ok: 1, t: live.by === me ? '✨ 이 휴대폰이 바로 답해요 (Claude 열쇠)' : `✨ 지금 바로 답해요 · ${live.nm || '일행'} 님 휴대폰` };
-  if (mine) return { ok: 1, t: '✨ 이 휴대폰이 바로 답해요 (Claude 열쇠)' };
-  if (any) return { ok: 0, t: `⏳ ${any.nm || '일행'} 님 휴대폰에서 MPD가 켜지면 답해요 (마지막 ${trAgo(any.bot)})` };
-  return { ok: 0, t: '⏳ 아직 답해 줄 휴대폰이 없어요 · Claude 열쇠를 넣은 일행이 MPD를 켜면 답해요' };
+  if (mine && L.some(x => x.by === me && x.off)) return { ok: 0, t: '⏸ 이 휴대폰은 AI 답하기를 꺼 뒀어요', next: '켜기' };
+  if (live) return { ok: 1, t: live.by === me ? '✅ 지금 AI가 답할 수 있어요 · 이 휴대폰' : `✅ 지금 AI가 답할 수 있어요 · ${live.nm || '일행'} 님 휴대폰` };
+  if (mine) return { ok: 1, t: '✅ 지금 AI가 답할 수 있어요 · 이 휴대폰' };
+  if (any) return { ok: 0, t: `⏸ 지금은 AI가 답할 수 없어요 · ${any.nm || '일행'} 님 휴대폰에서 MPD가 켜져 있어야 답해요 (마지막 ${trAgo(any.bot)})` };
+  return { ok: 0, t: '⏸ 지금은 AI가 답할 수 없어요 · 일행 중 AI 답하기를 켠 휴대폰이 없어요' };
+}
+// 질문 하나의 상태: 보내는 중 · 대기 중 · 답변 중 · 완료 · 실패 · 만료 · 취소 · (다시 물어서 숨김)
+var TQ_EXP = 30 * 60000, TQ_WORK = 3 * 60000;
+function trQState(S, q) {
+  const now = Date.now(), a = S.tc.find(y => y.id === 'a_' + q.id);
+  if (S.tc.some(y => y.ask && y.re === q.id)) return { k: 'moved' };
+  if (S.tc.some(y => y.cq === q.id)) return { k: 'cancel', t: '취소한 질문이에요' };
+  if (q.pend) return { k: 'pend', t: '보내는 중…' };
+  if (a && !a.wait) return a.err ? { k: 'fail', t: '⚠ 실패 · ' + String(a.x || '').replace(/^⚠\s*/, '') } : { k: 'done' };
+  const w = trBotWho(S);
+  if (a && a.wait) return now - a.t < TQ_WORK || w.ok ? { k: 'work', t: '✍ 답변 중이에요' } : { k: 'fail', t: '⚠ 답하던 휴대폰과 연결이 끊겼어요' };
+  if (now - q.t > TQ_EXP) return { k: 'exp', t: '⌛ 30분 동안 답할 수 있는 휴대폰이 없었어요' };
+  return { k: 'wait', t: w.ok ? '⏳ 대기 중 · 곧 답해요' : '⏳ 대기 중 · ' + w.t.replace(/^⏸\s*/, '') };
+}
+function trQHidden(S, m) {   // 다시 물어서 대신한 질문과 그 답은 화면에서 숨김
+  const id = m.bot ? m.q : m.id; return !!id && S.tc.some(y => y.ask && y.re === id);
+}
+// 질문 아래 상태 줄 + 할 수 있는 일(다시 묻기·취소·일행에게)
+function trQFoot(R, S, q, redraw, toPeople, code) {
+  const st = trQState(S, q); if (st.k === 'done' || st.k === 'moved') return null;
+  const b = (t, f) => el('button', { type: 'button', class: 'btn line small', style: 'padding:3px 10px;font-size:12.5px', text: t, onclick: f });
+  const mine = q.by === trMe(), acts = [];
+  if (mine && (st.k === 'fail' || st.k === 'exp')) acts.push(b('↻ 다시 묻기', async () => { try { await trAsk(R, S, q.x, q.id); redraw(); if (trBotOn(R)) { await trBotTick(R.code, R, S); redraw(); } } catch { toast('⚠ 못 보냈어요 · 인터넷을 확인해 주세요'); } }));
+  if (mine && (st.k === 'wait' || st.k === 'fail' || st.k === 'exp')) acts.push(b('취소', async () => { const id = 'c_' + q.id, m = { by: trMe(), cq: q.id, t: Date.now() }; try { await trPut(R, 'tc', id, m); S.tc.push(Object.assign({ id, _t: m.t }, m)); await trSet('room:' + R.rid, S); redraw(); } catch { toast('⚠ 못 했어요 · 인터넷을 확인해 주세요'); } }));
+  if (mine && toPeople && (st.k === 'fail' || st.k === 'exp' || (st.k === 'wait' && !trBotWho(S).ok))) acts.push(b('👥 일행에게 묻기', () => toPeople(q.x)));
+  return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:4px' },
+    el('div', { class: 'dt', style: `font-size:12px;font-weight:700;color:${st.k === 'fail' || st.k === 'exp' ? '#C2410C' : '#6B7684'}`, text: st.t }),
+    acts.length ? el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end' }, ...acts) : null);
 }
 function planBotCtx(p) {   // 계획 자료를 글로 (Claude에게 보낼 것)
   const L = [], wx = ls.get('planWx:' + p.id, null), K = planToday(p), cut = (s, n) => String(s || '').replace(/\s+\n/g, '\n').trim().slice(0, n);
   L.push(`여행 이름: ${p.name}`, `기간: ${p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 없음'} (${p.nd - 1}박 ${p.nd}일)`);
-  if (p.meet) L.push(`출발 미팅: ${[p.meet.d, p.meet.t, p.meet.n].filter(Boolean).join(' · ')}`);
+  L.push(p.meet ? `[출발 미팅 · 여행사 안내 그대로] ${[p.meet.d, p.meet.t, p.meet.n].filter(Boolean).join(' · ')}` : '[출발 미팅] 자료 없음 — 항공편 출발 시각은 미팅 시각이 아님. 미팅 시각·장소를 짐작하지 말 것');
+  L.push('[가이드 연락처] 자료 없음', '[알아 둘 것] 일정에 등록된 것과 상품 가격에 포함된 것은 다르다. 포함 여부는 자료에 "포함"·"포함사항"·"스페셜포함" 같은 글자가 그 일정에 직접 적혀 있을 때만 그 글자를 근거로 말하고, 없으면 "포함 여부는 자료로 확인할 수 없어요"라고 한다');
   for (const z of (p.info || [])) L.push(`[안내 · ${z.h}]\n${cut(z.x, 1500)}`);
   for (let d = 0; d < p.nd; d++) {
     L.push(`\n[${d + 1}일차 · ${planDayLabel(p, d)}]`);
     const w = wx && wx.days && wx.days[d]; if (w) L.push(`날씨(${wx.src === 'fc' ? '예보' : '작년 같은 날'}): ${planWxLine(w)}`);
     for (const x of planItems(p, d)) {
       const kk = (PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1];
-      L.push(`- ${x.t || '시각 없음'} [${kk}${x.opt ? ` · 선택관광${x.opt === 2 ? "(하나투어 표기 '스페셜포함')" : ''}` : ''}] ${x.n}${x.m ? ` — ${cut(x.m, 200)}` : ''}${x.ok ? ' (다녀옴)' : ''}`);
+      L.push(`- ${x.t || '시각 없음'} [${kk} · 일정에 등록${x.opt ? ` · 여행사 분류 '선택관광'${x.opt === 2 ? " · 하나투어 표기 '스페셜포함'" : ''}` : ''}${x.ap || x.near ? ' · 위치는 앱이 짐작한 대략' : ''}] ${x.n}${x.m ? ` — ${cut(x.m, 200)}` : ''}${x.ok ? ' (다녀옴)' : ''}`);
       if (x.x) L.push(`  ${planXLab(p).replace(/^\S+\s*/, '')}: ${cut(x.x, 700).replace(/\n/g, ' / ')}`);
     }
   }
-  { const O = (p.it || []).filter(x => x.opt); L.push(O.length ? `\n[선택관광 · 여행사 일정표 분류 그대로] ${O.map(x => `${x.d + 1}일차 ${x.n}${x.opt === 2 ? "('스페셜포함')" : ''}`).join(' / ')} · 비용은 자료에 없음 · '스페셜포함'은 하나투어가 쓴 표기 그대로이고 상품 값에 들어 있다는 뜻으로 보이지만 확정은 여행사·가이드에게 확인하라고 답할 것` : (planIsHana(p) ? '\n[선택관광] 이 계획엔 선택관광 표시가 아직 없어요(하나투어 일정을 다시 받으면 생겨요)' : '')); }
+  { const O = (p.it || []).filter(x => x.opt); L.push(!O.length && !p.optV ? '\n[선택관광] 자료 없음 — 어떤 일정이 선택관광인지, 가격에 포함인지 이 자료로는 알 수 없음. 짐작하지 말 것' : O.length ? `\n[선택관광 · 여행사 일정표 분류 그대로] ${O.map(x => `${x.d + 1}일차 ${x.n}${x.opt === 2 ? "('스페셜포함')" : ''}`).join(' / ')} · 비용은 자료에 없음 · '스페셜포함'은 하나투어가 쓴 표기 그대로이고 상품 값에 들어 있다는 뜻으로 보이지만 확정은 여행사·가이드에게 확인하라고 답할 것` : (p.optV ? '\n[선택관광] 여행사 일정표에 선택관광으로 분류된 일정이 없음' : '')); }
   try { const P = planPrepList(p, wx).S; L.push('\n[여행 준비 목록]'); for (const s of P) L.push(`${s.h}: ${s.it.map(i => i.t + (i.w ? ` (${cut(i.w, 120)})` : '')).join(' / ')}`); } catch {}
   return { txt: L.join('\n').slice(0, 60000), today: K != null && K >= 0 && K < p.nd ? `오늘은 ${K + 1}일차(${planDayLabel(p, K)})예요.` : K != null && K < 0 ? `오늘은 출발 ${-K}일 전이에요.` : '여행 날짜가 지났거나 정해지지 않았어요.' };
 }
+// 판 -135 (개선 지시서 3번): 자료에 그대로 있는(또는 없는) 것은 AI 없이 자료로 바로 답해요 — 짐작해서 틀리지 않게, 열쇠 없는 휴대폰에서도
+//   ① 출발 미팅·집합: p.meet 그대로 / 없으면 '자료 없음'(항공편 시각을 미팅으로 대신하지 않음)
+//   ② 선택관광·옵션·포함: 여행사 분류 '선택관광' 목록 그대로 / 표시가 없으면 '자료로 알 수 없음'
+function trBotLocal(p, x) {
+  if (!p) return null; x = String(x || '');
+  const fly = (p.it || []).find(y => y.k === 'fly' && y.d === 0 && y.t);
+  if (/미팅|집합|모이|만나는\s*(곳|장소|시간)|어디서\s*만나/.test(x) && !/식사|점심|저녁/.test(x)) {
+    if (p.meet) return { x: `출발 미팅 (여행사 안내 그대로)\n${[p.meet.d ? planDayLabel({ start: p.meet.d }, 0) : '', p.meet.t].filter(Boolean).join(' ')}\n${p.meet.n}`, src: ['출발 미팅'] };
+    return { x: `이 계획에는 출발 미팅(집합) 시각·장소 자료가 없어요.${fly ? `\n1일차 항공편 '${fly.n}' ${fly.t}은 비행기 시각이고 미팅 시각이 아니에요.` : ''}\n여행사 확정 안내(문자·메일)나 담당자에게 확인해 주세요.${planIsHana(p) && IN_NATIVE ? '\n앱에서 ⋯ 더보기 → 하나투어 일정 다시 받기를 하면 미팅 정보가 들어올 수 있어요.' : ''}`, src: ['출발 미팅 · 자료 없음'], miss: 1 };
+  }
+  if (/선택\s*관광|옵션|선택관|추가\s*(요금|비용)|포함(이야|이에요|인가|돼|되|된)|스페셜/.test(x)) {
+    const O = (p.it || []).filter(y => y.opt);
+    if (O.length) return { x: `여행사 일정표에서 '선택관광'으로 분류된 일정 ${O.length}곳:\n${O.map(y => `· ${y.d + 1}일차 ${y.n}${y.opt === 2 ? " — 하나투어 표기 '스페셜포함'" : ''}`).join('\n')}\n\n'스페셜포함'은 하나투어가 쓴 글자 그대로예요. 상품 가격에 들어 있다는 뜻으로 보이지만, 비용과 정확한 포함 여부는 자료에 없으니 여행사·가이드에게 확인해 주세요.\n그 밖의 일정이 가격에 포함인지는 자료로 확인할 수 없어요.`, src: O.map(y => `${y.d + 1}일차 · ${y.n}`).slice(0, 5) };
+    return { x: `이 계획에는 어떤 일정이 선택관광인지, 가격에 포함인지 알려 주는 자료가 없어요.\n일정에 등록돼 있다고 해서 가격에 포함된 것은 아니에요.\n여행사 상품 안내의 '포함/불포함 사항'이나 담당자에게 확인해 주세요.${planIsHana(p) && IN_NATIVE && !p.optV ? '\n앱에서 하나투어 일정을 다시 받으면 선택관광 표시가 들어올 수 있어요.' : ''}`, src: ['선택관광 · 자료 없음'], miss: 1 };
+  }
+  return null;
+}
+async function trLocalAnswer(R, S, p, q) {   // 자료로 바로 답할 수 있으면 답을 올리고 true
+  const L = trBotLocal(p, q.x); if (!L) return false; const aid = 'a_' + q.id; if (S.tc.some(y => y.id === aid && !y.wait)) return true;
+  const a = { by: trMe(), nm: '✨ 여행 도우미', bot: 1, local: 1, q: q.id, x: L.x, src: L.src, miss: L.miss ? 1 : 0, t: Date.now() };
+  try { await trPut(R, 'tc', aid, a); const i = S.tc.findIndex(y => y.id === aid); if (i >= 0) S.tc[i] = Object.assign({ id: aid, _t: a.t }, a); else S.tc.push(Object.assign({ id: aid, _t: a.t }, a)); await trSet('room:' + R.rid, S); return true; } catch { return false; }
+}
 async function trBotAnswer(R, S, p, q) {   // 질문 하나에 답하기 → 성공하면 true
+  if (await trLocalAnswer(R, S, p, q)) return true;
   const me = trMe(), aid = 'a_' + q.id;
   const N = ls.get('tripBotN', null) || {}, day = new Date().toDateString(); if (N.d === day && N.n >= TB_DAY_MAX) return false;
   try { await trPut(R, 'tc', aid, { by: me, nm: '✨ 여행 도우미', bot: 1, wait: 1, q: q.id, ow: trName(), t: Date.now() }); } catch { return false; }
   const ctx = planBotCtx(p), hist = S.tc.filter(m => m.ask && m.id !== q.id && m.t < q.t).slice(-3).map(m => { const a = S.tc.find(y => y.id === 'a_' + m.id && !y.wait); return a ? `질문: ${m.x}\n답: ${a.x}` : null; }).filter(Boolean);
-  const sys = '너는 이 단체 여행에 함께하는 "여행 도우미"다. 아래 "여행 자료"(여행사 일정표·안내문·날씨·준비 목록)에 적힌 것만으로 답한다.\n- 자료에 없는 사실(영업시간·가격·가이드 연락처·환율·지금 상황 등)은 지어내지 말고 "여행 자료엔 없어요"라고 한 뒤 가이드나 여행사에 물어보라고 한다.\n- 지명·식당·호텔·관광 이름은 자료에 적힌 글자 그대로 쓴다(예: 장가계를 장자제로 바꾸지 않는다).\n- 한국어, 쉬운 말, 3~6줄. 시각·장소는 자료 그대로. 목록이 길면 줄을 나눠도 된다.\n- 근거로 쓴 일정은 "n일차 장소이름" 또는 "안내 · 제목" 꼴로 src에 적는다.\n결과는 JSON 하나로만: {"text": "답", "src": ["근거", ...]}';
+  const sys = '너는 이 단체 여행에 함께하는 "여행 도우미"다. 아래 "여행 자료"(여행사 일정표·안내문·날씨·준비 목록)에 적힌 것만으로 답한다.\n- 자료에 없는 사실(영업시간·가격·가이드 연락처·환율·지금 상황·미팅 시각·장소 등)은 지어내지 말고 "여행 자료엔 없어요"라고 한 뒤 가이드나 여행사에 물어보라고 한다.\n- "일정에 등록"과 "상품 가격에 포함"은 다르다. 포함 여부는 그 일정에 ‘포함‘·‘포함사항‘·‘스페셜포함‘이 적혀 있을 때만 말하고, ‘기본 일정‘·‘기본 포함‘이라고 단정하지 않는다.\n- 항공편 시각을 미팅·집합 시각으로 대신 말하지 않는다.\n- 지명·식당·호텔·관광 이름은 자료에 적힌 글자 그대로 쓴다(예: 장가계를 장자제로 바꾸지 않는다).\n- 한국어, 쉬운 말, 3~6줄. 시각·장소는 자료 그대로. 목록이 길면 줄을 나눠도 된다.\n- 근거로 쓴 일정은 자료에 적힌 이름 그대로 "n일차 · 장소이름", "안내 · 제목", "출발 미팅" 꼴로 src에 적는다. 근거가 없으면 src는 빈 목록.\n결과는 JSON 하나로만: {"text": "답", "src": ["근거", ...]}';
   const prompt = `${ctx.today}\n\n여행 자료:\n${ctx.txt}\n\n${hist.length ? `앞서 나눈 말:\n${hist.join('\n\n')}\n\n` : ''}질문: ${q.x}`;
   toast(`✨ AI를 써요 · 여행 도우미${q.by !== me ? ` · ${q.nm || '일행'} 님 질문` : ''}`, true);
   try {
@@ -8959,7 +9022,7 @@ async function trBotTick(code, R, S) {   // 안 답한 질문 찾기 (하루 지
   try {
     const p = planOfRoom(code); if (!p) return 0;
     const now = Date.now(), me = trMe();
-    const qs = S.tc.filter(m => m.ask && m.x && now - m.t < 864e5 && (() => { const a = S.tc.find(y => y.id === 'a_' + m.id); return !a || (a.wait && (a.by === me ? now - a.t > 90000 : now - a.t > 120000)); })());
+    const qs = S.tc.filter(m => m.ask && m.x && now - m.t < TQ_EXP && !S.tc.some(y => y.cq === m.id || (y.ask && y.re === m.id)) && (() => { const a = S.tc.find(y => y.id === 'a_' + m.id); return !a || (a.wait && (a.by === me ? now - a.t > 90000 : now - a.t > 120000)); })());   // 판 -135: 30분 지난 질문·취소·다시 물은 질문은 안 함
     for (const q of qs.slice(0, 3)) { if (await trBotAnswer(R, S, p, q)) n++; }
     if (n) document.dispatchEvent(new Event('tr-changed'));
   } finally { trBotTick.busy = 0; }
@@ -8979,20 +9042,43 @@ function trBotStart(p) {   // 계획·오늘·여행 방 화면에서: 열쇠가
   };
   go(); setInterval(go, 15000);
 }
-async function trAsk(R, S, x) {   // 질문 올리기 (누구나)
-  const m = { by: trMe(), nm: trName() || '일행', ask: 1, x: String(x).trim().slice(0, 500), t: Date.now() }, id = Date.now().toString(36) + rid(4);
+async function trAsk(R, S, x, re) {   // 질문 올리기 (누구나) · re = 다시 묻는 앞 질문 번호(앞 질문은 화면에서 숨김)
+  if (re && S.tc.some(y => y.ask && y.re === re)) return null;   // 이미 다시 물었으면 또 안 만듦
+  const m = Object.assign({ by: trMe(), nm: trName() || '일행', ask: 1, x: String(x).trim().slice(0, 500), t: Date.now() }, re ? { re } : {}), id = Date.now().toString(36) + rid(4);
   S.tc.push(Object.assign({ id, _t: m.t, pend: 1 }, m));
   await trPut(R, 'tc', id, m); const q = S.tc.find(y => y.id === id); if (q) delete q.pend; await trSet('room:' + R.rid, S);
+  try { const pl = planOfRoom(R.code); if (pl && q) await trLocalAnswer(R, S, pl, q); } catch {}
   return id;
 }
-function trBotBubble(a, q, p) {   // 도우미 답 말풍선 (여행 자료로 답 못 하면 하나투어 AI로 넘기는 단추)
-  const miss = !a.wait && (a.err || /자료(에|엔|에는|에도)?[^.\n]{0,40}없/.test(a.x || ''));
-  return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px' },
-    el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '✨ 여행 도우미' }),
+function trBotBubble(a, q, p) {   // 도우미 답 말풍선 · 근거를 누르면 원문 (판 -135) · 여행 자료로 답 못 하면 하나투어 AI로 넘기는 단추
+  const miss = !a.wait && (a.err || a.miss || /자료(에|엔|에는|에도)?[^.\n]{0,40}없/.test(a.x || ''));
+  const src = !a.wait && a.src && a.src.length ? a.src : [];
+  return el('div', { style: 'display:flex;flex-direction:column;align-items:flex-start;gap:3px' },
+    el('div', { class: 'dt', style: 'font-weight:800;color:#D2462A', text: '✨ AI 도우미' + (a.local ? ' · 계획 자료 그대로' : '') }),
     el('div', { style: 'max-width:88%;padding:10px 13px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;border:1px solid #FFD3C6;white-space:pre-wrap;word-break:break-word;line-height:1.55', text: a.wait ? '답을 쓰는 중이에요…' : a.x }),
-    !a.wait && a.src && a.src.length ? el('div', { class: 'dt', style: 'font-size:11.5px', text: '근거 · ' + a.src.join(' · ') }) : null,
-    !a.wait && !a.err ? el('div', { class: 'dt', style: 'font-size:11px', text: `여행 자료로만 답해요 · 틀릴 수 있어요${a.ow ? ` · ${a.ow} 님 휴대폰` : ''} · ${trHm(a.t)}` }) : null,
+    src.length ? el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;max-width:88%' }, el('span', { class: 'dt', style: 'font-size:11.5px', text: '근거' }),
+      ...src.map(t => el('button', { type: 'button', style: 'border:1px solid #FFD3C6;background:#fff;border-radius:10px;padding:2px 8px;font:600 11.5px Pretendard,sans-serif;color:#9A3412;cursor:pointer', text: t + ' ›', onclick: () => trSrcOpen(p, t) }))) : (!a.wait && !a.err && !a.local ? el('div', { class: 'dt', style: 'font-size:11.5px;color:#C2410C', text: '근거로 든 자료가 없어요 · 일정표와 다를 수 있어요' }) : null),
+    !a.wait && !a.err ? el('div', { class: 'dt', style: 'font-size:11px', text: `${a.local ? '계획에 등록된 자료를 그대로 보여 줘요' : '등록된 일정·안내로 답해요 · 틀릴 수 있어요'}${a.ow ? ` · ${a.ow} 님 휴대폰` : ''} · ${trHm(a.t)}` }) : null,
     miss && q && planIsHana(p) ? el('button', { class: 'btn line small', style: 'margin-top:4px', text: '하나투어 AI에게 물어보기 ↗', onclick: () => hanaAskOpen(p, q.x) }) : null);
+}
+function planMissNote(p) {   // 이 계획에 없는 자료 (판 -135 · 개선 지시서 3번)
+  const L = [];
+  if (!p.meet) L.push('출발 미팅 시각·장소');
+  if (!(p.it || []).some(x => x.opt) && !p.optV) L.push('선택관광·포함 여부');
+  L.push('가이드 연락처');
+  return el('div', { style: 'margin:0 4px;padding:9px 12px;border-radius:12px;background:#FFF7ED;color:#9A3412;font-size:13px;line-height:1.5;white-space:pre-wrap', text: `⚠ 이 계획에 없는 자료: ${L.join(' · ')}\n물어봐도 '자료가 없어요'라고 답해요. 여행사 확정 안내로 확인해 주세요.` });
+}
+function trSrcOpen(p, t) {   // 근거 이름 → 계획 속 원문(여행사 안내·메모·미팅)
+  if (!p) return; t = String(t || ''); const nz = v => String(v || '').replace(/\s+/g, '');
+  if (/출발\s*미팅/.test(t)) return labSheet('출발 미팅', el('div', { style: 'white-space:pre-wrap;line-height:1.6', text: p.meet ? `${p.meet.d || ''} ${p.meet.t || ''}\n${p.meet.n}\n\n(여행사 안내 그대로)` : '계획에 출발 미팅 자료가 없어요.' }));
+  if (/자료 없음/.test(t)) return labSheet(t, el('div', { class: 'sub', text: '이 내용은 계획에 자료가 없어요. 여행사·가이드에게 확인해 주세요.' }));
+  const ai = /^안내\s*·\s*(.+)$/.exec(t); if (ai) { const z = (p.info || []).find(z => nz(z.h).includes(nz(ai[1])) || nz(ai[1]).includes(nz(z.h))); if (z) return labSheet(z.h, el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.6', text: z.x })); }
+  const m = /(\d+)\s*일차\s*·?\s*(.*)$/.exec(t), d = m ? +m[1] - 1 : null, n = nz(m ? m[2] : t);
+  const x = (p.it || []).find(y => (d == null || y.d === d) && n && (nz(y.n).includes(n) || n.includes(nz(y.n)))) || (p.it || []).find(y => n && (nz(y.n).includes(n) || n.includes(nz(y.n))));
+  if (!x) return labSheet('근거', el('div', { class: 'sub', text: `'${t}'에 맞는 일정을 계획에서 찾지 못했어요. 일정표와 다를 수 있어요.` }));
+  return labSheet(x.n, el('div', { class: 'sub', text: `${x.d + 1}일차${x.t ? ' · ' + x.t : ''} · ${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1]}${x.opt ? ` · 여행사 분류 선택관광${x.opt === 2 ? " · '스페셜포함'" : ''}` : ''}` }),
+    x.m ? el('div', { style: 'white-space:pre-wrap', text: x.m }) : null,
+    el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.6', text: x.x || '여행사 안내 글이 없어요(이름만 있어요).' }));
 }
 var TB_QUICK = ['오늘 일정 알려 줘', '내일은 뭘 챙겨야 해?', '첫날 미팅 장소랑 시간은?', '식사는 어떻게 나와?', '날씨랑 옷차림은?', '선택 관광은 뭐가 있어?'];
 // 🧭 길 도우미 (2026-11-15 사용자 '여기도 챗봇 넣자. 계획 도우미. 길가다 헷갈리면 도와주기. 주변 안내 등등')
@@ -9127,21 +9213,22 @@ function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 �
   let R = null, S = null, busy = false, lastN = -1;
   const paint = () => {
     if (!S) return;
-    const who = trBotWho(S), me = trMe(), qs = S.tc.filter(m => m.ask).slice(-20);
+    const who = trBotWho(S), me = trMe(), qs = S.tc.filter(m => m.ask && !trQHidden(S, m)).slice(-20);
     const N = ls.get('tripBotN', null) || {}, n = N.d === new Date().toDateString() ? N.n : 0;
-    faRc(st, el('span', { style: `color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t }),
+    faRc(st, el('span', { style: `color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t + (who.ok ? '' : ' · 지금 보내면 답이 늦거나 오지 않을 수 있어요') }),
       trBotKey() ? el('span', { style: 'font-weight:500;color:#6B7684', text: ` · 오늘 ${n}/${TB_DAY_MAX}번 · ` }) : null,
       trBotKey() ? el('button', { type: 'button', style: 'border:none;background:none;padding:0;font:600 13px Pretendard,sans-serif;color:#6B7684;text-decoration:underline;cursor:pointer', text: trBotOn(R) ? '일행 질문 답하기 끄기' : '일행 질문 답하기 켜기', onclick: () => { ls.set('tripBot:' + R.rid, !trBotOn(R)); trPut(R, 'tm', me, { by: me, nm: trName() || '일행', bot: trBotOn(R) ? Date.now() : 0, off: trBotOn(R) ? 0 : 1, t: Date.now() }).catch(() => {}); if (trBotOn(R)) trBotStart(p); paint(); } }) : null);
     const atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     faRc(list, ...(qs.length ? qs.flatMap(q => { const a = S.tc.find(y => y.id === 'a_' + q.id);
       return [el('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' }, q.by !== me ? el('div', { class: 'dt', style: 'font-weight:700', text: q.nm || '일행' }) : null,
           el('div', { style: 'max-width:82%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: q.x })),
-        a ? trBotBubble(a, q, p) : el('div', { class: 'dt', text: q.pend ? '보내는 중…' : `⏳ 답을 기다려요 · ${who.ok ? '곧 와요' : '답해 줄 휴대폰이 켜지면 와요'}` })]; })
-      : [el('div', { class: 'sub', style: 'padding:8px 4px', text: '이 여행 일정과 여행사 안내를 다 알고 있어요. 아래 질문을 누르거나 직접 물어보세요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' })]));
+        a && !a.wait ? trBotBubble(a, q, p) : null, trQFoot(R, S, q, paint, x => { bg.remove(); location.href = './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1'; try { sessionStorage.setItem('tripTo:' + R.rid, '0'); sessionStorage.setItem('tripDraft', x); } catch {} }, code)].filter(Boolean); })
+      : [el('div', { class: 'sub', style: 'padding:8px 4px', text: '이 계획에 등록된 일정과 안내를 바탕으로 답해요. 계획에 없는 것(가격·영업시간·가이드 연락처 등)은 모른다고 답해요. 질문과 답은 여행 방에 남아 일행도 같이 봐요.' }), planMissNote(p)].filter(Boolean)));
     if (atEnd || qs.length !== lastN) list.scrollTop = list.scrollHeight; lastN = qs.length;
   };
   const send = async (x) => {
     x = String(x || ta.value).trim(); if (!x) { ta.focus(); return toast('궁금한 걸 적어 주세요'); } if (busy) return toast('앞 질문을 보내는 중이에요');
+    if (S && S.tc.some(m => m.ask && m.by === trMe() && m.x === x && Date.now() - m.t < 60000)) return toast('방금 같은 질문을 보냈어요');   // 두 번 눌러 생기는 같은 질문 막기
     if (!trName()) { const nm = nmIn.value.trim().slice(0, 12); if (!nm) { nmIn.focus(); return toast('먼저 내 이름을 적어 주세요'); } ls.set('nick', nm); nmIn.remove(); }
     if (!R) return toast('잠깐만요, 여행 방에 들어가는 중이에요');
     busy = true; ta.value = ''; goB.disabled = true; goB.style.opacity = '.5';
@@ -9156,7 +9243,7 @@ function planAskSheet(p) {   // 채팅 모양: 위 상태 한 줄 · 가운데 �
     st, list,
     el('div', { style: 'flex:none' }, chips, trName() ? null : nmIn,
       el('div', { style: 'display:flex;gap:8px;align-items:flex-end;margin-top:6px' }, ta, goB),
-      el('div', { class: 'dt', style: 'font-size:11.5px;margin-top:6px', text: '여행사 일정·안내·날씨 자료로만 답해요. 사진·위치·이름은 보내지 않아요.' }))));
+      el('div', { class: 'dt', style: 'font-size:11.5px;margin-top:6px', text: '등록된 일정·안내·날씨 자료로만 답해요. 사진·위치·이름은 보내지 않아요.' }))));
   document.body.append(bg); ovGuard();
   (async () => { try { R = await trRoom(code); S = await trLoad(R); paint(); await trSync(R, S, ['tc', 'tm']); paint();
     trBotStart(p);
