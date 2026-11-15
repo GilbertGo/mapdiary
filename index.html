@@ -3228,9 +3228,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-167-hotel';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-168-flytime';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
+const UI_NOTES = '✈ 비행 구간 줄에 출발→도착 시각(모르면 거리로 짐작한 비행 시간) · 비행 칸을 고칠 때 도착 시각도 적어요 · 🏨 숙소를 예약 앱과 이어요: 아고다·부킹닷컴 앱에서 공유 → 복사한 글을 붙여 넣으면 묵는 밤 숙소에 붙고, 숙소 칸의 "아고다에서 보기"로 바로 열려요 · 링크가 없으면 "예약 앱에서 찾기" · 🔢 일정 번호 이어지게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7988,7 +7988,7 @@ function planSumCalc(p, day) {   // 판 -135 (개선 지시서 4번): 걷기·�
     }
     L2.forEach((x, j) => { if (o.from && j === 0) return; const h = x.bEle ?? x.ele ?? x.ele2; if (h != null) { o.eleN++; if (o.top == null || h > o.top) o.top = h; } });
     for (let i = 1; i < L2.length; i++) { const a = L2[i - 1], b = L2[i], st = dist(a.lat, a.lng, b.lat, b.lng); if (st < 20) continue;
-      if (planLegMode(a, b, p) === 'fly') { o.fly += st; continue; }
+      if (planLegMode(a, b, p) === 'fly') { o.fly += st; o.flyMin = (o.flyMin || 0) + planFlyMin(st); continue; }
       const R = planWalkPair(a, b, p) && planRtGet(a, b), du = a.ele2 != null && b.ele2 != null ? b.ele2 - a.ele2 : 0;
       let m, up, dn;
       if (R) { m = R.m; up = R.up != null ? R.up : Math.max(0, du); dn = R.dn != null ? R.dn : Math.max(0, -du); if (R.top != null && (o.top == null || R.top > o.top)) o.top = R.top; o.real++; }
@@ -8025,7 +8025,7 @@ function planSumBox(p, day, onNav) {
     o.wLeg ? `🚶 걷기 ${fmtDist(o.walk)} · 약 ${fm(o.wMin)} (${o.real ? `실제 길 ${o.real}구간` : ''}${o.real && o.guess ? ' · ' : ''}${o.guess ? `직선으로 짐작 ${o.guess}구간` : ''})` : '',
     o.cLeg ? `🚗 차 약 ${fmtDist(o.car)} (${o.cReal === o.cLeg ? '도로 길' : o.cReal ? `도로 길 ${o.cReal}구간 · 직선 ×1.3 짐작 ${o.cLeg - o.cReal}구간` : `직선 거리 ×1.3 짐작 ${o.cLeg}구간`} · 시속 35km로 셈)` : '',
     o.rLeg ? `🚆 전철 약 ${fmtDist(o.rail)} · 약 ${fm(Math.round(o.rMin))} (직선 ×1.15 · 시속 40km 짐작 ${o.rLeg}구간 · 갈아타기·기다림 빠짐)` : '',
-    o.fly ? `✈ 비행 ${fmtDist(o.fly)} (시간은 항공편 시각대로)` : '',
+    o.fly ? `✈ 비행 ${fmtDist(o.fly)} · 약 ${o.flyMin >= 60 ? Math.floor(o.flyMin / 60) + '시간' + (o.flyMin % 60 ? ' ' + o.flyMin % 60 + '분' : '') : o.flyMin + '분'} (거리로 짐작 · 정확한 시각은 항공편대로)` : '',
     o.from ? `전날 밤 숙소 '${o.from}'에서 첫 장소까지 포함` : '',
     o.miss ? `⚠ 위치 없는 ${o.miss}곳은 미계산(거리·시간에 안 들어가요)` : ''].filter(Boolean);
   const tail = '관광지 안에서 걷는 거리·머무는 시간은 빠져 있어요 · 대략값';
@@ -8036,11 +8036,16 @@ function planSumBox(p, day, onNav) {
     el('div', { style: 'font-size:11.5px;color:#8B95A1;padding:4px 8px 0;line-height:1.45', text: tail }),
     onNav ? el('div', { style: 'padding:10px 6px 0' }, el('button', { class: 'btn', style: 'width:100%;background:#191F28;color:#fff;font:600 15.5px Pretendard,sans-serif;padding:13px;border-radius:14px', text: '길 안내 시작', onclick: onNav })) : null);
 }
+// 판 -168 (사용자 '비행도 시간넣어'): 비행 칸의 출발·도착 시각(x.t·x.ta, 없으면 메모 '10:35 출발 → 12:20 도착')과 거리로 짐작한 비행 시간
+function planFlyT(x) { if (!x) return {}; const m = String(x.m || '').match(/(\d{1,2}:\d{2})\s*출발\s*→\s*(\d{1,2}:\d{2})\s*도착/); return { dep: x.t || (m && m[1]) || '', arr: x.ta || (m && m[2]) || '' }; }
+function planFlyMin(m) { return Math.round(m / 780000 * 60 + 30); }   // 시속 780km + 뜨고 내리는 30분 (대략)
+function planFlyTxt(fx, m) { const T = planFlyT(fx), mn = planFlyMin(m), fm = mn >= 60 ? `${Math.floor(mn / 60)}시간${mn % 60 ? ' ' + (mn % 60) + '분' : ''}` : `${mn}분`;
+  return T.dep && T.arr ? `비행 ${T.dep} 출발 → ${T.arr} 도착 · ${fmtDist(m)}` : `비행 ${T.dep ? T.dep + ' 출발 · ' : ''}약 ${fm} · ${fmtDist(m)}`; }
 // 판 -161 (사용자 '구간별 거리도 넣고. 얼마를 걸어야 할지 알아야해'): 두 곳 사이 한 구간 — 어떻게·몇 m·몇 분 · 받은 실제 길인지
 function planLegInfo(a, b, p) {
   const k = planLegMode(a, b, p); if (!k || k === 'none') return null;
   const st = dist(a.lat, a.lng, b.lat, b.lng), hike = !!(p && p.hike && p.hike.on), fm = mn => mn >= 60 ? `${Math.floor(mn / 60)}시간${mn % 60 ? ' ' + (mn % 60) + '분' : ''}` : `${Math.max(1, mn)}분`;
-  if (k === 'fly') return { k, m: st, ic: '✈', svg: 'plane', t: `비행 ${fmtDist(st)}`, s: `비행 ${fmtDist(st)}`, real: 0 };
+  if (k === 'fly') { const tx = planFlyTxt(b.k === 'fly' ? b : a.k === 'fly' ? a : null, st); return { k, m: st, ic: '✈', svg: 'plane', t: tx, s: tx, real: 0 }; }
   if (k === 'rail') { const m = st * 1.15, mn = Math.round(m / 40000 * 60); return { k, m, ic: '🚆', svg: 'train', t: `전철 약 ${fm(mn)} · ${fmtDist(m)}`, s: `전철 약 ${fmtDist(m)} · 약 ${fm(mn)}`, real: 0, note: '노선 아님' }; }
   const car = k === 'car' || (k === 'line' && st > 1500);
   if (car) { const CR = k === 'car' && planRtGet(a, b, true), m = CR ? CR.m : st * 1.3, nm = b.lmn === 'taxi' ? ['🚕', '택시로'] : b.lmn === 'bus' ? ['🚌', '버스로'] : ['🚗', '차로'];
@@ -10647,7 +10652,7 @@ async function planBookApply(p, R, docId, say) {   // 읽은 예약을 일정에
     let x = f.no ? p.it.find(y => y.k === 'fly' && nk(y.n).includes(nk(f.no))) : null; const isNew = !x;
     if (!x) x = { id: planNewId(), k: 'fly', lat: null, lng: null };
     const meM = (p.mem || []).find(z => z.id === ls.get('planMe:' + p.id, ''));
-    Object.assign(x, { d, t: f.dep, n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } }, isNew ? { mine: 1 } : {});   // 판 -142: 내 비행기는 내 일정
+    Object.assign(x, { d, t: f.dep, ta: f.arr || x.ta || '', n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } }, isNew ? { mine: 1 } : {});   // 판 -142: 내 비행기는 내 일정
     if (!Number.isFinite(x.lat)) { say && say(`📍 ${f.fromAp || f.from} 위치 찾는 중…`); const g = await geo(f.fromEn || (f.fromCode && f.fromCode + ' airport')); if (g) { x.lat = g[0]; x.lng = g[1]; x.ap = 0; } }
     if (isNew) p.it.push(x); out.n++; out.lines.push(`✈ ${f.date.slice(5).replace('-', '/')} ${f.dep} ${n}${f.ref ? ` · 예약번호 ${f.ref}` : ''}`);
   }
@@ -11080,19 +11085,20 @@ function viewPlanOne(id) {
   function editItem(x, isNew) {
     const nm = el('input', { type: 'text', value: x.n || '', placeholder: '장소 이름', style: 'width:100%;box-sizing:border-box' });
     const tm = el('input', { type: 'time', value: x.t || '', style: 'width:100%;box-sizing:border-box' });
+    const ta = el('input', { type: 'time', value: planFlyT(x).arr || '', style: 'width:100%;box-sizing:border-box' }), taW = el('div', { class: 'grow', style: 'display:none' }, el('label', { class: 'sub', text: '도착 시각 (현지)' }), ta);   // 판 -168
     const ds = el('select', { style: 'width:100%' }, ...Array.from({ length: p.nd }, (_, d) => el('option', { value: d, selected: d === x.d ? true : null, text: `${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}` })));
     let k = x.k || 'spot';
     const kRow = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });
-    const drawK = () => kRow.replaceChildren(...Object.entries(PLAN_KINDS).map(([kk, v]) => el('button', { class: 'btn small ' + (k === kk ? 'dark' : 'line'), text: v[0] + ' ' + v[1], onclick: () => { k = kk; drawK(); } }))); drawK();
+    const drawK = () => (taW.style.display = k === 'fly' ? '' : 'none', kRow.replaceChildren(...Object.entries(PLAN_KINDS).map(([kk, v]) => el('button', { class: 'btn small ' + (k === kk ? 'dark' : 'line'), text: v[0] + ' ' + v[1], onclick: () => { k = kk; drawK(); } })))); drawK();
     const mm = el('textarea', { rows: 2, placeholder: '메모 (메뉴·입장 시간·준비물 등)', style: 'width:100%;box-sizing:border-box;font:inherit' }); mm.value = x.m || '';
     let at = Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng } : null;
     const locL = el('div', { class: 'sub' }); const paintL = () => { locL.textContent = at ? `📍 위치 있음${x.ap ? ' (대략)' : ''}` : '📍 아직 위치가 없어요'; }; paintL();
     let mine = !!x.mine; const frRow = el('div', { class: 'row', style: 'gap:6px' });   // 판 -142: 함께 일정 / 내 일정 둘만
     const drawFr = () => frRow.replaceChildren(el('button', { class: 'btn small grow ' + (!mine ? 'dark' : 'line'), text: '👥 함께 일정 (모두 똑같이)', onclick: () => { mine = false; drawFr(); } }),
       el('button', { class: 'btn small grow ' + (mine ? 'dark' : 'line'), text: '👤 내 일정 (나만)', onclick: () => { mine = true; drawFr(); } })); drawFr();
-    const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (mine) x.mine = 1; else delete x.mine; delete x.fr; if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
+    const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (k === 'fly' && ta.value) x.ta = ta.value; else delete x.ta; if (mine) x.mine = 1; else delete x.mine; delete x.fr; if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
     const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: planXLab(p) }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
-    const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
+    const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요 · 비행은 출발)' }), tm), taW),
       kRow, p.shOn ? frRow : null, mm, locL,
       el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
@@ -11139,7 +11145,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ ic: mic, k: x.k, t: x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.ai ? '✨ AI 추천' : x.opt ? '선택관광' : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + ' 출발' : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? '선택관광' : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : '', thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
         x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
