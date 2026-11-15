@@ -892,13 +892,13 @@ html.n-page .btn.line{background:#fff;color:#15202B;border-color:#E3E7EB;box-sha
 .n-seg{display:flex;gap:20px;border-bottom:1px solid #E6E9ED;margin:8px -20px 4px;padding:0 20px;overflow-x:auto;scrollbar-width:none}.n-seg::-webkit-scrollbar{display:none}
 .n-seg button{flex:none;background:none;border:none;padding:10px 0 11px;font:700 15px Pretendard,sans-serif;color:#A3ABB5;cursor:pointer;white-space:nowrap}
 .n-seg button.on{color:#15202B;box-shadow:inset 0 -2.5px 0 #15202B}
-.n-rc{display:block;text-decoration:none;color:inherit}
-.n-rc .im{height:196px;border-radius:20px;background:#E3E8EC center/cover no-repeat;position:relative}
+.n-rc{display:block;text-decoration:none;color:inherit;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 1px 5px rgba(16,24,40,.09);padding-bottom:13px}   /* 판 -152: 사진과 이름을 흰 카드 하나로(이름이 위·아래 사진 중 어디 것인지 헷갈려서) */
+.n-rc .im{height:196px;border-radius:0;background:#E3E8EC center/cover no-repeat;position:relative}
 .n-rc .tag{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.94);border-radius:20px;padding:4px 10px 4px 8px;font-size:12px;font-weight:700;display:flex;gap:5px;align-items:center;color:#15202B}
 .n-rc .tag svg{stroke:#15202B}
 .n-rc .cnt{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.5);color:#fff;border-radius:20px;padding:3px 9px;font-size:12px;font-weight:600}
 .n-rc .lv{position:absolute;right:12px;top:12px;background:#E5383B;color:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:800}
-.n-rc h3{margin:10px 2px 1px;font-size:18px;font-weight:800;letter-spacing:-.4px;color:#15202B}.n-rc p{margin:0 2px;font-size:13px;color:#6B7684}
+.n-rc h3{margin:11px 14px 2px;font-size:18px;font-weight:800;letter-spacing:-.4px;color:#15202B}.n-rc p{margin:0 14px;font-size:13px;color:#6B7684}
 .n-row{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:12px 14px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(21,32,43,.05)}
 .n-row .th{width:52px;height:52px;border-radius:14px;background:#EEF2F5;display:grid;place-items:center;color:#1D9EC0;flex:none}
 .n-row .th svg{stroke:#1D9EC0}
@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-151-jp';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-152-apply2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🗣 일본 여행 계획(오사카 등)에 아래 메뉴 일본어가 생겼어요 · 화장실·계산·카드·인원·길 잃음·도와주세요 같은 기본 말을 누르면 크게 보여 줘요 · 호텔로 가 주세요 카드도';
+const UI_NOTES = '✨ 계획 도우미의 반영하기 단추를 산호색으로 눈에 띄게 · 같은 제안이 두 번 보이지 않게 가장 마지막 제안만 목록과 단추를 보여 줘요 · 여행 계획·이야기 목록은 사진과 이름을 흰 카드 하나로 묶어 어느 사진의 이름인지 헷갈리지 않게';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9831,10 +9831,13 @@ function planMakeSheet(p) {
     if (m.r === 'u') return el('div', { style: 'align-self:flex-end;max-width:84%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: m.x });
     const box = el('div', { style: 'align-self:flex-start;max-width:94%;padding:10px 12px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;color:#15202B;line-height:1.5;display:flex;flex-direction:column;gap:6px' }, el('div', { style: 'white-space:pre-wrap', text: m.x }));
     const CH = m.ch || [], IT = m.items || [];
-    if (CH.length || IT.length) {
+    // 판 -152 (사용자 캡처: 같은 제안 목록·반영 단추가 두 번 보여 헷갈림): 반영 안 한 제안은 가장 마지막 것만 목록·단추를 보이고, 그 앞 것은 한 줄로 접음
+    const last = (() => { for (let i = hist.length - 1; i >= 0; i--) { const q = hist[i]; if (q.r === 'a' && !q.applied && !q.added && ((q.ch && q.ch.length) || (q.items && q.items.length))) return q; } return null; })(), old = (CH.length || IT.length) && !(m.applied || m.added) && last && last !== m;
+    if (old) box.append(el('div', { style: 'font-size:12.5px;color:#8A94A0', text: `앞 제안 (바꾸기 ${CH.length} · 넣기 ${IT.length}) · 아래 새 제안으로 반영해 주세요` }));
+    if ((CH.length || IT.length) && !old) {
       const cOn = CH.map(() => true), iOn = IT.map(() => true), done = m.applied || m.added;
       const lab = () => `✓ 반영하기${CH.length ? ` · 바꾸기 ${cOn.filter(Boolean).length}` : ''}${IT.length ? ` · 넣기 ${iOn.filter(Boolean).length}` : ''}`;
-      const btn = el('button', { class: 'btn primary full', text: lab(), onclick: () => applyAll(m, CH.filter((_, i) => cOn[i]), IT.filter((_, i) => iOn[i]), btn) });
+      const btn = el('button', { class: 'btn primary full', style: 'background:#FF6B4A;border-color:#FF6B4A;color:#fff;font-weight:800;box-shadow:0 4px 14px rgba(255,107,74,.38)', text: lab(), onclick: () => applyAll(m, CH.filter((_, i) => cOn[i]), IT.filter((_, i) => iOn[i]), btn) });   // 판 -152 사용자 '이거 색깔 바꿔 눈에 띄게' → 산호
       const ck = (arr, i) => done ? null : el('input', { type: 'checkbox', checked: true, style: 'margin-top:3px', onchange: e => { arr[i] = e.target.checked; btn.textContent = lab(); } });
       const line = (k, a, b2) => el('label', { style: 'display:flex;gap:8px;align-items:flex-start;background:#fff;border-radius:10px;padding:7px 9px;font-size:13.5px' }, k, el('span', {}, el('b', { text: a }), b2 ? el('span', { style: 'display:block;color:#6B7684;font-size:12.5px', text: b2 }) : null));
       if (CH.length) { box.append(el('div', { style: 'font-weight:800;font-size:13px;margin-top:4px', text: done ? `✅ 있던 일정 ${m.chDone || 0}곳 반영했어요` : '있던 일정 바꾸기' }));
