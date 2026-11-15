@@ -3267,9 +3267,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-183-verify';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-184-ref';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9291,6 +9291,31 @@ var PLAN_SAY_CN = [
 // 📒 여행 노트 (2026-11-15 사용자 '배치가 중구난방이다. 여기저기 흩어졌어' → 다시 배치):
 //   맨 위 요약(D-n·날짜·날씨 범위·체크 진행) → 여행 정보(여행지·함께 가는 사람·예약·출발 미팅·여행사 안내) → 날씨(하루 한 줄) → 체크리스트(묶음마다 접기) → 현지에서(보여 주는 말·통신·결제·긴급 도움)
 //   모든 칸이 같은 모양: 회색 작은 제목 + 흰 둥근 묶음 + 줄(이름 · 오른쪽 회색 값 · ›)
+// 판 -184 (사용자 '오사카 여행 계획의 여행노트에 오사카 여행상품을 참고로 링크 걸어두자. 유명 여행사 것으로'): 참고 여행상품 링크
+//   하나투어 자료(getPkgProdItnrInfo)로 출발일·항공편을 확인한 상품만 적어 둠 · 사용자가 직접 넣은 링크는 p.refs, 지운 기본 링크는 p.refsGone
+var PLAN_REF_PKGS = [
+  { dest: /오사카|大阪|osaka|간사이|kansai/i, start: '2026-12-11', id: 'hana-JOP136261211MME', by: '하나투어', n: '오사카 / 고베 / 나라 3일 (1일 자유 · 시내 숙박)',
+    note: '12월 11일 출발 · 피치항공 MM714 인천 10:35 → 간사이 12:20 · 귀국 12월 13일 MM711 간사이 19:50 → 인천 21:50 (하나투어 자료로 확인)', url: 'https://www.hanatour.com/trp/pkg/CHPC0PKG0200M200?pkgCd=JOP136261211MME' }];
+function planRefs(p) {
+  const nm = [(p.dest && p.dest.n) || '', p.name || '', planDestName(p) || ''].join(' '), gone = p.refsGone || {};
+  const base = PLAN_REF_PKGS.filter(r => r.dest.test(nm) && (!r.start || !p.start || Math.abs(new Date(r.start) - new Date(p.start)) < 15 * 864e5) && !gone[r.id]);
+  return base.concat(p.refs || []);
+}
+function planRefSheet(p, rd) {
+  const list = el('div', { class: 'stack', style: 'gap:8px' });
+  const draw = () => list.replaceChildren(...(planRefs(p).length ? planRefs(p).map(r => el('div', { style: 'padding:12px 14px;border-radius:14px;background:#F5F6F8' },
+    el('div', { style: 'font-size:12.5px;color:#6B7684', text: r.by || '여행상품' }),
+    el('a', { href: r.url, target: '_blank', rel: 'noopener', style: 'display:block;font-size:15.5px;font-weight:500;color:#191F28;text-decoration:none;margin:2px 0 4px', text: r.n + ' ↗' }),
+    r.note ? el('div', { style: 'font-size:13px;color:#6B7684;line-height:1.5', text: r.note }) : null,
+    el('div', { style: 'display:flex;gap:14px;margin-top:6px' }, el('a', { href: r.url, target: '_blank', rel: 'noopener', style: 'font-size:13px;color:#1D7FA0;text-decoration:none', text: '상품 보기' }),
+      el('button', { style: 'border:none;background:none;padding:0;font:400 13px Pretendard,sans-serif;color:#8B95A1;cursor:pointer', text: '빼기', onclick: () => { if (r.id && /^hana-/.test(r.id) && !(p.refs || []).includes(r)) { p.refsGone = Object.assign(p.refsGone || {}, { [r.id]: Date.now() }); } else p.refs = (p.refs || []).filter(z => z !== r); planSave(p); draw(); rd && rd(); } })))) : [el('div', { class: 'sub', text: '아직 참고 상품이 없어요' })]));
+  const inp = el('input', { type: 'text', placeholder: '여행상품 주소 붙여 넣기 (하나투어·모두투어·노랑풍선 등)', style: 'width:100%;box-sizing:border-box' });
+  const add = () => { const m = /https?:\/\/\S+/.exec(inp.value || ''); if (!m) return toast('주소를 붙여 넣어 주세요'); const u = m[0], h = (() => { try { return new URL(u).hostname; } catch { return ''; } })();
+    const by = /hanatour/.test(h) ? '하나투어' : /modetour/.test(h) ? '모두투어' : /ybtour/.test(h) ? '노랑풍선' : /verygoodtour/.test(h) ? '참좋은여행' : /lottetour/.test(h) ? '롯데관광' : /kyowontour/.test(h) ? '교원투어' : /interpark/.test(h) ? '인터파크' : /myrealtrip/.test(h) ? '마이리얼트립' : h;
+    const t = (inp.value.replace(u, '').trim() || '여행상품').slice(0, 80); p.refs = (p.refs || []).concat([{ id: 'u' + Date.now(), by, n: t, url: u }]); planSave(p); inp.value = ''; draw(); rd && rd(); };
+  draw();
+  labSheet('참고 여행상품', el('div', { class: 'sub', text: '같은 여행지 여행사 상품을 참고로 둬요. 가격·일정은 상품 화면에서 확인해 주세요.' }), list, inp, el('button', { class: 'btn line full', text: '+ 링크 넣기', onclick: add }));
+}
 function planPrepSheet(p, wx) {
   const st = ls.get('planPrep:' + p.id, {}) || {}, { S, cn, meet } = planPrepList(p, wx);
   const body = el('div', { class: 'stack pn', style: 'gap:6px' });
@@ -9315,6 +9340,7 @@ function planPrepSheet(p, wx) {
   body.append(H('여행 정보'), grp(
     nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·환율' : '소개·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
     nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
+    planRefs(p).length || planAbroad(p) ? nrow('🧳', '참고 여행상품', planRefs(p).length ? planRefs(p).map(r => r.by).filter((v, i, A) => A.indexOf(v) === i).join(' · ') : '넣기', () => planRefSheet(p, rd)) : null,
     nrow('💰', '여행 경비 · 정산', (p.exp || []).length ? `${(p.exp || []).length}건` : '적기', () => planExpSheet(p, rd)),
     planAbroad(p) || nDoc ? nrow('🎫', '예약 · 항공권', nDoc ? `캡처 ${nDoc}장` : '없음', () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); rd(); })) : null,
     meet ? nrow('🧭', '출발 미팅', `${meet.t || ''}`, sub('🧭 출발 미팅', el('div', { style: 'font-weight:800;font-size:18px', text: `${meet.d ? planDayLabel({ start: meet.d }, 0) + ' ' : ''}${meet.t || ''}` }), el('div', { style: 'white-space:pre-wrap', text: meet.n }), el('div', { class: 'dt', text: '여행사 안내 그대로예요' }))) : null,
