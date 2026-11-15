@@ -3142,9 +3142,9 @@ function openBrag(info, t, count, allDone, room) {
 const IN_KAKAO = /KAKAOTALK/i.test(navigator.userAgent);
 // 안드로이드 러닝 앱(runapp/, Capacitor) 안에서 열렸는지. 앱 안 주소는 https://localhost/ 라서 남에게 보내는 링크는 웹 주소로 만들어요
 const IN_NATIVE = !!window.MD_NATIVE;
-const UI_VER = '2026.11.15-140-share';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.15-141-mine';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👥 여행 계획에 \'함께 가는 사람\'이 생겼어요: 사람마다 출발하는 곳·오는 날·가는 날을 적으면 날마다 몇 명인지, 누가 합류·먼저 떠나는지 보여요 · \'일행과 같이 고치기\'를 켜면 초대받은 일행이 같은 계획을 함께 고쳐요(예약번호·다녀옴은 각자 휴대폰에만) · ✨ 여행 전엔 \'도우미\'가 계획 도우미';
+const UI_NOTES = '👥 여행 계획에 \'함께 가는 사람\'이 생겼어요: 사람마다 출발하는 곳·오는 날·가는 날, 날마다 몇 명·누가 합류하는지 · 일정마다 \'누구 일정\'(고르지 않으면 모두 함께), \'내 일정 + 함께\'만 보기 · \'일행과 같이 고치기\'를 켜면 일행이 함께 고쳐요 · 🇬🇧 영어만 읽는 일행용 영어 일정·영어 초대 글 · ✨ 여행 전엔 \'도우미\'가 계획 도우미';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8314,6 +8314,7 @@ async function viewPlan() {
       }
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요');
       if (qs.get('mk') === 'film') { location.replace('./?film=1&plan=' + encodeURIComponent(id)); return; }   // 판 -133: 카톡에서 크롬으로 넘어온 계획 영상
+      if (qs.get('en')) ls.set('planLang:' + id, 'en');   // 판 -141: 영어 초대 링크
       return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
@@ -9218,7 +9219,7 @@ async function pgCtx(p, say) {
 const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q'];
 function plPub(x) { const o = Object.assign({}, x); PL_PRIV.forEach(k => delete o[k]); return o; }
 function plSig(o) { return JSON.stringify(o, Object.keys(o).sort()); }
-function plMeta(p) { return { name: p.name || '', start: p.start || '', nd: p.nd || 1, meet: p.meet || null, info: p.info || null }; }
+function plMeta(p) { return { name: p.name || '', start: p.start || '', nd: p.nd || 1, meet: p.meet || null, info: p.info || null, nameEn: p.nameEn || '', nameEnS: p.nameEnS || '' }; }
 function planShareSoon(id) { clearTimeout(planShareSoon.tm); planShareSoon.tm = setTimeout(async () => { const p = planGet(id); if (p && await planShareSync(p) && window.mpdPlanRedraw) window.mpdPlanRedraw(); }, 1500); }
 async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바뀌었으면 true
   if (!p || !p.room || !p.room.code || planShareSync.busy) return false; planShareSync.busy = 1; let local = false;
@@ -9268,7 +9269,7 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
     // 함께 가는 사람
     p.mem = p.mem || []; st.mm = st.mm || {};
     for (const r of S.pm) {
-      const i = p.mem.findIndex(x => x.id === r.id), L = i >= 0 ? p.mem[i] : null, rv = r.del ? null : { id: r.id, n: r.n || '', from: r.from || '', a: r.a || '', b: r.b || '', fl: r.fl || '' }, rs = rv ? plSig(rv) : 'del';
+      const i = p.mem.findIndex(x => x.id === r.id), L = i >= 0 ? p.mem[i] : null, rv = r.del ? null : { id: r.id, n: r.n || '', from: r.from || '', a: r.a || '', b: r.b || '', fl: r.fl || '', en: r.en || '', enS: r.enS || '', lang: r.lang || '' }, rs = rv ? plSig(rv) : 'del';
       if (L && plSig(L) === rs) { st.mm[r.id] = rs; continue; }
       if (!L) { if (rv && !(r.id in st.mm)) { p.mem.push(rv); st.mm[r.id] = rs; local = true; } else if (!rv) delete st.mm[r.id]; continue; }
       if (first || plSig(L) === st.mm[r.id]) { if (rv) p.mem[i] = rv; else p.mem.splice(i, 1); st.mm[r.id] = rs; local = true; }
@@ -9284,6 +9285,39 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
   } catch (e) { if (opt.say) opt.say('⚠ 같이 고치기 맞추기를 못 했어요 · ' + String(e && e.message || e).slice(0, 60)); return local; }
   finally { planShareSync.busy = 0; }
 }
+// 판 -141 (사용자 '나·아내·유진은 인천, 유건·아리는 제주, 아리 오빠네는 일본 · 개인 여행이 있고 7명 모여서 함께하는 일정이 있고 · 아리 오빠네는 영어만'):
+//   일정마다 누구 일정인지 x.fr=[사람 id](없으면 모두 함께) · 보기 '모든 일정 / 내 일정만'(ls planView:{계획}, 새 키) · 영어 보기(ls planLang:{계획}='en', 새 키)
+//   영어: 일정 x.en·x.enm, 사람 m.en, 계획 p.nameEn을 AI(열쇠 있는 휴대폰)가 옮겨 같이 고치기로 일행에게 감 · 사람에 '영어만 읽어요'(m.lang='en')
+function planFrTxt(p, x) { const M = p.mem || []; return (x.fr || []).map(id => (M.find(m => m.id === id) || {}).n).filter(Boolean).join('·'); }
+function planVis(p, x) { const me = ls.get('planMe:' + p.id, ''); if (ls.get('planView:' + p.id, 'all') !== 'me' || !me) return true; return !x.fr || !x.fr.length || x.fr.includes(me); }
+function planHasPersonal(p) { return (p.it || []).some(x => x.fr && x.fr.length); }
+function planEN(p) { return ls.get('planLang:' + p.id, '') === 'en'; }
+function planEnDay(p, d) { const x = planDate(p, d); return x ? `Day ${d + 1} · ${x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : `Day ${d + 1}`; }
+async function planTranslate(p, say, force) {   // 영어가 없거나 한국어가 바뀐 곳만 · 쓸 때마다 알림 두 번
+  const key = String(ls.get('claudeKey', '') || '').trim(); if (!key) throw new Error('nokey');
+  const sg = x => String(x.n || '') + '|' + String(x.m || '');
+  const todo = p.it.filter(x => force || !x.en || x.enS !== sg(x)), mem = (p.mem || []).filter(m => force || !m.en || m.enS !== m.n);
+  const needName = force || !p.nameEn || p.nameEnS !== p.name;
+  if (!todo.length && !mem.length && !needName) return 0;
+  say && say(`🌐 영어로 옮기는 중… ${todo.length}곳`);
+  toast('✨ AI를 써요 · 일정 영어로 옮기기 · 일정 이름·메모만 보내요', true);
+  const { default: Anthropic } = await import(TALK_SDK);
+  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 6000, messages: [{ role: 'user', content: `Translate this Korean travel itinerary into natural, short English for English-speaking family members. Keep place names as commonly known in English (e.g. 도톤보리 → Dotonbori, 간사이 국제공항 → Kansai Int'l Airport). Keep flight numbers, times and codes exactly. Do not add anything that is not in the Korean text. Names of people: romanize (e.g. 아리 → Ari, 아내 → Seongsik's wife if it is a relation word).
+Return JSON only: {"name":"","items":[{"id":"","en":"","enm":""}],"mem":[{"id":"","en":""}]}
+Trip name: ${p.name}
+Items:
+${todo.map(x => JSON.stringify({ id: x.id, n: x.n, m: x.m || '' })).join('\n')}
+People:
+${mem.map(m => JSON.stringify({ id: m.id, n: m.n })).join('\n')}` }] });
+  const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '일정 영어로', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+  toast(`✨ AI 사용 끝 · 일정 영어로 옮기기 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+  const tb = (res.content || []).find(z => z.type === 'text'); const j = JSON.parse((/\{[\s\S]*\}/.exec(tb ? tb.text : '') || ['{}'])[0]);
+  let n = 0;
+  (j.items || []).forEach(z => { const x = p.it.find(y => y.id === z.id); if (x && z.en) { x.en = String(z.en).slice(0, 100); x.enm = String(z.enm || '').slice(0, 300); x.enS = sg(x); n++; } });
+  (j.mem || []).forEach(z => { const m = (p.mem || []).find(y => y.id === z.id); if (m && z.en) { m.en = String(z.en).slice(0, 30); m.enS = m.n; } });
+  if (j.name) { p.nameEn = String(j.name).slice(0, 60); p.nameEnS = p.name; }
+  planSave(p); return n;
+}
 function planMemDays(p, m) {   // 이 사람이 함께하는 날(0부터) 목록
   const a = m.a ? planDayOfDate(p, m.a) : 0, b = m.b ? planDayOfDate(p, m.b) : p.nd - 1;
   return [...Array(p.nd).keys()].filter(d => d >= (a == null ? 0 : a) && d <= (b == null ? p.nd - 1 : b));
@@ -9294,19 +9328,21 @@ function planMemSheet(p, redraw) {
   const save = async () => { planSave(p); if (p.shOn) { st.textContent = '⏳ 일행과 맞추는 중…'; await planShareSync(p, { say: t => { st.textContent = t; } }); Object.assign(p, planGet(p.id) || {}); st.textContent = '✅ 일행과 맞췄어요'; } paint(); redraw && redraw(); };
   const dl = d => d ? `${+d.slice(5, 7)}/${+d.slice(8)}` : '';
   const edit = m => {
-    const isNew = !m; m = m || { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), n: '', from: '', a: p.start || '', b: '', fl: '' };
+    const isNew = !m; m = m || { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), n: '', from: '', a: p.start || '', b: '', fl: '', en: '', enS: '', lang: '' };
     if (!m.b && p.start) { const z = planDate(p, p.nd - 1); m.b = z ? `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}` : ''; }
     const I = (v, ph, t) => el('input', { type: t || 'text', value: v || '', placeholder: ph || '', style: 'width:100%;box-sizing:border-box' });
-    const n = I(m.n, '이름 (예: 아리)'), fr = I(m.from, '출발하는 곳 (예: 부산 김해공항)'), a = I(m.a, '', 'date'), b = I(m.b, '', 'date'), fl = I(m.fl, '비행기·교통 메모 (예: 제주항공 7C1351 09:00)');
+    const n = I(m.n, '이름 (예: 아리)'), fr = I(m.from, '출발하는 곳 (예: 제주공항)'), a = I(m.a, '', 'date'), b = I(m.b, '', 'date'), fl = I(m.fl, '비행기·교통 메모 (예: 제주항공 7C1351 09:00)');
+    const lg = el('input', { type: 'checkbox', checked: m.lang === 'en' ? true : null });
     const bg = labSheet(isNew ? '+ 함께 가는 사람' : '✎ ' + m.n, el('label', { class: 'sub', text: '이름' }), n, el('label', { class: 'sub', text: '출발하는 곳' }), fr,
       el('label', { class: 'sub', text: '오는 날 (여행지에 닿는 날)' }), a, el('label', { class: 'sub', text: '가는 날 (여행지를 떠나는 날)' }), b, el('label', { class: 'sub', text: '메모' }), fl,
-      el('button', { class: 'btn primary full', text: '저장', onclick: async () => { m.n = n.value.trim().slice(0, 20); if (!m.n) return toast('이름을 적어 주세요'); m.from = fr.value.trim().slice(0, 40); m.a = a.value; m.b = b.value; m.fl = fl.value.trim().slice(0, 120); if (isNew) p.mem.push(m); bg.remove(); await save(); } }),
+      el('label', { style: 'display:flex;gap:8px;align-items:center;font-size:14px' }, lg, '🇬🇧 영어만 읽어요 (일정을 영어로도 옮겨 둬요)'),
+      el('button', { class: 'btn primary full', text: '저장', onclick: async () => { m.n = n.value.trim().slice(0, 20); if (!m.n) return toast('이름을 적어 주세요'); m.from = fr.value.trim().slice(0, 40); m.a = a.value; m.b = b.value; m.fl = fl.value.trim().slice(0, 120); m.lang = lg.checked ? 'en' : ''; if (isNew) p.mem.push(m); bg.remove(); await save(); } }),
       isNew ? null : el('button', { class: 'btn line full', text: '🗑 이 사람 빼기', onclick: async () => { if (!confirm(`${m.n} 님을 함께 가는 사람에서 뺄까요?`)) return; p.mem = p.mem.filter(x => x !== m); bg.remove(); await save(); } }));
   };
   const many = () => { const ta = el('textarea', { rows: 4, placeholder: '예: 성식, 아내, 유건, 아리, 유진, 아리 오빠, 아리 올케', style: 'width:100%;box-sizing:border-box;font:inherit;padding:10px' });
     const bg = labSheet('👥 이름 여러 명 한 번에', el('div', { class: 'sub', text: '쉼표나 줄바꿈으로 나눠 적어 주세요. 출발하는 곳·날짜는 사람마다 눌러서 넣어요.' }), ta,
       el('button', { class: 'btn primary full', text: '넣기', onclick: async () => { const L = ta.value.split(/[,\n、·]+/).map(x => x.trim()).filter(Boolean).slice(0, 30); let k = 0;
-        L.forEach(nm => { if (!p.mem.some(x => x.n === nm)) { p.mem.push({ id: 'm' + Date.now().toString(36) + (k++) + Math.random().toString(36).slice(2, 4), n: nm.slice(0, 20), from: '', a: '', b: '', fl: '' }); } }); bg.remove(); await save(); } })); };
+        L.forEach(nm => { if (!p.mem.some(x => x.n === nm)) { p.mem.push({ id: 'm' + Date.now().toString(36) + (k++) + Math.random().toString(36).slice(2, 4), n: nm.slice(0, 20), from: '', a: '', b: '', fl: '', en: '', enS: '', lang: '' }); } }); bg.remove(); await save(); } })); };
   const paint = () => {
     const meNow = ls.get('planMe:' + p.id, '');
     faRc(box,
@@ -9320,8 +9356,18 @@ function planMemSheet(p, redraw) {
         el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { text: m.n + (meNow === m.id ? ' (나)' : '') }),
           el('span', { style: 'font-size:12.5px;color:#6B7684', text: [m.from ? m.from + ' 출발' : '출발하는 곳 아직', m.a || m.b ? `${dl(m.a) || '?'} ~ ${dl(m.b) || '?'}` : '날짜 아직', m.fl].filter(Boolean).join(' · ') })), el('span', { style: 'color:#A3ABB5', text: '✎' }))),
       el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '+ 한 명', onclick: () => edit(null) }), el('button', { class: 'btn line', style: 'flex:1', text: '+ 여러 명 한 번에', onclick: many })),
-      p.mem.length ? el('label', { class: 'sub', style: 'display:flex;gap:8px;align-items:center' }, '이 휴대폰은', el('select', { onchange: e => { ls.set('planMe:' + p.id, e.target.value); paint(); } },
-        el('option', { value: '', text: '(고르기)' }), ...p.mem.map(m => el('option', { value: m.id, selected: meNow === m.id ? true : null, text: m.n }))), '의 휴대폰이에요') : null);
+      p.mem.length ? el('label', { class: 'sub', style: 'display:flex;gap:8px;align-items:center' }, '이 휴대폰은', el('select', { onchange: e => { ls.set('planMe:' + p.id, e.target.value); const mm = p.mem.find(z => z.id === e.target.value); if (mm && mm.lang === 'en') ls.set('planLang:' + p.id, 'en'); paint(); redraw && redraw(); } },
+        el('option', { value: '', text: '(고르기)' }), ...p.mem.map(m => el('option', { value: m.id, selected: meNow === m.id ? true : null, text: m.n }))), '의 휴대폰이에요') : null,
+      p.mem.some(m => m.lang === 'en') ? (() => { const hasEn = p.it.filter(x => x.en).length, enM = p.mem.filter(m => m.lang === 'en').map(m => m.n).join('·');
+        return el('div', { style: 'background:#EEF6FB;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:6px' },
+          el('b', { text: `🇬🇧 영어 일정 (${enM})` }), el('div', { text: `일정 ${p.it.length}곳 중 ${hasEn}곳 영어 있음 · AI가 옮긴 글이라 이름이 다를 수 있어요` }),
+          el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' },
+            el('button', { class: 'btn line small', text: '🌐 지금 영어로 옮기기', onclick: async e => { e.target.disabled = true; try { const n = await planTranslate(p, t => { st.textContent = t; }); st.textContent = `✅ ${n}곳을 영어로 옮겼어요`; if (p.shOn) await planShareSync(p); Object.assign(p, planGet(p.id) || {}); } catch (er) { st.textContent = er && er.message === 'nokey' ? 'Claude 열쇠가 있는 휴대폰에서만 옮길 수 있어요' : '⚠ 못 옮겼어요 · ' + String(er && er.message || er).slice(0, 60); } paint(); redraw && redraw(); } }),
+            el('button', { class: 'btn line small', text: '🇬🇧 영어 초대 글 보내기', onclick: async e => { e.target.disabled = true; e.target.textContent = '링크 만드는 중…'; try { if (!p.shOn) { if (!p.room || !p.room.code) { p.room = { code: trNewCode() }; planSave(p); } await planShareSync(p, { start: 1 }); Object.assign(p, planGet(p.id) || {}); }
+              const u = (await planLink(p)).replace('?plan=1#', '?plan=1&en=1#'), a0 = planDate(p, 0), z0 = planDate(p, p.nd - 1), dt = a0 ? `${a0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${z0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : '';
+              const txt = `✈️ ${p.nameEn || p.name} — our family trip plan${dt ? ' (' + dt + ')' : ''}\nOpen this link to see the day-by-day plan, map and who joins when. You can edit it too.\n👉 ${u}`;
+              if (navigator.share) await navigator.share({ text: txt }).catch(() => {}); else { await navigator.clipboard.writeText(txt).catch(() => {}); toast('영어 초대 글을 복사했어요 · 메신저에 붙여 넣어 주세요'); } } finally { e.target.disabled = false; e.target.textContent = '🇬🇧 영어 초대 글 보내기'; } } }),
+            el('button', { class: 'btn line small', text: planEN(p) ? '한국어로 보기' : '이 휴대폰에서 영어로 보기', onclick: () => { ls.set('planLang:' + p.id, planEN(p) ? '' : 'en'); paint(); redraw && redraw(); } }))); })() : null);
   };
   paint();
   labSheet('👥 함께 가는 사람', st, box);
@@ -9331,13 +9377,20 @@ function planMemSheet(p, redraw) {
 //   AI(FA_MODEL, 사용자 열쇠)에게 계획 전체(날짜·비행기 시각·이미 넣은 곳)와 질문을 보냄 → 답 글 + 넣을 곳 제안(items)
 //   제안은 '✓ 고른 n곳 일정에 넣기'를 눌러야 들어가요(x.ai=1, 메모 = 추천 이유) · 위치는 Nominatim으로 찾고 못 찾으면 AI 짐작 좌표를 대략(ap)으로
 //   AI 추천은 일반 지식이라 영업시간·가격은 확인 필요 — 일정 줄에도 그렇게 표시 · 대화 ls planMake:{ID}(새 키, 30개)
+function planAnsParse(raw) {   // AI 답(JSON) 읽기 · 잘린 답도 다 된 칸까지는 살림
+  raw = String(raw || ''); try { const j = JSON.parse((/\{[\s\S]*\}/.exec(raw) || ['null'])[0]); if (j && typeof j === 'object') return j; } catch {}
+  const out = { text: '', items: [], cut: 1 }; const tx = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(raw); if (tx) try { out.text = JSON.parse('"' + tx[1] + '"'); } catch {}
+  for (const m of raw.matchAll(/\{[^{}]*"n"\s*:\s*"[^{}]*\}/g)) try { out.items.push(JSON.parse(m[0])); } catch {}
+  if (!tx && !out.items.length && !/^\s*[{\[]/.test(raw)) out.text = raw;   // JSON이 아닌 그냥 글이면 그대로
+  return out;
+}
 function planMakeCtx(p) {
   const L = [`여행 이름: ${p.name}`, `여행지: ${(p.dest && p.dest.n) || planDestName(p) || '모름'}`, p.start ? `날짜: ${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)} (${p.nd > 1 ? `${p.nd - 1}박 ${p.nd}일` : '당일'})` : `날 수: ${p.nd}일 (날짜 아직 안 정함)`];
   if ((p.mem || []).length) L.push(`함께 가는 사람 ${p.mem.length}명 (사람마다 출발하는 곳·오는 날·가는 날이 달라요):\n` + p.mem.map(m => `- ${m.n}: ${m.from || '출발지 모름'} 출발 · 오는 날 ${m.a || '모름'} · 가는 날 ${m.b || '모름'}${m.fl ? ' · ' + m.fl : ''}`).join('\n'));
   for (let d = 0; d < p.nd; d++) {
     const its = planItems(p, d); L.push(`\n[${d + 1}일차${p.start ? ' · ' + planDayLabel(p, d) : ''}]`);
     if (!its.length) L.push('- (아직 일정 없음)');
-    its.forEach(x => L.push(`- ${x.t || '시각 없음'} · ${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1]} · ${x.n}${x.m ? ' · ' + String(x.m).replace(/\s+/g, ' ').slice(0, 140) : ''}${x.ai ? ' (AI 추천으로 넣은 곳)' : ''}`));
+    its.forEach(x => L.push(`- ${x.t || '시각 없음'} · ${(PLAN_KINDS[x.k] || PLAN_KINDS.spot)[1]} · ${x.n}${x.fr && x.fr.length ? ` [${planFrTxt(p, x)}만]` : ' [모두 함께]'}${x.m ? ' · ' + String(x.m).replace(/\s+/g, ' ').slice(0, 140) : ''}${x.ai ? ' (AI 추천으로 넣은 곳)' : ''}`));
   }
   return L.join('\n');
 }
@@ -9352,7 +9405,8 @@ function planMakeSheet(p) {
   const addItems = async (m, picks, btn) => {
     btn.disabled = true; btn.textContent = '넣는 중…';
     const add = picks.map(z => ({ id: planNewId(), d: Math.max(0, Math.min(p.nd - 1, +z.d || 0)), t: /^\d{1,2}:\d{2}$/.test(z.t || '') ? String(z.t).padStart(5, '0') : '', n: String(z.n || '장소').slice(0, 60), k: PLAN_KINDS[z.k] ? z.k : 'spot', m: String(z.why || '').slice(0, 200), q: String(z.q || '').slice(0, 100),
-      lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1 }));
+      lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1, fr: (Array.isArray(z.who) ? z.who : []).map(w => ((p.mem || []).find(m => m.n === String(w).trim()) || {}).id).filter(Boolean) }));
+    add.forEach(x => { if (!x.fr.length) delete x.fr; });
     // 이미 있는 차례는 그대로 두고, 새 곳만 그날 시각에 맞는 자리에 끼움 (시각 없으면 그날 끝)
     add.forEach(x => { x.ap = x.lat != null ? 1 : 0;
       let endDay = -1, lastLE = -1, firstGT = -1; p.it.forEach((y, i) => { if (y.d <= x.d) endDay = i; if (y.d === x.d && x.t && y.t) { if (y.t <= x.t) lastLE = i; else if (firstGT < 0) firstGT = i; } });
@@ -9363,6 +9417,7 @@ function planMakeSheet(p) {
     say(`✅ ${add.length}곳을 일정에 넣었어요 · 위치 정확 ${ok}${ap ? ` · 대략 ${ap}` : ''}${no ? ` · 못 찾음 ${no}` : ''}`);
     if (window.mpdPlanRedraw) window.mpdPlanRedraw(); paint();
   };
+  hist.forEach(m => { if (m.r === 'a' && /"items"\s*:|^\s*(```|\{)/.test(m.x || '')) { const j = planAnsParse(m.x); m.x = String(j.text || '일정을 짜 봤어요. 아래에서 넣을 곳을 골라 주세요.'); if (!m.items || !m.items.length) m.items = (j.items || []).filter(z => z && z.n); } });   // 예전 판에서 날것으로 남은 답 고침
   const bubble = m => {
     if (m.r === 'u') return el('div', { style: 'align-self:flex-end;max-width:84%;padding:9px 12px;border-radius:16px;border-bottom-right-radius:4px;background:#15202B;color:#fff;white-space:pre-wrap', text: m.x });
     const box = el('div', { style: 'align-self:flex-start;max-width:94%;padding:10px 12px;border-radius:16px;border-bottom-left-radius:4px;background:#FFF1EC;color:#15202B;line-height:1.5;display:flex;flex-direction:column;gap:6px' }, el('div', { style: 'white-space:pre-wrap', text: m.x }));
@@ -9371,7 +9426,7 @@ function planMakeSheet(p) {
       box.append(el('div', { style: 'font-weight:800;font-size:13px;margin-top:4px', text: m.added ? `✅ ${m.added}곳 일정에 넣었어요` : '일정에 넣을 곳 (고르기)' }));
       m.items.forEach((z, i) => box.append(el('label', { style: 'display:flex;gap:8px;align-items:flex-start;background:#fff;border-radius:10px;padding:7px 9px;font-size:13.5px' },
         m.added ? null : el('input', { type: 'checkbox', checked: true, style: 'margin-top:3px', onchange: e => { chk[i] = e.target.checked; btn.textContent = `✓ 고른 ${chk.filter(Boolean).length}곳 일정에 넣기`; } }),
-        el('span', {}, el('b', { text: `${(+z.d || 0) + 1}일차${z.t ? ' ' + z.t : ''} · ${(PLAN_KINDS[z.k] || PLAN_KINDS.spot)[0]} ${z.n}` }), z.why ? el('span', { style: 'display:block;color:#6B7684;font-size:12.5px', text: z.why }) : null))));
+        el('span', {}, el('b', { text: `${(+z.d || 0) + 1}일차${z.t ? ' ' + z.t : ''} · ${(PLAN_KINDS[z.k] || PLAN_KINDS.spot)[0]} ${z.n}${Array.isArray(z.who) && z.who.length ? ' · 👤 ' + z.who.join('·') : ''}` }), z.why ? el('span', { style: 'display:block;color:#6B7684;font-size:12.5px', text: z.why }) : null))));
       const btn = el('button', { class: 'btn primary full', text: `✓ 고른 ${m.items.length}곳 일정에 넣기`, onclick: () => addItems(m, m.items.filter((_, i) => chk[i]), btn) });
       if (!m.added) box.append(btn);
     }
@@ -9389,8 +9444,10 @@ function planMakeSheet(p) {
 - 이미 정해진 일정, 특히 비행기 출발·도착 시각을 지키세요. 도착 뒤 입국·공항에서 시내까지 이동 시간, 돌아가는 비행기는 출발 2시간 반 전 공항 도착을 넣어 계산하세요.
 - 같은 날은 가까운 곳끼리 묶고 하루 4~6곳 안팎으로 무리 없게. 식사 시간도 넣으세요.
 - 일정에 넣을 곳을 제안할 때만 items에 넣고, 설명만 할 때는 items를 빈 배열로.
-- items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show|move, q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 한 줄.
-JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":""}]}`;
+- items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show|move, q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 25자 안.
+- text는 3~5줄로 짧게. 날마다 몇 곳인지·동선 요점만(일정 목록은 items에만, text에 되풀이하지 말 것).
+- 사람마다 따로 하는 일정이면 who에 그 사람 이름들(배열), 모두 함께면 빈 배열.
+JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":"","who":[]}]}`;
       const msgs = []; for (const m of hist.slice(-7, -1)) msgs.push({ role: m.r === 'u' ? 'user' : 'assistant', content: m.r === 'u' ? m.x : m.x + (m.items && m.items.length ? '\n(제안: ' + m.items.map(z => `${(+z.d || 0) + 1}일차 ${z.n}`).join(', ') + (m.added ? ' → 일정에 넣음' : '') + ')' : '') });
       while (msgs.length && msgs[0].role !== 'user') msgs.shift();
       for (let i = msgs.length - 1; i > 0; i--) if (msgs[i].role === msgs[i - 1].role) msgs.splice(i, 1);
@@ -9398,13 +9455,15 @@ JSON 하나로만 답하세요: {"text":"","items":[{"d":0,"t":"","n":"","k":"sp
       msgs.push({ role: 'user', content: `[지금 계획]\n${planMakeCtx(p)}\n\n[부탁]\n${x}` });
       toast('✨ AI를 써요 · 계획 도우미 · 계획(일정·날짜)을 보내요', true);
       const { default: Anthropic } = await import(TALK_SDK);
-      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 2500, system: sys, messages: msgs });
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 8000, system: sys, messages: msgs });
       const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '계획 도우미', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
       toast(`✨ AI 사용 끝 · 계획 도우미 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
       const tb = (res.content || []).find(z => z.type === 'text'), raw = tb ? tb.text : '';
-      let j = null; try { j = JSON.parse((/\{[\s\S]*\}/.exec(raw) || ['null'])[0]); } catch {}
-      const items = j && Array.isArray(j.items) ? j.items.filter(z => z && z.n).slice(0, 15) : [];
-      hist.push({ r: 'a', x: planTerm(String((j && j.text) || raw || '(빈 답)').trim()), items, t: Date.now() }); say('');
+      const j = planAnsParse(raw), cut = res.stop_reason === 'max_tokens' || j.cut;
+      const items = Array.isArray(j.items) ? j.items.filter(z => z && z.n).slice(0, 24) : [];
+      // 판 -141 (사용자 캡처: 답이 잘려 JSON 글자가 그대로 보임): 날것 JSON은 절대 안 보여요
+      const txt = String(j.text || '').trim() || (items.length ? '일정을 짜 봤어요. 아래에서 넣을 곳을 골라 주세요.' : '⚠ 답을 제대로 못 받았어요 · 한 번 더 물어봐 주세요');
+      hist.push({ r: 'a', x: planTerm(txt) + (cut && items.length ? `\n(답이 길어 ${items.length}곳까지만 받았어요 · 나머지는 '남은 날도 짜 줘'라고 물어봐 주세요)` : ''), items, t: Date.now() }); say('');
     } catch (e) { const m = String(e && e.message || e); hist.push({ r: 'a', x: '⚠ 답을 못 받았어요 · ' + (/401|auth/i.test(m) ? 'Claude 열쇠를 확인해 주세요' : /fetch|network|Failed/i.test(m) ? '인터넷을 확인해 주세요' : m.slice(0, 80)), t: Date.now() }); say(''); }
     ls.set(HK, hist.slice(-30)); busy = false; paint();
   };
@@ -9783,7 +9842,7 @@ async function planBookApply(p, R, docId, say) {   // 읽은 예약을 일정에
     let x = f.no ? p.it.find(y => y.k === 'fly' && nk(y.n).includes(nk(f.no))) : null; const isNew = !x;
     if (!x) x = { id: planNewId(), k: 'fly', lat: null, lng: null };
     const meM = (p.mem || []).find(z => z.id === ls.get('planMe:' + p.id, ''));
-    Object.assign(x, { d, t: f.dep, n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } }, meM && isNew ? { who: meM.n } : {});
+    Object.assign(x, { d, t: f.dep, n, m: (outR ? `⚠ ${f.date} 비행 · 계획 날짜 밖 · ` : '') + m, bk: { ref: f.ref, doc: docId, src: '예약 캡처' } }, meM && isNew ? { fr: [meM.id] } : {});
     if (!Number.isFinite(x.lat)) { say && say(`📍 ${f.fromAp || f.from} 위치 찾는 중…`); const g = await geo(f.fromEn || (f.fromCode && f.fromCode + ' airport')); if (g) { x.lat = g[0]; x.lng = g[1]; x.ap = 0; } }
     if (isNew) p.it.push(x); out.n++; out.lines.push(`✈ ${f.date.slice(5).replace('-', '/')} ${f.dep} ${n}${f.ref ? ` · 예약번호 ${f.ref}` : ''}`);
   }
@@ -10061,7 +10120,7 @@ function viewPlanOne(id) {
   const hero = tvHero(p, {});
   const head = el('div', { class: 'stack', style: 'gap:4px' });
   const drawHead = () => { const a = planDate(p, 0), z = planDate(p, p.nd - 1), M = x => ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][x.getMonth()];
-    hero.repaint({ title: p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
+    hero.repaint({ title: planEN(p) && p.nameEn ? p.nameEn : p.name, d: `${p.nd > 1 ? `${p.nd - 1} NIGHTS ${p.nd} DAYS` : 'DAY TRIP'}${a ? ` · ${M(a)} ${a.getDate()} – ${M(z) === M(a) ? '' : M(z) + ' '}${z.getDate()}` : ''}`, line: [p.start ? `${planDayLabel(p, 0)} ~ ${planDayLabel(p, p.nd - 1)}` : '날짜 미정', planStatus(p)].filter(Boolean).join(' · ') }); faRc(head,
       memLine(), docLine(), chkLine(), warnBox()); };
   function memLine() {   // 판 -140: 👥 함께 가는 사람 · 같이 고치기
     const n = (p.mem || []).length;
@@ -10193,10 +10252,13 @@ function viewPlanOne(id) {
     const mm = el('textarea', { rows: 2, placeholder: '메모 (메뉴·입장 시간·준비물 등)', style: 'width:100%;box-sizing:border-box;font:inherit' }); mm.value = x.m || '';
     let at = Number.isFinite(x.lat) ? { lat: x.lat, lng: x.lng } : null;
     const locL = el('div', { class: 'sub' }); const paintL = () => { locL.textContent = at ? `📍 위치 있음${x.ap ? ' (대략)' : ''}` : '📍 아직 위치가 없어요'; }; paintL();
-    const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
+    let fr = (x.fr || []).slice(); const M = p.mem || [], frRow = el('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' });   // 판 -141: 누구 일정
+    const drawFr = () => frRow.replaceChildren(el('button', { class: 'btn small ' + (!fr.length ? 'dark' : 'line'), text: '👥 모두 함께', onclick: () => { fr = []; drawFr(); } }),
+      ...M.map(m => el('button', { class: 'btn small ' + (fr.includes(m.id) ? 'dark' : 'line'), text: m.n, onclick: () => { fr = fr.includes(m.id) ? fr.filter(z => z !== m.id) : fr.concat(m.id); drawFr(); } }))); drawFr();
+    const save = () => { x.n = nm.value.trim() || '장소'; x.t = tm.value || ''; x.d = +ds.value; x.k = k; x.m = mm.value.trim().slice(0, 300); if (fr.length) x.fr = fr; else delete x.fr; if (at) { x.lat = at.lat; x.lng = at.lng; } if (isNew) p.it.push(x); planSave(p); };
     const about = x.x ? el('div', { class: 'card', style: 'padding:12px 14px;background:var(--soft)' }, el('div', { style: 'font-weight:800;margin-bottom:6px', text: planXLab(p) }), el('div', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.55', text: x.x })) : null;
     const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요)' }), tm)),
-      kRow, mm, locL,
+      kRow, M.length ? el('div', { class: 'sub', style: 'font-weight:700', text: '누구 일정이에요? (고르지 않으면 모두 함께)' }) : null, M.length ? frRow : null, mm, locL,
       el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
       isNew ? null : el('div', { class: 'row', style: 'gap:6px' },
@@ -10239,9 +10301,11 @@ function viewPlanOne(id) {
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { const v = { n: n.value.trim(), tel: t.value.trim() }; if (v.n || v.tel) p.guide = v; else delete p.guide; planSave(p); bg.remove(); drawAll(); } }));
   }
   function row(x, i, d, nx) {   // ✈ 일정 한 칸 (새 디자인 tvItem)
-    const hasLoc = Number.isFinite(x.lat), isNx = i === nx;
-    return tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: x.n, on: isNx, ok: x.ok, nx: isNx ? '다음 갈 곳' : '', onName: () => viewItem(x),
+    const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
+    const it = tvItem({ k: x.k, t: x.t, no: `${i + 1}`, n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
+        fr ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: `👤 ${EN ? (x.fr || []).map(id => { const m = (p.mem || []).find(z => z.id === id); return m ? (m.en || m.n) : ''; }).filter(Boolean).join(', ') + ' only' : fr + ' 일정'}` }) : null,
+        EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
         x.m && (x.k === 'fly' || x.bk) ? el('div', { class: 'tv-m', text: x.m }) : null,
         x.bk && x.bk.ref ? el('div', { class: 'tv-m', style: 'font-weight:700', text: `🎫 예약번호 ${x.bk.ref}` }) : null,
@@ -10252,6 +10316,8 @@ function viewPlanOne(id) {
         x.ok && x.okT ? el('div', { class: 'tv-m', text: `✓ ${new Date(x.okT).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} 다녀옴${x.okA ? ' · 기록한 길로 확인' : ''}` }) : null],
       btns: td === d || x.ok || hasLoc ? [hasLoc ? el('button', { class: isNx ? 'go' : '', text: '🧭 길찾기', onclick: () => planGo(x) }) : null,
         td === d || x.ok ? el('button', { text: x.ok ? '✓ 다녀옴' : '○ 다녀왔어요', onclick: () => { x.ok = !x.ok; if (x.ok) { x.okT = Date.now(); x.okA = 0; x.okNo = 0; } else { x.okT = 0; x.okA = 0; x.okNo = 1; } planSave(p); drawList(); } }) : null] : [] });
+    const me = ls.get('planMe:' + p.id, ''); if (fr && me && !(x.fr || []).includes(me)) it.style.opacity = '.62';   // 다른 사람 일정은 옅게
+    return it;
   }
   function drawTabs() {
     const t = (d, label) => el('button', { class: day === d ? 'on' : '', text: label, onclick: () => { day = d; ls.set('planDay:' + id, d); drawTabs(); drawList(); drawMap(); } });
@@ -10261,14 +10327,18 @@ function viewPlanOne(id) {
     const out = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const its = planItems(p, d), nx = nextIdx(d);
+      const all = planItems(p, d), nxI = all[nextIdx(d)], its = all.filter(x => planVis(p, x)), nx = its.indexOf(nxI);   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
-        out.push(el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') })));
+        out.push(planEN(p) ? el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), planEnDay(p, d) + (td === d ? ' · Today' : ''))
+          : el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), `${d + 1}일차${td === d ? ' · 오늘' : ''}`, el('small', { text: [p.start ? planDayLabel(p, d) : '', ln ? (wx.src === 'fc' ? '' : '작년 이맘때 ') + ln : ''].filter(Boolean).join(' · ') })));
         const M = p.mem || []; if (M.length && p.start) {   // 판 -140: 이날 함께하는 사람 · 오는 사람 · 가는 사람
           const inD = M.filter(m => planMemDays(p, m).includes(d)), arr = M.filter(m => m.a && planDayOfDate(p, m.a) === d && d > 0), lv = M.filter(m => m.b && planDayOfDate(p, m.b) === d && d < p.nd - 1), unk = M.filter(m => !m.a && !m.b).length;
           out.push(el('button', { style: 'display:block;width:100%;text-align:left;border:none;background:none;padding:0 2px;font:600 13px Pretendard,sans-serif;color:#4E5968;cursor:pointer', onclick: () => planMemSheet(p, drawAll) },
-            `👥 이날 ${inD.length}명${unk ? ` (날짜 모르는 ${unk}명 포함)` : ''}`, arr.length ? el('span', { style: 'color:#1D9EC0', text: ` · 🛬 ${arr.map(m => m.n + (m.from ? `(${m.from})` : '')).join(', ')} 합류` }) : null, lv.length ? el('span', { style: 'color:#C2410C', text: ` · 🛫 ${lv.map(m => m.n).join(', ')} 먼저 떠나요` }) : null)); } }
+            ...(planEN(p) ? [`👥 ${inD.length} people today`, arr.length ? el('span', { style: 'color:#1D9EC0', text: ` · 🛬 ${arr.map(m => m.en || m.n).join(', ')} join` }) : null, lv.length ? el('span', { style: 'color:#C2410C', text: ` · 🛫 ${lv.map(m => m.en || m.n).join(', ')} leave` }) : null]
+              : [`👥 이날 ${inD.length}명${unk ? ` (날짜 모르는 ${unk}명 포함)` : ''}`, arr.length ? el('span', { style: 'color:#1D9EC0', text: ` · 🛬 ${arr.map(m => m.n + (m.from ? `(${m.from})` : '')).join(', ')} 합류` }) : null, lv.length ? el('span', { style: 'color:#C2410C', text: ` · 🛫 ${lv.map(m => m.n).join(', ')} 먼저 떠나요` }) : null]))); }
+        if (d === day && planHasPersonal(p)) { const v = ls.get('planView:' + p.id, 'all'), me = ls.get('planMe:' + p.id, ''), EN = planEN(p);
+          out.push(el('div', { style: 'display:flex;gap:6px' }, ...[['all', EN ? 'Everyone' : '모든 일정'], ['me', EN ? 'Mine + group' : '내 일정 + 함께']].map(([k, t]) => el('button', { class: 'btn small ' + (v === k ? 'dark' : 'line'), text: t, onclick: () => { if (k === 'me' && !me) { toast('👥 함께 가는 사람에서 \'이 휴대폰은 ○○\'을 먼저 골라 주세요'); return planMemSheet(p, drawAll); } ls.set('planView:' + p.id, k); drawList(); drawMap(); } })))); } }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
       its.forEach((x, i) => tl.append(row(x, i, d, nx)));   // 판 -120: 줄 사이 거리 글은 뺌(사용자 '경로 안내문을 글로 할 필요?') · 지도와 요약 칸으로
       out.push(tl, el('button', { class: 'tv-add', text: `+ 장소 넣기`, onclick: () => editItem({ id: planNewId(), d, t: '', n: '', k: 'spot', m: '', lat: null, lng: null }, true) }));   // 판 -129: '그린 길 캡처로 고치기'는 ⋯ 더보기에만
@@ -10280,7 +10350,7 @@ function viewPlanOne(id) {
     const pts = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const col = PLAN_COLS[d % PLAN_COLS.length], its = planItems(p, d), ll = [];
+      const col = PLAN_COLS[d % PLAN_COLS.length], its = planItems(p, d).filter(x => planVis(p, x)), ll = [];
       its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]);
         L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
