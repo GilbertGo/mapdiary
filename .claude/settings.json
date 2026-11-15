@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "cat \"$CLAUDE_PROJECT_DIR/정한것.md\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/warn-rule.py\""
           }
         ]
       }
