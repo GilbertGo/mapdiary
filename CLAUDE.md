@@ -655,6 +655,11 @@
 - 휴대폰: **자바는 안 고침** — MPD Run 앱 `MdWearService`가 ID를 가리지 않고 mdsync에 둠 → MPD `syncPull`이 `talk_w`로 시작하면 기록이 아니라 `talkFromWatch`(열쇠 있으면 `talkAI`, 없거나 실패하면 `talkBasic` → `talkNotes`에 src·watch:1·t0·t1, `talkGot`에 ID를 남겨 지워도 안 살아남, MPD Run 혼자(WEAR_SELF)면 건너뜀) → 알림 '⌚ 시계에서 대화 n개를 받아 정리했어요' → 판 -179 `talkBox`로 그 시간 MPD에 보임
 - 필요: 시계 새 판(MPD Run 워치) + 휴대폰 **MPD Run 앱**(받는 쪽) + MPD 앱. 시험: scratchpad `autot/t4.js`(가짜 mdsync: 받음·한 번만·지운 뒤 안 살아남·기록에 표시). **시계 쪽은 실제 시계에서 확인 못 함**(음성 인식이 갤럭시워치에 있는지, '띵' 소리, 배터리). 시계 코드는 GitHub Actions(claude/** 가지)로 컴파일만 확인
 
+## 판 -181 호텔 조식 자리 · 마사지 그림 (2026-11-16, 사용자 장가계 2일차 캡처 세 장)
+- '호텔 조식'(AI 추천)이 묵은 풀맨에서 34.6km 떨어진 AI 짐작 자리에 찍혀 '차 약 59분' 구간이 생김 → `planSelfCheck` ⑦: 둘째 날부터 조식(이름·메모에 호텔·조식)은 전날 밤 숙소 자리로(직접 고친 곳·다녀온 곳 빼고)
+- 마사지 칸 '예시' 사진(foot massage 검색)이 이상한 사진이라 마사지는 사진을 찾지 않고 장밋빛 연꽃 타일
+- 확인 못 한 것: 풀맨 장가계 위치 자체가 맞는지(지도에서 시내 북쪽 멀리 찍힘), 천문산사는 위키 글이 없어 사진기 타일
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 

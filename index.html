@@ -3267,9 +3267,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-181-watchtalk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-181-bf';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8560,6 +8560,11 @@ function planSelfCheck(p) {
   // ⑥ 판 -180 (사용자 2일차 캡처: '호텔 조식 07:00 · 천문산 가기 전 든든히'가 그날 숙소 뒤 맨 끝에): 아침 식사(이름 조식·아침, 또는 10시 전 식사)가 그날 숙소 뒤에 있으면 그날 맨 앞으로
   for (let d = 0; d < p.nd; d++) { const L = p.it.filter(x => x.d === d), si = L.findIndex(x => x.k === 'stay'); if (si < 0) continue;
     L.slice(si + 1).filter(x => x.k === 'food' && !x.ok && !x.man && (/조식|아침|브런치|breakfast/i.test(x.n || '') || /^0\d:/.test(x.t || ''))).forEach(x => { const f = p.it.findIndex(y => y.d === d); p.it.splice(p.it.indexOf(x), 1); p.it.splice(f, 0, x); fixed.push(`${d + 1}일차 '${x.n}'(아침)을 숙소 뒤에서 그날 맨 앞으로`); }); }
+  // ⑦ 판 -181 (사용자 캡처: '호텔 조식'이 묵은 호텔에서 34.6km 떨어진 곳에 찍힘 — AI가 짐작한 위치): 호텔 조식은 전날 밤 숙소 자리로
+  for (let d = 1; d < p.nd; d++) { const st = p.it.filter(x => x.d === d - 1 && x.k === 'stay').pop(); if (!st || !Number.isFinite(st.lat)) continue;
+    p.it.filter(x => x.d === d && x.k === 'food' && !x.man && !x.ok && /호텔\s*조식|조식|breakfast/i.test(x.n || '') && /호텔|조식/.test((x.n || '') + (x.m || '') + (x.lt || ''))).forEach(x => {
+      if (Number.isFinite(x.lat) && Math.abs(x.lat - st.lat) < 1e-4 && Math.abs(x.lng - st.lng) < 1e-4) return;
+      x.lat = st.lat; x.lng = st.lng; x.ap = st.ap || 0; delete x.near; delete x.vf; fixed.push(`${d + 1}일차 '${x.n}' 위치를 전날 밤 숙소(${st.n}) 자리로`); }); }
   // ④ 앞 묶음 일정에 이미 든 이름(여행사 설명 카드) → 앞 일정에 합침
   { const r = planFoldDup(p.it); if (r.n) { p.it = r.it; r.drop.forEach(x => fixed.push(`${x.d + 1}일차 '${x.n}'은(는) 앞 일정에 들어 있어 합침`)); } }
   // ⑤ 사람이 봐야 할 것
@@ -10870,7 +10875,7 @@ function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, �
 // 일정 칸 오른쪽 장소 사진 (위키백과·위키미디어 공용, placeInfo 기억을 같이 씀) — 화면에 보일 때만 받아요, 동시에 2곳
 // 판 -176 (사용자 장가계 캡처 '대표 이미지를 넣어야 고급스럽고 시인성도 좋지 않을까?' · '사진 대신 그림 넣는 건 품질 떨어질걸'):
 // 정확한 위치면 그 자리 둘레 사진(예전대로) → 없거나 대략 위치면 '이름'으로 위키백과 대표 사진 → 식사·마사지처럼 그 가게 사진을 못 구하는 곳은 메뉴·종류로 위키미디어 공용 사진 + '예시' 딱지. 못 찾으면 칸 없음(그림으로 채우지 않음)
-var PLAN_TH_EN = [[/발\s*마사지|족욕/, 'foot massage'], [/마사지|안마|스파/, 'massage therapy'], [/닭백숙|백숙|삼계탕/, 'samgyetang'], [/훠궈|샤브/, 'hot pot chinese'], [/삼겹|돼지/, 'samgyeopsal'], [/버섯/, 'mushroom hot pot'], [/딤섬/, 'dim sum'], [/국수|면/, 'chinese noodles'],
+var PLAN_TH_EN = [[/닭백숙|백숙|삼계탕/, 'samgyetang'], [/훠궈|샤브/, 'hot pot chinese'], [/삼겹|돼지/, 'samgyeopsal'], [/버섯/, 'mushroom hot pot'], [/딤섬/, 'dim sum'], [/국수|면/, 'chinese noodles'],
   [/한식|비빔밥/, 'korean food bibimbap'], [/라멘/, 'ramen'], [/스시|초밥/, 'sushi'], [/오코노미/, 'okonomiyaki'], [/타코야키/, 'takoyaki'], [/규카츠|돈카츠/, 'tonkatsu'], [/야키니쿠|고기/, 'yakiniku'],
   [/현지식|중식|특식|중국/, 'Hunan cuisine dishes'], [/일식|가정식/, 'Japanese cuisine'], [/조식|아침/, 'breakfast buffet'], [/카페|다방|커피/, 'cafe coffee'], [/매력상서/, 'Charming Xiangxi show'], [/천문호선|천문호|호선/, 'Tianmen Fox Fairy show'], [/쇼|공연/, 'theatre stage performance']];
 function planThQ(x) {   // 이름에서 찾을 말: 첫 이름만 (' + '·'·'·괄호·[ ] 앞), VIP 좌석 같은 말 빼고
@@ -10888,6 +10893,7 @@ async function planThName(x) {
       if (hit) return { u: hit.thumbnail.source }; } catch {}
   }
   // ② 식사·마사지·그 밖: 메뉴·종류로 위키미디어 공용 사진 (그 가게 사진이 아니라 '예시')
+  if (/마사지|안마|스파|족욕/.test(x.n || '')) return { u: '' };   // 판 -181: 마사지 예시 사진이 이상해서(사용자 캡처) 그림 타일로
   const txt = (Q.menu || '') + ' ' + x.n, en = (PLAN_TH_EN.find(([re]) => re.test(txt)) || [])[1] || (x.k === 'food' ? 'Chinese cuisine dishes' : x.k === 'show' ? 'theatre stage performance' : '');
   if (!en) return { u: '' };
   try { const d = await J('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=' + encodeURIComponent(en + ' filetype:bitmap') + '&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=480');
