@@ -1183,6 +1183,19 @@ html.c-home.c-live .c-ph-chips,html.c-home.c-live .c-ph-deco{top:calc(88px + env
 .c-ph-rec{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
 html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .c-find{padding-top:calc(52px + env(safe-area-inset-top,0px))}
+
+/* 판 -189 첫 화면 '여행 계획' 칸 */
+.hp{background:#fff;border-radius:20px;padding:6px 0 4px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
+.hp-hd{display:flex;align-items:center;gap:14px;padding:10px 18px 6px}.hp-hd b{font:600 16px Pretendard,sans-serif;color:#191F28}.hp-hd .sp{flex:1}
+.hp-hd a{font:500 13.5px Pretendard,sans-serif;color:#1D7FA0;text-decoration:none}
+.hp-row{display:flex;align-items:center;gap:12px;padding:10px 18px;text-decoration:none;color:inherit;border-top:1px solid #F0F2F5}
+.hp-row:first-of-type{border-top:none}
+.hp-th{flex:none;width:48px;height:48px;border-radius:12px;background:linear-gradient(145deg,#5CCFE0,#1D7FC0) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.hp-row.on .hp-th{width:56px;height:56px}
+.hp-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.hp-tx b{font:500 15.5px Pretendard,sans-serif;color:#191F28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-tx small{font:400 13px Pretendard,sans-serif;color:#6B7684;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-row.on .hp-tx small:first-of-type{color:#E8613C;font-weight:500}.hp-tx small.nx{color:#191F28}
+.hp-row .go{color:#B0B8C1;font-size:20px}
 </style>
 </head>
 <body>
@@ -3287,9 +3300,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-188-dup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-189-plans';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9169,6 +9182,7 @@ async function viewPlan() {
   if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode() }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p') && qs.get('info')) return viewPlanDest(qs.get('p'));   // 판 -144: 여행지 정보 한 페이지
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
+  if (location.hash === '#plNew') setTimeout(() => document.getElementById('plNew')?.scrollIntoView({ block: 'start' }), 300);   // 판 -189: 첫 화면 '+ 새 계획'
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
   const card = p => { const h = ls.get('planHero:' + p.id, null), st = planStatus(p), href = './?plan=1&p=' + encodeURIComponent(p.id), meta = [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ');
     return h && h.u ? el('a', { class: 'n-rc', href }, el('div', { class: 'im', style: `background-image:url("${String(h.u).replace(/"/g, '%22')}")` }, st ? el('span', { class: 'tag', text: st }) : null), el('h3', { text: p.name }), el('p', { text: meta }))
@@ -10670,6 +10684,23 @@ function planCur() {   // 여행 중인 계획, 없으면 30일 안에 떠나는
 function planNext(p, d) {
   const its = planItems(p, d), now = new Date(), hm = now.getHours() * 60 + now.getMinutes();
   let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm); if (i < 0) i = its.findIndex(x => !x.ok); return i;
+}
+// 판 -189 (사용자 '여행계획을 만들고 그 안에 장가계·오사카 넣어야지' → '고쳐'): 첫 화면 '여행 계획' 칸 하나에 다가오는·여행 중인 계획을 모두 한 줄씩
+function planHomeSection() {
+  const all = planAll(), up = all.filter(p => { const k = planToday(p); return k == null || k < p.nd; })
+    .sort((x, y) => { const a = planToday(x), b = planToday(y), on = k => k != null && k >= 0; return (on(b) ? 1 : 0) - (on(a) ? 1 : 0) || String(x.start || '9999').localeCompare(String(y.start || '9999')); }).slice(0, 5);
+  const head = el('div', { class: 'hp-hd' }, el('b', { text: '여행 계획' }), el('span', { class: 'sp' }),
+    el('a', { href: './?plan=1#plNew', text: '+ 새 계획' }), all.length ? el('a', { href: './?plan=1', text: '전체 ›' }) : null);
+  const row = p => { const k = planToday(p), on = k != null && k >= 0 && k < p.nd, h = ls.get('planHero:' + p.id, null), w = (ls.get('planWx:' + p.id, null) || {}).days || [];
+    const wx = w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : '';
+    let nx = null; if (on) { try { const its = planItems(p, k), ni = planNext(p, k); nx = ni >= 0 ? its[ni] : null; } catch {} }
+    const th = el('span', { class: 'hp-th' }); if (h && h.u) th.style.backgroundImage = `url("${h.u}")`; else th.append(cSvg('plane', 22, '#fff'));
+    return el('a', { class: 'hp-row' + (on ? ' on' : ''), href: './?plan=1&p=' + encodeURIComponent(p.id) }, th,
+      el('span', { class: 'hp-tx' }, el('b', { text: p.name || '여행' }),
+        el('small', { text: [on ? `여행 중 · ${k + 1}일차` : planStatus(p), p.start ? planDayLabel(p, 0) + (on ? '' : ' 출발') : '날짜 미정', wx].filter(Boolean).join(' · ') }),
+        on ? el('small', { class: 'nx', text: nx ? `다음 · ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null),
+      el('span', { class: 'go', text: '›' })); };
+  return el('div', { class: 'hp' }, head, ...(up.length ? up.map(row) : [el('a', { class: 'hp-row', href: './?plan=1#plNew' }, el('span', { class: 'hp-th' }, cSvg('plane', 22, '#fff')), el('span', { class: 'hp-tx' }, el('b', { text: '여행 계획 만들기' }), el('small', { text: '여행사 일정·블로그 글로도 만들 수 있어요' })), el('span', { class: 'go', text: '›' }))]));
 }
 function planHomeCard() {
   let p = null; try { p = planCur(); } catch {} if (!p) return null;
@@ -14611,7 +14642,7 @@ function viewLanding() {
   // 시안 한 화면 아래(스크롤): 예전 첫 화면에 있던 들어가는 길은 그대로 한 줄씩
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), ...(sub ? [el('small', { text: sub })] : [])), el('span', { class: 'go', text: '›' }));
-  const tripCard = (() => { try { return planHomeCard(); } catch { return null; } })();
+  const tripCard = (() => { try { return planHomeSection(); } catch { return null; } })();   // 판 -189
   const heroEl = cHomePhoto();
   // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
   app.replaceChildren(heroEl,
@@ -14623,7 +14654,7 @@ function viewLanding() {
         row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
         row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
         row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
-        tripCard ? null : row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
+        null && row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
         row('👥', '모임방', '', './?room=1'),
         row('📸', '가족 앨범', '', './?album=1'),
         row('🧪', '추억 만들기', '', './?lab=mem'),
