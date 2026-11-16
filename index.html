@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-213-planrescue';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-214-enlink';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🔎 없어진 여행 계획 되찾기: 일행과 같이 고치던 계획은 여행 방 자료로 저절로 되살려요(여행 계획 목록 맨 아래 \'없어진 계획 찾기\'도) · 🛡 휴대폰과 크롬이 서로 계획을 지우던 문제를 막았어요';
+const UI_NOTES = '내가 보낸 영어 초대 링크를 내 휴대폰에서 열어도 계획 화면은 한국어 그대로예요 · 영어로 바뀌어 있던 화면도 한국어로 돌아와요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9416,8 +9416,8 @@ async function viewPlan() {
       }
       const id = same ? same.id : (planSave(p), p.id); history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(id)); toast(same ? (filled ? '이미 넣어 둔 계획에 위치·안내를 채웠어요' : '이미 넣어 둔 계획이에요') : '받은 여행 계획을 내 계획에 넣었어요');
       if (qs.get('mk') === 'film') { location.replace('./?film=1&plan=' + encodeURIComponent(id)); return; }   // 판 -133: 카톡에서 크롬으로 넘어온 계획 영상
-      if (qs.get('en')) ls.set('planLang:' + id, 'en');   // 판 -141: 영어 초대 링크
-      setTimeout(() => planAskName(planGet(id)), 700);   // 판 -196 바로 · 판 -194 (같이 고치기 첫 맞추기 뒤라 함께 가는 사람 목록이 들어와 있음): 초대받아 들어온 사람이 이름 적기
+      if (qs.get('en') && !same) ls.set('planLang:' + id, 'en');   // 판 -141: 영어 초대 링크 · 판 -214: 이미 있는 계획(내가 보낸 계획 등)은 화면 언어를 안 바꿔요
+      if (!same) setTimeout(() => planAskName(planGet(id)), 700);   // 판 -196 바로 · 판 -194 (같이 고치기 첫 맞추기 뒤라 함께 가는 사람 목록이 들어와 있음): 초대받아 들어온 사람이 이름 적기
       return viewPlanOne(id); }
     catch (e) { toast(String(e && e.message) === 'net' ? '⚠ 인터넷이 안 돼서 계획을 못 받았어요 · 인터넷이 되면 다시 열어 주세요' : '⚠ 계획 링크가 깨졌어요 · 끝까지 그대로 열어 주세요', false, 6000); }
   }
@@ -10621,7 +10621,7 @@ function planFrTxt(p, x) { const M = p.mem || []; return (x.fr || []).map(id => 
 function planVis(p, x) { return true; }   // 판 -142: '내 일정만 보기'는 없앰(내 일정은 원래 내 휴대폰에만 있어서)
 function planHasPersonal(p) { return false; }
 function planShared(p) { return !!(p && (p.shOn || (p.room && p.room.code))); }   // 판 -208: 일행과 같이 쓰는 계획
-function planEN(p) { return ls.get('planLang:' + p.id, '') === 'en'; }
+function planEN(p) { if (p && p.room && p.room.mk && ls.get('planLang:' + p.id, '') === 'en' && !ls.get('planLangMe:' + p.id, 0)) { ls.set('planLang:' + p.id, ''); } return ls.get('planLang:' + p.id, '') === 'en'; }   // 판 -214: 여행 방을 만든 휴대폰(주인)은 보낸 영어 링크를 열어도 한국어 그대로(직접 English view를 고른 것 planLangMe만 영어)
 // 판 -204 (사용자 '계획 화면도 영어로 나오게 해'): 영어 초대로 연 휴대폰(planEN)은 계획 화면·창의 앱 글자를 영어로 바꿔 보여 줌(장소 이름·메모는 영어 옮김 x.en이 있으면 그것, 없으면 원래 글자)
 var EN_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], EN_WD = { 일: 'Sun', 월: 'Mon', 화: 'Tue', 수: 'Wed', 목: 'Thu', 금: 'Fri', 토: 'Sat' };
 var PLAN_EN_EXACT = { '여행 계획': 'Trips', '초대': 'Invite', '일정': 'Plan', '여행': 'Trip', '오늘': 'Today', '여행 방': 'Trip room', '여행 노트': 'Trip notes', '일본어': 'Japanese', '중국어': 'Chinese', 'AI 묻기': 'Ask AI', '준비': 'Prep', '길찾기': 'Directions', '첫 장소': 'First stop', '바로 옆': 'Right next door', '더보기': 'More', '닫기': 'Close', '다음 갈 곳': 'Next', '다녀왔어요': 'Visited', '저장': 'Save', '취소': 'Cancel', '확인': 'OK', '빼기': 'Remove', '날짜 미정': 'Date TBD', '여행 중': 'On the trip', '처음 화면': 'Home' };
@@ -10736,7 +10736,7 @@ function planMemSheet(p, redraw) {
               const u = (await planLink(p)).replace('?plan=1#', '?plan=1&en=1#'), a0 = planDate(p, 0), z0 = planDate(p, p.nd - 1), dt = a0 ? `${a0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${z0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : '';
               const txt = `✈️ ${p.nameEn || p.name} — our family trip plan${dt ? ' (' + dt + ')' : ''}\nOpen this link to see the day-by-day plan, map and who joins when.\n👉 ${u}`;
               if (navigator.share) await navigator.share({ text: txt }).catch(() => {}); else { await navigator.clipboard.writeText(txt).catch(() => {}); toast('영어 초대 글을 복사했어요 · 메신저에 붙여 넣어 주세요'); } } finally { e.target.disabled = false; e.target.textContent = '🇬🇧 영어 초대 글 보내기'; } } }),
-            el('button', { class: 'btn line small', text: planEN(p) ? '한국어로 보기' : '이 휴대폰에서 영어로 보기', onclick: () => { ls.set('planLang:' + p.id, planEN(p) ? '' : 'en'); paint(); redraw && redraw(); } }))); })() : null);
+            el('button', { class: 'btn line small', text: planEN(p) ? '한국어로 보기' : '이 휴대폰에서 영어로 보기', onclick: () => { const e = !planEN(p); ls.set('planLang:' + p.id, e ? 'en' : ''); ls.set('planLangMe:' + p.id, e ? 1 : 0); paint(); redraw && redraw(); } }))); })() : null);
   };
   paint();
   labSheet('👥 함께 가는 사람', st, box);
@@ -11727,7 +11727,7 @@ function viewPlanOne(id) {
       go('✎ 이름 · 날짜 고치기', editMeta),
       go('📄 이 계획 복사하기 (1안 · 2안)', () => planCopySheet(p)),
       go(planEN(p) ? '❓ Quick tour' : '❓ 사용법 둘러보기', () => setTimeout(() => planTour(p), 300)),
-      go(planEN(p) ? '🇰🇷 한국어로 보기 (Korean)' : '🇬🇧 English view', () => { ls.set('planLang:' + p.id, planEN(p) ? '' : 'en'); location.reload(); }),
+      go(planEN(p) ? '🇰🇷 한국어로 보기 (Korean)' : '🇬🇧 English view', () => { const e = !planEN(p); ls.set('planLang:' + p.id, e ? 'en' : ''); ls.set('planLangMe:' + p.id, e ? 1 : 0); location.reload(); }),
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
       go('🗑 이 계획 지우기', () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } }));
