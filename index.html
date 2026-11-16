@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-216-nochange';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-217-roomreset';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '앱이 여행 계획을 저절로 고치거나 합치지 않아요(이름 바꾸기·점검 고치기·하나투어 다시 받기·다녀옴 표시 모두 끔) · 계획은 1시간에 한 번 휴대폰에 남겨 두고, 여행 계획 목록 맨 아래 🕘 예전 모습으로 되돌리기로 되돌릴 수 있어요';
+const UI_NOTES = '여행 계획 ⋯ 더보기에 🔄 여행 방 새로 만들기: 일행에게 다른 일정이 보이면 눌러 주세요 · 지금 내 일정 그대로 새 방을 만들고 초대 창이 열려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7828,6 +7828,17 @@ async function planSnapSheet() {
           const a = planAll().filter(x => x.id !== q.id); a.unshift(Object.assign({}, q, { u: Date.now() })); ls.set('tripPlans', a); toastLater(`🕘 '${q.name}'을(를) 예전 모습으로 되돌렸어요`); location.href = './?plan=1&p=' + encodeURIComponent(q.id); }); } })); } }
   labSheet('🕘 예전 모습으로 되돌리기', el('div', { class: 'sub', style: 'font-size:13px', text: '계획 목록을 1시간에 한 번 이 휴대폰에 남겨 둬요. 되돌릴 계획을 누르세요.' }), box);
 }
+// 판 -217 (사용자 '이렇게 보냈는데 이상하게 나와 · 일정도 다르게'): 여행 방에 다른 계획(1안) 일정이 섞여 받는 사람에게 다른 일정이 보일 때 — 누를 때만, 지금 이 계획 그대로 새 방을 만들고 초대 창을 엶(예전 방은 버림, 이 계획 일정은 안 건드림)
+async function planRoomReset(p) {
+  if (!confirm('여행 방을 새로 만들까요?\n\n· 지금 이 계획 일정 그대로 새 방에 올려요\n· 이 계획 일정은 바뀌지 않아요\n· 예전에 보낸 초대 링크는 예전 방으로 열려요 → 일행에게 새 링크를 다시 보내 주세요')) return;
+  try { await planSnap(true); } catch {}
+  const q = planGet(p.id) || p; q.room = { code: trNewCode(), mk: 1 }; q.shOn = 1; ls.del ? ls.del('plSync:' + q.id) : localStorage.removeItem('plSync:' + q.id);
+  planSave(q); toast('새 여행 방에 지금 일정을 올리는 중…');
+  try { await planShareSync(planGet(q.id) || q, { start: true }); } catch (e) { toast('⚠ 새 방에 올리지 못했어요 · 인터넷을 확인하고 다시 눌러 주세요'); return; }
+  toast('✅ 새 여행 방을 만들었어요 · 이제 초대 링크를 다시 보내 주세요', false, 6000);
+  try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {}
+  setTimeout(() => planShare(planGet(q.id) || q), 600);
+}
 function planNewId() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function planDate(p, d) { const [y, m, dd] = String(p.start || '').split('-').map(Number); if (!y) return null; return new Date(y, m - 1, dd + d); }
 function planDayLabel(p, d) { const x = planDate(p, d); return x ? `${x.getMonth() + 1}월 ${x.getDate()}일 (${'일월화수목금토'[x.getDay()]})` : ''; }
@@ -11760,6 +11771,7 @@ function viewPlanOne(id) {
       go('🏨 숙소 예약 링크 넣기 (아고다·부킹닷컴…)', () => planDocSheet(p, drawAll)),
       go('✎ 이름 · 날짜 고치기', editMeta),
       go('📄 이 계획 복사하기 (1안 · 2안)', () => planCopySheet(p)),
+      go('🔄 여행 방 새로 만들기 · 지금 내 일정으로', () => planRoomReset(p)),
       go(planEN(p) ? '❓ Quick tour' : '❓ 사용법 둘러보기', () => setTimeout(() => planTour(p), 300)),
       go(planEN(p) ? '🇰🇷 한국어로 보기 (Korean)' : '🇬🇧 English view', () => { const e = !planEN(p); ls.set('planLang:' + p.id, e ? 'en' : ''); ls.set('planLangMe:' + p.id, e ? 1 : 0); location.reload(); }),
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
