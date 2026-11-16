@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-222-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-223-leg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 계획 맨 위 사진: 장소에 넣은 호텔 사진 대신 여행지(오사카 등) 사진으로 · 마음에 안 들면 ↻ 다른 사진';
+const UI_NOTES = '여행 일정: 위치가 없는 장소도 앞뒤 사이에 늘 길찾기 줄이 있어요 · 위치가 없으면 이름으로 찾아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8379,6 +8379,15 @@ function planMoveFix(p) {
   return n;
 }
 function planLegGo(a, b, k) {   // 구간 길찾기: 출발 = 앞 장소, 도착 = 이 장소 · 한국은 네이버, 중국은 가오더, 그 밖은 구글 지도(일본 전철도 나와요)
+  // 판 -223 (사용자 '장소추가와 관계없이 길찾기는 항상 있어야해'): 위치가 없는 곳은 이름(+여행지)으로 길찾기
+  const okP = z => z && Number.isFinite(z.lat) && Number.isFinite(z.lng);
+  if (!okP(a) || !okP(b)) { const ref = okP(b) ? b : okP(a) ? a : null, nm = z => (z && (z.q || z.n)) || '';
+    const dn = encodeURIComponent(nm(b) + (okP(b) || !planLegGo.city ? '' : ' ' + planLegGo.city)), on = a ? encodeURIComponent(nm(a) + (okP(a) || !planLegGo.city ? '' : ' ' + planLegGo.city)) : '';
+    if (ref && planInChina(ref.lat, ref.lng)) { window.open(`https://uri.amap.com/search?keyword=${dn}&callnative=1`, '_blank', 'noopener'); return; }
+    if (ref && geoidOff(ref.lat, ref.lng) != null) { window.open(`https://map.naver.com/p/search/${dn}`, '_blank', 'noopener'); return; }
+    const tm = k === 'walk' ? 'walking' : k === 'car' ? 'driving' : 'transit';
+    const o = !a ? '' : okP(a) ? `&origin=${a.lat},${a.lng}` : `&origin=${on}`, de = okP(b) ? `${b.lat},${b.lng}` : dn;
+    window.open(`https://www.google.com/maps/dir/?api=1${o}&destination=${de}&travelmode=${tm}`, '_blank', 'noopener'); return; }
   if (planInChina(b.lat, b.lng)) {   // 중국: 가오더 지도 길찾기 (앞 장소 → 이 장소)
     const md = k === 'walk' ? 'walk' : k === 'rail' ? 'bus' : 'car';
     window.open(`https://uri.amap.com/navigation?from=${a.lng},${a.lat},${encodeURIComponent(a.n)}&to=${b.lng},${b.lat},${encodeURIComponent(b.n)}&mode=${md}&coordinate=wgs84&callnative=1`, '_blank', 'noopener'); return; }
@@ -11999,9 +12008,16 @@ function viewPlanOne(id) {
       const legLine = (svg, txt, sub, go, cls, pick, warn) => tl.append(el('div', { class: 'tv-leg' + (cls ? ' ' + cls : '') },
         el('button', { class: 'tv-lgt', onclick: pick || (() => {}) }, cSvg(svg, 16), el('span', { text: txt }), warn ? el('b', { text: ` · ⚠ ${warn}` }) : null, sub ? el('small', { text: sub }) : null),
         go ? el('button', { class: 'tv-lgo', text: '길찾기', onclick: go }) : null));
+      planLegGo.city = (p.dest && p.dest.n) || planDestName(p) || '';
+      let pc = fromStay;   // 판 -223: 바로 앞 칸(위치가 없어도) — 모든 칸 사이에 길찾기 줄
       its.forEach((x, i) => {
         if (x.k === 'move' && !pos(x) && pv && !x.x) { hold.push(x); return; }   // 판 -183: 여행사 안내(x 있음)는 줄 글로 숨기지 않고 칸으로
-        if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+        if (x.k !== 'move' && x.k !== 'fly' && pc && (!pos(x) || !pos(pc))) {   // 판 -223: 이 칸이나 바로 앞 칸에 위치가 없으면 이름으로 길찾기
+          const how = [!pos(pc) ? `${pc.n}에서` : '', ...hold.map(z => z.n)].filter(Boolean).join(' · ');
+          const from = pc; legLine('route', !pos(x) ? '거리 모름 · 위치 없음' : '거리 모름 · 앞 장소 위치 없음', how, () => planLegGo(from, x, 'car'), 'ap');
+          if (pos(x)) { if (exact(x)) lastEx = x; pv = x; fromStay = null; } hold = []; }
+        else if (x.k !== 'move' && x.k !== 'fly' && !pc && !pos(x)) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', '', () => planLegGo(null, x, 'car'), 'ap');
+        else if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
           if (!a0) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', how, () => planGo(x));
           else if (!exact(x)) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
           else if (!exact(a0) && !lastEx) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap');
@@ -12015,6 +12031,7 @@ function viewPlanOne(id) {
           tl.append(x.mine ? el('div', { class: 'tv-meet split', text: EN ? 'Each on your own from here' : '여기서부터 각자 일정' })
             : el('div', { class: 'tv-meet' }, el('b', { text: EN ? '👥 Everyone meets here' : '👥 여기서 모두 모여요' }), el('span', { text: [x.t, nmx].filter(Boolean).join(' · ') }))); }
         if (x.k !== 'move') pM = !!x.mine;
+        if (x.k !== 'move' || pos(x)) pc = x;
         tl.append(row(x, i, d, nx, true)); });
       hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx)));
       const canOpt = its.filter(x => PLAN_OPT_K.includes(x.k) && Number.isFinite(x.lat) && !x.ok).length >= 3;
