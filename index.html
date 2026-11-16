@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-219-itemphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-220-itemphoto2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 일정 장소마다 사진 넣기: 장소를 눌러 고치기·보기 창에서 📷 사진 넣기 · 넣은 사진이 일정 칸 작은 그림으로 보여요 · 함께 가는 사람 저장이 되돌아가던 것도 고쳤어요';
+const UI_NOTES = '함께 일정 장소에 넣은 사진은 일행 모두에게 보여요 (여행 방 사진에도 올라가요) · 내 일정 장소 사진은 나만 봐요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9803,7 +9803,7 @@ async function trImg(f, max, q) {   // WebP가 되면 WebP(같은 화질에 30%�
   let b = await new Promise(r => c.toBlob(r, 'image/webp', q)); if (!b || b.type !== 'image/webp') b = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
   return { b, w: c.width, h: c.height };
 }
-async function trSendPhoto(R, f, drv, say, over) {
+async function trSendPhoto(R, f, drv, say, over, more) {
   const isV = /^video\//.test(f.type || '');
   const ex = over || (isV ? {} : await famExif(f).catch(() => ({})));
   const pid = Date.now().toString(36) + rid(4), meta = { by: trMe(), nm: trName(), t: Date.now(), ts: ex.ts || f.lastModified || Date.now(), lat: ex.lat ?? null, lng: ex.lng ?? null };
@@ -9818,6 +9818,7 @@ async function trSendPhoto(R, f, drv, say, over) {
     await trSet('full:' + pid, b);
   }
   if (drv) { try { meta.dv = await driveUpload(drv, f); meta.dvs = f.size; } catch (e) { meta.dverr = String(e && e.message || e).slice(0, 60); if (isV) throw e; } }
+  if (more) Object.assign(meta, more);   // 판 -220: 일정 장소 사진(pi = 일정 칸 번호)
   await trPut(R, 'tp', pid, meta);
   return Object.assign({ id: pid, _t: meta.t }, meta);
 }
@@ -11281,18 +11282,34 @@ async function planPhAdd(p, x, files) { let n = 0, bad = 0; x.ph = Array.isArray
     await trSet('pph:' + p.id + ':' + id, { b, s: sm, at: Date.now() }); x.ph.push(id); n++; } catch { bad++; } }
   return { n, bad }; }
 async function planPhGet(p, id) { return await trGet('pph:' + p.id + ':' + id); }
-function planPhBox(p, x, onCh) {   // 사진 줄 + '📷 사진 넣기'
+function planPhShared(p, x) { return !!(p && p.room && p.room.code && !x.mine); }
+async function planPhRoom(p, x, sync) {   // 판 -220: 함께 일정 장소 사진 = 여행 방 사진(tp.pi = 일정 칸 번호)
+  const R = await trRoom(p.room.code), S = await trLoad(R); if (sync) { try { await trSync(R, S, ['tp']); } catch {} }
+  return { R, S, L: (S.tp || []).filter(t => t.pi === x.id && !t.del && !t.v) }; }
+function planPhBox(p, x, onCh) {   // 사진 줄 + '📷 사진 넣기' · 함께 일정이면 여행 방에 올려 일행 모두 봄
   const box = el('div', { style: 'display:flex;flex-direction:column;gap:8px' }), inp = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });
-  const urls = []; const free = () => { urls.forEach(u => URL.revokeObjectURL(u)); urls.length = 0; };
-  const big = async id => { const r = await planPhGet(p, id); if (!r) return; const u = URL.createObjectURL(r.b); urls.push(u);
-    const sh = labSheet('', el('img', { src: u, style: 'width:100%;border-radius:12px' }),
-      el('button', { class: 'btn line full', text: '🗑 이 사진 빼기', onclick: async () => { if (!confirm('이 사진을 뺄까요?')) return; x.ph = (x.ph || []).filter(z => z !== id); try { const db = await trDb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete('pph:' + p.id + ':' + id); t.oncomplete = res; t.onerror = res; }); } catch {} sh.remove(); onCh && onCh(); paint(); toast('사진을 뺐어요'); } })); };
-  const paint = async () => { free(); const ids = (x.ph || []).slice(); const row = el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:2px' });
-    for (const id of ids) { const r = await planPhGet(p, id); if (!r) continue; const u = URL.createObjectURL(r.s || r.b); urls.push(u); row.append(el('img', { src: u, style: 'width:84px;height:84px;object-fit:cover;border-radius:12px;flex:none;cursor:pointer;background:#EEF1F4', onclick: () => big(id) })); }
-    const btn = el('button', { class: 'btn line full', text: ids.length ? `📷 사진 더 넣기 · 지금 ${ids.length}장` : '📷 사진 넣기', onclick: () => inp.click() });
-    box.replaceChildren(...(ids.length ? [row] : []), btn, el('div', { class: 'dt', text: '내 휴대폰에만 남아요 · 일행에게 보이려면 여행 방 📷 사진에 올려 주세요' }), inp); };
-  inp.onchange = async () => { const fs = [...(inp.files || [])]; inp.value = ''; if (!fs.length) return; toast(`사진 ${fs.length}장 넣는 중…`); const r = await planPhAdd(p, x, fs); onCh && onCh(); await paint(); toast(r.bad ? `✅ ${r.n}장 넣었어요 · ⚠ ${r.bad}장은 못 읽었어요` : `✅ 사진 ${r.n}장 넣었어요`); };
-  paint(); return box; }
+  const urls = []; const free = () => { urls.forEach(u => URL.revokeObjectURL(u)); urls.length = 0; }; let busy = 0, note = '';
+  const show = (u, del) => { const sh = labSheet('', el('img', { src: u, style: 'width:100%;border-radius:12px' }), del ? el('button', { class: 'btn line full', text: '🗑 이 사진 빼기', onclick: async () => { if (!confirm('이 사진을 뺄까요?')) return; sh.remove(); await del(); onCh && onCh(); paint(); toast('사진을 뺐어요'); } }) : null); };
+  const delLocal = async id => { x.ph = (x.ph || []).filter(z => z !== id); try { const db = await trDb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete('pph:' + p.id + ':' + id); t.oncomplete = res; t.onerror = res; }); } catch {} };
+  const paint = async (sync) => { free(); const row = el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:2px' }); let n = 0;
+    const th = (src, nm, on) => { n++; row.append(el('div', { style: 'flex:none;display:flex;flex-direction:column;gap:2px;align-items:center' }, el('img', { src, style: 'width:84px;height:84px;object-fit:cover;border-radius:12px;cursor:pointer;background:#EEF1F4', onclick: on }), nm ? el('span', { style: 'font-size:11px;color:#8B95A1', text: nm }) : null)); };
+    const sh = planPhShared(p, x);
+    if (sh) { try { const { R, L } = await planPhRoom(p, x, sync); for (const t of L) th(t.th, t.by === trMe() ? '나' : (t.nm || '일행'), async () => { try { const b = await trFull(R, t), u = URL.createObjectURL(b); urls.push(u);
+      show(u, t.by === trMe() ? async () => { await trPut(R, 'tp', t.id, { del: 1, by: t.by, t: Date.now() }); for (let k = 0; k < (t.n || 0); k++) fsDel(`rooms/${R.rid}/tq/${t.id}-${k}`).catch(() => {}); const S = await trLoad(R), z = S.tp.find(q => q.id === t.id); if (z) { z.del = 1; await trSet('room:' + R.rid, S); } } : null); } catch { toast('⚠ 사진을 못 받았어요 · 인터넷을 확인해 주세요'); } }); } catch {} }
+    for (const id of (x.ph || []).slice()) { const r = await planPhGet(p, id); if (!r) continue; const u = URL.createObjectURL(r.s || r.b); urls.push(u); th(u, sh ? '내 휴대폰' : '', async () => { const r2 = await planPhGet(p, id); if (!r2) return; const u2 = URL.createObjectURL(r2.b); urls.push(u2); show(u2, () => delLocal(id)); }); }
+    const btn = el('button', { class: 'btn line full', disabled: busy ? true : null, text: busy ? note || '올리는 중…' : n ? `📷 사진 더 넣기 · 지금 ${n}장` : '📷 사진 넣기', onclick: () => inp.click() });
+    box.replaceChildren(...(n ? [row] : []), btn, el('div', { class: 'dt', text: sh ? '👥 일행 모두에게 보여요 (여행 방 📷 사진에도 올라가요)' : p.room && p.room.code ? '👤 내 일정이라 내 휴대폰에만 남아요' : '내 휴대폰에만 남아요 · 일행과 같이 쓰려면 👋 초대로 여행 방을 만들어 주세요' }), inp); };
+  const upload = async (files, fromLocal) => { const { R } = await planPhRoom(p, x); let ok = 0, bad = 0;
+    for (let i = 0; i < files.length; i++) { note = `올리는 중… ${i + 1}/${files.length}`; paint(); try { await trSendPhoto(R, files[i], null, null, null, { pi: x.id, pn: x.n }); ok++; if (fromLocal) await delLocal(fromLocal[i]); } catch { bad++; } }
+    try { const S = await trLoad(R); await trSync(R, S, ['tp']); } catch {} return { ok, bad }; };
+  inp.onchange = async () => { const fs = [...(inp.files || [])]; inp.value = ''; if (!fs.length) return; busy = 1;
+    try { if (planPhShared(p, x)) { const r = await upload(fs); toast(r.bad ? `✅ ${r.ok}장 올렸어요 · ⚠ ${r.bad}장 못 올렸어요 (인터넷 확인)` : `✅ 사진 ${r.ok}장 · 일행 모두에게 보여요`); }
+      else { const r = await planPhAdd(p, x, fs); toast(r.bad ? `✅ ${r.n}장 넣었어요 · ⚠ ${r.bad}장은 못 읽었어요` : `✅ 사진 ${r.n}장 넣었어요`); } } finally { busy = 0; onCh && onCh(); paint(); } };
+  (async () => { await paint(); if (planPhShared(p, x) && (x.ph || []).length && navigator.onLine) {   // 판 -219 때 내 휴대폰에만 넣은 사진 → 사용자가 '다 같이 볼 수 있게'라고 해서 여행 방으로 옮김
+      busy = 1; const ids = x.ph.slice(), fs = []; for (const id of ids) { const r = await planPhGet(p, id); fs.push(r ? new File([r.b], id + '.jpg', { type: 'image/jpeg' }) : null); }
+      const ok = ids.filter((_, i) => fs[i]); try { const r = await upload(fs.filter(Boolean), ok); if (r.ok) toast(`✅ 넣어 둔 사진 ${r.ok}장을 일행과 같이 보게 올렸어요`); } finally { busy = 0; onCh && onCh(); paint(true); } }
+    else paint(true); })();
+  return box; }
 function planDocKey(p, id) { const m = /^(.*)@([^@]+)$/.exec(String(id)); return m ? 'pdoc:' + m[2] + ':' + m[1] : 'pdoc:' + p.id + ':' + id; }   // 판 -190: 합친 계획에서 옮겨 온 캡처는 원래 번호로
 async function planBookRead(file) {
   const key = trBotKey(); if (!key) throw new Error('nokey');
@@ -11529,6 +11546,8 @@ function planArt(x, box) {
   box.replaceChildren(cSvg(A[0], 28, '#fff')); return box;
 }
 function planThumb(x, p) {
+  if (p && !planThumb.__in && planPhShared(p, x) && !(x.ph || []).length) { const box0 = el('div', { class: 'tv-th' }); let got = 0; planThumb.__in = 1; let fb; try { fb = planThumb(x, p); } finally { planThumb.__in = 0; }
+    planPhRoom(p, x).then(({ L }) => { const t = L[L.length - 1]; if (t && t.th) { got = 1; box0.replaceChildren(); box0.className = 'tv-th on'; box0.style.display = ''; box0.style.backgroundImage = `url("${t.th}")`; } }).catch(() => {}); if (fb) { box0.className = fb.className; box0.style.cssText = fb.style.cssText; box0.append(...fb.childNodes); } else box0.style.display = 'none'; return box0; }   // 판 -220: 일행이 올린 장소 사진 먼저
   if (p && Array.isArray(x.ph) && x.ph.length) { const box = el('div', { class: 'tv-th on' }); planPhGet(p, x.ph[0]).then(r => { if (r) box.style.backgroundImage = `url("${URL.createObjectURL(r.s || r.b)}")`; }); return box; }   // 판 -219: 내 사진 먼저
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''), z = (p.it || []).find(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length);
     if (z) x = Object.assign({}, x, { img: z.img }); else return ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) ? planArt(x) : null; }   // 판 -211: 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
