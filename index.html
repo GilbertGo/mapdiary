@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-221-order';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-222-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '일정 아래 ↕ 순서 바꾸기: 그날 일정을 ↑ ↓로 옮기거나 시각 순으로 한 번에 · 처음대로 되돌리기도 돼요 · 함께 일정 장소 사진은 일행 모두에게 보여요';
+const UI_NOTES = '여행 계획 맨 위 사진: 장소에 넣은 호텔 사진 대신 여행지(오사카 등) 사진으로 · 마음에 안 들면 ↻ 다른 사진';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11444,7 +11444,7 @@ function planDocSheet(p, redraw) {
 }
 // 판 -138 (2026-11-15 사용자 빈 '오사카' 계획 캡처: 지도가 한반도 전체, 맨 위 사진 없음): 장소가 하나도 없으면
 //   계획 이름에서 여행지 이름('오사카 3박 4일' → 오사카)을 뽑아 지도 자료(Nominatim)에서 찾아 p.dest={n,lat,lng}에 둠 → 지도 가운데·맨 위 사진
-function planDestName(p) { return String(p.name || '').replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/[·|,/].*$/, '').replace(/\d+\s*박\s*\d*\s*일?|\d+\s*일|당일|여행|투어|패키지|자유|가족|계획|새/g, ' ').trim().split(/\s+/)[0] || ''; }
+function planDestName(p) { return String(p.name || '').replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/_/g, ' ').replace(/[·|,/].*$/, '').replace(/\d+\s*박\s*\d*\s*일?|\d+\s*일|당일|여행|투어|패키지|자유|가족|계획|새/g, ' ').trim().split(/\s+/)[0] || ''; }
 async function planDest(p) {
   const nm = planDestName(p); if (!nm) return null;
   if (p.dest && p.dest.n === nm) return p.dest;
@@ -11461,7 +11461,7 @@ async function tvHeroCands(p) {
   const C = p.dest && Number.isFinite(+p.dest.lat) ? { lat: +p.dest.lat, lng: +p.dest.lng } : null, notHub = x => !/공항|airport|터미널|terminal|역$|station/i.test(x.n || '');
   const inDest = x => !C || dist(C.lat, C.lng, x.lat, x.lng) < 80000;
   const sp = pk || its.find(x => /spot|show/.test(x.k) && Number.isFinite(x.lat) && !x.ap && notHub(x) && inDest(x)) || C || its.find(x => Number.isFinite(x.lat) && x.k !== 'fly' && notHub(x)); if (!sp) return [];
-  const out = [], bad = /map|karte|logo|sign|plan|diagram|flag|locator|seal|emblem|svg|ticket|menu|screenshot|construction|scaffold|ipark|apartment|badminton|court|station|car|interior|지도|안내|아파트|공사/i;
+  const out = [], bad = /map|karte|logo|sign|plan|diagram|flag|locator|seal|emblem|svg|ticket|menu|screenshot|construction|scaffold|ipark|apartment|hotel|hostel|resort|lobby|building|tower|badminton|court|station|car|interior|지도|안내|아파트|공사/i;
   if (planIsHana(p)) {   // 판 -211: 하나투어 계획은 여행사 관광지 사진을 맨 앞에(1280px로)
     const seen = new Set(); its.filter(x => /spot|show|peak/.test(x.k) && (x.img || []).length).forEach(x => x.img.slice(0, 2).forEach(u => { const b = u.replace(/\/resize\/\d+_0\//, '/resize/1280_0/'); if (!seen.has(b) && seen.size < 6) { seen.add(b); out.push({ u: b, t: x.n, src: 'hana' }); } }));
     if (out.length) return out; }
@@ -11480,7 +11480,7 @@ async function tvHeroCands(p) {
     } catch {}
   }
   if (!hike) {   // 여행지 이름 글의 대표 사진을 늘 맨 앞에   // 판 -139 (사용자 오사카 계획 캡처: 시내 백화점 건물 사진이 나옴): 구경 장소가 아직 없으면 여행지 이름의 한국어 위키백과 대표 사진 먼저
-    const nm = (p.dest && p.dest.n) || planDestName(p);
+    const nm = planDestName(p) || (p.dest && p.dest.n);
     if (nm) try { const r = await fetchT(`https://ko.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(nm)}&redirects=1&prop=pageimages&piprop=original%7Cthumbnail&pithumbsize=1280&format=json&origin=*`, {}, 12000);
       if (r.ok) { const pg = Object.values(((await r.json()).query || {}).pages || {})[0] || {}, o = pg.original; if (o && o.width >= 900 && o.width > o.height * 1.1 && !bad.test(o.source)) out.push({ u: (pg.thumbnail && pg.thumbnail.source) || o.source, t: pg.title, src: 'kw' }); } } catch {}
   }
@@ -11492,13 +11492,13 @@ async function tvHeroCands(p) {
   return out;
 }
 async function tvHeroImg(p, again) {
-  try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
+  try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n && !x.pi).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
     for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
-  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 6 && Date.now() - c.at < 30 * 864e5) return c;
+  const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 7 && Date.now() - c.at < 30 * 864e5) return c;
   const skip = ls.get('planHeroSkip:' + p.id, []) || [];
   const L = await tvHeroCands(p); let cand = L.filter(x => !skip.includes(x.u));
   if (!cand.length && L.length) { ls.set('planHeroSkip:' + p.id, []); cand = L; }   // 다 넘겼으면 처음부터
-  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 6 }, x); ls.set(k, o); return o; }
+  for (const x of cand.slice(0, 6)) if (await tvImgOk(x.u)) { const o = Object.assign({ at: Date.now(), v: 7 }, x); ls.set(k, o); return o; }
   return null;
 }
 function tvImgOk(u) { return new Promise(res => { const im = new Image(), tm = setTimeout(() => res(false), 15000); im.onload = () => { clearTimeout(tm); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(tm); res(false); }; im.src = u; }); }
