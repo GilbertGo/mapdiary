@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-215-planroom';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-216-nochange';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 계획을 앱이 저절로 합치거나 바꾸지 않아요 · 합쳐져 없어진 계획(오사카 2안 등)은 휴대폰에 남은 여행 방 자료로 되살려요(이름 끝에 (되찾음))';
+const UI_NOTES = '앱이 여행 계획을 저절로 고치거나 합치지 않아요(이름 바꾸기·점검 고치기·하나투어 다시 받기·다녀옴 표시 모두 끔) · 계획은 1시간에 한 번 휴대폰에 남겨 두고, 여행 계획 목록 맨 아래 🕘 예전 모습으로 되돌리기로 되돌릴 수 있어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7809,6 +7809,25 @@ async function planRescue(say) {
   } catch (e) { out.why = String(e && e.message || e).slice(0, 80); }
   return out;
 }
+// 판 -216 (사용자 '다시 이런 일 안 생기게 해'): 계획 목록을 1시간에 한 번 통째로 남겨 둠(IndexedDB mpdTrip 'plansnap:시각', 최근 60개) → '🕘 예전 모습으로 되돌리기'
+async function planSnap(force) { try { const last = ls.get('planSnapAt', 0) || 0; if (!force && Date.now() - last < 36e5) return; const L = planAll(); if (!L.length) return;
+  const k = 'plansnap:' + Date.now(); await trSet(k, { at: Date.now(), list: L }); ls.set('planSnapAt', Date.now());
+  const db = await trDb(); const keys = await new Promise(res => { const q = db.transaction('kv').objectStore('kv').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); });
+  const sk = keys.filter(x => /^plansnap:/.test(x)).sort(); for (const x of sk.slice(0, Math.max(0, sk.length - 60))) await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete(x); t.oncomplete = res; t.onerror = res; });
+} catch {} }
+async function planSnapSheet() {
+  const db = await trDb(); const keys = await new Promise(res => { const q = db.transaction('kv').objectStore('kv').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); });
+  const sk = keys.filter(x => /^plansnap:/.test(x)).sort().reverse(); const box = el('div', { class: 'stack' });
+  if (!sk.length) box.append(el('div', { class: 'sub', text: '아직 남겨 둔 모습이 없어요. 이 판부터 계획 목록을 열 때 1시간에 한 번 남겨요.' }));
+  for (const k of sk) { const S = await trGet(k); if (!S || !Array.isArray(S.list)) continue; const t = new Date(S.at);
+    box.append(el('div', { style: 'font-weight:700;margin-top:8px', text: `${t.getMonth() + 1}월 ${t.getDate()}일 ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')} 모습 · 계획 ${S.list.length}개` }));
+    for (const q of S.list) { const now = planGet(q.id);
+      box.append(el('button', { class: 'btn line full', style: 'text-align:left', text: `${q.name} · ${(q.it || []).length}곳${now ? (JSON.stringify(now.it) === JSON.stringify(q.it) && now.name === q.name ? ' · 지금과 같아요' : ' · 지금과 달라요') : ' · 지금 없어요'}`, onclick: () => {
+        if (!confirm(`'${q.name}'을(를) ${t.getMonth() + 1}월 ${t.getDate()}일 ${t.getHours()}시 모습으로 되돌릴까요?${now ? '\n지금 모습은 덮어써져요(되돌리기 목록엔 남아요).' : ''}`)) return;
+        planSnap(true).then(() => { const G = ls.get('planGone', {}) || {}; delete G[q.id]; ls.set('planGone', G); const I = ls.get('planInto', {}) || {}; delete I[q.id]; ls.set('planInto', I); const AL = ls.get('planAlive', {}) || {}; AL[q.id] = Date.now(); ls.set('planAlive', AL);
+          const a = planAll().filter(x => x.id !== q.id); a.unshift(Object.assign({}, q, { u: Date.now() })); ls.set('tripPlans', a); toastLater(`🕘 '${q.name}'을(를) 예전 모습으로 되돌렸어요`); location.href = './?plan=1&p=' + encodeURIComponent(q.id); }); } })); } }
+  labSheet('🕘 예전 모습으로 되돌리기', el('div', { class: 'sub', style: 'font-size:13px', text: '계획 목록을 1시간에 한 번 이 휴대폰에 남겨 둬요. 되돌릴 계획을 누르세요.' }), box);
+}
 function planNewId() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function planDate(p, d) { const [y, m, dd] = String(p.start || '').split('-').map(Number); if (!y) return null; return new Date(y, m - 1, dd + d); }
 function planDayLabel(p, d) { const x = planDate(p, d); return x ? `${x.getMonth() + 1}월 ${x.getDate()}일 (${'일월화수목금토'[x.getDay()]})` : ''; }
@@ -9401,9 +9420,8 @@ function planTour(p) {
 }
 async function viewPlan() {
   document.title = '여행 계획 · Map Photo Diary';
-  planTermsAll();
+  planSnap();   // 판 -216: 계획 목록을 열 때마다(1시간에 한 번) 지금 모습을 휴대폰에 남겨 둠
   // 판 -215: 계획을 저절로 합치지 않음(사용자 '지워지고 막 바뀌고 · 다 해논 거 자꾸 건드릴래?')
-  planRescueAuto();
   const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash), hs = /#ps=/.test(location.hash);
   if (hs) app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), el('div', { class: 'card sub', text: '🗓 받은 여행 계획을 여는 중이에요…' })));
   if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
@@ -9418,7 +9436,7 @@ async function viewPlan() {
             history.replaceState(null, '', './?plan=1&p=' + encodeURIComponent(tg.id)); toast('⛰ ' + tg.name + ' · 정상 뒤 하산길을 바꿨어요 (' + inc.map(y => y.n.replace(/\s*\(.*$/, '')).join(' → ') + ')', false, 7000); return viewPlanOne(tg.id); } }
       } const w1 = v => String(v || '').split(/[\s·]/)[0], cands = planAll().filter(x => x.start === p.start && x.nd === p.nd && (x.name === p.name || w1(x.name) === w1(p.name)));   // 판 -92: 이름이 조금 달라도(· 하나투어) 같은 날·같은 곳 계획이면 같이 채움
       const same = cands.find(x => x.name === p.name && (x.it || []).length === p.it.length) || cands.find(x => x.name === p.name) || cands[0], best = same;
-      for (const same of cands) {   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
+      for (const same of cands.filter(x => x === best)) {   // 판 -216: 받은 링크는 가장 맞는 계획 하나에만(다른 계획은 안 건드림)   // 이미 있는 계획이면 새로 온 여행사 안내·미팅·설명만 채워요(내가 고친 것은 그대로)
         let ch = 0; if (p.meet && !same.meet) { same.meet = p.meet; ch++; } if ((p.mem || []).length && !(same.mem || []).length) { same.mem = p.mem; ch++; } if (p.room && !(same.room && same.room.code) && same === best) { same.room = p.room; ch++; }   /* 판 -215: 이미 여행 방이 있는 계획(1안·2안 등)의 방을 받은 링크의 방으로 바꾸면 두 계획이 한 방을 쓰다 이름·일정이 섞여 합쳐져 버렸음 */ if (p.code && !same.code) { same.code = p.code; same.src = 'hanatour'; ch++; } if (p.info && p.info.length && !(same.info || []).length) { same.info = p.info; ch++; }
         for (const y of same.it) if (!y.x) { const sp = v => String(v || '').replace(/\s+/g, ''), z = p.it.find(q => sp(q.n) === sp(y.n) && q.d === y.d && q.x); if (z) { y.x = z.x; ch++; } }
         for (const y of same.it) if (!(y.img || []).length) { const sp = v => String(v || '').replace(/\s+/g, ''), z = p.it.find(q => sp(q.n) === sp(y.n) && q.d === y.d && (q.img || []).length); if (z) { y.img = z.img; ch++; } }   // 판 -211: 여행사 사진도 채워요
@@ -9457,6 +9475,7 @@ async function viewPlan() {
     el('div', { class: 'n-gh', id: 'plNew', text: '새 계획' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
+    el('button', { class: 'btn line full', text: '🕘 예전 모습으로 되돌리기', onclick: () => planSnapSheet() }),
     el('button', { class: 'btn line full', text: '🔎 없어진 계획 찾기', onclick: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = '찾는 중…';
       const r = await planRescue(); b.disabled = false; b.textContent = '🔎 없어진 계획 찾기';
       if (r.n) { toastLater('🔎 없어진 계획을 되찾았어요 · ' + r.names.join(', ')); location.reload(); }
@@ -11626,11 +11645,9 @@ function viewPlanOne(id) {
     roleBar('member', '여행 계획'); faRc(app, el('div', { class: 'stack' }, el('a', { class: 'link', href: './?plan=1', text: '‹ 여행 계획' }),
       el('div', { class: 'card' }, el('b', { style: 'font-size:18px', text: '⛔ 이 여행을 볼 수 없어요' }), el('div', { class: 'dt', style: 'margin-top:6px', text: `${(S && S.own && S.own.nm) || '주인'} 님이 보기 권한을 껐어요. 다시 보려면 그분께 말씀해 주세요.` }))));
     permSync(p, true).then(() => { if (permCanR(planGet(id) || p)) viewPlanOne(id); }).catch(() => {}); return; }
-  p.it = p.it || [];
-  { const mf = planMoveFix(p); if (mf) setTimeout(() => toast(`이동 칸 ${mf}곳을 도착 장소 이름으로 바꿨어요 · 가는 방법은 일정 사이 줄에 있어요`, false, 6000), 1200); }
-  { const before = JSON.stringify(p.it), r = planSelfCheck(p); if (JSON.stringify(p.it) !== before || r.fixed.length) { planSave(p); setTimeout(() => toast(`🔎 스스로 점검해서 ${r.fixed.length}가지를 고쳤어요 · ${r.fixed[0] || ''}${r.fixed.length > 1 ? ' 외' : ''}`, false, 7000), 700); } else planSave(p); }   // 판 -130·-131
-  { const n = planAutoVisit(p); if (n) setTimeout(() => toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`), 600); }
-  setInterval(() => { if (document.hidden) return; const n = planAutoVisit(p); if (n) { toast(`✓ 기록한 길로 ${n}곳을 '다녀옴'으로 표시했어요`); drawAll(); } }, 120000);   // 여행 중 화면을 열어 두면 2분마다
+  p.it = p.it || []; planSnap();
+  // 판 -216: 앱이 계획을 저절로 고치지 않음(이동 칸 이름 바꾸기·스스로 점검 고치기·다녀옴 표시 끔) — 점검은 사본으로 보기만
+  { const cp = JSON.parse(JSON.stringify(p)), r = planSelfCheck(cp); p.selfChk = { at: r.at, fixed: [], warn: r.warn.concat(r.fixed.map(t => ({ t: t + ' (앱은 고치지 않았어요)' }))) }; }
   const td = planToday(p);
   let day = ls.get('planDay:' + id, null);
   if (td != null && td >= 0 && td < p.nd) day = td;   // 여행 중이면 오늘
@@ -11665,7 +11682,7 @@ function viewPlanOne(id) {
     const c = p.selfChk; if (!c) return null; const W = c.warn.filter(w => !/지도 위치가 없는/.test(w.t));   // 위치는 아래 '위치 확인' 줄에
     return el('button', { style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 2px;font:400 13px Pretendard,sans-serif;color:#6B7684;cursor:pointer;text-align:left', onclick: () => {
       labSheet('🔎 스스로 점검',
-        el('div', { class: 'sub', style: 'font-size:13px', text: '계획을 열 때마다 앱이 일정을 스스로 훑어봐요. 확실한 건 저절로 고치고, 사람이 봐야 할 건 여기에 남겨요.' }),
+        el('div', { class: 'sub', style: 'font-size:13px', text: '계획을 열 때마다 앱이 일정을 훑어보기만 해요. 일정은 직접 고치기 전엔 그대로예요.' }),
         W.length ? el('div', { style: 'font-weight:800', text: `확인해 주세요 ${W.length}` }) : null,
         ...W.map(w => el('div', { style: 'padding:8px 10px;border-radius:10px;background:#FFF6EE;font-size:13.5px;line-height:1.5', text: '• ' + w.t })),
         c.fixed.length ? el('div', { style: 'font-weight:800;margin-top:6px', text: `저절로 고친 것 ${c.fixed.length}` }) : null,
@@ -11977,7 +11994,7 @@ function viewPlanOne(id) {
     // 판 -129: 한 화면 차례 = 날 고르기 → 그날 지도·요약 → 그날 일정 → (작게) 위치 확인. 준비·여행 방은 아래 메뉴에만
     mapEl, sumEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
   drawAll();
-  planHanaAuto(p, () => drawAll());
+  // 판 -216: 하나투어 일정 저절로 다시 받아 합치기 끔(⋯ 더보기 '하나투어 일정 다시 받기'로만)
   // 판 -129: 오늘 화면에서 하던 일(날씨 받기·여행 사진 저절로 올리기)을 여기서
   planWeather(p).then(w => { if (w) { wx = w; drawList(); } }).catch(() => {});
   { const k0 = planToday(p); if (k0 != null && k0 >= 0) trAuto(p, () => {}).then(r => { if (r && r.n) toast(`📷 여행 사진 ${r.n}장을 여행 방에 올렸어요`); }).catch(() => {}); }
@@ -15128,7 +15145,7 @@ function viewLanding() {
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), ...(sub ? [el('small', { text: sub })] : [])), el('span', { class: 'go', text: '›' }));
   // 판 -215: 계획을 저절로 합치지 않음
-  planRescueAuto();
+  planSnap();
   const tripCard = (() => { try { return planHomeSection(); } catch { return null; } })();   // 판 -189
   const heroEl = cHomePhoto();
   // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
