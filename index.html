@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-212-hometop';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-213-planrescue';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '🏠 첫 화면 맨 위 줄(MPD·검색·알림·프로필·대화 기록·꾸미기)을 상태 표시줄 바로 아래로 올렸어요: 앱에서 상태 표시줄 높이만큼 두 번 내려가 있던 것을 고쳤어요';
+const UI_NOTES = '🔎 없어진 여행 계획 되찾기: 일행과 같이 고치던 계획은 여행 방 자료로 저절로 되살려요(여행 계획 목록 맨 아래 \'없어진 계획 찾기\'도) · 🛡 휴대폰과 크롬이 서로 계획을 지우던 문제를 막았어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4689,8 +4689,8 @@ async function cloudSync(quiet) {
     if (Array.isArray(one.myPosts)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...one.myPosts])].slice(-300));
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
     if (one.me && typeof one.me === 'object' && (+one.me.at || 0) > (ls.get('myAt', 0) || 0)) { ls.set('nick', String(one.me.nick || ls.get('nick', '')).slice(0, 20)); ls.set('myBio', String(one.me.bio || '').slice(0, 40)); ls.set('myPhoto', /^data:image\//.test(one.me.ph || '') ? one.me.ph : ''); ls.set('myAt', +one.me.at); }
-    if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone);   // 🗓 여행 계획도 모음에(2026-11-14)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), phGone: phGoneAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
+    if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone, one.planInto, one.planAlive);   // 🗓 여행 계획도 모음에(2026-11-14)
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), phGone: phGoneAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
@@ -7730,19 +7730,68 @@ function planAll() { const a = ls.get('tripPlans', []); return Array.isArray(a) 
 function planGet(id) { return planAll().find(p => p.id === id) || null; }
 function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id);
   // 판 -192 (사용자 '자꾸 복사본이 생겨'): 지웠거나 합쳐져 없어진 계획을, 열려 있던 예전 화면(날씨·하나투어·같이 고치기 15초·2분 타이머)이 다시 저장하면서 되살렸음 → 지운 표시(planGone)가 있는 번호는 새로 넣지 않음
-  if (i < 0) { const G = ls.get('planGone', {}) || {}; if (G[p.id]) { const to = (ls.get('planInto', {}) || {})[p.id]; if (to && !planSave.warned) { planSave.warned = 1; try { if (/[?&]plan=1/.test(location.search) && new URLSearchParams(location.search).get('p') === p.id) location.replace('./?plan=1&p=' + encodeURIComponent(to)); } catch {} } return; } }
+  if (i < 0) { const G = ls.get('planGone', {}) || {}; if (planGoneNow(p.id, G)) { const to = (ls.get('planInto', {}) || {})[p.id]; if (to && !planSave.warned) { planSave.warned = 1; try { if (/[?&]plan=1/.test(location.search) && new URLSearchParams(location.search).get('p') === p.id) location.replace('./?plan=1&p=' + encodeURIComponent(to)); } catch {} } return; } }
   p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); if (p.shOn && !planShareSync.applying) planShareSoon(p.id); }
-function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); const g = ls.get('planGone', {}) || {}; g[id] = Date.now(); ls.set('planGone', g); }
+function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); const g = ls.get('planGone', {}) || {}; g[id] = Date.now(); ls.set('planGone', g); const I = ls.get('planInto', {}) || {}; if (I[id]) { delete I[id]; ls.set('planInto', I); } }
 // 계획 합치기(백업 불러오기·로그인 모음): 같은 계획이면 나중에 고친 것(u), 지운 계획(planGone)은 되살리지 않아요
-function planMerge(list, gone) {
+function planMerge(list, gone, into, alive) {
+  // 판 -213 (사용자 '오사카1안이 없어졌다'): 휴대폰·크롬이 각자 똑같은 계획을 합치며 서로 다른 쪽을 지워, 로그인 모음으로 주고받다 둘 다 사라졌음
+  //   → 합치기로 빠진 번호(planInto)는 '들어간 계획'이 어디에도 없으면 지우지 않고 살림 · 되찾은 계획(planAlive)은 그 뒤에 온 '지움'만 따름
   const G = Object.assign({}, gone && typeof gone === 'object' ? gone : {}, ls.get('planGone', {}) || {}); ls.set('planGone', G);
-  const a = planAll().filter(p => !G[p.id]);
-  for (const x of Array.isArray(list) ? list : []) {
-    if (!x || !x.id || G[x.id] || !Array.isArray(x.it)) continue;
+  const I = Object.assign({}, into && typeof into === 'object' ? into : {}, ls.get('planInto', {}) || {}); ls.set('planInto', I);
+  const AL = planAliveMerge(alive);
+  const L = Array.isArray(list) ? list.filter(x => x && x.id && Array.isArray(x.it)) : [];
+  const has = id => planAll().some(p => p.id === id && !planGoneNow(p.id, G, AL)) || L.some(x => x.id === id && !planGoneNow(x.id, G, AL));
+  const dead = id => planGoneNow(id, G, AL) && !(I[id] && !has(I[id]));
+  const a = [];
+  planAll().forEach(p => { if (!dead(p.id)) { a.push(p); if (planGoneNow(p.id, G, AL)) AL[p.id] = Date.now(); } });
+  for (const x of L) {
+    if (dead(x.id)) continue; if (planGoneNow(x.id, G, AL)) AL[x.id] = Date.now();
     const i = a.findIndex(p => p.id === x.id);
     if (i < 0) a.push(x); else if ((x.u || 0) > (a[i].u || 0)) a[i] = x;
   }
-  ls.set('tripPlans', a);
+  ls.set('planAlive', AL); ls.set('tripPlans', a);
+}
+function planGoneNow(id, G, AL) { G = G || ls.get('planGone', {}) || {}; AL = AL || ls.get('planAlive', {}) || {}; return !!G[id] && !((AL[id] || 0) > G[id]); }
+function planAliveMerge(x) { const AL = ls.get('planAlive', {}) || {}; if (x && typeof x === 'object') for (const k in x) AL[k] = Math.max(AL[k] || 0, +x[k] || 0); ls.set('planAlive', AL); return AL; }
+function planRescueAuto() { try { if (sessionStorage.getItem('planRescue')) return; sessionStorage.setItem('planRescue', '1'); } catch { return; }
+  setTimeout(async () => { const r = await planRescue(); if (r.n) { toastLater('🔎 없어진 계획을 되찾았어요 · ' + r.names.join(', ')); location.reload(); } }, 1500); }
+// 판 -213: 잃어버린 계획 되찾기 — 일행과 같이 고치던 계획은 여행 방 자료가 이 휴대폰(mpdTrip 'room:방번호')에 남아 있어서, 지금 계획에 붙어 있지 않은 방 자료로 다시 만듦
+async function planRescue(say) {
+  const out = { n: 0, names: [], why: '' };
+  try {
+    const db = await trDb(); const keys = await new Promise(res => { const q = db.transaction('kv').objectStore('kv').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); });
+    const rk = keys.filter(k => /^room:/.test(k)); if (!rk.length) { out.why = 'noroom'; return out; }
+    const plans = planAll(), used = new Set();
+    for (const p of plans) if (p.room && p.room.code) { try { used.add((await trRoom(p.room.code)).rid); } catch {} }
+    const codes = Object.keys(localStorage).filter(k => k.startsWith('tripPermC:')).map(k => k.slice(10));
+    const G = ls.get('planGone', {}) || {}, I = ls.get('planInto', {}) || {}, AL = ls.get('planAlive', {}) || {};
+    const userDel = id => G[id] && !I[id];   // 사람이 직접 지운 계획(합치기 아님)
+    for (const k of rk) {
+      const rid = k.slice(5); if (used.has(rid)) continue;
+      const S = await trGet(k); const meta = S && (S.pl || []).find(x => x.id === 'meta' && !x.del && x.m && x.m.name); if (!meta) continue;
+      const its = (S.pl || []).filter(r => r.id !== 'meta' && !r.del && r.it); if (!its.length) continue;
+      const m = meta.m, nz = t => String(t || '').replace(/\s+/g, '');
+      // 사람이 지운 계획이면 되살리지 않음: 그 방을 쓰던 계획 번호(plSync:번호)가 직접 지운 목록에 있으면 건너뜀
+      const pid0 = Object.keys(localStorage).filter(x => x.startsWith('plSync:')).map(x => x.slice(7)).find(id => G[id] && !plans.some(p => p.id === id) && (() => { const st = ls.get('plSync:' + id, null); return st && st.sig && its.some(r => r.id in st.sig); })());
+      if (pid0 && userDel(pid0)) continue;
+      if (plans.some(p => nz(p.name) === nz(m.name) && p.start === m.start && +p.nd === +m.nd)) continue;
+      let code = ''; for (const c of codes) { try { if ((await trRoom(c)).rid === rid) { code = c; break; } } catch {} }
+      const copy = plans.find(p => p.copyOf && (p.copyOf === pid0 || (p.start === m.start && +p.nd === +m.nd && nz(planBaseName(p.name)) === nz(planBaseName(m.name)))));
+      const id = pid0 || (copy && copy.copyOf && !plans.some(p => p.id === copy.copyOf) && !userDel(copy.copyOf) ? copy.copyOf : planNewId());
+      let name = m.name; if (copy && !/\d+\s*안\s*$/.test(name)) name = planBaseName(copy.name) + ' 1안';
+      const q = { id, name, start: m.start || '', nd: +m.nd || 1, meet: m.meet || null, info: m.info || null, nameEn: m.nameEn || '', at: Date.now(), rescued: Date.now(),
+        it: its.sort((a, b) => (a.it.d - b.it.d) || ((a.it.ord || 0) - (b.it.ord || 0))).map(r => { const x = Object.assign({}, r.it); delete x.ord; x.id = r.id; return x; }),
+        mem: (S.pm || []).filter(r => !r.del).map(r => ({ id: r.id, n: r.n || '', from: r.from || '', a: r.a || '', b: r.b || '', fl: r.fl || '', en: r.en || '', enS: r.enS || '', lang: r.lang || '' })),
+        exp: (S.px || []).filter(r => !r.del && r.e).map(r => r.e) };
+      if (code) { q.room = { code }; q.shOn = 1; }
+      AL[id] = Date.now(); ls.set('planAlive', AL); delete I[id]; ls.set('planInto', I);
+      const a = planAll().filter(p => p.id !== id); a.unshift(Object.assign(q, { u: Date.now() })); ls.set('tripPlans', a);
+      out.n++; out.names.push(name + (code ? '' : ' (여행 방 연결 못 찾음)')); if (say) say(name);
+    }
+    if (!out.n) out.why = 'none';
+  } catch (e) { out.why = String(e && e.message || e).slice(0, 80); }
+  return out;
 }
 function planNewId() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function planDate(p, d) { const [y, m, dd] = String(p.start || '').split('-').map(Number); if (!y) return null; return new Date(y, m - 1, dd + d); }
@@ -9227,12 +9276,13 @@ function planNewSheet() {
 function planDedupe() {   // 판 -190 (사용자 첫 화면 캡처: 오사카가 여전히 두 줄): 장소가 조금 달라도 이름·첫날·날 수가 같으면 같은 여행으로 보고 하나로 합침
   const A = planAll(), nz = t => String(t || '').replace(/\s+/g, ''), sig = p => [nz(p.name), p.start || '', p.nd].join('#');
   const G = {}; A.forEach(p => (G[sig(p)] = G[sig(p)] || []).push(p));
-  let n = 0; const drop = new Set(), into = ls.get('planInto', {}) || {};
+  let n = 0; const drop = new Set(), dropO = new Set(), into = ls.get('planInto', {}) || {};
   for (const L of Object.values(G)) { if (L.length < 2) continue;
     const sc = p => (p.room && p.room.code ? 8 : 0) + (p.shOn ? 4 : 0) + ((p.docs || []).length ? 2 : 0) + ((p.it || []).length / 1000);
-    L.sort((a, b) => sc(b) - sc(a) || (b.u || 0) - (a.u || 0));
+    L.sort((a, b) => sc(b) - sc(a) || (b.u || 0) - (a.u || 0) || String(a.id).localeCompare(String(b.id)));
     const k = L[0]; k.it = k.it || [];
     for (const o of L.slice(1)) {
+      if (o.id === k.id) { dropO.add(o); n++; continue; }   // 판 -213: 같은 번호가 두 번 들어 있으면 번호로 지우면 둘 다 사라져서 그 칸만 뺌
       for (const x of o.it || []) { const y = k.it.find(z => z.d === x.d && nz(z.n) === nz(x.n));
         if (!y) { k.it.push(Object.assign({}, x, { id: k.it.some(z => z.id === x.id) ? planNewId() : x.id })); continue; }
         for (const f of ['bk', 'ok', 'okT', 'man', 'lat', 'lng', 'x', 'm', 't', 'img', 'url']) if ((y[f] == null || y[f] === '') && x[f] != null && x[f] !== '') y[f] = x[f];
@@ -9247,7 +9297,7 @@ function planDedupe() {   // 판 -190 (사용자 첫 화면 캡처: 오사카가
     k.it.forEach((x, i) => { x._o = i; }); k.it.sort((a, b) => a.d - b.d || a._o - b._o); k.it.forEach(x => delete x._o);
   }
   if (!n) return 0;
-  ls.set('tripPlans', A.filter(p => !drop.has(p.id))); const g = ls.get('planGone', {}) || {}; drop.forEach(id => { g[id] = Date.now(); }); ls.set('planGone', g); ls.set('planInto', into);   // 판 -191: 합쳐진 계획 번호 → 남은 계획 번호
+  ls.set('tripPlans', A.filter(p => !dropO.has(p) && !drop.has(p.id))); const g = ls.get('planGone', {}) || {}; drop.forEach(id => { g[id] = Date.now(); }); ls.set('planGone', g); ls.set('planInto', into);   // 판 -191: 합쳐진 계획 번호 → 남은 계획 번호
   return n;
 }
 // 판 -194 (사용자 '초대받은 사람이 들어오면서 자기 이름 쓰게 하고'): 받은 계획 링크로 들어왔는데 이 휴대폰에 이름(nick)이 없으면 바로 묻기
@@ -9336,6 +9386,7 @@ async function viewPlan() {
   document.title = '여행 계획 · Map Photo Diary';
   planTermsAll();
   { const n = planDedupe(); if (n) setTimeout(() => toast(`똑같은 여행 계획 ${n}개를 하나로 합쳤어요`), 600); }
+  planRescueAuto();
   const hm = /#pl=([A-Za-z0-9_-]+)/.exec(location.hash), hs = /#ps=/.test(location.hash);
   if (hs) app.replaceChildren(el('div', { class: 'stack' }, roleBar('member', '여행 계획'), el('div', { class: 'card sub', text: '🗓 받은 여행 계획을 여는 중이에요…' })));
   if (hm || hs) {   // 받은 계획 링크: 묻지 않고 내 계획에 넣고 바로 보여 줘요
@@ -9389,6 +9440,10 @@ async function viewPlan() {
     el('div', { class: 'n-gh', id: 'plNew', text: '새 계획' }),
     el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
     el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
+    el('button', { class: 'btn line full', text: '🔎 없어진 계획 찾기', onclick: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = '찾는 중…';
+      const r = await planRescue(); b.disabled = false; b.textContent = '🔎 없어진 계획 찾기';
+      if (r.n) { toastLater('🔎 없어진 계획을 되찾았어요 · ' + r.names.join(', ')); location.reload(); }
+      else toast(r.why === 'noroom' || r.why === 'none' ? '이 휴대폰에서 찾을 수 있는 없어진 계획이 없어요 · 일행과 같이 고치던 계획만 여행 방 자료로 되찾을 수 있어요 · 자동 백업 파일(내 파일 › Documents › MapDiary)을 불러와도 돼요' : '⚠ 찾지 못했어요 · ' + r.why, false, 9000); } }),
     el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
     el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
 }
@@ -12056,7 +12111,7 @@ function backupLs(ids) {
   const out = {};
   for (const id of ids) for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) out[k + id] = v; }
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
-  for (const k of ['tripPlans', 'planGone']) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }   // 🗓 여행 계획도 백업에
+  for (const k of ['tripPlans', 'planGone', 'planInto', 'planAlive']) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }   // 🗓 여행 계획도 백업에
   const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;
   const pg = localStorage.getItem('phGone'); if (pg != null) out.phGone = pg;   // 지운 사진 목록도(불러온 휴대폰에서 되살아나지 않게)   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
   return out;
@@ -12225,7 +12280,7 @@ async function backupLoad(file) {
     else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
     else if (k === 'phGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) phGoneAdd([], a); }
     else if (k === 'recGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) ls.set('recGone', Object.assign({}, a, goneAll())); }
-    else if (k === 'tripPlans') planMerge(parse(v), parse(data.ls.planGone));
+    else if (k === 'tripPlans') planMerge(parse(v), parse(data.ls.planGone), data.ls.planInto ? parse(data.ls.planInto) : null, data.ls.planAlive ? parse(data.ls.planAlive) : null);
     else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
@@ -15056,6 +15111,7 @@ function viewLanding() {
   const row = (icon, title, sub, href, click) => el(href ? 'a' : 'button', Object.assign({ class: 'c-li' }, href ? { href } : { type: 'button', onclick: click }),
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), ...(sub ? [el('small', { text: sub })] : [])), el('span', { class: 'go', text: '›' }));
   try { if (planDedupe()) setTimeout(() => toast('똑같은 여행 계획을 하나로 합쳤어요'), 800); } catch {}
+  planRescueAuto();
   const tripCard = (() => { try { return planHomeSection(); } catch { return null; } })();   // 판 -189
   const heroEl = cHomePhoto();
   // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
