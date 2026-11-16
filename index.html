@@ -1227,6 +1227,11 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){.tr-hole{transition:none}}
 .iv-lang{background:#FFF4F0;border-radius:14px;padding:10px 12px 12px}.iv-lang-h{font:700 13px Pretendard,sans-serif;color:#D2462A;margin-bottom:8px}.iv-segs.big .iv-seg{padding:12px;font-size:16px}.iv-lang .iv-seg.on{background:#FF6B4A;color:#fff}
 .iv-segs{display:flex;background:#F2F4F6;border-radius:12px;padding:3px;gap:2px}.iv-seg{flex:1;border:none;background:none;border-radius:10px;padding:9px;font:600 14px Pretendard,sans-serif;color:#6B7684}.iv-seg.on{background:#fff;color:#191F28;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tv-it.mine .tv-c{background:#FFF6F2;box-shadow:inset 3px 0 0 #FF6B4A}.tv-it.mine .tv-pn span{background:#FF6B4A!important;color:#fff;font-size:12px}
+.tv-me{display:inline-block;vertical-align:2px;font:600 11px Pretendard,sans-serif;color:#D2462A;background:#FFE3DA;border-radius:6px;padding:1px 7px;margin:0 6px 2px 0}
+.tv-meet{margin:6px 0 6px 44px;padding:9px 12px;border-radius:12px;background:#191F28;color:#fff;font:500 13px Pretendard,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tv-meet b{font-weight:600}.tv-meet span{color:#B0B8C1}
+.tv-meet.split{background:none;color:#8B95A1;padding:4px 0;border-top:1px dashed #D1D6DB;border-radius:0;font-size:12px}
+.tv-flt{display:flex;gap:6px;margin:2px 0 8px}.tv-flt button{border:none;background:#fff;border-radius:999px;padding:7px 13px;font:500 13px Pretendard,sans-serif;color:#4E5968;box-shadow:0 0 0 1px #E5E8EB inset}.tv-flt button.on{background:#191F28;color:#fff;box-shadow:none}
 </style>
 </head>
 <body>
@@ -3331,9 +3336,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-207-enfull';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-208-mine';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👥 초대받은 일행도 함께 일정을 같이 고치고, 나만 보는 내 일정을 넣을 수 있어요 (새로 들어온 사람 기본 권한이 보기·고치기) · 초대를 보내면 같이 고치기가 저절로 켜져요 · 🇬🇧 초대 보내는 창 맨 위에 "받는 사람이 볼 언어"를 크게 · 영어 초대로 연 일행은 여행 노트·AI 묻기·일본어·장소 보기·여행 방도 영어로 · 🇬🇧 영어 보기에서 한국어로 남은 장소 이름·메모를 AI로 한 번 저절로 영어로 옮겨요 · 전철 구간 글이 잘리지 않게 짧게 · 👋 초대 보낼 때 한국어·English를 골라요 · 🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '👤 일행과 같이 쓰는 여행 계획에서 내 일정은 산호색 카드·내 이름 첫 글자·‘나만’으로, 함께 일정은 흰 카드 · 각자 다니다 모이는 곳에 ‘👥 여기서 모두 모여요’ 줄 · 날짜 아래 ‘전체 · 함께만 · 내 것만’ · 지도에서도 내 일정은 산호색 · 👥 초대받은 일행도 함께 일정을 같이 고치고, 나만 보는 내 일정을 넣을 수 있어요 (새로 들어온 사람 기본 권한이 보기·고치기) · 초대를 보내면 같이 고치기가 저절로 켜져요 · 🇬🇧 초대 보내는 창 맨 위에 "받는 사람이 볼 언어"를 크게 · 영어 초대로 연 일행은 여행 노트·AI 묻기·일본어·장소 보기·여행 방도 영어로 · 🇬🇧 영어 보기에서 한국어로 남은 장소 이름·메모를 AI로 한 번 저절로 영어로 옮겨요 · 전철 구간 글이 잘리지 않게 짧게 · 👋 초대 보낼 때 한국어·English를 골라요 · 🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10525,6 +10530,7 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
 function planFrTxt(p, x) { const M = p.mem || []; return (x.fr || []).map(id => (M.find(m => m.id === id) || {}).n).filter(Boolean).join('·'); }
 function planVis(p, x) { return true; }   // 판 -142: '내 일정만 보기'는 없앰(내 일정은 원래 내 휴대폰에만 있어서)
 function planHasPersonal(p) { return false; }
+function planShared(p) { return !!(p && (p.shOn || (p.room && p.room.code))); }   // 판 -208: 일행과 같이 쓰는 계획
 function planEN(p) { return ls.get('planLang:' + p.id, '') === 'en'; }
 // 판 -204 (사용자 '계획 화면도 영어로 나오게 해'): 영어 초대로 연 휴대폰(planEN)은 계획 화면·창의 앱 글자를 영어로 바꿔 보여 줌(장소 이름·메모는 영어 옮김 x.en이 있으면 그것, 없으면 원래 글자)
 var EN_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], EN_WD = { 일: 'Sun', 월: 'Mon', 화: 'Tue', 수: 'Wed', 목: 'Thu', 금: 'Fri', 토: 'Sat' };
@@ -11314,10 +11320,10 @@ function tvNameSplit(n) { n = String(n || ''); const P = []; let b = '', dep = 0
   const L = P.filter(Boolean); return L.length > 1 && n.length > 12 ? [L[0], '+ ' + L.slice(1).join(' · ')] : [n, '']; }
 function tvItem(o) {   // 판 -165 (사용자 '다른 앱은 고급스럽네, 넌 촌스럽고' → Wanderlog·Stippl처럼): 왼쪽 번호 핀 + 이어진 점선, 흰 카드 안 이름 · 시각·종류 한 줄 · 설명, 오른쪽 장소 사진
   const kk = PLAN_KINDS[o.k] || PLAN_KINDS.spot;
-  return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') + (o.k === 'fly' ? ' fly' : '') },
-    el('div', { class: 'tv-pn' }, el('span', {}, o.k === 'fly' ? cSvg('plane', 14, '#fff') : o.k === 'stay' ? cSvg('home', 13, '#fff') : (o.no || ''))),
+  return el('div', { class: 'tv-it' + (o.on ? ' on' : '') + (o.ok ? ' ok' : '') + (o.k === 'fly' ? ' fly' : '') + (o.mine ? ' mine' : '') },
+    el('div', { class: 'tv-pn' }, el('span', {}, o.mine ? (o.mine === true ? '나' : o.mine) : o.k === 'fly' ? cSvg('plane', 14, '#fff') : o.k === 'stay' ? cSvg('home', 13, '#fff') : (o.no || ''))),   // 판 -208: 내 일정은 번호 대신 내 이름 첫 글자
     el('div', { class: 'tv-c' },
-      el('div', { class: 'tv-bd' }, o.nx ? el('span', { class: 'tv-nx', text: o.nx }) : null,
+      el('div', { class: 'tv-bd' }, o.nx ? el('span', { class: 'tv-nx', text: o.nx }) : null, o.mine ? el('span', { class: 'tv-me', text: o.mineTag || '나만' }) : null,
         ...(nm => [el('button', { class: 'tv-n', text: nm[0], onclick: o.onName }), nm[1] ? el('div', { class: 'tv-n2', text: nm[1] }) : null])(tvNameSplit(o.n)),
         (mt => mt ? el('div', { class: 'tv-mt', text: mt }) : null)([o.t, o.meta].filter(Boolean).join(' · ') || (['stay', 'move'].includes(o.k) ? kk[1] : '')),   // 판 -174: 종류 글자(구경·식사)는 빼고, 숙소·이동만 시각·딱지가 없을 때
         ...(o.extra || []).filter(Boolean),
@@ -11730,9 +11736,8 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + (/도착(\s|$)/.test(x.n || '') && !/출발/.test(x.n || '') ? ' 도착' : ' 출발') : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: [x.eb && x.ebt && Date.now() - x.ebt < 14 * 864e5 ? `✎ ${x.eb} · ${trAgo(x.ebt)}` : ''].concat([x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '']).filter(Boolean).join(' · '), thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ mine: planShared(p) && x.mine ? (String(trName() || (EN ? 'Me' : '나')).trim().slice(0, 1) || true) : false, mineTag: EN ? 'Only me' : '나만', ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + (/도착(\s|$)/.test(x.n || '') && !/출발/.test(x.n || '') ? ' 도착' : ' 출발') : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: [x.eb && x.ebt && Date.now() - x.ebt < 14 * 864e5 ? `✎ ${x.eb} · ${trAgo(x.ebt)}` : ''].concat([x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '']).filter(Boolean).join(' · '), thumb: planThumb(x), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
-        x.mine && p.shOn ? el('div', { class: 'tv-m', style: 'font-weight:800;color:#1D7FA8', text: EN ? '👤 My plan · only on this phone' : '👤 내 일정 · 내 휴대폰에만' }) : null,
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
         x.k === 'move' && !EN ? (t => { const X = PLAN_RX, w = X.W.test(t), r = X.R.test(t) || (t.match(/역/g) || []).length >= 2, c = X.C.test(t);
@@ -11757,7 +11762,7 @@ function viewPlanOne(id) {
     const out = []; planThumb.used = new Set();   // 판 -174: 같은 날 같은 사진이 두 칸에 나오지 않게
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const all = planItems(p, d), nxI = all[nextIdx(d)], its = planUniq(all.filter(x => planVis(p, x))), nx = its.indexOf(nxI);   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
+      const SH = planShared(p), fl = SH ? ls.get('planShow:' + p.id, 'all') : 'all', all = planItems(p, d), nxI = all[nextIdx(d)], its = planUniq(all.filter(x => planVis(p, x) && (fl === 'all' || (fl === 'mine' ? x.mine : !x.mine)))), nx = its.indexOf(nxI);   // 판 -208: 전체 · 함께만 · 내 것만   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
       if (td === d) out.push(todayCard(d));
       { const w = wx && wx.days && wx.days[d], ln = planWxLine(w, true);
         out.push(planEN(p) ? el('div', { class: 'tv-day', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` }, el('i'), planEnDay(p, d) + (td === d ? ' · Today' : ''))
@@ -11770,7 +11775,10 @@ function viewPlanOne(id) {
               : [`👥 이날 ${inD.length}명`, arr.length ? el('span', { style: 'color:#1D9EC0', text: ` · 🛬 ${arr.map(m => m.n + (m.from ? `(${m.from})` : '')).join(', ')} 합류` }) : null, lv.length ? el('span', { style: 'color:#C2410C', text: ` · 🛫 ${lv.map(m => m.n).join(', ')} 먼저 떠나요` }) : null]))); }
         if (d === day && planHasPersonal(p)) { const v = ls.get('planView:' + p.id, 'all'), me = ls.get('planMe:' + p.id, ''), EN = planEN(p);
           out.push(el('div', { style: 'display:flex;gap:6px' }, ...[['all', EN ? 'Everyone' : '모든 일정'], ['me', EN ? 'Mine + group' : '내 일정 + 함께']].map(([k, t]) => el('button', { class: 'btn small ' + (v === k ? 'dark' : 'line'), text: t, onclick: () => { if (k === 'me' && !me) { toast('👥 함께 가는 사람에서 \'이 휴대폰은 ○○\'을 먼저 골라 주세요'); return planMemSheet(p, drawAll); } ls.set('planView:' + p.id, k); drawList(); drawMap(); } })))); } }
+      if (SH && d === day && p.it.some(x => x.mine)) { const EN = planEN(p);   // 판 -208 (사용자 '개인 일정과 단체 일정을 어떻게 구분?' → 추천안 '해봐'): 전체 · 함께만 · 내 것만
+        out.push(el('div', { class: 'tv-flt' }, ...[['all', EN ? 'All' : '전체'], ['grp', EN ? 'Group' : '👥 함께만'], ['mine', EN ? 'Only me' : '내 것만']].map(([k, t]) => el('button', { class: fl === k ? 'on' : '', text: t, onclick: () => { ls.set('planShow:' + p.id, k); drawList(); drawMap(); } })))); }
       const tl = el('div', { class: 'tv-tl', style: `--dc:${PLAN_COLS[d % PLAN_COLS.length]}` });
+      let pM = null;   // 판 -208: 바로 앞 칸이 내 일정이었나 → 모이는 곳·각자 줄
       let pv = null, hold = []; rowNo = planNoMap(its);   // 판 -161·-163: 위치 있는 앞 장소와의 구간 한 줄 (👣 걸어서 650m · 9분 · 길찾기) · 위치 없는 이동 칸은 카드 대신 이 줄에
       // 판 -164 (장가계에 맞춰 보며): 대략 위치(ap·near)인 곳은 구간 거리를 믿을 수 없어 건너뛰고 정확한 곳끼리만 · 둘째 날부터는 전날 밤 숙소에서 첫 곳까지도
       const exact = x => Number.isFinite(x.lat) && Number.isFinite(x.lng) && !x.ap && !x.near;
@@ -11793,6 +11801,10 @@ function viewPlanOne(id) {
           if (exact(x)) lastEx = x;
           hold = []; pv = x; fromStay = null; }
         if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
+        if (SH && fl === 'all' && pM !== null && pM !== !!x.mine && x.k !== 'move') { const EN = planEN(p), nmx = EN && x.en ? x.en : x.n;
+          tl.append(x.mine ? el('div', { class: 'tv-meet split', text: EN ? 'Each on your own from here' : '여기서부터 각자 일정' })
+            : el('div', { class: 'tv-meet' }, el('b', { text: EN ? '👥 Everyone meets here' : '👥 여기서 모두 모여요' }), el('span', { text: [x.t, nmx].filter(Boolean).join(' · ') }))); }
+        if (x.k !== 'move') pM = !!x.mine;
         tl.append(row(x, i, d, nx, true)); });
       hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx)));
       const canOpt = its.filter(x => PLAN_OPT_K.includes(x.k) && Number.isFinite(x.lat) && !x.ok).length >= 3;
@@ -11806,12 +11818,12 @@ function viewPlanOne(id) {
     const pts = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
-      const col = PLAN_COLS[d % PLAN_COLS.length], its = planUniq(planItems(p, d).filter(x => planVis(p, x))), ll = [];
-      const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1;
+      const col0 = PLAN_COLS[d % PLAN_COLS.length], SHm = planShared(p), flm = SHm ? ls.get('planShow:' + p.id, 'all') : 'all', its = planUniq(planItems(p, d).filter(x => planVis(p, x) && (flm === 'all' || (flm === 'mine' ? x.mine : !x.mine)))), ll = []; let col = col0;
+      const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1; col = SHm && x.mine ? '#FF6B4A' : col0;   // 판 -208: 내 일정 핀은 산호
         L.marker([x.lat, x.lng], { zIndexOffset: x.k === 'stay' ? 500 : 0, icon: x.k === 'stay' ? planStayIcon(planEN(p) && x.en ? Object.assign({}, x, { n: x.en }) : x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
       { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
-        for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, col, 5); }
+        for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, SHm && (L2[i].mine || L2[i - 1].mine) ? '#FF6B4A' : col0, 5); }
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
     sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
