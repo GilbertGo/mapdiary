@@ -3330,9 +3330,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-205-invlang';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-206-enname';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '👋 초대 보낼 때 한국어·English를 골라요 · 🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
+const UI_NOTES = '🇬🇧 영어 보기에서 한국어로 남은 장소 이름·메모를 AI로 한 번 저절로 영어로 옮겨요 · 전철 구간 글이 잘리지 않게 짧게 · 👋 초대 보낼 때 한국어·English를 골라요 · 🇬🇧 영어 초대로 연 일행은 계획 화면 글자도 영어로 봐요 (⋯ 더보기에서 바꾸기) · ❓ 초대받아 들어오면 화면을 짚어 가며 사용법을 둘러봐요 (⋯ 더보기에서 다시 보기) · 🇬🇧 영어 초대 링크로 열면 이름 창·사용법도 영어로 나와요 · 🔐 여행 주인이 일행마다 보기·고치기·AI 권한을 정해요(여행 노트 › 일행 권한) · 🔑 열쇠가 없는 일행도 열쇠 있는 사람의 열쇠로 여행 AI를 써요 (한 사람 하루 30번) · ✨ AI 묻기 창 위 "AI가 못 하는 것"에서 한계를 볼 수 있어요 · ✨ AI 묻기 창에 가장 정확한(비싼) 모델로 답한다고 적었어요 · 📖 초대받아 이름을 적으면 간단한 사용법을 보고 시작해요 · 👋 초대 링크를 열면 안내 창에서 이름이나 별명을 적고 시작해요 · 👋 초대받은 사람은 이름을 고르지 않고 직접 적어요 · 👋 초대받아 들어온 사람은 처음에 자기 이름을 적어요 (함께 가는 사람에서 골라도 돼요) · ✎ 같이 고치는 여행 계획에서 일행이 바꾼 일정에 누가 언제 바꿨는지 보여요 (여행 노트 > 바뀐 기록) · 🗓 합친 여행 계획의 복사본이 다시 생기던 것을 막았어요 · 🗓 합쳐진 여행 계획의 예전 주소로 열어도 남은 계획으로 가요 · 🗓 이름과 날짜가 같은 여행 계획(오사카 두 개)을 하나로 합쳐요 · 🗓 첫 화면에 여행 계획 칸 하나: 장가계와 오사카처럼 다가오는 여행을 모두 한 줄씩 · 🏠 첫 화면에서 겹치던 줄을 뺐어요: 여행 카드가 있으면 여행 계획 줄은 빼고, 대화 정리 줄은 위 대화 기록 알약과 같아 뺌 · 🏠 첫 화면 아래 메뉴를 없앴어요: 지도와 발견은 첫 화면 아래 목록에, 내 기록은 내 MPD 보기, 나는 오른쪽 위 사진 · 🏠 첫 화면 맨 위 줄을 위로 올리고 글자를 작게 · 🗓 똑같은 여행 계획이 두 개 보이던 것을 하나로 합쳐요 · 🧳 여행 노트에 참고 여행상품: 오사카는 같은 날 같은 피치항공 하나투어 3일 상품 · 🧾 하나투어 일정과 한 줄씩 맞대 봤어요: 빠졌던 조식(호텔식)과 기내식, 도착 뒤 가이드 미팅 안내, 이동 시간 안내, 호텔 사진을 채웠어요 · 📷 하나투어 계획은 여행사 사진을 일정 칸에 써요 · 🏨 숙소를 누르면 여행사 예정 호텔 후보와 주소·전화 · 🏨 호텔 조식은 전날 묵은 호텔 자리로 · 마사지 칸은 사진 대신 그림 · ⌚ 갤럭시워치로 대화 기록: 시계 앱 목록의 "MPD 대화"를 누르면 시계가 바로 받아 적어요 · "그만"을 누르면 휴대폰으로 보내고, 휴대폰 MPD가 정리해서 그 시간 MPD 기록에 붙여요 · 시계 새 판(MPD Run 워치)과 휴대폰 MPD Run 앱이 있어야 해요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10530,8 +10530,8 @@ var PLAN_EN_RX = [
   [/위치 확인 (\d+)곳 \(대략 위치\)/g, 'Check $1 approx. locations'], [/대략 위치 · 고치기/g, 'Approx. location · fix'], [/거리 모름 · 대략 위치/g, 'Distance unknown · approx. location'], [/대략 위치/g, 'approx. location'],
   [/새로 들어온 사람 (\d+)명/g, '$1 new people joined'], [/권한 정하기/g, 'Set permissions'],
   [/(\d+)시간 (\d+)분/g, '$1 h $2 min'], [/(\d+)시간/g, '$1 h'], [/(\d+)분/g, '$1 min'],
-  [/도보/g, 'Walk'], [/전철/g, 'Train'], [/버스/g, 'Bus'], [/택시/g, 'Taxi'], [/비행/g, 'Flight'], [/차 약/g, 'Drive ~'], [/약 /g, '~'],
-  [/노선 아님/g, 'not the real route'], [/실제 노선이 아니에요/g, 'not the real route'],
+  [/도보/g, 'Walk'], [/전철/g, 'Train'], [/버스/g, 'Bus'], [/택시/g, 'Taxi'], [/비행/g, 'Flight'], [/차 약 /g, 'Drive ~'], [/약 /g, '~'],
+  [/노선 아님/g, 'approx.'], [/실제 노선이 아니에요/g, 'not the real route'],
   [/(\S+) 출발/g, '$1 dep.'], [/(\S+) 도착/g, '$1 arr.'], [/출발/g, 'Departure'], [/도착/g, 'Arrival'],
   [/선택관광/g, 'Optional tour'], [/스페셜포함/g, 'special included'], [/하나투어 표기/g, 'per Hanatour'], [/AI 추천/g, 'AI pick'], [/확정 전 · 후보 (\d+)곳/g, 'Not confirmed · $1 options'], [/(\d+)곳/g, '$1 places'],
   [/숙소/g, 'Stay'], [/식사/g, 'Meal'], [/공연/g, 'Show'], [/구경/g, 'Sightseeing'], [/이동/g, 'Transfer'],
@@ -11810,6 +11810,11 @@ function viewPlanOne(id) {
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };
   planEnWatch(p);   // 판 -204: 영어 초대면 화면 글자를 영어로
+  // 판 -206 (사용자 영어 화면 캡처: 장소 이름·메모가 한국어 그대로): 영어 보기에서 영어 이름 없는 곳이 있으면 AI로 한 번 저절로 옮김(이 휴대폰에 쓸 수 있는 열쇠가 있을 때, 세션에 한 번)
+  if (planEN(p) && !sessionStorage.getItem('planEnAuto:' + p.id) && (p.it.some(x => x.k !== 'move' && !x.en) || !p.nameEn)) {
+    if (trBotKey()) { sessionStorage.setItem('planEnAuto:' + p.id, '1'); planTranslate(p).then(n => { if (n) { Object.assign(p, planGet(p.id) || {}); drawAll(); toast(`🌐 Translated ${n} places into English`); } }).catch(() => {}); }
+    else if (!sessionStorage.getItem('planEnNo:' + p.id)) { sessionStorage.setItem('planEnNo:' + p.id, '1'); toast('Some place names are still in Korean · they turn English once the trip owner opens this plan', false, 6000); }
+  }
   permSync(p).then(S => { if (S) drawHead(); }).catch(() => {});   // 판 -201: 권한 받기 → 맨 위 줄   // 판 -139: 계획 도우미가 일정을 넣은 뒤
   // 판 -140: 같이 고치기 — 열 때 한 번, 화면을 보는 동안 15초마다 방과 맞춤
   if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; const n0 = (planGet(p.id) || p).chLog ? (planGet(p.id) || p).chLog.length : 0; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); const L = (p.chLog || []), nn = L.length - n0; if (nn > 0) { const who = [...new Set(L.slice(0, nn).map(z => z.nm))].join('·'); toast(`✎ ${who} 님이 일정을 ${nn}가지 바꿨어요 · 여행 노트 > 바뀐 기록`, false, 6000); } } }).catch(() => {}); };
