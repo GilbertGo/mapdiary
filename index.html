@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-217-roomreset';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-218-memsave';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 계획 ⋯ 더보기에 🔄 여행 방 새로 만들기: 일행에게 다른 일정이 보이면 눌러 주세요 · 지금 내 일정 그대로 새 방을 만들고 초대 창이 열려요';
+const UI_NOTES = '함께 가는 사람 저장이 안 되던 것 고침: 고친 이름·출발하는 곳·날짜·이 휴대폰은 누구인지가 그대로 남아요 · 일행 방에 못 올렸을 때도 내 휴대폰 것은 지켜요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -7731,6 +7731,7 @@ function planGet(id) { return planAll().find(p => p.id === id) || null; }
 function planSave(p) { const a = planAll(), i = a.findIndex(x => x.id === p.id);
   // 판 -192 (사용자 '자꾸 복사본이 생겨'): 지웠거나 합쳐져 없어진 계획을, 열려 있던 예전 화면(날씨·하나투어·같이 고치기 15초·2분 타이머)이 다시 저장하면서 되살렸음 → 지운 표시(planGone)가 있는 번호는 새로 넣지 않음
   if (i < 0) { const G = ls.get('planGone', {}) || {}; if (planGoneNow(p.id, G)) { const to = (ls.get('planInto', {}) || {})[p.id]; if (to && !planSave.warned) { planSave.warned = 1; try { if (/[?&]plan=1/.test(location.search) && new URLSearchParams(location.search).get('p') === p.id) location.replace('./?plan=1&p=' + encodeURIComponent(to)); } catch {} } return; } }
+  if (i >= 0 && (a[i].memU || 0) > (p.memU || 0)) { p.mem = a[i].mem; p.memU = a[i].memU; }   // 판 -218: 열려 있던 다른 화면의 예전 사람 목록이 방금 고친 것을 덮지 않게
   p.u = Date.now(); if (i >= 0) a[i] = p; else a.unshift(p); ls.set('tripPlans', a); if (p.shOn && !planShareSync.applying) planShareSoon(p.id); }
 function planDel(id) { ls.set('tripPlans', planAll().filter(p => p.id !== id)); const g = ls.get('planGone', {}) || {}; g[id] = Date.now(); ls.set('planGone', g); const I = ls.get('planInto', {}) || {}; if (I[id]) { delete I[id]; ls.set('planInto', I); } }
 // 계획 합치기(백업 불러오기·로그인 모음): 같은 계획이면 나중에 고친 것(u), 지운 계획(planGone)은 되살리지 않아요
@@ -10629,32 +10630,32 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
       if (rv && first) local = true;
     }
     // 올리기: 내가 바꾼 칸, 지운 칸, 이름·날짜
-    const by = trMe(), nm = trName() || '일행', ups = [];
+    const by = trMe(), nm = trName() || '일행', ups = [], put = (pr, undo) => ups.push(Promise.resolve(pr).catch(e => { undo(); throw e; }));   // 판 -218: 못 올린 칸만 다음에 다시 (예전엔 하나라도 못 올리면 맞춘 모양을 통째로 버려, 다음 맞추기가 '처음 들어옴'으로 내 사람·일정을 방 것으로 덮었음)
     if (canW) {
-    if (!meta || plSig(plMeta(p)) !== st.m) { ups.push(trPut(R, 'pl', 'meta', { m: plMeta(p), by, nm })); st.m = plSig(plMeta(p)); }
-    myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { ups.push(trPut(R, 'pl', o.id, { it: o, by, nm })); st.sig[o.id] = sg; } });
-    Object.keys(st.sig).forEach(id => { if (!shd().some(x => x.id === id)) { ups.push(trPut(R, 'pl', id, { del: 1, by, nm })); delete st.sig[id]; } });
+    if (!meta || plSig(plMeta(p)) !== st.m) { const o0 = st.m; put(trPut(R, 'pl', 'meta', { m: plMeta(p), by, nm }), () => { st.m = o0; }); st.m = plSig(plMeta(p)); }
+    myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { const o0 = st.sig[o.id]; put(trPut(R, 'pl', o.id, { it: o, by, nm }), () => { if (o0 == null) delete st.sig[o.id]; else st.sig[o.id] = o0; }); st.sig[o.id] = sg; } });
+    Object.keys(st.sig).forEach(id => { if (!shd().some(x => x.id === id)) { const o0 = st.sig[id]; put(trPut(R, 'pl', id, { del: 1, by, nm }), () => { st.sig[id] = o0; }); delete st.sig[id]; } });
     }
     // 함께 가는 사람
     p.mem = p.mem || []; st.mm = st.mm || {};
     for (const r of S.pm) {
       const i = p.mem.findIndex(x => x.id === r.id), L = i >= 0 ? p.mem[i] : null, rv = r.del ? null : { id: r.id, n: r.n || '', from: r.from || '', a: r.a || '', b: r.b || '', fl: r.fl || '', en: r.en || '', enS: r.enS || '', lang: r.lang || '' }, rs = rv ? plSig(rv) : 'del';
       if (L && plSig(L) === rs) { st.mm[r.id] = rs; continue; }
-      if (!L) { if (rv && !(r.id in st.mm)) { p.mem.push(rv); st.mm[r.id] = rs; local = true; } else if (!rv) delete st.mm[r.id]; continue; }
-      if (first || plSig(L) === st.mm[r.id]) { if (rv) p.mem[i] = rv; else p.mem.splice(i, 1); st.mm[r.id] = rs; local = true; }
+      if (!L) { if (rv && !(r.id in st.mm)) { p.mem.push(rv); st.mm[r.id] = rs; local = true; p.memU = Date.now(); } else if (!rv) delete st.mm[r.id]; continue; }
+      if (first || plSig(L) === st.mm[r.id]) { if (rv) p.mem[i] = rv; else p.mem.splice(i, 1); st.mm[r.id] = rs; local = true; p.memU = Date.now(); }
     }
-    p.mem.forEach(m => { const sg = plSig(m); if (st.mm[m.id] !== sg) { ups.push(trPut(R, 'pm', m.id, Object.assign({ by, nm }, m))); st.mm[m.id] = sg; } });
-    Object.keys(st.mm).forEach(id => { if (st.mm[id] !== 'del' && !p.mem.some(m => m.id === id)) { ups.push(trPut(R, 'pm', id, { del: 1, by, nm })); st.mm[id] = 'del'; } });
+    p.mem.forEach(m => { const sg = plSig(m); if (st.mm[m.id] !== sg) { put(trPut(R, 'pm', m.id, Object.assign({ by, nm }, m)), () => { st.mm[m.id] = 'fail'; }); st.mm[m.id] = sg; } });
+    Object.keys(st.mm).forEach(id => { if (st.mm[id] !== 'del' && !p.mem.some(m => m.id === id)) { const o0 = st.mm[id]; put(trPut(R, 'pm', id, { del: 1, by, nm }), () => { st.mm[id] = o0; }); st.mm[id] = 'del'; } });
     // 판 -162 💰 가계부: 같은 지출은 나중에 고친 것(u), 지운 것은 묘비(expGone)로 다시 안 들어옴
     p.exp = p.exp || []; p.expGone = p.expGone || {}; st.ex = st.ex || {};
     for (const r of S.px) { if (r.del) { if (!p.expGone[r.id]) { p.expGone[r.id] = r._t || Date.now(); local = true; } const i = p.exp.findIndex(e => e.id === r.id); if (i >= 0) { p.exp.splice(i, 1); local = true; } st.ex[r.id] = 'del'; continue; }
       if (!r.e || p.expGone[r.id]) continue; const i = p.exp.findIndex(e => e.id === r.id);
       if (i < 0) { p.exp.push(Object.assign({}, r.e, { id: r.id })); st.ex[r.id] = r.e.u; local = true; } else if ((r.e.u || 0) > (p.exp[i].u || 0)) { p.exp[i] = Object.assign({}, r.e, { id: r.id }); st.ex[r.id] = r.e.u; local = true; } }
-    p.exp.forEach(e => { if (st.ex[e.id] !== e.u) { ups.push(trPut(R, 'px', e.id, { e, by, nm })); st.ex[e.id] = e.u; } });
-    Object.keys(p.expGone).forEach(id => { if (st.ex[id] !== 'del') { ups.push(trPut(R, 'px', id, { del: 1, by, nm })); st.ex[id] = 'del'; } });
+    p.exp.forEach(e => { if (st.ex[e.id] !== e.u) { const o0 = st.ex[e.id]; put(trPut(R, 'px', e.id, { e, by, nm }), () => { st.ex[e.id] = o0; }); st.ex[e.id] = e.u; } });
+    Object.keys(p.expGone).forEach(id => { if (st.ex[id] !== 'del') { const o0 = st.ex[id]; put(trPut(R, 'px', id, { del: 1, by, nm }), () => { st.ex[id] = o0; }); st.ex[id] = 'del'; } });
     const res = await Promise.allSettled(ups); const bad = res.filter(r => r.status === 'rejected').length;
-    if (bad) { st = ls.get(stK, null) || { sig: {}, m: '', mm: {} }; if (opt.say) opt.say(`⚠ ${bad}개를 못 올렸어요 · 인터넷을 확인해 주세요`); }   // 못 올린 건 다음에 다시
-    else ls.set(stK, st);
+    if (bad && opt.say) opt.say(`⚠ ${bad}개를 못 올렸어요 · 내 휴대폰엔 저장됐고, 다음에 다시 올려요`);
+    ls.set(stK, st);   // 판 -218: 못 올린 칸은 위 undo로 '다시 올릴 것'으로 남김
     if (!p.shOn) { p.shOn = 1; local = true; }
     p.shAt = Date.now(); planShareSync.applying = 1; try { planSave(p); } finally { planShareSync.applying = 0; }
     return local;
@@ -10741,7 +10742,7 @@ function planMemDays(p, m) {   // 이 사람이 함께하는 날(0부터) 목록
 function planMemSheet(p, redraw) {
   p.mem = p.mem || []; const me = ls.get('planMe:' + p.id, '');
   const st = el('div', { class: 'dt', style: 'font-weight:700;min-height:18px' }), box = el('div', { class: 'stack', style: 'gap:8px' });
-  const save = async () => { planSave(p); if (p.shOn) { st.textContent = '⏳ 일행과 맞추는 중…'; await planShareSync(p, { say: t => { st.textContent = t; } }); Object.assign(p, planGet(p.id) || {}); st.textContent = '✅ 일행과 맞췄어요'; } paint(); redraw && redraw(); };
+  const save = async () => { const q = planGet(p.id); if (q && q !== p) { q.mem = p.mem; Object.assign(p, q); } p.memU = Date.now(); planSave(p); if (p.shOn) { st.textContent = '⏳ 일행과 맞추는 중…'; await planShareSync(p, { say: t => { st.textContent = t; } }); Object.assign(p, planGet(p.id) || {}); st.textContent = '✅ 일행과 맞췄어요'; } else toast('✅ 저장했어요'); paint(); redraw && redraw(); };
   const dl = d => d ? `${+d.slice(5, 7)}/${+d.slice(8)}` : '';
   const edit = m => {
     const isNew = !m; m = m || { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), n: '', from: '', a: p.start || '', b: '', fl: '', en: '', enS: '', lang: '' };
@@ -10760,7 +10761,8 @@ function planMemSheet(p, redraw) {
       el('button', { class: 'btn primary full', text: '넣기', onclick: async () => { const L = ta.value.split(/[,\n、·]+/).map(x => x.trim()).filter(Boolean).slice(0, 30); let k = 0;
         L.forEach(nm => { if (!p.mem.some(x => x.n === nm)) { p.mem.push({ id: 'm' + Date.now().toString(36) + (k++) + Math.random().toString(36).slice(2, 4), n: nm.slice(0, 20), from: '', a: '', b: '', fl: '', en: '', enS: '', lang: '' }); } }); bg.remove(); await save(); } })); };
   const paint = () => {
-    const meNow = ls.get('planMe:' + p.id, '');
+    let meNow = ls.get('planMe:' + p.id, '');
+    if (meNow && !p.mem.some(z => z.id === meNow)) { const nN = ls.get('planMeN:' + p.id, ''), z = nN && p.mem.find(m => m.n === nN); if (z) { meNow = z.id; ls.set('planMe:' + p.id, z.id); } }   // 판 -218: 맞추기로 사람 번호가 바뀌어도 이름으로 다시 찾음
     faRc(box,
       p.shOn ? el('div', { style: 'background:#E8F6EF;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5' }, el('b', { text: '✅ 같이 고치기 켜짐' }), el('div', { text: `여행 방 사람 누구나 일정을 고칠 수 있고, 몇 초 안에 모두에게 맞춰져요${p.shAt ? ` · 마지막 맞춤 ${trHm(p.shAt)}` : ''} · 예약번호·예약 캡처·다녀옴 표시는 각자 휴대폰에만` }))
         : el('div', { style: 'background:#FFF4E5;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5' }, el('b', { text: '지금은 내 휴대폰에서만 고쳐요' }), el('div', { text: '켜면 이 계획을 여행 방에 올려, 초대받은 일행이 같이 고칠 수 있어요(일행도 새 판 MPD가 있어야 해요).' }),
@@ -10772,7 +10774,7 @@ function planMemSheet(p, redraw) {
         el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { text: m.n + (meNow === m.id ? ' (나)' : '') }),
           el('span', { style: 'font-size:12.5px;color:#6B7684', text: [m.from ? m.from + ' 출발' : '출발하는 곳 아직', m.a || m.b ? `${dl(m.a) || '?'} ~ ${dl(m.b) || '?'}` : '날짜 아직', m.fl].filter(Boolean).join(' · ') })), el('span', { style: 'color:#A3ABB5', text: '✎' }))),
       el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '+ 한 명', onclick: () => edit(null) }), el('button', { class: 'btn line', style: 'flex:1', text: '+ 여러 명 한 번에', onclick: many })),
-      p.mem.length ? el('label', { class: 'sub', style: 'display:flex;gap:8px;align-items:center' }, '이 휴대폰은', el('select', { onchange: e => { ls.set('planMe:' + p.id, e.target.value); const mm = p.mem.find(z => z.id === e.target.value); if (mm && mm.lang === 'en') ls.set('planLang:' + p.id, 'en'); paint(); redraw && redraw(); } },
+      p.mem.length ? el('label', { class: 'sub', style: 'display:flex;gap:8px;align-items:center' }, '이 휴대폰은', el('select', { onchange: e => { ls.set('planMe:' + p.id, e.target.value); { const z = p.mem.find(m => m.id === e.target.value); ls.set('planMeN:' + p.id, z ? z.n : ''); } toast(e.target.value ? '✅ 저장했어요' : '빼었어요'); const mm = p.mem.find(z => z.id === e.target.value); if (mm && mm.lang === 'en') ls.set('planLang:' + p.id, 'en'); paint(); redraw && redraw(); } },
         el('option', { value: '', text: '(고르기)' }), ...p.mem.map(m => el('option', { value: m.id, selected: meNow === m.id ? true : null, text: m.n }))), '의 휴대폰이에요') : null,
       p.mem.some(m => m.lang === 'en') ? (() => { const hasEn = p.it.filter(x => x.en).length, enM = p.mem.filter(m => m.lang === 'en').map(m => m.n).join('·');
         return el('div', { style: 'background:#EEF6FB;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:6px' },
