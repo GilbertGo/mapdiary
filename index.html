@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-223-leg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-224-gphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 일정: 위치가 없는 장소도 앞뒤 사이에 늘 길찾기 줄이 있어요 · 위치가 없으면 이름으로 찾아요';
+const UI_NOTES = '여행 일정 칸 사진을 구글 지도 사진으로 · 한 번 받은 사진은 기억해 다시 안 물어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11578,28 +11578,50 @@ function planArt(x, box) {
   box = box || el('div', { class: 'tv-th' }); box.classList.add('art'); box.style.backgroundImage = `radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.38), rgba(255,255,255,0) 55%), linear-gradient(145deg, ${A[1]}, ${A[2]})`;
   box.replaceChildren(cSvg(A[0], 28, '#fff')); return box;
 }
+// 판 -224 (사용자 '구글지도 가 보면 좋은 사진 많던데 그걸 써봐' → 1번 열쇠): 구글 Places API (New) 사진 · 프로젝트 mpd-maps · 열쇠는 웹사이트(gilbertgo.github.io·localhost)로 잠금
+var GPL_KEY = 'AIzaSyBJtG9BGCDf5V2qrNPFo8DVjgRl9WXEM2A', GPL_DAY = 150;   // 이 휴대폰 하루 새로 찾는 수 한도(받은 사진은 기억해 다시 안 물음)
+function gPhotoKey(x) { return (x.q || x.n || '') + '|' + (Number.isFinite(x.lat) ? x.lat.toFixed(3) + ',' + x.lng.toFixed(3) : ''); }
+function gPhotoCached(x) { const c = (ls.get('gPhoto', {}) || {})[gPhotoKey(x)]; return c && (c.u || Date.now() - c.at < 7 * 864e5) ? c : null; }
+async function gPhoto(x, p) {
+  const k = gPhotoKey(x), c0 = gPhotoCached(x); if (c0) return c0;
+  const today = new Date().toISOString().slice(0, 10), n = ls.get('gPhotoN', {}) || {}; if (n.d === today && n.n >= GPL_DAY) return null;
+  ls.set('gPhotoN', { d: today, n: (n.d === today ? n.n : 0) + 2 });
+  const city = (p && ((p.dest && p.dest.n) || planDestName(p))) || '', q = x.q || ((x.n || '') + (city && !String(x.n).includes(city) ? ' ' + city : ''));
+  const body = { textQuery: q, languageCode: 'ko', maxResultCount: 1 };
+  if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) body.locationBias = { circle: { center: { latitude: x.lat, longitude: x.lng }, radius: x.ap || x.near ? 20000 : 3000 } };
+  let o = { u: '', by: '', at: Date.now() };
+  try { const r = await fetchT('https://places.googleapis.com/v1/places:searchText', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GPL_KEY, 'X-Goog-FieldMask': 'places.id,places.photos.name,places.photos.authorAttributions' }, body: JSON.stringify(body) }, 15000);
+    if (!r.ok) return null;   // 열쇠·한도 문제면 기억하지 않고 다음에 다시
+    const pl = ((await r.json()).places || [])[0], ph = pl && (pl.photos || [])[0];
+    if (ph) { const r2 = await fetchT(`https://places.googleapis.com/v1/${ph.name}/media?maxWidthPx=480&skipHttpRedirect=true&key=${GPL_KEY}`, {}, 15000);
+      if (r2.ok) { const j = await r2.json(); o.u = j.photoUri || ''; o.by = ((ph.authorAttributions || [])[0] || {}).displayName || ''; } }
+  } catch { return null; }
+  const all = ls.get('gPhoto', {}) || {}; all[k] = o; const ks = Object.keys(all); if (ks.length > 400) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 400).forEach(z => delete all[z]); ls.set('gPhoto', all); return o;
+}
 function planThumb(x, p) {
   if (p && !planThumb.__in && planPhShared(p, x) && !(x.ph || []).length) { const box0 = el('div', { class: 'tv-th' }); let got = 0; planThumb.__in = 1; let fb; try { fb = planThumb(x, p); } finally { planThumb.__in = 0; }
     planPhRoom(p, x).then(({ L }) => { const t = L[L.length - 1]; if (t && t.th) { got = 1; box0.replaceChildren(); box0.className = 'tv-th on'; box0.style.display = ''; box0.style.backgroundImage = `url("${t.th}")`; } }).catch(() => {}); if (fb) { box0.className = fb.className; box0.style.cssText = fb.style.cssText; box0.append(...fb.childNodes); } else box0.style.display = 'none'; return box0; }   // 판 -220: 일행이 올린 장소 사진 먼저
   if (p && Array.isArray(x.ph) && x.ph.length) { const box = el('div', { class: 'tv-th on' }); planPhGet(p, x.ph[0]).then(r => { if (r) box.style.backgroundImage = `url("${URL.createObjectURL(r.s || r.b)}")`; }); return box; }   // 판 -219: 내 사진 먼저
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''), z = (p.it || []).find(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length);
     if (z) x = Object.assign({}, x, { img: z.img }); else return ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) ? planArt(x) : null; }   // 판 -211: 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
-  if (x.k === 'stay' && !(Array.isArray(x.img) && x.img.length)) return planArt(x);
+  if (x.k === 'stay' && !(Array.isArray(x.img) && x.img.length) && !(GPL_KEY && navigator.onLine) && !(gPhotoCached(x) || {}).u) return planArt(x);
   if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return null;
   const exact = Number.isFinite(x.lat) && !x.ap && !x.near && x.k !== 'food';
   const box = el('div', { class: 'tv-th' }), U = () => planThumb.used || (planThumb.used = new Set());
-  let show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: '예시' })); return true; };
+  let show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: ex === 'G' ? 'Google' : '예시' })); if (ex === 'G') box.title = '사진 · Google 지도'; return true; };
   const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName2', {}) || {};
   const byName = async () => { const c = NC()[nkey]; if (c && (c.u || Date.now() - c.at < 3 * 864e5)) return c; const r = await planThName(x); const all = NC(); all[nkey] = { u: r.u || '', ex: r.ex || 0, at: Date.now() };
     const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName2', all); return all[nkey]; };
   const pkey = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, pc = exact ? (ls.get('placeInfo', {}) || {})[pkey] : null, pu = r => r && r.ph && r.ph[0] && r.ph[0].u;
   const nc = NC()[nkey];
   if (Array.isArray(x.img) && x.img.length) { const u = x.img.find(u0 => !U().has(u0)) || x.img[0]; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); return box; }   // 판 -182: 여행사 사진이 있으면 그것
-  if (pc && show(pu(pc))) return box;
-  if (nc && nc.u && show(nc.u, nc.ex)) return box;
+  const gc = gPhotoCached(x); if (gc && gc.u && show(gc.u, 'G')) return box;   // 판 -224: 구글 지도 사진 먼저
+  const gWait = !gc && navigator.onLine;   // 아직 구글에 안 물어봤으면 위키 사진으로 정하지 않고 먼저 물어봄
+  if (!gWait && pc && show(pu(pc))) return box;
+  if (!gWait && nc && nc.u && show(nc.u, nc.ex)) return box;
   planArt(x, box); const show0 = show; show = (u, ex) => { const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
   if (!navigator.onLine) return box;
-  const work = async () => { if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
+  const work = async () => { if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay') return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
   const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => {}).finally(() => { Q.n--; run(); }); };
     Q.L.push(work); run(); };
   if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '200px' }); setTimeout(() => io.observe(box), 0); } else go();
