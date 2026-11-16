@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-224-gphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-225-gphoto2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 일정 칸 사진을 구글 지도 사진으로 · 한 번 받은 사진은 기억해 다시 안 물어요';
+const UI_NOTES = '같은 숙소가 두 번 나오면 같은 사진으로 · 구글 사진 찾기가 하루 75곳에서 멈추던 것을 150곳으로';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11584,8 +11584,8 @@ function gPhotoKey(x) { return (x.q || x.n || '') + '|' + (Number.isFinite(x.lat
 function gPhotoCached(x) { const c = (ls.get('gPhoto', {}) || {})[gPhotoKey(x)]; return c && (c.u || Date.now() - c.at < 7 * 864e5) ? c : null; }
 async function gPhoto(x, p) {
   const k = gPhotoKey(x), c0 = gPhotoCached(x); if (c0) return c0;
-  const today = new Date().toISOString().slice(0, 10), n = ls.get('gPhotoN', {}) || {}; if (n.d === today && n.n >= GPL_DAY) return null;
-  ls.set('gPhotoN', { d: today, n: (n.d === today ? n.n : 0) + 2 });
+  const today = new Date().toISOString().slice(0, 10), n = ls.get('gPhotoN', {}) || {}; if (n.d === today && n.n >= GPL_DAY) { if (!gPhoto.said) { gPhoto.said = 1; toast(`오늘 구글 사진 새로 찾기를 ${GPL_DAY}곳 다 했어요 · 나머지는 내일 저절로 찾아요`); } return null; }
+  ls.set('gPhotoN', { d: today, n: (n.d === today ? n.n : 0) + 1 });   // 판 -225: 한 곳에 1(예전엔 2로 세어 실제 75곳에서 멈췄음)
   const city = (p && ((p.dest && p.dest.n) || planDestName(p))) || '', q = x.q || ((x.n || '') + (city && !String(x.n).includes(city) ? ' ' + city : ''));
   const body = { textQuery: q, languageCode: 'ko', maxResultCount: 1 };
   if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) body.locationBias = { circle: { center: { latitude: x.lat, longitude: x.lng }, radius: x.ap || x.near ? 20000 : 3000 } };
@@ -11608,7 +11608,9 @@ function planThumb(x, p) {
   if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return null;
   const exact = Number.isFinite(x.lat) && !x.ap && !x.near && x.k !== 'food';
   const box = el('div', { class: 'tv-th' }), U = () => planThumb.used || (planThumb.used = new Set());
-  let show = (u, ex) => { if (!u) return false; if (U().has(u)) return false; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: ex === 'G' ? 'Google' : '예시' })); if (ex === 'G') box.title = '사진 · Google 지도'; return true; };
+  // 판 -225: 같은 장소(같은 호텔 두 번)는 같은 사진 그대로
+  const same = () => planThumb.who || (planThumb.who = {}), me = x.k + '|' + String(x.n || '').replace(/\s+/g, '');
+  let show = (u, ex) => { if (!u) return false; if (U().has(u) && same()[u] !== me) return false; U().add(u); same()[u] = me; box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: ex === 'G' ? 'Google' : '예시' })); if (ex === 'G') box.title = '사진 · Google 지도'; return true; };
   const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName2', {}) || {};
   const byName = async () => { const c = NC()[nkey]; if (c && (c.u || Date.now() - c.at < 3 * 864e5)) return c; const r = await planThName(x); const all = NC(); all[nkey] = { u: r.u || '', ex: r.ex || 0, at: Date.now() };
     const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName2', all); return all[nkey]; };
@@ -12000,7 +12002,7 @@ function viewPlanOne(id) {
     tabs.replaceChildren(...Array.from({ length: p.nd }, (_, d) => t(d, `${td === d ? '오늘' : `${d + 1}일`}${p.start ? ' ' + (planDate(p, d).getMonth() + 1) + '/' + planDate(p, d).getDate() : ''}`)));
   }
   function drawList() {
-    const out = []; planThumb.used = new Set();   // 판 -174: 같은 날 같은 사진이 두 칸에 나오지 않게
+    const out = []; planThumb.used = new Set(); planThumb.who = {};   // 판 -174: 같은 날 같은 사진이 두 칸에 나오지 않게
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
       const SH = planShared(p), fl = SH ? ls.get('planShow:' + p.id, 'all') : 'all', all = planItems(p, d), nxI = all[nextIdx(d)], its = planUniq(all.filter(x => planVis(p, x) && (fl === 'all' || (fl === 'mine' ? x.mine : !x.mine)))), nx = its.indexOf(nxI);   // 판 -208: 전체 · 함께만 · 내 것만   // 판 -141: '내 일정만'이면 남의 개인 일정은 뺌
