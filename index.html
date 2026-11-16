@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.16-218-memsave';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.16-219-itemphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '함께 가는 사람 저장이 안 되던 것 고침: 고친 이름·출발하는 곳·날짜·이 휴대폰은 누구인지가 그대로 남아요 · 일행 방에 못 올렸을 때도 내 휴대폰 것은 지켜요';
+const UI_NOTES = '여행 일정 장소마다 사진 넣기: 장소를 눌러 고치기·보기 창에서 📷 사진 넣기 · 넣은 사진이 일정 칸 작은 그림으로 보여요 · 함께 가는 사람 저장이 되돌아가던 것도 고쳤어요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10560,7 +10560,7 @@ async function pgCtx(p, say) {
 //   pl/meta = 이름·날짜·날 수·미팅·안내, pl/{일정 id} = {it, by, nm} 또는 {del:1}, pm/{사람 id} = {n, from, a(오는 날), b(가는 날), fl, del}
 //   맞추는 법: 마지막으로 맞춘 모양(ls plSync:{계획} = {sig:{id:모양}, m, mm:{}})과 견줘 — 내가 안 고친 칸만 남의 것으로 바꾸고, 내가 고친 칸은 올림(나중에 올린 쪽이 남음)
 //   내 것만: 예약(bk)·다녀옴(ok…)은 안 올림 · 처음 들어온 휴대폰은 방 일정으로 바꾸고(같은 날·같은 이름이면 내 예약·다녀옴을 옮겨 붙임), 내 예약이 있는 칸만 방에 올림
-const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q', 'eb', 'ebt'];   // 판 -193: eb·ebt(누가·언제 고쳤나)는 받은 휴대폰에만 적어요
+const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q', 'eb', 'ebt', 'ph'];   // 판 -219: ph(내 사진)도 내 휴대폰에만   // 판 -193: eb·ebt(누가·언제 고쳤나)는 받은 휴대폰에만 적어요
 function planMineIns(list, y) {   // 내 일정을 그날 시각 자리에 끼움 (시각 없으면 그날 끝)
   let endDay = -1, lastLE = -1, firstGT = -1; list.forEach((z, i) => { if (z.d <= y.d) endDay = i; if (z.d === y.d && y.t && z.t) { if (z.t <= y.t) lastLE = i; else if (firstGT < 0) firstGT = i; } });
   list.splice(!y.t ? endDay + 1 : lastLE >= 0 ? lastLE + 1 : firstGT >= 0 ? firstGT : endDay + 1, 0, y);
@@ -11274,6 +11274,25 @@ async function viewPlanToday(p) {
 //   예약 화면 캡처를 계획에 넣어 둠: 사진은 이 휴대폰 IndexedDB mpdTrip 'pdoc:{계획}:{번호}'(인터넷 없어도 보임, 일행·링크로 안 감), 목록 p.docs=[{id,at,nm,rd}]
 //   Claude 열쇠가 있으면 캡처를 읽어 비행기·숙소를 일정에 넣음(적힌 것만, 같은 편명은 고침) · 예약번호는 x.bk(계획 링크로 안 보냄)
 //   첫·마지막 비행 날짜가 계획 날짜와 다르면 '계획 날짜 맞추기' 단추
+// 판 -219 (사용자 장소 고치기 창 캡처 '여기서 사진 넣기 기능 추가'): 일정 장소마다 내 사진 · x.ph=[사진 번호] (이 휴대폰에만, PL_PRIV라 일행 방·링크로 안 감)
+//   사진은 IndexedDB mpdTrip 'pph:{계획}:{번호}'={b: 1600px, s: 320px} · 장소 칸 작은 그림도 내 사진이 맨 먼저
+async function planPhAdd(p, x, files) { let n = 0, bad = 0; x.ph = Array.isArray(x.ph) ? x.ph : [];
+  for (const f of files) { try { const b = await shrinkImage(f, 1600, 'blob', .85), sm = await shrinkImage(f, 320, 'blob', .8); if (!b || !sm) throw 0; const id = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await trSet('pph:' + p.id + ':' + id, { b, s: sm, at: Date.now() }); x.ph.push(id); n++; } catch { bad++; } }
+  return { n, bad }; }
+async function planPhGet(p, id) { return await trGet('pph:' + p.id + ':' + id); }
+function planPhBox(p, x, onCh) {   // 사진 줄 + '📷 사진 넣기'
+  const box = el('div', { style: 'display:flex;flex-direction:column;gap:8px' }), inp = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });
+  const urls = []; const free = () => { urls.forEach(u => URL.revokeObjectURL(u)); urls.length = 0; };
+  const big = async id => { const r = await planPhGet(p, id); if (!r) return; const u = URL.createObjectURL(r.b); urls.push(u);
+    const sh = labSheet('', el('img', { src: u, style: 'width:100%;border-radius:12px' }),
+      el('button', { class: 'btn line full', text: '🗑 이 사진 빼기', onclick: async () => { if (!confirm('이 사진을 뺄까요?')) return; x.ph = (x.ph || []).filter(z => z !== id); try { const db = await trDb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete('pph:' + p.id + ':' + id); t.oncomplete = res; t.onerror = res; }); } catch {} sh.remove(); onCh && onCh(); paint(); toast('사진을 뺐어요'); } })); };
+  const paint = async () => { free(); const ids = (x.ph || []).slice(); const row = el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:2px' });
+    for (const id of ids) { const r = await planPhGet(p, id); if (!r) continue; const u = URL.createObjectURL(r.s || r.b); urls.push(u); row.append(el('img', { src: u, style: 'width:84px;height:84px;object-fit:cover;border-radius:12px;flex:none;cursor:pointer;background:#EEF1F4', onclick: () => big(id) })); }
+    const btn = el('button', { class: 'btn line full', text: ids.length ? `📷 사진 더 넣기 · 지금 ${ids.length}장` : '📷 사진 넣기', onclick: () => inp.click() });
+    box.replaceChildren(...(ids.length ? [row] : []), btn, el('div', { class: 'dt', text: '내 휴대폰에만 남아요 · 일행에게 보이려면 여행 방 📷 사진에 올려 주세요' }), inp); };
+  inp.onchange = async () => { const fs = [...(inp.files || [])]; inp.value = ''; if (!fs.length) return; toast(`사진 ${fs.length}장 넣는 중…`); const r = await planPhAdd(p, x, fs); onCh && onCh(); await paint(); toast(r.bad ? `✅ ${r.n}장 넣었어요 · ⚠ ${r.bad}장은 못 읽었어요` : `✅ 사진 ${r.n}장 넣었어요`); };
+  paint(); return box; }
 function planDocKey(p, id) { const m = /^(.*)@([^@]+)$/.exec(String(id)); return m ? 'pdoc:' + m[2] + ':' + m[1] : 'pdoc:' + p.id + ':' + id; }   // 판 -190: 합친 계획에서 옮겨 온 캡처는 원래 번호로
 async function planBookRead(file) {
   const key = trBotKey(); if (!key) throw new Error('nokey');
@@ -11510,6 +11529,7 @@ function planArt(x, box) {
   box.replaceChildren(cSvg(A[0], 28, '#fff')); return box;
 }
 function planThumb(x, p) {
+  if (p && Array.isArray(x.ph) && x.ph.length) { const box = el('div', { class: 'tv-th on' }); planPhGet(p, x.ph[0]).then(r => { if (r) box.style.backgroundImage = `url("${URL.createObjectURL(r.s || r.b)}")`; }); return box; }   // 판 -219: 내 사진 먼저
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''), z = (p.it || []).find(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length);
     if (z) x = Object.assign({}, x, { img: z.img }); else return ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) ? planArt(x) : null; }   // 판 -211: 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
   if (x.k === 'stay' && !(Array.isArray(x.img) && x.img.length)) return planArt(x);
@@ -11794,6 +11814,7 @@ function viewPlanOne(id) {
     const bg = labSheet(x.n,
       el('div', { class: 'sub', text: line }),
       x.opt ? el('div', { style: 'font-size:13px;font-weight:700;color:#6B7684', text: x.opt === 2 ? "여행사 분류 '선택관광' · 하나투어 표기 '스페셜포함' (가격 포함 여부는 여행사 확인)" : "여행사 분류 '선택관광' (가격 포함 여부는 여행사 확인)" }) : null,
+      planPhBox(p, x, () => { planSave(p); drawAll(); }),
       Array.isArray(x.img) && x.img.length ? el('div', {}, el('div', { style: 'font-weight:600;font-size:13px;color:#4E5968;margin-bottom:6px', text: `여행사 사진 ${x.img.length}장` }),   // 판 -182
         el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:4px' }, ...x.img.map(u => el('img', { src: u, loading: 'lazy', style: 'height:120px;border-radius:12px;flex:none;cursor:pointer;background:#EEF1F4', onclick: () => labSheet('', el('img', { src: u.replace('/resize/400_0/', '/resize/800_0/'), style: 'width:100%;border-radius:12px', onerror: e => { if (!e.target.dataset.f) { e.target.dataset.f = 1; e.target.src = u; } } })) })))) : null,
       Array.isArray(x.cands) && x.cands.length ? el('div', { style: 'padding:10px 12px;border-radius:12px;background:#F5F6F8' },   // 판 -182: 여행사 호텔 후보
@@ -11837,6 +11858,7 @@ function viewPlanOne(id) {
     const bg = labSheet(isNew ? '+ 장소 넣기' : x.n || '✎ 장소 고치기', about, about ? el('div', { class: 'sub', style: 'font-weight:700;margin-top:4px', text: '✎ 고치기' }) : null, nm, el('div', { class: 'row', style: 'gap:8px' }, el('div', { class: 'grow' }, el('label', { class: 'sub', text: '날' }), ds), el('div', { class: 'grow' }, el('label', { class: 'sub', text: '시각 (모르면 비워 두세요 · 비행은 출발)' }), tm), taW),
       kRow, (p.shOn || (p.room && p.room.code)) ? frRow : null, mm, locL,
       el('button', { class: 'btn line full', text: '📍 지도에서 위치 정하기 · 이름으로 찾기', onclick: async () => { const near = at ? [at.lat, at.lng] : centerOf(); const r = await pickDest(at ? { lat: at.lat, lng: at.lng, n: nm.value } : null, near, true); if (r) { at = { lat: r.lat, lng: r.lng }; x.ap = 0; x.near = 0; x.man = 1; delete x.vf; if (!nm.value.trim() && r.n) nm.value = r.n; paintL(); } } }),
+      planPhBox(p, x, () => { if (!isNew && p.it.includes(x)) planSave(p); }),
       el('button', { class: 'btn primary full', text: '저장', onclick: () => { save(); bg.remove(); drawAll(); } }),
       isNew ? null : el('div', { class: 'row', style: 'gap:6px' },
         el('button', { class: 'btn line small grow', text: '↑ 앞으로', onclick: () => { move(x, -1); bg.remove(); } }),
