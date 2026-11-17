@@ -1279,6 +1279,21 @@ html.vw-lt .vw-mapw .leaflet-control-zoom{display:none}
 html.vw-lt .vw-mapw .leaflet-top.leaflet-right{top:calc(78px + env(safe-area-inset-top,0px))}
 html.vw-lt .vw-mapw .fs-btn{min-height:34px;padding:6px 12px;border-radius:17px;font:500 13px 'Pretendard Variable',Pretendard,sans-serif;box-shadow:0 1px 6px rgba(21,32,43,.14);margin-top:8px}
 html.vw-lt .vw-mapw .leaflet-control-attribution{font-size:9px;line-height:1.3;padding:0 5px;background:rgba(255,255,255,.6);opacity:.8}
+/* 판 -239: 카드 없애기 — 흰 바탕 한 장, 섹션은 가는 선으로 · 그래프 이름 회색 · 지도 이름표 없이 */
+html.vw-lt .tv-sheet{background:#fff;gap:14px}
+html.vw-lt .tv-sheet .card,html.vw-lt .tv-sheet .vw-statw{background:transparent;box-shadow:none;border-radius:0;border:none}
+html.vw-lt .tv-sheet>.card,html.vw-lt .tv-sheet>.vw-statw,html.vw-lt .tv-sheet>.stack{border-top:1px solid #F2F4F6;padding:20px 0 4px!important;margin:0}
+html.vw-lt .tv-sheet .vw-grid{padding:0}html.vw-lt .tv-sheet .vw-statw>.card{border:none;padding:0!important}
+html.vw-lt .vw-more2{border-top:none;padding:10px 0 0;text-align:left}
+html.vw-lt .vw-sr-h b{color:#6B7684!important;font-weight:500;font-size:13px}
+html.vw-lt .ag-row{background:#F7F8FA}
+html.vw-lt .vw-mapw .leaflet-tooltip.nm{display:none}
+html.vw-lt .vw-mapw .fs-btn:not(.ph-tg){font-size:0;width:36px;height:36px;min-height:36px;padding:0;border-radius:50%}
+html.vw-lt .vw-mapw .fs-btn:not(.ph-tg)::before{content:'⤢';font-size:17px;color:#15202B}
+details.vw-fold>summary{list-style:none;cursor:pointer;font-size:13.5px;color:#6B7684;padding:6px 0}details.vw-fold>summary::after{content:' ›'}details.vw-fold[open]>summary::after{content:' ⌄'}
+html.vw-lt .tv-sheet>.vw-pick{padding-top:14px!important}html.vw-lt .vw-sr-h span,html.vw-lt .vw-sr-ax span{font-weight:500!important}
+html.vw-lt .tv-sheet [hidden],html.vw-lt .tv-sheet>.stack:empty,html.vw-lt .tv-sheet>.stack:not(:has(*)){display:none!important}html.vw-lt .tv-sheet .vw-km>b{font-weight:500}html.vw-lt .vw-elnote{display:none}html.vw-lt .vw-card .vw-h .sub b,html.vw-lt .vw-card .vw-h span b{font-weight:500}
+details.vw-fold>summary::-webkit-details-marker{display:none}details.vw-fold{display:flex;flex-direction:column;gap:8px}
 </style>
 </head>
 <body>
@@ -2319,7 +2334,7 @@ function elevCard(ev, tr, modes) {
   const card = el('div', { class: 'card vw-card' },
     el('div', { class: 'vw-h' }, el('b', { text: '높이' }), el('span', { class: 'sub' }, '오른 높이 ', el('b', { style: `color:${STAT_COL.up}`, text: `${ev.gain}m` }), ` · 최고 ${elevWhat(ev)} ${elevTxt(ev, 'max')}m`)),
     svg, el('div', { class: 'sub vw-ax' }, el('span', { text: `출발 ${elevTxt(ev, 'start')}m` }), el('span', { text: `최저 ${elevTxt(ev, 'min')}m` }), el('span', { text: fmtDist(D) })),
-    el('div', { class: 'sub', style: 'font-size:12px;line-height:1.5', text: `오른 높이는 오르막만 모두 더한 값이에요(내리막은 빼요). 최고·출발 높이는 ${ev.maxAsl != null ? '바다 기준 높이(해발)예요. GPS로 짐작해서 10~20m 다를 수 있어요' : 'GPS가 잰 높이예요(해발과 수십 m 다를 수 있어요)'}.` }),
+    el('div', { class: 'sub vw-elnote', style: 'font-size:12px;line-height:1.5', text: `오른 높이는 오르막만 모두 더한 값이에요(내리막은 빼요). 최고·출발 높이는 ${ev.maxAsl != null ? '바다 기준 높이(해발)예요. GPS로 짐작해서 10~20m 다를 수 있어요' : 'GPS가 잰 높이예요(해발과 수십 m 다를 수 있어요)'}.` }),
     tot > 6e4 ? [zoneRow('오르막', STAT_COL.up, T[0], mx, `${Math.round(T[0] * 100 / tot)}%`), zoneRow('평지', '#9AA5B4', T[1], mx, `${Math.round(T[1] * 100 / tot)}%`), zoneRow('내리막', '#42A5F5', T[2], mx, `${Math.round(T[2] * 100 / tot)}%`),
       el('div', { class: 'sub', style: 'font-size:12px', text: '움직인 동안 기울기 4%보다 가파르면 오르막·내리막으로 셌어요.' })] : null,
     el('div', { class: 'sub', style: 'font-size:12px', text: '👆 그래프를 누르거나 밀면 그 지점이 지도에 나와요' }));
@@ -2449,12 +2464,12 @@ function hrCard(t, tr) {
   let Z = (W.zone || []).slice(0, 5); if (!Z.some(Boolean)) { Z = [0, 0, 0, 0, 0]; for (let i = 1; i < hl.length; i++) { const dt = hl[i][0] - hl[i - 1][0]; if (dt > 0 && dt <= 60000) Z[zoneOf(W.mx, hl[i][1])] += dt; } }
   const mz = Math.max(...Z), rng = z => z === 0 ? `<${zoneLo(W.mx, 1)}` : z === 4 ? `${zoneLo(W.mx, 4)}+` : `${zoneLo(W.mx, z)}~${zoneLo(W.mx, z + 1) - 1}`;
   return el('div', { class: 'card vw-card' },
-    el('div', { class: 'vw-h' }, el('b', { text: '심박수' }), el('span', { class: 'sub' }, '최고 ', el('b', { style: `color:${STAT_COL.hr}`, text: String(top) }))),
+    el('div', { class: 'vw-h' }, el('b', { text: '심박수' }), el('span', { class: 'sub' }, `평균 ${avg} · 최고 ${top} bpm`)),
     svg, el('div', { class: 'sub vw-ax' }, el('span', { text: kTime(t0) }), el('span', { text: kTime((t0 + t1) / 2) }), el('span', { text: kTime(t1) })),
-    el('div', { style: `color:${STAT_COL.hr};font-weight:800;font-size:15px`, text: `평균 ${avg} BPM` }),
-    hrRecRow(HH),
-    [0, 1, 2, 3, 4].map(z => zoneRow(`영역 ${z + 1}`, ZONE_COL[z], Z[z], mz, rng(z))),
-    el('div', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준으로 나눈 영역에 머문 시간이에요(시계에서 바꿀 수 있어요).` }));
+    el('details', { class: 'vw-fold' }, el('summary', { text: '심박 영역 · 운동 뒤 회복' }),   // 판 -239: 영역 표·회복은 접어 둠
+      hrRecRow(HH),
+      ...[0, 1, 2, 3, 4].map(z => zoneRow(`영역 ${z + 1}`, ZONE_COL[z], Z[z], mz, rng(z))),
+      el('div', { class: 'sub', style: 'font-size:12px', text: `최대 심박 ${W.mx} 기준` })));
 }
 // ---------- 기록 모드 ----------
 // car: 이 속도(km/h)보다 빠르면 차(탈것)로 간 길로 봐요. did: 거리 앞에 붙는 말
@@ -3387,9 +3402,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-238-tidy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-239-flat';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 화면을 깔끔하게 다시 짰어요 · 공유는 오른쪽 위 · 겹치는 숫자·이모지·긴 설명을 뺐어요";
+const UI_NOTES = "기록 보기 화면에서 상자들을 없애고 흰 바탕 한 장으로 정리했어요 · 지도 이름표·심박 영역 표는 접었어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13408,7 +13423,7 @@ async function viewMyOne(t) {
     // 사진 켜고 끄기 (2026-10-29 사용자 '경로만 보기 선택 가능하게'): 지도 오른쪽 위 '크게 보기' 아래 단추, 고른 것 기억(ls mapPhotoOff)
     let phOn = !ls.get('mapPhotoOff', false), phBtn = null;
     const PC = L.Control.extend({ options: { position: 'topright' }, onAdd() {
-      const bt = phBtn = L.DomUtil.create('button', 'fs-btn'); bt.type = 'button'; bt.style.display = 'none';
+      const bt = phBtn = L.DomUtil.create('button', 'fs-btn ph-tg'); bt.type = 'button'; bt.style.display = 'none';
       L.DomEvent.disableClickPropagation(bt);
       bt.addEventListener('click', () => { phOn = !phOn; ls.set('mapPhotoOff', !phOn); drawPh(); });
       return bt; } });
