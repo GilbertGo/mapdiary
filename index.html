@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-232-hanaphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-233-hanaauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '하나투어 계획 ⋯ 더보기에 "여행사 사진 채우기" (사진 없는 칸에 여행사 안내서 사진) · 지도 기호 설명을 지도 위로 옮겨 아래 메뉴에 안 가려요';
+const UI_NOTES = '하나투어 계획은 앱에서 열면 여행사 안내서 사진이 저절로 나와요 (단추 안 눌러도, 계획 자료는 그대로)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10145,6 +10145,21 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
 }
 // 판 -232 (사용자 '여행사 자료는 왜 안 써?' → '만들어봐'): 하나투어 원본에서 사진만 받아 사진 없는 칸에 넣음
 //   누를 때만 · 일정·시각·위치·메모는 안 건드림 · 이미 있는 사진은 그대로 · 넣기 전에 예전 모습을 남김(🕘 예전 모습으로 되돌리기)
+// 판 -233 (사용자 '고쳐' — 단추를 누르지 않아도): 하나투어 계획을 열면 앱이 원본 사진 목록만 받아 화면에 씀
+//   계획 자료는 바꾸지 않음(따로 ls hanaImg:{상품 번호}, 7일) · 웹은 하나투어가 막아서 못 받음
+function hanaImgKey(x, by) { const nm = String(x.n || '').replace(/\s+/g, ''); return by ? x.k + '|' + nm : x.d + '|' + nm; }
+function hanaImgCached(p, x) { const c = p && p.code ? ls.get('hanaImg:' + p.code, null) : null; if (!c || !c.m) return null; return c.m[hanaImgKey(x)] || c.m[hanaImgKey(x, 1)] || null; }
+function hanaImgMap(p) {
+  if (!p || !p.code || !IN_NATIVE) return Promise.resolve(null);
+  const c = ls.get('hanaImg:' + p.code, null); if (c && c.m && Date.now() - c.at < 7 * 864e5) return Promise.resolve(c.m);
+  const Q = hanaImgMap.q || (hanaImgMap.q = {}); if (Q[p.code]) return Q[p.code];
+  return Q[p.code] = (async () => {
+    try { const r = planFromHana(await planHanaFetch(p.code)); planTermFix(r); const m = {};
+      for (const z of r.it) if ((z.img || []).length) { const v = z.img.slice(0, 8); m[hanaImgKey(z)] = m[hanaImgKey(z)] || v; m[hanaImgKey(z, 1)] = m[hanaImgKey(z, 1)] || v; }
+      ls.set('hanaImg:' + p.code, { at: Date.now(), m }); return m; }
+    catch { setTimeout(() => { delete Q[p.code]; }, 5 * 6e4); return null; }
+  })();
+}
 function planHanaPhotoGap(p) { return (p.it || []).filter(x => ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) && !(Array.isArray(x.img) && x.img.length)).length; }
 async function planHanaPhotos(p) {   // → {n: 넣은 칸 수, none: 원본에도 사진 없는 칸 수}
   if (!p.code) throw new Error('nocode');
@@ -11626,6 +11641,7 @@ function gPhotoInfo(x, p) {
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''); if ((p.it || []).some(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length)) return { t: '여행사 안내서 사진(같은 이름 칸)이 있어서 구글 사진은 찾지 않아요' }; }
   if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return { t: '이 종류(비행·이동)는 사진을 찾지 않아요' };
   if (Array.isArray(x.img) && x.img.length) return { t: '여행사 안내서 사진이 있어서 구글 사진은 찾지 않아요' };
+  if (p && planIsHana(p) && hanaImgCached(p, x)) return { t: '여행사 안내서 사진을 써요 (하나투어 원본)', ok: 1 };
   const k = gPhotoKey(x), c = (ls.get('gPhoto', {}) || {})[k], st = (ls.get('gPhotoSt', {}) || {})[k];
   if (c && c.u) return { t: `✅ 받았어요 · ${ago(c.at)}`, ok: 1 };
   if (st) return { t: (st.s === 'none' ? '⚠ 못 찾았어요 · ' : st.s === 'cap' ? '⚠ 오늘 한도를 다 써서 안 물어봤어요 · ' : '⚠ 못 받았어요 · ') + (st.why || '') + ` · ${ago(st.at)}`, bad: 1 };
@@ -11672,13 +11688,14 @@ function planThumb(x, p) {
   const pkey = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, pc = exact ? (ls.get('placeInfo', {}) || {})[pkey] : null, pu = r => r && r.ph && r.ph[0] && r.ph[0].u;
   const nc = NC()[nkey];
   if (Array.isArray(x.img) && x.img.length) { const u = x.img.find(u0 => !U().has(u0)) || x.img[0]; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); return box; }   // 판 -182: 여행사 사진이 있으면 그것
+  if (noWiki) { const hc = hanaImgCached(p, x); if (hc && show(hc[0])) return box; }   // 판 -233 여행사 원본 사진(계획엔 없어도)
   const gc = gPhotoCached(x); if (gc && gc.u && show(gc.u, 'G')) return box;   // 판 -224: 구글 지도 사진 먼저
   const gWait = !gc && navigator.onLine;   // 아직 구글에 안 물어봤으면 위키 사진으로 정하지 않고 먼저 물어봄
   if (!gWait && !noWiki && pc && show(pu(pc))) return box;
   if (!gWait && !noWiki && nc && nc.u && show(nc.u, nc.ex)) return box;
   planArt(x, box); const show0 = show; show = (u, ex) => { if (box.dataset.room) return true; const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
   if (!navigator.onLine) return box;
-  const work = async () => { if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay' || noWiki) return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
+  const work = async () => { if (noWiki && p && p.code && IN_NATIVE) { const m = await hanaImgMap(p); const v = m && (m[hanaImgKey(x)] || m[hanaImgKey(x, 1)]); if (v && show(v[0])) return; } if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay' || noWiki) return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
   const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => {}).finally(() => { Q.n--; run(); }); };
     Q.L.push(work); run(); };
   if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '200px' }); setTimeout(() => io.observe(box), 0); } else go();
