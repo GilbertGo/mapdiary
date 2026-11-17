@@ -1856,13 +1856,6 @@ async function cardStrip(recs, skip) {
 const coverOf = (t, recs) => { const cid = ls.get('walkCover:' + t, null); if (cid === 'none' || !recs.length) return null; return (cid && recs.find(r => r.id === cid)) || recs[Math.floor((recs.length - 1) / 2)]; };
 // 판 -240 대표 사진 바꾸기 (2026-11-17 사용자 '큰사진 바꾸기 너무 어렵다'): 예전엔 공유 창 안에서만 → 기록 보기 사진 칸·⋯ 더보기·사진 크게 보기에서 바로
 function coverId(t, ps) { const cid = ls.get('walkCover:' + t, null), im = (ps || []).filter(r => !isVid(r)); if (cid === 'none' || !im.length) return null; return ((cid && im.find(r => r.id === cid)) || im[Math.floor((im.length - 1) / 2)]).id; }
-function coverHold(img, t, r) {   // 꾹(0.5초) 누르면 대표 사진 · 화면에 단추를 더 붙이지 않아요 (사용자 '뭘 자꾸 만들지마 · 심플해 보이지만 기능은 다 있는')
-  let T = null, done = false; const stop = () => clearTimeout(T);
-  img.addEventListener('pointerdown', () => { done = false; T = setTimeout(() => { done = true; try { navigator.vibrate && navigator.vibrate(20); } catch {} coverSet(t, r.id); }, 500); });
-  ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(k => img.addEventListener(k, e => { if (k !== 'pointermove' || Math.abs(e.movementX) + Math.abs(e.movementY) > 6) stop(); }));
-  img.addEventListener('click', e => { if (done) { e.stopImmediatePropagation(); done = false; } }, true);
-  img.addEventListener('contextmenu', e => e.preventDefault()); img.style.webkitTouchCallout = 'none'; return img;
-}
 function coverSet(t, id) { ls.set('walkCover:' + t, id); dispatchEvent(new Event('photo-changed')); toast('대표 사진을 바꿨어요'); }
 async function coverPick(t, cover) {   // t = 기록(여행이면 여행) 번호, cover = 그 기록 대표 사진 키 주인
   const key = cover || t, ps = (await photoList(t)).filter(r => !isVid(r));
@@ -1956,27 +1949,32 @@ async function savePhotos(list, base) {
     big, grid, el('button', { class: 'btn line full', text: '닫기', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
-function showPhoto(p, list) {
+function showPhoto(p, list, cover) {
   const all = Array.isArray(list) && list.length ? list : [p];
   let i = Math.max(0, all.indexOf(p)), url = null;
   const img = el('img', { alt: '찍은 사진', style: 'max-width:100%;max-height:80vh;border-radius:12px;transition:transform .15s;touch-action:none;user-select:none;-webkit-user-drag:none;will-change:transform' });
   // 동영상이면 사진 대신 재생 칸(누르면 재생·멈춤 단추가 보여요). 확대·밀기는 사진에만
   const vid = el('video', { controls: true, playsinline: true, preload: 'metadata', style: 'max-width:100%;max-height:78vh;border-radius:12px;display:none;background:#000', onclick: e => e.stopPropagation() });
   vid.addEventListener('touchstart', e => e.stopPropagation(), { passive: true }); vid.addEventListener('touchend', e => e.stopPropagation());
-  const cap = el('div', { style: 'position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px' });
-  // 한 줄 메모: 사진 위쪽에. 이 휴대폰에 있는 내 사진이면 ✎로 적거나 고칠 수 있어요 (받은 사진은 보기만)
-  const memo = el('div', { style: 'position:absolute;top:calc(20px + env(safe-area-inset-top,0px));left:16px;right:16px;text-align:center;color:#fff;font-size:17px;font-weight:600;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap' });
+  // 판 -240 갤럭시 갤러리처럼 (사용자 '갤럭시 쓰는 사람들은 다 짐작하는 그런거'): 위엔 몇 번째·시각과 메모만, 아래 줄 저장 · 삭제 · ⋮(메모·위치·대표 사진으로 설정)
+  const cap = el('div', { style: 'position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:rgba(255,255,255,.75);font-size:13px;pointer-events:none' });
+  const memo = el('div', { style: 'position:absolute;top:calc(40px + env(safe-area-inset-top,0px));left:20px;right:20px;text-align:center;color:#fff;font-size:16px;font-weight:500;pointer-events:none' });
+  const bar = el('div', { style: 'position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;display:flex;justify-content:space-around;padding:0 24px', onclick: e => e.stopPropagation() });
+  bar.addEventListener('touchstart', e => e.stopPropagation(), { passive: true }); bar.addEventListener('touchend', e => e.stopPropagation());
   const mine = r => r && r.t && !String(r.id).startsWith('allhere/');
-  const drawMemo = () => { const r = all[i]; memo.replaceChildren(r.m ? `“${r.m}”` : '',
-    mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: r.m ? '✎ 고치기' : '✎ 한 줄 적기', onclick: async e => {
-      e.stopPropagation(); const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true);
-      if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} drawMemo(); } }) : '',
-    el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '⬇ 저장', 'aria-label': isVid(r) ? '이 동영상을 휴대폰에 저장' : '이 사진을 휴대폰에 저장', onclick: e => { e.stopPropagation(); savePhotos([r], 'MapDiary사진'); } }),
-    mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '📍 위치', onclick: async e => { e.stopPropagation(); await pickPhotoPlace(r); } }) : '',
-    mine(r) ? el('button', { class: 'btn small', style: 'height:34px;background:rgba(255,255,255,.2);color:#fff;border:none', text: '🗑', 'aria-label': '이 사진 지우기', onclick: async e => {
-      e.stopPropagation(); if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
-      await photoDel(r.id); all.splice(i, 1); dispatchEvent(new Event('photo-changed')); toast('사진을 지웠어요');
-      if (!all.length) close(); else show(i); } }) : ''); };
+  const bb = (svg, label, on) => el('button', { type: 'button', 'aria-label': label, style: 'display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:#fff;font:inherit;font-size:11px;padding:8px 14px;cursor:pointer', onclick: on }, cSvg(svg, 24), label);
+  const isCover = r => cover && coverId(cover, all) === r.id;
+  const moreSheet = r => { const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer', onclick: () => { sb.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }));
+    const sb = labSheet('사진',
+      go(r.m ? '한 줄 메모 고치기' : '한 줄 메모 쓰기', async () => { const v = await askText('사진 한 줄', '한 줄 메모', r.m || '', '예: 정상에서 다 같이', '비우면 지워요.', 80, true); if (v == null) return; r.m = v || undefined; try { await photoPut(r); } catch {} drawMemo(); }),
+      go('위치 바꾸기', () => pickPhotoPlace(r)),
+      cover && !isVid(r) ? go(isCover(r) ? '✓ 지금 대표 사진이에요' : '대표 사진으로 설정', () => { if (!isCover(r)) coverSet(cover, r.id); }) : null);
+    sb.style.zIndex = 4100; };
+  const drawMemo = () => { const r = all[i]; memo.textContent = r.m ? `“${r.m}”` : '';
+    bar.replaceChildren(bb('dl', '저장', () => savePhotos([r], 'MapDiary사진')),
+      mine(r) ? bb('trash', '삭제', async () => { if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
+        await photoDel(r.id); all.splice(i, 1); dispatchEvent(new Event('photo-changed')); toast('사진을 지웠어요'); if (!all.length) close(); else show(i); }) : null,
+      mine(r) ? bb('more', '더보기', () => moreSheet(r)) : null); };
   const close = () => { clearTimeout(tapT); try { vid.pause(); } catch {} bg.remove(); if (url) URL.revokeObjectURL(url); };
   const show = n => {
     i = (n + all.length) % all.length; const r = all[i];
@@ -1984,8 +1982,7 @@ function showPhoto(p, list) {
     if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); sc = 1; tx = ty = 0;
     if (isVid(r)) { img.style.display = 'none'; img.removeAttribute('src'); vid.style.display = ''; vid.poster = r.thumb || ''; vid.src = url; }
     else { vid.style.display = 'none'; vid.removeAttribute('src'); img.style.display = ''; img.src = url; apply(false); }
-    cap.textContent = isVid(r) ? `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}🎬 동영상 ${fmtVidDur(r.dur)} · ${fmtClock(r.ts)}${all.length > 1 ? ' · ‹ › 로 넘겨요' : ''} · 바깥을 누르면 닫혀요`
-      : `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${fmtClock(r.ts)} · 두 번 누르거나 두 손가락으로 벌리면 크게 · ${all.length > 1 ? '옆으로 밀면 다음 사진 · ' : ''}한 번 누르면 닫혀요`;
+    cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${isVid(r) ? `동영상 ${fmtVidDur(r.dur)} · ` : ''}${fmtClock(r.ts)}`;
     drawMemo();
   };
   const arrow = (side, d) => el('button', { 'aria-label': d < 0 ? '앞 사진' : '다음 사진', text: d < 0 ? '‹' : '›',
@@ -2006,7 +2003,7 @@ function showPhoto(p, list) {
     const now = Date.now();
     if (now - lastTap < 320) { clearTimeout(tapT); lastTap = 0; toggleZoom(e.clientX, e.clientY); return; }
     lastTap = now; clearTimeout(tapT); tapT = setTimeout(() => { if (sc === 1) close(); }, 320);
-  } }, img, vid, memo, cap, all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
+  } }, img, vid, memo, cap, bar, all.length > 1 ? [arrow('left', -1), arrow('right', 1)] : null);
   const pt = (t, k) => [t[k].clientX, t[k].clientY];
   bg.addEventListener('touchstart', e => {
     const T = e.touches; if (isVid(all[i])) { g = { x0: T[0].clientX, y0: T[0].clientY, tx0: 0, ty0: 0, vid: 1 }; return; }
@@ -3424,9 +3421,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-240-cover';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-240-galaxy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "대표 사진을 쉽게 바꿔요: 기록 보기 사진 칸의 '대표 사진 바꾸기', 사진 크게 보기의 '대표 사진으로' · 지도의 '길만 보기' 단추는 없앴어요";
+const UI_NOTES = "대표 사진은 사진을 크게 열고 ⋮ 더보기 → 대표 사진으로 설정 (갤럭시 갤러리처럼) · 사진 보기 아래 줄을 저장 · 삭제 · 더보기로 정리했어요 · 지도의 '길만 보기' 단추는 없앴어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13437,9 +13434,9 @@ async function viewMyOne(t) {
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
       const ps = await photoList(t); phAll = ps;
-      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}`; phN.textContent = ps.some(r => !isVid(r)) ? '꾹 누르면 대표 사진' : '눌러서 크게'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
+      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}`; phN.textContent = '눌러서 크게'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
-        : coverHold(el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps) }), t, r)));
+        : el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps, t) })));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
       if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
@@ -14733,6 +14730,7 @@ function cSvg(n, s = 22, c = 'currentColor') {
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     back: '<path d="M15 5l-7 7 7 7"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
     more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
     share: '<path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/>',
     again: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/>',
