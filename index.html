@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-231-photoorder';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-232-hanaphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '일정 칸 사진 차례: 내가 넣은 사진 → 여행사 안내서 사진 → 구글 지도 사진 (하나투어 계획도 여행사 사진이 없는 칸은 구글 사진)';
+const UI_NOTES = '하나투어 계획 ⋯ 더보기에 "여행사 사진 채우기" (사진 없는 칸에 여행사 안내서 사진) · 지도 기호 설명을 지도 위로 옮겨 아래 메뉴에 안 가려요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10143,6 +10143,41 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
   p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planSave(p);
   return { ch };
 }
+// 판 -232 (사용자 '여행사 자료는 왜 안 써?' → '만들어봐'): 하나투어 원본에서 사진만 받아 사진 없는 칸에 넣음
+//   누를 때만 · 일정·시각·위치·메모는 안 건드림 · 이미 있는 사진은 그대로 · 넣기 전에 예전 모습을 남김(🕘 예전 모습으로 되돌리기)
+function planHanaPhotoGap(p) { return (p.it || []).filter(x => ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) && !(Array.isArray(x.img) && x.img.length)).length; }
+async function planHanaPhotos(p) {   // → {n: 넣은 칸 수, none: 원본에도 사진 없는 칸 수}
+  if (!p.code) throw new Error('nocode');
+  if (!IN_NATIVE) throw new Error('web');
+  const r = planFromHana(await planHanaFetch(p.code)); planTermFix(r);
+  const nm = v => String(v || '').replace(/\s+/g, '');
+  await planSnap(true);
+  const cur = planGet(p.id) || p; let n = 0, none = 0;
+  for (const x of cur.it || []) {
+    if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) || (Array.isArray(x.img) && x.img.length)) continue;
+    const z = r.it.find(w => w.d === x.d && nm(w.n) === nm(x.n) && (w.img || []).length) || r.it.find(w => w.k === x.k && nm(w.n) === nm(x.n) && (w.img || []).length);
+    if (z) { x.img = z.img.slice(0, 8); n++; } else none++;
+  }
+  cur.imgV = 2; planSave(cur); Object.assign(p, cur);
+  return { n, none };
+}
+function planHanaPhotoSheet(p, after) {
+  const st = el('div', { class: 'sub', style: 'font-weight:700' });
+  const urlIn = el('input', { type: 'text', placeholder: '하나투어 상품 주소 (pkgCd=… 들어 있는 주소)', style: 'width:100%;box-sizing:border-box' });
+  const run = async () => {
+    const c = planHanaCode(urlIn.value); if (c) { p.code = c; p.src = 'hanatour'; planSave(p); }
+    if (!p.code) return toast('하나투어 상품 주소를 붙여 넣어 주세요');
+    btn.disabled = true; st.textContent = '📷 하나투어에서 사진 받는 중…';
+    try { const r = await planHanaPhotos(p); st.textContent = r.n ? `✅ ${r.n}곳에 여행사 사진을 넣었어요${r.none ? ` · 원본에도 사진이 없는 ${r.none}곳은 구글 사진·그림 그대로` : ''}` : `여행사 원본에 더 넣을 사진이 없어요${r.none ? ` (사진 없는 ${r.none}곳)` : ''}`; after && after(); }
+    catch (e) { const m = String(e && e.message || e); st.textContent = m === 'web' ? '⚠ 웹에선 하나투어가 막아 둬서 못 받아요 · MPD 앱에서 눌러 주세요' : '⚠ 못 받았어요 · ' + m.slice(0, 60); }
+    btn.disabled = false;
+  };
+  const btn = el('button', { class: 'btn primary full', text: '📷 여행사 사진 채우기', onclick: run });
+  labSheet('📷 여행사 사진 채우기',
+    el('div', { class: 'sub', text: `하나투어 안내서에 있는 사진을 받아, 지금 사진이 없는 칸(${planHanaPhotoGap(p)}곳)에 넣어요. 일정·시각·위치·메모는 바꾸지 않고, 이미 넣은 사진도 그대로 둬요. 넣기 전 모습은 '🕘 예전 모습으로 되돌리기'에 남아요.` }),
+    p.code ? el('div', { class: 'dt', text: `상품 ${p.code}` }) : el('div', { class: 'dt', text: '이 계획엔 하나투어 상품 번호가 없어요. 상품 주소를 한 번 붙여 넣어 주세요.' }),
+    p.code ? null : urlIn, btn, st);
+}
 function planHanaSheet(p, after) {   // ⋯ 더보기 '🔗 하나투어 일정 다시 받기'
   const st = el('div', { class: 'sub', style: 'font-weight:700' }), out = el('div', { class: 'stack', style: 'gap:6px' });
   const urlIn = el('input', { type: 'text', placeholder: '하나투어 상품 주소 (pkgCd=… 들어 있는 주소)', value: '', style: 'width:100%;box-sizing:border-box' });
@@ -11892,6 +11927,7 @@ function viewPlanOne(id) {
       go('🔄 여행 방 새로 만들기 · 지금 내 일정으로', () => planRoomReset(p)),
       go(planEN(p) ? '❓ Quick tour' : '❓ 사용법 둘러보기', () => setTimeout(() => planTour(p), 300)),
       go(planEN(p) ? '🇰🇷 한국어로 보기 (Korean)' : '🇬🇧 English view', () => { const e = !planEN(p); ls.set('planLang:' + p.id, e ? 'en' : ''); ls.set('planLangMe:' + p.id, e ? 1 : 0); location.reload(); }),
+      planIsHana(p) ? go(`📷 여행사 사진 채우기 · 사진 없는 칸 ${planHanaPhotoGap(p)}곳`, () => planHanaPhotoSheet(p, drawAll)) : null,
       planIsHana(p) ? go(`🔗 하나투어 일정 다시 받기${p.hanaCh && p.hanaCh.L.length ? ` · 바뀐 것 ${p.hanaCh.L.length}` : ''}`, () => planHanaSheet(p, drawAll)) : null,
       p.blog && p.blog.url ? go('📝 블로그 원문 보기', () => window.open(p.blog.url, '_blank', 'noopener')) : null,
       go('🗑 이 계획 지우기', () => { if (confirm(`'${p.name}' 계획을 지울까요?`)) { planDel(p.id); location.replace('./?plan=1'); } }));
@@ -12100,7 +12136,7 @@ function viewPlanOne(id) {
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
     { const EN = planEN(p), mineOn = planShared(p) && p.it.some(x => x.mine);   // 판 -209: 지도는 기호만, 뜻은 지도 아래 한 줄(범례) · 핀을 누르면 이름
-      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, el('span', { text: 'Tap a pin for its name' })]
+      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, el('span', { text: 'Tap a pin for its name' })]
         : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, el('span', { text: '핀을 누르면 이름' })]).filter(Boolean))); }
     if (0) sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
     if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
@@ -12134,7 +12170,7 @@ function viewPlanOne(id) {
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['film', '미리 보기 영상 만들기', './?film=1&plan=' + encodeURIComponent(p.id)], ['share', '일행 초대 · 일정 보내기', () => planShare(p), '초대'], ['more', '더보기', moreSheet]), hero,
     el('div', { class: 'tv-sheet' },
     // 판 -129: 한 화면 차례 = 날 고르기 → 그날 지도·요약 → 그날 일정 → (작게) 위치 확인. 준비·여행 방은 아래 메뉴에만
-    mapEl, sumEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
+    sumEl, mapEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
   drawAll();
   // 판 -216: 하나투어 일정 저절로 다시 받아 합치기 끔(⋯ 더보기 '하나투어 일정 다시 받기'로만)
   // 판 -129: 오늘 화면에서 하던 일(날씨 받기·여행 사진 저절로 올리기)을 여기서
