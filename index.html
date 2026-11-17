@@ -946,6 +946,15 @@ html.n-page .btn.line{background:#fff;color:#15202B;border-color:#E3E7EB;box-sha
 .n-row h4{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;color:#15202B}.n-row p{margin:2px 0 0;font-size:13px;color:#6B7684}
 .n-row .chv{margin-left:auto;color:#C4CAD1;font-size:20px;flex:none}
 .n-gh{font-size:13px;font-weight:700;color:#6B7684;margin:14px 6px -4px}
+details.n-auto{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+details.n-auto>summary{list-style:none;display:flex;align-items:center;gap:14px;padding:12px 14px;cursor:pointer}
+details.n-auto>summary::-webkit-details-marker{display:none}
+details.n-auto>summary .th{width:52px;height:52px;border-radius:14px;background:#F2F4F6;color:#6B7684;display:grid;place-items:center;flex:none}
+details.n-auto>summary h4{margin:0;font-size:15.5px;font-weight:600;color:#191F28}
+details.n-auto>summary p{margin:2px 0 0;font-size:13px;color:#8B95A1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.n-auto>summary .chv{color:#B0B8C1;font-size:20px;transition:transform .2s}
+details.n-auto[open]>summary .chv{transform:rotate(90deg)}
+.n-afb{display:grid;gap:8px;padding:0 8px 10px}
 details.n-fold{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
 details.n-fold>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-weight:700;font-size:15px}
 details.n-fold>summary::-webkit-details-marker{display:none}
@@ -2740,7 +2749,8 @@ const ICONS = {
   pin: ['M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z', 'M9.8 10a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
   camera: ['M3.5 8A1.5 1.5 0 0 1 5 6.5h2.5L9 4.5h6l1.5 2H19A1.5 1.5 0 0 1 20.5 8v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18z', 'M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0'],
   lock: ['M6 11h12v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3', 'M12 15v2.5'],
-  share: ['M12 3.5v11', 'M8 7.5l4-4 4 4', 'M5.5 12.5v6a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-6']
+  share: ['M12 3.5v11', 'M8 7.5l4-4 4 4', 'M5.5 12.5v6a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-6'],
+  car: ['M4 16.5V12l2.2-5h11.6L20 12v4.5', 'M3 12h18', 'M6.5 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.9 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M3 16.5h3.5', 'M10.1 16.5h3.8', 'M17.5 16.5H21']
 };
 const icoSvg = (k, size, fill) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fill || 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(ICONS[k] || []).map(d => `<path d="${d}"/>`).join('')}</svg>`;
 function ico(k, size = 18, fill) { const s = el('span', { class: 'ico' }); s.innerHTML = icoSvg(k, size, fill); return s; }
@@ -3450,9 +3460,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-247-bar';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-248-my';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 맨 위가 얇은 머리줄로 바뀌었어요 · 가운데 MPD 로고(누르면 처음 화면) · 양옆 뒤로·공유·더보기 · 그 아래 대표 사진을 크게 보여 줘요";
+const UI_NOTES = "기록 목록 이름을 '내 MPD'로 맞췄어요(첫 화면 줄·화면 제목·뒤로 단추) · 맨 위는 '‹ 처음 화면'과 🔍 한 줄 · 자동으로 남긴 차 이동은 차 그림과 '이동 n km' · 자동 기록이 하루에 여러 개면 한 줄로 접혀서 진짜 기록이 위에 보여요(누르면 펼쳐요) · 기록 보기 맨 위 얇은 머리줄과 MPD 로고";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11826,7 +11836,7 @@ function planThumb(x, p) {
   return box;
 }
 // 뒤로 단추 이름(2026-11-15 사용자 '화살표만 있으면 어쩌라는 거야'): ‹ 만 두지 말고 어디로 가는지 글자로
-function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '이야기' : '뒤로'; }
+function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '내 MPD' : '뒤로'; }
 function tvTop(back, ...acts) {   // 사진 위 동그란 단추 줄 (뒤로 · 오른쪽 단추들)
   // 넷째 값(글자)이 있으면 그림 + 글자 알약 (판 -134: 공유 단추가 초대인 줄 몰라서 '초대')
   const ib = (svg, label, on, txt) => { const cls = 'n-ib' + (txt ? ' pill' : ''), kids = [cSvg(svg, 20), txt ? el('span', { text: txt }) : null].filter(Boolean);
@@ -13004,9 +13014,14 @@ function viewMyList() {
   document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15 시안 ① '이야기')
   // 기록 한 편: 사진이 있으면 큰 사진 카드(대표 사진 원본), 없으면 작은 줄
   const PH = viewMyList.ph || (viewMyList.ph = new Map());
-  const metaOf = x => { const M = modeOfT(x.t), s0 = mdLine(x); return ls.get('walkMode:' + x.t, null) ? s0.replace(M.label + ' · ', '') : s0; };
+  // 판 -248: 자동 기록 알아보기(이름을 안 바꾼 '14:10 걷기/자전거/차로 이동' 또는 autoIds) · 차로 이동은 차 그림과 '이동 n km'
+  const autoSet = new Set((ls.get('autoIds', []) || []).map(a => a.id));
+  const isAuto = x => !x.album && x.t !== live && (autoSet.has(x.t) || /^\d{2}:\d{2} (걷기|자전거|차로 이동)$/.test(ls.get('trackName:' + x.t, '') || ''));
+  const isCar = x => !x.album && ls.get('walkMode:' + x.t, null) === 'daily' && /차로 이동$/.test(ls.get('trackName:' + x.t, '') || '');
+  const carMeta = x => { const tr = trackLoad(x.t), st = trackStats(tr, modeOfT(x.t).car), d = new Date(x.info.startAt); return `${d.getMonth() + 1}월 ${d.getDate()}일 · 이동 ${fmtDist(st.d)} · ${fmtDur(st.ms)}`; };
+  const metaOf = x => { if (isCar(x)) return carMeta(x); const M = modeOfT(x.t), s0 = mdLine(x); return ls.get('walkMode:' + x.t, null) ? s0.replace(M.label + ' · ', '') : s0; };
   const row = x => {
-    const M = modeOfT(x.t), k = ls.get('walkMode:' + x.t, null) ? M.k : 'pin', href = `./?my=1&t=${encodeURIComponent(x.t)}`;
+    const M = modeOfT(x.t), k = isCar(x) ? 'car' : ls.get('walkMode:' + x.t, null) ? M.k : 'pin', href = `./?my=1&t=${encodeURIComponent(x.t)}`;
     const small = () => el('a', { class: 'n-row', href },
       el('span', { class: 'th' }, ico(k, 26)),
       el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: x.info.name }), el('p', { text: metaOf(x) })),
@@ -13014,7 +13029,7 @@ function viewMyList() {
     const big = (ps) => {
       const cid = ls.get('walkCover:' + x.t, null), p = (cid && cid !== 'none' && ps.find(r => r.id === cid)) || ps[Math.floor((ps.length - 1) / 2)] || ps[0];
       const im = el('div', { class: 'im', style: `background-image:url("${phSrc(p)}")` },
-        el('span', { class: 'tag' }, ico(k, 15), x.album ? `여행 ${x.info.days}일` : M.label),
+        el('span', { class: 'tag' }, ico(k, 15), x.album ? `여행 ${x.info.days}일` : isCar(x) ? '차로 이동' : M.label),
         x.t === live ? el('span', { class: 'lv', text: '● 기록 중' }) : null,
         el('span', { class: 'cnt', text: `사진 ${ps.length}` }));
       return el('a', { class: 'n-rc', href }, im, el('h3', { text: x.info.name }), el('p', { text: metaOf(x) }));
@@ -13068,11 +13083,30 @@ function viewMyList() {
       sel ? el('b', { text: `${Mo + 1}월 ${sel.split('-')[2]}일` }) : null,
       shown.map(row)];
   }
+  // 판 -248: 자동 기록은 하루치를 한 줄로 접음(2개 넘을 때) → 진짜 기록이 위에 보여요. 눌러서 펼침
+  function listRows() {
+    const out = [], seen = new Set(), dk = x => new Date(x.info.startAt).toDateString();
+    for (const x of list) {
+      if (!isAuto(x)) { out.push(row(x)); continue; }
+      const k = dk(x); if (seen.has(k)) continue; seen.add(k);
+      const g = list.filter(y => isAuto(y) && dk(y) === k);
+      if (g.length < 2) { out.push(row(x)); continue; }
+      let dd = 0; g.forEach(y => { dd += trackStats(trackLoad(y.t), modeOfT(y.t).car).d; });
+      const d = new Date(x.info.startAt), inner = el('div', { class: 'n-afb' });
+      const det = el('details', { class: 'n-auto' }, el('summary', {},
+        el('span', { class: 'th' }, cSvg('cal', 22)),
+        el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: `${d.getMonth() + 1}월 ${d.getDate()}일 자동 기록 ${g.length}개` }), el('p', { text: `이동 ${fmtDist(dd)} · ${g.map(y => fmtClock(y.info.startAt)).reverse().join(' · ')}`.slice(0, 80) })),
+        el('span', { class: 'chv', text: '›' })), inner);
+      det.addEventListener('toggle', () => { if (det.open && !inner.childElementCount) inner.append(...g.map(row)); });
+      out.push(det);
+    }
+    return out;
+  }
   function draw() {
     const nFood = foodPlaces().length;
     const nPk = myPeaks().length;
     tabs.replaceChildren(tab('list', '전체'), tab('cal', '달력'), tab('peaks', `오른 산${nPk ? ' ' + nPk : ''}`), tab('food', `맛집${nFood ? ' ' + nFood : ''}`));
-    body.replaceChildren(...(mode === 'peaks' ? peaksView(() => { if (mode === 'peaks') draw(); }) : mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
+    body.replaceChildren(...(mode === 'peaks' ? peaksView(() => { if (mode === 'peaks') draw(); }) : mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? listRows() : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
   }
   // 올해 걸은 거리
   const Y0 = new Date().getFullYear(); let yWalk = 0;
@@ -13089,12 +13123,12 @@ function viewMyList() {
     fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
   ];
   app.replaceChildren(el('div', { class: 'stack' },
-    el('div', { class: 'n-top' }, el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch()), ib('cal', '달력으로 보기', () => { mode = 'cal'; ls.set('myView', 'cal'); draw(); })),
-    el('h1', { class: 'n-lt', text: '이야기' }),
+    el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch())),
+    el('h1', { class: 'n-lt', text: '내 MPD' }),
     el('div', { class: 'n-ls', text: `기록 ${list.length}개${yWalk > 0 ? ` · 올해 걸은 거리 ${fmtDist(yWalk)}` : ''}` }),
     tabs, body,
     el('div', { class: 'n-gh', text: '기록 지키기 · 가져오기' }), ...keep));
-  app.append(cTabs('book'));
+  app.append(cTabs('book', true));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
@@ -13425,7 +13459,7 @@ async function viewMyOne(t) {
       const ib = (svg, label, on) => el('button', { class: 'vb-ib', type: 'button', 'aria-label': label, title: label, onclick: on }, cSvg(svg, 22));
       const lg = cLogoSvg(); const sv = lg.querySelector('svg'); if (sv) { sv.setAttribute('width', '18'); sv.setAttribute('height', '21'); }
       return el('div', { class: 'vw-bar' },
-        el('a', { class: 'vb-ib', href: './?my=1', 'aria-label': '이야기로', title: '이야기로' }, cSvg('back', 22)),
+        el('a', { class: 'vb-ib', href: './?my=1', 'aria-label': '내 MPD로', title: '내 MPD로' }, cSvg('back', 22)),
         el('a', { class: 'vb-logo', href: './', 'aria-label': 'MPD 처음 화면' }, lg, el('b', { text: 'MPD' })),
         el('span', { class: 'vb-r' }, ib('share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)), ib('more', '더보기', moreSheet))); })(),
     el('div', { class: 'tv-sheet vw-top1' },   // 판 -242 사용자 '제목과 요약을 맨 위에': 제목·요약 → 지도 → 사진 → 그래프
@@ -14817,13 +14851,13 @@ function cLiveTime(id) { const ms = Math.max(0, Date.now() - ls.get('walkAt', Da
 function cLiveName(id) { return ls.get('trackName:' + id, `${modeOfT(id).label} 기록`); }
 // 1초마다 글자를 바꿈. 화면에서 빠지면 멈춤
 function cLiveTick(node, fn) { fn(); const iv = setInterval(() => { if (!node.isConnected) return clearInterval(iv); fn(); }, 1000); }
-function cTabs(on) {
+function cTabs(on, noBack) {
   document.documentElement.classList.remove('c-tabbed');
   const wNow = ls.get('walkNow', null);
   document.documentElement.classList.toggle('c-live', !!wNow);
   const it = (k, label, href, click) => el(href ? 'a' : 'button', Object.assign({ class: on === k ? 'on' : null, 'aria-current': on === k ? 'page' : null }, href ? { href } : { type: 'button', onclick: click }), cSvg(k, 24), label);
   // 판 -187 (사용자 홈 캡처 '맨 아래는 지워. 꼭 필요한 기능은 다른데로 옮겨'): 아래 메뉴(홈·지도·발견·이야기·나)를 없앰 → 지도·발견은 홈 목록 줄로, 이야기는 '내 MPD 보기', 나는 오른쪽 위 프로필. 다른 화면엔 왼쪽 위 '‹ 처음 화면'
-  const nav = on === 'home' ? document.createDocumentFragment() : el('a', { class: 'c-hback', href: './' }, '‹ 처음 화면');
+  const nav = on === 'home' || noBack ? document.createDocumentFragment() : el('a', { class: 'c-hback', href: './' }, '‹ 처음 화면');
   // (예전) const nav = el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
   if (!wNow) return nav;
   // 기록 중이면 아래 메뉴 바로 위에 빨간 띠(홈은 큰 빨간 단추가 화면에 있을 땐 숨김)
@@ -15499,7 +15533,7 @@ function viewLanding() {
       memSlot,
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
-        row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
+        row('📖', '내 MPD', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
         row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
         row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
         null && row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
