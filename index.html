@@ -946,6 +946,15 @@ html.n-page .btn.line{background:#fff;color:#15202B;border-color:#E3E7EB;box-sha
 .n-row h4{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;color:#15202B}.n-row p{margin:2px 0 0;font-size:13px;color:#6B7684}
 .n-row .chv{margin-left:auto;color:#C4CAD1;font-size:20px;flex:none}
 .n-gh{font-size:13px;font-weight:700;color:#6B7684;margin:14px 6px -4px}
+details.n-auto{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
+details.n-auto>summary{list-style:none;display:flex;align-items:center;gap:14px;padding:12px 14px;cursor:pointer}
+details.n-auto>summary::-webkit-details-marker{display:none}
+details.n-auto>summary .th{width:52px;height:52px;border-radius:14px;background:#F2F4F6;color:#6B7684;display:grid;place-items:center;flex:none}
+details.n-auto>summary h4{margin:0;font-size:15.5px;font-weight:600;color:#191F28}
+details.n-auto>summary p{margin:2px 0 0;font-size:13px;color:#8B95A1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.n-auto>summary .chv{color:#B0B8C1;font-size:20px;transition:transform .2s}
+details.n-auto[open]>summary .chv{transform:rotate(90deg)}
+.n-afb{display:grid;gap:8px;padding:0 8px 10px}
 details.n-fold{background:#fff;border-radius:18px;box-shadow:0 1px 3px rgba(21,32,43,.05)}
 details.n-fold>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-weight:700;font-size:15px}
 details.n-fold>summary::-webkit-details-marker{display:none}
@@ -1313,6 +1322,75 @@ html.vw-lt .vw-hero{width:100vw;margin:0 0 4px calc(50% - 50vw);height:min(52vh,
 html.vw-lt .vw-hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
 html.vw-lt .vw-top1 .note{font-size:15px;line-height:1.55;color:#333D4B}
 html.vw-lt .vw-top1 .vw-mapw .leaflet-control-attribution{font-size:8px;opacity:.6}
+html.vw-lt .vw-bar{position:sticky;top:0;z-index:40;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px;margin:-20px -20px 0;padding:0 8px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid #F2F4F6}
+html.vw-lt .vb-ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:none;background:none;border-radius:50%;color:#191F28;cursor:pointer;padding:0}
+html.vw-lt .vb-ib:active{background:#F2F4F6}
+html.vw-lt .vb-ib svg{stroke:#191F28}
+html.vw-lt .vb-logo{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:#191F28}
+html.vw-lt .vb-logo b{font:800 17px/1 'Pretendard Variable',Pretendard,sans-serif;letter-spacing:-.3px}
+html.vw-lt .vb-r{display:flex;justify-content:flex-end}
+html.vw-lt .tv-sheet.vw-top1,html.vw-lt .tv-sheet.vw-top1:not(.has-hero),html.vw-lt .tv-sheet.vw-top1.has-hero{padding-top:22px}
+html.vw-lt .vw-top1.has-hero{padding-top:0!important}
+
+/* 판 -250 처음 쓰는 사람 첫 화면(시안 B) */
+.c-first .cf-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0,rgba(0,0,0,0) 26%,rgba(0,0,0,0) 50%,rgba(0,0,0,.7) 100%);z-index:1}
+.c-first .cf-tag{position:absolute;left:20px;top:calc(68px + env(safe-area-inset-top,0px));z-index:4;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:0;border-radius:999px;padding:8px 12px;cursor:pointer}
+.c-first .cf-pins{position:absolute;inset:0;z-index:2;pointer-events:none}
+.c-first .cf-line{position:absolute;inset:0;width:100%;height:100%}
+.c-first .cf-bub{position:absolute;aspect-ratio:1;border-radius:22px;border:5px solid #fff;background:#ddd center/cover no-repeat;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.c-first .cf-bub::after{content:'';position:absolute;bottom:-14px;left:50%;margin-left:-9px;border:9px solid transparent;border-top-color:#fff}
+.c-first .cf-bub em{position:absolute;left:6px;top:6px;font-style:normal;font-size:10.5px;font-weight:600;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;padding:2px 6px}
+.c-first .cf-dot{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#3FD0D9;border:3px solid #fff}
+.c-first .cf-dt{position:absolute;margin:12px 0 0 -16px;width:32px;text-align:center;color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.c-first .cf-card{position:absolute;left:16px;right:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:5;background:#fff;border-radius:24px;padding:22px 20px 16px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.c-first .cf-card h2{margin:0;font-size:21px;font-weight:700;color:#191F28;letter-spacing:-.4px;line-height:1.35}
+.c-first .cf-card p{margin:6px 0 0;font-size:14px;color:#6B7684;line-height:1.5}
+.c-first .cf-go{display:block;width:100%;margin-top:16px;height:54px;border:0;border-radius:16px;background:#191F28;color:#fff;font:600 16.5px/1 inherit;font-family:inherit;cursor:pointer}
+.c-first .cf-sub{display:block;margin-top:12px;text-align:center;font-size:14px;color:#1D9EC0;font-weight:500;text-decoration:none}
+
+/* 판 -251 첫 화면 세 가지 */
+.c-mph{color:#191F28}
+.c-mph .c-hero{position:absolute;inset:0;height:auto;min-height:0;border-radius:0;box-shadow:none}
+.c-mph .c-slogan{display:none}
+.c-mph .c-hero::after{content:'';position:absolute;left:0;right:0;top:0;height:150px;background:linear-gradient(180deg,rgba(247,250,252,.95),rgba(247,250,252,0));z-index:400;pointer-events:none}
+.c-mph .c-hero-note{top:calc(70px + env(safe-area-inset-top,0px))!important}
+.c-mph .c-rec{bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+.c-ph-top.dk .c-ph-logo{filter:none}.c-ph-top.dk .c-ph-logo b{color:#191F28}.c-ph-top.dk .c-ph-logo small{color:#6B7684}
+.c-ph-top.dk .c-ph-ib{filter:none}.c-ph-top.dk .c-ph-av{border-color:#D1D6DB;background:#fff;color:#191F28}.c-ph-top.dk .c-ph-av svg{stroke:#191F28}
+.c-mph .c-ph-top{z-index:700}
+.c-cardh .c-sec h2{font-size:19px;font-weight:700}.c-cardh .c-sec a{color:#6B7684;text-decoration:none;font-size:14px}
+.c-cardh{--c-ink:#191F28;margin:calc(-20px - env(safe-area-inset-top,0px)) -20px 0;padding:0 20px 8px;background:#F5F6F8;color:#191F28;display:flex;flex-direction:column;gap:14px}
+.c-cardh .c-ph-top{position:relative;padding-left:0;padding-right:0}
+.c-cardh .ch-h{margin:14px 0 0;font-size:28px;font-weight:700;letter-spacing:-.6px}
+.c-cardh .ch-s{margin:-8px 0 0;font-size:15px;color:#6B7684}
+.c-cardh .ch-lead{position:relative;display:block;height:min(52vh,420px);border-radius:24px;overflow:hidden;text-decoration:none;color:#fff;background:#DDE3E8}
+.c-cardh .ch-lead .im{position:absolute;inset:0;background:#DDE3E8 center/cover no-repeat}
+.c-cardh .ch-lead .im.rt{display:flex;align-items:center;justify-content:center}
+.c-cardh .ch-lead::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.6))}
+.c-cardh .ch-lead .tx{position:absolute;left:18px;right:18px;bottom:16px;z-index:1;display:flex;flex-direction:column;gap:2px}
+.c-cardh .ch-lead small{font-size:13px;opacity:.9}.c-cardh .ch-lead b{font-size:22px;font-weight:700}.c-cardh .ch-lead span{font-size:14px;opacity:.9}
+.c-cardh .ch-go{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border:0;border-radius:16px;background:#191F28;color:#fff;font:600 17px/1 inherit;font-family:inherit;text-decoration:none;cursor:pointer}
+.c-cardh .ch-go span{font-size:24px;font-weight:400}
+.c-cardh .ch-go.live{background:#E5383B}
+.hs-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hs-op{border:2px solid #E5E8EB;border-radius:16px;background:#fff;padding:8px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;cursor:pointer}
+.hs-op.on{border-color:#FF6B4A;background:#FFF4F1}
+.hs-op b{font-size:15px;font-weight:600;color:#191F28}.hs-op small{font-size:11.5px;color:#8B95A1;line-height:1.35;text-align:center}
+.hs-mini{position:relative;width:100%;aspect-ratio:9/16;border-radius:10px;overflow:hidden}
+.hs-mini i{position:absolute;display:block}
+.hs-photo{background:linear-gradient(160deg,#4C7DA6,#2C4C6A)}
+.hs-photo .b1{left:14%;top:38%;width:34%;aspect-ratio:1;border:2px solid #fff;border-radius:6px;background:#9CC3D9}
+.hs-photo .b2{left:54%;top:22%;width:34%;aspect-ratio:1;border:2px solid #fff;border-radius:6px;background:#E2B9A0}
+.hs-photo .ln{left:30%;top:64%;width:44%;height:2px;background:#3FD0D9;transform:rotate(-20deg)}
+.hs-map{background:#E8EEF2;background-image:linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px);background-size:12px 12px}
+.hs-map .rd{left:16%;top:30%;width:66%;height:44%;border:3px solid #1D9EC0;border-radius:40% 60% 50% 40%;border-left-color:transparent}
+.hs-map .p1{left:20%;top:24%;width:22%;aspect-ratio:1;border-radius:50%;border:2px solid #fff;background:#E2B9A0}
+.hs-map .p2{left:58%;top:58%;width:22%;aspect-ratio:1;border-radius:50%;border:2px solid #fff;background:#9CC3D9}
+.hs-card{background:#F5F6F8}
+.hs-card .t1{left:10%;top:9%;width:60%;height:6%;border-radius:3px;background:#191F28}
+.hs-card .t2{left:10%;top:18%;width:40%;height:4%;border-radius:3px;background:#C9CDD2}
+.hs-card .c1{left:10%;top:27%;width:80%;height:40%;border-radius:8px;background:linear-gradient(160deg,#9CC3D9,#4C7DA6)}
+.hs-card .c2{left:10%;top:72%;width:80%;height:9%;border-radius:6px;background:#191F28}
 </style>
 </head>
 <body>
@@ -2731,7 +2809,8 @@ const ICONS = {
   pin: ['M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z', 'M9.8 10a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
   camera: ['M3.5 8A1.5 1.5 0 0 1 5 6.5h2.5L9 4.5h6l1.5 2H19A1.5 1.5 0 0 1 20.5 8v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18z', 'M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0'],
   lock: ['M6 11h12v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20z', 'M8.5 11V8a3.5 3.5 0 0 1 7 0v3', 'M12 15v2.5'],
-  share: ['M12 3.5v11', 'M8 7.5l4-4 4 4', 'M5.5 12.5v6a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-6']
+  share: ['M12 3.5v11', 'M8 7.5l4-4 4 4', 'M5.5 12.5v6a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-6'],
+  car: ['M4 16.5V12l2.2-5h11.6L20 12v4.5', 'M3 12h18', 'M6.5 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.9 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M3 16.5h3.5', 'M10.1 16.5h3.8', 'M17.5 16.5H21']
 };
 const icoSvg = (k, size, fill) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fill || 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(ICONS[k] || []).map(d => `<path d="${d}"/>`).join('')}</svg>`;
 function ico(k, size = 18, fill) { const s = el('span', { class: 'ico' }); s.innerHTML = icoSvg(k, size, fill); return s; }
@@ -3441,9 +3520,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-246-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-251-homestyle';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 맨 위에 대표 사진을 크게 보여 줘요 · 지도 길은 한 가지 색으로 깔끔하게(빠르기는 아래 그래프에) · 메모 쓰기는 ⋯ 안으로";
+const UI_NOTES = "첫 화면을 세 가지 모양 중에 고를 수 있어요 · 사진(내 사진 + 말풍선) · 지도(다녀온 곳이 지도에) · 카드(흰 바탕에 이번 달 · 최근 기록) · 고르는 곳: 오른쪽 위 프로필 → 화면 → 첫 화면 모양 · 처음 쓰는 분 첫 화면도 새로워졌어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4359,12 +4438,13 @@ function appSettings() {
     const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
     const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내 사진' : '기본', () => runHeroPick(done));
     photoRow.firstChild.replaceWith(thumb);
-    const homeRow = row('', '첫 화면 꾸미기', ls.get('homeDeco', null) ? '내가 꾸밈' : '저절로', () => { cb.remove(); homeDecoEdit(); });
-    homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
+    const hsNow = ls.get('homeStyle', 'photo'), styleRow = row('', '첫 화면 모양', (HOME_STYLES.find(x => x[0] === hsNow) || HOME_STYLES[0])[1], () => homeStyleSheet(() => paint()));   // 판 -251
+    const homeRow = hsNow === 'photo' ? row('', '첫 화면 꾸미기', ls.get('homeDeco', null) ? '내가 꾸밈' : '저절로', () => { cb.remove(); homeDecoEdit(); }) : null;
+    if (homeRow) homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
     body.replaceChildren(
       profileHead(done),
-      head('화면'), grp(homeRow, photoRow,
+      head('화면'), grp(styleRow, homeRow, photoRow,
       row('🎨', '화면 분위기', sea ? '바닷가' : '산', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
       head('계정'), grp( (() => { const a = cloudAcct();
         return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? [a.via, a.code].filter(Boolean).join(' ') : '안 함', () => { if (a && a.code) toast(`계정 번호 ${a.code} · 휴대폰 앱과 크롬의 번호가 같아야 기록·지운 사진이 서로 맞춰져요`, 0, 6000); setTimeout(() => { location.href = './?my=1'; }, a && a.code ? 1500 : 0); }); })(),
@@ -11817,7 +11897,7 @@ function planThumb(x, p) {
   return box;
 }
 // 뒤로 단추 이름(2026-11-15 사용자 '화살표만 있으면 어쩌라는 거야'): ‹ 만 두지 말고 어디로 가는지 글자로
-function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '이야기' : '뒤로'; }
+function backLbl(h) { h = String(h || ''); return h === './' ? '처음 화면' : /[?&]plan=1&p=/.test(h) ? '일정' : /[?&]plan=1/.test(h) ? '여행 계획' : /[?&]my=1&t=/.test(h) ? '기록' : /[?&]my=1/.test(h) ? '내 MPD' : '뒤로'; }
 function tvTop(back, ...acts) {   // 사진 위 동그란 단추 줄 (뒤로 · 오른쪽 단추들)
   // 넷째 값(글자)이 있으면 그림 + 글자 알약 (판 -134: 공유 단추가 초대인 줄 몰라서 '초대')
   const ib = (svg, label, on, txt) => { const cls = 'n-ib' + (txt ? ' pill' : ''), kids = [cSvg(svg, 20), txt ? el('span', { text: txt }) : null].filter(Boolean);
@@ -12995,9 +13075,14 @@ function viewMyList() {
   document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15 시안 ① '이야기')
   // 기록 한 편: 사진이 있으면 큰 사진 카드(대표 사진 원본), 없으면 작은 줄
   const PH = viewMyList.ph || (viewMyList.ph = new Map());
-  const metaOf = x => { const M = modeOfT(x.t), s0 = mdLine(x); return ls.get('walkMode:' + x.t, null) ? s0.replace(M.label + ' · ', '') : s0; };
+  // 판 -248: 자동 기록 알아보기(이름을 안 바꾼 '14:10 걷기/자전거/차로 이동' 또는 autoIds) · 차로 이동은 차 그림과 '이동 n km'
+  const autoSet = new Set((ls.get('autoIds', []) || []).map(a => a.id));
+  const isAuto = x => !x.album && x.t !== live && (autoSet.has(x.t) || /^\d{2}:\d{2} (걷기|자전거|차로 이동)$/.test(ls.get('trackName:' + x.t, '') || ''));
+  const isCar = x => !x.album && ls.get('walkMode:' + x.t, null) === 'daily' && /차로 이동$/.test(ls.get('trackName:' + x.t, '') || '');
+  const carMeta = x => { const tr = trackLoad(x.t), st = trackStats(tr, modeOfT(x.t).car), d = new Date(x.info.startAt); return `${d.getMonth() + 1}월 ${d.getDate()}일 · 이동 ${fmtDist(st.d)} · ${fmtDur(st.ms)}`; };
+  const metaOf = x => { if (isCar(x)) return carMeta(x); const M = modeOfT(x.t), s0 = mdLine(x); return ls.get('walkMode:' + x.t, null) ? s0.replace(M.label + ' · ', '') : s0; };
   const row = x => {
-    const M = modeOfT(x.t), k = ls.get('walkMode:' + x.t, null) ? M.k : 'pin', href = `./?my=1&t=${encodeURIComponent(x.t)}`;
+    const M = modeOfT(x.t), k = isCar(x) ? 'car' : ls.get('walkMode:' + x.t, null) ? M.k : 'pin', href = `./?my=1&t=${encodeURIComponent(x.t)}`;
     const small = () => el('a', { class: 'n-row', href },
       el('span', { class: 'th' }, ico(k, 26)),
       el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: x.info.name }), el('p', { text: metaOf(x) })),
@@ -13005,7 +13090,7 @@ function viewMyList() {
     const big = (ps) => {
       const cid = ls.get('walkCover:' + x.t, null), p = (cid && cid !== 'none' && ps.find(r => r.id === cid)) || ps[Math.floor((ps.length - 1) / 2)] || ps[0];
       const im = el('div', { class: 'im', style: `background-image:url("${phSrc(p)}")` },
-        el('span', { class: 'tag' }, ico(k, 15), x.album ? `여행 ${x.info.days}일` : M.label),
+        el('span', { class: 'tag' }, ico(k, 15), x.album ? `여행 ${x.info.days}일` : isCar(x) ? '차로 이동' : M.label),
         x.t === live ? el('span', { class: 'lv', text: '● 기록 중' }) : null,
         el('span', { class: 'cnt', text: `사진 ${ps.length}` }));
       return el('a', { class: 'n-rc', href }, im, el('h3', { text: x.info.name }), el('p', { text: metaOf(x) }));
@@ -13059,11 +13144,30 @@ function viewMyList() {
       sel ? el('b', { text: `${Mo + 1}월 ${sel.split('-')[2]}일` }) : null,
       shown.map(row)];
   }
+  // 판 -248: 자동 기록은 하루치를 한 줄로 접음(2개 넘을 때) → 진짜 기록이 위에 보여요. 눌러서 펼침
+  function listRows() {
+    const out = [], seen = new Set(), dk = x => new Date(x.info.startAt).toDateString();
+    for (const x of list) {
+      if (!isAuto(x)) { out.push(row(x)); continue; }
+      const k = dk(x); if (seen.has(k)) continue; seen.add(k);
+      const g = list.filter(y => isAuto(y) && dk(y) === k);
+      if (g.length < 2) { out.push(row(x)); continue; }
+      let dd = 0; g.forEach(y => { dd += trackStats(trackLoad(y.t), modeOfT(y.t).car).d; });
+      const d = new Date(x.info.startAt), inner = el('div', { class: 'n-afb' });
+      const det = el('details', { class: 'n-auto' }, el('summary', {},
+        el('span', { class: 'th' }, cSvg('cal', 22)),
+        el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: `${d.getMonth() + 1}월 ${d.getDate()}일 자동 기록 ${g.length}개` }), el('p', { text: `이동 ${fmtDist(dd)} · ${g.map(y => fmtClock(y.info.startAt)).reverse().join(' · ')}`.slice(0, 80) })),
+        el('span', { class: 'chv', text: '›' })), inner);
+      det.addEventListener('toggle', () => { if (det.open && !inner.childElementCount) inner.append(...g.map(row)); });
+      out.push(det);
+    }
+    return out;
+  }
   function draw() {
     const nFood = foodPlaces().length;
     const nPk = myPeaks().length;
     tabs.replaceChildren(tab('list', '전체'), tab('cal', '달력'), tab('peaks', `오른 산${nPk ? ' ' + nPk : ''}`), tab('food', `맛집${nFood ? ' ' + nFood : ''}`));
-    body.replaceChildren(...(mode === 'peaks' ? peaksView(() => { if (mode === 'peaks') draw(); }) : mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? list.map(row) : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
+    body.replaceChildren(...(mode === 'peaks' ? peaksView(() => { if (mode === 'peaks') draw(); }) : mode === 'food' ? foodView() : mode === 'cal' ? calendar() : list.length ? listRows() : [el('div', { class: 'card sub center', text: '아직 저장한 기록이 없어요. 첫 화면에서 기록을 시작해 보세요.' })]).flat().filter(Boolean));
   }
   // 올해 걸은 거리
   const Y0 = new Date().getFullYear(); let yWalk = 0;
@@ -13080,12 +13184,12 @@ function viewMyList() {
     fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
   ];
   app.replaceChildren(el('div', { class: 'stack' },
-    el('div', { class: 'n-top' }, el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch()), ib('cal', '달력으로 보기', () => { mode = 'cal'; ls.set('myView', 'cal'); draw(); })),
-    el('h1', { class: 'n-lt', text: '이야기' }),
+    el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch())),
+    el('h1', { class: 'n-lt', text: '내 MPD' }),
     el('div', { class: 'n-ls', text: `기록 ${list.length}개${yWalk > 0 ? ` · 올해 걸은 거리 ${fmtDist(yWalk)}` : ''}` }),
     tabs, body,
     el('div', { class: 'n-gh', text: '기록 지키기 · 가져오기' }), ...keep));
-  app.append(cTabs('book'));
+  app.append(cTabs('book', true));
   draw();
   if (watchGet() && !viewMyList.pulled) { viewMyList.pulled = 1; watchPull().then(n => { if (n) { toast(`⌚ 시계 기록 ${n}개를 받았어요`); viewMyList(); } }); }   // 열 때 한 번 저절로
 }
@@ -13412,7 +13516,13 @@ async function viewMyOne(t) {
       go('이 기록 지우기', del, true));
   };
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
-    tvTop('./?my=1', ['share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)], ['more', '더보기', moreSheet]),
+    (() => {   // 판 -247 사용자 '맨 위 헤드라인 디자인 수정 · MPD 로고 넣는 것 고려': 얇은 앱 머리줄 ‹ · MPD 로고 · 공유 ⋯ (테두리·그림자 없는 그림 단추)
+      const ib = (svg, label, on) => el('button', { class: 'vb-ib', type: 'button', 'aria-label': label, title: label, onclick: on }, cSvg(svg, 22));
+      const lg = cLogoSvg(); const sv = lg.querySelector('svg'); if (sv) { sv.setAttribute('width', '18'); sv.setAttribute('height', '21'); }
+      return el('div', { class: 'vw-bar' },
+        el('a', { class: 'vb-ib', href: './?my=1', 'aria-label': '내 MPD로', title: '내 MPD로' }, cSvg('back', 22)),
+        el('a', { class: 'vb-logo', href: './', 'aria-label': 'MPD 처음 화면' }, lg, el('b', { text: 'MPD' })),
+        el('span', { class: 'vb-r' }, ib('share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)), ib('more', '더보기', moreSheet))); })(),
     el('div', { class: 'tv-sheet vw-top1' },   // 판 -242 사용자 '제목과 요약을 맨 위에': 제목·요약 → 지도 → 사진 → 그래프
       heroEl, el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [M.label, ' · '] : null, `${x.album ? dateText : `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`}${live ? ' · 기록 중' : ''}`),
       el('div', { class: 'vw-ttl' }, title),
@@ -14802,13 +14912,13 @@ function cLiveTime(id) { const ms = Math.max(0, Date.now() - ls.get('walkAt', Da
 function cLiveName(id) { return ls.get('trackName:' + id, `${modeOfT(id).label} 기록`); }
 // 1초마다 글자를 바꿈. 화면에서 빠지면 멈춤
 function cLiveTick(node, fn) { fn(); const iv = setInterval(() => { if (!node.isConnected) return clearInterval(iv); fn(); }, 1000); }
-function cTabs(on) {
+function cTabs(on, noBack) {
   document.documentElement.classList.remove('c-tabbed');
   const wNow = ls.get('walkNow', null);
   document.documentElement.classList.toggle('c-live', !!wNow);
   const it = (k, label, href, click) => el(href ? 'a' : 'button', Object.assign({ class: on === k ? 'on' : null, 'aria-current': on === k ? 'page' : null }, href ? { href } : { type: 'button', onclick: click }), cSvg(k, 24), label);
   // 판 -187 (사용자 홈 캡처 '맨 아래는 지워. 꼭 필요한 기능은 다른데로 옮겨'): 아래 메뉴(홈·지도·발견·이야기·나)를 없앰 → 지도·발견은 홈 목록 줄로, 이야기는 '내 MPD 보기', 나는 오른쪽 위 프로필. 다른 화면엔 왼쪽 위 '‹ 처음 화면'
-  const nav = on === 'home' ? document.createDocumentFragment() : el('a', { class: 'c-hback', href: './' }, '‹ 처음 화면');
+  const nav = on === 'home' || noBack ? document.createDocumentFragment() : el('a', { class: 'c-hback', href: './' }, '‹ 처음 화면');
   // (예전) const nav = el('nav', { class: 'c-tabs', 'aria-label': '아래 메뉴' }, it('home', '홈', './'), it('pin', '지도', './?map=1'), it('spark', '발견', './?find=1'), it('book', '이야기', './?my=1'), it('user', '나', null, appSettings));
   if (!wNow) return nav;
   // 기록 중이면 아래 메뉴 바로 위에 빨간 띠(홈은 큰 빨간 단추가 화면에 있을 땐 숨김)
@@ -14888,7 +14998,7 @@ function cRecs(limit) {
 async function cPhotos(r) {
   if (r.ph) return r.ph;
   const ps = await photoImgs(r.t), cid = ls.get('walkCover:' + r.t, null), loc = p => Number.isFinite(p.lat) && Number.isFinite(p.lng);
-  r.ph = ps; r.cover = (cid && ps.find(p => p.id === cid && loc(p))) || ps.find(loc) || null; r.first = (cid && ps.find(p => p.id === cid)) || ps[0] || null;
+  r.ph = ps; r.cover = (cid && ps.find(p => p.id === cid && loc(p))) || ps.find(loc) || null; const fid = coverId(r.t, ps); r.first = (fid && ps.find(p => p.id === fid)) || (cid === 'none' ? null : ps[0]) || null;   // 판 -249: 기록 보기 대표 사진(coverId)과 같은 사진
   return ps;
 }
 // 실제 GPS 길만: 기록이 끊긴 구간('g')은 잇지 않아요
@@ -15257,6 +15367,8 @@ async function decoDraw(layer, box, pins, edit) {
     svg.innerHTML = `<path d="${dd}" fill="none" stroke="#3FD0D9" stroke-width="3" stroke-linecap="round" opacity=".9"/>`; };
   for (const q of pins) {
     let src = q.img || '', r = null;
+    if (q.k === 'r' && q.t && !q.own) {   // 판 -249: 저절로 고른 말풍선은 그 기록의 지금 대표 사진을 따라감(직접 고른 사진(own)은 그대로)
+      try { const ps = await photoImgs(q.t), fid = coverId(q.t, ps), old = q.cv || (ps[0] && q.pid === ps[0].id); if (old && fid && fid !== q.pid) q.pid = fid; } catch {} }
     if (q.k === 'r') { r = await phGet(q.pid); if (!r || phIsGone(q.pid)) { q.gone = 1; continue; } src = phSrc(r); }
     const s = Math.round(q.s * Math.min(1.12, W / 393)), d = new Date(q.a || Date.now());
     const pin = el(edit || !q.t ? 'div' : 'a', Object.assign({ class: 'c-ph-pin' + (edit ? ' ed' : ''), style: `left:${q.x}%;top:${q.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` }, !edit && q.t ? { href: `./?my=1&t=${encodeURIComponent(q.t)}` } : {}),
@@ -15295,7 +15407,7 @@ function homeDecoEdit() {
     const sb = labSheet('사진 넣기', el('button', { class: 'btn primary full', text: '휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
       el('div', { class: 'pf-lb', text: '내 기록 사진' }), grid); sb.style.zIndex = '4700';   // 꾸미기 화면(4500) 위로
     (async () => { for (const r of cRecs(20)) { for (const ph of (await photoImgs(r.t)).slice(0, 6)) {
-      grid.append(el('button', { type: 'button', style: `background-image:url('${ph.thumb || phSrc(ph)}')`, onclick: () => { sb.remove(); put({ k: 'r', t: r.t, pid: ph.id, a: ph.ts || r.a }); } })); } } if (!grid.children.length) grid.append(el('div', { class: 'sub', text: '사진이 있는 기록이 아직 없어요' })); })();
+      grid.append(el('button', { type: 'button', style: `background-image:url('${ph.thumb || phSrc(ph)}')`, onclick: () => { sb.remove(); put({ k: 'r', t: r.t, pid: ph.id, own: 1, a: ph.ts || r.a }); } })); } } if (!grid.children.length) grid.append(el('div', { class: 'sub', text: '사진이 있는 기록이 아직 없어요' })); })();
   };
   wrap.append(bg, layer,
     el('div', { class: 'deco-top' }, el('button', { class: 'deco-tx', type: 'button', text: '취소', onclick: () => { if (!dirty || confirm('바꾼 것을 버릴까요?')) close(); } }), el('b', { text: '첫 화면 꾸미기' }), el('button', { class: 'deco-tx ok', type: 'button', text: '완료', onclick: save })),
@@ -15306,26 +15418,104 @@ function homeDecoEdit() {
       el('button', { type: 'button', onclick: () => { pins = JSON.parse(JSON.stringify(window.__cHomeAuto || [])); ls.set('homeDeco', null); dirty = true; redraw(); toast('처음 모습(최근 기록 사진)으로 돌렸어요'); } }, cSvg('again', 20), el('span', { text: '처음 모습' }))));
   document.body.append(wrap); paintBg(); setTimeout(redraw, 30); ovGuard && ovGuard();
 }
-function cHomePhoto() {
-  const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
-  const wNow = ls.get('walkNow', null);
+// 판 -250 처음 쓰는 사람 첫 화면(2026-11-17 시안 B '예시로 미리 보여 주기', 사용자 'B로 해'): 기록이 하나도 없고 기록 중도 아니고 꾸민 첫 화면도 없을 때만.
+//   예시 사진(위키미디어 공용, 출처는 '예시' 딱지를 누르면) 말풍선 셋 + 아래 흰 카드(설명 두 줄 · 첫 기록 시작하기 · 여행 계획부터 만들기). 🔍·🔔·꾸미기·대화 기록은 기록이 생길 때까지 숨김
+var C_FIRST_CRED = [['배경 · 천문산 천문동', 'Lianguanlun', 'CC BY 4.0', 'https://commons.wikimedia.org/wiki/File:Tianmen_Mountain_Heaven_Gate_arch_Zhangjiajie.jpg'],
+  ['유리 다리', 'Codas', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Zhangjiajie_Glass_Bridge_01.jpg'],
+  ['부용진 밤', 'Popolon', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Furongzhen_nuit.jpg'],
+  ['보봉호', 'Yoo Chung', 'CC BY-SA 2.5', 'https://commons.wikimedia.org/wiki/File:Baofeng_Lake.jpg']];
+function cHomeEmpty() { try { return !ls.get('walkNow', null) && !pastTrips().length && !(ls.get('homeDeco', null) || {}).pins; } catch { return false; } }
+function cHomeFirst() {
+  const box = el('div', { class: 'c-ph c-first' }), img = n => `${IN_NATIVE ? APP_BASE : './'}img/onb-${n}.jpg`;
+  box.append(el('div', { class: 'c-ph-bg', style: `background-image:url("${img('bg')}")` }), el('div', { class: 'cf-shade' }));
+  const nick = String(ls.get('nick', '') || '').trim(), myPh = ls.get('myPhoto', '');
+  const av = el('button', { class: 'c-ph-av', type: 'button', 'aria-label': '나 · 설정', onclick: appSettings }, nick ? nick.slice(0, 1) : null);
+  if (myPh) av.style.cssText = `background:#fff center/cover no-repeat;background-image:url("${myPh}")`;
+  else if (!nick) av.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
+  box.append(el('div', { class: 'c-ph-top' }, el('div', { class: 'c-ph-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary' }, cLogoSvg(), el('span', {}, el('b', { text: 'MPD' }), el('small', { text: 'Map Photo Diary' }))), el('span', { style: 'flex:1' }), av));
+  box.append(el('button', { class: 'cf-tag', type: 'button', onclick: () => labSheet('예시 사진 출처', el('div', { class: 'sub', text: '처음 화면의 예시 사진은 위키미디어 공용의 사진이에요. 기록을 남기면 내 사진으로 바뀌어요.' }),
+    ...C_FIRST_CRED.map(c => el('a', { class: 'sub', href: c[3], target: '_blank', rel: 'noopener', style: 'display:block', text: `${c[0]} · ${c[1]} · ${c[2]}` }))) }, '예시 · 기록하면 이렇게 쌓여요 ⓘ'));
+  const L = el('div', { class: 'cf-pins' }), sv = 'http://www.w3.org/2000/svg', svg = document.createElementNS(sv, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('class', 'cf-line');
+  svg.innerHTML = '<path d="M22 47 C44 47 44 35 67 35 S80 52 79 56" fill="none" stroke="#3FD0D9" stroke-width="3" vector-effect="non-scaling-stroke" opacity=".9"/>';
+  L.append(svg);
+  [['glass', 8, 30, 29, 22, 47, '5.3'], ['furong', 53, 18, 29, 67, 35, '6.21'], ['baofeng', 67, 43, 25, 79, 56, '8.15']].forEach(([n, x, y, w, dx, dy, dt]) =>
+    L.append(el('div', { class: 'cf-bub', style: `left:${x}%;top:${y}%;width:${w}vw;max-width:${w * 4}px;background-image:url("${img(n)}")` }, el('em', { text: '예시' })),
+      el('span', { class: 'cf-dot', style: `left:${dx}%;top:${dy}%` }), el('span', { class: 'cf-dt', style: `left:${dx}%;top:${dy}%`, text: dt })));
+  box.append(L, el('div', { class: 'cf-card' }, el('h2', {}, '다닌 길과 사진이', el('br'), '그대로 일기가 돼요'),
+    el('p', { text: '산행·여행·산책을 기록하면 사진과 길이 모여 이 화면을 채워요.' }),
+    el('button', { class: 'cf-go', type: 'button', onclick: cRecordSheet, text: '첫 기록 시작하기' }),
+    el('a', { class: 'cf-sub', href: './?plan=1', text: '여행 계획부터 만들기' })));
+  return box;
+}
+// 판 -251 첫 화면 세 가지(2026-11-17 사용자 '첫화면 종류를 세 가지 만들고, 선택할수 있게 해'): ls homeStyle = 'photo'(기본, 내 사진 + 말풍선) · 'map'(다녀온 곳이 지도에) · 'card'(깔끔한 흰 화면)
+//   고르는 곳: 나(⚙) → 화면 → '첫 화면 모양'(homeStyleSheet). 기록이 하나도 없으면 셋 다 처음 쓰는 사람 화면(cHomeFirst)
+var HOME_STYLES = [['photo', '사진', '내 사진 위에 최근 기록 말풍선'], ['map', '지도', '다녀온 곳과 사진이 지도 위에'], ['card', '카드', '흰 바탕에 이번 달 · 최근 기록']];
+function cHomeMapStyle() {
+  const box = el('div', { class: 'c-ph c-mph' }), hero = cHomeHero();
+  box.append(hero, cHomeTop(true));
+  return box;
+}
+function cHomeCardStyle() {
+  const wNow = ls.get('walkNow', null), nick = String(ls.get('nick', '') || '').trim(), now = new Date();
+  const box = el('div', { class: 'c-cardh' });
+  let n = 0, walk = 0;
+  try { pastTrips().filter(x => !x.album).forEach(x => { const d = new Date(x.info.startAt); if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) { n++; const M = modeOfT(x.t); walk += trackStats(trackLoad(x.t), M.car).walk; } }); } catch {}
+  const recBtn = wNow ? el('a', { class: 'ch-go live', href: '?walk=1' }, el('i', { class: 'c-lv-dot' }), `기록 중 · ${cLiveName(wNow)} · 이어서 ›`)
+    : el('button', { class: 'ch-go', type: 'button', onclick: cRecordSheet }, el('span', { text: '+' }), '기록하기');
+  const lead = el('a', { class: 'ch-lead', href: './?my=1', style: 'display:none' });
+  box.append(cHomeTop(true),
+    el('h1', { class: 'ch-h', text: nick ? `안녕하세요, ${nick} 님` : '안녕하세요' }),
+    el('p', { class: 'ch-s', text: n ? `${now.getMonth() + 1}월 · 기록 ${n}번${walk >= 50 ? ` · 걸은 거리 ${fmtDist(walk)}` : ''}` : `${now.getMonth() + 1}월엔 아직 기록이 없어요` }),
+    lead, recBtn, cStoryStrip({ focus() {} }));
+  setTimeout(async () => {   // 맨 위 큰 카드 = 가장 최근 기록(대표 사진)
+    const r = cRecs(1)[0]; if (!r) return; await cPhotos(r); const p = r.first, d = new Date(r.a);
+    lead.href = `./?my=1&t=${encodeURIComponent(r.t)}`; lead.style.display = '';
+    lead.append(el('i', { class: 'im' + (p ? '' : ' rt'), style: p ? `background-image:url('${phSrc(p)}')` : '' }, p ? null : cRouteThumb(r)),
+      el('div', { class: 'tx' }, el('small', { text: `최근 기록 · ${d.getMonth() + 1}월 ${d.getDate()}일 · ${r.M.label}` }), el('b', { text: r.name }), r.walk >= 50 ? el('span', { text: fmtDist(r.walk) }) : null));
+  }, 0);
+  return box;
+}
+function homeStyleSheet(after) {
+  const cur = ls.get('homeStyle', 'photo');
+  const mini = k => { const m = el('div', { class: 'hs-mini hs-' + k });
+    if (k === 'photo') m.append(el('i', { class: 'b1' }), el('i', { class: 'b2' }), el('i', { class: 'ln' }));
+    else if (k === 'map') m.append(el('i', { class: 'rd' }), el('i', { class: 'p1' }), el('i', { class: 'p2' }));
+    else m.append(el('i', { class: 't1' }), el('i', { class: 't2' }), el('i', { class: 'c1' }), el('i', { class: 'c2' }));
+    return m; };
+  const bg = labSheet('첫 화면 모양', el('div', { class: 'hs-row' }, ...HOME_STYLES.map(([k, nm, ds]) => el('button', { class: 'hs-op' + (k === cur ? ' on' : ''), type: 'button', onclick: () => {
+    ls.set('homeStyle', k); bg.remove(); if (after) after(); toast(`첫 화면을 '${nm}'(으)로 바꿨어요`);
+    if (!location.search) setTimeout(() => location.reload(), 300); } }, mini(k), el('b', { text: nm }), el('small', { text: ds })))),
+    el('div', { class: 'sub', style: 'font-size:13px', text: '기록이 하나도 없을 땐 처음 쓰는 분 화면이 나와요. 사진 모양은 첫 화면의 \'꾸미기\'로 사진을 옮기고 바꿀 수 있어요.' }));
+  return bg;
+}
+// 첫 화면 맨 위 줄(로고 · 🔍 · 🔔 · 프로필) — 세 가지 첫 화면이 같이 씀(판 -251). dark면 흰 바탕용 짙은 그림
+function cHomeTop(dark) {
   const icBtn = (label, svg, on) => { const b = el(on.href ? 'a' : 'button', Object.assign({ class: 'c-ph-ib', 'aria-label': label, title: label }, on)); b.innerHTML = svg; return b; };
   const logo = el('div', { class: 'c-ph-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 (예전 'MPD' 딱지와 같음)
     const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
     if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
     if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } },
     cLogoSvg(), el('span', {}, el('b', { text: 'MPD' }), el('small', { text: 'Map Photo Diary' })));
-  const S = 'viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  const S = 'viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="' + (dark ? '#191F28' : '#fff') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
   // 시안 그대로 오른쪽 위: 🔍 검색(cSearch) · 🔔 알림(아직 없음 → 만들 예정 창) · 프로필(누르면 '나' = 설정)
   const nick = String(ls.get('nick', '') || '').trim();
   const avatar = el('button', { class: 'c-ph-av', type: 'button', 'aria-label': '나 · 설정', title: '나', onclick: appSettings }, nick ? nick.slice(0, 1) : null);
   const myPh = ls.get('myPhoto', '');
   if (myPh) { avatar.textContent = ''; avatar.style.cssText = `background:#fff center/cover no-repeat;background-image:url("${myPh}")`; }
   else if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
-  const top = el('div', { class: 'c-ph-top' }, logo, el('span', { style: 'flex:1' }),
+  const top = el('div', { class: 'c-ph-top' + (dark ? ' dk' : '') }, logo, el('span', { style: 'flex:1' }),
     icBtn('검색', `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`, { type: 'button', onclick: cSearch }),
     icBtn('알림', `<svg ${S}><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`, { type: 'button', onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
     avatar);
+  return top;
+}
+function cHomePhoto() {
+  if (cHomeEmpty()) return cHomeFirst();
+  const hs = ls.get('homeStyle', 'photo'); if (hs === 'map') return cHomeMapStyle(); if (hs === 'card') return cHomeCardStyle();
+  const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
+  const wNow = ls.get('walkNow', null);
+  const top = cHomeTop();
   const sw = el('span'); sw.innerHTML = '<svg width="230" height="40" viewBox="0 0 230 40" aria-hidden="true"><path d="M4 36C60 14 140 4 226 10" fill="none" stroke="#3FD0D9" stroke-width="4" stroke-linecap="round"/></svg>';
   const slogan = el('div', { class: 'c-ph-sl' }, el('h1', {}, '일상을 발견하고,', el('br'), '행복을 넓히다.'), sw,
     null);
@@ -15364,7 +15554,7 @@ function cHomePhoto() {
     const mp = memoryPick(); let memR = null;
     if (mp) { memR = { t: mp.x.t, name: mp.x.info.name, a: mp.x.info.startAt, M: modeOfT(mp.x.t), mem: mp }; try { await cPhotos(memR); } catch {} }
     const bub = [...(memR ? [memR] : []), ...(chosen ? withPh : withPh.slice(1)).filter(r => !memR || r.t !== memR.t)].slice(0, C_SPOTS.length);
-    window.__cHomeAuto = bub.map((r, i) => ({ k: 'r', t: r.t, pid: r.first && r.first.id, x: C_SPOTS[i].x, y: C_SPOTS[i].y, s: C_SPOTS[i].s, a: r.a }));
+    window.__cHomeAuto = bub.map((r, i) => ({ k: 'r', t: r.t, pid: r.first && r.first.id, cv: 1, x: C_SPOTS[i].x, y: C_SPOTS[i].y, s: C_SPOTS[i].s, a: r.a }));
     if (Array.isArray((ls.get('homeDeco', null) || {}).pins)) return;   // 내가 꾸민 첫 화면이면 아래 저절로 고른 말풍선 대신 decoDraw
     if (!bub.length) return;
     const W = box.clientWidth, H = box.clientHeight, pts = [];
@@ -15475,7 +15665,8 @@ function viewLanding() {
     el('span', { class: 'ic', text: icon }), el('span', { class: 'tx' }, el('b', { text: title }), ...(sub ? [el('small', { text: sub })] : [])), el('span', { class: 'go', text: '›' }));
   // 판 -215: 계획을 저절로 합치지 않음
   planSnap();
-  const tripCard = (() => { try { return planHomeSection(); } catch { return null; } })();   // 판 -189
+  const first = cHomeEmpty();   // 판 -250: 기록이 하나도 없으면 기록이 있어야 쓸모 있는 줄은 숨김
+  const tripCard = (() => { try { return first && !planAll().length ? null : planHomeSection(); } catch { return null; } })();   // 판 -189
   const heroEl = cHomePhoto();
   // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
   app.replaceChildren(heroEl,
@@ -15484,13 +15675,13 @@ function viewLanding() {
       memSlot,
       el('div', { class: 'c-list' },
         // 2026-11-11 사용자 'MPD 공유하기 말고 MPD 보기여야지?' → '공유하기는 빼. 보기에 들어가서 보다가 공유하게 해': 홈엔 보기만, 공유는 기록 보기의 떠 있는 단추(.vw-share)
-        row('📖', '내 MPD 보기', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
-        row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
-        row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
+        first ? null : row('📖', '내 MPD', (() => { let n = 0; try { n = pastTrips().length; } catch {} return n ? `기록 ${n}개` : ''; })(), './?my=1'),
+        first ? null : row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
+        first ? null : row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
         null && row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
         row('👥', '모임방', '', './?room=1'),
         row('📸', '가족 앨범', '', './?album=1'),
-        row('🧪', '추억 만들기', '', './?lab=mem'),
+        first ? null : row('🧪', '추억 만들기', '', './?lab=mem'),
         row('🎮', '게임', '', './?game=1'),
         null),   // 판 -188: '대화 정리'는 사진 위 '🎙 대화 기록' 알약과 겹쳐 뺌
       installSlot,
