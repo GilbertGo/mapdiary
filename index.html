@@ -1296,6 +1296,14 @@ html.vw-lt .tv-sheet>.vw-pick{padding-top:14px!important}html.vw-lt .vw-sr-h spa
 html.vw-lt .tv-sheet [hidden],html.vw-lt .tv-sheet>.stack:empty,html.vw-lt .tv-sheet>.stack:not(:has(*)){display:none!important}html.vw-lt .tv-sheet .vw-km>b{font-weight:500}html.vw-lt .vw-elnote{display:none}html.vw-lt .vw-card .vw-h .sub b,html.vw-lt .vw-card .vw-h span b{font-weight:500}
 details.vw-fold>summary::-webkit-details-marker{display:none}details.vw-fold{display:flex;flex-direction:column;gap:8px}
 html.vw-lt .vw-slope{display:flex;flex-direction:column;gap:8px;margin-top:-6px}
+html.vw-lt .tv-sheet.vw-top1{margin:0 -20px;border-radius:0;padding-top:calc(64px + env(safe-area-inset-top,0px))}
+html.vw-lt .vw-top1 .tv-topbar,html.vw-lt .stack>.tv-topbar{background:#fff}
+html.vw-lt .vw-top1 .vw-mapw{margin:4px 0 0;border-radius:18px;overflow:hidden}
+html.vw-lt .vw-top1 .vw-mapw .mapbox:not(.map-full){height:30vh!important;min-height:210px!important;border-radius:18px}
+html.vw-lt .vw-top1 .vw-mapw .leaflet-top{top:0}html.vw-lt .vw-top1 .vw-mapw .leaflet-top.leaflet-right{top:4px}html.vw-lt .vw-top1 .vw-mapw .leaflet-bottom{bottom:0}
+html.vw-lt .vw-top1 .vw-mapw>div:last-child .vw-leg{bottom:10px}
+html.vw-lt .tv-sheet.vw-top1::before{display:none}
+html.vw-lt .vw-top1>.vw-mapw+.card{border-top:none!important;padding-top:4px!important}
 </style>
 </head>
 <body>
@@ -3424,9 +3432,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-243-bomb';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-244-top';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "숫자 폭탄 게임이 한 화면에 다 보여요 · 폭탄이 터지면 숫자판 자리에 누가 쏘는지 바로 나와요";
+const UI_NOTES = "기록 보기에서 제목·요약을 맨 위로 올렸어요 · 그 아래 지도와 사진이 이어서 나와요 · 등산·걷기는 쉬는 시간이 섞인 평균 페이스를 뺐어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13328,7 +13336,7 @@ async function viewMyOne(t) {
     ev && ev.gain >= 10 ? [`최고 높이 (${elevWhat(ev)})`, elevTxt(ev, 'max'), 'm'] : null,
     ev && ev.gain >= 10 ? [`출발 높이 (${elevWhat(ev)})`, elevTxt(ev, 'start'), 'm'] : null,
     M.k === 'bike' && !x.album ? (() => { const mx = bikeSpeeds(tr).max; return mx >= 3 ? ['최고 속도', mx.toFixed(1), 'km/h'] : null; })() : null,
-    M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && !x.album && !['travel', 'date', 'daily', 'camp', 'backpack'].includes(M.k) && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
+    M.k === 'bike' ? (mv > 0 ? ['평균 속도', (st.walk / 1000 / (mv / 3600000)).toFixed(1), 'km/h'] : null) : M.k !== 'pgolf' && !x.album && !['travel', 'date', 'daily', 'camp', 'backpack', 'hike', 'trek'].includes(M.k) && st.walk >= 200 && (M.k === 'run' ? mv : st.ms) > 0 ? ['평균 페이스', fmtPace(st.walk, M.k === 'run' ? mv : (off && off.ms) || st.ms), '/km'] : null,   // 걷는 모드는 애플처럼 전체 시간 ÷ 거리(쉬는 시간 포함)
     st.walk >= 500 && M.k !== 'pgolf' ? ['칼로리 (대략)', '약 ' + kcalOf(M.k, st.walk, ev ? ev.gain : 0).toLocaleString(), 'kcal'] : null,
     H && H.avg ? ['평균 심박', H.avg, 'bpm'] : null,
     H && H.max ? ['최고 심박', H.max, 'bpm'] : null,
@@ -13389,13 +13397,14 @@ async function viewMyOne(t) {
   };
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
     tvTop('./?my=1', ['share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)], ['more', '더보기', moreSheet]),
-    el('div', { class: 'vw-mapw' }, mapEl, legEl),
-    el('div', { class: 'tv-sheet' },
+    el('div', { class: 'tv-sheet vw-top1' },   // 판 -242 사용자 '제목과 요약을 맨 위에': 제목·요약 → 지도 → 사진 → 그래프
       el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [M.label, ' · '] : null, `${dateText} · ${kTime(info.startAt)}${live ? ' · 기록 중' : ''}`),
       el('div', { class: 'vw-ttl' }, title),
       wp.start || wp.end ? el('div', { class: 'sub', style: 'font-size:14px;margin-top:-6px', text: `${wp.start || '출발'} → ${wp.end || '도착'} · ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}` }) : null,
       big3, off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
       whereEl, noteEl, talkBox(t),
+      el('div', { class: 'vw-mapw' }, mapEl, legEl),
+      phBox,
     (() => {   // 판 -238: 위 큰 숫자 셋과 겹치는 칸은 빼고, 6칸 넘으면 '자세히 보기'로 접어요
       if (!stats) return null; const top = new Set([...big3.querySelectorAll('small')].map(e => e.textContent)), alias = { '시간': '다닌 시간' };
       top.forEach(k => { if (alias[k]) top.add(alias[k]); });
@@ -13406,7 +13415,7 @@ async function viewMyOne(t) {
         return el('div', { class: 'vw-statw' }, stats, mb); }
       return stats; })(),
       ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })(),
-      phBox, pickEl, slopeEl,   // 판 -241 사용자 '배치가 산만, 정보가 왔다갔다': 그래프 한 묶음(해발·빠르기·심박) + 오르막·평지·내리막 막대
+      pickEl, slopeEl,   // 판 -241 사용자 '배치가 산만, 정보가 왔다갔다': 그래프 한 묶음(해발·빠르기·심박) + 오르막·평지·내리막 막대
     kmc, hrCard(t, tr), golfBox,
 (() => {   // 🏔 오른 정상 (2026-11-07): 기록 중에 남긴 것, 없으면 지도 자료에서 찾아 채움
       const box = el('div', { class: 'card pk-rec', hidden: true });
