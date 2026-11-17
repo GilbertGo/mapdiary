@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-228-tvpad';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-229-gphotost';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '여행 일정 맨 아래 장소 넣기·순서 바꾸기 단추가 아래 메뉴에 가려지지 않게 · 구글 사진 일시 오류면 다시 찾아요';
+const UI_NOTES = '장소를 누르면 구글 사진을 받았는지, 못 받았으면 까닭이 한 줄로 보여요 · 지금 다시 찾기 단추';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11582,9 +11582,24 @@ function planArt(x, box) {
 var GPL_KEY = 'AIzaSyBJtG9BGCDf5V2qrNPFo8DVjgRl9WXEM2A', GPL_DAY = 150;   // 이 휴대폰 하루 새로 찾는 수 한도(받은 사진은 기억해 다시 안 물음)
 function gPhotoKey(x) { return (x.q || x.n || '') + '|' + (Number.isFinite(x.lat) ? x.lat.toFixed(3) + ',' + x.lng.toFixed(3) : ''); }
 function gPhotoCached(x) { const c = (ls.get('gPhoto', {}) || {})[gPhotoKey(x)]; return c && (c.u || (c.v === 2 && Date.now() - c.at < 864e5)) ? c : null; }   // 판 -226: 못 찾음은 하루만(예전 판 못 찾음은 다시)
+// 판 -229: 구글 사진을 왜 못 받았는지 남겨 장소 보기에 보여 줌 · ls gPhotoSt={키: {at, s: ok|none|err|cap, why}}
+function gPhotoSt(k, st, why) { const all = ls.get('gPhotoSt', {}) || {}; all[k] = { at: Date.now(), s: st, why: String(why || '').slice(0, 160) }; const ks = Object.keys(all); if (ks.length > 150) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 150).forEach(z => delete all[z]); ls.set('gPhotoSt', all); }
+async function gErrWhy(r) { let m = ''; try { const j = await r.json(); m = (j.error && (j.error.message || j.error.status)) || ''; } catch {} return `구글 응답 ${r.status}${m ? ' · ' + m : ''}`; }
+function gPhotoInfo(x, p) {
+  const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : Math.round(m / 1440) + '일 전'; };
+  if (Array.isArray(x.ph) && x.ph.length) return { t: '내가 넣은 사진이 있어서 구글 사진은 찾지 않아요' };
+  if (p && planIsHana(p)) return { t: '하나투어 계획이라 여행사 사진만 써요' };
+  if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return { t: '이 종류(비행·이동)는 사진을 찾지 않아요' };
+  if (Array.isArray(x.img) && x.img.length) return { t: '여행사 사진이 있어서 구글 사진은 찾지 않아요' };
+  const k = gPhotoKey(x), c = (ls.get('gPhoto', {}) || {})[k], st = (ls.get('gPhotoSt', {}) || {})[k];
+  if (c && c.u) return { t: `✅ 받았어요 · ${ago(c.at)}`, ok: 1 };
+  if (st) return { t: (st.s === 'none' ? '⚠ 못 찾았어요 · ' : st.s === 'cap' ? '⚠ 오늘 한도를 다 써서 안 물어봤어요 · ' : '⚠ 못 받았어요 · ') + (st.why || '') + ` · ${ago(st.at)}`, bad: 1 };
+  if (!navigator.onLine) return { t: '인터넷이 없어서 아직 안 물어봤어요' };
+  return { t: '아직 안 물어봤어요 (일정 화면에서 이 칸이 보이면 찾아요)' };
+}
 async function gPhoto(x, p) {
   const k = gPhotoKey(x), c0 = gPhotoCached(x); if (c0) return c0;
-  const today = new Date().toISOString().slice(0, 10), n = ls.get('gPhotoN', {}) || {}; if (n.d === today && n.n >= GPL_DAY) { if (!gPhoto.said) { gPhoto.said = 1; toast(`오늘 구글 사진 새로 찾기를 ${GPL_DAY}곳 다 했어요 · 나머지는 내일 저절로 찾아요`); } return null; }
+  const today = new Date().toISOString().slice(0, 10), n = ls.get('gPhotoN', {}) || {}; if (n.d === today && n.n >= GPL_DAY) { if (!gPhoto.said) { gPhoto.said = 1; toast(`오늘 구글 사진 새로 찾기를 ${GPL_DAY}곳 다 했어요 · 나머지는 내일 저절로 찾아요`); } gPhotoSt(k, 'cap', `하루 ${GPL_DAY}곳`); return null; }
   ls.set('gPhotoN', { d: today, n: (n.d === today ? n.n : 0) + 1 });   // 판 -225: 한 곳에 1(예전엔 2로 세어 실제 75곳에서 멈췄음)
   const city = (p && ((p.dest && p.dest.n) || planDestName(p))) || '', q = x.q || ((x.n || '') + (city && !String(x.n).includes(city) ? ' ' + city : ''));
   const body = { textQuery: q, languageCode: 'ko', maxResultCount: 5 };
@@ -11592,11 +11607,12 @@ async function gPhoto(x, p) {
   let o = { u: '', by: '', at: Date.now(), v: 2 };
   try { const ask = () => fetchT('https://places.googleapis.com/v1/places:searchText', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GPL_KEY, 'X-Goog-FieldMask': 'places.id,places.photos.name,places.photos.authorAttributions' }, body: JSON.stringify(body) }, 15000);
     let r = await ask(); if (r.status >= 500) { await new Promise(z => setTimeout(z, 1500)); r = await ask(); }   // 판 -227: 구글 쪽 일시 오류(502·503)면 한 번 더
-    if (!r.ok) return null;   // 열쇠·한도 문제면 기억하지 않고 다음에 다시
+    if (!r.ok) { gPhotoSt(k, 'err', await gErrWhy(r)); return null; }   // 열쇠·한도 문제면 기억하지 않고 다음에 다시
     const pl = ((await r.json()).places || []).find(z => (z.photos || []).length), ph = pl && pl.photos[0];   // 판 -226: 사진 있는 첫 곳
     if (ph) { const md = () => fetchT(`https://places.googleapis.com/v1/${ph.name}/media?maxWidthPx=480&skipHttpRedirect=true&key=${GPL_KEY}`, {}, 15000); let r2 = await md(); if (r2.status >= 500) { await new Promise(z => setTimeout(z, 1500)); r2 = await md(); }
-      if (!r2.ok) return null; const j = await r2.json(); o.u = j.photoUri || ''; o.by = ((ph.authorAttributions || [])[0] || {}).displayName || ''; }
-  } catch { return null; }
+      if (!r2.ok) { gPhotoSt(k, 'err', '사진 받기 · ' + await gErrWhy(r2)); return null; } const j = await r2.json(); o.u = j.photoUri || ''; o.by = ((ph.authorAttributions || [])[0] || {}).displayName || ''; }
+  } catch (e) { gPhotoSt(k, 'err', e && e.name === 'AbortError' ? '15초 안에 답이 없어요' : '인터넷 연결 · ' + ((e && e.message) || e)); return null; }
+  gPhotoSt(k, o.u ? 'ok' : 'none', o.u ? '' : `'${q}' 검색 결과에 사진 있는 곳이 없어요`);
   const all = ls.get('gPhoto', {}) || {}; all[k] = o; const ks = Object.keys(all); if (ks.length > 400) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 400).forEach(z => delete all[z]); ls.set('gPhoto', all); return o;
 }
 function planThumb(x, p) {
@@ -11902,6 +11918,7 @@ function viewPlanOne(id) {
           el('div', { style: 'display:flex;gap:12px;margin-top:3px;font-size:13px' }, c.tel ? el('a', { href: 'tel:' + (d0 => /^86/.test(d0) ? '+' + d0 : d0)(c.tel.replace(/[^\d]/g, '')), style: 'color:#1D7FA0;text-decoration:none', text: '전화 ' + c.tel }) : null, c.url ? el('a', { href: c.url, target: '_blank', rel: 'noopener', style: 'color:#1D7FA0;text-decoration:none', text: '호텔 홈페이지 ↗' }) : null)))) : null,
       x.x ? box(planXLab(p), x.x) : x.m ? null : box(planXLab(p), '설명이 없어요. 이름만 있어요.'),
       x.m ? box(x.ai ? '✨ 추천 이유 (AI가 쓴 글 · 영업시간·가격은 확인해 주세요)' : '📝 메모', x.m, '#FFF8E6') : null,
+      (() => { const w = el('div', { style: 'padding:9px 12px;border-radius:12px;background:#F5F6F8;font-size:13px;color:#4E5968' }); const paint = (busy) => { const i = gPhotoInfo(x, p); w.replaceChildren(el('div', {}, el('b', { style: 'font-weight:600;color:#191F28', text: '구글 사진 · ' }), el('span', { style: i.bad ? 'color:#D2462A' : '', text: busy ? '찾는 중…' : i.t })), el('div', { style: 'font-size:11.5px;color:#8B95A1;margin-top:3px', text: `판 ${UI_VER} · ${IN_NATIVE ? '앱' : '웹'} · ${location.host || 'localhost'}` }), !busy && !i.ok && !/찾지 않아요|여행사 사진만/.test(i.t) && navigator.onLine ? el('button', { style: 'margin-top:6px;border:none;background:none;padding:0;color:#1D7FA0;font:inherit;font-weight:600;cursor:pointer', text: '↻ 지금 다시 찾기', onclick: async () => { const a = ls.get('gPhoto', {}) || {}; delete a[gPhotoKey(x)]; ls.set('gPhoto', a); paint(1); try { await gPhoto(x, p); } catch {} paint(); drawAll(); } }) : null); }; paint(); return w; })(),   // 판 -229: 구글 사진 받았나·까닭
       x.k !== 'stay' || has ? placeInfoBox(x, (p.dest && p.dest.n) || planDestName(p)) : null,   // 판 -143: 사진·소개·참고 링크
       x.bk ? el('button', { style: 'text-align:left;border:none;font:inherit;cursor:pointer;padding:10px 12px;border-radius:12px;background:#EEF6FB', onclick: () => { bg.remove(); planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); }); } },
         el('div', { style: 'font-weight:800;font-size:13px;color:#4E5968', text: '🎫 예약 (예약 캡처에서 AI가 읽음)' }), el('div', { style: 'font-size:15px', text: x.bk.ref ? `예약번호 ${x.bk.ref}` : '예약번호 없음' }), el('div', { style: 'font-size:12.5px;color:#6B7684', text: '예약 캡처 보기 ›' })) : null,
