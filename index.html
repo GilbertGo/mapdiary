@@ -967,6 +967,7 @@ html.vw-lt .vw-t>b{color:#15202B!important}
 .vw-act{text-align:center;font:600 12px Pretendard,sans-serif;color:#15202B;width:66px;background:none;border:none;cursor:pointer;text-decoration:none;padding:0}
 .vw-act i{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 6px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(21,32,43,.08)}
 .vw-act i svg{stroke:#15202B}.vw-act.pri i{background:#15202B}.vw-act.pri i svg{stroke:#fff}
+.cv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.cv-it{position:relative;padding:0;border:none;background:none;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer}.cv-it img{width:100%;height:100%;object-fit:cover;display:block}.cv-it.on{outline:3px solid #FF6B4A;outline-offset:-3px}.cv-it i{position:absolute;left:6px;top:6px;background:#FF6B4A;color:#fff;font-style:normal;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px}
 .vw-sec{display:flex;justify-content:space-between;align-items:baseline;font-size:17px;font-weight:800;margin:8px 0 -4px}.vw-sec small{font-size:13px;color:#6B7684;font-weight:600}
 html.vw-lt .gallery img{width:104px;height:104px;border-radius:14px;box-shadow:none}
 /* ⚙ 나(설정) 새 디자인 (2026-11-15 시안 ④): 화면 가득 · 큰 제목 '나' · 프로필 칸 · 묶음 목록(색 네모 그림) */
@@ -1853,6 +1854,27 @@ async function cardStrip(recs, skip) {
 }
 // 카드 맨 위 사진: 고른 것(walkCover:{ID}), 'none'이면 풍경 그림, 안 골랐으면 가운데쯤 사진을 저절로 (2026-10-27 '지금은 영 보고 싶은 마음이 안 들 거야')
 const coverOf = (t, recs) => { const cid = ls.get('walkCover:' + t, null); if (cid === 'none' || !recs.length) return null; return (cid && recs.find(r => r.id === cid)) || recs[Math.floor((recs.length - 1) / 2)]; };
+// 판 -240 대표 사진 바꾸기 (2026-11-17 사용자 '큰사진 바꾸기 너무 어렵다'): 예전엔 공유 창 안에서만 → 기록 보기 사진 칸·⋯ 더보기·사진 크게 보기에서 바로
+function coverId(t, ps) { const cid = ls.get('walkCover:' + t, null), im = (ps || []).filter(r => !isVid(r)); if (cid === 'none' || !im.length) return null; return ((cid && im.find(r => r.id === cid)) || im[Math.floor((im.length - 1) / 2)]).id; }
+function coverHold(img, t, r) {   // 꾹(0.5초) 누르면 대표 사진 · 화면에 단추를 더 붙이지 않아요 (사용자 '뭘 자꾸 만들지마 · 심플해 보이지만 기능은 다 있는')
+  let T = null, done = false; const stop = () => clearTimeout(T);
+  img.addEventListener('pointerdown', () => { done = false; T = setTimeout(() => { done = true; try { navigator.vibrate && navigator.vibrate(20); } catch {} coverSet(t, r.id); }, 500); });
+  ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(k => img.addEventListener(k, e => { if (k !== 'pointermove' || Math.abs(e.movementX) + Math.abs(e.movementY) > 6) stop(); }));
+  img.addEventListener('click', e => { if (done) { e.stopImmediatePropagation(); done = false; } }, true);
+  img.addEventListener('contextmenu', e => e.preventDefault()); img.style.webkitTouchCallout = 'none'; return img;
+}
+function coverSet(t, id) { ls.set('walkCover:' + t, id); dispatchEvent(new Event('photo-changed')); toast('대표 사진을 바꿨어요'); }
+async function coverPick(t, cover) {   // t = 기록(여행이면 여행) 번호, cover = 그 기록 대표 사진 키 주인
+  const key = cover || t, ps = (await photoList(t)).filter(r => !isVid(r));
+  if (!ps.length) { toast('이 기록에는 사진이 없어요'); return; }
+  const cur = coverId(key, ps), urls = [];
+  const bg = labSheet('대표 사진 고르기',
+    el('div', { class: 'sub', style: 'margin-top:-6px', text: '누르면 바로 바뀌어요 · 내 MPD 목록과 공유 카드 맨 위에 나와요' }),
+    el('div', { class: 'cv-grid' }, ps.map(r => { const u = r.blob ? URL.createObjectURL(r.blob) : r.thumb; if (r.blob) urls.push(u);
+      return el('button', { type: 'button', class: 'cv-it' + (r.id === cur ? ' on' : ''), 'aria-label': r.id === cur ? '지금 대표 사진' : '이 사진을 대표 사진으로',
+        onclick: () => { bg.remove(); urls.forEach(x => URL.revokeObjectURL(x)); if (r.id !== cur) coverSet(key, r.id); } },
+        el('img', { src: u, alt: '사진', loading: 'lazy', decoding: 'async' }), r.id === cur ? el('i', { text: '대표' }) : null); })));
+}
 // 지도에 사진 동그라미를 놓아요. 누르면 크게 보여줘요.
 // 2026-10-29 사용자가 화담숲 기록 캡처를 보냄: 사진 동그라미가 겹겹이 길을 덮어 빠르기 색 길이 안 보였음
 //   → 화면에서 가까운(40px 안) 사진은 한 동그라미로 묶고 '+n' 숫자, 확대하면 다시 나뉨. 동그라미도 36px로 작게
@@ -3402,9 +3424,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-239-flat';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-240-cover';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 화면에서 상자들을 없애고 흰 바탕 한 장으로 정리했어요 · 지도 이름표·심박 영역 표는 접었어요";
+const UI_NOTES = "대표 사진을 쉽게 바꿔요: 기록 보기 사진 칸의 '대표 사진 바꾸기', 사진 크게 보기의 '대표 사진으로' · 지도의 '길만 보기' 단추는 없앴어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13354,6 +13376,7 @@ async function viewMyOne(t) {
     const bg = labSheet(info.name,
       go('✎ 제목 바꾸기', rename),
       live ? null : go('✎ 수정하기 (모드·장소·사진·경로 자르기)', () => editMD(x)),
+      phAll.some(r => !isVid(r)) ? go('🖼 대표 사진 바꾸기', () => coverPick(t)) : null,
       live ? null : go('📸 가족 앨범에 올리기', () => famFromMD(t, info.name)),
       canFilm ? go(x.album ? '🎬 여행 전체 이동 영상 만들기' : '🎬 이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
       go('⬇ GPX 받기', gpx),
@@ -13414,20 +13437,14 @@ async function viewMyOne(t) {
     const phLyr = L.layerGroup().addTo(m);
     const drawPh = async () => {   // 사진을 더하거나 지우거나 위치를 바꾸면 다시 그려요
       const ps = await photoList(t); phAll = ps;
-      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}`; phN.textContent = '눌러서 크게'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
+      phBox.style.display = ps.length ? '' : 'none'; phHd.textContent = `${ps.some(isVid) ? '사진·동영상' : '사진'} ${ps.length}`; phN.textContent = ps.some(r => !isVid(r)) ? '꾹 누르면 대표 사진' : '눌러서 크게'; vNote.style.display = ps.some(isVid) ? '' : 'none'; phSave.textContent = ps.some(isVid) ? `⬇ 사진·동영상 ${ps.length}개 모두 휴대폰에 저장` : `⬇ 사진 ${ps.length}장 모두 휴대폰에 저장`;
       gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
-        : el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps) })));
+        : coverHold(el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps) }), t, r)));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
       if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
-    // 사진 켜고 끄기 (2026-10-29 사용자 '경로만 보기 선택 가능하게'): 지도 오른쪽 위 '크게 보기' 아래 단추, 고른 것 기억(ls mapPhotoOff)
-    let phOn = !ls.get('mapPhotoOff', false), phBtn = null;
-    const PC = L.Control.extend({ options: { position: 'topright' }, onAdd() {
-      const bt = phBtn = L.DomUtil.create('button', 'fs-btn ph-tg'); bt.type = 'button'; bt.style.display = 'none';
-      L.DomEvent.disableClickPropagation(bt);
-      bt.addEventListener('click', () => { phOn = !phOn; ls.set('mapPhotoOff', !phOn); drawPh(); });
-      return bt; } });
-    m.addControl(new PC());
+    // 판 -240 '길만 보기' 단추 없앰 (사용자 '길만보기 기능은 없애자. 복잡하다'): 사진은 늘 지도에
+    const phOn = true, phBtn = null;
     // 지도 오른쪽 위 '↻ 다시 가기': 첫 화면에서 바로 보이게, 누르면 아래 다시 가기 칸으로 (같은 기능을 두 번 만들지 않고 그 칸으로 데려가요)
     // '↻ 다시 가기'는 지도 아래 동그라미 단추로 옮김 (2026-11-15 새 디자인)
     drawPh(); addEventListener('photo-changed', drawPh);
