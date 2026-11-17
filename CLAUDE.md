@@ -943,6 +943,10 @@
 - 지도 크게 보기 고침(사용자 '지도 전체화면 보기가 안되네'): 기록 보기 지도 높이 규칙(`!important`)이 `.map-full`을 덮어 반쯤만 커졌음 → `:not(.map-full)`, 크게 볼 땐 단추 그림 ✕
 - 시험 scratchpad `t/f237.js`(OUT=o241_ run/hike)
 
+## 판 -243 숫자 폭탄 한 화면에 (2026-11-17, 사용자 게임 캡처 '한 화면에 다 보이게')
+- `gameBomb`: 터지면 숫자판·'숫자를 골라요'를 숨기고(style.display, `.bb-keys`가 display:grid라 hidden은 안 먹음) 그 자리에 결과(🍚 ○○ 님이 쏩니다) + 새 폭탄 — 예전엔 결과가 숫자판 아래로 밀려 안 보였고, `draw()`가 '💥 숫자'를 '100 ~ 100'으로 덮어썼음
+- 범위 글자 clamp(36px,11vw,48px), 숫자 단추 높이 clamp(44px,6.5vh,56px). 시험 scratchpad `t/bomb.js`
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
