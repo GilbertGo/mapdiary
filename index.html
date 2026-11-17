@@ -649,7 +649,7 @@ html[data-theme=sea] .toast{background:rgba(12,58,92,.95);box-shadow:0 8px 24px 
 /* ✈ 여행 화면 B안 '여행 매거진'(2026-11-15 사용자 'B'): 어두운 남색 · 맨 위 여행지 사진 · 시간 줄 · 노을 산호 */
 /* ✈ 여행 화면 (2026-11-15 새 디자인 시안 ③으로: 사진 위로 흰 판이 올라오는 밝은 화면. 예전 판 -90 '여행 매거진'의 어두운 남색은 '너무 어둡다'고 해서 바꿈) */
 html.tv-page{--ground:#F5F6F8;--card:#fff;--ink:#15202B;--muted:#6B7684;--line:#ECEEF1;--soft:#EEF2F5;--grey-soft:#EEF2F5;--pine:#1D9EC0;--accent:#1D9EC0;--forest:#1D9EC0;--forest-ink:#147FA0;--forest-soft:#E4F2F7;--blue-ink:#147FA0;--shadow:0 1px 3px rgba(21,32,43,.05);color-scheme:light;background:#F5F6F8}
-html.tv-page body{background:#F5F6F8!important;color:var(--ink);padding-bottom:92px}
+html.tv-page body{background:#F5F6F8!important;color:var(--ink);padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 html.tv-page .sky-clouds{display:none!important}
 html.tv-page .card,html.tv-page details.card{background:#fff;box-shadow:0 1px 3px rgba(21,32,43,.05);border:none;border-radius:18px;color:var(--ink)}
 html.tv-page h1,html.tv-page h2{color:#15202B}
@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-227-gphoto4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-228-tvpad';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '일정 칸 구글 사진을 못 찾던 곳을 다시 찾아요 · 구글이 잠깐 오류를 내면 한 번 더 물어봐요';
+const UI_NOTES = '여행 일정 맨 아래 장소 넣기·순서 바꾸기 단추가 아래 메뉴에 가려지지 않게 · 구글 사진 일시 오류면 다시 찾아요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
