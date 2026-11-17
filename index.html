@@ -1235,6 +1235,31 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .tv-meet.split{background:none;color:#8B95A1;padding:4px 0;border-top:1px dashed #D1D6DB;border-radius:0;font-size:12px}
 .tv-flt{display:flex;gap:6px;margin:2px 0 8px}.tv-flt button{border:none;background:#fff;border-radius:999px;padding:7px 13px;font:500 13px Pretendard,sans-serif;color:#4E5968;box-shadow:0 0 0 1px #E5E8EB inset}.tv-flt button.on{background:#191F28;color:#fff;box-shadow:none}
 .pl-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:8px 2px 2px;font:500 11.5px Pretendard,sans-serif;color:#6B7684}.pl-key b{font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.pl-key i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font:600 10px Pretendard,sans-serif;font-style:normal;color:#fff}.pl-key i.n{background:#1D9EC0}.pl-key i.h{background:#191F28}.pl-key i.m{background:#FF6B4A}.pl-key span{color:#8B95A1}
+/* 판 -237 (사용자 기록 보기 캡처 '글씨가 너무 크고 굵은 거 아냐? 디자인이 촌스러워'): 기록 보기 전체 글자 가볍게 — 숫자 600·22px, 이름표 500 회색, 제목 600, 다시 가기 단추 가늘게 */
+html.vw-lt .vw-grid{gap:18px 14px;padding:18px 20px}
+html.vw-lt .vw-t>span{font-size:12.5px;font-weight:500;color:#8B95A1}
+html.vw-lt .vw-t>b{font-size:22px;font-weight:600;letter-spacing:-.4px;line-height:1.2}
+html.vw-lt .vw-t small{font-size:12.5px;font-weight:500;color:#8B95A1;margin-left:3px}
+html.vw-lt .vw-3 b{font-size:23px;font-weight:600;letter-spacing:-.5px}html.vw-lt .vw-3 small{font-weight:500;color:#8B95A1}
+html.vw-lt .vw-ttl h1{font-size:24px;font-weight:700;letter-spacing:-.5px}
+html.vw-lt .vw-sec{font-size:16px;font-weight:600}html.vw-lt .vw-sec small{font-weight:500}
+html.vw-lt .vw-card{padding:16px 18px;gap:10px}html.vw-lt .vw-h>b{font-size:16px;font-weight:600}
+html.vw-lt .vw-dots i{height:5px;border-radius:3px}
+html.vw-lt .ag-box{padding:16px 18px;gap:10px}html.vw-lt .ag-h{font-size:16px;font-weight:600}
+html.vw-lt .ag-box .btn.primary{min-height:46px;padding:10px 14px;font-size:15px;font-weight:600;border-radius:14px;letter-spacing:-.2px}
+html.vw-lt .ag-box .btn.primary svg{width:18px;height:18px}
+html.vw-lt .ag-s{font-size:12.5px;line-height:1.5;color:#8B95A1}
+html.vw-lt .ag-chip{min-height:36px;padding:5px 13px;font-size:13.5px;font-weight:500;border-color:#E5E8EB;background:#fff}
+html.vw-lt .ag-chip span{font-size:13px}
+html.vw-lt .vw-chip{font-weight:500}
+html.vw-lt .vw-km{padding:9px 0;border-color:#F2F4F6}
+html.vw-lt .vw-km>b{font-size:14.5px;font-weight:500;color:#15202B!important}
+html.vw-lt .vw-km .n{font-size:13px;color:#8B95A1}html.vw-lt .vw-kmh>span{font-size:12px;color:#8B95A1;font-weight:500}
+html.vw-lt .vw-more{font-size:13.5px;font-weight:500}
+html.vw-lt .vw-h>span{font-weight:500}
+html.vw-lt .vw-wx b{font-size:17px;font-weight:600}html.vw-lt .vw-wx span{font-weight:500;color:#8B95A1}
+html.vw-lt .vw-leg{font-weight:500;font-size:12.5px;color:#6B7684}html.vw-lt .vw-leg i{height:6px}
+html.vw-lt .vw-pk-hd,html.vw-lt .vw-stack{font-weight:500}
 </style>
 </head>
 <body>
@@ -2164,11 +2189,11 @@ function diffCard(modeK, walkM, gain) {
   if (['run', 'bike', 'pgolf'].includes(modeK) || walkM < 500) return null;
   const D = diffOf(walkM, gain), kg = bodyKg();
   return el('div', { class: 'card vw-card' },
-    el('div', { class: 'vw-h' }, el('b', { text: '난이도' }), el('span', { style: `color:${D.col};font-weight:800;font-size:17px`, text: D.name })),
+    el('div', { class: 'vw-h' }, el('b', { text: '난이도' }), el('span', { style: `color:${D.col};font-weight:600;font-size:15px`, text: D.name })),
     el('div', { class: 'vw-dots' }, ...DIFF_NAME.map((_, i) => el('i', { style: i <= D.lv ? `background:${D.col}` : '' }))),
-    el('div', { style: 'font-size:15px;font-weight:600', text: `평지로 치면 ${D.e.toFixed(1)}km를 걸은 셈이에요` }),
+    el('div', { style: 'font-size:14.5px;font-weight:500;color:#15202B', text: `평지로 치면 ${D.e.toFixed(1)}km를 걸은 셈이에요` }),
     el('div', { class: 'sub', style: 'font-size:12px;line-height:1.5', text: `걸은 거리 ${(walkM / 1000).toFixed(1)}km${gain ? ` + 오른 높이 ${gain}m(100m마다 평지 1km로 셈)` : ''} · 평지 4km까지 아주 쉬움 · 8km까지 쉬움 · 13km까지 보통 · 20km까지 힘듦 · 그 위 아주 힘듦` }),
-    el('div', { style: `font-size:15px;font-weight:700;color:${STAT_COL.kcal}`, text: `🔥 약 ${kcalOf(modeK, walkM, gain).toLocaleString()} kcal` }),
+    el('div', { style: `font-size:14px;font-weight:600;color:${STAT_COL.kcal}`, text: `🔥 약 ${kcalOf(modeK, walkM, gain).toLocaleString()} kcal` }),
     el('div', { class: 'sub', style: 'font-size:12px', text: `몸무게 ${kg || 65}kg로 대략 셈했어요${kg ? '' : ' · ⚙ 설정 → 몸무게에서 바꿔요'}` }));
 }
 // 빠르기 색: 그 기록 안에서 빠른 20%는 짙은 파랑 → 느린 20%는 빨강 (애플처럼 그 기록 기준. 녹색·누런색은 안 씀)
@@ -3347,9 +3372,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-236-gone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-237-light';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지운 사진이 '그 시간 사진 넣기'로 다시 들어오지 않아요 · 설정 로그인 줄에 계정 번호(#ABCD)가 보여요 — 휴대폰과 크롬 번호가 같아야 서로 맞춰져요";
+const UI_NOTES = "기록 보기 화면 글자를 가볍게 다듬었어요 · 숫자·제목·다시 가기 단추가 덜 굵고 덜 커요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13198,7 +13223,7 @@ async function viewMyOne(t) {
   const title = el('h1', { text: info.name });
   const noteEl = el('div', { class: 'note' });
   // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
-  const whereEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:600;display:none' }), wxEl = el('div', { class: 'vw-wx', style: 'display:none' });
+  const whereEl = el('div', { class: 'sub', style: 'font-size:14px;font-weight:500;display:none' }), wxEl = el('div', { class: 'vw-wx', style: 'display:none' });
   if (tr.length >= 2) {
     placeName(t, tr).then(n => { if (n) { whereEl.textContent = '◎ ' + n; whereEl.style.display = ''; } });
     // 날씨는 애플처럼 작은 칸 셋: 날씨·기온 / 바람 / 비(왔을 때만)
@@ -13206,7 +13231,7 @@ async function viewMyOne(t) {
       wxEl.replaceChildren(cell(`${e} ${w.lo === w.hi ? w.lo : `${w.lo}~${w.hi}`}°`, nm), cell(`💨 ${w.w}m/s`, '바람'), ...(w.p >= 0.5 ? [cell(`☔ ${w.p}mm`, '비')] : [])); wxEl.style.display = ''; });
   }
   const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
-    el('button', { class: 'link', style: 'padding:0;font-size:14px', text: n ? '✎ 메모 고치기' : '📝 이번 MPD 메모 쓰기', onclick: async () => {
+    el('button', { class: 'link', style: 'padding:0;font-size:14px;font-weight:500', text: n ? '✎ 메모 고치기' : '📝 이번 MPD 메모 쓰기', onclick: async () => {
       const v = await askLong('📝 이번 MPD 메모', ls.get('walkNote:' + t, ''), '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것…', '첫 줄은 공유 카드에, 전체는 지도 링크에도 보여요. 비우면 지워요.');
       if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
   drawNote();
