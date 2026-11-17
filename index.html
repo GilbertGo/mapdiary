@@ -3460,9 +3460,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-248-my';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-249-cover';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 목록 이름을 '내 MPD'로 맞췄어요(첫 화면 줄·화면 제목·뒤로 단추) · 맨 위는 '‹ 처음 화면'과 🔍 한 줄 · 자동으로 남긴 차 이동은 차 그림과 '이동 n km' · 자동 기록이 하루에 여러 개면 한 줄로 접혀서 진짜 기록이 위에 보여요(누르면 펼쳐요) · 기록 보기 맨 위 얇은 머리줄과 MPD 로고";
+const UI_NOTES = "첫 화면 사진 말풍선이 그 기록의 대표 사진과 같아졌어요(예전엔 첫 사진) · 기록 보기에서 대표 사진을 바꾸면 첫 화면도 같이 바뀌어요 · 기록 목록 이름 '내 MPD' · 자동 기록 하루치는 한 줄로 접혀요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -14937,7 +14937,7 @@ function cRecs(limit) {
 async function cPhotos(r) {
   if (r.ph) return r.ph;
   const ps = await photoImgs(r.t), cid = ls.get('walkCover:' + r.t, null), loc = p => Number.isFinite(p.lat) && Number.isFinite(p.lng);
-  r.ph = ps; r.cover = (cid && ps.find(p => p.id === cid && loc(p))) || ps.find(loc) || null; r.first = (cid && ps.find(p => p.id === cid)) || ps[0] || null;
+  r.ph = ps; r.cover = (cid && ps.find(p => p.id === cid && loc(p))) || ps.find(loc) || null; const fid = coverId(r.t, ps); r.first = (fid && ps.find(p => p.id === fid)) || (cid === 'none' ? null : ps[0]) || null;   // 판 -249: 기록 보기 대표 사진(coverId)과 같은 사진
   return ps;
 }
 // 실제 GPS 길만: 기록이 끊긴 구간('g')은 잇지 않아요
@@ -15306,6 +15306,8 @@ async function decoDraw(layer, box, pins, edit) {
     svg.innerHTML = `<path d="${dd}" fill="none" stroke="#3FD0D9" stroke-width="3" stroke-linecap="round" opacity=".9"/>`; };
   for (const q of pins) {
     let src = q.img || '', r = null;
+    if (q.k === 'r' && q.t && !q.own) {   // 판 -249: 저절로 고른 말풍선은 그 기록의 지금 대표 사진을 따라감(직접 고른 사진(own)은 그대로)
+      try { const ps = await photoImgs(q.t), fid = coverId(q.t, ps), old = q.cv || (ps[0] && q.pid === ps[0].id); if (old && fid && fid !== q.pid) q.pid = fid; } catch {} }
     if (q.k === 'r') { r = await phGet(q.pid); if (!r || phIsGone(q.pid)) { q.gone = 1; continue; } src = phSrc(r); }
     const s = Math.round(q.s * Math.min(1.12, W / 393)), d = new Date(q.a || Date.now());
     const pin = el(edit || !q.t ? 'div' : 'a', Object.assign({ class: 'c-ph-pin' + (edit ? ' ed' : ''), style: `left:${q.x}%;top:${q.y}%;width:${s}px;height:${s}px;margin-left:${-s / 2}px` }, !edit && q.t ? { href: `./?my=1&t=${encodeURIComponent(q.t)}` } : {}),
@@ -15344,7 +15346,7 @@ function homeDecoEdit() {
     const sb = labSheet('사진 넣기', el('button', { class: 'btn primary full', text: '휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
       el('div', { class: 'pf-lb', text: '내 기록 사진' }), grid); sb.style.zIndex = '4700';   // 꾸미기 화면(4500) 위로
     (async () => { for (const r of cRecs(20)) { for (const ph of (await photoImgs(r.t)).slice(0, 6)) {
-      grid.append(el('button', { type: 'button', style: `background-image:url('${ph.thumb || phSrc(ph)}')`, onclick: () => { sb.remove(); put({ k: 'r', t: r.t, pid: ph.id, a: ph.ts || r.a }); } })); } } if (!grid.children.length) grid.append(el('div', { class: 'sub', text: '사진이 있는 기록이 아직 없어요' })); })();
+      grid.append(el('button', { type: 'button', style: `background-image:url('${ph.thumb || phSrc(ph)}')`, onclick: () => { sb.remove(); put({ k: 'r', t: r.t, pid: ph.id, own: 1, a: ph.ts || r.a }); } })); } } if (!grid.children.length) grid.append(el('div', { class: 'sub', text: '사진이 있는 기록이 아직 없어요' })); })();
   };
   wrap.append(bg, layer,
     el('div', { class: 'deco-top' }, el('button', { class: 'deco-tx', type: 'button', text: '취소', onclick: () => { if (!dirty || confirm('바꾼 것을 버릴까요?')) close(); } }), el('b', { text: '첫 화면 꾸미기' }), el('button', { class: 'deco-tx ok', type: 'button', text: '완료', onclick: save })),
@@ -15413,7 +15415,7 @@ function cHomePhoto() {
     const mp = memoryPick(); let memR = null;
     if (mp) { memR = { t: mp.x.t, name: mp.x.info.name, a: mp.x.info.startAt, M: modeOfT(mp.x.t), mem: mp }; try { await cPhotos(memR); } catch {} }
     const bub = [...(memR ? [memR] : []), ...(chosen ? withPh : withPh.slice(1)).filter(r => !memR || r.t !== memR.t)].slice(0, C_SPOTS.length);
-    window.__cHomeAuto = bub.map((r, i) => ({ k: 'r', t: r.t, pid: r.first && r.first.id, x: C_SPOTS[i].x, y: C_SPOTS[i].y, s: C_SPOTS[i].s, a: r.a }));
+    window.__cHomeAuto = bub.map((r, i) => ({ k: 'r', t: r.t, pid: r.first && r.first.id, cv: 1, x: C_SPOTS[i].x, y: C_SPOTS[i].y, s: C_SPOTS[i].s, a: r.a }));
     if (Array.isArray((ls.get('homeDeco', null) || {}).pins)) return;   // 내가 꾸민 첫 화면이면 아래 저절로 고른 말풍선 대신 decoDraw
     if (!bub.length) return;
     const W = box.clientWidth, H = box.clientHeight, pts = [];
