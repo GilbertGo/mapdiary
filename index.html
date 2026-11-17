@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-234-meet';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-235-nomeet';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 일정의 '여기서 모두 모여요' 줄을 누르면 모이는 일정을 바로 고칠 수 있어요 · 순서를 바꾼 뒤 구간 줄에 남던 엉뚱한 '○○에서' 글은 안 보여요";
+const UI_NOTES = "여행 일정의 '여기서 모두 모여요'·'여기서부터 각자 일정' 줄을 뺐어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -12132,9 +12132,7 @@ function viewPlanOne(id) {
           if (exact(x)) lastEx = x;
           hold = []; pv = x; fromStay = null; }
         if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
-        if (SH && fl === 'all' && pM !== null && pM !== !!x.mine && x.k !== 'move') { const EN = planEN(p), nmx = EN && x.en ? x.en : x.n;
-          tl.append(x.mine ? el('div', { class: 'tv-meet split', text: EN ? 'Each on your own from here' : '여기서부터 각자 일정' })
-            : el('button', { class: 'tv-meet', onclick: () => editItem(x) }, el('b', { text: EN ? '👥 Everyone meets here' : '👥 여기서 모두 모여요' }), el('span', { text: [x.t, nmx].filter(Boolean).join(' · ') }), el('span', { style: 'margin-left:auto', text: EN ? 'Edit ›' : '고치기 ›' }))); }   // 판 -234: 누르면 모이는 일정 고치기
+        // 판 -235 (사용자 '여기서모여 기능제거'): 모이는 곳·각자 일정 줄 뺌
         if (x.k !== 'move') pM = !!x.mine;
         if (x.k !== 'move' || pos(x)) pc = x;
         tl.append(row(x, i, d, nx, true)); });
