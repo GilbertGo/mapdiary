@@ -955,7 +955,7 @@ details.n-fold>.n-fb{padding:0 12px 12px}
 details.n-fold>.n-fb .card{box-shadow:none;background:#F7F8FA}
 /* 기록 보기 새 디자인 (2026-11-15 시안 ②): 밝은 지도 위로 흰 판 · 큰 숫자 셋 · 동그라미 단추 넷 · 숫자는 한 색 */
 html.vw-lt .vw-mapw{margin:-20px -20px 0;position:relative}
-html.vw-lt .vw-mapw .mapbox{border-radius:0;box-shadow:none;height:46vh!important;min-height:300px!important}
+html.vw-lt .vw-mapw .mapbox:not(.map-full){border-radius:0;box-shadow:none;height:34vh!important;min-height:230px!important}
 html.vw-lt .vw-mapw .leaflet-top{top:60px}
 html.vw-lt .vw-mapw .leaflet-bottom{bottom:30px}
 html.vw-lt .vw-t>b{color:#15202B!important}
@@ -1290,11 +1290,12 @@ html.vw-lt .vw-sr-h b{color:#6B7684!important;font-weight:500;font-size:13px}
 html.vw-lt .ag-row{background:#F7F8FA}
 html.vw-lt .vw-mapw .leaflet-tooltip.nm{display:none}
 html.vw-lt .vw-mapw .fs-btn:not(.ph-tg){font-size:0;width:36px;height:36px;min-height:36px;padding:0;border-radius:50%}
-html.vw-lt .vw-mapw .fs-btn:not(.ph-tg)::before{content:'⤢';font-size:17px;color:#15202B}
+html.vw-lt .vw-mapw .fs-btn:not(.ph-tg)::before{content:'⤢';font-size:17px;color:#15202B}html.vw-lt .vw-mapw .map-full .fs-btn:not(.ph-tg)::before{content:'✕'}html.vw-lt .vw-mapw .map-full .leaflet-top{top:calc(14px + env(safe-area-inset-top,0px))}
 details.vw-fold>summary{list-style:none;cursor:pointer;font-size:13.5px;color:#6B7684;padding:6px 0}details.vw-fold>summary::after{content:' ›'}details.vw-fold[open]>summary::after{content:' ⌄'}
 html.vw-lt .tv-sheet>.vw-pick{padding-top:14px!important}html.vw-lt .vw-sr-h span,html.vw-lt .vw-sr-ax span{font-weight:500!important}
 html.vw-lt .tv-sheet [hidden],html.vw-lt .tv-sheet>.stack:empty,html.vw-lt .tv-sheet>.stack:not(:has(*)){display:none!important}html.vw-lt .tv-sheet .vw-km>b{font-weight:500}html.vw-lt .vw-elnote{display:none}html.vw-lt .vw-card .vw-h .sub b,html.vw-lt .vw-card .vw-h span b{font-weight:500}
 details.vw-fold>summary::-webkit-details-marker{display:none}details.vw-fold{display:flex;flex-direction:column;gap:8px}
+html.vw-lt .vw-slope{display:flex;flex-direction:column;gap:8px;margin-top:-6px}
 </style>
 </head>
 <body>
@@ -2146,8 +2147,7 @@ function formCard(t) {
       el('div', { class: 'row', style: 'justify-content:space-between' }, el('b', { style: 'color:var(--pine)', text: '달리기 자세' }), el('span', { class: 'sub', style: 'font-size:12px', text: f ? '휴대폰으로 짐작한 대략값' : '휴대폰 흔들림 기록이 없어요' })),
       f ? el('div', { class: 'fm-g' }, ...formTags(f).map(formTile)) : null,
       trend ? el('div', { class: 'sub', style: 'font-size:13px', text: trend }) : null,
-      wv ? el('div', { class: 'sub', style: 'font-size:14px;color:var(--pine)', text: '⌚ 워치: ' + watchText(wv) }) : null,
-      el('button', { class: 'btn line full', text: wv ? '⌚ 워치 값 고치기' : '⌚ 워치(삼성헬스) 값 적기', onclick: () => watchEdit(t, draw) })].filter(Boolean));
+      wv ? el('div', { class: 'sub', style: 'font-size:14px;color:var(--pine)', text: '⌚ 워치: ' + watchText(wv) }) : null].filter(Boolean));   // 워치 값 적기는 ⋯ 더보기로 (판 -241)
   };
   draw(); return box;
 }
@@ -2329,7 +2329,7 @@ const zoneRow = (name, col, ms, maxMs, right) => el('div', { class: 'vw-z' }, el
   el('div', { class: 'bar' }, el('i', { style: `background:${col};width:${ms ? Math.max(3, ms / Math.max(1, maxMs) * 100) : 0}%` })),
   el('span', { class: 't', text: fmtRunTime(ms || 0) }), el('span', { class: 'r', text: right || '' }));
 // 높이 카드: 산 그래프(보라) + 오르막·평지·내리막 시간 (애플의 심박 영역 자리를 오르내림으로)
-function elevCard(ev, tr, modes) {
+function elevCard(ev, tr, modes, slim) {
   if (!ev || ev.prof.length < 5 || ev.max - ev.min < 5) return null;
   const W = 600, H = 150, pad = 6, P = ev.prof, D = P[P.length - 1][0] || 1, lo = ev.min - 5, hi = ev.max + 5;
   const xy = P.map(([d, v]) => [pad + (d / D) * (W - pad * 2), H - pad - ((v - lo) / (hi - lo)) * (H - pad * 2 - 20)]);
@@ -2350,6 +2350,7 @@ function elevCard(ev, tr, modes) {
   svg.addEventListener('pointerdown', e => { pickAt(e); svg.setPointerCapture && svg.setPointerCapture(e.pointerId); });
   svg.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') pickAt(e); });
   const mx = Math.max(...T), tot = T[0] + T[1] + T[2];
+  if (slim) return tot > 6e4 ? el('div', { class: 'vw-slope' }, zoneRow('오르막', STAT_COL.up, T[0], mx, `${Math.round(T[0] * 100 / tot)}%`), zoneRow('평지', '#9AA5B4', T[1], mx, `${Math.round(T[1] * 100 / tot)}%`), zoneRow('내리막', '#42A5F5', T[2], mx, `${Math.round(T[2] * 100 / tot)}%`)) : null;   // 판 -241: 그래프는 위 묶음에 있어 막대만
   const card = el('div', { class: 'card vw-card' },
     el('div', { class: 'vw-h' }, el('b', { text: '높이' }), el('span', { class: 'sub' }, '오른 높이 ', el('b', { style: `color:${STAT_COL.up}`, text: `${ev.gain}m` }), ` · 최고 ${elevWhat(ev)} ${elevTxt(ev, 'max')}m`)),
     svg, el('div', { class: 'sub vw-ax' }, el('span', { text: `출발 ${elevTxt(ev, 'start')}m` }), el('span', { text: `최저 ${elevTxt(ev, 'min')}m` }), el('span', { text: fmtDist(D) })),
@@ -2402,7 +2403,9 @@ function vwPicker(m, tr, M, t, box, modes, elev) {
     const yOf = v => { const f = Math.min(1, Math.max(0, (v - lo) / (hi - lo))); return 6 + (r.inv ? f : 1 - f) * (GH - 12); };
     r.yOf = k => yOf(r.v[k]);
     const P = r.v.map((v, k) => [xOf(k), yOf(v)]), d = curve(P), id = 'vwg' + (++gid) + Math.random().toString(36).slice(2, 6);
-    const mean = r.v.reduce((x, y) => x + y, 0) / r.v.length;
+    let mean = r.v.reduce((x, y) => x + y, 0) / r.v.length;
+    if (r.pace) { const mv = movingMs(tr, M.car); if (mv > 0 && cum[n - 1] > 50) mean = mv / cum[n - 1]; }
+    if (r.k === '심박') { const hv = ls.get('walkHr:' + t, null); if (hv && hv.avg) mean = hv.avg; }   // 숫자 칸 '평균 심박'(시계 요약)과 같은 값   // 판 -241 숫자 칸 '평균 페이스'와 같은 값(움직인 시간 ÷ 걸은 거리)
     const fmt = v => r.pace ? fmtPace(1000, v * 1000) : String(Math.round(v));
     const box2 = el('div', { class: 'vw-sr' }, el('div', { class: 'vw-sr-h' }, el('b', { style: `color:${r.col}`, text: r.k }),
       el('span', { text: r.avg ? `평균 ${fmt(mean)}${r.pace ? '' : r.u}` : `${fmt(srt[0])}~${fmt(srt[srt.length - 1])}${r.u}` })));
@@ -3421,9 +3424,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-240-galaxy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-241-full';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "대표 사진은 사진을 크게 열고 ⋮ 더보기 → 대표 사진으로 설정 (갤럭시 갤러리처럼) · 사진 보기 아래 줄을 저장 · 삭제 · 더보기로 정리했어요 · 지도의 '길만 보기' 단추는 없앴어요";
+const UI_NOTES = "기록 보기를 한 방향으로 정리했어요: 숫자 → 그래프(해발·빠르기) → 1km 구간 → 다시 가기 · 겹치던 높이 그래프는 하나로 합쳤어요 · 지도 크게 보기도 고쳤어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13070,6 +13073,8 @@ function editMD(x) {
   const t = x.t, days = x.album ? (albumGet(t)?.days || []) : [t];
   const wp = ls.get('walkPlaces:' + t, {});
   let mode = ls.get('walkMode:' + t, null) || modeOfT(t).k;
+  const nm0 = x.album ? (albumGet(t)?.name || '') : ls.get('trackName:' + t, '') || x.name || '';
+  const iT = el('input', { type: 'text', id: 'em-t', maxlength: 40, value: nm0, placeholder: '예: 인왕산 산책' });   // 판 -241 제목도 여기서 (사용자 '제목바꾸기·수정하기 따로 있네')
   const iS = el('input', { type: 'text', id: 'em-s', maxlength: 30, value: wp.start || '', placeholder: '예: 동네 공원' });
   const iE = el('input', { type: 'text', id: 'em-e', maxlength: 30, value: wp.end || '', placeholder: '예: 뒷산 정상' });
   const grid = el('div');
@@ -13098,7 +13103,8 @@ function editMD(x) {
   } });
   const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 수정하기', style: 'max-height:88vh;overflow:auto' },
-    el('h2', { text: '✎ MPD 수정하기' }),
+    el('h2', { text: '수정하기' }),
+    el('label', { class: 'f', for: 'em-t' }, '제목', iT),
     el('b', { text: '모드' }), grid,
     el('div', { class: 'two' }, el('label', { class: 'f', for: 'em-s' }, '출발한 곳', iS), el('label', { class: 'f', for: 'em-e' }, '도착한 곳', iE)),
     el('div', { class: 'two' },
@@ -13106,10 +13112,11 @@ function editMD(x) {
       x.album ? el('button', { class: 'btn line', disabled: true, text: '경로 자르기(하루치에서)' }) : el('button', { class: 'btn line', text: '✂ 경로 앞뒤 자르기', onclick: () => { sb.remove(); trimTrack(t); } })),
     phOrderBox(days),
     window.mdNativePhotos ? el('button', { class: 'btn line full', text: '📱 그 시간에 휴대폰으로 찍은 사진 찾기', onclick: async () => { sb.remove(); const recs = await galleryOffer(days, true); if (recs && recs.length) reviewPhotos(recs); } }) : null,
-    el('div', { class: 'sub', style: 'font-size:13px', text: '제목과 오늘 한 줄은 화면 위 ✎, 별표는 목록의 ✎ 고치기, 사진 메모·위치·지우기는 사진을 크게 볼 때 할 수 있어요.' }),
+    el('div', { class: 'sub', style: 'font-size:13px', text: '메모는 제목 아래 \'메모 쓰기\', 사진 메모·위치·대표 사진은 사진을 크게 연 뒤 ⋮에서 할 수 있어요.' }),
     inp,
     el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
       el('button', { class: 'btn primary small grow', text: '저장', onclick: () => {
+        const nt = iT.value.trim().slice(0, 40); if (nt && nt !== nm0) { if (x.album) { const a = albumGet(t); if (a) { a.name = nt; albumSave(a); } } else ls.set('trackName:' + t, nt); }
         ls.set('walkPlaces:' + t, { start: iS.value.trim(), end: iE.value.trim() });
         ls.set('walkMode:' + t, mode); if (x.album) days.forEach(d => ls.set('walkMode:' + d, mode));
         sb.remove(); toast('고쳤어요'); setTimeout(() => location.reload(), 400);
@@ -13286,7 +13293,7 @@ async function viewMyOne(t) {
       if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
   drawNote();
   const ev = elevStats(tr);
-  const elevEl = elevCard(ev, tr, trackModes(tr, M.car));
+  const elevEl = elevCard(ev, tr, trackModes(tr, M.car)), slopeEl = x.album ? null : elevCard(ev, tr, trackModes(tr, M.car), true);
   const golf = golfClean(ls.get('walkGolf:' + t, null));
   const golfBox = el('div', { class: 'stack', style: 'gap:8px' });
   let golfLyr = null;
@@ -13371,14 +13378,14 @@ async function viewMyOne(t) {
   const moreSheet = () => {   // ⋯ 더보기
     const go = (txt, fn, red) => el('button', { class: 'n-row', style: `width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer${red ? ';color:#D64545' : ''}`, onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(info.name,
-      go('✎ 제목 바꾸기', rename),
-      live ? null : go('✎ 수정하기 (모드·장소·사진·경로 자르기)', () => editMD(x)),
-      phAll.some(r => !isVid(r)) ? go('🖼 대표 사진 바꾸기', () => coverPick(t)) : null,
-      live ? null : go('📸 가족 앨범에 올리기', () => famFromMD(t, info.name)),
-      canFilm ? go(x.album ? '🎬 여행 전체 이동 영상 만들기' : '🎬 이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
-      go('⬇ GPX 받기', gpx),
-      M.k === 'run' && !live && !x.album ? go(off ? '🏁 대회 기록 고치기' : '🏁 대회 기록으로 맞추기', () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); }) : null,
-      go('🗑 이 기록 지우기', del, true));
+      live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x)),
+      phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
+      live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
+      canFilm ? go(x.album ? '여행 전체 이동 영상 만들기' : '이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
+      go('GPX 받기', gpx),
+      M.k === 'run' && !live && !x.album ? go(ls.get('walkWatch:' + t, null) ? '워치 값 고치기' : '워치(삼성헬스) 값 적기', () => watchEdit(t, () => location.reload())) : null,
+      M.k === 'run' && !live && !x.album ? go(off ? '대회 기록 고치기' : '대회 기록으로 맞추기', () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); }) : null,
+      go('이 기록 지우기', del, true));
   };
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
     tvTop('./?my=1', ['share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)], ['more', '더보기', moreSheet]),
@@ -13399,8 +13406,8 @@ async function viewMyOne(t) {
         return el('div', { class: 'vw-statw' }, stats, mb); }
       return stats; })(),
       ...(() => { const r = rxMiss(t); return r ? [el('div', { class: 'card', style: 'border:2px solid var(--alert-ink);padding:10px 12px;font-size:14px' }, el('b', { style: 'color:var(--alert-ink)', text: '⚠ 일부 데이터 미수신' }), el('div', { class: 'sub', text: `${r.miss.join(', ')}을(를) 이 휴대폰에 다 저장하지 못했어요. 원본은 시계·보낸 앱에 그대로 있어요. 휴대폰 저장 공간이 생기면 다음에 저절로 다시 받아요.` }))] : []; })(),
-      phBox, pickEl,
-    agBox,   // ↻ 다시 가기 (2026-11-09 P1): 이 길 다시 가기 · 길찾기
+      phBox, pickEl, slopeEl,   // 판 -241 사용자 '배치가 산만, 정보가 왔다갔다': 그래프 한 묶음(해발·빠르기·심박) + 오르막·평지·내리막 막대
+    kmc, hrCard(t, tr), golfBox,
 (() => {   // 🏔 오른 정상 (2026-11-07): 기록 중에 남긴 것, 없으면 지도 자료에서 찾아 채움
       const box = el('div', { class: 'card pk-rec', hidden: true });
       const paint = sm => { if (!sm || !sm.length) return; box.hidden = false; box.replaceChildren(el('b', { text: '🏔 오른 정상' }),
@@ -13422,9 +13429,11 @@ async function viewMyOne(t) {
           el('span', { text: lbl(o.m) }), el('b', { style: 'font-size:22px;color:var(--pine)', text: fmtRunTime(o.ms) }),
           el('span', { class: 'sub', style: 'font-size:13px', text: sp.length >= o.m / 1000 ? `움직인 시간만 ${fmtRunTime(sp.slice(0, Math.floor(o.m / 1000)).reduce((a, b) => a + b, 0))}` : '' }))),
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
-    golfBox, kmc, hrCard(t, tr), elevEl,
-    wa ? el('details', { class: 'card vw-det' }, el('summary', { text: '⌚ 시계 분석 자세히 · 판단 글 · 심박 존 · 자세' }), wa) : null,
-    M.k === 'run' ? formCard(t) : null, spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]),
+    x.album ? elevEl : null,   // 여러 날 여행은 위 그래프 묶음이 없어 높이 카드 그대로
+    spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]),
+    agBox,   // ↻ 다시 가기: 보는 것을 다 본 뒤 맨 아래에 할 일로
+    (() => { const fc = M.k === 'run' && (formAvg(ls.get('walkForm:' + t, [])) || ls.get('walkWatch:' + t, null)) ? formCard(t) : null; if (!wa && !fc) return null;
+      return el('details', { class: 'card vw-det' }, el('summary', { text: '시계 분석 · 달리기 자세' }), wa, fc); })(),
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null)));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
