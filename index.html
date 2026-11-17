@@ -1313,6 +1313,15 @@ html.vw-lt .vw-hero{width:100vw;margin:0 0 4px calc(50% - 50vw);height:min(52vh,
 html.vw-lt .vw-hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
 html.vw-lt .vw-top1 .note{font-size:15px;line-height:1.55;color:#333D4B}
 html.vw-lt .vw-top1 .vw-mapw .leaflet-control-attribution{font-size:8px;opacity:.6}
+html.vw-lt .vw-bar{position:sticky;top:0;z-index:40;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px;margin:-20px -20px 0;padding:0 8px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid #F2F4F6}
+html.vw-lt .vb-ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:none;background:none;border-radius:50%;color:#191F28;cursor:pointer;padding:0}
+html.vw-lt .vb-ib:active{background:#F2F4F6}
+html.vw-lt .vb-ib svg{stroke:#191F28}
+html.vw-lt .vb-logo{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:#191F28}
+html.vw-lt .vb-logo b{font:800 17px/1 'Pretendard Variable',Pretendard,sans-serif;letter-spacing:-.3px}
+html.vw-lt .vb-r{display:flex;justify-content:flex-end}
+html.vw-lt .tv-sheet.vw-top1,html.vw-lt .tv-sheet.vw-top1:not(.has-hero),html.vw-lt .tv-sheet.vw-top1.has-hero{padding-top:22px}
+html.vw-lt .vw-top1.has-hero{padding-top:0!important}
 </style>
 </head>
 <body>
@@ -3441,9 +3450,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-246-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-247-bar';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 맨 위에 대표 사진을 크게 보여 줘요 · 지도 길은 한 가지 색으로 깔끔하게(빠르기는 아래 그래프에) · 메모 쓰기는 ⋯ 안으로";
+const UI_NOTES = "기록 보기 맨 위가 얇은 머리줄로 바뀌었어요 · 가운데 MPD 로고(누르면 처음 화면) · 양옆 뒤로·공유·더보기 · 그 아래 대표 사진을 크게 보여 줘요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13412,7 +13421,13 @@ async function viewMyOne(t) {
       go('이 기록 지우기', del, true));
   };
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
-    tvTop('./?my=1', ['share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)], ['more', '더보기', moreSheet]),
+    (() => {   // 판 -247 사용자 '맨 위 헤드라인 디자인 수정 · MPD 로고 넣는 것 고려': 얇은 앱 머리줄 ‹ · MPD 로고 · 공유 ⋯ (테두리·그림자 없는 그림 단추)
+      const ib = (svg, label, on) => el('button', { class: 'vb-ib', type: 'button', 'aria-label': label, title: label, onclick: on }, cSvg(svg, 22));
+      const lg = cLogoSvg(); const sv = lg.querySelector('svg'); if (sv) { sv.setAttribute('width', '18'); sv.setAttribute('height', '21'); }
+      return el('div', { class: 'vw-bar' },
+        el('a', { class: 'vb-ib', href: './?my=1', 'aria-label': '이야기로', title: '이야기로' }, cSvg('back', 22)),
+        el('a', { class: 'vb-logo', href: './', 'aria-label': 'MPD 처음 화면' }, lg, el('b', { text: 'MPD' })),
+        el('span', { class: 'vb-r' }, ib('share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)), ib('more', '더보기', moreSheet))); })(),
     el('div', { class: 'tv-sheet vw-top1' },   // 판 -242 사용자 '제목과 요약을 맨 위에': 제목·요약 → 지도 → 사진 → 그래프
       heroEl, el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [M.label, ' · '] : null, `${x.album ? dateText : `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`}${live ? ' · 기록 중' : ''}`),
       el('div', { class: 'vw-ttl' }, title),
