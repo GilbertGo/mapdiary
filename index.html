@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-230-gphotoauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-231-photoorder';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '일행과 같이 쓰는 여행 계획에서도 구글 사진이 저절로 들어가요 (다시 찾기를 안 눌러도)';
+const UI_NOTES = '일정 칸 사진 차례: 내가 넣은 사진 → 여행사 안내서 사진 → 구글 지도 사진 (하나투어 계획도 여행사 사진이 없는 칸은 구글 사진)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11588,9 +11588,9 @@ async function gErrWhy(r) { let m = ''; try { const j = await r.json(); m = (j.e
 function gPhotoInfo(x, p) {
   const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : Math.round(m / 1440) + '일 전'; };
   if (Array.isArray(x.ph) && x.ph.length) return { t: '내가 넣은 사진이 있어서 구글 사진은 찾지 않아요' };
-  if (p && planIsHana(p)) return { t: '하나투어 계획이라 여행사 사진만 써요' };
+  if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''); if ((p.it || []).some(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length)) return { t: '여행사 안내서 사진(같은 이름 칸)이 있어서 구글 사진은 찾지 않아요' }; }
   if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return { t: '이 종류(비행·이동)는 사진을 찾지 않아요' };
-  if (Array.isArray(x.img) && x.img.length) return { t: '여행사 사진이 있어서 구글 사진은 찾지 않아요' };
+  if (Array.isArray(x.img) && x.img.length) return { t: '여행사 안내서 사진이 있어서 구글 사진은 찾지 않아요' };
   const k = gPhotoKey(x), c = (ls.get('gPhoto', {}) || {})[k], st = (ls.get('gPhotoSt', {}) || {})[k];
   if (c && c.u) return { t: `✅ 받았어요 · ${ago(c.at)}`, ok: 1 };
   if (st) return { t: (st.s === 'none' ? '⚠ 못 찾았어요 · ' : st.s === 'cap' ? '⚠ 오늘 한도를 다 써서 안 물어봤어요 · ' : '⚠ 못 받았어요 · ') + (st.why || '') + ` · ${ago(st.at)}`, bad: 1 };
@@ -11616,13 +11616,14 @@ async function gPhoto(x, p) {
   const all = ls.get('gPhoto', {}) || {}; all[k] = o; const ks = Object.keys(all); if (ks.length > 400) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 400).forEach(z => delete all[z]); ls.set('gPhoto', all); return o;
 }
 function planThumb(x, p) {
+  let noWiki = 0;
   if (p && !planThumb.__in && planPhShared(p, x) && !(x.ph || []).length) { planThumb.__in = 1; let fb; try { fb = planThumb(x, p); } finally { planThumb.__in = 0; }
     // 판 -230: 화면에 붙는 칸 = 구글 사진을 찾는 칸(예전엔 사본을 붙여 구글에 저절로 안 물어봤음)
     const box0 = fb || el('div', { class: 'tv-th', style: 'display:none' });
     planPhRoom(p, x).then(({ L }) => { const t = L[L.length - 1]; if (t && t.th) { box0.dataset.room = 1; box0.replaceChildren(); box0.className = 'tv-th on'; box0.style.display = ''; box0.style.backgroundImage = `url("${t.th}")`; } }).catch(() => {}); return box0; }   // 판 -220: 일행이 올린 장소 사진 먼저
   if (p && Array.isArray(x.ph) && x.ph.length) { const box = el('div', { class: 'tv-th on' }); planPhGet(p, x.ph[0]).then(r => { if (r) box.style.backgroundImage = `url("${URL.createObjectURL(r.s || r.b)}")`; }); return box; }   // 판 -219: 내 사진 먼저
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''), z = (p.it || []).find(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length);
-    if (z) x = Object.assign({}, x, { img: z.img }); else return ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) ? planArt(x) : null; }   // 판 -211: 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
+    if (z) x = Object.assign({}, x, { img: z.img }); else noWiki = 1; }   // 판 -231: 사진 차례 = 내가 넣은 사진 → 여행사 안내서 사진(같은 이름 칸 것도) → 구글 지도 사진 (하나투어 계획은 위키 사진 안 씀, 판 -211): 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
   if (x.k === 'stay' && !(Array.isArray(x.img) && x.img.length) && !(GPL_KEY && navigator.onLine) && !(gPhotoCached(x) || {}).u) return planArt(x);
   if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) return null;
   const exact = Number.isFinite(x.lat) && !x.ap && !x.near && x.k !== 'food';
@@ -11638,11 +11639,11 @@ function planThumb(x, p) {
   if (Array.isArray(x.img) && x.img.length) { const u = x.img.find(u0 => !U().has(u0)) || x.img[0]; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); return box; }   // 판 -182: 여행사 사진이 있으면 그것
   const gc = gPhotoCached(x); if (gc && gc.u && show(gc.u, 'G')) return box;   // 판 -224: 구글 지도 사진 먼저
   const gWait = !gc && navigator.onLine;   // 아직 구글에 안 물어봤으면 위키 사진으로 정하지 않고 먼저 물어봄
-  if (!gWait && pc && show(pu(pc))) return box;
-  if (!gWait && nc && nc.u && show(nc.u, nc.ex)) return box;
+  if (!gWait && !noWiki && pc && show(pu(pc))) return box;
+  if (!gWait && !noWiki && nc && nc.u && show(nc.u, nc.ex)) return box;
   planArt(x, box); const show0 = show; show = (u, ex) => { if (box.dataset.room) return true; const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
   if (!navigator.onLine) return box;
-  const work = async () => { if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay') return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
+  const work = async () => { if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay' || noWiki) return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
   const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => {}).finally(() => { Q.n--; run(); }); };
     Q.L.push(work); run(); };
   if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '200px' }); setTimeout(() => io.observe(box), 0); } else go();
