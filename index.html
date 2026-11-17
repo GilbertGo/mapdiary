@@ -1602,8 +1602,16 @@ async function photoPut(rec) {
   const db = await photoDb();
   return new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(rec); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
 }
+// 판 -236 (사용자 '인왕산 사진 지웠는데 또 살아났어'): '그 시간 사진 넣기'(galleryOffer)는 같은 사진을 새 번호로 다시 넣어 번호 묘비에 안 걸렸음
+//   → 지운 사진의 기록·찍은 시각도 남김 phGoneTs = { 사진id: [기록ID, 찍은 시각] } (클라우드·백업으로도 퍼짐)
+function phGoneTsAll() { const g = ls.get('phGoneTs', {}); return g && typeof g === 'object' && !Array.isArray(g) ? g : {}; }
+function phGoneTsAdd(more) { const g = Object.assign({}, more && typeof more === 'object' && !Array.isArray(more) ? more : {}, phGoneTsAll());
+  const k = Object.keys(g); if (k.length > 5000) k.slice(0, k.length - 5000).forEach(x => delete g[x]); ls.set('phGoneTs', g); return g; }
+function phGoneTsOf(t) { return Object.values(phGoneTsAll()).filter(v => Array.isArray(v) && v[0] === t && +v[1] > 0).map(v => +v[1]); }
 async function photoDel(id, keep) {
-  if (!keep) phGoneAdd([id]);   // 지운 표시를 먼저 남겨요(다른 기기·클라우드에서 다시 오지 않게)
+  if (!keep) { phGoneAdd([id]);   // 지운 표시를 먼저 남겨요(다른 기기·클라우드에서 다시 오지 않게)
+    try { const db0 = await photoDb(); const r = await new Promise(res => { const q = db0.transaction('photos').objectStore('photos').get(id); q.onsuccess = () => res(q.result); q.onerror = () => res(null); });
+      if (r && r.t && +r.ts > 0) phGoneTsAdd({ [String(id)]: [r.t, +r.ts] }); } catch {} }
   const db = await photoDb();
   return new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete = res; tx.onerror = res; });
 }
@@ -3339,9 +3347,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-235-nomeet';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-236-gone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 일정의 '여기서 모두 모여요'·'여기서부터 각자 일정' 줄을 뺐어요";
+const UI_NOTES = "지운 사진이 '그 시간 사진 넣기'로 다시 들어오지 않아요 · 설정 로그인 줄에 계정 번호(#ABCD)가 보여요 — 휴대폰과 크롬 번호가 같아야 서로 맞춰져요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4265,7 +4273,7 @@ function appSettings() {
       head('화면'), grp(homeRow, photoRow,
       row('🎨', '화면 분위기', sea ? '바닷가' : '산', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
       head('계정'), grp( (() => { const a = cloudAcct();
-        return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? a.via : '안 함', () => { location.href = './?my=1'; }); })(),
+        return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? [a.via, a.code].filter(Boolean).join(' ') : '안 함', () => { if (a && a.code) toast(`계정 번호 ${a.code} · 휴대폰 앱과 크롬의 번호가 같아야 기록·지운 사진이 서로 맞춰져요`, 0, 6000); setTimeout(() => { location.href = './?my=1'; }, a && a.code ? 1500 : 0); }); })(),
       row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg` : '안 정함', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
       ),
       AUTO_OK ? head('기록') : null, AUTO_OK ? grp(
@@ -4575,10 +4583,12 @@ function uiNewCheck() {
 // 설정에 보일 로그인한 계정 {via: '카카오'|'구글', name} (2026-10-21 사용자 '설정에 내가 로그인한 계정도 보여줘'). 없으면 null
 function cloudAcct() {
   const kk = u => (u.providerData || []).some(x => /kakao/.test(x.providerId || '')) || u.via === 'kakao';
-  if (cloudUser) return { via: kk(cloudUser) ? '카카오' : '구글', name: cloudWho(cloudUser) };
+  // 판 -236: 계정 번호 #ABCD(uid 끝 4자) — 휴대폰과 크롬이 같은 계정인지 견줘 보게(다르면 기록·지운 사진이 서로 안 맞춰짐)
+  const code = u => u ? '#' + String(u).slice(-4).toUpperCase() : '';
+  if (cloudUser) return { via: kk(cloudUser) ? '카카오' : '구글', name: cloudWho(cloudUser), code: code(cloudUser.uid) };
   const c = ls.get('cloudRt', null);
-  if (IN_NATIVE) return c && c.uid ? { via: c.via === 'kakao' ? '카카오' : '구글', name: c.name || c.email || ls.get('cloudName', '') || '' } : null;
-  return ls.get('cloudOn', false) && ls.get('cloudName', '') ? { via: ls.get('cloudVia', '') === 'kakao' ? '카카오' : '구글', name: ls.get('cloudName', '') } : null;
+  if (IN_NATIVE) return c && c.uid ? { via: c.via === 'kakao' ? '카카오' : '구글', name: c.name || c.email || ls.get('cloudName', '') || '', code: code(c.uid) } : null;
+  return ls.get('cloudOn', false) && ls.get('cloudName', '') ? { via: ls.get('cloudVia', '') === 'kakao' ? '카카오' : '구글', name: ls.get('cloudName', ''), code: code(ls.get('cloudUid', '')) } : null;
 }
 function cloudWho(u) { if (!u) return ''; const kk = (u.providerData || []).some(x => /kakao/.test(x.providerId || '')) || u.via === 'kakao';
   return u.email || u.displayName || (kk ? '카카오 계정' : '구글 계정'); }
@@ -4630,7 +4640,7 @@ async function cloudSync(quiet) {
     if (gone.length) ls.set('cloudGone', []);
     // 🗑 지운 사진: 다른 기기에서 지운 것까지 모아(x/one의 phGone) 이 휴대폰에서도 지우고, 클라우드 사본(ph/{id})도 지워요
     const oneR = await cGet('x/one').catch(() => null); let one = {}; try { one = JSON.parse(oneR || '{}') || {}; } catch {}
-    const PG = phGoneAdd([], one.phGone), pgCl = ls.get('phGoneCl', {}) || {};
+    phGoneTsAdd(one.phGoneTs); const PG = phGoneAdd([], one.phGone), pgCl = ls.get('phGoneCl', {}) || {};
     for (const pid of Object.keys(PG)) {
       try { const db = await photoDb(); await new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(pid); tx.oncomplete = res; tx.onerror = res; }); } catch {}
       delete phSent[pid];
@@ -4690,7 +4700,7 @@ async function cloudSync(quiet) {
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
     if (one.me && typeof one.me === 'object' && (+one.me.at || 0) > (ls.get('myAt', 0) || 0)) { ls.set('nick', String(one.me.nick || ls.get('nick', '')).slice(0, 20)); ls.set('myBio', String(one.me.bio || '').slice(0, 40)); ls.set('myPhoto', /^data:image\//.test(one.me.ph || '') ? one.me.ph : ''); ls.set('myAt', +one.me.at); }
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone, one.planInto, one.planAlive);   // 🗓 여행 계획도 모음에(2026-11-14)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), phGone: phGoneAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
@@ -12347,7 +12357,7 @@ function backupLs(ids) {
   for (const k of MD_ONE) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }
   for (const k of ['tripPlans', 'planGone', 'planInto', 'planAlive']) { const v = localStorage.getItem(k); if (v != null) out[k] = v; }   // 🗓 여행 계획도 백업에
   const g = localStorage.getItem('recGone'); if (g != null) out.recGone = g;
-  const pg = localStorage.getItem('phGone'); if (pg != null) out.phGone = pg;   // 지운 사진 목록도(불러온 휴대폰에서 되살아나지 않게)   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
+  const pg = localStorage.getItem('phGone'); if (pg != null) out.phGone = pg; { const pt = localStorage.getItem('phGoneTs'); if (pt != null) out.phGoneTs = pt; }   // 지운 사진 목록도(불러온 휴대폰에서 되살아나지 않게)   // 지운 기록 목록도(새 휴대폰에서 시계 기록이 되살아나지 않게)
   return out;
 }
 const backupPh = async ph => ph.v && ph.blob && ph.blob.size > 60 * 1048576 ? null   // 60MB 넘는 동영상은 백업 파일에서 빼요(파일이 너무 커져서)
@@ -12461,7 +12471,7 @@ async function galleryOffer(days, manual) {
     const tr = trackLoad(d); if (tr.length < 2) continue;
     let items; try { items = await G.between(tr[0][2] - 5 * 60000, tr[tr.length - 1][2] + 5 * 60000); }
     catch { if (manual) toast('사진을 볼 수 있게 허락해 주세요 (설정 → 애플리케이션 → 권한 → 사진)'); return; }
-    const have = (await photoList(d)).map(p => p.ts);
+    const have = (await photoList(d)).map(p => p.ts).concat(phGoneTsOf(d));   // 판 -236: 지운 사진(찍은 시각 ±3초)은 다시 안 넣어요
     for (const x of items) if (x && x.uri && !have.some(h => Math.abs(h - x.ts) < 3000)) found.push({ ...x, day: d });
   }
   if (!found.length) { if (manual) toast('그 시간에 휴대폰으로 찍은 사진이 없어요'); return; }
@@ -12469,6 +12479,7 @@ async function galleryOffer(days, manual) {
   toast('사진을 넣는 중이에요…');
   const recs = [];
   for (const x of found) {
+    if (phGoneTsOf(x.day).some(h => Math.abs(h - x.ts) < 3000)) continue;   // 넣는 사이에 지운 것도
     try { const b = await G.blob(x.uri);
       recs.push(...await addPhotos(x.day, [new File([b], x.name || 'photo.jpg', { type: b.type || x.type || 'image/jpeg', lastModified: x.ts })], null, true)); } catch {}
   }
@@ -12513,12 +12524,13 @@ async function backupLoad(file) {
     } else if (k === 'albums') { const a = parse(v); if (Array.isArray(a)) { const m = albumsLoad(); a.forEach(x => { if (!x || !x.id) return; const y = m.find(z => z.id === x.id); if (y) y.days = [...new Set([...y.days, ...(x.days || [])])]; else m.push(x); }); ls.set('albums', m.slice(0, 30)); } }
     else if (k === 'rooms') { const a = parse(v); if (Array.isArray(a)) ls.set('rooms', [...roomsLoad(), ...a.filter(x => x && !roomsLoad().some(y => y.code === x.code))]); }
     else if (k === 'phGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) phGoneAdd([], a); }
+    else if (k === 'phGoneTs') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) phGoneTsAdd(a); }
     else if (k === 'recGone') { const a = parse(v); if (a && typeof a === 'object' && !Array.isArray(a)) ls.set('recGone', Object.assign({}, a, goneAll())); }
     else if (k === 'tripPlans') planMerge(parse(v), parse(data.ls.planGone), data.ls.planInto ? parse(data.ls.planInto) : null, data.ls.planAlive ? parse(data.ls.planAlive) : null);
     else if (k === 'myPosts') { const a = parse(v); if (Array.isArray(a)) ls.set('myPosts', [...new Set([...ls.get('myPosts', []), ...a])].slice(-300)); }
     else if (MD_ONE.includes(k) && localStorage.getItem(k) == null) localStorage.setItem(k, v);
   }
-  { const pg = data.ls && parse(data.ls.phGone); if (pg && typeof pg === 'object' && !Array.isArray(pg)) phGoneAdd([], pg); }
+  { const pg = data.ls && parse(data.ls.phGone); if (pg && typeof pg === 'object' && !Array.isArray(pg)) phGoneAdd([], pg); } { const pt = data.ls && parse(data.ls.phGoneTs); if (pt && typeof pt === 'object' && !Array.isArray(pt)) phGoneTsAdd(pt); }
   for (const ph of Array.isArray(data.photos) ? data.photos : []) {
     try { if (!ph || typeof ph.blob !== 'string' || !/^data:(image|video)\//.test(ph.blob) || phIsGone(ph.id)) continue;
       const vid = ph.blob.startsWith('data:video/');
@@ -12964,7 +12976,7 @@ function viewMyList() {
   const fold = (title, small, inner, open) => { const d = el('details', { class: 'n-fold' }, el('summary', {}, el('span', { class: 'sp', text: title }), small ? el('small', { text: small }) : null), el('div', { class: 'n-fb' }, inner)); if (open) d.open = true; return d; };
   const wNeed = !watchGet() && !ls.get('watchAskHide', false) && !wearSelf();
   const keep = [
-    fold('☁ 로그인 · 기록 모으기', acct ? `${acct.via} · ${acct.name || '로그인됨'}${cl && cl.ok ? ' · ✓' : ''}` : '로그인 안 함', cloudCard()),
+    fold('☁ 로그인 · 기록 모으기', acct ? `${acct.via} · ${acct.name || '로그인됨'}${acct.code ? ' ' + acct.code : ''}${cl && cl.ok ? ' · ✓' : ''}` : '로그인 안 함', cloudCard()),
     fold('⌚ 시계 기록 받기', watchGet() ? '연결됨' : wearSelf() ? '저절로 와요' : '연결 안 됨', watchCard(viewMyList)),
     fold('📥 다른 앱 기록(GPX) 가져오기', '', gpxImportBtn()),
     fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
