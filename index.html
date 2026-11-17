@@ -1231,7 +1231,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .iv-segs{display:flex;background:#F2F4F6;border-radius:12px;padding:3px;gap:2px}.iv-seg{flex:1;border:none;background:none;border-radius:10px;padding:9px;font:600 14px Pretendard,sans-serif;color:#6B7684}.iv-seg.on{background:#fff;color:#191F28;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .tv-it.mine .tv-c{background:#FFF6F2;box-shadow:inset 3px 0 0 #FF6B4A}.tv-it.mine .tv-pn span{background:#FF6B4A!important;color:#fff;font-size:12px}
 .tv-me{display:inline-block;vertical-align:2px;font:600 11px Pretendard,sans-serif;color:#D2462A;background:#FFE3DA;border-radius:6px;padding:1px 7px;margin:0 6px 2px 0}
-.tv-meet{margin:6px 0 6px 44px;padding:9px 12px;border-radius:12px;background:#191F28;color:#fff;font:500 13px Pretendard,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tv-meet b{font-weight:600}.tv-meet span{color:#B0B8C1}
+.tv-meet{width:calc(100% - 44px);border:none;text-align:left;cursor:pointer;margin:6px 0 6px 44px;padding:9px 12px;border-radius:12px;background:#191F28;color:#fff;font:500 13px Pretendard,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tv-meet b{font-weight:600}.tv-meet span{color:#B0B8C1}
 .tv-meet.split{background:none;color:#8B95A1;padding:4px 0;border-top:1px dashed #D1D6DB;border-radius:0;font-size:12px}
 .tv-flt{display:flex;gap:6px;margin:2px 0 8px}.tv-flt button{border:none;background:#fff;border-radius:999px;padding:7px 13px;font:500 13px Pretendard,sans-serif;color:#4E5968;box-shadow:0 0 0 1px #E5E8EB inset}.tv-flt button.on{background:#191F28;color:#fff;box-shadow:none}
 .pl-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:8px 2px 2px;font:500 11.5px Pretendard,sans-serif;color:#6B7684}.pl-key b{font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.pl-key i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font:600 10px Pretendard,sans-serif;font-style:normal;color:#fff}.pl-key i.n{background:#1D9EC0}.pl-key i.h{background:#191F28}.pl-key i.m{background:#FF6B4A}.pl-key span{color:#8B95A1}
@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-233-hanaauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-234-meet';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '하나투어 계획은 앱에서 열면 여행사 안내서 사진이 저절로 나와요 (단추 안 눌러도, 계획 자료는 그대로)';
+const UI_NOTES = "여행 일정의 '여기서 모두 모여요' 줄을 누르면 모이는 일정을 바로 고칠 수 있어요 · 순서를 바꾼 뒤 구간 줄에 남던 엉뚱한 '○○에서' 글은 안 보여요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8082,9 +8082,16 @@ async function planFilmRoutes(p, say) {
 }
 // 판 -147 (사용자 '교통편 넣었는데 왜 지도에선 직선이야?'): 두 곳 사이 '어떻게 가나'를 이동 칸 글(이름·메모)로 읽음
 //   walk 걷는 길 · car 도로 길(차·버스·택시) · rail 전철(노선은 무료 길찾기에 없어 점선 그대로) · fly 비행 · line 그 밖 직선 · none 너무 가까움
+// 판 -234 (사용자 캡처 '간사이 국제공항 → 이치란' 줄에 '도톤보리에서 걸어서'): 칸에 남은 가는 방법 글(x.lt)이 'OO에서…'/'OO → …'인데 OO가 지금 바로 앞 장소가 아니면(순서를 바꿔 앞 장소가 달라짐) 그 글은 안 씀 · 자료는 그대로
+function planLtOk(a, b) {
+  const lt = b && b.lt; if (!lt) return ''; if (!a || !a.n) return lt;
+  const m = String(lt).match(/^\s*(.+?)(?:에서|\s*(?:→|->|➝))/); if (!m) return lt;
+  const N = s => String(s || '').replace(/[\s·()\[\]]/g, '').toLowerCase(), f = N(m[1]), an = N(a.n), ae = N(a.en);
+  if (!f) return lt; return (an && (an.includes(f) || f.includes(an))) || (ae && (ae.includes(f) || f.includes(ae))) ? lt : '';
+}
 function planLegText(a, b, p) {
   const L = (p && p.it) || [], ia = L.indexOf(a), ib = L.indexOf(b), T = [];
-  if (a.k === 'move') T.push(a); if (ia >= 0 && ib > ia) L.slice(ia + 1, ib).forEach(x => { if (x.d === b.d && (x.k === 'move' || !Number.isFinite(x.lat))) T.push(x); }); if (b.k === 'move') T.push(b); if (b.lt) T.push({ n: b.lt, m: b.m || '' });   // 판 -163 b.lt: 장소로 바꾼 이동 칸의 원래 글
+  if (a.k === 'move') T.push(a); if (ia >= 0 && ib > ia) L.slice(ia + 1, ib).forEach(x => { if (x.d === b.d && (x.k === 'move' || !Number.isFinite(x.lat))) T.push(x); }); if (b.k === 'move') T.push(b); if (planLtOk(a, b)) T.push({ n: b.lt, m: b.m || '' });   // 판 -163 b.lt: 장소로 바꾼 이동 칸의 원래 글
   return T.map(x => `${x.n || ''} ${x.m || ''}`).join(' ');
 }
 const PLAN_RX = { W: /도보|걸어|걷기|산책|walk/i, R: /전철|지하철|라피트|JR|열차|기차|신칸센|메트로|난카이|한큐|한신|케이한|긴테츠|모노레일|철도|트램|노면|train|subway|metro|rapi|monorail/i, C: /버스|택시|차량|자동차|렌터카|렌트카|셔틀|리무진|승용차|드라이브|bus|taxi|shuttle/i, F: /페리|배편|유람선|여객선|ferry/i };
@@ -12115,7 +12122,7 @@ function viewPlanOne(id) {
           const from = pc; legLine('route', !pos(x) ? '거리 모름 · 위치 없음' : '거리 모름 · 앞 장소 위치 없음', how, () => planLegGo(from, x, 'car'), 'ap');
           if (pos(x)) { if (exact(x)) lastEx = x; pv = x; fromStay = null; } hold = []; }
         else if (x.k !== 'move' && x.k !== 'fly' && !pc && !pos(x)) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', '', () => planLegGo(null, x, 'car'), 'ap');
-        else if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), x.lt || ''].filter(Boolean).join(' · ');
+        else if (pos(x)) { const a0 = pv, mv = hold.slice(), how = [a0 && a0 === fromStay ? `${a0.n}에서` : '', ...mv.map(z => z.n + (z.m && !z.ai ? ' · ' + z.m : '')), planLtOk(mv.length ? null : (a0 && !exact(a0) && lastEx ? lastEx : a0), x)].filter(Boolean).join(' · ');
           if (!a0) legLine('locate', td === d ? '지금 있는 곳에서' : '첫 장소', how, () => planGo(x));
           else if (!exact(x)) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap', () => planLegPick(p, a0, x, drawAll, mv, viewItem));
           else if (!exact(a0) && !lastEx) legLine('route', '거리 모름 · 대략 위치', how, () => planLegGo(a0, x, 'car'), 'ap');
@@ -12127,7 +12134,7 @@ function viewPlanOne(id) {
         if (hold.length) { hold.forEach(z => tl.append(row(z, its.indexOf(z), d, nx))); hold = []; }   // 구간 줄에 못 붙인 이동 칸은 예전처럼 카드로
         if (SH && fl === 'all' && pM !== null && pM !== !!x.mine && x.k !== 'move') { const EN = planEN(p), nmx = EN && x.en ? x.en : x.n;
           tl.append(x.mine ? el('div', { class: 'tv-meet split', text: EN ? 'Each on your own from here' : '여기서부터 각자 일정' })
-            : el('div', { class: 'tv-meet' }, el('b', { text: EN ? '👥 Everyone meets here' : '👥 여기서 모두 모여요' }), el('span', { text: [x.t, nmx].filter(Boolean).join(' · ') }))); }
+            : el('button', { class: 'tv-meet', onclick: () => editItem(x) }, el('b', { text: EN ? '👥 Everyone meets here' : '👥 여기서 모두 모여요' }), el('span', { text: [x.t, nmx].filter(Boolean).join(' · ') }), el('span', { style: 'margin-left:auto', text: EN ? 'Edit ›' : '고치기 ›' }))); }   // 판 -234: 누르면 모이는 일정 고치기
         if (x.k !== 'move') pM = !!x.mine;
         if (x.k !== 'move' || pos(x)) pc = x;
         tl.append(row(x, i, d, nx, true)); });
