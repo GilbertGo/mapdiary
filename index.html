@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-226-gphoto3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-227-gphoto4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '일정 칸 구글 사진을 못 찾던 곳(신사이바시·지유켄 등)을 다시 찾아요';
+const UI_NOTES = '일정 칸 구글 사진을 못 찾던 곳을 다시 찾아요 · 구글이 잠깐 오류를 내면 한 번 더 물어봐요';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11590,10 +11590,11 @@ async function gPhoto(x, p) {
   const body = { textQuery: q, languageCode: 'ko', maxResultCount: 5 };
   if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) body.locationBias = { circle: { center: { latitude: x.lat, longitude: x.lng }, radius: x.ap || x.near ? 20000 : 3000 } };
   let o = { u: '', by: '', at: Date.now(), v: 2 };
-  try { const r = await fetchT('https://places.googleapis.com/v1/places:searchText', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GPL_KEY, 'X-Goog-FieldMask': 'places.id,places.photos.name,places.photos.authorAttributions' }, body: JSON.stringify(body) }, 15000);
+  try { const ask = () => fetchT('https://places.googleapis.com/v1/places:searchText', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GPL_KEY, 'X-Goog-FieldMask': 'places.id,places.photos.name,places.photos.authorAttributions' }, body: JSON.stringify(body) }, 15000);
+    let r = await ask(); if (r.status >= 500) { await new Promise(z => setTimeout(z, 1500)); r = await ask(); }   // 판 -227: 구글 쪽 일시 오류(502·503)면 한 번 더
     if (!r.ok) return null;   // 열쇠·한도 문제면 기억하지 않고 다음에 다시
     const pl = ((await r.json()).places || []).find(z => (z.photos || []).length), ph = pl && pl.photos[0];   // 판 -226: 사진 있는 첫 곳
-    if (ph) { const r2 = await fetchT(`https://places.googleapis.com/v1/${ph.name}/media?maxWidthPx=480&skipHttpRedirect=true&key=${GPL_KEY}`, {}, 15000);
+    if (ph) { const md = () => fetchT(`https://places.googleapis.com/v1/${ph.name}/media?maxWidthPx=480&skipHttpRedirect=true&key=${GPL_KEY}`, {}, 15000); let r2 = await md(); if (r2.status >= 500) { await new Promise(z => setTimeout(z, 1500)); r2 = await md(); }
       if (!r2.ok) return null; const j = await r2.json(); o.u = j.photoUri || ''; o.by = ((ph.authorAttributions || [])[0] || {}).displayName || ''; }
   } catch { return null; }
   const all = ls.get('gPhoto', {}) || {}; all[k] = o; const ks = Object.keys(all); if (ks.length > 400) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 400).forEach(z => delete all[z]); ls.set('gPhoto', all); return o;
