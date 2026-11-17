@@ -3339,9 +3339,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-229-gphotost';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-230-gphotoauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = '장소를 누르면 구글 사진을 받았는지, 못 받았으면 까닭이 한 줄로 보여요 · 지금 다시 찾기 단추';
+const UI_NOTES = '일행과 같이 쓰는 여행 계획에서도 구글 사진이 저절로 들어가요 (다시 찾기를 안 눌러도)';
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11616,8 +11616,10 @@ async function gPhoto(x, p) {
   const all = ls.get('gPhoto', {}) || {}; all[k] = o; const ks = Object.keys(all); if (ks.length > 400) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 400).forEach(z => delete all[z]); ls.set('gPhoto', all); return o;
 }
 function planThumb(x, p) {
-  if (p && !planThumb.__in && planPhShared(p, x) && !(x.ph || []).length) { const box0 = el('div', { class: 'tv-th' }); let got = 0; planThumb.__in = 1; let fb; try { fb = planThumb(x, p); } finally { planThumb.__in = 0; }
-    planPhRoom(p, x).then(({ L }) => { const t = L[L.length - 1]; if (t && t.th) { got = 1; box0.replaceChildren(); box0.className = 'tv-th on'; box0.style.display = ''; box0.style.backgroundImage = `url("${t.th}")`; } }).catch(() => {}); if (fb) { box0.className = fb.className; box0.style.cssText = fb.style.cssText; box0.append(...fb.childNodes); } else box0.style.display = 'none'; return box0; }   // 판 -220: 일행이 올린 장소 사진 먼저
+  if (p && !planThumb.__in && planPhShared(p, x) && !(x.ph || []).length) { planThumb.__in = 1; let fb; try { fb = planThumb(x, p); } finally { planThumb.__in = 0; }
+    // 판 -230: 화면에 붙는 칸 = 구글 사진을 찾는 칸(예전엔 사본을 붙여 구글에 저절로 안 물어봤음)
+    const box0 = fb || el('div', { class: 'tv-th', style: 'display:none' });
+    planPhRoom(p, x).then(({ L }) => { const t = L[L.length - 1]; if (t && t.th) { box0.dataset.room = 1; box0.replaceChildren(); box0.className = 'tv-th on'; box0.style.display = ''; box0.style.backgroundImage = `url("${t.th}")`; } }).catch(() => {}); return box0; }   // 판 -220: 일행이 올린 장소 사진 먼저
   if (p && Array.isArray(x.ph) && x.ph.length) { const box = el('div', { class: 'tv-th on' }); planPhGet(p, x.ph[0]).then(r => { if (r) box.style.backgroundImage = `url("${URL.createObjectURL(r.s || r.b)}")`; }); return box; }   // 판 -219: 내 사진 먼저
   if (p && planIsHana(p) && !(Array.isArray(x.img) && x.img.length)) { const sp = v => String(v || '').replace(/\s+/g, ''), z = (p.it || []).find(q => q !== x && q.k === x.k && sp(q.n) === sp(x.n) && (q.img || []).length);
     if (z) x = Object.assign({}, x, { img: z.img }); else return ['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) ? planArt(x) : null; }   // 판 -211: 하나투어 계획은 여행사 사진만(같은 이름 칸 사진을 빌려 쓰고, 없으면 그림) · 위키 사진 안 씀
@@ -11627,7 +11629,7 @@ function planThumb(x, p) {
   const box = el('div', { class: 'tv-th' }), U = () => planThumb.used || (planThumb.used = new Set());
   // 판 -225: 같은 장소(같은 호텔 두 번)는 같은 사진 그대로
   const same = () => planThumb.who || (planThumb.who = {}), me = x.k + '|' + String(x.n || '').replace(/\s+/g, '');
-  let show = (u, ex) => { if (!u) return false; if (U().has(u) && same()[u] !== me) return false; U().add(u); same()[u] = me; box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: ex === 'G' ? 'Google' : '예시' })); if (ex === 'G') box.title = '사진 · Google 지도'; return true; };
+  let show = (u, ex) => { if (box.dataset.room) return true; if (!u) return false; if (U().has(u) && same()[u] !== me) return false; U().add(u); same()[u] = me; box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); if (ex) box.append(el('span', { class: 'ex', text: ex === 'G' ? 'Google' : '예시' })); if (ex === 'G') box.title = '사진 · Google 지도'; return true; };
   const nkey = x.k + '|' + x.n, NC = () => ls.get('planThName2', {}) || {};
   const byName = async () => { const c = NC()[nkey]; if (c && (c.u || Date.now() - c.at < 3 * 864e5)) return c; const r = await planThName(x); const all = NC(); all[nkey] = { u: r.u || '', ex: r.ex || 0, at: Date.now() };
     const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName2', all); return all[nkey]; };
@@ -11638,7 +11640,7 @@ function planThumb(x, p) {
   const gWait = !gc && navigator.onLine;   // 아직 구글에 안 물어봤으면 위키 사진으로 정하지 않고 먼저 물어봄
   if (!gWait && pc && show(pu(pc))) return box;
   if (!gWait && nc && nc.u && show(nc.u, nc.ex)) return box;
-  planArt(x, box); const show0 = show; show = (u, ex) => { const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
+  planArt(x, box); const show0 = show; show = (u, ex) => { if (box.dataset.room) return true; const o = box.style.backgroundImage; box.replaceChildren(); box.classList.remove('art'); if (show0(u, ex)) return true; planArt(x, box); return false; };
   if (!navigator.onLine) return box;
   const work = async () => { if (GPL_KEY) { try { const g = await gPhoto(x, p); if (g && g.u && show(g.u, 'G')) return; } catch {} } if (x.k === 'stay') return; if (pc && show(pu(pc))) return; if (nc && nc.u && show(nc.u, nc.ex)) return; if (exact && !pc) { try { if (show(pu(await placeInfo(x)))) return; } catch {} } const r = await byName(); if (r) show(r.u, r.ex); };
   const go = () => { const Q = planThumb.q || (planThumb.q = { n: 0, L: [] }); const run = () => { if (Q.n >= 2 || !Q.L.length) return; const f = Q.L.shift(); Q.n++; f().catch(() => {}).finally(() => { Q.n--; run(); }); };
