@@ -3432,9 +3432,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-244-top';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-245-plnew';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기에서 제목·요약을 맨 위로 올렸어요 · 그 아래 지도와 사진이 이어서 나와요 · 등산·걷기는 쉬는 시간이 섞인 평균 페이스를 뺐어요";
+const UI_NOTES = "여행 계획 목록이 깔끔해졌어요 · '+ 새 계획 만들기'를 누르면 만드는 방법·링크 넣기·되돌리기가 한 창에 나와요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9583,7 +9583,7 @@ async function viewPlan() {
   if (qs.get('p') && qs.get('room')) { const pr = planGet(qs.get('p')); if (pr) { if (!pr.room || !pr.room.code) { pr.room = { code: trNewCode(), mk: 1 }; planSave(pr); } return viewTripRoom(pr.room.code, pr.name, pr.id); } }
   if (qs.get('p') && qs.get('info')) return viewPlanDest(qs.get('p'));   // 판 -144: 여행지 정보 한 페이지
   if (qs.get('p')) return viewPlanOne(qs.get('p'));
-  if (location.hash === '#plNew') setTimeout(() => document.getElementById('plNew')?.scrollIntoView({ block: 'start' }), 300);   // 판 -189: 첫 화면 '+ 새 계획'
+  if (location.hash === '#plNew') setTimeout(() => { history.replaceState(null, '', './?plan=1'); planNewMenu(); }, 300);   // 판 -189: 첫 화면 '+ 새 계획'
   const list = planAll().slice().sort((a, b) => String(b.start || '').localeCompare(String(a.start || '')));
   const card = p => { const h = ls.get('planHero:' + p.id, null), st = planStatus(p), href = './?plan=1&p=' + encodeURIComponent(p.id), meta = [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : '날짜 미정', `${(p.it || []).length}곳`].join(' · ');
     return h && h.u ? el('a', { class: 'n-rc', href }, el('div', { class: 'im', style: `background-image:url("${String(h.u).replace(/"/g, '%22')}")` }, st ? el('span', { class: 'tag', text: st }) : null), el('h3', { text: p.name }), el('p', { text: meta }))
@@ -9591,20 +9591,24 @@ async function viewPlan() {
   document.documentElement.classList.add('n-page');   // 새 디자인(2026-11-15)
   roleBar('member', '여행 계획');
   app.replaceChildren(el('div', { class: 'stack' },
-    el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' }),
-      el('button', { class: 'n-ib pill', type: 'button', onclick: () => document.getElementById('plNew')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, el('span', { text: '+ 새 계획' }))),
+    el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' })),
     el('h1', { class: 'n-lt', text: '여행 계획' }),
     ...(list.length ? list.map(card) : [el('div', { class: 'card sub', text: '아직 계획이 없어요. 여행사에서 받은 일정표를 넣으면 날마다 갈 곳이 지도에 놓여요.' })]),
-    el('div', { class: 'n-gh', id: 'plNew', text: '새 계획' }),
-    el('button', { class: 'btn primary full', text: '📋 여행사 일정 · 블로그 글로 만들기', onclick: planImportSheet }),
-    el('button', { class: 'btn line full', text: '🔗 받은 계획 링크 넣기', onclick: planLinkSheet }),
-    el('button', { class: 'btn line full', text: '🕘 예전 모습으로 되돌리기', onclick: () => planSnapSheet() }),
-    el('button', { class: 'btn line full', text: '🔎 없어진 계획 찾기', onclick: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = '찾는 중…';
-      const r = await planRescue(); b.disabled = false; b.textContent = '🔎 없어진 계획 찾기';
+    el('button', { class: 'btn line full', id: 'plNew', text: '+ 새 계획 만들기', onclick: () => planNewMenu() })));   // 판 -245 사용자 '새계획만들기 누르면 나머지 필요한게 보이게'
+}
+function planNewMenu() {   // 새 계획 만드는 길 · 링크 넣기 · 되찾기를 한 창에
+  const go = (ic, t, d, fn) => el('button', { class: 'n-row', type: 'button', style: 'width:100%;border:none;font:inherit;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } },
+    el('span', { class: 'th', style: 'font-size:22px', text: ic }), el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: t }), el('p', { text: d })), el('span', { class: 'chv', text: '›' }));
+  const bg = labSheet('새 계획',
+    go('📋', '여행사 일정 · 블로그 글로 만들기', '주소나 글·캡처를 넣으면 날마다 갈 곳이 지도에 놓여요', planImportSheet),
+    go('✏️', '직접 만들기', '이름과 날짜만 정하고 장소는 하나씩', planNewSheet),
+    go('🔗', '받은 계획 링크 넣기', '가족·일행이 보낸 계획 링크', planLinkSheet),
+    el('div', { class: 'n-gh', style: 'margin-top:8px', text: '계획이 없어졌나요?' }),
+    go('🕘', '예전 모습으로 되돌리기', '1시간마다 남겨 둔 계획 목록에서', () => planSnapSheet()),
+    go('🔎', '없어진 계획 찾기', '일행과 같이 고치던 계획을 여행 방 자료로', async () => { toast('찾는 중…');
+      const r = await planRescue();
       if (r.n) { toastLater('🔎 없어진 계획을 되찾았어요 · ' + r.names.join(', ')); location.reload(); }
-      else toast(r.why === 'noroom' || r.why === 'none' ? '이 휴대폰에서 찾을 수 있는 없어진 계획이 없어요 · 일행과 같이 고치던 계획만 여행 방 자료로 되찾을 수 있어요 · 자동 백업 파일(내 파일 › Documents › MapDiary)을 불러와도 돼요' : '⚠ 찾지 못했어요 · ' + r.why, false, 9000); } }),
-    el('button', { class: 'btn line full', text: '+ 직접 새 계획 만들기', onclick: planNewSheet }),
-    el('div', { class: 'sub', style: 'font-size:12px', text: '계획은 이 휴대폰에만 있어요. 같이 가는 사람에게는 계획 안 📤 보내기로 링크를 보내면 그 휴대폰에도 들어가요.' })));
+      else toast(r.why === 'noroom' || r.why === 'none' ? '이 휴대폰에서 찾을 수 있는 없어진 계획이 없어요 · 일행과 같이 고치던 계획만 여행 방 자료로 되찾을 수 있어요 · 자동 백업 파일(내 파일 › Documents › MapDiary)을 불러와도 돼요' : '⚠ 찾지 못했어요 · ' + r.why, false, 9000); }));
 }
 // ---------- 🧳 여행 준비 (2026-11-14 사용자 '준비물·옷·음식 걱정·날씨·로밍 안내, 이번 여행에서 앱의 진가를'): 계획 화면 위 카드 → 준비 창 ----------
 //   날씨 = Open-Meteo(그날 장소 가운데, 16일 안이면 예보·그보다 멀면 작년 같은 날) + 산 위 기온(그날 가장 높은 장소의 해발로 100m마다 0.65°C 낮춤)
