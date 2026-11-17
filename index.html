@@ -1298,12 +1298,21 @@ details.vw-fold>summary::-webkit-details-marker{display:none}details.vw-fold{dis
 html.vw-lt .vw-slope{display:flex;flex-direction:column;gap:8px;margin-top:-6px}
 html.vw-lt .tv-sheet.vw-top1{margin:0 -20px;border-radius:0;padding-top:calc(64px + env(safe-area-inset-top,0px))}
 html.vw-lt .vw-top1 .tv-topbar,html.vw-lt .stack>.tv-topbar{background:#fff}
+html.vw-lt .stack:has(.has-hero)>.tv-topbar{background:transparent}
 html.vw-lt .vw-top1 .vw-mapw{margin:4px 0 0;border-radius:18px;overflow:hidden}
 html.vw-lt .vw-top1 .vw-mapw .mapbox:not(.map-full){height:30vh!important;min-height:210px!important;border-radius:18px}
 html.vw-lt .vw-top1 .vw-mapw .leaflet-top{top:0}html.vw-lt .vw-top1 .vw-mapw .leaflet-top.leaflet-right{top:4px}html.vw-lt .vw-top1 .vw-mapw .leaflet-bottom{bottom:0}
 html.vw-lt .vw-top1 .vw-mapw>div:last-child .vw-leg{bottom:10px}
 html.vw-lt .tv-sheet.vw-top1::before{display:none}
 html.vw-lt .vw-top1>.vw-mapw+.card{border-top:none!important;padding-top:4px!important}
+html.vw-lt .vw-top1 .tv-topbar{padding-top:8px;background:transparent}
+html.vw-lt .stack:not(:has(.has-hero))>.tv-topbar .n-ib{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+html.vw-lt .vw-top1:not(.has-hero){padding-top:72px}
+html.vw-lt .vw-top1.has-hero{padding-top:0}
+html.vw-lt .vw-hero{width:100vw;margin:0 0 4px calc(50% - 50vw);height:min(52vh,440px);overflow:hidden;background:#EEF1F4}
+html.vw-lt .vw-hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+html.vw-lt .vw-top1 .note{font-size:15px;line-height:1.55;color:#333D4B}
+html.vw-lt .vw-top1 .vw-mapw .leaflet-control-attribution{font-size:8px;opacity:.6}
 </style>
 </head>
 <body>
@@ -3432,9 +3441,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-245-plnew';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-246-hero';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 계획 목록이 깔끔해졌어요 · '+ 새 계획 만들기'를 누르면 만드는 방법·링크 넣기·되돌리기가 한 창에 나와요";
+const UI_NOTES = "기록 보기 맨 위에 대표 사진을 크게 보여 줘요 · 지도 길은 한 가지 색으로 깔끔하게(빠르기는 아래 그래프에) · 메모 쓰기는 ⋯ 안으로";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13289,6 +13298,7 @@ async function viewMyOne(t) {
   const phHd = el('span', { text: '사진' });
   const phN = el('small'), gal = el('div', { class: 'gallery' }), phBox = el('div', { class: 'stack', style: 'gap:10px;display:none' }, el('div', { class: 'vw-sec' }, phHd, phN), gal, vNote, phSave);
   const title = el('h1', { text: info.name });
+  const heroEl = el('div', { class: 'vw-hero', hidden: true });   // 판 -246: 대표 사진 한 장 크게 (누르면 크게 보기)
   const noteEl = el('div', { class: 'note' });
   // 장소 이름·날씨 (3단계): 남겨 둔 게 있으면 바로, 없으면 인터넷으로 한 번 받아 채워요
   const whereEl = el('div', { class: 'vw-meta', style: 'display:none' }), wxEl = null;
@@ -13299,10 +13309,11 @@ async function viewMyOne(t) {
     trailWeather(t, tr, live).then(w => { if (!w) return; const [, nm] = wxName(w.c);   // 판 -238: 장소·날씨는 회색 한 줄(이모지·칸 없이)
       whereEl.dataset.w = `${nm} ${w.lo === w.hi ? w.lo : `${w.lo}~${w.hi}`}° · 바람 ${w.w}m/s${w.p >= 0.5 ? ` · 비 ${w.p}mm` : ''}`; paintMeta(); });
   }
-  const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap', text: n }) : '',
-    el('button', { class: 'link vw-memo', text: n ? '메모 고치기' : '+ 메모 쓰기', onclick: async () => {
-      const v = await askLong('📝 이번 MPD 메모', ls.get('walkNote:' + t, ''), '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것…', '첫 줄은 공유 카드에, 전체는 지도 링크에도 보여요. 비우면 지워요.');
-      if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); } })); };
+  const memoEdit = async () => {
+      const v = await askLong('이번 MPD 메모', ls.get('walkNote:' + t, ''), '오늘 어땠나요? 날씨, 함께한 사람, 기억하고 싶은 것…', '첫 줄은 공유 카드에, 전체는 지도 링크에도 보여요. 비우면 지워요.');
+      if (v == null) return; if (v) ls.set('walkNote:' + t, v); else localStorage.removeItem('walkNote:' + t); drawNote(); };
+  const drawNote = () => { const n = ls.get('walkNote:' + t, ''); noteEl.hidden = !n;   // 판 -246: 빈 메모 줄 없앰 · 쓰기는 ⋯ 안, 글을 누르면 고치기
+    noteEl.replaceChildren(n ? el('div', { style: 'white-space:pre-wrap;cursor:pointer', text: n, onclick: memoEdit }) : ''); };
   drawNote();
   const ev = elevStats(tr);
   const elevEl = elevCard(ev, tr, trackModes(tr, M.car)), slopeEl = x.album ? null : elevCard(ev, tr, trackModes(tr, M.car), true);
@@ -13391,6 +13402,7 @@ async function viewMyOne(t) {
     const go = (txt, fn, red) => el('button', { class: 'n-row', style: `width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer${red ? ';color:#D64545' : ''}`, onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(info.name,
       live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x)),
+      go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
       phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
       live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
       canFilm ? go(x.album ? '여행 전체 이동 영상 만들기' : '이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
@@ -13402,7 +13414,7 @@ async function viewMyOne(t) {
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
     tvTop('./?my=1', ['share', '공유', () => openBrag(Object.assign({}, info), t, 0, false)], ['more', '더보기', moreSheet]),
     el('div', { class: 'tv-sheet vw-top1' },   // 판 -242 사용자 '제목과 요약을 맨 위에': 제목·요약 → 지도 → 사진 → 그래프
-      el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [M.label, ' · '] : null, `${dateText} · ${kTime(info.startAt)}${live ? ' · 기록 중' : ''}`),
+      heroEl, el('div', { class: 'vw-chip' }, ls.get('walkMode:' + t, null) ? [M.label, ' · '] : null, `${x.album ? dateText : `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`}${live ? ' · 기록 중' : ''}`),
       el('div', { class: 'vw-ttl' }, title),
       wp.start || wp.end ? el('div', { class: 'sub', style: 'font-size:14px;margin-top:-6px', text: `${wp.start || '출발'} → ${wp.end || '도착'} · ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}` }) : null,
       big3, off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
@@ -13450,7 +13462,7 @@ async function viewMyOne(t) {
     live ? el('a', { class: 'btn primary full big', href: './?walk=1', text: '기록 화면으로 가기' }) : null)));
   setTimeout(async () => {
     const m = routeMap(mapEl, tr.map(q => [q[0], q[1]]), null, trackModes(tr, M.car), spots); addFullBtn(m, mapEl);
-    if (M.k !== 'pgolf' && paceOverlay(m, tr, trackModes(tr, M.car))) legEl.replaceChildren(paceLegend());   // 빠르기로 색칠한 길
+    // 판 -246 사용자 '이게 최선이냐?': 지도 길은 한 가지 색으로 깔끔하게, 빠르기는 아래 그래프에서
     if (!x.album) vwPicker(m, tr, M, t, pickEl, trackModes(tr, M.car), elevEl);   // 길을 누르면 그 지점 데이터 (여러 날 여행은 날마다 시각이 달라 뺌)
     golfLyr = L.layerGroup().addTo(m); drawGolf();
     const phLyr = L.layerGroup().addTo(m);
@@ -13460,6 +13472,9 @@ async function viewMyOne(t) {
       gal.replaceChildren(...ps.map(r => isVid(r) ? el('span', { class: 'gv', onclick: () => showPhoto(r, ps) }, el('img', { src: r.thumb, alt: '동영상' }), el('i', { text: '▶ ' + fmtVidDur(r.dur) }))
         : el('img', { src: phSrc(r), alt: '사진', loading: 'lazy', decoding: 'async', onclick: () => showPhoto(r, ps, t) })));
       phLyr.clearLayers(); if (phOn) photoMarkers(m, phLyr, ps);
+      { const cid = coverId(t, ps), cv = cid && ps.find(r => r.id === cid);
+        heroEl.hidden = !cv; heroEl.closest('.tv-sheet')?.classList.toggle('has-hero', !!cv);
+        heroEl.replaceChildren(cv ? el('img', { src: phSrc(cv), alt: '대표 사진', decoding: 'async', onclick: () => showPhoto(cv, ps, t) }) : ''); }
       if (phBtn) { phBtn.style.display = ps.length ? '' : 'none'; phBtn.textContent = phOn ? '🗺 길만 보기' : `📷 사진 보기 ${ps.length}`; }
     };
     // 판 -240 '길만 보기' 단추 없앰 (사용자 '길만보기 기능은 없애자. 복잡하다'): 사진은 늘 지도에
