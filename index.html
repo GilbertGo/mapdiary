@@ -955,7 +955,7 @@ details.n-fold>.n-fb{padding:0 12px 12px}
 details.n-fold>.n-fb .card{box-shadow:none;background:#F7F8FA}
 /* 기록 보기 새 디자인 (2026-11-15 시안 ②): 밝은 지도 위로 흰 판 · 큰 숫자 셋 · 동그라미 단추 넷 · 숫자는 한 색 */
 html.vw-lt .vw-mapw{margin:-20px -20px 0;position:relative}
-html.vw-lt .vw-mapw .mapbox{border-radius:0;box-shadow:none;height:34vh!important;min-height:230px!important}
+html.vw-lt .vw-mapw .mapbox:not(.map-full){border-radius:0;box-shadow:none;height:34vh!important;min-height:230px!important}
 html.vw-lt .vw-mapw .leaflet-top{top:60px}
 html.vw-lt .vw-mapw .leaflet-bottom{bottom:30px}
 html.vw-lt .vw-t>b{color:#15202B!important}
@@ -1290,7 +1290,7 @@ html.vw-lt .vw-sr-h b{color:#6B7684!important;font-weight:500;font-size:13px}
 html.vw-lt .ag-row{background:#F7F8FA}
 html.vw-lt .vw-mapw .leaflet-tooltip.nm{display:none}
 html.vw-lt .vw-mapw .fs-btn:not(.ph-tg){font-size:0;width:36px;height:36px;min-height:36px;padding:0;border-radius:50%}
-html.vw-lt .vw-mapw .fs-btn:not(.ph-tg)::before{content:'⤢';font-size:17px;color:#15202B}
+html.vw-lt .vw-mapw .fs-btn:not(.ph-tg)::before{content:'⤢';font-size:17px;color:#15202B}html.vw-lt .vw-mapw .map-full .fs-btn:not(.ph-tg)::before{content:'✕'}html.vw-lt .vw-mapw .map-full .leaflet-top{top:calc(14px + env(safe-area-inset-top,0px))}
 details.vw-fold>summary{list-style:none;cursor:pointer;font-size:13.5px;color:#6B7684;padding:6px 0}details.vw-fold>summary::after{content:' ›'}details.vw-fold[open]>summary::after{content:' ⌄'}
 html.vw-lt .tv-sheet>.vw-pick{padding-top:14px!important}html.vw-lt .vw-sr-h span,html.vw-lt .vw-sr-ax span{font-weight:500!important}
 html.vw-lt .tv-sheet [hidden],html.vw-lt .tv-sheet>.stack:empty,html.vw-lt .tv-sheet>.stack:not(:has(*)){display:none!important}html.vw-lt .tv-sheet .vw-km>b{font-weight:500}html.vw-lt .vw-elnote{display:none}html.vw-lt .vw-card .vw-h .sub b,html.vw-lt .vw-card .vw-h span b{font-weight:500}
@@ -3424,9 +3424,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-241-order';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.17-241-full';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기를 한 방향으로 정리했어요: 숫자 → 그래프(해발·빠르기) → 1km 구간 → 다시 가기 · 겹치던 높이 그래프는 하나로 합쳤어요";
+const UI_NOTES = "기록 보기를 한 방향으로 정리했어요: 숫자 → 그래프(해발·빠르기) → 1km 구간 → 다시 가기 · 겹치던 높이 그래프는 하나로 합쳤어요 · 지도 크게 보기도 고쳤어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
