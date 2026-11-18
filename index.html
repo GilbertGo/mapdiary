@@ -1244,7 +1244,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .tv-meet{width:calc(100% - 44px);border:none;text-align:left;cursor:pointer;margin:6px 0 6px 44px;padding:9px 12px;border-radius:12px;background:#191F28;color:#fff;font:500 13px Pretendard,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tv-meet b{font-weight:600}.tv-meet span{color:#B0B8C1}
 .tv-meet.split{background:none;color:#8B95A1;padding:4px 0;border-top:1px dashed #D1D6DB;border-radius:0;font-size:12px}
 .tv-flt{display:flex;gap:6px;margin:2px 0 8px}.tv-flt button{border:none;background:#fff;border-radius:999px;padding:7px 13px;font:500 13px Pretendard,sans-serif;color:#4E5968;box-shadow:0 0 0 1px #E5E8EB inset}.tv-flt button.on{background:#191F28;color:#fff;box-shadow:none}
-.tr-bub{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:170px;background:#fff;color:#191F28;border-radius:14px;padding:6px 10px;font:500 13px/1.35 Pretendard,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25);white-space:normal;word-break:keep-all;overflow-wrap:anywhere;pointer-events:auto;cursor:pointer;text-align:left}.tr-bub::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}.tr-bub i{display:block;font-style:normal;font-size:10.5px;color:#8B95A1;margin-top:1px}
+.tr-bub{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:170px;background:#fff;color:#191F28;border-radius:14px;padding:6px 10px;font:500 13px/1.35 Pretendard,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25);white-space:normal;word-break:keep-all;overflow-wrap:anywhere;pointer-events:auto;cursor:pointer;text-align:left}.tr-bub::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}.tr-bub.old{opacity:.72}.tr-bub i{display:block;font-style:normal;font-size:10.5px;color:#8B95A1;margin-top:1px}
 .pl-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:8px 2px 2px;font:500 11.5px Pretendard,sans-serif;color:#6B7684}.pl-key b{font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.pl-key i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font:600 10px Pretendard,sans-serif;font-style:normal;color:#fff}.pl-key i.n{background:#1D9EC0}.pl-key i.h{background:#191F28}.pl-key i.m{background:#FF6B4A}.pl-key span{color:#8B95A1}
 /* 판 -237 (사용자 기록 보기 캡처 '글씨가 너무 크고 굵은 거 아냐? 디자인이 촌스러워'): 기록 보기 전체 글자 가볍게 — 숫자 600·22px, 이름표 500 회색, 제목 600, 다시 가기 단추 가늘게 */
 html.vw-lt .vw-grid{gap:18px 14px;padding:18px 20px}
@@ -3521,9 +3521,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-253-bubble';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-254-bubtime';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 방에서 '내 위치 같이 보기'를 켜면 끌 때까지 화면을 꺼도 1분마다 위치를 보내요 (안드로이드 MPD 앱 · 웹은 화면이 열려 있을 때만) · 여행 계획 지도에도 일행 위치가 보여요 · 일행 동그라미 위에 30분 안에 한 말이 말풍선으로 · 말풍선을 누르면 여행 방 대화로 · 여행 방 위치 칸에서 지도를 보며 아래 칸에 적으면 일행 모두에게 보내져요 · 회색 점선은 5분 넘게 안 바뀐 위치";
+const UI_NOTES = "지도 위 일행 말풍선에 시간 제한이 없어졌어요 · 그 사람이 마지막으로 한 말이 늘 떠 있고, 아래에 올린 시각(오후 2:31, 다른 날이면 11월 17일 오후 2:31) · 30분 지난 말은 조금 옅게";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10224,7 +10224,7 @@ async function viewTripRoom(code, title, planId) {
           ? `${mine && !mine.off ? `마지막으로 보낸 때 ${trHm(mine.at)} (${trAgo(mine.at)})` : '아직 보내지 못했어요 · 위치 권한을 확인해 주세요'}\n${IN_NATIVE ? '끌 때까지 화면을 꺼도 1분마다 보내요(알림에 \'MPD 일행과 위치 공유 중\'). 앱을 최근 앱에서 밀어 닫거나 휴대폰을 껐다 켜면 MPD를 다시 열 때까지 멈춰요.' : '⚠ 이 휴대폰은 웹(브라우저)이라 화면을 끄거나 다른 앱으로 가면 멈추고, 일행 화면엔 \'현재 위치 아님\'으로 보여요. 안드로이드 MPD 앱은 화면을 꺼도 계속 보내요.'}`
           : `켜면 이 방 일행에게 내 위치가 보여요(켠 사람만). ${IN_NATIVE ? '끌 때까지 화면을 꺼도 1분마다 보내요.' : '웹에선 이 화면이 열려 있는 동안만 보내요(안드로이드 MPD 앱은 화면을 꺼도 보내요).'}` }),
         el('button', { class: 'btn ' + (on ? 'line' : 'primary') + ' full', style: 'margin-top:8px', text: on ? '내 위치 같이 보기 끄기' : '📍 내 위치 일행과 같이 보기 켜기', onclick: () => { ls.set('tripLoc:' + R.rid, !on); if (on) trPut(R, 'tl', me, { by: me, nm: trName(), at: Date.now(), off: 1 }).catch(() => {}); locStart(); draw(); } })),
-      mapEl, el('div', { class: 'dt', text: '색 점 = 지금 위치 · 회색 점선 = 5분 넘게 안 바뀐 위치(현재 위치 아님) · 말풍선 = 30분 안에 한 말' }), list, el('div', { style: `height:${IN_NATIVE ? 120 : 80}px` }));
+      mapEl, el('div', { class: 'dt', text: '색 점 = 지금 위치 · 회색 점선 = 5분 넘게 안 바뀐 위치(현재 위치 아님) · 말풍선 = 마지막으로 한 말 · 올린 시각' }), list, el('div', { style: `height:${IN_NATIVE ? 120 : 80}px` }));
     {   // 판 -253: 지도를 보면서 일행 모두에게 말하기 — 보낸 말은 대화 칸에도, 지도엔 내 핀 위 말풍선으로
       const ta = el('textarea', { class: 'tr-in', rows: 1, placeholder: trName() ? '일행 모두에게 말하기' : '먼저 위에 이름을 적어 주세요', style: 'flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:1px solid var(--line)' });
       const send = async () => { const x = ta.value.trim(); if (!x) return; if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요');
@@ -10558,9 +10558,11 @@ function trLocOld(x) { return !x || Date.now() - x.at > 5 * 60000; }   // 판 -2
 var TR_COLS = ['#0277BD', '#E8590C', '#7B61FF', '#D6336C', '#1D9EC0', '#5C3D2E', '#364FC7', '#C2255C'];
 function trCol(by) { let h = 0; for (const c of String(by || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return TR_COLS[h % TR_COLS.length]; }
 // 판 -253 (사용자 '각 멤버의 말풍선도 넣어 · 단체 채팅도'): 지도 위 사람 핀에 그 사람의 최근 말(30분 안)을 말풍선으로
-function trLastMsg(S, by, ms) { let b = null; for (const m of (S && S.tc) || []) if (m.by === by && m.x && !m.bot && !m.gone && !m.cq && !m.wait && Date.now() - m.t < (ms || 30 * 60000) && !trQHidden(S, m) && (!b || m.t > b.t)) b = m; return b; }
+function trLastMsg(S, by, ms) { let b = null; for (const m of (S && S.tc) || []) if (m.by === by && m.x && !m.bot && !m.gone && !m.cq && !m.wait && (!ms || Date.now() - m.t < ms) && !trQHidden(S, m) && (!b || m.t > b.t)) b = m; return b; }
 function trBubbleHtml(m, bottom) { if (!m) return ''; const x = String(m.x).replace(/\s+/g, ' ').trim(), t = (x.length > 40 ? x.slice(0, 39) + '…' : x).replace(/[<&>"]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;', '"': '&quot;' })[c]);
-  return `<div class="tr-bub" style="bottom:${bottom}px"><span>${t}</span><i>${trAgo(m.t)}</i></div>`; }
+  const d = new Date(m.t), today = d.toDateString() === new Date().toDateString(), old = Date.now() - m.t > 30 * 60000;   // 판 -254: 시간 제한 없이 마지막 말 + 올린 시각, 30분 지난 말은 옅게
+  const when = (today ? '' : `${d.getMonth() + 1}월 ${d.getDate()}일 `) + trHm(m.t);
+  return `<div class="tr-bub${old ? ' old' : ''}" style="bottom:${bottom}px"><span>${t}</span><i>${when}</i></div>`; }
 function trDot(by, nm) { return el('span', { title: nm || '', style: `flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${trCol(by)};color:#fff;font:800 11px Pretendard,sans-serif`, text: String(nm || '?').trim().slice(0, 1) || '?' }); }
 // 판 -137 (사용자 '아직 ai가 거짓말하네'): AI 답을 올리기 전에 검사 — 자료에 없는 '포함/기본 일정' 단정은 자료 그대로 답으로 바꾸고,
 //   자료에 없는 시각·돈·전화번호는 답 아래 경고. 예전 판(답 검사 전)이 만든 답·예전 판으로 답하는 휴대폰도 표시
