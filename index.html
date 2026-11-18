@@ -3520,9 +3520,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.17-251-homestyle';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-252-memloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면을 세 가지 모양 중에 고를 수 있어요 · 사진(내 사진 + 말풍선) · 지도(다녀온 곳이 지도에) · 카드(흰 바탕에 이번 달 · 최근 기록) · 고르는 곳: 오른쪽 위 프로필 → 화면 → 첫 화면 모양 · 처음 쓰는 분 첫 화면도 새로워졌어요";
+const UI_NOTES = "여행 계획 지도에 일행 위치가 보여요 · 여행 방 위치 칸에서 '내 위치 같이 보기'를 켠 일행이 이름 첫 글자 동그라미로 · 회색 점선은 3분 넘게 안 바뀐 위치(현재 위치 아님) · 동그라미를 누르면 이름과 시각 · 지도 위 설명 줄을 누르면 내 위치 같이 보기 켜고 끄기로 가요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -12347,7 +12347,7 @@ function viewPlanOne(id) {
     }
     { const EN = planEN(p), mineOn = planShared(p) && p.it.some(x => x.mine);   // 판 -209: 지도는 기호만, 뜻은 지도 아래 한 줄(범례) · 핀을 누르면 이름
       const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, el('span', { text: 'Tap a pin for its name' })]
-        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, el('span', { text: '핀을 누르면 이름' })]).filter(Boolean))); }
+        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, el('span', { text: '핀을 누르면 이름' }), ...memKey()]).filter(Boolean))); }
     if (0) sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
     if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
     const real = pts.filter(q => q[1] > -180);
@@ -12360,6 +12360,42 @@ function viewPlanOne(id) {
     const c = real.reduce((s, q) => [s[0] + q[0] / real.length, s[1] + q[1] / real.length], [0, 0]);
     let near = real.filter(q => dist(c[0], c[1], q[0], q[1]) < 300000); if (near.length < 2) near = real;
     if (near.length === 1) map.setView(near[0], 14); else map.fitBounds(near, { padding: p.it.some(x => x.k === 'stay' && Number.isFinite(x.lat)) ? [74, 34] : [28, 28], maxZoom: 15 });
+  }
+  // 판 -252 (사용자 '여행멤버의 위치가 지도에 표시되게 하자'): 여행 방에서 '내 위치 같이 보기'를 켠 일행의 위치를 계획 지도에도
+  //   · 12시간 넘은 위치는 안 보임 · 3분 넘게 안 바뀐 위치는 회색 점선(현재 위치 아님) · 30초마다 새로
+  //   · 내가 켜 두었으면 이 화면이 열려 있는 동안에도 1분마다 내 위치를 보냄 · 켜고 끄기는 여행 방 위치 칸 그대로
+  let memR = null, memS = null, memLay = null, memWatch = null;
+  function memList() { if (!memS) return []; const me = trMe(); return memS.tl.filter(x => !x.off && Number.isFinite(x.lat) && Date.now() - x.at < 12 * 3600000 && (x.by !== me || ls.get('tripLoc:' + memR.rid, false))); }
+  function memKey() {
+    if (!memR) return [];
+    const on = !!ls.get('tripLoc:' + memR.rid, false), n = memList().length, EN = planEN(p);
+    const go = () => { ls.set('tripTab', 'loc'); location.href = `./?plan=1&p=${encodeURIComponent(p.id)}&room=1`; };
+    return [n ? el('b', {}, el('i', { style: 'background:#7B61FF;border:1.5px solid #fff;box-shadow:0 0 0 1px #7B61FF' }), EN ? 'Group location' : '일행 위치') : null,
+      el('span', { style: 'color:#1D9EC0;cursor:pointer', onclick: go, text: on ? (EN ? 'Sharing my location ›' : '내 위치 같이 보는 중 ›') : (EN ? 'My location: off ›' : '내 위치 같이 보기 꺼짐 ›') })];
+  }
+  function memDraw() {
+    if (!map || !memS) return; if (!memLay) memLay = L.layerGroup().addTo(map); memLay.clearLayers(); const me = trMe();
+    for (const x of memList()) { const old = trLocOld(x), nm = String(x.nm || '일행').trim(), c = old ? '#ADB5BD' : trCol(x.by);
+      L.marker([x.lat, x.lng], { zIndexOffset: 900, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div style="width:30px;height:30px;border-radius:50%;background:${c};color:#fff;font:700 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2.5px ${old ? 'dashed #fff' : 'solid #fff'};box-shadow:0 1px 6px rgba(0,0,0,.4);opacity:${old ? .75 : 1}">${(nm.slice(0, 1) || '?').replace(/[<&]/g, '')}</div>` }) })
+        .bindTooltip(el('span', { text: `${nm}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · 마지막 ' + trHm(x.at) : '지금 · ' + trAgo(x.at)}` }), { direction: 'top', offset: [0, -14] })
+        .on('click', () => toast(`${nm}${x.by === me ? ' (나)' : ''} · ${old ? `현재 위치 아님 · 마지막 ${trHm(x.at)} (${trAgo(x.at)})` : '지금 · ' + trAgo(x.at)}${x.acc ? ` · 오차 ${x.acc}m` : ''}`)).addTo(memLay); }
+  }
+  function memSend() {
+    if (!memR) return; const on = !!ls.get('tripLoc:' + memR.rid, false);
+    if (!on || !document.body.contains(list)) { if (memWatch != null) navigator.geolocation.clearWatch(memWatch); memWatch = null; return; }
+    if (memWatch != null || !navigator.geolocation) return; let last = 0; const me = trMe();
+    memWatch = navigator.geolocation.watchPosition(pos => {
+      if (Date.now() - last < 60000 || document.hidden || !document.body.contains(list)) return; last = Date.now();
+      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now() };
+      trPut(memR, 'tl', me, o).then(() => { const i = memS.tl.findIndex(x => x.by === me); if (i >= 0) memS.tl[i] = Object.assign(memS.tl[i], o); else memS.tl.push(Object.assign({ id: me }, o)); trSet('room:' + memR.rid, memS); memDraw(); }).catch(() => {});
+    }, () => {}, { enableHighAccuracy: true, maximumAge: 30000 });
+  }
+  async function memStart() {
+    if (!p.room || !p.room.code || !permCanR(p)) return;
+    try { memR = await trRoom(p.room.code); memS = await trLoad(memR); } catch { memR = null; return; }
+    memDraw(); drawMap(); memSend();
+    const pull = async () => { if (!document.body.contains(list)) return false; if (document.hidden) return true; const n0 = memList().length; if (await trSync(memR, memS, ['tl'])) { memDraw(); if (memList().length !== n0) drawMap(); } return true; };
+    await pull(); const iv = setInterval(async () => { if (!(await pull())) { clearInterval(iv); memSend(); } }, 30000);
   }
   function drawAll() { drawHead(); drawTabs(); drawList(); drawMap(); }
   window.mpdPlanRedraw = () => { Object.assign(p, planGet(p.id) || {}); drawAll(); };
@@ -12390,6 +12426,7 @@ function viewPlanOne(id) {
     const pl = p.it.filter(x => Number.isFinite(x.lat)).concat(p.dest && !p.it.some(x => Number.isFinite(x.lat)) ? [p.dest] : []);
     const abroad = pl.some(x => !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
     map = L.map(mapEl); base = mdTileLayer({ vec: !abroad }).addTo(map); drawMap();
+    memStart();   // 판 -252: 일행 위치
     mapEl.append(el('button', { style: 'position:absolute;right:10px;top:10px;z-index:900;border:none;border-radius:999px;background:#fff;color:#15202B;font:700 13px Pretendard,sans-serif;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.25)', text: '⛶ 크게 보고 고치기', onclick: e => { e.stopPropagation(); planMapEdit(p, day < 0 ? 0 : day, () => drawAll()); } }));
     // 나라 밖 계획이면 지도 이름을 한글로(없으면 영어) — 기본 지도(OSM)는 그 나라 글자(중국은 한자)라서
     if (abroad) planAbroadMap();
