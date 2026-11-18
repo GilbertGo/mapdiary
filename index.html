@@ -1244,7 +1244,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .tv-meet{width:calc(100% - 44px);border:none;text-align:left;cursor:pointer;margin:6px 0 6px 44px;padding:9px 12px;border-radius:12px;background:#191F28;color:#fff;font:500 13px Pretendard,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tv-meet b{font-weight:600}.tv-meet span{color:#B0B8C1}
 .tv-meet.split{background:none;color:#8B95A1;padding:4px 0;border-top:1px dashed #D1D6DB;border-radius:0;font-size:12px}
 .tv-flt{display:flex;gap:6px;margin:2px 0 8px}.tv-flt button{border:none;background:#fff;border-radius:999px;padding:7px 13px;font:500 13px Pretendard,sans-serif;color:#4E5968;box-shadow:0 0 0 1px #E5E8EB inset}.tv-flt button.on{background:#191F28;color:#fff;box-shadow:none}
-.tr-bub{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:170px;background:#fff;color:#191F28;border-radius:14px;padding:6px 10px;font:500 13px/1.35 Pretendard,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25);white-space:normal;word-break:keep-all;overflow-wrap:anywhere;pointer-events:auto;cursor:pointer;text-align:left}.tr-bub::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}.tr-bub.old{opacity:.72}.tr-bub i{display:block;font-style:normal;font-size:10.5px;color:#8B95A1;margin-top:1px}
+.tr-bub{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:170px;background:#fff;color:#191F28;border-radius:14px;padding:6px 10px;font:500 13px/1.35 Pretendard,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25);white-space:normal;word-break:keep-all;overflow-wrap:anywhere;pointer-events:auto;cursor:pointer;text-align:left}.tr-bub::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}body.noscroll .tv-topbar,body.noscroll .tv-bar,body.noscroll .vw-bar{display:none!important}.tr-bub.old{opacity:.72}.tr-bub.lift::before{content:'';position:absolute;left:50%;top:calc(100% + 6px);width:2px;margin-left:-1px;height:calc(var(--lift) - 6px);background:rgba(255,255,255,.95);box-shadow:0 0 2px rgba(0,0,0,.35)}.tr-bub i{display:block;font-style:normal;font-size:10.5px;color:#8B95A1;margin-top:1px}
 .pl-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:8px 2px 2px;font:500 11.5px Pretendard,sans-serif;color:#6B7684}.pl-key b{font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.pl-key i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font:600 10px Pretendard,sans-serif;font-style:normal;color:#fff}.pl-key i.n{background:#1D9EC0}.pl-key i.h{background:#191F28}.pl-key i.m{background:#FF6B4A}.pl-key span{color:#8B95A1}
 /* 판 -237 (사용자 기록 보기 캡처 '글씨가 너무 크고 굵은 거 아냐? 디자인이 촌스러워'): 기록 보기 전체 글자 가볍게 — 숫자 600·22px, 이름표 500 회색, 제목 600, 다시 가기 단추 가늘게 */
 html.vw-lt .vw-grid{gap:18px 14px;padding:18px 20px}
@@ -3521,9 +3521,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-254-bubtime';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-255-bubfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도 위 일행 말풍선에 시간 제한이 없어졌어요 · 그 사람이 마지막으로 한 말이 늘 떠 있고, 아래에 올린 시각(오후 2:31, 다른 날이면 11월 17일 오후 2:31) · 30분 지난 말은 조금 옅게";
+const UI_NOTES = "일행 말풍선이 서로 겹치지 않아요 · 가까이 모여 있으면 위로 차례로 쌓이고, 말풍선 아래에 누가 언제 한 말인지(유진 · 오후 2:31) · 여행 계획 지도와 여행 방 위치 지도 오른쪽 위 ⤢ 를 누르면 지도를 화면 가득 크게 · 경로 고치기는 ⋯ 더보기 맨 위 '지도에서 경로 고치기'로 옮겼어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10236,14 +10236,15 @@ async function viewTripRoom(code, title, planId) {
     }
     setTimeout(() => {
       const c = S.tl.find(x => Number.isFinite(x.lat));
-      map = L.map(mapEl); const base = mdTileLayer({ vec: !(c && koInHanzi(c.lat, c.lng)) }).addTo(map); mlay = L.layerGroup().addTo(map); drawPins(); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
+      map = L.map(mapEl); const base = mdTileLayer({ vec: !(c && koInHanzi(c.lat, c.lng)) }).addTo(map); mlay = L.layerGroup().addTo(map); addFullBtn(map, mapEl); map.on('zoomend moveend', () => trBubFix(map)); drawPins(); if (c && koInHanzi(c.lat, c.lng)) koMapLayer(true).then(ly => { if (ly && map) { ly.addTo(map); map.removeLayer(base); } }).catch(() => {});
     }, 30);
   }
   function drawPins() {
     if (!map || !mlay) return; mlay.clearLayers(); const pts = [];
     for (const x of S.tl) { if (x.off || !Number.isFinite(x.lat)) continue; const old = trLocOld(x); pts.push([x.lat, x.lng]);
-      L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${old ? '#E9ECEF' : trCol(x.by)};color:${old ? '#4E5968' : '#fff'};font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px ${old ? 'dashed #8B95A1' : 'solid #fff'};box-shadow:0 1px 4px rgba(0,0,0,.35)">${String(x.nm || '일행').replace(/[<&]/g, '')}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · ' + trHm(x.at) : trAgo(x.at)}${trBubbleHtml(trLastMsg(S, x.by), 34)}</div>` }) }).addTo(mlay); }
+      L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div class="tr-pin" style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${old ? '#E9ECEF' : trCol(x.by)};color:${old ? '#4E5968' : '#fff'};font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px ${old ? 'dashed #8B95A1' : 'solid #fff'};box-shadow:0 1px 4px rgba(0,0,0,.35)">${String(x.nm || '일행').replace(/[<&]/g, '')}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · ' + trHm(x.at) : trAgo(x.at)}${trBubbleHtml(trLastMsg(S, x.by), 34, x.nm || '일행')}</div>` }) }).addTo(mlay); }
     if (!map._trTap) { map._trTap = 1; map.getContainer().addEventListener('click', e => { if (e.target.closest && e.target.closest('.tr-bub')) { tab = 'chat'; ls.set('tripTab', 'chat'); draw(); } }); }
+    requestAnimationFrame(() => trBubFix(map));
     if (pts.length === 1) map.setView(pts[0], 15); else if (pts.length) map.fitBounds(pts, { paddingTopLeft: [70, 110], paddingBottomRight: [70, 30], maxZoom: 16 }); else map.setView([29.13, 110.48], 9);
   }
   function locStart() {
@@ -10559,10 +10560,30 @@ var TR_COLS = ['#0277BD', '#E8590C', '#7B61FF', '#D6336C', '#1D9EC0', '#5C3D2E',
 function trCol(by) { let h = 0; for (const c of String(by || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return TR_COLS[h % TR_COLS.length]; }
 // 판 -253 (사용자 '각 멤버의 말풍선도 넣어 · 단체 채팅도'): 지도 위 사람 핀에 그 사람의 최근 말(30분 안)을 말풍선으로
 function trLastMsg(S, by, ms) { let b = null; for (const m of (S && S.tc) || []) if (m.by === by && m.x && !m.bot && !m.gone && !m.cq && !m.wait && (!ms || Date.now() - m.t < ms) && !trQHidden(S, m) && (!b || m.t > b.t)) b = m; return b; }
-function trBubbleHtml(m, bottom) { if (!m) return ''; const x = String(m.x).replace(/\s+/g, ' ').trim(), t = (x.length > 40 ? x.slice(0, 39) + '…' : x).replace(/[<&>"]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;', '"': '&quot;' })[c]);
+function trBubbleHtml(m, bottom, nm) { if (!m) return ''; const x = String(m.x).replace(/\s+/g, ' ').trim(), t = (x.length > 40 ? x.slice(0, 39) + '…' : x).replace(/[<&>"]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;', '"': '&quot;' })[c]);
   const d = new Date(m.t), today = d.toDateString() === new Date().toDateString(), old = Date.now() - m.t > 30 * 60000;   // 판 -254: 시간 제한 없이 마지막 말 + 올린 시각, 30분 지난 말은 옅게
   const when = (today ? '' : `${d.getMonth() + 1}월 ${d.getDate()}일 `) + trHm(m.t);
-  return `<div class="tr-bub${old ? ' old' : ''}" style="bottom:${bottom}px"><span>${t}</span><i>${when}</i></div>`; }
+  return `<div class="tr-bub${old ? ' old' : ''}" style="bottom:${bottom}px"><span>${t}</span><i>${nm ? String(nm).replace(/[<&>"]/g, '') + ' · ' : ''}${when}</i></div>`; }
+// 판 -255 (사용자 '말풍선 겹치지 않게'): 화면에서 말풍선끼리·다른 사람 핀과 겹치면 위로 올려 쌓고, 올린 만큼 가는 줄로 핀과 이음
+function trBubFix(map) {
+  if (!map || !map.getContainer) return; const box = map.getContainer();
+  const bubs = [...box.querySelectorAll('.tr-bub')]; if (!bubs.length) return;
+  bubs.forEach(b => { if (b.dataset.b0 == null) b.dataset.b0 = parseFloat(b.style.bottom) || 0; b.style.bottom = b.dataset.b0 + 'px'; b.style.setProperty('--lift', '0px'); b.classList.remove('lift'); });
+  const pins = [...box.querySelectorAll('.tr-pin')].map(e => ({ e, r: e.getBoundingClientRect() }));
+  const hit = (a, b) => a.left < b.right + 3 && a.right + 3 > b.left && a.top < b.bottom + 3 && a.bottom + 3 > b.top;
+  const L0 = bubs.map(b => { const pin = b.closest('.tr-pin'); return { b, pin, y: pin ? pin.getBoundingClientRect().top : 0 }; }).sort((a, c) => c.y - a.y);   // 아래쪽 사람부터
+  const placed = [];
+  for (const o of L0) {
+    let lift = 0, r = o.b.getBoundingClientRect();
+    for (let k = 0; k < 40; k++) {
+      const obs = placed.concat(pins.filter(q => q.e !== o.pin).map(q => q.r)).find(q => hit(r, q)); if (!obs) break;
+      const d = r.bottom - obs.top + 4; lift += Math.max(6, d); r = { left: r.left, right: r.right, top: r.top - Math.max(6, d), bottom: r.bottom - Math.max(6, d) };
+      if (lift > 400) break;
+    }
+    if (lift) { o.b.style.bottom = (+o.b.dataset.b0 + lift) + 'px'; o.b.style.setProperty('--lift', lift + 'px'); o.b.classList.add('lift'); }
+    placed.push(r);
+  }
+}
 function trDot(by, nm) { return el('span', { title: nm || '', style: `flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${trCol(by)};color:#fff;font:800 11px Pretendard,sans-serif`, text: String(nm || '?').trim().slice(0, 1) || '?' }); }
 // 판 -137 (사용자 '아직 ai가 거짓말하네'): AI 답을 올리기 전에 검사 — 자료에 없는 '포함/기본 일정' 단정은 자료 그대로 답으로 바꾸고,
 //   자료에 없는 시각·돈·전화번호는 답 아래 경고. 예전 판(답 검사 전)이 만든 답·예전 판으로 답하는 휴대폰도 표시
@@ -10954,7 +10975,7 @@ var PLAN_EN_FULL = {"탑승 수속": "Check-in", "↕ 순서 바꾸기": "↕ Re
 var PLAN_EN_RX = [
   [/(\d+)월 (\d+)일 \(([일월화수목금토])\)/g, (m, a, b, c) => `${EN_MON[a - 1]} ${b} (${EN_WD[c]})`], [/(\d+)월 (\d+)일/g, (m, a, b) => `${EN_MON[a - 1]} ${b}`],
   [/(\d+)일 (\d+)\/(\d+)/g, 'Day $1 · $2/$3'], [/(\d+)일차/g, 'Day $1'], [/(\d+)박 (\d+)일/g, '$1 nights $2 days'],
-  [/크게 보고 고치기/g, 'Full map'], [/\+ 장소 넣기/g, '+ Add a place'], [/(\d+)일차에 장소 넣기/g, 'Add a place to Day $1'], [/장소 넣기/g, 'Add a place'],
+  [/크게 보고 고치기/g, 'Full map'], [/지도에서 경로 고치기/g, 'Edit route on map'], [/\+ 장소 넣기/g, '+ Add a place'], [/(\d+)일차에 장소 넣기/g, 'Add a place to Day $1'], [/장소 넣기/g, 'Add a place'],
   [/예약 앱에서 찾기/g, 'Find in booking apps'], [/예약 링크 붙이기/g, 'Add booking link'], [/에서 보기 ↗/g, ' ↗'],
   [/스스로 점검/g, 'Self-check'], [/확인할 것/g, 'to check'], [/고친 것/g, 'fixed'], [/살펴본 항목에서는 문제를 못 찾았어요/g, 'No issues found'],
   [/위치 확인 (\d+)곳 \(대략 위치\)/g, 'Check $1 approx. locations'], [/대략 위치 · 고치기/g, 'Approx. location · fix'], [/거리 모름 · 대략 위치/g, 'Distance unknown · approx. location'], [/대략 위치/g, 'approx. location'],
@@ -12148,6 +12169,7 @@ function viewPlanOne(id) {
   function moreSheet() {   // ⋯ 더보기: 자주 안 쓰는 것들
     const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(p.name,
+      go('🗺 지도에서 경로 고치기', () => planMapEdit(p, day < 0 ? 0 : day, () => drawAll())),
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
@@ -12394,9 +12416,10 @@ function viewPlanOne(id) {
   function memDraw() {
     if (!map || !memS) return; if (!memLay) memLay = L.layerGroup().addTo(map); memLay.clearLayers(); const me = trMe();
     for (const x of memList()) { const old = trLocOld(x), nm = String(x.nm || '일행').trim(), c = old ? '#ADB5BD' : trCol(x.by);
-      L.marker([x.lat, x.lng], { zIndexOffset: 900, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div style="position:relative;width:30px;height:30px;border-radius:50%;background:${c};color:#fff;font:700 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2.5px ${old ? 'dashed #fff' : 'solid #fff'};box-shadow:0 1px 6px rgba(0,0,0,.4);opacity:${old ? .75 : 1}">${(nm.slice(0, 1) || '?').replace(/[<&]/g, '')}${trBubbleHtml(trLastMsg(memS, x.by), 38)}</div>` }) })
+      L.marker([x.lat, x.lng], { zIndexOffset: 900, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="tr-pin" style="position:relative;width:30px;height:30px;border-radius:50%;background:${c};color:#fff;font:700 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2.5px ${old ? 'dashed #fff' : 'solid #fff'};box-shadow:0 1px 6px rgba(0,0,0,.4);opacity:${old ? .75 : 1}">${(nm.slice(0, 1) || '?').replace(/[<&]/g, '')}${trBubbleHtml(trLastMsg(memS, x.by), 38, nm)}</div>` }) })
         .bindTooltip(el('span', { text: `${nm}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · 마지막 ' + trHm(x.at) : '지금 · ' + trAgo(x.at)}` }), { direction: 'top', offset: [0, -14] })
         .on('click', e => { if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.tr-bub')) { ls.set('tripTab', 'chat'); location.href = `./?plan=1&p=${encodeURIComponent(p.id)}&room=1`; return; } toast(`${nm}${x.by === me ? ' (나)' : ''} · ${old ? `현재 위치 아님 · 마지막 ${trHm(x.at)} (${trAgo(x.at)})` : '지금 · ' + trAgo(x.at)}${x.acc ? ` · 오차 ${x.acc}m` : ''}`); }).addTo(memLay); }
+    requestAnimationFrame(() => trBubFix(map));
   }
   function memSend() {
     if (!memR || IN_NATIVE) return;   // 판 -253: 앱은 tripLocBg가 화면을 꺼도 보내요
@@ -12446,7 +12469,8 @@ function viewPlanOne(id) {
     const abroad = pl.some(x => !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
     map = L.map(mapEl); base = mdTileLayer({ vec: !abroad }).addTo(map); drawMap();
     memStart();   // 판 -252: 일행 위치
-    mapEl.append(el('button', { style: 'position:absolute;right:10px;top:10px;z-index:900;border:none;border-radius:999px;background:#fff;color:#15202B;font:700 13px Pretendard,sans-serif;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.25)', text: '⛶ 크게 보고 고치기', onclick: e => { e.stopPropagation(); planMapEdit(p, day < 0 ? 0 : day, () => drawAll()); } }));
+    addFullBtn(map, mapEl);   // 판 -255 (사용자 '지도 전체화면보기 넣고. 수정은 별도로 해'): 지도는 크게 보기만, 경로 고치기는 ⋯ 더보기로
+    map.on('zoomend moveend', () => trBubFix(map));
     // 나라 밖 계획이면 지도 이름을 한글로(없으면 영어) — 기본 지도(OSM)는 그 나라 글자(중국은 한자)라서
     if (abroad) planAbroadMap();
   }, 30);
