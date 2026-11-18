@@ -2135,11 +2135,25 @@ function showPhoto(p, list, cover) {
 // 점 하나: [lat, lng, ts, 높이(m, GPS가 알려 줄 때만), 흔들림]
 // 5번째 값(있을 때만): 휴대폰 흔들림 1 = 걷거나 뛰는 중, 0 = 흔들림 없음(차 안). 높이가 없으면 4번째는 null
 // brk: '잠시 멈춤'을 풀고 처음 들어온 점이라 앞 점과 잇지 않아요 (6번째 값 1 → 끊긴 구간 'g')
-function trackAdd(t, lat, lng, acc, name, alt, shake, brk) {
+// 판 -259 (사용자 차 기록 캡처 '끊겼다가 이을 때는 출발지에서 잇는 것 같네'): 화면이 꺼진 동안 휴대폰이 위치를 모아 두었다가 한꺼번에·늦게 넘겨주면
+//   예전엔 받은 때(Date.now)로 적고 맨 뒤에 붙여서, 늦게 온 앞쪽 위치가 지금 위치 뒤에 이어져 선이 앞으로 되돌아가 그려지고(엉뚱한 직선·✈) 빠르기도 틀렸음
+//   → GPS가 잰 때(fix ts, 6시간 안·앞날 아닌 것)로 적고, 앞 점보다 이르면 시각 자리에 끼움(같은 때·15m 안 겹침은 버림)
+function trackAdd(t, lat, lng, acc, name, alt, shake, brk, ts) {
   if (acc > TRACK_MAX_ACC) return false;
-  const tr = trackLoad(t), lp = tr[tr.length - 1];
+  const tr = trackLoad(t), lp = tr[tr.length - 1], now = Date.now();
+  const tt = Number.isFinite(ts) && ts <= now + 5000 && ts > now - 6 * 3600e3 ? Math.round(ts) : now;
+  if (lp && tt < lp[2] && !brk) {
+    let j = tr.length; while (j > 0 && tr[j - 1][2] > tt) j--;
+    const a = tr[j - 1], b = tr[j];
+    if (a && (a[2] === tt || dist(a[0], a[1], lat, lng) < TRACK_MIN_M) || b && dist(b[0], b[1], lat, lng) < TRACK_MIN_M) return false;
+    const q = [+lat.toFixed(6), +lng.toFixed(6), tt]; if (Number.isFinite(alt)) q.push(Math.round(alt)); else if (shake != null) q.push(null); if (shake != null) q.push(shake);
+    tr.splice(j, 0, q);
+    if (!ls.set('track:' + t, tr)) return false;
+    if (name) ls.set('trackName:' + t, name);
+    return true;
+  }
   if (lp && dist(lp[0], lp[1], lat, lng) < TRACK_MIN_M && !brk) return false;
-  const q = [+lat.toFixed(6), +lng.toFixed(6), Date.now()];
+  const q = [+lat.toFixed(6), +lng.toFixed(6), lp && tt <= lp[2] ? lp[2] + 1 : tt];
   if (Number.isFinite(alt)) q.push(Math.round(alt)); else if (shake != null || brk) q.push(null);
   if (shake != null || brk) q.push(shake ?? null);
   if (brk && lp) q.push(1);
@@ -3535,9 +3549,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-258-nofly';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-259-gpsorder';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "차로 다닌 기록에 비행기(✈)가 잘못 그려지던 것을 고쳤어요 · GPS가 잠깐 튄 곳은 이제 비행으로 세지 않아요 · 이미 남긴 기록도 다시 열면 바로 보여요";
+const UI_NOTES = "화면이 꺼진 동안 휴대폰이 늦게 넘겨준 위치를 이제 실제 지난 시각 자리에 넣어요 · 끊겼다 이어질 때 길이 엉뚱한 곳(출발한 쪽)으로 되돌아가 그려지던 것을 고쳤어요 · 차로 간 빠르기도 바르게 셈해요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8235,7 +8249,7 @@ function planNav(p, d0, done) {
   }
   const onPos = g => { if (closed) return; pos = { lat: g.coords.latitude, lng: g.coords.longitude, acc: g.coords.accuracy };
     { const lc = trail.c[trail.c.length - 1]; if ((pos.acc || 0) <= 50 && (!lc || dist(lc[0], lc[1], pos.lat, pos.lng) >= 8)) { trail.c.push([+pos.lat.toFixed(6), +pos.lng.toFixed(6)]); if (trail.c.length > 5000) trail.c.splice(0, trail.c.length - 5000); trail.at = Date.now(); ls.set(tKey, trail); if (tl) tl.setLatLngs(trail.c); } }
-    if (ls.get('walkNow', null) === recId) try { trackAdd(recId, pos.lat, pos.lng, pos.acc, null, g.coords.altitude); } catch {}
+    if (ls.get('walkNow', null) === recId) try { trackAdd(recId, pos.lat, pos.lng, pos.acc, null, g.coords.altitude, null, false, g.timestamp); } catch {}
     if (g.coords.heading != null && !isNaN(g.coords.heading) && (g.coords.speed || 0) > 0.6) { hd = g.coords.heading; }
     if (map) { const ll = [pos.lat, pos.lng];
       if (!me) { me = L.marker(ll, { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: '', iconSize: [44, 44], iconAnchor: [22, 22], html: '<div style="position:relative;width:44px;height:44px"><div class="nv-hd" style="position:absolute;inset:0;display:none"><div style="position:absolute;left:14px;top:-2px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #1D9EC0"></div></div><div style="position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:#1D9EC0;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4)"></div></div>' }) }).addTo(map); ac = L.circle(ll, { radius: pos.acc || 10, color: '#1D9EC0', weight: 1, fillOpacity: .1, interactive: false }).addTo(map); map.setView(ll, 17); }
@@ -17008,10 +17022,12 @@ function viewWalk() {
     if (watch != null || !navigator.geolocation) return;
     watch = navigator.geolocation.watchPosition(p => {
       const was = gps; gps = 'on';
-      const ll = [p.coords.latitude, p.coords.longitude]; lastFix = { lat: ll[0], lng: ll[1], ts: Date.now() }; lastAcc = p.coords.accuracy;
+      const ll = [p.coords.latitude, p.coords.longitude], late = lastFix && Number.isFinite(p.timestamp) && lastFix.pt && p.timestamp < lastFix.pt;   // 늦게 온 예전 위치는 길에만 끼우고 내 위치 점은 안 옮겨요
+      if (late) { if (id && !pausedNow) trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, null, false, p.timestamp); stats(); return; }
+      lastFix = { lat: ll[0], lng: ll[1], ts: Date.now(), pt: p.timestamp }; lastAcc = p.coords.accuracy;
       if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
       // 잠시 멈춤 중엔 길을 남기지 않고 내 위치 점만 움직여요. 다시 시작하면 첫 점은 앞과 잇지 않아요(brkNext)
-      if (!pausedNow && trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow(), brkNext)) brkNext = false;
+      if (!pausedNow && trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow(), brkNext, p.timestamp)) brkNext = false;
       if (!pausedNow && p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); goalCheck(); coachTick(); hikeCheck(); }
       if (guide && p.coords.accuracy <= TRACK_MAX_ACC) {
         const w = guideWhere(guide.route, ll[0], ll[1], gIdx); if (w.off < 60) gIdx = w.i;
