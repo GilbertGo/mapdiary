@@ -3521,9 +3521,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-256-locsw';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-257-pinspread';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "아래 메뉴 이름을 바꿨어요 · 여행 방 → 일행 채팅(대화·사진·위치) · 여행 노트 → 준비·정보(체크리스트·날씨·예약·경비) · 내 위치 공유 스위치가 지도 왼쪽 아래에 늘 보여요 · 켜지면 청록색 '내 위치 공유 켜짐', 꺼지면 흰색 '꺼짐' · 누르면 바로 바뀌어요";
+const UI_NOTES = "같은 자리에 모인 일행 동그라미가 겹치지 않아요 · 둘레에 고리처럼 벌어져 모두 보여요 · 일행 채팅 위치 지도의 이름표는 위아래로 나란히 · 지도를 확대하면 제자리로 돌아가요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -10565,8 +10565,30 @@ function trBubbleHtml(m, bottom, nm) { if (!m) return ''; const x = String(m.x).
   const when = (today ? '' : `${d.getMonth() + 1}월 ${d.getDate()}일 `) + trHm(m.t);
   return `<div class="tr-bub${old ? ' old' : ''}" style="bottom:${bottom}px"><span>${t}</span><i>${nm ? String(nm).replace(/[<&>"]/g, '') + ' · ' : ''}${when}</i></div>`; }
 // 판 -255 (사용자 '말풍선 겹치지 않게'): 화면에서 말풍선끼리·다른 사람 핀과 겹치면 위로 올려 쌓고, 올린 만큼 가는 줄로 핀과 이음
+// 판 -257 (사용자 '같은 자리 동그라미도 안 겹치게'): 화면에서 겹치는 사람 핀은 둘레에 고리처럼 벌려 놓음(동그라미) · 이름 알약은 위아래로 쌓음. 지도를 움직일 때마다 다시 셈
+function trPinSpread(map) {
+  const box = map.getContainer(), pins = [...box.querySelectorAll('.tr-pin')];
+  pins.forEach(e => { e.style.translate = ''; });
+  const R = pins.map(e => ({ e, r: e.getBoundingClientRect() })), used = new Set();
+  const hit = (a, b) => a.left < b.right + 2 && a.right + 2 > b.left && a.top < b.bottom + 2 && a.bottom + 2 > b.top;
+  for (let i = 0; i < R.length; i++) {
+    if (used.has(i)) continue; const g = [i]; used.add(i);
+    for (let k = 0; k < g.length; k++) for (let j = 0; j < R.length; j++) if (!used.has(j) && hit(R[g[k]].r, R[j].r)) { used.add(j); g.push(j); }
+    if (g.length < 2) continue;
+    const C = j => ({ x: R[j].r.left + R[j].r.width / 2, y: R[j].r.top + R[j].r.height / 2 });
+    const cx = g.reduce((s, j) => s + C(j).x, 0) / g.length, cy = g.reduce((s, j) => s + C(j).y, 0) / g.length, n = g.length;
+    if (R[g[0]].r.width <= 44) {   // 동그라미 핀: 고리
+      const rad = Math.max(24, n * 36 / (2 * Math.PI));
+      g.forEach((j, k) => { const a = -Math.PI / 2 + 2 * Math.PI * k / n, c = C(j); R[j].e.style.translate = `${Math.round(cx + rad * Math.cos(a) - c.x)}px ${Math.round(cy + rad * Math.sin(a) - c.y)}px`; });
+    } else {   // 이름 알약: 위아래로
+      const h = Math.max(...g.map(j => R[j].r.height)) + 6;
+      g.forEach((j, k) => { const c = C(j); R[j].e.style.translate = `${Math.round(cx - c.x)}px ${Math.round(cy + (k - (n - 1) / 2) * h - c.y)}px`; });
+    }
+  }
+}
 function trBubFix(map) {
   if (!map || !map.getContainer) return; const box = map.getContainer();
+  try { trPinSpread(map); } catch {}
   const bubs = [...box.querySelectorAll('.tr-bub')]; if (!bubs.length) return;
   bubs.forEach(b => { if (b.dataset.b0 == null) b.dataset.b0 = parseFloat(b.style.bottom) || 0; b.style.bottom = b.dataset.b0 + 'px'; b.style.setProperty('--lift', '0px'); b.classList.remove('lift'); });
   const pins = [...box.querySelectorAll('.tr-pin')].map(e => ({ e, r: e.getBoundingClientRect() }));
