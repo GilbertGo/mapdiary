@@ -2897,6 +2897,18 @@ function trackModes(tr, kmh) {
 // 비행 구간 (2026-11-14 사용자 '비행기 타고 가는 여행도 기록'): 위치가 끊겼다가 100km 넘게 떨어진 곳에서 평균 시속 220km 넘게 이어졌거나(비행기 안은 GPS가 끊겨서),
 //   점이 이어져 있어도 시속 324km 넘으면(창가에서 GPS가 잡힌 때) 비행. KTX(시속 300km 안팎)·차와 겹치지 않게 넉넉히
 function isFlySeg(d, sec) { if (!(sec > 0)) return false; const v = d / sec; return v < 340 && (d > 100000 && v > 61 || d > 200 && v > 90); }
+// 판 -258 (사용자 차 여행 기록에 ✈가 그려짐): GPS가 한 번 튀어 몇 km를 몇 초에 건너뛴 것도 '빨라서' 비행으로 셌음 →
+//   점이 이어진 빠른 구간은 이어진 빠른 구간들을 합쳐 30km 넘을 때만 비행(진짜 비행기는 수십~수백 km), 끊겼다가 100km 넘게 떨어진 곳은 예전대로
+function flyFlags(D, T) {
+  const f = D.map((d, i) => isFlySeg(d, T[i]));
+  for (let i = 0; i < f.length; i++) {
+    if (!f[i] || D[i] > 100000) continue;
+    let j = i, sum = 0; while (j < f.length && f[j] && D[j] <= 100000) { sum += D[j]; j++; }
+    if (sum < 30000) for (let k = i; k < j; k++) f[k] = false;
+    i = j - 1;
+  }
+  return f;
+}
 // 두 공항 사이 둥근 곡선 (실제 날아간 길은 몰라서 그림으로만): [[lat,lng], …]
 function flyArc(a, b, n) {
   n = n || 32; const k = Math.cos((a[0] + b[0]) / 2 * Math.PI / 180), dx = (b[1] - a[1]) * k, dy = b[0] - a[0], L = Math.hypot(dx, dy) || 1e-9, h = L * 0.18;
@@ -2909,11 +2921,13 @@ function trackModesCalc(tr, kmh) {
   const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
   const segV = k => { const dt = (tr[k][2] - tr[k - 1][2]) / 1000; return dt > 0 ? segD(k) / dt : 0; };
   const m = ['w'];
+  const FD = [0], FT = [0]; for (let i = 1; i < tr.length; i++) { FD.push(segD(i)); FT.push((tr[i][2] - tr[i - 1][2]) / 1000); }
+  const FF = flyFlags(FD, FT);
   for (let i = 1; i < tr.length; i++) {
-    const dt = (tr[i][2] - tr[i - 1][2]) / 1000, d = segD(i);
+    const dt = FT[i], d = FD[i];
     // 'g': 화면이 꺼지는 등으로 5분 넘게 위치가 안 들어왔다가 150m 넘게 떨어진 곳에서 다시 이어진 구간 (가는 점선)
     // '잠시 멈춤'을 풀고 다시 시작한 점(6번째 값 1)도 끊긴 구간이에요
-    m.push(tr[i][5] === 1 ? 'g' : isFlySeg(d, dt) ? 'f' : dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
+    m.push(tr[i][5] === 1 ? 'g' : FF[i] ? 'f' : dt > 5 * 60 && d > 150 ? 'g' : dt > 0 && d / dt > lim ? 'c' : 'w');
   }
   // 신호 대기처럼 잠깐 느려지거나, GPS가 튀어 잠깐 빨라진 곳은 앞뒤에 맞춰요 (끊긴 구간 'g'는 그대로 둬요)
   const smooth = () => { for (let pass = 0; pass < 2; pass++)
@@ -3521,9 +3535,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-257-pinspread';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.18-258-nofly';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "같은 자리에 모인 일행 동그라미가 겹치지 않아요 · 둘레에 고리처럼 벌어져 모두 보여요 · 일행 채팅 위치 지도의 이름표는 위아래로 나란히 · 지도를 확대하면 제자리로 돌아가요";
+const UI_NOTES = "차로 다닌 기록에 비행기(✈)가 잘못 그려지던 것을 고쳤어요 · GPS가 잠깐 튄 곳은 이제 비행으로 세지 않아요 · 이미 남긴 기록도 다시 열면 바로 보여요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -5999,8 +6013,10 @@ function filmPath(rows, hide, carMs, fastMs) {
   // ✈ 비행 구간 (2026-11-14): 끊긴 두 공항 사이는 둥근 곡선 점으로 채우고, 영상에선 짧게 지나가요(길이를 걸은 길의 절반 안팎으로 줄여 셈)
   //   d = 영상에서 쓰는 길 위 거리(비행은 줄인 값) · g = 땅 위에서 다닌 거리(비행 뺌, 화면 숫자·km 표시용)
   const R = [Object.assign(Q[0], { fly: false })];
+  const QD = [0], QT = [0]; for (let i = 1; i < Q.length; i++) { QD.push(dist(Q[i - 1].lat, Q[i - 1].lng, Q[i].lat, Q[i].lng)); QT.push((Q[i].ts - Q[i - 1].ts) / 1000); }
+  const QF = flyFlags(QD, QT);
   for (let i = 1; i < Q.length; i++) {
-    const a = Q[i - 1], b = Q[i], dd = dist(a.lat, a.lng, b.lat, b.lng), fly = isFlySeg(dd, (b.ts - a.ts) / 1000);
+    const a = Q[i - 1], b = Q[i], dd = QD[i], fly = QF[i];
     if (fly && dd > 30000) { const arc = flyArc([a.lat, a.lng], [b.lat, b.lng], 48); for (let k = 1; k < arc.length - 1; k++) R.push({ lat: arc[k][0], lng: arc[k][1], ts: a.ts + (b.ts - a.ts) * k / (arc.length - 1), alt: null, fly: true }); }
     if (fly) { b.alt = null; if (dd <= 30000) a.alt = null; }   // 비행기 안 높이(수천 m)는 높이 그림에서 빼요
     R.push(Object.assign(b, { fly, car: !fly && b.ts > a.ts && dd / ((b.ts - a.ts) / 1000) > (carMs || 6) }));
