@@ -3562,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-274-slim';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-275-story';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "앱을 가볍게 정리했어요 · 모임방·게임·실험실·화면 분위기·비밀코드·지금 연 곳 표시를 뺐어요 · 밥값 내기는 처음 화면 목록에 그대로 있어요 · 예전 기록·사진은 그대로예요";
+const UI_NOTES = "기록 보기 ⋯ 더보기에 '포토스토리 만들기'가 생겼어요 · 대표 사진 위에 제목, 아래 사진 3장과 글이 한 장 그림으로 · 보내기·저장 · Claude 열쇠가 있으면 AI가 사진을 보고 제목과 글을 써요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9510,6 +9510,95 @@ function recPost(t) {
     note: ls.get('walkNote:' + (album ? ids[0] : t), '') || '', summit: ids.flatMap(id => ls.get('walkSummits:' + id, []) || []).filter(Boolean) } };
   planPostSheet(p);
 }
+// 판 -275 📖 포토스토리 (2026-11-19 사용자가 다른 앱 '포토스토리' 캡처를 보냄): 기록 하나로 사진 이야기 카드 한 장
+//   큰 대표 사진 위에 '사진 이야기 · 날짜' + 제목 + 장소, 아래 사진 3장 + 글 몇 줄 → 그림(1080px) 그대로 보내기·저장
+//   Claude 열쇠(trBotKey)가 있으면 사진 4장과 기록 사실을 보고 AI(FA_MODEL)가 제목·한 줄·글을 씀(알림 두 번·AI 사용 기록), 없으면 기록 이름·장소·메모로
+async function photoStory(t) {
+  const x = pastTrips().find(y => y.t === t); if (!x) return;
+  const all = await photoImgs(t); if (!all.length) { toast('사진이 있는 기록에서 만들 수 있어요'); return; }
+  const info = x.info, album = String(t).startsWith('album_'), a = album ? albumGet(t) : null, ids = album && a ? a.days : [t];
+  const tr = trackLoad(t), d0 = new Date(tr.length ? tr[0][2] : info.startAt || Date.now());
+  const pad = n => String(n).padStart(2, '0'), dTxt = `${d0.getFullYear()}.${pad(d0.getMonth() + 1)}.${pad(d0.getDate())}`;
+  const gen = n => !n || /^(출발|도착)( 지점)?$|들른 곳$|좋았던 곳$|^지금 여기$|^마지막 위치$/.test(String(n).trim());
+  const where = ((ls.get('walkWhere:' + t, null) || ls.get('walkWhere:' + ids[0], null) || {}).n) || '';
+  const names = []; ids.forEach(id => { const wp = ls.get('walkPlaces:' + id, {}) || {}; [wp.start, ...(ls.get('walkSummits:' + id, []) || []).map(q => q && q.n), ...(ls.get('walkSpots:' + id, []) || []).map(q => q && q.n), wp.end].forEach(n => { n = String(n || '').trim(); if (!gen(n) && !names.includes(n)) names.push(n); }); });
+  const note = String(ls.get('walkNote:' + (album ? ids[0] : t), '') || '').trim();
+  const S = { cov: null, pick: [], title: '', sub: '', text: '', ai: false };
+  const choose = (shift) => {   // 대표 사진 + 고르게 3장(대표 사진 빼고)
+    const cid = coverId(t, all); S.cov = all.find(r => r.id === cid) || all[0];
+    const rest = all.filter(r => r !== S.cov); const n = Math.min(3, rest.length), out = [];
+    for (let i = 0; i < n; i++) out.push(rest[(Math.floor((i + .5) * rest.length / n) + (shift || 0)) % rest.length]);
+    S.pick = [...new Set(out)];
+  };
+  choose(0);
+  S.title = info.name || '그날의 기록'; S.sub = [where, names.slice(0, 2).join(' · ')].filter(Boolean).join(' · ') || (album ? `${ids.length - 1}박 ${ids.length}일` : '');
+  S.text = note ? note.split('\n').slice(0, 3).join(' ') : (S.cov.m || '');
+  const bg = el('div', { class: 'sheet-bg ps-bg', style: 'z-index:4300;background:#F2F5F9;align-items:stretch' });
+  const img = el('img', { alt: '포토스토리', style: 'width:100%;display:block;border-radius:22px;box-shadow:0 8px 28px rgba(16,42,67,.16);background:#E3EAF2;min-height:300px' });
+  const st = el('div', { class: 'sub', style: 'font-size:12.5px;text-align:center;min-height:18px;margin-top:8px' });
+  let blob = null, busy = false;
+  async function draw() {
+    const W = 1080, P = 44, HH = 1220, c = document.createElement('canvas'), g = c.getContext('2d'), F = `'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif`;
+    const wrap = (s, w, font, max) => { g.font = font; const L = []; let cur = ''; for (const ch of String(s)) { if (ch === '\n') { L.push(cur); cur = ''; continue; } if (g.measureText(cur + ch).width > w && cur) { const k = cur.lastIndexOf(' '); if (k > cur.length * .5) { L.push(cur.slice(0, k)); cur = cur.slice(k + 1) + ch; } else { L.push(cur); cur = ch; } } else cur += ch; } if (cur) L.push(cur); if (L.length > max) { L.length = max; L[max - 1] = L[max - 1].replace(/.{0,2}$/, '…'); } return L; };
+    const tL = wrap(S.title, W - P * 2 - 10, `800 76px ${F}`, 3), bodyL = S.text ? wrap(S.text, W - P * 2 - 70, `500 38px ${F}`, 6) : [];
+    const thH = S.pick.length ? Math.floor((W - P * 2 - 24 * 2) / 3) : 0, H = HH + (thH ? thH + 64 : 24) + (bodyL.length ? bodyL.length * 56 + 60 : 0) + 30;
+    c.width = W; c.height = H; g.fillStyle = '#EEF4F2'; g.fillRect(0, 0, W, H);
+    const pic = async r => { const bm = await createImageBitmap(r.blob || r.thumb); return bm; };
+    const cover = (bm, x, y, w, h, rad) => { g.save(); g.beginPath(); g.roundRect(x, y, w, h, rad); g.clip(); const s = Math.max(w / bm.width, h / bm.height), dw = bm.width * s, dh = bm.height * s; g.drawImage(bm, x + (w - dw) / 2, y + (h - dh) / 2.4, dw, dh); g.restore(); };
+    try { const bm = await pic(S.cov); cover(bm, 0, 0, W, HH, 0); bm.close && bm.close(); } catch { g.fillStyle = '#9FB3C8'; g.fillRect(0, 0, W, HH); }
+    const gr = g.createLinearGradient(0, HH * .42, 0, HH); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.66)'); g.fillStyle = gr; g.fillRect(0, 0, W, HH);
+    let y = HH - 60 - (S.sub ? 56 : 0) - tL.length * 92 - 70;
+    g.fillStyle = '#FFC9A8'; g.font = `700 34px ${F}`; g.fillText(`사진 이야기  ·  ${dTxt}`, P + 6, y); y += 92;
+    g.fillStyle = '#fff'; g.font = `800 76px ${F}`; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 16; tL.forEach(l => { g.fillText(l, P + 6, y); y += 92; }); g.shadowBlur = 0;
+    if (S.sub) { g.fillStyle = 'rgba(255,255,255,.88)'; g.font = `500 38px ${F}`; g.fillText(wrap(S.sub, W - P * 2, `500 38px ${F}`, 1)[0], P + 6, y - 20); }
+    y = HH + 40;
+    for (let i = 0; i < S.pick.length; i++) { try { const bm = await pic(S.pick[i]); cover(bm, P + i * (thH + 24), y, thH, thH, 26); bm.close && bm.close(); } catch {} }
+    if (thH) y += thH + 64;
+    if (bodyL.length) { g.fillStyle = '#FF8A6B'; g.fillRect(P + 6, y - 40, 7, bodyL.length * 56 - 6); g.fillStyle = '#1B2B3A'; g.font = `500 38px ${F}`; bodyL.forEach(l => { g.fillText(l, P + 40, y); y += 56; }); }
+    g.fillStyle = 'rgba(27,43,58,.38)'; g.font = `600 26px ${F}`; g.textAlign = 'right'; g.fillText('Map Photo Diary', W - P, H - 26); g.textAlign = 'left';
+    blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); if (img.src) URL.revokeObjectURL(img.src); img.src = URL.createObjectURL(blob);
+  }
+  async function aiWrite() {
+    const key = trBotKey(); if (!key || busy) return; busy = true; st.textContent = '✨ AI가 사진을 보고 글을 쓰는 중…';
+    try {
+      const facts = [`기록 이름: ${info.name}`, `날짜: ${dTxt}`, where ? `장소: ${where}` : '', names.length ? `지나간 곳: ${names.slice(0, 8).join(', ')}` : '', note ? `내 메모: ${note.slice(0, 300)}` : ''].filter(Boolean).join('\n');
+      const content = [];
+      for (const r of [S.cov, ...S.pick]) { try { content.push({ type: 'text', text: `사진${r.m ? ' · 내 메모: ' + r.m : ''}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await postImg64(r.blob || r.thumb) } }); } catch {} }
+      content.push({ type: 'text', text: `위는 내가 그날 찍은 사진이고, 아래는 앱이 내 기록에서 모은 사실이에요.\n${facts}\n\n이걸로 '사진 이야기' 카드 글을 한국어로 써 주세요.\n- title: 그날을 담은 짧고 감성적인 제목(18자 안팎, 사진에서 보이는 것으로)\n- sub: 장소를 담은 짧은 한 줄(20자 안팎, 위 사실의 장소 이름 그대로)\n- text: 2~3문장, 내가 쓴 것처럼 따뜻하게\n지킬 것: 사진에 보이는 것과 위 사실만. 장소·사람 이름·숫자를 지어내지 말고, 사진 속 사람을 누구라고 단정하지 말 것.\n답은 JSON 하나: {"title":"","sub":"","text":""}` });
+      toast(`✨ AI를 써요 · 포토스토리 글 · 사진 ${content.filter(q => q.type === 'image').length}장을 보내요`, true);
+      const { default: Anthropic } = await import(TALK_SDK);
+      const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 800, messages: [{ role: 'user', content }] });
+      const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '포토스토리 글', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+      toast(`✨ AI 사용 끝 · 포토스토리 글 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+      const tb = (res.content || []).filter(q => q.type === 'text').map(q => q.text).join(''); const j = JSON.parse((/\{[\s\S]*\}/.exec(tb) || ['{}'])[0]);
+      if (j.title) S.title = String(j.title).trim().slice(0, 40); if (j.sub) S.sub = String(j.sub).trim().slice(0, 40); if (j.text) S.text = String(j.text).trim().slice(0, 300); S.ai = true;
+      st.textContent = ''; await draw();
+    } catch (e) { st.textContent = '⚠ AI 글을 못 받았어요 · 기록 글로 만들었어요' + (e && e.message ? ` (${String(e.message).slice(0, 60)})` : ''); }
+    busy = false;
+  }
+  const fname = () => `MapDiary_story_${dTxt.replace(/\./g, '')}.jpg`;
+  const send = async () => { if (!blob) return; const f = new File([blob], fname(), { type: 'image/jpeg' });
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: S.title }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    savePhotoBlob(blob, fname()); toast('공유 창을 못 열어 휴대폰에 저장했어요'); };
+  const save = () => { if (!blob) return; savePhotoBlob(blob, fname()); toast('✅ 휴대폰에 저장했어요'); };
+  const more = () => { const m = labSheet('포토스토리',
+      el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:600;text-align:left', onclick: async () => { m.remove(); choose(1 + Math.floor(Math.random() * Math.max(1, all.length - 1))); await draw(); } }, '다른 사진으로'),
+      el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:600;text-align:left', onclick: async () => { m.remove(); const v = prompt('제목', S.title); if (v == null) return; S.title = v.trim() || S.title; const w = prompt('글', S.text); if (w != null) S.text = w.trim(); await draw(); } }, '제목·글 고치기'),
+      trBotKey() ? el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:600;text-align:left', onclick: () => { m.remove(); aiWrite(); } }, 'AI로 다시 쓰기') : null); };
+  const btn = (txt, cls, on) => el('button', { class: cls, type: 'button', onclick: on, style: 'flex:1;height:56px;border-radius:16px;border:none;font:inherit;font-weight:700;font-size:17px' }, txt);
+  bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '포토스토리', style: 'max-width:520px;width:100%;margin:0 auto;min-height:100%;border-radius:0;background:#F2F5F9;padding:14px 16px 96px;box-shadow:none' },
+    el('div', { style: 'display:flex;align-items:center;gap:12px;margin-bottom:14px' },
+      el('button', { class: 'n-ib', type: 'button', 'aria-label': '닫기', onclick: () => bg.remove() }, cSvg('x', 20)),
+      el('b', { style: 'flex:1;font-size:21px', text: '포토스토리' }),
+      el('button', { class: 'n-ib', type: 'button', 'aria-label': '더보기', onclick: more }, cSvg('more', 20))),
+    img, st),
+    el('div', { style: 'position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #E6EBF1;max-width:520px;margin:0 auto' },
+      btn('보내기', '', send), btn('저장', '', save)));
+  const [b1, b2] = bg.lastChild.children; b1.style.background = '#2563EB'; b1.style.color = '#fff'; b1.style.flex = '1.8'; b2.style.background = '#E8EFFB'; b2.style.color = '#2563EB';
+  document.body.append(bg);
+  await draw();
+  if (trBotKey()) aiWrite();
+}
 function postPtNear(r, la, ln) { let b = null, bd = 1e9; for (const q of r.pts || []) { const d = dist(la, ln, q.lat, q.lng); if (d <= q.r && d - (q.pk ? 40 : 0) < bd) { bd = d - (q.pk ? 40 : 0); b = q; } } return b; }
 function postNameOf(o, r) {   // 찍은 곳 이름: 기록에 남긴 이름 → 예전에 찾아 둔 지도 이름. 못 찾으면 undefined(아직 안 물음)
   if (o.la == null) return ''; const q = postPtNear(r, o.la, o.ln); if (q) return q.n;
@@ -14031,6 +14120,7 @@ async function viewMyOne(t) {
       live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x)),
       go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
       phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
+      live || !phAll.some(r => !isVid(r)) ? null : go('포토스토리 만들기', () => photoStory(t)),   // 판 -275
       live ? null : go('그림 앨범 보기', () => storyBook(t)),   // 판 -263
       live ? null : go('여행 후기 만들기 (블로그·인스타)', () => recPost(t)),   // 판 -269
       live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
