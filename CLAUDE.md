@@ -1032,6 +1032,12 @@
 - 계획 링크(`planPack`)에 함께 가는 사람 이름을 다시 넣음(`o.mb`=[[id, 이름, 보낸 사람이면 1]], 판 -195에서 뺐던 것). `planUnpack`이 mem으로, 보낸 사람(그 휴대폰의 planMe)은 `snd:1`
 - 초대 이름 창(`planAskName`): 이름이 있으면 '나는 누구인가요?' + 이름 칩(`.iv-ch`, 보낸 사람 빼고) → 누르면 고르고 칸에 이름, 아래 '목록에 없으면 직접 적기' 칸. 다음 → 그 사람 번호로 planMe(같은 번호라 같이 고치기·경비에서 한 사람). 이름이 없으면 예전처럼 적기만. 시험 scratchpad `g260/n.js`
 
+## 판 -262 📝 여행 후기 만들기 (2026-11-19, 사용자 '여행다녀와서 자랑용 자료' → 해설집·결산 카드 샘플은 '우리 여행 느낌이 없다' → '블로그에 올리거나 인스타에 올리거나' 샘플 → '앱에 넣어 만들어')
+- 여행 계획 ⋯ 더보기 맨 위 '📝 여행 후기 만들기 (블로그·인스타)' → `planPostSheet(p)`: 위 '인스타그램 | 블로그 후기' · 여행 날짜 사진 3칸 격자(고른 사진 산호 테·번호, 10장까지, 처음엔 날짜 고르게 10장 `postPick`) · 고칠 수 있는 글 칸 · '사진과 글 공유하기'(글은 먼저 복사 → 공유 창 files+text, 안 되면 사진 저장) · 글 복사 · 사진 저장(`savePhotos`)
+- 사진 `postPhotos`: 여행 날짜(`postRange`) 안의 이 휴대폰 MPD 사진(`trMpdPhotos`) · 앱이면 휴대폰 사진첩(`mdNativePhotos.between`) · 일행 채팅 사진(tp, 보이는 건 th, 원본은 `trFull`), 3초 안 같은 사진은 한 번, 동영상 뺌
+- 글 `postText(p, 'ig'|'bl')`: 앱이 정한 틀(AI 안 씀) — 장소는 그날 구경·공연·정상 이름(`postPlaces`: 여행사 이름 앞부분, 마사지·라운지·VR·쇼핑·공항 등 뺌), 소개 한 줄은 여행사 안내 첫 문장(`postSnip`, 없으면 '하이라이트' 첫 줄), 꿀팁은 여행사 안내의 주의·착용·불가 문장(`postTips`, 같은 말 한 번), 걸은 거리는 여행 날짜 MPD 기록(`postWalk`, trackStats walk), 해시태그 = 여행지·장소·해외/국내·하나투어. 블로그엔 날마다 '[사진]' 자리와 '(여기에 소감을…)'. 계획·사진·기록은 읽기만
+- 시험 scratchpad `post/t.js`(실제 장가계 계획 링크 + 예시 사진 9장 + 가짜 기록), 그림 `post/ig.png`·`bl.png`. 샘플 페이지: 해설집 https://claude.ai/artifact/7ZJwWzMr6mCeWuDnguFhbG · 결산 카드 https://claude.ai/artifact/JSQa1fvpNKNxj69scUgadt · 인스타·블로그 https://claude.ai/artifact/3MfgLpyeZeMqCKATcEjVEk
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
