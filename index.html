@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-263-storybook';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-264-storybook2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "다녀온 기록으로 그림 앨범을 만들어요 · 내 MPD 기록 ⋯ 더보기 → 그림 앨범 보기 · 동화책 그림 같은 약도에 다닌 길과 사진 찍은 곳 번호, 아래에 같은 번호의 사진";
+const UI_NOTES = "그림 앨범 약도에 산 정상(⛰ 이름·높이)과 사진 번호마다 장소 이름이 나와요 · 이름은 사진 메모 → 정상·별표 → 출발·도착 → 지도 이름 순 · 사진 아래 글에도 그 이름";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13176,7 +13176,8 @@ async function peaksAt(lat, lng) {
   return (peaksAt.busy[k] = (async () => {
     try {
       const q = `[out:json][timeout:25];node["natural"="peak"]["name"](${s},${w},${n},${e});out body;`;
-      const j = await (await fetchT('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), {}, 30000)).json();
+      let j = null; for (const h of ['overpass-api.de', 'overpass.kumi.systems']) { try { j = await (await fetchT(`https://${h}/api/interpreter?data=` + encodeURIComponent(q), {}, 25000)).json(); if (j && j.elements) break; } catch {} }   // 판 -264: 막히면 다른 서버
+      if (!j || !j.elements) throw 0;
       const p = (j.elements || []).map(o => [String(o.tags['name:ko'] || o.tags.name).slice(0, 30), +o.lat.toFixed(5), +o.lon.toFixed(5), parseInt(o.tags.ele) || 0]);
       const c = ls.get('peakCache', {}); c[k] = { at: Date.now(), p };
       const ks = Object.keys(c); if (ks.length > 80) ks.sort((x, y) => c[x].at - c[y].at).slice(0, ks.length - 80).forEach(x => delete c[x]);
@@ -13698,15 +13699,27 @@ async function storyBook(t) {
     if (tr.length < 2 && !phs.length) continue;
     const dd = new Date((tr[0] && tr[0][2]) || (phs[0] && phs[0].ts) || Date.now()), nm = ls.get('trackName:' + dt, '') || info.name || '';
     const pg = el('section', { class: 'sbk-pg' }, el('div', { class: 'sbk-dh' }, isA ? el('b', { text: `${di + 1}일차` }) : null, el('span', { text: `${dd.getMonth() + 1}월 ${dd.getDate()}일 (${'일월화수목금토'[dd.getDay()]})` })), (t0 => isA && t0 ? el('h2', { text: t0 }) : null)(String(nm).replace(info.name || '\u0000', '').replace(/^\s*[·\-–]?\s*\d+\s*일차\s*$/, '').trim()));
-    // 사진: 12장까지 고르게, 위치 있는 건 약도 번호로 묶음(그림에서 28px 안)
+    // 판 -264 사용자 '각 포인트 이름 넣자 · 인왕산 정상이 없는게 말이되?': 정상(⛰)과 번호마다 이름
+    let sm = (ls.get('walkSummits:' + dt, null) || []).filter(s => Number.isFinite(s.lat));
     const pick = phs.length <= 12 ? phs : Array.from({ length: 12 }, (_, i) => phs[Math.round(i * (phs.length - 1) / 11)]);
     const loc = pick.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
-    const all = [...tr.map(q => [q[0], q[1]]), ...loc.map(p => [p.lat, p.lng]), ...spots.map(s => [s.lat, s.lng])];
-    const W = 340; let H = 250;
+    const W = 340; let H = 250, svg = null, marks = [];
+    const NM = ls.get('sbNames', {}), nmKey = (a, b) => `${a.toFixed(4)}_${b.toFixed(4)}`;
+    // 번호 이름: 사진 메모 → 150m 안 정상 → 별표·들른 곳 → 출발·도착 곳 → 지도 이름(받아 둔 것)
+    const markName = m => { const c = m.ph[0], la = m.ph.reduce((s, p) => s + p.lat, 0) / m.ph.length, ln = m.ph.reduce((s, p) => s + p.lng, 0) / m.ph.length; m.la = la; m.ln = ln;
+      const memo = m.ph.find(p => p.m); if (memo) return { n: String(memo.m), own: 1 };
+      const s1 = sm.find(s => dist(s.lat, s.lng, la, ln) < 150); if (s1) return { n: s1.n, dup: 1 };
+      const sp = spots.filter(s => s.n).sort((a, b) => dist(a.lat, a.lng, la, ln) - dist(b.lat, b.lng, la, ln))[0]; if (sp && dist(sp.lat, sp.lng, la, ln) < 150) return { n: String(sp.n), dup: 1 };
+      if (tr.length >= 2 && wp.start && dist(tr[0][0], tr[0][1], la, ln) < 120) return { n: wp.start, dup: 1 };
+      if (tr.length >= 2 && wp.end && dist(tr[tr.length - 1][0], tr[tr.length - 1][1], la, ln) < 120) return { n: wp.end, dup: 1 };
+      const g = NM[nmKey(la, ln)]; return g ? { n: g } : null; void c; };
+    const caps = [];
+    const seed0 = seed;
+    const draw = () => { seed = seed0; const all = [...tr.map(q => [q[0], q[1]]), ...loc.map(p => [p.lat, p.lng]), ...spots.map(s => [s.lat, s.lng]), ...sm.map(s => [s.lat, s.lng])];
     if (all.length >= 2) {
       const la = all.map(p => p[0]), lo = all.map(p => p[1]), asp = ((Math.max(...la) - Math.min(...la)) || 1e-4) / (((Math.max(...lo) - Math.min(...lo)) * Math.cos(la[0] * Math.PI / 180)) || 1e-4);
       H = Math.round(Math.max(210, Math.min(380, (W - 70) * asp + 70)));
-      const f = sbProj(all, W, H, 34), svg = mk('svg', { class: 'sbk-map', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '그림 약도' });
+      const f = sbProj(all, W, H, 34), old = svg; svg = mk('svg', { class: 'sbk-map', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '그림 약도' });
       svg.appendChild(mk('defs', {}, [mk('filter', { id: 'sbr' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .035, numOctaves: 2, seed: di + 3 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 3 })]),
         mk('filter', { id: 'sbw' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .015, numOctaves: 3, seed: di + 9 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 22 }), mk('feGaussianBlur', { stdDeviation: 1.2 })])]));
       // 길(그림 좌표로 3px 넘게 떨어진 점만, 400개까지)
@@ -13725,33 +13738,59 @@ async function storyBook(t) {
       if (Rs.length > 1) { let dP = `M${Rs[0][0].toFixed(1)} ${Rs[0][1].toFixed(1)}`; for (let i = 1; i < Rs.length; i++) { const a = Rs[i - 1], b = Rs[i]; dP += ` Q${a[0].toFixed(1)} ${a[1].toFixed(1)} ${((a[0] + b[0]) / 2).toFixed(1)} ${((a[1] + b[1]) / 2).toFixed(1)}`; } dP += ` L${Rs[Rs.length - 1][0].toFixed(1)} ${Rs[Rs.length - 1][1].toFixed(1)}`;
         svg.appendChild(mk('path', { d: dP, fill: 'none', stroke: '#fff', 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: .85, filter: `url(#sbr${di})` }));
         svg.appendChild(mk('path', { class: 'sbk-walk', d: dP, fill: 'none', stroke: '#E4603F', 'stroke-width': 2.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': '6 7', filter: `url(#sbr${di})` })); }
-      const marks = [], boxes = [];   // 번호 묶기
+      marks = []; const boxes = [];   // 번호 묶기
       loc.forEach(p => { const q = f(p.lat, p.lng), g = marks.find(m => Math.hypot(m.x - q[0], m.y - q[1]) < 28); if (g) g.ph.push(p); else marks.push({ x: q[0], y: q[1], ph: [p] }); });
-      marks.forEach((m, i) => { m.no = i + 1; m.ph.forEach(p => p._no = m.no); });
+      marks.forEach((m, i) => { m.no = i + 1; m.ph.forEach(p => p._no = m.no); m.nm = markName(m); });
       const lab = [];   // 이름: 출발·도착·★
       if (Rs.length > 1) { lab.push({ p: Rs[0], n: wp.start || '출발', k: 'home' }); if (Math.hypot(Rs[0][0] - Rs[Rs.length - 1][0], Rs[0][1] - Rs[Rs.length - 1][1]) > 24) lab.push({ p: Rs[Rs.length - 1], n: wp.end || '도착', k: 'end' }); }
       spots.slice(0, 8).forEach(s => { if (s.n) lab.push({ p: f(s.lat, s.lng), n: String(s.n).slice(0, 12), k: 'star' }); });
+      sm.slice(0, 4).forEach(s => lab.unshift({ p: f(s.lat, s.lng), n: `${s.n}${s.ele ? ' ' + s.ele + 'm' : ''}`, k: 'peak' }));
       lab.forEach(L0 => { const [x1, y1] = L0.p, g = mk('g', { transform: `translate(${x1.toFixed(1)} ${y1.toFixed(1)})` });
         if (L0.k === 'home') { g.appendChild(mk('path', { d: 'M-8 4 L-8 -3 L0 -10 L8 -3 L8 4 Z', fill: '#fff', stroke: '#5A4433', 'stroke-width': 1.2, 'stroke-linejoin': 'round' })); g.appendChild(mk('rect', { x: -2, y: -2, width: 4, height: 6, fill: '#E4603F' })); }
+        else if (L0.k === 'peak') { g.setAttribute('transform', `translate(${x1.toFixed(1)} ${(y1 - 12).toFixed(1)}) scale(1.35)`); g.appendChild(mk('path', { d: 'M-13 6 L0 -14 L13 6 Z', fill: '#B9A58A', stroke: '#5A4433', 'stroke-width': 1.2, 'stroke-linejoin': 'round' })); g.appendChild(mk('path', { d: 'M-4.5 -7 L0 -14 L4.5 -7 L2 -5 L0 -7 L-2 -5 Z', fill: '#fff', stroke: '#5A4433', 'stroke-width': .8, 'stroke-linejoin': 'round' })); g.appendChild(mk('path', { d: 'M0 -14 L0 -24 L8 -21 L0 -18', fill: '#E4603F', stroke: '#5A4433', 'stroke-width': .9 })); }
         else if (L0.k === 'end') g.appendChild(mk('path', { d: 'M-1 6 L-1 -11 L9 -7 L-1 -3', fill: '#E4603F', stroke: '#5A4433', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }));
         else g.appendChild(mk('path', { d: 'M0 -7 L2 -2 L7 -2 L3 1.5 L4.5 7 L0 3.5 L-4.5 7 L-3 1.5 L-7 -2 L-2 -2 Z', fill: '#F4C25A', stroke: '#5A4433', 'stroke-width': .9 }));
-        svg.appendChild(g); boxes.push([x1 - 10, y1 - 12, x1 + 10, y1 + 8]); });
+        svg.appendChild(g); boxes.push(L0.k === 'peak' ? [x1 - 19, y1 - 46, x1 + 19, y1 - 2] : [x1 - 10, y1 - 12, x1 + 10, y1 + 8]); });
       marks.forEach(m => { const g = mk('g', { transform: `translate(${m.x.toFixed(1)} ${m.y.toFixed(1)})` }); g.appendChild(mk('circle', { r: 10, fill: '#E4603F', stroke: '#fff', 'stroke-width': 2 }));
         g.appendChild(mk('text', { y: 4.5, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: '#fff', 'font-family': 'Gowun Dodum,sans-serif' }, [document.createTextNode(String(m.no))])); svg.appendChild(g); boxes.push([m.x - 11, m.y - 11, m.x + 11, m.y + 11]); });
       const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-      lab.forEach(L0 => { const [x1, y1] = L0.p, w = [...L0.n].length * 8.6 + 4, r0 = 12;
-        const C = [[x1 + r0, y1 - 9, 'start'], [x1 - r0 - w, y1 - 9, 'end'], [x1 - w / 2, y1 - 30, 'middle'], [x1 - w / 2, y1 + 10, 'middle']].map(([bx, by, an]) => ({ b: [bx, by, bx + w, by + 18], an }));
+      const names = lab.map(q => q.n);
+      marks.forEach(m => { if (!m.nm) return; const n = m.nm.n.replace(/\s+/g, ' ').trim(), sh = [...n].length > 10 ? [...n].slice(0, 9).join('') + '…' : n;
+        if (!names.some(q => q.startsWith(m.nm.n) || q === sh)) { lab.push({ p: [m.x, m.y], n: sh, k: 'pt' }); names.push(sh); } });
+      lab.forEach(L0 => { const fs = L0.k === 'pt' ? 15.5 : L0.k === 'peak' ? 19 : 17, cw = fs * .5 + (L0.k === 'pt' ? 1.4 : .1), [x1, y1] = L0.p, w = [...L0.n].length * cw + 4, r0 = L0.k === 'peak' ? 15 : 12;
+        const yo = L0.k === 'peak' ? y1 - 26 : y1 - 9, C = [[x1 + r0 + (L0.k === 'peak' ? 6 : 0), yo, 'start'], [x1 - r0 - w - (L0.k === 'peak' ? 6 : 0), yo, 'end'], [x1 - w / 2, y1 - (L0.k === 'peak' ? 64 : 30), 'middle'], [x1 - w / 2, y1 + 10, 'middle']].map(([bx, by, an]) => ({ b: [bx, by, bx + w, by + 18], an }));
         const c = C.find(c => c.b[0] >= 2 && c.b[2] <= W - 2 && c.b[1] >= 2 && c.b[3] <= H - 2 && !boxes.some(q => hit(c.b, q))) || C.find(c => c.b[0] >= 2 && c.b[2] <= W - 2) || C[0]; boxes.push(c.b);
-        svg.appendChild(tx(L0.n, { x: (c.an === 'start' ? c.b[0] : c.an === 'end' ? c.b[2] : (c.b[0] + c.b[2]) / 2).toFixed(1), y: (c.b[1] + 14).toFixed(1), 'text-anchor': c.an, 'font-size': 17 })); });
+        svg.appendChild(tx(L0.n, Object.assign({ x: (c.an === 'start' ? c.b[0] : c.an === 'end' ? c.b[2] : (c.b[0] + c.b[2]) / 2).toFixed(1), y: (c.b[1] + 14).toFixed(1), 'text-anchor': c.an, 'font-size': fs }, L0.k === 'peak' ? { 'font-weight': 700 } : L0.k === 'pt' ? { fill: '#6B4F3A' } : {}))); });
       svg.appendChild(mk('g', { transform: `translate(${W - 22} ${H - 22})` }, [mk('circle', { r: 11, fill: 'none', stroke: '#5A4433', 'stroke-width': .8 }), mk('path', { d: 'M0 -10 L3 0 L0 10 L-3 0 Z', fill: '#E4603F', stroke: '#5A4433', 'stroke-width': .6 }), tx('북', { y: -14, 'text-anchor': 'middle', 'font-size': 11, stroke: 'none' })]));
-      pg.append(svg);
-    }
+      if (old && old.parentNode) old.replaceWith(svg); else pg.append(svg);
+    } };
+    draw();
     if (pick.length) { const grid = el('div', { class: 'sbk-ph' });
-      pick.forEach(p => { const sp = spots.find(s => Number.isFinite(p.lat) && dist(s.lat, s.lng, p.lat, p.lng) < 150);
+      pick.forEach(p => { const sp = spots.find(s => Number.isFinite(p.lat) && dist(s.lat, s.lng, p.lat, p.lng) < 150), cap = el('figcaption');
+        const capSet = () => { const m = marks.find(q => q.no === p._no), nm = !p.m && m && m.nm ? m.nm.n : ''; cap.textContent = (p.m ? String(p.m) : nm || (sp && sp.n) || hm(p.ts)).slice(0, 16); };
+        capSet(); caps.push(capSet);
         grid.append(el('figure', { class: 'sbk-pol', onclick: () => showPhoto(p, pick) }, el('span', { class: 'sbk-tape' }), el('img', { src: phSrc(p), loading: 'lazy', decoding: 'async', alt: '' }),
-          p._no ? el('span', { class: 'sbk-no', text: String(p._no) }) : null, el('figcaption', { text: (p.m || (sp && sp.n) || hm(p.ts)).slice(0, 18) }))); });
+          p._no ? el('span', { class: 'sbk-no', text: String(p._no) }) : null, cap)); });
       pg.append(grid); }
     else pg.append(el('div', { class: 'sbk-s', style: 'margin-top:8px', text: '이날 찍은 사진이 없어요' }));
+    // 정상(길 150m 안, 산 정상 자료)과 이름 없는 번호의 이름(OpenStreetMap)을 받아 다시 그려요 · 받은 이름은 이 휴대폰에 두고 다시 안 물음(기록은 안 바꿈)
+    if (navigator.onLine) (async () => { let got = 0;
+      if (tr.length >= 2) { const cells = new Set(); tr.forEach((q, i) => { if (i % 5 === 0 || i === tr.length - 1) cells.add(peakKey(q[0], q[1])); });
+        if (cells.size <= 12) for (const k of cells) { const [a, b] = k.split('_').map(Number); const P = await peaksAt((a + .5) / 5, (b + .5) / 5) || [];
+          for (const p of P) { if (sm.some(o => o.n === p[0] && dist(o.lat, o.lng, p[1], p[2]) < 300)) continue;
+            let best = 1e9; for (const q of tr) { const d1 = dist(q[0], q[1], p[1], p[2]); if (d1 < best) best = d1; }
+            if (best <= 150) { sm.push({ n: p[0], ele: p[3] || null, lat: p[1], lng: p[2] }); got++; } } } }
+      if (got && wrap.isConnected) { draw(); caps.forEach(f => f()); } got = 0;
+      const BAD = /폐쇄|불분명|금지|통제|출입|주의|위험|공사|화장실|벤치|주차|쓰레기|\d+[가-하]?길$|로\d+길$/;
+      for (const m of marks.filter(m => !m.nm && m.la != null)) { if (!wrap.isConnected) return;
+        try { const j = await (await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=ko&lat=${m.la.toFixed(5)}&lon=${m.ln.toFixed(5)}`, {}, 12000)).json(), a = j.address || {};
+          const cut = v => String(v || '').replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s*\d+\s*코스.*$/, '').trim();
+          const poi = /^(tourism|historic|leisure|natural|amenity|man_made|building|place)$/.test(j.category || '') ? cut(j.name) : '';
+          const trail = /^(path|footway|track|steps|pedestrian)$/.test(j.type || '') || /둘레길|자락길|순성길|성곽|등산로|숲길|산책로|올레/.test(a.road || '') ? cut(a.road) : '';
+          const n = [poi, trail, a.tourism, a.historic, a.attraction, a.leisure, a.neighbourhood, a.quarter, a.suburb].map(cut).find(v => v && !BAD.test(v)) || '';
+          if (n) { const D = ls.get('sbNames', {}), ks = Object.keys(D); if (ks.length > 400) ks.slice(0, 100).forEach(k => delete D[k]); D[nmKey(m.la, m.ln)] = n.slice(0, 30); NM[nmKey(m.la, m.ln)] = n.slice(0, 30); ls.set('sbNames', D); got++; } } catch {}
+        await new Promise(r => setTimeout(r, 1100)); }
+      if (got && wrap.isConnected) { draw(); caps.forEach(f => f()); } })();
     book.append(pg);
   }
   if (book.children.length < 2) book.append(el('section', { class: 'sbk-pg' }, el('div', { class: 'sbk-s', text: '그릴 길이나 사진이 아직 없어요' })));
