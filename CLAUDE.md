@@ -1063,6 +1063,9 @@
 - 이름: Overpass(overpass-api.de → kumi)로 덩어리 가운데 둘레(약도 대각선 반, 1.5~20km)의 이름 있는 만·해협(natural bay·strait) > 강·호수(waterway river·canal, natural water) > 바다(place sea·ocean 60km)에서 가까운 것, name:ko 먼저. Nominatim 거꾸로 찾기는 물 이름을 안 줘서 못 씀. 받은 이름은 `sbNames`에 'w:좌표' 키로
 - 시험 scratchpad `sbk2/t.js RIVER=1`(가짜 지도 조각 + 가짜 Overpass '한강'). 이 클라우드에서 Overpass가 막혀 실제 이름(예: 사용자 10월 17일 기록의 바다)은 확인 못 함
 
+## 판 -267 기록 보기 머리줄 상태 표시줄 아래로 (2026-11-19, 사용자 인천대공원 기록 보기 캡처에 머리줄을 빨간 줄로 그리며 '요거 내려 조금')
+- 판 -247 `.vw-bar`가 `margin-top:-20px`로 올라가 앱에서 상태 표시줄(시각·배터리) 밑에 반쯤 깔렸음 → 바탕을 상태 표시줄 밑까지 올리고(`margin-top: -20px - safe-area`) 그만큼 `padding-top: safe-area`·높이 52px + safe-area라 단추·로고는 상태 표시줄 바로 아래. 판 -212 첫 화면과 같은 방식. safe-area 값이 0인 기기(웹)에선 예전과 같음. 실제 휴대폰으로는 확인 못 함
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
