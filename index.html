@@ -1454,7 +1454,7 @@ const ls = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
 };
 // 분위기(테마): 'sea' 바닷가(기본, 2026-10-16) / 'mt' 예전 산 분위기. 첫 화면 맨 아래에서 바꿔요
-document.documentElement.dataset.theme = ls.get('theme', 'sea');
+document.documentElement.dataset.theme = 'sea';   // 판 -274: 화면 분위기 고르기 뺌(새 디자인이 덮어서 차이가 없음)
 { const d = document.createElement('div'); d.className = 'sky-clouds'; d.setAttribute('aria-hidden', 'true'); document.body.prepend(d); }   // 바닷가일 때 하늘에 흘러가는 구름
 let offset = 0;
 const now = () => Date.now() + offset;
@@ -3546,11 +3546,10 @@ function openBrag(info, t, count, allDone, room) {
       document.body.append(pb);
     } }),
     count ? el('div', { class: 'check' }, cnt, el('label', { for: 'bg-c', text: '참여 인원 수 보이기' })) : null,
-    hideBox, phBox, shBox, secBox,
+    hideBox, phBox, shBox,   // 판 -274: 비밀코드 걸기 뺌(링크는 늘 잠겨 가요)
     // 모임방 목록에서 '내 MPD 올리기'로 왔으면 그 방에 올리는 버튼이 맨 위
     room ? el('button', { class: 'btn primary full big', onclick: async () => { if (await roomPost(room, cardOpts)) { bg.remove(); location.reload(); } } }, `'${room.name}'에 올리기`) : null,
     ...card.actions,
-    room ? null : roomPostBtn(() => cardOpts),
     room || !t ? null : el('button', { class: 'btn line full', onclick: () => famFromMD(t, info.name) }, '📸 가족 앨범에 올리기'),
     el('button', { class: 'btn line small', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
@@ -3563,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-273-blogpv';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-274-slim';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "블로그 후기는 글 사이에 사진이 들어간 실제 모양으로 보여요 · 사진 번호는 찍은 차례로, 글 속 [사진 n]과 저장 파일 번호가 같아요 · 블로그 글 복사는 사진까지 함께 복사해 봐요";
+const UI_NOTES = "앱을 가볍게 정리했어요 · 모임방·게임·실험실·화면 분위기·비밀코드·지금 연 곳 표시를 뺐어요 · 밥값 내기는 처음 화면 목록에 그대로 있어요 · 예전 기록·사진은 그대로예요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4485,10 +4484,9 @@ function appSettings() {
     const homeRow = hsNow === 'photo' ? row('', '첫 화면 꾸미기', ls.get('homeDeco', null) ? '내가 꾸밈' : '저절로', () => { cb.remove(); homeDecoEdit(); }) : null;
     if (homeRow) homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
-    body.replaceChildren(
+    body.replaceChildren(...[   // 판 -274: null을 빼요(웹에선 '기록' 묶음이 없어 'nullnull' 글자가 보였음)
       profileHead(done),
-      head('화면'), grp(styleRow, homeRow, photoRow,
-      row('🎨', '화면 분위기', sea ? '바닷가' : '산', () => { ls.set('theme', sea ? 'mt' : 'sea'); document.documentElement.dataset.theme = sea ? 'mt' : 'sea'; done(); })),
+      head('화면'), grp(styleRow, homeRow, photoRow),
       head('계정'), grp( (() => { const a = cloudAcct();
         return row(a ? (a.via === '카카오' ? '💬' : '🔑') : '🔑', '로그인', a ? [a.via, a.code].filter(Boolean).join(' ') : '안 함', () => { if (a && a.code) toast(`계정 번호 ${a.code} · 휴대폰 앱과 크롬의 번호가 같아야 기록·지운 사진이 서로 맞춰져요`, 0, 6000); setTimeout(() => { location.href = './?my=1'; }, a && a.code ? 1500 : 0); }); })(),
       row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg` : '안 정함', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
@@ -4501,15 +4499,12 @@ function appSettings() {
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '안 정함', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
       row('🔊', '1km 음성 안내', voice ? '켬' : '끔', () => { ls.set('runVoice', !voice); done(); }),
       ),
-      head('실험실'), grp(
-      row('🧪', 'AI 추억 발견', '시험 중', () => { location.href = './?lab=mem'; }),
-      ),
       head('연결'), grp(
       row('📸', '가족 앨범', '', () => { location.href = './?album=1'; }),
       row('⌚', '시계 연결', watchGet() ? '연결됨' : '안 함', () => { location.href = './?my=1'; }),
       row('☁️', '기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '안 함';
         const L = ls.get('cloudLast', null); return !L ? '아직' : !L.ok || L.bad ? '⚠ 다시' : `✅ ${L.n}개`; })(), () => { location.href = './?my=1'; })),
-      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `${w.t} · 판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` }));
+      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` })].filter(Boolean));
   };
   paint();
   cb.append(el('div', { class: 'sheet st-full', role: 'dialog', 'aria-label': '나 · 설정' }, el('div', { class: 'st-in' },
@@ -4746,7 +4741,7 @@ const kakaoOut = () => { const u = new URL(location.href); u.searchParams.set('i
 function drawInstall() {
   if (!installSlot) return;
   // 개발자 보기(devMode): 앱으로 열었거나 ✕로 숨겼어도 카드를 보여 줘요. 첫 화면 'MPD' 딱지를 5번 누르면 켜고 꺼요
-  const dev = ls.get('devMode', false);
+  const dev = false;   // 판 -274 개발자 보기 뺌
   if (!dev && (IS_APP || ls.get('installHide', false) || (ls.get('installed', false) && !installEv))) return installSlot.replaceChildren();
   const go = IN_KAKAO ? kakaoOut
     : installEv ? async () => { const e = installEv; installEv = null; e.prompt(); const r = await e.userChoice.catch(() => null); if (r && r.outcome !== 'accepted') installEv = e; drawInstall(); }
@@ -8160,129 +8155,6 @@ function planMapEdit(p, d0, done) {
   paintChips(); paint();
   setTimeout(() => { map = L.map(mapEl); mdTileLayer({ vec: true }).addTo(map); map.on('click', e => { if (mode === 'add') addAt(e.latlng.lat, e.latlng.lng); else if (sel) { sel = null; paint(); draw(false); } }); draw(true); route(); }, 30);
 }
-// 판 -120 🧭 길 안내 (2026-11-15 사용자 '네비게이션 기능 넣고'): 계획 지도에 그려 둔 길(받아 둔 걷는 길, 없으면 직선)을 따라 지금 위치로 안내.
-//   다음 꺾는 곳(길 모양에서 35° 넘게 꺾이는 곳, 인터넷 없이 셈)·남은 거리·도착 예정 · 길에서 50m 넘게 15초 벗어나면 진동·목소리 · 장소 30m 안이면 '다녀옴'(okNav) 표시하고 다음 곳으로
-//   지도는 내 위치를 따라감(손으로 움직이면 멈추고 ◎로 다시) · 화면 켜 둠 · 🔊 목소리 켜고 끄기(ls navVoice)
-function planNav(p, d0, done) {
-  const d = Math.max(0, Math.min(p.nd - 1, d0 | 0)), hike = !!(p.hike && p.hike.on), spd = hike ? 3.5 : 4;
-  const L2 = planItems(p, d).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng) && x.k !== 'fly'); const NOL = planNoMap(planItems(p, d));
-  if (L2.length < 2) return toast('위치가 있는 장소가 두 곳은 있어야 길 안내를 할 수 있어요');
-  const toXY = (o, q) => [(q[1] - o[1]) * 111320 * Math.cos(o[0] * Math.PI / 180), (q[0] - o[0]) * 110540];
-  const mkLeg = (a, b) => { const R = planWalkPair(a, b, p) && planRtGet(a, b); let P = (R && R.c && R.c.length > 1 ? R.c : [[a.lat, a.lng], [b.lat, b.lng]]).map(q => [+q[0], +q[1]]);
-    const S = [0]; for (let i = 1; i < P.length; i++) S.push(S[i - 1] + dist(P[i - 1][0], P[i - 1][1], P[i][0], P[i][1]));
-    const T = []; const Q = [P[0]]; for (let i = 1; i < P.length; i++) if (dist(Q[Q.length - 1][0], Q[Q.length - 1][1], P[i][0], P[i][1]) > 10 || i === P.length - 1) Q.push(P[i]);
-    let qs = 0; for (let i = 1; i < Q.length - 1; i++) { qs += dist(Q[i - 1][0], Q[i - 1][1], Q[i][0], Q[i][1]);
-      let dl = bearing(Q[i][0], Q[i][1], Q[i + 1][0], Q[i + 1][1]) - bearing(Q[i - 1][0], Q[i - 1][1], Q[i][0], Q[i][1]); dl = ((dl + 540) % 360) - 180;
-      if (Math.abs(dl) >= 35) { const t = { s: qs, dir: dl > 0 ? 'r' : 'l', big: Math.abs(dl) >= 120 }; if (T.length && qs - T[T.length - 1].s < 12) T[T.length - 1] = t; else T.push(t); } }
-    return { a, b, P, S, len: S[S.length - 1], T, real: !!R, up: R && R.up || 0 }; };
-  const legs = []; for (let i = 1; i < L2.length; i++) legs.push(mkLeg(L2[i - 1], L2[i]));
-  let ti = L2.findIndex(x => !x.ok); if (ti < 0) ti = 0;
-  let pos = null, follow = true, wid = null, wake = null, offT = 0, offSaid = 0, said = {}, map = null, me = null, ac = null, lay = null, hd = null, closed = 0, tl = null;
-  // 판 -121: 실제로 지나온 길(산호색)을 따로 남김 · ls navTrail:{계획}:{일차} = {at, c:[[lat,lng]]} · 20시간 지나면 새로 · 8m 넘게 움직이고 오차 50m 아래일 때만
-  // 판 -122: 길 안내를 켜면 MPD 기록도 같이(사용자 '길안내 시작하면 mpd기록 되게해') · 이미 기록 중이면 그 기록에 이어 붙이고 끝낼 때도 그대로 둠
-  let recId = ls.get('walkNow', null), recMine = false;
-  if (!recId) { recId = 'walk_' + rid(8); recMine = true; const mk = p.hike && p.hike.on || (p.it || []).some(x => x.k === 'peak') ? 'hike' : 'trek';
-    ls.set('walkNow', recId); ls.set('walkAt', Date.now()); ls.set('walkMode:' + recId, mk); ls.set('lastMode', mk);
-    ls.set('trackName:' + recId, (p.nd > 1 ? `${p.name} ${d + 1}일차` : p.name).slice(0, 40)); ls.set('navRecOf:' + recId, { p: p.id, d }); }
-  const recNote = el('div', { style: 'display:flex;align-items:center;gap:6px;font:800 12.5px Pretendard,sans-serif;color:#FFB4A6;margin-top:8px' }, el('span', { style: 'width:8px;height:8px;border-radius:50%;background:#E5383B;box-shadow:0 0 0 3px rgba(229,56,59,.3)' }), `MPD 기록 중 · ${ls.get('trackName:' + recId, '')}${recMine ? '' : ' (이어서)'}`);
-  const recEnd = () => { if (!recMine) { toast('길 안내를 끝냈어요 · 기록은 계속 이어지고 있어요'); return; }
-    const tr = trackLoad(recId); ls.set('walkNow', null);
-    if (tr.length < 2) { ['track:', 'trackName:', 'walkMode:', 'navRecOf:'].forEach(k => localStorage.removeItem(k + recId)); toast('움직인 길이 없어 기록은 남기지 않았어요'); return; }
-    const ok = L2.filter(x => x.ok); ls.set('walkPlaces:' + recId, { start: (ok[0] || L2[0]).n || '', end: ok.length ? ok[ok.length - 1].n : '' });
-    setTimeout(() => { try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} }, 300);
-    const t = el('div', { class: 'toast', style: 'pointer-events:auto' }, '✅ MPD 기록으로 저장했어요 · ', el('a', { href: './?my=1&t=' + recId, style: 'color:#fff;font-weight:800;text-decoration:underline' }, '기록 보기 ›'));
-    document.body.append(t); setTimeout(() => t.remove(), 7000); };
-  const tKey = 'navTrail:' + p.id + ':' + d; let trail = ls.get(tKey, null); if (!trail || !Array.isArray(trail.c) || Date.now() - (trail.at || 0) > 20 * 3600000) trail = { at: Date.now(), c: [] };
-  const trailM = () => { let m = 0; for (let i = 1; i < trail.c.length; i++) m += dist(trail.c[i - 1][0], trail.c[i - 1][1], trail.c[i][0], trail.c[i][1]); return m; };
-  const voiceOn = () => ls.get('navVoice', true);
-  const say = t => { if (!voiceOn()) return; try { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch {} };
-  const buzz = pat => { try { navigator.vibrate && navigator.vibrate(pat); } catch {} };
-  const fmM = m => m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.max(0, Math.round(m / 10) * 10) + 'm';
-  const sayM = m => m >= 1000 ? (m / 1000).toFixed(1) + '킬로미터' : Math.max(10, Math.round(m / 10) * 10) + '미터';
-  const proj = (leg, q) => { let best = { off: 1e9, s: 0 }; for (let i = 1; i < leg.P.length; i++) { const A = leg.P[i - 1], B = toXY(A, leg.P[i]), X = toXY(A, q), L = B[0] * B[0] + B[1] * B[1];
-      const t = L ? Math.max(0, Math.min(1, (X[0] * B[0] + X[1] * B[1]) / L)) : 0, dx = X[0] - t * B[0], dy = X[1] - t * B[1], o = Math.hypot(dx, dy);
-      if (o < best.off) best = { off: o, s: leg.S[i - 1] + t * (leg.S[i] - leg.S[i - 1]) }; } return best; };
-  const arrow = el('div', { style: 'flex:none;width:58px;height:58px;border-radius:16px;background:#1D9EC0;color:#fff;display:flex;align-items:center;justify-content:center;font:900 34px Pretendard,sans-serif', text: '↑' });
-  const big = el('div', { style: 'font:800 22px Pretendard,sans-serif;line-height:1.2', text: '내 위치를 찾는 중…' });
-  const sub = el('div', { style: 'font-size:13.5px;color:#C9D3DD;margin-top:3px;line-height:1.35' });
-  const warn = el('div', { style: 'display:none;background:#E5383B;color:#fff;font:800 14px Pretendard,sans-serif;padding:8px 12px;border-radius:12px;margin-top:8px' });
-  const bot = el('div', { style: 'font:800 17px Pretendard,sans-serif;color:#15202B' }), bot2 = el('div', { style: 'font-size:12.5px;color:#6B7684;margin-top:2px' });
-  const vB = el('button', { class: 'btn line small', onclick: () => { ls.set('navVoice', !voiceOn()); vB.textContent = voiceOn() ? '🔊 소리 켬' : '🔇 소리 끔'; } });
-  vB.textContent = voiceOn() ? '🔊 소리 켬' : '🔇 소리 끔';
-  const reB = el('button', { style: 'position:absolute;right:12px;bottom:12px;z-index:900;border:none;border-radius:999px;background:#fff;color:#15202B;font:800 14px Pretendard,sans-serif;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none', text: '◎ 내 위치로', onclick: () => { follow = true; reB.style.display = 'none'; if (pos) map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 17)); } });
-  const mapEl = el('div', { style: 'position:absolute;inset:0' });
-  const close = () => { if (closed) return; closed = 1; try { navigator.geolocation.clearWatch(wid); } catch {} try { wake && wake.release(); } catch {} removeEventListener('deviceorientationabsolute', onOri); removeEventListener('deviceorientation', onOri); try { speechSynthesis.cancel(); } catch {} recEnd(); bg.remove(); done && done(); };
-  const skip = () => { if (ti < L2.length - 1) { ti++; said = {}; toast(`다음 곳: ${L2[ti].n}`); drawRoute(); upd(); } };
-  const bg = el('div', { class: 'sheet-bg', style: 'z-index:4400' });
-  bg.addEventListener('click', e => { if (e.target === bg) close(); });
-  bg.append(el('div', { style: `position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;padding-bottom:calc(${IN_NATIVE ? 56 : 0}px + env(safe-area-inset-bottom,0px))` },
-    el('div', { style: 'background:#15202B;color:#fff;padding:12px 14px 12px;border-radius:0 0 18px 18px;z-index:2' },
-      el('div', { style: 'display:flex;gap:12px;align-items:center' }, arrow, el('div', { style: 'flex:1;min-width:0' }, big, sub),
-        el('button', { class: 'n-ib', style: 'flex:none;background:rgba(255,255,255,.14);color:#fff', 'aria-label': '끝내기', onclick: close }, cSvg('x', 18))), recNote, warn),
-    el('div', { style: 'position:relative;flex:1;min-height:0;margin-top:-18px' }, mapEl, reB),
-    el('div', { style: 'padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;background:#fff' }, el('div', {}, bot, bot2),
-      el('div', { style: 'display:flex;gap:6px' }, vB, el('button', { class: 'btn line small', style: 'white-space:nowrap', text: '다음 곳 ›', onclick: skip }), el('span', { style: 'flex:1' }), el('button', { class: 'btn small', style: 'background:#15202B;color:#fff;white-space:nowrap', text: '끝내기', onclick: close })))));
-  document.body.append(bg); ovGuard();
-  const onOri = e => { const h = e.webkitCompassHeading != null ? e.webkitCompassHeading : e.absolute && e.alpha != null ? (360 - e.alpha) % 360 : null; if (h != null) { hd = h; paintMe(); } };
-  addEventListener('deviceorientationabsolute', onOri); addEventListener('deviceorientation', onOri);
-  const paintMe = () => { if (!me) return; const ic = me.getElement && me.getElement(); const a = ic && ic.querySelector('.nv-hd'); if (a) { a.style.display = hd == null ? 'none' : ''; a.style.transform = `rotate(${hd || 0}deg)`; } };
-  const drawRoute = () => { if (!map) return; if (lay) lay.remove(); lay = L.layerGroup().addTo(map);
-    legs.forEach((g, i) => { const done_ = i + 1 < ti, cur = i + 1 === ti; L.polyline(g.P, { color: '#fff', weight: cur ? 11 : 8, opacity: .95 }).addTo(lay);
-      L.polyline(g.P, { color: done_ ? '#A3ABB5' : cur ? '#1D9EC0' : '#7FB8D0', weight: cur ? 7 : 5, dashArray: g.real ? null : '8 8' }).addTo(lay); });
-    if (tl) tl.bringToFront();
-    L2.forEach((x, i) => L.marker([x.lat, x.lng], { icon: x.k === 'stay' && i !== ti ? planStayIcon(x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${i === ti ? '#E5383B' : x.ok ? '#A3ABB5' : '#15202B'};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${NOL.get(x) || i + 1}</div>` }) }).addTo(lay)); };
-  function upd() {
-    const tg = L2[ti], leg = ti > 0 ? legs[ti - 1] : null;
-    const later = legs.slice(ti).reduce((s, g) => s + g.len, 0), upL = legs.slice(ti).reduce((s, g) => s + g.up, 0);
-    if (!pos) { big.textContent = '내 위치를 찾는 중…'; sub.textContent = `다음: ${NOL.get(tg) || ti + 1}. ${tg.n}`; return; }
-    let rem, off, s = 0;
-    if (leg) { const r = proj(leg, [pos.lat, pos.lng]); s = r.s; off = r.off; rem = Math.max(0, leg.len - s); if (off > 80) rem = Math.max(rem, dist(pos.lat, pos.lng, tg.lat, tg.lng)); }
-    else { rem = dist(pos.lat, pos.lng, tg.lat, tg.lng); off = 0; }
-    const toT = dist(pos.lat, pos.lng, tg.lat, tg.lng);
-    if (toT < Math.max(30, Math.min(60, pos.acc || 0))) {   // 도착
-      tg.ok = 1; tg.okT = Date.now(); tg.okA = 0; tg.okNo = 0; tg.okNav = 1; planSave(p); buzz([200, 100, 200]);
-      if (ti < L2.length - 1) { const nx = L2[ti + 1], g = legs[ti]; say(`${tg.n}에 도착했어요. 다음은 ${nx.n}, ${sayM(g.len)}예요.`); toast(`✓ ${tg.n} 도착 · 다음 ${nx.n}`); ti++; said = {}; drawRoute(); return upd(); }
-      say(`${tg.n}에 도착했어요. 오늘 길 안내를 마쳤어요.`); big.textContent = '🎉 다 왔어요'; sub.textContent = `${tg.n} 도착 · 오늘 일정 끝`; arrow.textContent = '✓'; bot.textContent = '안내를 마쳤어요'; bot2.textContent = ''; drawRoute(); return;
-    }
-    let tn = null; if (leg && off < 60) tn = leg.T.find(t => t.s > s + 3);
-    const tdist = tn ? tn.s - s : rem;
-    if (tn && tdist < 120) { arrow.textContent = tn.dir === 'l' ? (tn.big ? '↶' : '↰') : (tn.big ? '↷' : '↱'); big.textContent = `${fmM(tdist)} 뒤 ${tn.big ? '크게 ' : ''}${tn.dir === 'l' ? '왼쪽' : '오른쪽'}으로`;
-      const k = 'tn' + Math.round(tn.s); if (tdist < 35 && !said[k]) { said[k] = 1; say(`${tn.big ? '크게 ' : ''}${tn.dir === 'l' ? '왼쪽' : '오른쪽'}으로 가세요`); buzz(80); } }
-    else if (!leg || off >= 60) { const b = bearing(pos.lat, pos.lng, tg.lat, tg.lng); arrow.textContent = '➤'; arrow.style.transform = `rotate(${(b - (hd || 0)) - 90}deg)`; big.textContent = `${tg.n}까지 직선 ${fmM(toT)}`; }
-    else { arrow.textContent = '↑'; big.textContent = `${fmM(tdist)} 앞으로`; }
-    if (arrow.textContent !== '➤') arrow.style.transform = '';
-    sub.textContent = `다음: ${NOL.get(tg) || ti + 1}. ${tg.n} · ${fmM(rem)}${leg && !leg.real ? ' (직선)' : ''}`;
-    if (rem < 150 && !said.near) { said.near = 1; say(`${tg.n}까지 ${sayM(rem)} 남았어요`); }
-    const bad = leg && off > 50 && (pos.acc || 0) < 45;
-    if (bad) { if (!offT) offT = Date.now(); } else offT = 0;
-    if (offT && Date.now() - offT > 15000) { warn.style.display = ''; warn.textContent = `⚠ 길에서 ${fmM(off)} 벗어났어요 · 지도의 파란 길로 돌아가세요`; if (Date.now() - offSaid > 60000) { offSaid = Date.now(); buzz([300, 150, 300]); say('길에서 벗어났어요. 파란 길로 돌아가세요.'); } }
-    else warn.style.display = 'none';
-    const tot = rem + later, mins = Math.round((tot / (spd * 1000) + upL / 600) * 60), eta = new Date(Date.now() + mins * 60000);
-    bot.textContent = `남은 ${fmM(tot)} · 약 ${mins >= 60 ? Math.floor(mins / 60) + '시간 ' + (mins % 60) + '분' : mins + '분'}`;
-    bot2.textContent = `도착 예정 ${eta.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} · ${ti + 1}/${L2.length}곳${trail.c.length > 1 ? ` · 지나온 길 ${fmM(trailM())} (산호색)` : ''}${legs.some(g => !g.real) ? ' · 점선은 길을 못 받아 직선' : ''}`;
-  }
-  const onPos = g => { if (closed) return; pos = { lat: g.coords.latitude, lng: g.coords.longitude, acc: g.coords.accuracy };
-    { const lc = trail.c[trail.c.length - 1]; if ((pos.acc || 0) <= 50 && (!lc || dist(lc[0], lc[1], pos.lat, pos.lng) >= 8)) { trail.c.push([+pos.lat.toFixed(6), +pos.lng.toFixed(6)]); if (trail.c.length > 5000) trail.c.splice(0, trail.c.length - 5000); trail.at = Date.now(); ls.set(tKey, trail); if (tl) tl.setLatLngs(trail.c); } }
-    if (ls.get('walkNow', null) === recId) try { trackAdd(recId, pos.lat, pos.lng, pos.acc, null, g.coords.altitude, null, false, g.timestamp); } catch {}
-    if (g.coords.heading != null && !isNaN(g.coords.heading) && (g.coords.speed || 0) > 0.6) { hd = g.coords.heading; }
-    if (map) { const ll = [pos.lat, pos.lng];
-      if (!me) { me = L.marker(ll, { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: '', iconSize: [44, 44], iconAnchor: [22, 22], html: '<div style="position:relative;width:44px;height:44px"><div class="nv-hd" style="position:absolute;inset:0;display:none"><div style="position:absolute;left:14px;top:-2px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #1D9EC0"></div></div><div style="position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:#1D9EC0;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4)"></div></div>' }) }).addTo(map); ac = L.circle(ll, { radius: pos.acc || 10, color: '#1D9EC0', weight: 1, fillOpacity: .1, interactive: false }).addTo(map); map.setView(ll, 17); }
-      else { me.setLatLng(ll); ac.setLatLng(ll).setRadius(pos.acc || 10); if (follow) map.panTo(ll, { animate: true }); }
-      paintMe(); }
-    upd(); };
-  setTimeout(async () => {
-    map = L.map(mapEl, { zoomControl: false }); mdTileLayer({ vec: true }).addTo(map);
-    map.fitBounds(L2.map(x => [x.lat, x.lng]), { padding: [40, 40], maxZoom: 17 });
-    map.on('dragstart', () => { follow = false; reB.style.display = ''; });
-    tl = L.polyline(trail.c, { color: '#FF6B4A', weight: 6, opacity: .95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
-    drawRoute(); upd();
-    if (!navigator.geolocation) { big.textContent = '이 기기는 위치를 쓸 수 없어요'; return; }
-    wid = navigator.geolocation.watchPosition(onPos, e => { if (!pos) { big.textContent = e && e.code === 1 ? '위치 권한이 꺼져 있어요' : '위치를 못 받고 있어요'; sub.textContent = e && e.code === 1 ? '휴대폰 설정에서 위치를 허용해 주세요' : '하늘이 보이는 곳에서 잠시 기다려 주세요'; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-    try { wake = await navigator.wakeLock.request('screen'); } catch {}
-    say(`${L2[ti].n}${ti ? '까지' : '부터'} 길 안내를 시작할게요`);
-    try { (async () => { if (await planRoutes(p, d)) { for (let i = 1; i < L2.length; i++) legs[i - 1] = mkLeg(L2[i - 1], L2[i]); drawRoute(); upd(); } })(); } catch {}
-  }, 30);
-}
 // 판 -105 (사용자 '앱에서도 경로 지도 나오게'): 걸어서 가는 두 곳 사이는 OSRM 도보 길찾기(routing.openstreetmap.de)로 실제 길을 받아 지도에 그려요.
 //   걸어서 갈 사이만(등산 계획 15km, 그 밖 1.5km 아래, 이동·비행 빼고) · 받은 길은 ls planRt에 두 곳 좌표로 저장(300개) · 못 받으면 예전처럼 직선 점선
 const planRtKey = (a, b) => `${a.lat.toFixed(5)},${a.lng.toFixed(5)}>${b.lat.toFixed(5)},${b.lng.toFixed(5)}`;
@@ -8644,7 +8516,6 @@ function planStayIcon(x, big) { const h = big ? 34 : 28;   // 판 -209 (사용�
   const html = `<div style="width:${h}px;height:${h}px;border-radius:50%;background:${PLAN_STAY_COL};display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);box-sizing:border-box${x.ap || x.near || x.vf ? ';outline:3px dashed #FF9F43' : ''}"><svg width="${big ? 17 : 14}" height="${big ? 17 : 14}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></div>`;
   return L.divIcon({ className: 'pl-stay', iconSize: [h, h], iconAnchor: [h / 2, h / 2], html }); }
 // 판 -170 (사용자 '이 길안내는 빼는게 어때' → '둘 다 고쳐'): 요약 칸 큰 '길 안내 시작'은 등산 계획(정상 있음)에서만 · 다른 계획은 구간 줄 길찾기(구글·네이버·가오더)가 낫고 ⋯ 더보기에만
-function planNavOk(p) { return !!((p.it || []).some(x => x.k === 'peak') || (p.hike && p.hike.on)); }
 function planUniq(its) { const s = new Set(); return its.filter(x => { const { id, ...r } = x, k = JSON.stringify(r); if (s.has(x) || s.has('i' + id) || s.has(k)) return false; s.add(x); s.add('i' + id); s.add(k); return true; }); }   // 판 -173: 같은 일정이 두 번 그려지지 않게
 function planNoMap(its) { const m = new Map(); let n = 0; its.forEach(x => { if (!(x.k === 'move' && !Number.isFinite(x.lat))) m.set(x, ++n); }); return m; }
 // 판 -167 (사용자 '숙소는 숙소 예약 앱과 연결시켜' + 아고다 공유 글 '아크 호텔 오사카 신사이바시 확인하기 https://www.agoda.com/sh-app/…'): 숙소 일정에 예약 앱 링크 x.url · 앱 이름 x.bkSite
@@ -12833,7 +12704,6 @@ function viewPlanOne(id) {
   // 판 -140: 같이 고치기 — 열 때 한 번, 화면을 보는 동안 15초마다 방과 맞춤
   if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; const n0 = (planGet(p.id) || p).chLog ? (planGet(p.id) || p).chLog.length : 0; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); const L = (p.chLog || []), nn = L.length - n0; if (nn > 0) { const who = [...new Set(L.slice(0, nn).map(z => z.nm))].join('·'); toast(`✎ ${who} 님이 일정을 ${nn}가지 바꿨어요 · 준비·정보 > 바뀐 기록`, false, 6000); } } }).catch(() => {}); };
     setTimeout(tick, 800); const iv = setInterval(() => { if (!document.body.contains(list)) return clearInterval(iv); tick(); }, 15000); }
-  function navGo() { const td0 = planToday(p); planNav(p, day >= 0 ? day : td0 >= 0 && td0 < p.nd ? td0 : 0, () => drawAll()); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
   const noPrep = p.hike && p.hike.on && p.nd === 1 && !p.start;
@@ -14274,11 +14144,11 @@ function gamesAll() { return [
   { k: 'omok', t: '오목', d: '다섯 개를 먼저 한 줄로. 둘이서 또는 컴퓨터와', e: '⚫', best: v => `컴퓨터에게 ${v}번 이김` },
 ]; }
 function viewGames() {
-  const GAMES = gamesAll(), g = GAMES.find(x => x.k === qs.get('g'));
-  const top = [roleBar('leader', '게임'), el('a', { class: 'link', href: g ? './?game=1' : './', style: 'align-self:flex-start;padding:0', text: g ? '← 게임 목록' : '← 처음으로' })];
+  const GAMES = gamesAll().filter(x => x.bet), g = gamesAll().find(x => x.k === qs.get('g'));   // 판 -274: 목록엔 밥값 내기만
+  const top = [roleBar('leader', '밥값 내기'), el('a', { class: 'link', href: g ? './?game=1' : './', style: 'align-self:flex-start;padding:0', text: g ? '← 밥값 내기' : '← 처음으로' })];
   if (!g) {
-    app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: '🎮 게임' }),
-      el('div', { class: 'sub', text: '쉬는 시간에 가볍게 한 판. 최고 기록은 이 휴대폰에 남아요.' }),
+    app.replaceChildren(el('div', { class: 'stack' }, ...top, el('h1', { text: '🍚 밥값 내기' }),
+      el('div', { class: 'sub', text: '휴대폰 하나로 같이 해요.' }),
       ...GAMES.flatMap((x, i) => { const b = gameBest(x.k), head = i === 0 ? el('h2', { class: 'gm-h', text: '🍚 밥값 내기 · 휴대폰 하나로 같이' }) : !x.bet && GAMES[i - 1].bet ? el('h2', { class: 'gm-h', text: '🎮 혼자 · 둘이서' }) : null;
         return [head, el('a', { class: 'gm-item', href: `./?game=1&g=${x.k}` }, el('span', { class: 'gm-e', text: x.e }),
           el('div', { class: 'grow' }, el('b', { text: x.t }), el('span', { class: 'sub', text: x.d }), b != null ? el('span', { class: 'gm-best', text: x.best(b) }) : null),
@@ -15499,6 +15369,7 @@ function whereNow() {
   return IS_APP ? { ico: '🏠', t: `바탕화면 웹앱 (${br})` } : { ico: '🌐', t: `${br}에서 열림 (웹)` };
 }
 function wherePill(light, plain) {
+  return null;   // 판 -274: '지금 연 곳' 알약 뺌(판 번호는 ⚙ 맨 아래)
   const w = whereNow(), on = !!ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false));
   return el('button', { class: 'where-pill' + (light ? ' light' : ''), 'aria-label': '지금 연 곳: ' + w.t, onclick: () => toast(`${w.ico} 지금 연 곳: ${w.t}. 기록은 여기에만 저장돼요. ${on ? `${(cloudAcct() || { via: '' }).via} 계정으로 로그인돼 있어서 다른 곳 기록과 하나로 모여요.` : '앱·크롬 기록을 하나로 모으려면 내 기록 맨 위에서 카카오나 구글로 로그인하세요'}`) },
     plain ? el('i', { class: 'wp-dot' }) : `${w.ico} `, w.t, on ? el('span', { text: plain ? ' · 모음' : ' · ☁ 모음' }) : null);
@@ -16147,7 +16018,7 @@ function homeStyleSheet(after) {
 // 첫 화면 맨 위 줄(로고 · 🔍 · 🔔 · 프로필) — 세 가지 첫 화면이 같이 씀(판 -251). dark면 흰 바탕용 짙은 그림
 function cHomeTop(dark) {
   const icBtn = (label, svg, on) => { const b = el(on.href ? 'a' : 'button', Object.assign({ class: 'c-ph-ib', 'aria-label': label, title: label }, on)); b.innerHTML = svg; return b; };
-  const logo = el('div', { class: 'c-ph-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary', onpointerdown: () => {   // 5번 빨리 누르면 개발자 보기 (예전 'MPD' 딱지와 같음)
+  const logo = el('div', { class: 'c-ph-logo', role: 'img', 'aria-label': 'MPD · Map Photo Diary', onpointerdown: () => { return;   // 판 -274: 개발자 보기(5번 누르기) 뺌
     const now = Date.now(), t = (window.__mdTaps || []).filter(x => now - x < 3000); t.push(now); window.__mdTaps = t;
     if (t.length >= 2 && t.length < 5) toast(`${5 - t.length}번 더 누르면 개발자 보기를 ${ls.get('devMode', false) ? '꺼요' : '켜요'}`);
     if (t.length >= 5) { window.__mdTaps = []; const on = !ls.get('devMode', false); ls.set('devMode', on); drawInstall(); toast(on ? '개발자 보기를 켰어요' : '개발자 보기를 껐어요'); } } },
@@ -16334,10 +16205,8 @@ function viewLanding() {
         first ? null : row('🗺', '나의 이야기 지도', '다녀온 곳과 사진을 지도에서', './?map=1'),
         first ? null : row('✨', '발견', '내 기록에서 찾은 이야기', './?find=1'),
         null && row('🗓', '여행 계획', tripCard ? '' : (() => { try { const a = planAll(), up = a.filter(p => (planToday(p) ?? 1) < 0).sort((x, y) => String(x.start).localeCompare(String(y.start)))[0]; return up ? `${up.name} · ${planStatus(up)}` : ''; } catch { return ''; } })(), './?plan=1'),   // 위 여행 카드에 있으면 되풀이 안 함
-        row('👥', '모임방', '', './?room=1'),
         row('📸', '가족 앨범', '', './?album=1'),
-        first ? null : row('🧪', '추억 만들기', '', './?lab=mem'),
-        row('🎮', '게임', '', './?game=1'),
+        row('🍚', '밥값 내기', '', './?game=1'),   // 판 -274: 모임방·추억 만들기·게임 뺌, 밥값 내기만
         null),   // 판 -188: '대화 정리'는 사진 위 '🎙 대화 기록' 알약과 겹쳐 뺌
       installSlot,
       el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' },   // '지금 연 곳' 알약은 뺌(아래 판 줄에 앱/바탕화면이 같이 나와서)
