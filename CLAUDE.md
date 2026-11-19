@@ -1058,6 +1058,11 @@
 - 그리기: 물은 옅은 하늘색 #8FC1D4 번진 칸 + 작은 물결 무늬, 숲·공원은 옅은 초록, 나무·언덕은 물 위엔 안 그리고 숲·공원엔 나무. 조각을 못 받으면(인터넷 없음) 예전 무작위 바탕. 약도를 먼저 그리고 받은 뒤 다시 그림(같은 seed)
 - 시험 scratchpad `sbk2/t.js`(`RIVER=1`: 한강 건너는 가짜 길 + 가짜 지도 조각, 이 클라우드에서 OSM 조각 서버가 막혀서). 실제 지도 조각·사용자 실제 기록으로는 확인 못 함
 
+## 판 -266 그림 앨범 바다·강 이름 (2026-11-19, 사용자 '바다 이름도 넣어')
+- `storyBook`: `sbLand`로 읽은 물 칸에서 가장 큰 물 덩어리(이웃 칸 잇기, 8칸 넘을 때) → 그 안에서 가로 ±40px·세로 ±20px가 모두 물이고 길에서 가장 먼 칸에 이름(파란 손글씨 20px, 자간 3)
+- 이름: Overpass(overpass-api.de → kumi)로 덩어리 가운데 둘레(약도 대각선 반, 1.5~20km)의 이름 있는 만·해협(natural bay·strait) > 강·호수(waterway river·canal, natural water) > 바다(place sea·ocean 60km)에서 가까운 것, name:ko 먼저. Nominatim 거꾸로 찾기는 물 이름을 안 줘서 못 씀. 받은 이름은 `sbNames`에 'w:좌표' 키로
+- 시험 scratchpad `sbk2/t.js RIVER=1`(가짜 지도 조각 + 가짜 Overpass '한강'). 이 클라우드에서 Overpass가 막혀 실제 이름(예: 사용자 10월 17일 기록의 바다)은 확인 못 함
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
