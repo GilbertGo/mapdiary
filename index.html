@@ -3549,9 +3549,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.18-259-gpsorder';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-260-guide';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "화면이 꺼진 동안 휴대폰이 늦게 넘겨준 위치를 이제 실제 지난 시각 자리에 넣어요 · 끊겼다 이어질 때 길이 엉뚱한 곳(출발한 쪽)으로 되돌아가 그려지던 것을 고쳤어요 · 차로 간 빠르기도 바르게 셈해요";
+const UI_NOTES = "현지 가이드 이름·전화번호를 여행 전에도 적어 둘 수 있어요 · 여행 계획 → 준비·정보 → 현지 가이드 · 여행 당일 오늘 칸에서 📞 바로 전화";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9902,6 +9902,11 @@ function planRefSheet(p, rd) {
   draw();
   labSheet('참고 여행상품', el('div', { class: 'sub', text: '같은 여행지 여행사 상품을 참고로 둬요. 가격·일정은 상품 화면에서 확인해 주세요.' }), list, inp, el('button', { class: 'btn line full', text: '+ 링크 넣기', onclick: add }));
 }
+function planGuideEdit(p, done) {   // 판 -260: 가이드 연락처 — 여행 전에도 준비·정보에서 적기
+  const g = p.guide || {}, n = el('input', { type: 'text', value: g.n || '', placeholder: '가이드 이름', maxlength: 30, style: 'width:100%;box-sizing:border-box' }), t = el('input', { type: 'tel', value: g.tel || '', placeholder: '전화번호 (예: +86 138 0000 0000)', maxlength: 30, style: 'width:100%;box-sizing:border-box' });
+  const bg = labSheet('현지 가이드', el('div', { class: 'sub', text: '이 휴대폰의 계획에만 적혀요. 일행에게는 일행 채팅 대화로 알려 주세요.' }), n, t,
+    el('button', { class: 'btn primary full', text: '저장', onclick: () => { const v = { n: n.value.trim(), tel: t.value.trim() }; if (v.n || v.tel) p.guide = v; else delete p.guide; planSave(p); bg.remove(); if (done) done(); } }));
+}
 function planPrepSheet(p, wx) {
   const st = ls.get('planPrep:' + p.id, {}) || {}, { S, cn, meet } = planPrepList(p, wx);
   const body = el('div', { class: 'stack pn', style: 'gap:6px' });
@@ -9926,6 +9931,8 @@ function planPrepSheet(p, wx) {
   body.append(H('여행 정보'), grp(
     nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·환율' : '소개·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
     nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
+    (() => { const gv = () => p.guide && (p.guide.n || p.guide.tel) ? (p.guide.n || p.guide.tel) : '적기';
+      const r = nrow('📞', '현지 가이드', gv(), () => planGuideEdit(p, () => { rd(); const v = r.querySelector('.st-v'); if (v) v.textContent = gv(); })); return r; })(),
     p.room && p.room.code ? nrow('🔐', '일행 권한', (() => { const S = permCached(p); if (!S || !S.own) return '보기·고치기·AI'; if (S.own.by !== trMe()) { const P = permOf(S, trMe()); return P.w ? '보기·고치기' + (P.ai ? '·AI' : '') : P.r ? '보기만' : '볼 수 없음'; } return `${(S.tk || []).length}명`; })(), () => permSheet(p, rd)) : null,
     (p.chLog || []).length ? nrow('✎', '바뀐 기록', `${p.chLog[0].nm} · ${trAgo(p.chLog[0].t)}`, sub('✎ 일행이 바꾼 기록', el('div', { class: 'sub', text: '같이 고치기로 일행이 바꾼 것이에요 (내가 바꾼 것은 빼고, 최근 80개)' }),
       ...p.chLog.map(z => el('div', { style: 'display:flex;gap:10px;padding:9px 0;border-top:1px solid #F0F2F5;font-size:14px' }, el('b', { style: 'flex:none;font-weight:500;color:#191F28', text: z.nm }), el('span', { style: 'flex:1;color:#4E5968', text: z.w }), el('span', { style: 'flex:none;color:#8B95A1;font-size:12.5px', text: trAgo(z.t) }))))) : null,   // 판 -193
@@ -12345,11 +12352,7 @@ function viewPlanOne(id) {
       row('가이드', g && (g.n || g.tel) ? [g.n, g.tel].filter(Boolean).join(' · ') : '등록된 연락처 없음', g && g.tel ? '' : '첫날 받으면 여기에 적어 두세요',
         el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, g && g.tel ? el('a', { class: 'btn primary small', href: 'tel:' + String(g.tel).replace(/[^\d+]/g, ''), text: '📞 전화' }) : null, el('button', { class: 'btn line small', text: g ? '✎' : '+ 적기', onclick: guideEdit }))));
   }
-  function guideEdit() {
-    const g = p.guide || {}, n = el('input', { type: 'text', value: g.n || '', placeholder: '가이드 이름', maxlength: 30, style: 'width:100%;box-sizing:border-box' }), t = el('input', { type: 'tel', value: g.tel || '', placeholder: '전화번호 (예: +86 138 0000 0000)', maxlength: 30, style: 'width:100%;box-sizing:border-box' });
-    const bg = labSheet('가이드 연락처', el('div', { class: 'sub', text: '이 휴대폰의 계획에만 적혀요. 일행에게는 일행 채팅 대화로 알려 주세요.' }), n, t,
-      el('button', { class: 'btn primary full', text: '저장', onclick: () => { const v = { n: n.value.trim(), tel: t.value.trim() }; if (v.n || v.tel) p.guide = v; else delete p.guide; planSave(p); bg.remove(); drawAll(); } }));
-  }
+  function guideEdit() { planGuideEdit(p, drawAll); }
   let rowNo = null;
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
