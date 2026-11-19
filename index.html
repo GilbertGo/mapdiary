@@ -3550,9 +3550,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-261-pickname';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-262-post';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "일행 초대를 받은 사람이 미리 넣어 둔 이름 중 자기 이름을 눌러서 들어와요 · 함께 가는 사람에 이름을 먼저 넣고 초대를 보내 주세요 · 목록에 없으면 직접 적어도 돼요";
+const UI_NOTES = "여행 다녀와서 올릴 후기 글을 앱이 만들어 줘요 · 여행 계획 ⋯ 더보기 → 여행 후기 만들기 · 인스타그램 글과 블로그 후기 글, 여행 날짜에 찍은 사진을 골라 공유·복사";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9527,6 +9527,98 @@ function planCopy(p, name) {
   for (const k of ['planHero:', 'planPrep:', 'planMap:']) { const v = localStorage.getItem(k + p.id); if (v != null) try { localStorage.setItem(k + c.id, v); } catch (e) {} }
   planSave(c); return c;
 }
+// ---------- 📝 여행 후기 만들기 (판 -262, 2026-11-19 사용자 '여행 다녀와서 자랑용. 블로그에 올리거나 인스타에 올리거나' → 샘플 → '앱에 넣어 만들어') ----------
+//   계획 ⋯ 더보기 '📝 여행 후기 만들기 (블로그·인스타)' → planPostSheet: 여행 날짜에 찍은 우리 사진(이 휴대폰 MPD 사진 · 앱이면 휴대폰 사진첩 · 일행 채팅 사진),
+//   여행 날짜의 MPD 기록으로 걸은 거리, 일정 장소 이름·여행사 안내로 인스타 글·블로그 후기 글을 만들어요. 앱이 정한 틀이라 AI·돈 안 씀.
+//   사진은 눌러서 넣고 빼고, 글은 고쳐서 복사·공유. 계획·사진·기록은 읽기만 해요(바꾸지 않음)
+function postRange(p) { const a = planDate(p, 0); return a ? [a.getTime(), planDate(p, p.nd - 1).getTime() + 864e5] : null; }
+function postWalk(p) {   // 여행 날짜 안 MPD 기록의 걸은 거리(m)
+  const r = postRange(p); if (!r) return 0; let m = 0;
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue;
+    let tr; try { tr = JSON.parse(localStorage.getItem(k)); } catch { continue; } if (!Array.isArray(tr)) continue;
+    const L = tr.filter(q => q && q[2] >= r[0] && q[2] < r[1] && Number.isFinite(q[0])); if (L.length < 2) continue;
+    try { m += trackStats(L, 15).walk || 0; } catch {} }
+  return m;
+}
+function postPlaces(p, d) {   // 그날 구경한 곳 이름(여행사 이름 그대로, 묶음 이름은 앞 이름만)
+  const seen = new Set(), out = [];
+  planItems(p, d).filter(x => ['spot', 'show', 'peak'].includes(x.k)).forEach(x => { const n = tvNameSplit(planTerm(x.n || ''))[0].replace(/\[.*?\]|\(.*?\)/g, '').replace(/^스페셜포함\s*/, '').replace(/\s*VIP.*$/, '').trim();
+    if (!n || /마사지|라운지|VR|쇼핑|면세|공항|다방|휴게소|체험$/.test(n) || seen.has(n)) return; seen.add(n); out.push({ n, x }); });   // 자랑할 곳만(마사지·라운지·VR 등은 빼요)
+  return out;
+}
+function postSnip(x) {   // 여행사 안내 첫 소개 한 줄(■ 묶음·안내 사항 앞까지)
+  const X = String(x.x || ''), hl = /하이라이트\s*-\s*([^■]+?)(?=\s-\s|■|$)/.exec(X.replace(/\s+/g, ' '));
+  const t = X.split(/■/)[0].replace(/\s+/g, ' ').replace(/^스페셜포함\s*/, '').trim() || (hl ? hl[1].trim() : ''); if (!t) return '';
+  const nm = tvNameSplit(planTerm(x.n || ''))[0]; let s = t.startsWith(nm) ? t.slice(nm.length).trim() : t;
+  const S0 = s.replace(/^[은는이가을를의]\s+/, '').split(/(?<=[.!?])\s/); s = S0[0].length < 25 && S0[1] ? S0[0] + ' ' + S0[1] : S0[0]; return s.length > 90 ? s.slice(0, 88) + '…' : s;
+}
+function postTips(p) {   // 여행사 안내 속 '꼭 알아 둘 것' 문장(같은 말 한 번만)
+  const out = [], seen = new Set();
+  (p.it || []).forEach(x => String(x.x || '').split(/\n|\s-\s|■/).forEach(s => { s = s.replace(/^[-·•\s]+/, '').trim();
+    if (s.length < 8 || s.length > 70 || !/주의|착용|유의|불가|신으|챙기/.test(s) || /현지 사정/.test(s)) return; const k = (s.match(/구명조끼|운동화|나무|환불/) || [s.replace(/\s/g, '').slice(0, 14)])[0]; if (seen.has(k)) return; seen.add(k); out.push(s); }));
+  return out.slice(0, 5);
+}
+async function postPhotos(p) {   // 여행 날짜 사진 [{k, ts, src(보여 줄 주소), get()=blob}] · 같은 사진(3초 안)은 한 번
+  const r = postRange(p); if (!r) return []; const out = [], near = ts => out.some(o => Math.abs(o.ts - ts) < 3000);
+  for (const ph of await trMpdPhotos(r[0], r[1])) { if (near(ph.ts)) continue; out.push({ k: 'm:' + ph.id, ts: ph.ts, src: phSrc(ph), get: async () => ph.blob }); }
+  if (window.mdNativePhotos) try { for (const g of await window.mdNativePhotos.between(r[0], r[1])) { if (near(g.ts)) continue;
+    out.push({ k: 'g:' + g.uri, ts: g.ts, src: window.Capacitor && Capacitor.convertFileSrc ? Capacitor.convertFileSrc(g.uri) : '', get: () => window.mdNativePhotos.blob(g.uri) }); } } catch {}
+  if (p.room && p.room.code) try { const R = await trRoom(p.room.code), S = await trLoad(R);
+    for (const ph of S.tp) { if (ph.del || ph.v || !ph.th || !(ph.ts >= r[0] && ph.ts < r[1]) || near(ph.ts)) continue; out.push({ k: 't:' + ph.id, ts: ph.ts, src: ph.th, by: ph.nm, get: () => trFull(R, ph) }); } } catch {}
+  return out.filter(o => o.src).sort((a, b) => a.ts - b.ts);
+}
+function postPick(L, n) { if (L.length <= n) return L.map(o => o.k); const out = []; for (let i = 0; i < n; i++) out.push(L[Math.round(i * (L.length - 1) / (n - 1))].k); return [...new Set(out)]; }
+function postText(p, kind, nPh) {
+  const dest = planDestName(p) || p.name, nn = p.nd > 1 ? `${p.nd - 1}박 ${p.nd}일` : '당일', km = postWalk(p) / 1000, ppl = (p.mem || []).length;
+  const days = [...Array(p.nd).keys()].map(d => ({ d, L: postPlaces(p, d) })).filter(z => z.L.length);
+  const all = days.flatMap(z => z.L), tag = s => '#' + String(s).replace(/[^\p{L}\p{N}]/gu, '');
+  const tags = [...new Set([tag(dest), tag(dest + '여행'), ...days.flatMap(z => z.L.slice(0, 2)).slice(0, 7).map(z => tag(z.n)), planAbroad(p) ? '#해외여행' : '#국내여행', planIsHana(p) ? '#하나투어' : '', '#여행기록'].filter(t => t && t.length > 1))].join(' ');
+  const r0 = planDate(p, 0), r1 = planDate(p, p.nd - 1), dt = r0 ? `${r0.getFullYear()}.${r0.getMonth() + 1}.${r0.getDate()}${p.nd > 1 ? ` – ${r1.getMonth() + 1}.${r1.getDate()}` : ''}` : '';
+  if (kind === 'ig') {
+    const pick = days.slice(0, 6).map(z => z.L[0].n);
+    return [`${dest} ${nn} ✈️`, ppl > 1 ? `${ppl}명이 함께 다녀왔어요.` : '', '', ...pick.map(n => `📍 ${n}`), '', km >= 1 ? `${p.nd}일 동안 ${km.toFixed(1)}km를 걸었어요 👣` : '', nPh ? `사진 ${nPh}장 중에 골라 올려요 📸` : '', '', tags].filter((s, i, a) => s || (a[i - 1] && i < a.length - 1)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  const first = all[0] ? all[0].n : '', last = all.length > 1 ? all[all.length - 1].n : '';
+  const L = [`${dest} ${nn} 여행 후기${first && last ? ` | ${first}부터 ${last}까지` : ''}`, [dt, planIsHana(p) ? '하나투어 패키지' : '', ppl > 1 ? `${ppl}명` : ''].filter(Boolean).join(' · '), '',
+    `${dest}에 다녀왔어요. ${nn} 동안 ${all.slice(0, 4).map(z => z.n).join(', ')}${all.length > 4 ? ' 등' : ''}을 둘러봤어요. 다녀온 일정과 알아 두면 좋은 것을 정리해 둘게요.`, '',
+    '📌 한눈에 보는 일정', ...[...Array(p.nd).keys()].map(d => { const z = postPlaces(p, d); return `${d + 1}일차 · ${z.length ? z.map(q => q.n).slice(0, 4).join(' · ') : (planItems(p, d).find(x => x.k === 'fly') ? '이동' : '자유 일정')}`; }), ''];
+  days.forEach(z => { L.push(`■ ${z.d + 1}일차${p.start ? ' · ' + planDayLabel(p, z.d) : ''} · ${z.L[0].n}`, '[사진]');
+    const has = z.L.slice(0, 4).map(q => [q, postSnip(q.x)]), no = has.filter(h => !h[1]).map(h => h[0].n);
+    L.push([...has.filter(h => h[1]).map(h => `${h[0].n} — ${h[1]}`), no.length ? `${no.join(', ')}에도 다녀왔어요.` : ''].filter(Boolean).join('\n'), ''); });
+  const tips = postTips(p); if (tips.length) L.push('💡 알아 두면 좋은 것', ...tips.map(s => '· ' + s), '');
+  L.push('✍ 총평', [km >= 1 ? `${p.nd}일 동안 ${km.toFixed(1)}km를 걸었어요.` : '', '(여기에 소감을 한두 줄 적어 주세요)'].filter(Boolean).join(' '), '', tags);
+  return L.join('\n');
+}
+async function planPostSheet(p) {
+  const st = el('div', { class: 'sub', text: '사진을 모으는 중…' }), grid = el('div', { style: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px' });
+  const segB = (t, on) => el('button', { type: 'button', style: `flex:1;border:1.5px solid ${on ? '#191F28' : '#E5E8EB'};background:${on ? '#191F28' : '#fff'};color:${on ? '#fff' : '#191F28'};border-radius:999px;padding:9px;font:600 14.5px Pretendard,sans-serif;cursor:pointer`, text: t });
+  let kind = 'ig'; const seg = el('div', { style: 'display:flex;gap:8px' });
+  const ta = el('textarea', { rows: 12, style: 'width:100%;box-sizing:border-box;font:400 15px/1.65 Pretendard,sans-serif;padding:12px;border:1px solid #E5E8EB;border-radius:14px;resize:vertical' });
+  const ok = el('div', { style: 'font-size:13px;color:#6B7684;min-height:18px' });
+  let L = [], sel = [];
+  const paintSeg = () => seg.replaceChildren(...[['ig', '인스타그램'], ['bl', '블로그 후기']].map(([k, t]) => { const b = segB(t, k === kind); b.onclick = () => { kind = k; ta.value = postText(p, kind, L.length); paintSeg(); }; return b; }));
+  const paintGrid = () => { st.textContent = L.length ? `여행 날짜에 찍은 사진 ${L.length}장 · 고른 사진 ${sel.length}장 · 눌러서 넣고 빼요` : '아직 이 여행 날짜에 찍은 사진이 없어요 · MPD로 찍은 사진, 일행 채팅에 올린 사진' + (window.mdNativePhotos ? ', 휴대폰 사진첩 사진' : '') + '을 가져와요';
+    grid.replaceChildren(...L.map(o => { const i = sel.indexOf(o.k); return el('button', { type: 'button', style: `position:relative;padding:0;border:none;background:#EEF1F4;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;outline:${i >= 0 ? '3px solid #FF6B4A' : 'none'};outline-offset:-3px`,
+      onclick: () => { const j = sel.indexOf(o.k); if (j >= 0) sel.splice(j, 1); else if (sel.length < 10) sel.push(o.k); else return toast('사진은 10장까지 골라요 (인스타 한 번에 10장)'); paintGrid(); } },
+      el('img', { src: o.src, loading: 'lazy', style: 'width:100%;height:100%;object-fit:cover;display:block' }),
+      i >= 0 ? el('span', { style: 'position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:#FF6B4A;color:#fff;font:700 12px/22px Pretendard,sans-serif;text-align:center', text: String(i + 1) }) : null); })); };
+  const blobs = async () => { const out = []; for (const k of sel) { const o = L.find(z => z.k === k); if (!o) continue; try { const b = await o.get(); if (b) out.push({ id: o.k, ts: o.ts, blob: b }); } catch {} } return out; };
+  const copy = async () => { try { await navigator.clipboard.writeText(ta.value); ok.textContent = '✅ 글을 복사했어요 · 인스타·블로그 글쓰기 칸에 붙여 넣으세요'; return true; } catch { ta.select(); ok.textContent = '글을 골라 두었어요 · 길게 눌러 복사하세요'; return false; } };
+  const bShare = el('button', { class: 'btn primary full', text: '사진과 글 공유하기', onclick: async () => {
+    if (!sel.length) return toast('사진을 먼저 골라 주세요');
+    bShare.disabled = true; bShare.textContent = '사진 준비 중…'; await copy();
+    try { const ps = await blobs(), files = ps.map((r, k) => new File([r.blob], `MapDiary_${k + 1}.${photoExt(r.blob)}`, { type: r.blob.type || 'image/jpeg' }));
+      if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, text: ta.value }); ok.textContent = '✅ 공유 창을 열었어요 · 글은 복사해 뒀으니 인스타 글 칸에 붙여 넣으세요'; }
+      else { await savePhotos(ps); ok.textContent = '이 브라우저는 사진 공유가 안 돼서 사진을 저장했어요 · 글은 복사해 뒀어요'; }
+    } catch (e) { if (!(e && e.name === 'AbortError')) ok.textContent = '⚠ 공유하지 못했어요 · ' + ((e && e.message) || e); }
+    bShare.disabled = false; bShare.textContent = '사진과 글 공유하기'; } });
+  const bSave = el('button', { class: 'btn line', style: 'flex:1', text: '사진 저장', onclick: async () => { if (!sel.length) return toast('사진을 먼저 골라 주세요'); bSave.disabled = true; bSave.textContent = '준비 중…'; try { await savePhotos(await blobs()); } catch {} bSave.disabled = false; bSave.textContent = '사진 저장'; } });
+  labSheet('📝 여행 후기 만들기', seg,
+    el('div', { style: 'font-size:13px;color:#6B7684;line-height:1.55', text: '일정·여행사 안내·MPD 기록으로 앱이 쓴 글이에요. 마음대로 고치고, 소감을 한 줄 더해 보세요. 계획과 사진은 바뀌지 않아요.' }),
+    st, grid, ta, bShare, el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '글 복사', onclick: copy }), bSave), ok);
+  paintSeg(); ta.value = postText(p, kind, 0);
+  L = await postPhotos(p); sel = postPick(L, 10); paintGrid(); ta.value = postText(p, kind, L.length);
+}
 function planCopySheet(p, after) {
   const base = planBaseName(p.name), alt = /\d+\s*안\s*$/.test(p.name || '');
   const nm = el('input', { type: 'text', value: base + ' ' + planNextAlt(base) + '안', style: 'width:100%;box-sizing:border-box' });
@@ -12248,6 +12340,7 @@ function viewPlanOne(id) {
     const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(p.name,
       go('🗺 지도에서 경로 고치기', () => planMapEdit(p, day < 0 ? 0 : day, () => drawAll())),
+      go('📝 여행 후기 만들기 (블로그·인스타)', () => planPostSheet(p)),   // 판 -262
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
