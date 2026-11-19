@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-268-vwbar2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-269-recpost';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 맨 위 줄 아래 회색 띠를 없앴어요";
+const UI_NOTES = "기록 보기 ⋯ 더보기에서도 블로그·인스타 후기 글을 만들 수 있어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9544,8 +9544,9 @@ function planCopy(p, name) {
 //   계획 ⋯ 더보기 '📝 여행 후기 만들기 (블로그·인스타)' → planPostSheet: 여행 날짜에 찍은 우리 사진(이 휴대폰 MPD 사진 · 앱이면 휴대폰 사진첩 · 일행 채팅 사진),
 //   여행 날짜의 MPD 기록으로 걸은 거리, 일정 장소 이름·여행사 안내로 인스타 글·블로그 후기 글을 만들어요. 앱이 정한 틀이라 AI·돈 안 씀.
 //   사진은 눌러서 넣고 빼고, 글은 고쳐서 복사·공유. 계획·사진·기록은 읽기만 해요(바꾸지 않음)
-function postRange(p) { const a = planDate(p, 0); return a ? [a.getTime(), planDate(p, p.nd - 1).getTime() + 864e5] : null; }
+function postRange(p) { if (p._r) return [p._r.a, p._r.b]; const a = planDate(p, 0); return a ? [a.getTime(), planDate(p, p.nd - 1).getTime() + 864e5] : null; }
 function postWalk(p) {   // 여행 날짜 안 MPD 기록의 걸은 거리(m)
+  if (p._r) return p._r.walk;
   const r = postRange(p); if (!r) return 0; let m = 0;
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue;
     let tr; try { tr = JSON.parse(localStorage.getItem(k)); } catch { continue; } if (!Array.isArray(tr)) continue;
@@ -9554,6 +9555,7 @@ function postWalk(p) {   // 여행 날짜 안 MPD 기록의 걸은 거리(m)
   return m;
 }
 function postPlaces(p, d) {   // 그날 구경한 곳 이름(여행사 이름 그대로, 묶음 이름은 앞 이름만)
+  if (p._r) return (p._r.days[d] || []).map(n => ({ n, x: {} }));
   const seen = new Set(), out = [];
   planItems(p, d).filter(x => ['spot', 'show', 'peak'].includes(x.k)).forEach(x => { const n = tvNameSplit(planTerm(x.n || ''))[0].replace(/\[.*?\]|\(.*?\)/g, '').replace(/^스페셜포함\s*/, '').replace(/\s*VIP.*$/, '').trim();
     if (!n || /마사지|라운지|VR|쇼핑|면세|공항|다방|휴게소|체험$/.test(n) || seen.has(n)) return; seen.add(n); out.push({ n, x }); });   // 자랑할 곳만(마사지·라운지·VR 등은 빼요)
@@ -9573,7 +9575,7 @@ function postTips(p) {   // 여행사 안내 속 '꼭 알아 둘 것' 문장(같
 }
 async function postPhotos(p) {   // 여행 날짜 사진 [{k, ts, src(보여 줄 주소), get()=blob}] · 같은 사진(3초 안)은 한 번
   const r = postRange(p); if (!r) return []; const out = [], near = ts => out.some(o => Math.abs(o.ts - ts) < 3000);
-  for (const ph of await trMpdPhotos(r[0], r[1])) { if (near(ph.ts)) continue; out.push({ k: 'm:' + ph.id, ts: ph.ts, src: phSrc(ph), get: async () => ph.blob }); }
+  for (const ph of p._r ? await photoImgs(p._r.t) : await trMpdPhotos(r[0], r[1])) { if (near(ph.ts)) continue; out.push({ k: 'm:' + ph.id, ts: ph.ts, src: phSrc(ph), get: async () => ph.blob }); }
   if (window.mdNativePhotos) try { for (const g of await window.mdNativePhotos.between(r[0], r[1])) { if (near(g.ts)) continue;
     out.push({ k: 'g:' + g.uri, ts: g.ts, src: window.Capacitor && Capacitor.convertFileSrc ? Capacitor.convertFileSrc(g.uri) : '', get: () => window.mdNativePhotos.blob(g.uri) }); } } catch {}
   if (p.room && p.room.code) try { const R = await trRoom(p.room.code), S = await trLoad(R);
@@ -9582,6 +9584,7 @@ async function postPhotos(p) {   // 여행 날짜 사진 [{k, ts, src(보여 줄
 }
 function postPick(L, n) { if (L.length <= n) return L.map(o => o.k); const out = []; for (let i = 0; i < n; i++) out.push(L[Math.round(i * (L.length - 1) / (n - 1))].k); return [...new Set(out)]; }
 function postText(p, kind, nPh) {
+  if (p._r) return postTextRec(p._r, kind, nPh);
   const dest = planDestName(p) || p.name, nn = p.nd > 1 ? `${p.nd - 1}박 ${p.nd}일` : '당일', km = postWalk(p) / 1000, ppl = (p.mem || []).length;
   const days = [...Array(p.nd).keys()].map(d => ({ d, L: postPlaces(p, d) })).filter(z => z.L.length);
   const all = days.flatMap(z => z.L), tag = s => '#' + String(s).replace(/[^\p{L}\p{N}]/gu, '');
@@ -9602,6 +9605,36 @@ function postText(p, kind, nPh) {
   L.push('✍ 총평', [km >= 1 ? `${p.nd}일 동안 ${km.toFixed(1)}km를 걸었어요.` : '', '(여기에 소감을 한두 줄 적어 주세요)'].filter(Boolean).join(' '), '', tags);
   return L.join('\n');
 }
+// 판 -269 (사용자 '기록 보기에도 넣어'): 내 MPD 하나 보기 ⋯ '여행 후기 만들기' → 같은 창을 기록으로. 기록은 읽기만
+function recPost(t) {
+  const x = pastTrips().find(y => y.t === t); if (!x) return;
+  const info = x.info, album = String(t).startsWith('album_'), a = album ? albumGet(t) : null, ids = album && a ? a.days : [t];
+  const tr = trackLoad(t), M = album ? null : modeOfT(t), st = tr.length > 1 ? trackStats(tr, M ? M.car : 15) : {}, ev = tr.length > 1 ? elevStats(tr) : null;
+  const days = ids.map(id => { const seen = new Set(), out = [], add = n => { n = String(n || '').trim(); if (!n || seen.has(n) || /^(출발|도착)( 지점)?$|들른 곳$|좋았던 곳$/.test(n)) return; seen.add(n); out.push(n); };
+    const wp = ls.get('walkPlaces:' + id, {}) || {}; add(wp.start); (ls.get('walkSummits:' + id, []) || []).forEach(q => q && add(q.n)); (ls.get('walkSpots:' + id, []) || []).forEach(q => q && add(q.n)); add(wp.end); return out; });
+  const where = ((ls.get('walkWhere:' + t, null) || ls.get('walkWhere:' + ids[0], null) || {}).n) || '';
+  const t0 = tr.length ? tr[0][2] : info.startAt, t1 = tr.length ? tr[tr.length - 1][2] : t0;
+  const p = { name: info.name, nd: ids.length, it: [], _r: { t, a: (t0 || Date.now()) - 36e5, b: (t1 || Date.now()) + 36e5, walk: st.walk || 0, ms: st.ms || 0, gain: ev ? ev.gain : 0,
+    name: info.name, mode: album ? '여행' : (M ? M.label : ''), where, days, nd: ids.length, d0: new Date(t0 || info.startAt), note: ls.get('walkNote:' + (album ? ids[0] : t), '') || '', summit: ids.flatMap(id => ls.get('walkSummits:' + id, []) || []).filter(Boolean).map(q => q.n) } };
+  planPostSheet(p);
+}
+function postTextRec(r, kind, nPh) {
+  const d = r.d0, dt = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, nn = r.nd > 1 ? `${r.nd - 1}박 ${r.nd}일` : '', km = r.walk / 1000;
+  const all = [...new Set(r.days.flat())], tag = s => '#' + String(s).replace(/[^\p{L}\p{N}]/gu, '');
+  const stat = [km >= 0.1 ? `${km.toFixed(1)}km` : '', r.ms >= 6e4 && r.nd === 1 ? fmtDur(r.ms) : '', r.gain >= 20 ? `↑ ${r.gain}m` : ''].filter(Boolean).join(' · ');
+  const tags = [...new Set([r.where ? tag(r.where.split(/\s/).pop()) : '', r.mode ? tag(r.mode) : '', ...r.summit.slice(0, 2).map(tag), ...all.slice(0, 4).map(tag), '#기록', '#MapPhotoDiary'].filter(t => t && t.length > 1))].join(' ');
+  const memo = String(r.note || '').trim();
+  if (kind === 'ig') return [`${r.name}${r.mode ? ' · ' + r.mode : ''}`, [dt, nn, r.where].filter(Boolean).join(' · '), '', ...all.slice(0, 6).map(n => `📍 ${n}`), all.length ? '' : null,
+    stat ? `${stat} 👣` : '', memo ? memo.split('\n')[0] : '', nPh ? `사진 ${nPh}장 중에 골라 올려요 📸` : '', '', tags].filter(v => v != null).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  const L = [`${r.name}${r.where ? ' | ' + r.where : ''}`, [dt, nn, r.mode].filter(Boolean).join(' · '), '',
+    `${r.where ? r.where + '에 ' : ''}다녀왔어요.${all.length ? ` ${all.slice(0, 4).join(', ')}${all.length > 4 ? ' 등' : ''}을 들렀어요.` : ''}`, ''];
+  if (stat) L.push('📌 기록', stat + (r.summit.length ? ` · 정상 ${r.summit.slice(0, 3).join('·')}` : ''), '');
+  if (r.nd > 1) r.days.forEach((z, i) => { L.push(`■ ${i + 1}일차${z.length ? ' · ' + z[0] : ''}`, '[사진]', z.length > 1 ? z.slice(1, 5).join(' · ') : '', ''); });
+  else L.push('[사진]', all.length ? all.join(' → ') : '', '');
+  if (memo) L.push('📝 메모', memo, '');
+  L.push('✍ 총평', '(여기에 소감을 한두 줄 적어 주세요)', '', tags);
+  return L.filter((v, i, A) => v !== '' || A[i - 1] !== '').join('\n').trim();
+}
 async function planPostSheet(p) {
   const st = el('div', { class: 'sub', text: '사진을 모으는 중…' }), grid = el('div', { style: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px' });
   const segB = (t, on) => el('button', { type: 'button', style: `flex:1;border:1.5px solid ${on ? '#191F28' : '#E5E8EB'};background:${on ? '#191F28' : '#fff'};color:${on ? '#fff' : '#191F28'};border-radius:999px;padding:9px;font:600 14.5px Pretendard,sans-serif;cursor:pointer`, text: t });
@@ -9610,7 +9643,7 @@ async function planPostSheet(p) {
   const ok = el('div', { style: 'font-size:13px;color:#6B7684;min-height:18px' });
   let L = [], sel = [];
   const paintSeg = () => seg.replaceChildren(...[['ig', '인스타그램'], ['bl', '블로그 후기']].map(([k, t]) => { const b = segB(t, k === kind); b.onclick = () => { kind = k; ta.value = postText(p, kind, L.length); paintSeg(); }; return b; }));
-  const paintGrid = () => { st.textContent = L.length ? `여행 날짜에 찍은 사진 ${L.length}장 · 고른 사진 ${sel.length}장 · 눌러서 넣고 빼요` : '아직 이 여행 날짜에 찍은 사진이 없어요 · MPD로 찍은 사진, 일행 채팅에 올린 사진' + (window.mdNativePhotos ? ', 휴대폰 사진첩 사진' : '') + '을 가져와요';
+  const paintGrid = () => { st.textContent = L.length ? `${p._r ? '이 기록' : '여행 날짜'}에 찍은 사진 ${L.length}장 · 고른 사진 ${sel.length}장 · 눌러서 넣고 빼요` : p._r ? '이 기록에 사진이 없어요 · ⋯ 수정하기에서 사진을 더해 보세요' : '아직 이 여행 날짜에 찍은 사진이 없어요 · MPD로 찍은 사진, 일행 채팅에 올린 사진' + (window.mdNativePhotos ? ', 휴대폰 사진첩 사진' : '') + '을 가져와요';
     grid.replaceChildren(...L.map(o => { const i = sel.indexOf(o.k); return el('button', { type: 'button', style: `position:relative;padding:0;border:none;background:#EEF1F4;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;outline:${i >= 0 ? '3px solid #FF6B4A' : 'none'};outline-offset:-3px`,
       onclick: () => { const j = sel.indexOf(o.k); if (j >= 0) sel.splice(j, 1); else if (sel.length < 10) sel.push(o.k); else return toast('사진은 10장까지 골라요 (인스타 한 번에 10장)'); paintGrid(); } },
       el('img', { src: o.src, loading: 'lazy', style: 'width:100%;height:100%;object-fit:cover;display:block' }),
@@ -9627,7 +9660,7 @@ async function planPostSheet(p) {
     bShare.disabled = false; bShare.textContent = '사진과 글 공유하기'; } });
   const bSave = el('button', { class: 'btn line', style: 'flex:1', text: '사진 저장', onclick: async () => { if (!sel.length) return toast('사진을 먼저 골라 주세요'); bSave.disabled = true; bSave.textContent = '준비 중…'; try { await savePhotos(await blobs()); } catch {} bSave.disabled = false; bSave.textContent = '사진 저장'; } });
   labSheet('📝 여행 후기 만들기', seg,
-    el('div', { style: 'font-size:13px;color:#6B7684;line-height:1.55', text: '일정·여행사 안내·MPD 기록으로 앱이 쓴 글이에요. 마음대로 고치고, 소감을 한 줄 더해 보세요. 계획과 사진은 바뀌지 않아요.' }),
+    el('div', { style: 'font-size:13px;color:#6B7684;line-height:1.55', text: p._r ? '이 기록(장소·거리·메모)으로 앱이 쓴 글이에요. 마음대로 고치고, 소감을 한 줄 더해 보세요. 기록과 사진은 바뀌지 않아요.' : '일정·여행사 안내·MPD 기록으로 앱이 쓴 글이에요. 마음대로 고치고, 소감을 한 줄 더해 보세요. 계획과 사진은 바뀌지 않아요.' }),
     st, grid, ta, bShare, el('div', { style: 'display:flex;gap:8px' }, el('button', { class: 'btn line', style: 'flex:1', text: '글 복사', onclick: copy }), bSave), ok);
   paintSeg(); ta.value = postText(p, kind, 0);
   L = await postPhotos(p); sel = postPick(L, 10); paintGrid(); ta.value = postText(p, kind, L.length);
@@ -13965,6 +13998,7 @@ async function viewMyOne(t) {
       go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
       phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
       live ? null : go('그림 앨범 보기', () => storyBook(t)),   // 판 -263
+      live ? null : go('여행 후기 만들기 (블로그·인스타)', () => recPost(t)),   // 판 -269
       live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
       canFilm ? go(x.album ? '여행 전체 이동 영상 만들기' : '이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
       go('GPX 받기', gpx),
