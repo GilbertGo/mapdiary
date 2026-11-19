@@ -3562,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-281-book5';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-282-menu';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "포토북 쪽을 포토스토리 카드와 같은 세로 화면 크기로 바꿨어요 · 사진은 화면 3분의 2만큼 크게, 제목·글씨도 포토스토리와 같은 크기 · 만드는 동안 큰 모래시계 · 약도 밑에 실제 지도";
+const UI_NOTES = "기록 보기 ⋯ 메뉴를 묶음으로 정리했어요 · 기록 · 만들기 · 내보내기 · 이름 아래 한 줄 설명 · 포토스토리는 사진 한 장 카드, 포토북은 여러 쪽 책 · 포토북 표지에 쪽 수와 차례";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9750,10 +9750,19 @@ async function photoBook(t, plan) {
   async function build() {
     busy(true); list.style.opacity = '.25';
     S.pages = []; let no = 1; const push = async c => { S.pages.push({ c, blob: await toJpeg(c) }); };
-    { const [c, g] = sPage(), HH = 1220, bm = await bmOf(cover); heroTop(g, bm, HH, `포토북  ·  ${range}`, S.title, S.sub); bm && bm.close && bm.close();
-      const th = allPh.filter(r => r !== cover), strip = evenPick(th, 3), tw = Math.floor((W - P * 2 - 24 * 2) / 3); let y = HH + 40;
-      for (let j = 0; j < strip.length; j++) { const b2 = await bmOf(strip[j]); fit(g, b2, P + j * (tw + 24), y, tw, tw, 26); b2 && b2.close && b2.close(); }
-      if (strip.length) y += tw + 64; else y += 40;
+    const plan2 = days.map(d => { const hp = d.pick.length > 1 ? d.pick.filter(r => r !== cover) : d.pick; let n = d.pick.length - (hp.length ? 1 : 0), k = 0, li = 0; while (n > 0) { n -= LAYOUT[li++ % LAYOUT.length]; k++; } return 1 + k; });   // 판 -282: 날마다 쪽 수
+    const total = 2 + plan2.reduce((a, b) => a + b, 0);
+    { const [c, g] = sPage(), HH = 1100, bm = await bmOf(cover); heroTop(g, bm, HH, `PHOTO BOOK  ·  ${total}쪽`, S.title, [range, S.sub].filter(Boolean).join('  ·  ')); bm && bm.close && bm.close();
+      let y = HH + 44; const rows = []; let pg = 2;   // 차례: 책이라는 게 표지에서 보이게
+      days.forEach((d, di) => { const n = plan2[di]; rows.push([many ? `DAY ${di + 1}  ${d.title || dLab(d.date)}` : (d.title || dLab(d.date)), many && n > 1 ? `${pg}–${pg + n - 1}` : String(pg)]); pg += n; });
+      if (!many && days[0] && pg > 3) rows.push([`사진 ${days[0].pick.length}장`, pg - 1 > 3 ? `3–${pg - 1}` : '3']);
+      rows.push(['다녀온 길', String(pg)]);
+      const RH = 64, show = rows.slice(0, Math.max(2, Math.floor((H - 520 - HH) / RH))); if (show.length < rows.length) show[show.length - 1] = rows[rows.length - 1];
+      g.fillStyle = '#fff'; g.beginPath(); g.roundRect(P, y, W - P * 2, 92 + show.length * RH, 26); g.fill();
+      g.fillStyle = CO; g.font = `800 28px ${F}`; g.fillText('차례', P + 36, y + 58); y += 92;
+      show.forEach(([k, v], i) => { const yy = y + i * RH + 40; g.fillStyle = INK; g.font = `600 32px ${F}`; g.fillText(wrap(g, k, W - P * 2 - 220, 1)[0], P + 36, yy); g.fillStyle = MU; g.font = `600 30px ${F}`; g.textAlign = 'right'; g.fillText(v, W - P - 36, yy); g.textAlign = 'left';
+        if (i < show.length - 1) { g.fillStyle = '#EEF1F4'; g.fillRect(P + 36, yy + 24, W - P * 2 - 72, 2); } });
+      y += show.length * RH + 64;
       story(g, S.story, P, y, W - P * 2, H - 80); sFoot(g, ''); await push(c); prog.textContent = '만드는 중 · 표지'; }
     for (let di = 0; di < days.length; di++) { const d = days[di], picks = d.pick, head = many ? `DAY ${di + 1}  ·  ${dLab(d.date)}` : dLab(d.date);
       const hp = picks.length > 1 ? picks.filter(r => r !== cover) : picks, hero = hp.length ? hp.reduce((b, r) => (r.m && !b.m ? r : b), hp[Math.floor(hp.length / 2)]) : null, rest = picks.filter(r => r !== hero);
@@ -9810,7 +9819,7 @@ async function photoBook(t, plan) {
   let pdf = null;
   async function makePdf() { const L = []; for (const p of S.pages) L.push({ bytes: new Uint8Array(await p.blob.arrayBuffer()), w: W, h: H }); pdf = pdfFromJpegs(L, 540, 960); return pdf; }
   const list = el('div', { style: 'display:flex;flex-direction:column;gap:14px' });
-  function paint() { pdf = null; list.replaceChildren(...S.pages.map((p, i) => { const im = el('img', { alt: `${i + 1}쪽`, style: 'width:100%;display:block;border-radius:14px;box-shadow:0 6px 22px rgba(16,42,67,.14);background:#E3EAF2' }); im.src = URL.createObjectURL(p.blob); return im; })); }
+  function paint() { pdf = null; if (S.ttlEl) S.ttlEl.textContent = S.pages.length ? `포토북 · ${S.pages.length}쪽` : '포토북'; list.replaceChildren(...S.pages.map((p, i) => { const im = el('img', { alt: `${i + 1}쪽`, style: 'width:100%;display:block;border-radius:14px;box-shadow:0 6px 22px rgba(16,42,67,.14);background:#E3EAF2' }); im.src = URL.createObjectURL(p.blob); return im; })); }
   const send = async () => { const b = pdf || await makePdf(), f = new File([b], fbase() + '.pdf', { type: 'application/pdf' });
     try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: S.title }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     const m = await fileSaveAny(b, fbase() + '.pdf', 'application/pdf'); m && toast(m + ' · 공유 창을 못 열었어요'); };
@@ -9828,7 +9837,7 @@ async function photoBook(t, plan) {
   bg.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '포토북', style: 'max-width:520px;width:100%;margin:0 auto;min-height:100%;border-radius:0;background:#F2F5F9;padding:14px 16px 110px;box-shadow:none' },
     el('div', { style: 'display:flex;align-items:center;gap:12px;margin-bottom:10px' },
       el('button', { class: 'n-ib', type: 'button', 'aria-label': '닫기', onclick: () => bg.remove() }, cSvg('x', 20)),
-      el('b', { style: 'flex:1;font-size:21px', text: '포토북' }),
+      (S.ttlEl = el('b', { style: 'flex:1;font-size:21px', text: '포토북' })),
       el('button', { class: 'n-ib', type: 'button', 'aria-label': '더보기', onclick: more }, cSvg('more', 20))), prog, list, wait), bar);
   document.body.append(bg);
   await build(); paint();
@@ -12746,8 +12755,8 @@ function viewPlanOne(id) {
     const bg = labSheet(p.name,
       go('🗺 지도에서 경로 고치기', () => planMapEdit(p, day < 0 ? 0 : day, () => drawAll())),
       go('📝 여행 후기 만들기 (블로그·인스타)', () => planPostSheet(p)),   // 판 -262
-      go('📖 포토스토리 만들기 (여행 사진 전체)', () => photoStory(null, p)),   // 판 -276
-      go('📚 포토북 만들기 (PDF)', () => photoBook(null, p)),   // 판 -277
+      go('📖 포토스토리 · 사진 한 장 카드 (카톡·인스타용)', () => photoStory(null, p)),   // 판 -276
+      go('📚 포토북 · 여러 쪽 PDF (간직·인쇄용)', () => photoBook(null, p)),   // 판 -277
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
@@ -14351,22 +14360,29 @@ async function viewMyOne(t) {
     agBox ? act('again', '다시 가기', () => { agBox.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); agBox.classList.remove('ag-flash'); void agBox.offsetWidth; agBox.classList.add('ag-flash'); }) : null,
     canFilm ? act('film', '영상', './?film=1&t=' + encodeURIComponent(t)) : null,
     act('dl', 'GPX', gpx));
-  const moreSheet = () => {   // ⋯ 더보기
-    const go = (txt, fn, red) => el('button', { class: 'n-row', style: `width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer${red ? ';color:#D64545' : ''}`, onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
+  const moreSheet = () => {   // ⋯ 더보기 · 판 -282 사용자 '이 메뉴 정리 좀 해봐': 묶음(고치기·만들기·내보내기·러닝) + 한 줄 설명
+    const go = (txt, fn, red, desc) => el('button', { class: 'n-row', style: `width:100%;border:none;font:inherit;font-weight:600;text-align:left;cursor:pointer;padding:13px 16px${red ? ';color:#D64545' : ''}`, onclick: () => { bg.remove(); fn(); } },
+      el('span', { style: 'flex:1;min-width:0' }, el('span', { style: 'display:block;font-size:16px', text: txt }), desc ? el('span', { style: 'display:block;font-size:12.5px;font-weight:500;color:#8B95A1;margin-top:2px', text: desc }) : null), el('span', { class: 'chv', text: '›' }));
+    const grp = (h, ...rows) => { rows = rows.filter(Boolean); return rows.length ? el('div', { class: 'stack', style: 'gap:6px' }, el('div', { style: 'font-size:12.5px;font-weight:700;color:#8B95A1;margin:4px 4px 0', text: h }), ...rows) : null; };
+    const hasPh = phAll.some(r => !isVid(r));
     const bg = labSheet(info.name,
-      live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x)),
-      go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
-      phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
-      live || !phAll.some(r => !isVid(r)) ? null : go('포토스토리 만들기', () => photoStory(t)),   // 판 -275
-      live || !phAll.some(r => !isVid(r)) ? null : go('포토북 만들기 (PDF)', () => photoBook(t)),   // 판 -277
-      live ? null : go('그림 앨범 보기', () => storyBook(t)),   // 판 -263
-      live ? null : go('여행 후기 만들기 (블로그·인스타)', () => recPost(t)),   // 판 -269
-      live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
-      canFilm ? go(x.album ? '여행 전체 이동 영상 만들기' : '이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
-      go('GPX 받기', gpx),
-      M.k === 'run' && !live && !x.album ? go(ls.get('walkWatch:' + t, null) ? '워치 값 고치기' : '워치(삼성헬스) 값 적기', () => watchEdit(t, () => location.reload())) : null,
-      M.k === 'run' && !live && !x.album ? go(off ? '대회 기록 고치기' : '대회 기록으로 맞추기', () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); }) : null,
-      go('이 기록 지우기', del, true));
+      grp('기록',
+        live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x), false, '제목 · 모드 · 장소 · 사진 더하기 · 길 자르기'),
+        go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
+        hasPh ? go('대표 사진 바꾸기', () => coverPick(t)) : null),
+      live ? null : grp('만들기',
+        hasPh ? go('포토스토리', () => photoStory(t), false, '사진 한 장 카드 · 카톡·인스타에 바로') : null,   // 판 -275
+        hasPh ? go('포토북', () => photoBook(t), false, '여러 쪽 PDF · 간직하고 인쇄하기') : null,   // 판 -277
+        canFilm ? go('이동 영상', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }, false, x.album ? '여행 전체를 지도 위 영상으로' : '다닌 길을 지도 위 영상으로') : null,
+        go('그림 앨범', () => storyBook(t), false, '동화책 같은 약도와 사진'),   // 판 -263
+        go('여행 후기', () => recPost(t), false, '블로그·인스타 글과 사진')),   // 판 -269
+      grp('내보내기',
+        live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
+        go('GPX 받기', gpx, false, '다른 지도·등산 앱에서 열기')),
+      M.k === 'run' && !live && !x.album ? grp('러닝',
+        go(ls.get('walkWatch:' + t, null) ? '워치 값 고치기' : '워치(삼성헬스) 값 적기', () => watchEdit(t, () => location.reload())),
+        go(off ? '대회 기록 고치기' : '대회 기록으로 맞추기', () => { const sp = runSpan(tr); officialEdit(t, sp ? tr[sp.b][2] - tr[sp.a][2] : 0); })) : null,
+      el('div', { style: 'margin-top:6px' }, go('이 기록 지우기', del, true)));
   };
   app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' },
     (() => {   // 판 -247 사용자 '맨 위 헤드라인 디자인 수정 · MPD 로고 넣는 것 고려': 얇은 앱 머리줄 ‹ · MPD 로고 · 공유 ⋯ (테두리·그림자 없는 그림 단추)
