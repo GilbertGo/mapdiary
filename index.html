@@ -3562,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-279-book3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-280-book4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "포토북을 포토스토리처럼 새로 꾸몄어요 · 표지는 큰 사진과 제목·사진 세 장·여행 이야기 · 날마다 큰 사진과 그날 제목·약도·그날 이야기 · 둥근 사진에 번호 딱지 · 마지막 쪽은 다닌 길 전체와 마무리 글";
+const UI_NOTES = "포토북을 만드는 동안 화면 가운데에 큰 모래시계와 지금 하는 일을 보여 줘요 · 포토북 약도 밑에 실제 지도를 깔아 어디인지 보여요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9684,23 +9684,31 @@ async function photoBook(t, plan) {
   const foot = (g, no) => { g.fillStyle = MU; g.font = `500 24px ${F}`; g.textAlign = 'center'; g.fillText(String(no), W / 2, H - 34); g.textAlign = 'right'; g.fillText('Map Photo Diary', W - P, H - 34); g.textAlign = 'left'; };
   const toJpeg = c => new Promise(r => c.toBlob(r, 'image/jpeg', .88));
   const prog = el('div', { class: 'sub', style: 'font-size:13px;text-align:center;margin:8px 0' });
+  const waitTx = el('div', { style: 'font-size:17px;font-weight:700;color:#1B2B3A;margin-top:18px;line-height:1.5' });   // 판 -280: 만드는 동안 가운데 큰 모래시계
+  const wait = el('div', { style: 'position:fixed;left:0;right:0;top:34%;text-align:center;z-index:2;pointer-events:none' }, el('div', { class: 'pb-hg', text: '⏳' }), waitTx);
+  if (!document.getElementById('pbHgCss')) document.head.append(el('style', { id: 'pbHgCss', text: '.pb-hg{font-size:96px;line-height:1;display:inline-block;animation:pbHg 1.6s ease-in-out infinite}@keyframes pbHg{0%,40%{transform:rotate(0)}60%,100%{transform:rotate(180deg)}}@media (prefers-reduced-motion:reduce){.pb-hg{animation:none}}' }));
+  const busy = on => { wait.hidden = !on; prog.style.visibility = on ? 'hidden' : ''; if (on) waitTx.textContent = prog.textContent || '포토북 만드는 중…'; };
+  new MutationObserver(() => { waitTx.textContent = prog.textContent; }).observe(prog, { childList: true, characterData: true, subtree: true });
   try { famFont(); } catch {}
   const FS = `'Gowun Batang',${F}`, mapNo = k => (k < 6 ? String(k + 1) : '');
-  function drawMap(g, segs, picks, x, y, w, h, bg) {   // 다닌 길 약도 + 사진 찍은 곳 번호(겹치면 비켜 놓고 가는 줄로 이음)
+  async function drawMap(g, segs, picks, x, y, w, h, bg) {   // 다닌 길 + 사진 찍은 곳 번호(겹치면 비켜 놓고 가는 줄로 이음). 판 -280: 밑에 실제 지도
     g.save(); g.beginPath(); g.roundRect(x, y, w, h, 28); g.fillStyle = bg || '#EEF3F1'; g.fill(); g.clip();
     const pts = segs.flat(), ph = picks.map((r, i) => [r, i]).filter(([r]) => Number.isFinite(r.la) && Number.isFinite(r.ln)), all = [...pts.map(q => [q[0], q[1]]), ...ph.map(([r]) => [r.la, r.ln])];
     if (all.length < 2) { g.restore(); return false; }
     let a0 = 90, a1 = -90, o0 = 180, o1 = -180; all.forEach(([la, ln]) => { a0 = Math.min(a0, la); a1 = Math.max(a1, la); o0 = Math.min(o0, ln); o1 = Math.max(o1, ln); });
     const k = Math.cos((a0 + a1) / 2 * Math.PI / 180), sx = (o1 - o0) * k || 1e-4, sy = (a1 - a0) || 1e-4, sc = Math.min((w - 110) / sx, (h - 110) / sy);
-    const px = ln => x + w / 2 + ((ln - (o0 + o1) / 2) * k) * sc, py = la => y + h / 2 - (la - (a0 + a1) / 2) * sc;
-    g.strokeStyle = 'rgba(30,59,47,.07)'; g.lineWidth = 2; for (let i = 1; i < 6; i++) { g.beginPath(); g.ellipse(x + w * (.2 + i * .13), y + h * .55, 60 + i * 50, 30 + i * 26, -.3, 0, Math.PI * 2); g.stroke(); }
+    let pt = (la, ln) => [x + w / 2 + ((ln - (o0 + o1) / 2) * k) * sc, y + h / 2 - (la - (a0 + a1) / 2) * sc];
+    let mt = null; try { mt = await Promise.race([mapTiles(g, all, x, y, w, h), new Promise(r => setTimeout(() => r(null), 15000))]); } catch {}
+    if (mt) { pt = (la, ln) => mt.proj([la, ln]); g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(x, y, w, h);
+      g.font = `500 17px ${F}`; g.fillStyle = 'rgba(27,43,58,.55)'; g.textAlign = 'right'; g.fillText('© OpenStreetMap', x + w - 14, y + h - 12); g.textAlign = 'left'; }
+    else { g.strokeStyle = 'rgba(30,59,47,.07)'; g.lineWidth = 2; for (let i = 1; i < 6; i++) { g.beginPath(); g.ellipse(x + w * (.2 + i * .13), y + h * .55, 60 + i * 50, 30 + i * 26, -.3, 0, Math.PI * 2); g.stroke(); } }
     g.lineJoin = g.lineCap = 'round';
-    for (const tr of segs) { const L = tr.filter((q, i) => i % Math.max(1, Math.floor(tr.length / 600)) === 0 || i === tr.length - 1);
-      [[14, '#fff'], [7, CO]].forEach(([lw, col]) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); L.forEach((q, i) => i ? g.lineTo(px(q[1]), py(q[0])) : g.moveTo(px(q[1]), py(q[0]))); g.stroke(); }); }
+    for (const tr of segs) { const L = tr.filter((q, i) => i % Math.max(1, Math.floor(tr.length / 600)) === 0 || i === tr.length - 1).map(q => pt(q[0], q[1]));
+      [[14, '#fff'], [7, CO]].forEach(([lw, col]) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); L.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke(); }); }
     if (pts.length > 1) { const s = pts[0], e = pts[pts.length - 1];
-      [[s, '#1E3B2F'], [e, CO]].forEach(([q, col]) => { g.beginPath(); g.arc(px(q[1]), py(q[0]), 13, 0, 7); g.fillStyle = '#fff'; g.fill(); g.beginPath(); g.arc(px(q[1]), py(q[0]), 8, 0, 7); g.fillStyle = col; g.fill(); }); }
+      [[s, '#1E3B2F'], [e, CO]].forEach(([q, col]) => { const [qx, qy] = pt(q[0], q[1]); g.beginPath(); g.arc(qx, qy, 13, 0, 7); g.fillStyle = '#fff'; g.fill(); g.beginPath(); g.arc(qx, qy, 8, 0, 7); g.fillStyle = col; g.fill(); }); }
     const placed = [], R = 22;   // 번호 동그라미: 앞 번호와 겹치면 둘레로 비켜 놓음
-    ph.forEach(([r, i]) => { const cx = px(r.ln), cy = py(r.la); let bx = cx, by = cy;
+    ph.forEach(([r, i]) => { const [cx, cy] = pt(r.la, r.ln); let bx = cx, by = cy;
       for (let s = 0; s < 40 && placed.some(p => Math.hypot(p[0] - bx, p[1] - by) < R * 2 + 4); s++) { const a = s * 2.4, d = 30 + s * 6; bx = cx + Math.cos(a) * d; by = cy + Math.sin(a) * d; }
       bx = Math.min(x + w - R - 6, Math.max(x + R + 6, bx)); by = Math.min(y + h - R - 6, Math.max(y + R + 6, by)); placed.push([bx, by, cx, cy, i]); });
     placed.forEach(([bx, by, cx, cy]) => { if (Math.hypot(bx - cx, by - cy) > 4) { g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(cx, cy); g.lineTo(bx, by); g.stroke(); g.beginPath(); g.arc(cx, cy, 5, 0, 7); g.fillStyle = INK; g.fill(); } });
@@ -9740,6 +9748,7 @@ async function photoBook(t, plan) {
   }
   const LAYOUT = [3, 2, 4, 1, 3, 2];   // 사진 쪽 모양을 돌아가며: 큰 1+작은 2 / 나란히 2 / 2×2 / 한 장 가득
   async function build() {
+    busy(true); list.style.opacity = '.25';
     S.pages = []; let no = 1; const push = async c => { S.pages.push({ c, blob: await toJpeg(c) }); };
     { const [c, g] = sPage(), HH = 780, bm = await bmOf(cover); heroTop(g, bm, HH, `포토북  ·  ${range}`, S.title, S.sub); bm && bm.close && bm.close();
       const th = allPh.filter(r => r !== cover), strip = evenPick(th, 3), tw = Math.floor((W - P * 2 - 24 * 2) / 3); let y = HH + 36;
@@ -9753,7 +9762,7 @@ async function photoBook(t, plan) {
         heroTop(g, bm, HH, head, d.title || dLab(d.date), meta); bm && bm.close && bm.close();
         let y = HH + 32; const hasMap = d.segs.length || rest.some(r => Number.isFinite(r.la));
         g.font = `500 34px ${F}`; const nL = d.text ? wrap(g, d.text, W - P * 2 - 40, 8).length : 0, mH = Math.max(330, Math.min(580, H - 90 - y - nL * 51 - 110));   // 글이 짧으면 약도를 크게
-        if (hasMap && drawMap(g, d.segs, rest.slice(0, 6), P, y, W - P * 2, mH, '#fff')) { y += mH + 14;
+        if (hasMap && await drawMap(g, d.segs, rest.slice(0, 6), P, y, W - P * 2, mH, '#fff')) { y += mH + 14;
           if (rest.slice(0, 6).some(r => Number.isFinite(r.la))) { g.fillStyle = MU; g.font = `500 22px ${F}`; g.fillText('지도 번호 = 다음 쪽 사진 번호', P + 4, y + 18); } y += 74; } else y += 40;
         story(g, d.text, P, y, W - P * 2, H - 90, 34); sFoot(g, no); await push(c); prog.textContent = `만드는 중 · ${no}쪽`; }
       let i = 0, li = 0;
@@ -9769,7 +9778,7 @@ async function photoBook(t, plan) {
     { const [c, g] = sPage(); no++; let y = P + 40; g.fillStyle = CO; g.font = `800 28px ${F}`; g.fillText(many ? 'OUR TRIP' : 'THE DAY', P, y);
       g.fillStyle = INK; g.font = `800 64px ${F}`; y += 80; g.fillText('다녀온 길', P, y); y += 40;
       const segs = days.flatMap(d => d.segs), mh = segs.length ? 520 : 0;
-      if (mh) { drawMap(g, segs, [], P, y, W - P * 2, mh, '#fff'); y += mh + 32; }
+      if (mh) { await drawMap(g, segs, [], P, y, W - P * 2, mh, '#fff'); y += mh + 32; }
       const walk = days.reduce((s, d) => s + d.walk, 0), tiles = [[nn || '하루', '기간'], [walk >= 100 ? `${(walk / 1000).toFixed(1)}km` : '–', '걸은 거리'], [`${allPh.length}장`, '사진']];
       const tw = (W - P * 2 - 36) / 3; tiles.forEach(([v, k], i) => { const x0 = P + i * (tw + 18); g.fillStyle = '#fff'; g.beginPath(); g.roundRect(x0, y, tw, 140, 26); g.fill(); g.fillStyle = INK; g.font = `800 44px ${F}`; g.fillText(v, x0 + 28, y + 68); g.fillStyle = MU; g.font = `500 24px ${F}`; g.fillText(k, x0 + 28, y + 110); }); y += 200;
       if (S.end) y = story(g, S.end, P, y, W - P * 2, H - 260, 34) + 30;
@@ -9777,10 +9786,10 @@ async function photoBook(t, plan) {
         g.fillStyle = INK; g.font = `500 30px ${F}`; wrap(g, d.names.slice(0, 8).join(' · '), W - P * 2, 2).forEach(l => { if (y < H - 140) { g.fillText(l, P, y); y += 44; } }); y += 18; });
       if (y < H - 380) { const strip = evenPick(allPh.filter(r => r !== cover), 3), sw = Math.floor((W - P * 2 - 48) / 3), sh = Math.min(sw, H - 110 - y); for (let j = 0; j < strip.length; j++) { const b2 = await bmOf(strip[j]); fit(g, b2, P + j * (sw + 24), y, sw, sh, 26); b2 && b2.close && b2.close(); } }
       sFoot(g, no); await push(c); }
-    prog.textContent = `${S.pages.length}쪽 · 아래로 넘겨 보세요`;
+    prog.textContent = `${S.pages.length}쪽 · 아래로 넘겨 보세요`; busy(false); list.style.opacity = '';
   }
   async function aiWrite() {
-    const key = trBotKey(); if (!key) return; prog.textContent = '✨ AI가 사진을 보고 날마다 글을 쓰는 중…';
+    const key = trBotKey(); if (!key) return; prog.textContent = '✨ AI가 사진을 보고 날마다 글을 쓰는 중…'; busy(true); list.style.opacity = '.25';
     try {
       const content = []; let nImg = 0;
       for (let di = 0; di < days.length && nImg < 8; di++) { const r = days[di].pick[Math.floor(days[di].pick.length / 2)]; if (!r) continue; try { content.push({ type: 'text', text: `${di + 1}일째 사진` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await postImg64(await blobOf(r)) } }); nImg++; } catch {} }
@@ -9795,7 +9804,7 @@ async function photoBook(t, plan) {
       if (j.title) S.title = String(j.title).trim().slice(0, 40); if (Array.isArray(j.days)) j.days.forEach((s, i) => { if (!days[i] || !s) return; if (typeof s === 'string') days[i].text = s.trim().slice(0, 200); else { if (s.text) days[i].text = String(s.text).trim().slice(0, 200); if (s.title) days[i].title = String(s.title).trim().slice(0, 24); } });
       if (j.story) S.story = String(j.story).trim().slice(0, 240); if (j.end) S.end = String(j.end).trim().slice(0, 160); S.ai = true;
       await build(); paint();
-    } catch (e) { prog.textContent = '⚠ AI 글을 못 받았어요 · 기록 글로 만들었어요' + (e && e.message ? ` (${String(e.message).slice(0, 60)})` : ''); }
+    } catch (e) { busy(false); list.style.opacity = ''; prog.textContent = '⚠ AI 글을 못 받았어요 · 기록 글로 만들었어요' + (e && e.message ? ` (${String(e.message).slice(0, 60)})` : ''); }
   }
   const fbase = () => `MapDiary_photobook_${range.slice(0, 10).replace(/\./g, '')}`;
   let pdf = null;
@@ -9820,7 +9829,7 @@ async function photoBook(t, plan) {
     el('div', { style: 'display:flex;align-items:center;gap:12px;margin-bottom:10px' },
       el('button', { class: 'n-ib', type: 'button', 'aria-label': '닫기', onclick: () => bg.remove() }, cSvg('x', 20)),
       el('b', { style: 'flex:1;font-size:21px', text: '포토북' }),
-      el('button', { class: 'n-ib', type: 'button', 'aria-label': '더보기', onclick: more }, cSvg('more', 20))), prog, list), bar);
+      el('button', { class: 'n-ib', type: 'button', 'aria-label': '더보기', onclick: more }, cSvg('more', 20))), prog, list, wait), bar);
   document.body.append(bg);
   await build(); paint();
   if (trBotKey()) aiWrite();

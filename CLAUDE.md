@@ -1131,6 +1131,11 @@
 - AI(열쇠 있을 때, `FA_MODEL`): {title, story, days:[{title, text}], end} — 예전 모양(days 글자 배열)도 읽음
 - 시험 scratchpad `pb/t2.js`(`KEY=1` 가짜 AI), 그림 `pb/book3.png`
 
+## 판 -280 포토북 모래시계 · 약도 밑 실제 지도 (2026-11-19, 사용자 캡처 '만드는 중 알게 가운데 크게 모래시계 넣어' · '다녀온 길' 캡처 '어딘지 모르겠다. 지도를 넣던가')
+- `photoBook`: 만드는 동안(`build`·`aiWrite`) 화면 가운데 큰 ⏳(96px, 뒤집히는 움직임, 움직임 줄이기면 멈춤) + 지금 하는 일 글(`busy`, prog 글을 따라감), 쪽 목록은 옅게
+- `drawMap`(날 첫 쪽·마지막 '다녀온 길')이 공유 카드의 `mapTiles`로 OpenStreetMap 조각을 밑에 깔고(15초 안, 저장된 조각 먼저) 그 위에 길·번호, 오른쪽 아래 '© OpenStreetMap'. 못 받으면 예전 빈 바탕
+- 시험 scratchpad `pb/t2.js`(가짜 지도 조각, `WAIT=250`이면 모래시계 화면)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
