@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-269-recpost';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-270-hanaimg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 ⋯ 더보기에서도 블로그·인스타 후기 글을 만들 수 있어요";
+const UI_NOTES = "여행사 사진이 다른 장소(예: 어필봉에 하룡공원) 사진과 섞여 보이던 것을 고쳤어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9044,7 +9044,12 @@ function planFromHana(j) {
   const info = [];
   // 판 -182 (사용자 '여행사에서 준 정보 적절한데 넣어둬'): 일정 카드에 실린 여행사 사진을 그 장소 칸에 · 카드에 여러 곳이 있으면 이름이 나온 뒤 사진만
   const cardImgs = (m, nm) => { const h = String(m.cardCntntMbl || m.cardCntntPc || ''), all = [...h.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(z => ({ u: z[1], i: z.index })).filter(z => /^https:\/\/image\.hanatour\.com\//.test(z.u) && !/\/guide\/|newmap|icon|logo|btn/i.test(z.u));
-    if (!all.length) return []; const pos = nm ? h.indexOf(String(nm).replace(/\s*\[[^\]]*\]\s*/g, '').split(/\s*\+\s*/)[0].trim()) : -1;
+    if (!all.length) return [];
+    if (nm) {   // 판 -270 (사용자 '어필봉 사진이 이게 맞아?'): 카드(card_mngr) 하나씩 나눠 그 장소 이름 카드 안 사진만 · 모바일 모양은 사진이 이름보다 앞이라 '이름 뒤 사진'으로 자르면 다음 장소 사진이 섞였음
+      const nz = v => String(v || '').replace(/\[[^\]]*\]|\([^)]*\)/g, '').replace(/\s+/g, ''), key = nz(String(nm).split(/\s*\+\s*/)[0]);
+      const blocks = h.split(/<div class=["']card_mngr/i).slice(1).map(b => ({ n: nz(String(((/<strong[^>]*>\s*(?:<a[^>]*>)?([^<]+)/i.exec(b) || [])[1]) || '').split(/\s*\+\s*/)[0]), u: [...b.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(z => z[1]).filter(u => /^https:\/\/image\.hanatour\.com\//.test(u) && !/\/guide\/|newmap|icon|logo|btn/i.test(u)) })).filter(b => b.n && b.u.length);
+      const hit = blocks.filter(b => b.n === key); if (hit.length) return [...new Set(hit.flatMap(b => b.u))].slice(0, 8); }
+    const pos = nm ? h.indexOf(String(nm).replace(/\s*\[[^\]]*\]\s*/g, '').split(/\s*\+\s*/)[0].trim()) : -1;
     let L = all; if (pos >= 0) { const after = all.filter(z => z.i > pos); const names = (m.cmsInfoList || []).map(c => h.indexOf(String(c.cmsCntntNm || '').split(/\s*\+\s*/)[0].trim())).filter(i => i > pos).sort((x, y) => x - y); const end = names.length ? names[0] : Infinity; const cut = after.filter(z => z.i < end); L = cut.length ? cut : after.length ? after : all; }
     return [...new Set(L.map(z => z.u))].slice(0, 8); };
   const hm = v => /^\d{4}$/.test(String(v || '')) ? `${String(v).slice(0, 2)}:${String(v).slice(2)}` : '';
@@ -10535,16 +10540,22 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
 //   누를 때만 · 일정·시각·위치·메모는 안 건드림 · 이미 있는 사진은 그대로 · 넣기 전에 예전 모습을 남김(🕘 예전 모습으로 되돌리기)
 // 판 -233 (사용자 '고쳐' — 단추를 누르지 않아도): 하나투어 계획을 열면 앱이 원본 사진 목록만 받아 화면에 씀
 //   계획 자료는 바꾸지 않음(따로 ls hanaImg:{상품 번호}, 7일) · 웹은 하나투어가 막아서 못 받음
+function planImgOwn(p, x) {   // 판 -270: 예전에 잘못 나뉜 여행사 사진(다른 장소 사진이 섞임)을 화면에서만 바로잡아요 · 계획 자료는 그대로
+  const L = Array.isArray(x.img) ? x.img : []; if (!L.length || !p || !Array.isArray(p.it)) return L;
+  if (planIsHana(p) && L.every(u => /^https:\/\/image\.hanatour\.com\//.test(u))) { const hc = hanaImgCached(p, x); if (hc && hc.length) return hc; }   // 앱이 하나투어 원본에서 다시 받아 둔 사진(바르게 나눈 것)이 있으면 그것
+  const i = p.it.indexOf(x); if (i < 0) return L; const later = new Set(); p.it.slice(i + 1).forEach(q => { if (q.d === x.d && q.k === x.k && q.n !== x.n) (q.img || []).forEach(u => later.add(u)); });
+  const own = L.filter(u => !later.has(u)); return own.length ? own : L;
+}
 function hanaImgKey(x, by) { const nm = String(x.n || '').replace(/\s+/g, ''); return by ? x.k + '|' + nm : x.d + '|' + nm; }
-function hanaImgCached(p, x) { const c = p && p.code ? ls.get('hanaImg:' + p.code, null) : null; if (!c || !c.m) return null; return c.m[hanaImgKey(x)] || c.m[hanaImgKey(x, 1)] || null; }
+function hanaImgCached(p, x) { const c = p && p.code ? ls.get('hanaImg2:' + p.code, null) : null; if (!c || !c.m) return null; return c.m[hanaImgKey(x)] || c.m[hanaImgKey(x, 1)] || null; }
 function hanaImgMap(p) {
   if (!p || !p.code || !IN_NATIVE) return Promise.resolve(null);
-  const c = ls.get('hanaImg:' + p.code, null); if (c && c.m && Date.now() - c.at < 7 * 864e5) return Promise.resolve(c.m);
+  const c = ls.get('hanaImg2:' + p.code, null); if (c && c.m && Date.now() - c.at < 7 * 864e5) return Promise.resolve(c.m);
   const Q = hanaImgMap.q || (hanaImgMap.q = {}); if (Q[p.code]) return Q[p.code];
   return Q[p.code] = (async () => {
     try { const r = planFromHana(await planHanaFetch(p.code)); planTermFix(r); const m = {};
       for (const z of r.it) if ((z.img || []).length) { const v = z.img.slice(0, 8); m[hanaImgKey(z)] = m[hanaImgKey(z)] || v; m[hanaImgKey(z, 1)] = m[hanaImgKey(z, 1)] || v; }
-      ls.set('hanaImg:' + p.code, { at: Date.now(), m }); return m; }
+      ls.set('hanaImg2:' + p.code, { at: Date.now(), m }); return m; }
     catch { setTimeout(() => { delete Q[p.code]; }, 5 * 6e4); return null; }
   })();
 }
@@ -10555,14 +10566,18 @@ async function planHanaPhotos(p) {   // → {n: 넣은 칸 수, none: 원본에�
   const r = planFromHana(await planHanaFetch(p.code)); planTermFix(r);
   const nm = v => String(v || '').replace(/\s+/g, '');
   await planSnap(true);
-  const cur = planGet(p.id) || p; let n = 0, none = 0;
+  const cur = planGet(p.id) || p; let n = 0, none = 0, fix = 0;
   for (const x of cur.it || []) {
-    if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k) || (Array.isArray(x.img) && x.img.length)) continue;
+    if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) continue;
     const z = r.it.find(w => w.d === x.d && nm(w.n) === nm(x.n) && (w.img || []).length) || r.it.find(w => w.k === x.k && nm(w.n) === nm(x.n) && (w.img || []).length);
+    const had = Array.isArray(x.img) && x.img.length;
+    if (had) {   // 판 -270: 예전에 잘못 나뉜 여행사 사진(다른 장소 사진)만 원본 것으로 바꿈 · 여행사 주소가 아닌 사진은 안 건드림
+      if (z && x.img.every(u => /^https:\/\/image\.hanatour\.com\//.test(u)) && x.img.join() !== z.img.slice(0, 8).join()) { x.img = z.img.slice(0, 8); fix++; }
+      continue; }
     if (z) { x.img = z.img.slice(0, 8); n++; } else none++;
   }
   cur.imgV = 2; planSave(cur); Object.assign(p, cur);
-  return { n, none };
+  return { n, none, fix };
 }
 function planHanaPhotoSheet(p, after) {
   const st = el('div', { class: 'sub', style: 'font-weight:700' });
@@ -10571,7 +10586,7 @@ function planHanaPhotoSheet(p, after) {
     const c = planHanaCode(urlIn.value); if (c) { p.code = c; p.src = 'hanatour'; planSave(p); }
     if (!p.code) return toast('하나투어 상품 주소를 붙여 넣어 주세요');
     btn.disabled = true; st.textContent = '📷 하나투어에서 사진 받는 중…';
-    try { const r = await planHanaPhotos(p); st.textContent = r.n ? `✅ ${r.n}곳에 여행사 사진을 넣었어요${r.none ? ` · 원본에도 사진이 없는 ${r.none}곳은 구글 사진·그림 그대로` : ''}` : `여행사 원본에 더 넣을 사진이 없어요${r.none ? ` (사진 없는 ${r.none}곳)` : ''}`; after && after(); }
+    try { const r = await planHanaPhotos(p); st.textContent = r.n || r.fix ? `✅ ${[r.n ? `${r.n}곳에 여행사 사진을 넣었어요` : '', r.fix ? `다른 장소 사진이 섞여 있던 ${r.fix}곳을 원본대로 바로잡았어요` : ''].filter(Boolean).join(' · ')}${r.none ? ` · 원본에도 사진이 없는 ${r.none}곳은 구글 사진·그림 그대로` : ''}` : `여행사 원본과 같아요 · 더 넣을 사진이 없어요${r.none ? ` (사진 없는 ${r.none}곳)` : ''}`; after && after(); }
     catch (e) { const m = String(e && e.message || e); st.textContent = m === 'web' ? '⚠ 웹에선 하나투어가 막아 둬서 못 받아요 · MPD 앱에서 눌러 주세요' : '⚠ 못 받았어요 · ' + m.slice(0, 60); }
     btn.disabled = false;
   };
@@ -12137,6 +12152,8 @@ function planThumb(x, p) {
     const ks = Object.keys(all); if (ks.length > 300) ks.sort((a, b) => all[a].at - all[b].at).slice(0, ks.length - 300).forEach(k => delete all[k]); ls.set('planThName2', all); return all[nkey]; };
   const pkey = (x.lat || 0).toFixed(4) + ',' + (x.lng || 0).toFixed(4) + '|' + x.n, pc = exact ? (ls.get('placeInfo', {}) || {})[pkey] : null, pu = r => r && r.ph && r.ph[0] && r.ph[0].u;
   const nc = NC()[nkey];
+  if (Array.isArray(x.img) && x.img.length) { const x0 = x, own = planImgOwn(p, x); if (own !== x.img) x = Object.assign({}, x, { img: own });
+    if (p && planIsHana(p) && p.code && IN_NATIVE && !hanaImgCached(p, x0)) setTimeout(() => hanaImgMap(p).then(m => { const v = m && planImgOwn(p, x0); if (v && v[0] && box.isConnected) box.style.backgroundImage = `url("${v[0]}")`; }).catch(() => {}), 0); }   // 판 -270: 원본을 받아 바른 사진으로
   if (Array.isArray(x.img) && x.img.length) { const u = x.img.find(u0 => !U().has(u0)) || x.img[0]; U().add(u); box.style.backgroundImage = `url("${u}")`; box.classList.add('on'); return box; }   // 판 -182: 여행사 사진이 있으면 그것
   if (noWiki) { const hc = hanaImgCached(p, x); if (hc && show(hc[0])) return box; }   // 판 -233 여행사 원본 사진(계획엔 없어도)
   const gc = gPhotoCached(x); if (gc && gc.u && show(gc.u, 'G')) return box;   // 판 -224: 구글 지도 사진 먼저
@@ -12416,8 +12433,8 @@ function viewPlanOne(id) {
       el('div', { class: 'sub', text: line }),
       x.opt ? el('div', { style: 'font-size:13px;font-weight:700;color:#6B7684', text: x.opt === 2 ? "여행사 분류 '선택관광' · 하나투어 표기 '스페셜포함' (가격 포함 여부는 여행사 확인)" : "여행사 분류 '선택관광' (가격 포함 여부는 여행사 확인)" }) : null,
       planPhBox(p, x, () => { planSave(p); drawAll(); }),
-      Array.isArray(x.img) && x.img.length ? el('div', {}, el('div', { style: 'font-weight:600;font-size:13px;color:#4E5968;margin-bottom:6px', text: `여행사 사진 ${x.img.length}장` }),   // 판 -182
-        el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:4px' }, ...x.img.map(u => el('img', { src: u, loading: 'lazy', style: 'height:120px;border-radius:12px;flex:none;cursor:pointer;background:#EEF1F4', onclick: () => labSheet('', el('img', { src: u.replace('/resize/400_0/', '/resize/800_0/'), style: 'width:100%;border-radius:12px', onerror: e => { if (!e.target.dataset.f) { e.target.dataset.f = 1; e.target.src = u; } } })) })))) : null,
+      Array.isArray(x.img) && x.img.length ? el('div', {}, el('div', { style: 'font-weight:600;font-size:13px;color:#4E5968;margin-bottom:6px', text: `여행사 사진 ${planImgOwn(p, x).length}장` }),   // 판 -182 · 판 -270 다른 장소 사진은 거름
+        el('div', { style: 'display:flex;gap:8px;overflow-x:auto;padding-bottom:4px' }, ...planImgOwn(p, x).map(u => el('img', { src: u, loading: 'lazy', style: 'height:120px;border-radius:12px;flex:none;cursor:pointer;background:#EEF1F4', onclick: () => labSheet('', el('img', { src: u.replace('/resize/400_0/', '/resize/800_0/'), style: 'width:100%;border-radius:12px', onerror: e => { if (!e.target.dataset.f) { e.target.dataset.f = 1; e.target.src = u; } } })) })))) : null,
       Array.isArray(x.cands) && x.cands.length ? el('div', { style: 'padding:10px 12px;border-radius:12px;background:#F5F6F8' },   // 판 -182: 여행사 호텔 후보
         el('div', { style: 'font-weight:600;font-size:13px;color:#4E5968;margin-bottom:6px', text: x.hfix ? '여행사가 확정한 호텔' : `여행사 예정 호텔 ${x.cands.length}곳 · 이 중 한 곳 · 출발 전 확정` }),
         ...x.cands.map(c => el('div', { style: 'padding:7px 0;border-top:1px solid #E5E8EB' },
@@ -12426,7 +12443,7 @@ function viewPlanOne(id) {
           el('div', { style: 'display:flex;gap:12px;margin-top:3px;font-size:13px' }, c.tel ? el('a', { href: 'tel:' + (d0 => /^86/.test(d0) ? '+' + d0 : d0)(c.tel.replace(/[^\d]/g, '')), style: 'color:#1D7FA0;text-decoration:none', text: '전화 ' + c.tel }) : null, c.url ? el('a', { href: c.url, target: '_blank', rel: 'noopener', style: 'color:#1D7FA0;text-decoration:none', text: '호텔 홈페이지 ↗' }) : null)))) : null,
       x.x ? box(planXLab(p), x.x) : x.m ? null : box(planXLab(p), '설명이 없어요. 이름만 있어요.'),
       x.m ? box(x.ai ? '✨ 추천 이유 (AI가 쓴 글 · 영업시간·가격은 확인해 주세요)' : '📝 메모', x.m, '#FFF8E6') : null,
-      (() => { const w = el('div', { style: 'padding:9px 12px;border-radius:12px;background:#F5F6F8;font-size:13px;color:#4E5968' }); const paint = (busy) => { const i = gPhotoInfo(x, p); w.replaceChildren(el('div', {}, el('b', { style: 'font-weight:600;color:#191F28', text: '구글 사진 · ' }), el('span', { style: i.bad ? 'color:#D2462A' : '', text: busy ? '찾는 중…' : i.t })), el('div', { style: 'font-size:11.5px;color:#8B95A1;margin-top:3px', text: `판 ${UI_VER} · ${IN_NATIVE ? '앱' : '웹'} · ${location.host || 'localhost'}` }), !busy && !i.ok && !/찾지 않아요|여행사 사진만/.test(i.t) && navigator.onLine ? el('button', { style: 'margin-top:6px;border:none;background:none;padding:0;color:#1D7FA0;font:inherit;font-weight:600;cursor:pointer', text: '↻ 지금 다시 찾기', onclick: async () => { const a = ls.get('gPhoto', {}) || {}; delete a[gPhotoKey(x)]; ls.set('gPhoto', a); paint(1); try { await gPhoto(x, p); } catch {} paint(); drawAll(); } }) : null); }; paint(); return w; })(),   // 판 -229: 구글 사진 받았나·까닭
+      (() => { const w = el('div', { style: 'padding:9px 12px;border-radius:12px;background:#F5F6F8;font-size:13px;color:#4E5968' }); const paint = (busy) => { const i = gPhotoInfo(x, p); w.replaceChildren(el('div', {}, el('b', { style: 'font-weight:600;color:#191F28', text: '구글 사진 · ' }), el('span', { style: i.bad ? 'color:#D2462A' : '', text: busy ? '찾는 중…' : i.t })), el('div', { style: 'font-size:11.5px;color:#8B95A1;margin-top:3px', text: `판 ${UI_VER} · ${IN_NATIVE ? '앱' : '웹'} · ${location.host || 'localhost'}` }), !busy && !i.ok && !/찾지 않아요|여행사 사진만/.test(i.t) && navigator.onLine ? el('button', { style: 'margin-top:6px;border:none;background:none;padding:0;color:#1D7FA0;font:inherit;font-weight:600;cursor:pointer', text: '↻ 지금 다시 찾기', onclick: async () => { const a = ls.get('gPhoto', {}) || {}; delete a[gPhotoKey(x)]; ls.set('gPhoto', a); paint(1); try { await gPhoto(x, p); } catch {} paint(); drawAll(); } }) : ''); }; paint(); return w; })(),   // 판 -229: 구글 사진 받았나·까닭
       x.k !== 'stay' || has ? placeInfoBox(x, (p.dest && p.dest.n) || planDestName(p)) : null,   // 판 -143: 사진·소개·참고 링크
       x.bk ? el('button', { style: 'text-align:left;border:none;font:inherit;cursor:pointer;padding:10px 12px;border-radius:12px;background:#EEF6FB', onclick: () => { bg.remove(); planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); }); } },
         el('div', { style: 'font-weight:800;font-size:13px;color:#4E5968', text: '🎫 예약 (예약 캡처에서 AI가 읽음)' }), el('div', { style: 'font-size:15px', text: x.bk.ref ? `예약번호 ${x.bk.ref}` : '예약번호 없음' }), el('div', { style: 'font-size:12.5px;color:#6B7684', text: '예약 캡처 보기 ›' })) : null,
