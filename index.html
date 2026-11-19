@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-265-storybook3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-266-storybook4';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "그림 앨범 약도에 실제 바다·강(파란 물결)과 숲·공원이 그려져요 · 나무는 땅 위에만 · 정상(⛰)과 사진 번호마다 장소 이름 · 사진 아래 글은 장소 이름";
+const UI_NOTES = "그림 앨범 약도의 바다·강에 이름이 나와요(예: 가로림만·한강) · 실제 바다·숲 바탕 · 정상(⛰)과 사진 번호마다 장소 이름";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13731,7 +13731,7 @@ async function storyBook(t) {
       if (tr.length >= 2 && wp.end && dist(tr[tr.length - 1][0], tr[tr.length - 1][1], la, ln) < 120) return { n: wp.end, dup: 1 };
       const g = NM[nmKey(la, ln)]; return g ? { n: g } : null; void c; };
     const caps = [];
-    const seed0 = seed; let land = null, landF = null;
+    const seed0 = seed; let land = null, landF = null, wName = null;
     const draw = () => { seed = seed0; const all = [...tr.map(q => [q[0], q[1]]), ...loc.map(p => [p.lat, p.lng]), ...spots.map(s => [s.lat, s.lng]), ...sm.map(s => [s.lat, s.lng])];
     if (all.length >= 2) {
       const la = all.map(p => p[0]), lo = all.map(p => p[1]), asp = ((Math.max(...la) - Math.min(...la)) || 1e-4) / (((Math.max(...lo) - Math.min(...lo)) * Math.cos(la[0] * Math.PI / 180)) || 1e-4);
@@ -13751,7 +13751,8 @@ async function storyBook(t) {
         svg.appendChild(lw);
         const wv = mk('g', { filter: `url(#sbr${di})`, stroke: '#5E8FA3', 'stroke-width': 1, fill: 'none', 'stroke-linecap': 'round', opacity: .7 });
         for (let i = 0, n = 0; i < 160 && n < 7; i++) { const x1 = 16 + rnd() * (W - 40), y1 = 20 + rnd() * (H - 30); if (land.at(x1, y1) !== 'w' || land.at(x1 + 14, y1) !== 'w' || near(x1 + 7, y1, 16)) continue; n++; wv.appendChild(mk('path', { d: `M${x1} ${y1} q3.5 -4 7 0 t7 0` })); }
-        svg.appendChild(wv); }
+        svg.appendChild(wv);
+        if (wName && wName.n) svg.appendChild(tx(wName.n, { x: wName.x.toFixed(1), y: (wName.y + 6).toFixed(1), 'text-anchor': 'middle', 'font-size': 20, fill: '#3F7A93', stroke: '#E4F0F3', 'letter-spacing': 3 })); }
       else for (let i = 0; i < 6; i++) bg.appendChild(mk('ellipse', { cx: (rnd() * W).toFixed(0), cy: (rnd() * H).toFixed(0), rx: (50 + rnd() * 70).toFixed(0), ry: (30 + rnd() * 40).toFixed(0), fill: i % 3 ? '#9DB88E' : '#CDBDA6', opacity: .16 }));
       svg.appendChild(bg);
       const deco = mk('g', { filter: `url(#sbr${di})` });
@@ -13801,6 +13802,24 @@ async function storyBook(t) {
     // 정상(길 150m 안, 산 정상 자료)과 이름 없는 번호의 이름(OpenStreetMap)을 받아 다시 그려요 · 받은 이름은 이 휴대폰에 두고 다시 안 물음(기록은 안 바꿈)
     if (navigator.onLine) (async () => { let got = 0;
       if (landF) { land = await sbLand(landF, W, H).catch(() => null); if (land && wrap.isConnected) { draw(); caps.forEach(f => f()); } }
+      // 판 -266 사용자 '바다 이름도 넣어': 가장 큰 물 덩어리 안, 길에서 가장 먼 칸에 이름(OpenStreetMap 만·강·호수·바다 이름)
+      if (land && landF) { const seen = new Uint8Array(land.a.length); let big = [];
+        for (let i = 0; i < land.a.length; i++) { if (land.a[i] !== 'w' || seen[i]) continue; const comp = [], st = [i]; seen[i] = 1;
+          while (st.length) { const k = st.pop(); comp.push(k); const r = Math.floor(k / land.cols), c = k % land.cols; [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].forEach(([r2, c2]) => { if (r2 < 0 || c2 < 0 || r2 >= land.rows || c2 >= land.cols) return; const k2 = r2 * land.cols + c2; if (!seen[k2] && land.a[k2] === 'w') { seen[k2] = 1; st.push(k2); } }); }
+          if (comp.length > big.length) big = comp; }
+        if (big.length >= 8) { const RP = tr.filter((_, i) => i % 4 === 0).map(q => landF(q[0], q[1])); let best = null, bd = -1;
+          for (const k of big) { const x = (k % land.cols + .5) * land.C, y = (Math.floor(k / land.cols) + .5) * land.C; if (x < 50 || x > W - 50 || y < 18 || y > H - 18) continue; const lr = k % land.cols; if (land.a[k - 4] !== 'w' && lr >= 4 || land.a[k + 4] !== 'w' && lr < land.cols - 4) continue; if (land.a[k - 2 * land.cols] !== 'w' || land.a[k + 2 * land.cols] !== 'w') continue;
+            const d0 = RP.reduce((m, p) => Math.min(m, Math.hypot(p[0] - x, p[1] - y)), 1e9); if (d0 > bd) { bd = d0; best = { x, y }; } }
+          if (best && bd > 14) { const xs = big.map(k => (k % land.cols + .5) * land.C), ys = big.map(k => (Math.floor(k / land.cols) + .5) * land.C), [cla, cln] = landF.inv(xs.reduce((a, b) => a + b) / xs.length, ys.reduce((a, b) => a + b) / ys.length);
+            const [nla, nln] = landF.inv(0, 0), [sla, sln] = landF.inv(W, H), R = Math.max(1500, Math.min(20000, dist(nla, nln, sla, sln) / 2)), key = `w:${cla.toFixed(3)}_${cln.toFixed(3)}`;
+            let n = NM[key];
+            if (n == null) { const q = `[out:json][timeout:20];(nwr(around:${Math.round(R)},${cla.toFixed(5)},${cln.toFixed(5)})["natural"~"^(bay|strait|water)$"][name];nwr(around:${Math.round(R)},${cla.toFixed(5)},${cln.toFixed(5)})["waterway"~"^(river|canal)$"][name];node(around:60000,${cla.toFixed(5)},${cln.toFixed(5)})["place"~"^(sea|ocean)$"][name];);out tags center 40;`;
+              for (const h of ['overpass-api.de', 'overpass.kumi.systems']) { try { const j = await (await fetchT(`https://${h}/api/interpreter?data=` + encodeURIComponent(q), {}, 25000)).json(); if (!j || !j.elements) continue;
+                const pr = e => { const t = e.tags || {}; return /^(bay|strait)$/.test(t.natural) ? 0 : t.waterway || t.natural === 'water' ? 1 : 2; };
+                const L = j.elements.filter(e => e.tags && (e.tags['name:ko'] || e.tags.name)).map(e => { const c = e.center || e; return { n: String(e.tags['name:ko'] || e.tags.name).slice(0, 14), p: pr(e), d: Number.isFinite(c.lat) ? dist(cla, cln, c.lat, c.lon) : 1e9 }; }).sort((a, b) => a.p - b.p || a.d - b.d);
+                n = L.length ? L[0].n : ''; break; } catch {} }
+              if (n != null) { const D = ls.get('sbNames', {}); D[key] = n; NM[key] = n; ls.set('sbNames', D); } }
+            if (n) { wName = { n, x: best.x, y: best.y }; if (wrap.isConnected) draw(); } } } }
       if (tr.length >= 2) { const cells = new Set(); tr.forEach((q, i) => { if (i % 5 === 0 || i === tr.length - 1) cells.add(peakKey(q[0], q[1])); });
         if (cells.size <= 12) for (const k of cells) { const [a, b] = k.split('_').map(Number); const P = await peaksAt((a + .5) / 5, (b + .5) / 5) || [];
           for (const p of P) { if (sm.some(o => o.n === p[0] && dist(o.lat, o.lng, p[1], p[2]) < 300)) continue;
