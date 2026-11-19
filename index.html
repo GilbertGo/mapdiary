@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-264-storybook2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-265-storybook3';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "그림 앨범 약도에 산 정상(⛰ 이름·높이)과 사진 번호마다 장소 이름이 나와요 · 이름은 사진 메모 → 정상·별표 → 출발·도착 → 지도 이름 순 · 사진 아래 글에도 그 이름";
+const UI_NOTES = "그림 앨범 약도에 실제 바다·강(파란 물결)과 숲·공원이 그려져요 · 나무는 땅 위에만 · 정상(⛰)과 사진 번호마다 장소 이름 · 사진 아래 글은 장소 이름";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13677,7 +13677,24 @@ function sbProj(pts, W, H, pad) {
   const la = pts.map(p => p[0]), lo = pts.map(p => p[1]), mid = (Math.min(...la) + Math.max(...la)) / 2, k = Math.cos(mid * Math.PI / 180);
   const x0 = Math.min(...lo), x1 = Math.max(...lo), y0 = Math.min(...la), y1 = Math.max(...la), sw = (x1 - x0) * k || 1e-4, sh = (y1 - y0) || 1e-4;
   const sc = Math.min((W - pad * 2) / sw, (H - pad * 2) / sh), ox = (W - sw * sc) / 2, oy = (H - sh * sc) / 2;
-  return (lat, lng) => [ox + (lng - x0) * k * sc, oy + (y1 - lat) * sc];
+  const f = (lat, lng) => [ox + (lng - x0) * k * sc, oy + (y1 - lat) * sc];
+  f.inv = (x, y) => [y1 - (y - oy) / sc, x0 + (x - ox) / (k * sc)];
+  return f;
+}
+// 판 -265: 그림 약도 땅·물·숲 — OpenStreetMap 그림 지도 조각의 색을 10px 칸마다 읽어요(w 물 · g 숲·공원 · l 땅)
+async function sbLand(f, W, H) {
+  const [la0, ln0] = f.inv(0, H), [la1, ln1] = f.inv(W, 0), tx = (ln, z) => (ln + 180) / 360 * 2 ** z, ty = (la, z) => (1 - Math.log(Math.tan(la * Math.PI / 180) + 1 / Math.cos(la * Math.PI / 180)) / Math.PI) / 2 * 2 ** z;
+  let z = 16; while (z > 9 && (tx(ln1, z) - tx(ln0, z) > 4 || ty(la0, z) - ty(la1, z) > 4)) z--;
+  const X0 = Math.floor(tx(ln0, z)), X1 = Math.floor(tx(ln1, z)), Y0 = Math.floor(ty(la1, z)), Y1 = Math.floor(ty(la0, z));
+  const cv = document.createElement('canvas'); cv.width = (X1 - X0 + 1) * 256; cv.height = (Y1 - Y0 + 1) * 256; const g = cv.getContext('2d', { willReadFrequently: true });
+  let ok = 0; await Promise.all([...Array(X1 - X0 + 1)].flatMap((_, i) => [...Array(Y1 - Y0 + 1)].map(async (_, j) => { const im = await loadTile(`https://tile.openstreetmap.org/${z}/${X0 + i}/${Y0 + j}.png`); if (im) { g.drawImage(im, i * 256, j * 256); ok++; } })));
+  if (!ok) return null;
+  let px; try { px = g.getImageData(0, 0, cv.width, cv.height).data; } catch { return null; }
+  const C = 10, cols = Math.ceil(W / C), rows = Math.ceil(H / C), out = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const [la, ln] = f.inv(c * C + C / 2, r * C + C / 2), x = Math.floor((tx(ln, z) - X0) * 256), y = Math.floor((ty(la, z) - Y0) * 256);
+    if (x < 0 || y < 0 || x >= cv.width || y >= cv.height) { out.push('l'); continue; } const i = (y * cv.width + x) * 4, R = px[i], G = px[i + 1], B = px[i + 2];
+    out.push(!px[i + 3] ? 'l' : Math.abs(R - 170) < 22 && Math.abs(G - 211) < 18 && Math.abs(B - 223) < 18 ? 'w' : G > R + 14 && G > B + 4 ? 'g' : 'l'); }
+  return { C, cols, rows, a: out, at: (x, y) => out[Math.min(rows - 1, Math.max(0, Math.floor(y / C))) * cols + Math.min(cols - 1, Math.max(0, Math.floor(x / C)))] };
 }
 async function storyBook(t) {
   const x = pastTrips().find(y => y.t === t); if (!x) return;
@@ -13714,12 +13731,12 @@ async function storyBook(t) {
       if (tr.length >= 2 && wp.end && dist(tr[tr.length - 1][0], tr[tr.length - 1][1], la, ln) < 120) return { n: wp.end, dup: 1 };
       const g = NM[nmKey(la, ln)]; return g ? { n: g } : null; void c; };
     const caps = [];
-    const seed0 = seed;
+    const seed0 = seed; let land = null, landF = null;
     const draw = () => { seed = seed0; const all = [...tr.map(q => [q[0], q[1]]), ...loc.map(p => [p.lat, p.lng]), ...spots.map(s => [s.lat, s.lng]), ...sm.map(s => [s.lat, s.lng])];
     if (all.length >= 2) {
       const la = all.map(p => p[0]), lo = all.map(p => p[1]), asp = ((Math.max(...la) - Math.min(...la)) || 1e-4) / (((Math.max(...lo) - Math.min(...lo)) * Math.cos(la[0] * Math.PI / 180)) || 1e-4);
       H = Math.round(Math.max(210, Math.min(380, (W - 70) * asp + 70)));
-      const f = sbProj(all, W, H, 34), old = svg; svg = mk('svg', { class: 'sbk-map', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '그림 약도' });
+      const f = sbProj(all, W, H, 42), old = svg; landF = f; svg = mk('svg', { class: 'sbk-map', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '그림 약도' });
       svg.appendChild(mk('defs', {}, [mk('filter', { id: 'sbr' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .035, numOctaves: 2, seed: di + 3 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 3 })]),
         mk('filter', { id: 'sbw' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .015, numOctaves: 3, seed: di + 9 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 22 }), mk('feGaussianBlur', { stdDeviation: 1.2 })])]));
       // 길(그림 좌표로 3px 넘게 떨어진 점만, 400개까지)
@@ -13727,11 +13744,19 @@ async function storyBook(t) {
       const Rs = R.length > 400 ? R.filter((_, i) => i % Math.ceil(R.length / 400) === 0 || i === R.length - 1) : R;
       const near = (x0, y0, r) => Rs.some(p => Math.hypot(p[0] - x0, p[1] - y0) < r);
       const bg = mk('g', { filter: `url(#sbw${di})` });
-      for (let i = 0; i < 6; i++) bg.appendChild(mk('ellipse', { cx: (rnd() * W).toFixed(0), cy: (rnd() * H).toFixed(0), rx: (50 + rnd() * 70).toFixed(0), ry: (30 + rnd() * 40).toFixed(0), fill: i % 3 ? '#9DB88E' : '#CDBDA6', opacity: .16 }));
+      if (land) { svg.querySelector('defs').appendChild(mk('filter', { id: 'sbq' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .04, numOctaves: 2, seed: di + 5 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 7 }), mk('feGaussianBlur', { stdDeviation: 1.6 })]));
+        const lw = mk('g', { filter: `url(#sbq${di})` }); let dw = '', dg = '';
+        land.a.forEach((v, i) => { const x = (i % land.cols) * land.C, y = Math.floor(i / land.cols) * land.C, r = `M${x - 1} ${y - 1}h${land.C + 2}v${land.C + 2}h${-land.C - 2}Z`; if (v === 'w') dw += r; else if (v === 'g') dg += r; });
+        if (dg) lw.appendChild(mk('path', { d: dg, fill: '#9DB88E', opacity: .3 })); if (dw) lw.appendChild(mk('path', { d: dw, fill: '#8FC1D4', opacity: .55 }));
+        svg.appendChild(lw);
+        const wv = mk('g', { filter: `url(#sbr${di})`, stroke: '#5E8FA3', 'stroke-width': 1, fill: 'none', 'stroke-linecap': 'round', opacity: .7 });
+        for (let i = 0, n = 0; i < 160 && n < 7; i++) { const x1 = 16 + rnd() * (W - 40), y1 = 20 + rnd() * (H - 30); if (land.at(x1, y1) !== 'w' || land.at(x1 + 14, y1) !== 'w' || near(x1 + 7, y1, 16)) continue; n++; wv.appendChild(mk('path', { d: `M${x1} ${y1} q3.5 -4 7 0 t7 0` })); }
+        svg.appendChild(wv); }
+      else for (let i = 0; i < 6; i++) bg.appendChild(mk('ellipse', { cx: (rnd() * W).toFixed(0), cy: (rnd() * H).toFixed(0), rx: (50 + rnd() * 70).toFixed(0), ry: (30 + rnd() * 40).toFixed(0), fill: i % 3 ? '#9DB88E' : '#CDBDA6', opacity: .16 }));
       svg.appendChild(bg);
       const deco = mk('g', { filter: `url(#sbr${di})` });
-      for (let i = 0, n = 0; i < 200 && n < 14; i++) { const x1 = 14 + rnd() * (W - 28), y1 = 30 + rnd() * (H - 40); if (near(x1, y1, 26)) continue; n++;
-        if (rnd() < .55) { const r1 = 5 + rnd() * 5; deco.appendChild(mk('line', { x1, y1, x2: x1, y2: y1 - r1 - 4, stroke: '#5A4433', 'stroke-width': 1 })); deco.appendChild(mk('circle', { cx: x1, cy: y1 - r1 - 6, r: r1, fill: '#9DB88E', stroke: '#5A4433', 'stroke-width': .8, opacity: .85 })); }
+      for (let i = 0, n = 0; i < 300 && n < 14; i++) { const x1 = 14 + rnd() * (W - 28), y1 = 30 + rnd() * (H - 40), lt = land && land.at(x1, y1), tree = lt === 'g' || (lt !== 'w' && rnd() < .55); if (near(x1, y1, 26) || lt === 'w' || (land && land.at(x1, y1 - 12) === 'w')) continue; n++;
+        if (tree) { const r1 = 5 + rnd() * 5; deco.appendChild(mk('line', { x1, y1, x2: x1, y2: y1 - r1 - 4, stroke: '#5A4433', 'stroke-width': 1 })); deco.appendChild(mk('circle', { cx: x1, cy: y1 - r1 - 6, r: r1, fill: '#9DB88E', stroke: '#5A4433', 'stroke-width': .8, opacity: .85 })); }
         else { const w1 = 18 + rnd() * 16, h1 = 8 + rnd() * 10; deco.appendChild(mk('path', { d: `M${x1 - w1 / 2} ${y1} Q${x1} ${y1 - h1 * 2} ${x1 + w1 / 2} ${y1} Z`, fill: '#CDBDA6', stroke: '#5A4433', 'stroke-width': .8, opacity: .8 })); } }
       [[20 + rnd() * 50, 24, 1.1], [W - 80 + rnd() * 20, 30, .9]].forEach(([cx, cy, s]) => deco.appendChild(mk('path', { d: `M${cx} ${cy} q${4 * s} ${-8 * s} ${10 * s} ${-3 * s} q${6 * s} ${-9 * s} ${14 * s} ${-1 * s} q${7 * s} 0 ${6 * s} ${5 * s} Z`, fill: '#fff', stroke: '#5A4433', 'stroke-width': .7 })));
       svg.appendChild(deco);
@@ -13775,6 +13800,7 @@ async function storyBook(t) {
     else pg.append(el('div', { class: 'sbk-s', style: 'margin-top:8px', text: '이날 찍은 사진이 없어요' }));
     // 정상(길 150m 안, 산 정상 자료)과 이름 없는 번호의 이름(OpenStreetMap)을 받아 다시 그려요 · 받은 이름은 이 휴대폰에 두고 다시 안 물음(기록은 안 바꿈)
     if (navigator.onLine) (async () => { let got = 0;
+      if (landF) { land = await sbLand(landF, W, H).catch(() => null); if (land && wrap.isConnected) { draw(); caps.forEach(f => f()); } }
       if (tr.length >= 2) { const cells = new Set(); tr.forEach((q, i) => { if (i % 5 === 0 || i === tr.length - 1) cells.add(peakKey(q[0], q[1])); });
         if (cells.size <= 12) for (const k of cells) { const [a, b] = k.split('_').map(Number); const P = await peaksAt((a + .5) / 5, (b + .5) / 5) || [];
           for (const p of P) { if (sm.some(o => o.n === p[0] && dist(o.lat, o.lng, p[1], p[2]) < 300)) continue;
