@@ -1220,6 +1220,7 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .iv-lb{display:block;font-size:13px;color:#6B7684;margin-bottom:6px}
 .iv-in{width:100%;box-sizing:border-box;font-size:17px;padding:14px 16px;border:1.5px solid #E5E8EB;border-radius:14px;background:#F9FAFB;outline:none}
 .iv-in:focus{border-color:#191F28;background:#fff}.iv-in.err{border-color:#E5383B}
+.iv-chs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}.iv-ch{border:1.5px solid #E5E8EB;background:#fff;border-radius:999px;padding:9px 15px;font:600 15px Pretendard,sans-serif;color:#191F28;cursor:pointer}.iv-ch.on{background:#191F28;border-color:#191F28;color:#fff}
 .iv-go{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:#191F28;color:#fff;font-size:16px;font-weight:600}
 .ai-lim{flex:none;font-size:13px;color:#6B7684;background:#F7F8FA;border-radius:12px;padding:8px 12px}.ai-lim summary{cursor:pointer;font-weight:600;color:#4E5968}.ai-lim ul{margin:6px 0 2px;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:1.45}
 .ai-sh{flex:none;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4E5968;background:#EEF7FA;border-radius:12px;padding:8px 12px}.ai-sh span{flex:1;min-width:0}.ai-sh button{flex:none;border:none;background:none;padding:0;font:600 12.5px Pretendard,sans-serif;color:#1D9EC0;text-decoration:underline;cursor:pointer}
@@ -3549,9 +3550,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-260-guide';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-261-pickname';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "현지 가이드 이름·전화번호를 여행 전에도 적어 둘 수 있어요 · 여행 계획 → 준비·정보 → 현지 가이드 · 여행 당일 오늘 칸에서 📞 바로 전화";
+const UI_NOTES = "일행 초대를 받은 사람이 미리 넣어 둔 이름 중 자기 이름을 눌러서 들어와요 · 함께 가는 사람에 이름을 먼저 넣고 초대를 보내 주세요 · 목록에 없으면 직접 적어도 돼요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8702,6 +8703,7 @@ function planImgOk(a) { return Array.isArray(a) ? a.filter(u => typeof u === 'st
 async function planPack(p) {
   const o = { v: 1, n: p.name, s: p.start, d: p.nd, i: (p.it || []).map(x => [x.d, x.t || '', x.n, x.k, x.m || '', Number.isFinite(x.lat) ? +x.lat.toFixed(5) : null, Number.isFinite(x.lng) ? +x.lng.toFixed(5) : null, x.ap ? 1 : 0, x.x || ''].concat(x.en || planImgOk(x.img).length ? [x.en || '', x.enm || ''] : []).concat(planImgOk(x.img).length ? [planImgOk(x.img)] : [])) };
   if (p.meet) o.mt = p.meet; if (p.info && p.info.length) o.nf = p.info; if (p.room && p.room.code) o.rm = p.room.code; if (p.nameEn) o.ne = String(p.nameEn).slice(0, 80); if (p.code) o.hc = p.code;
+  if ((p.mem || []).length) { const me = ls.get('planMe:' + p.id, ''); o.mb = p.mem.slice(0, 30).map(m => [String(m.id).slice(0, 20), String(m.n || '').slice(0, 20)].concat(m.id === me ? [1] : [])).filter(m => m[1]); }   // 판 -261: 미리 넣은 일행 이름 — 초대받은 사람이 골라서 들어오게
   const raw = new TextEncoder().encode(JSON.stringify(o));
   if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64url(z); }
   return 'j' + b64url(raw);
@@ -8718,7 +8720,7 @@ async function planUnpack(s) {
     info: (Array.isArray(o.nf) ? o.nf : []).slice(0, 6).map(z => ({ h: str(z && z.h, 60), x: str(z && z.x, 3000) })).filter(z => z.x),
     nameEn: str(o.ne, 80) || undefined,
     room: typeof o.rm === 'string' && o.rm.length >= 4 && o.rm.length <= 40 ? { code: o.rm } : null,
-    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined, rd: o.rd ? 1 : 0, mem: (Array.isArray(o.mb) ? o.mb : []).slice(0, 30).filter(m => Array.isArray(m) && typeof m[0] === 'string' && typeof m[1] === 'string').map(m => ({ id: m[0].slice(0, 20), n: m[1].slice(0, 20), from: '', a: '', b: '', fl: '' })) };
+    code: typeof o.hc === 'string' && /^[A-Za-z0-9]{6,30}$/.test(o.hc) ? o.hc : undefined, src: typeof o.hc === 'string' ? 'hanatour' : undefined, rd: o.rd ? 1 : 0, mem: (Array.isArray(o.mb) ? o.mb : []).slice(0, 30).filter(m => Array.isArray(m) && typeof m[0] === 'string' && typeof m[1] === 'string').map(m => Object.assign({ id: m[0].slice(0, 20), n: m[1].slice(0, 20), from: '', a: '', b: '', fl: '' }, m[2] === 1 ? { snd: 1 } : {})) };
 }
 // 계획 링크(2026-11-14): 여행사 설명까지 넣으면 링크가 너무 길어져서, 잠가서(AES) 짧은 링크 저장소(shares)에 올리고 링크엔 번호와 열쇠(# 뒤)만.
 //   못 올리면(인터넷·차단) 예전처럼 링크 안에 넣되 긴 설명은 빼요
@@ -9588,9 +9590,12 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
   const hero = ls.get('planHero:' + p.id, null), nm = EN && p.nameEn ? p.nameEn : String(p.name || '여행').replace(/\s*·\s*하나투어\s*$/, '');
   const enDate = () => { const a = planDate(p, 0); if (!a) return ''; const N = p.nd > 1 ? `${p.nd - 1} night${p.nd > 2 ? 's' : ''} ${p.nd} days` : 'Day trip'; return `${N} · from ${a.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`; };
   const inp = el('input', { type: 'text', placeholder: E('이름이나 별명', 'Your name or nickname'), maxlength: 20, value: '', autocomplete: 'off', class: 'iv-in' });
+  const M0 = ((planGet(p.id) || p).mem || []).filter(m => m && m.n && !m.snd); let pick = null;   // snd = 초대를 보낸 사람(그 사람 휴대폰의 '나')이라 빼요 ·   // 판 -261 (사용자 '초대받은 사람이 미리 넣은 이름 골라서 들어오게 해'): 주인이 미리 넣은 이름 칩
+  const chs = M0.length ? el('div', { class: 'iv-chs' }, ...M0.map(m => el('button', { type: 'button', class: 'iv-ch', text: m.n, onclick: e => { pick = m.id; inp.value = m.n; inp.classList.remove('err'); chs.querySelectorAll('.iv-ch').forEach(b => b.classList.toggle('on', b === e.currentTarget)); } }))) : null;
+  inp.addEventListener('input', () => { const c = chs && [...chs.children].find(b => b.classList.contains('on')); if (c && c.textContent !== inp.value.trim()) { c.classList.remove('on'); pick = null; } });
   const save = () => { const v = inp.value.trim().slice(0, 20); if (!v) { inp.focus(); inp.classList.add('err'); return; }
     ls.set('nick', v); const q = planGet(p.id) || p; q.mem = q.mem || [];
-    let m = q.mem.find(x => String(x.n).replace(/\s/g, '') === v.replace(/\s/g, ''));
+    let m = (pick && q.mem.find(x => x.id === pick)) || q.mem.find(x => String(x.n).replace(/\s/g, '') === v.replace(/\s/g, ''));
     if (!m) { m = { id: 'm' + rid(6), n: v, from: '', a: '', b: '', fl: '' }; q.mem.push(m); planSave(q); }
     ls.set('planMe:' + q.id, m.id); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} bg.remove(); toast(E(`${v} 님, 반가워요 · 화면을 짧게 둘러볼게요`, `Welcome, ${v} · a quick tour`)); setTimeout(() => planTour(planGet(p.id) || p), 600); };   // 판 -203: 글 목록(howTo) 대신 실제 화면 둘러보기
   const li = (ic, t, d) => el('div', { class: 'iv-li' }, el('span', { class: 'iv-ic' }, cSvg(ic, 20)), el('div', {}, el('b', { text: t }), el('span', { text: d })));
@@ -9600,7 +9605,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
       el('div', { class: 'iv-k', text: E('여행 초대', 'TRIP INVITATION') }),
       el('div', { class: 'iv-t', text: nm }),
       el('div', { class: 'iv-s', text: EN ? enDate() : [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : ''].filter(Boolean).join(' · ') }),
-            el('label', { class: 'iv-lb', style: 'margin-top:18px', text: E('일행에게 보일 이름', 'Name shown to the group') }), inp,
+            el('label', { class: 'iv-lb', style: 'margin-top:18px', text: chs ? E('나는 누구인가요?', 'Who are you?') : E('일행에게 보일 이름', 'Name shown to the group') }), chs, chs ? el('label', { class: 'iv-lb', style: 'font-weight:500;color:#8B95A1', text: E('목록에 없으면 직접 적기', 'Not listed? Type your name') }) : null, inp,
       el('button', { class: 'iv-go', text: E('다음', 'Next'), onclick: save })));
   const howTo = v => {   // 판 -197 (사용자 '간단한 사용법도 띄우고 나서 시작'): 이름 다음에 사용법 한 장
     const lg = (() => { try { return planCN(p) ? E('중국어', 'Chinese') : planJP(p) ? E('일본어', 'Japanese') : ''; } catch { return ''; } })();
@@ -9620,7 +9625,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
   };
   const bg = el('div', { class: 'iv-bg' }, card);
   inp.addEventListener('keydown', e => { inp.classList.remove('err'); if (e.key === 'Enter' && !e.isComposing) save(); });
-  document.body.append(bg); setTimeout(() => inp.focus(), 250);
+  document.body.append(bg); if (!chs) setTimeout(() => inp.focus(), 250);
 }
 
 // 판 -203 (사용자 '튜토리얼 만들어'): 계획 화면 둘러보기 — 실제 단추·칸을 차례로 밝게 짚으며 한 줄 설명 (초대받아 이름 적은 뒤 저절로, ⋯ 더보기 '사용법 둘러보기'로 다시)
