@@ -3562,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-282-menu';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-283-who';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 ⋯ 메뉴를 묶음으로 정리했어요 · 기록 · 만들기 · 내보내기 · 이름 아래 한 줄 설명 · 포토스토리는 사진 한 장 카드, 포토북은 여러 쪽 책 · 포토북 표지에 쪽 수와 차례";
+const UI_NOTES = "여행 일정 칸마다 누가 고쳤는지 보여요 · ✎ 나 · ✎ 일행 이름 · ✨ AI(누가 시켰는지) · ⚙ 앱(어느 휴대폰에서) · 준비·정보 > 바뀐 기록에 모두 남아요 · 동선 짧게의 되돌리기가 시각까지 되돌려요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -8395,6 +8395,7 @@ function planLegPick(p, a, b, done, mv, open) {
 const PLAN_OPT_K = ['spot', 'show', 'peak'];
 function planOptimize(p, d, done) {   // 구경 장소끼리만 순서를 바꿔 이동 거리를 줄임 · 비행·숙소·식사·이동 칸·위치 없는 곳·다녀온 곳은 제자리 · 시각은 칸 자리에 그대로 남김
   const its = planItems(p, d), legLen = L => { let m = 0, pv = null; L.forEach(x => { if (Number.isFinite(x.lat)) { if (pv) m += dist(pv.lat, pv.lng, x.lat, x.lng); pv = x; } }); return m; };
+  const undo = JSON.parse(JSON.stringify(p.it)), b4op = planMarkSnapOrd(p);   // 판 -283: 시각을 바꾸기 전에 남김(예전엔 바꾼 뒤라 되돌리기가 시각을 못 되돌렸음)
   const before = legLen(its), out = its.slice(); let i = 0;
   while (i < out.length) {
     const mv = x => PLAN_OPT_K.includes(x.k) && Number.isFinite(x.lat) && !x.ok;
@@ -8407,8 +8408,8 @@ function planOptimize(p, d, done) {   // 구경 장소끼리만 순서를 바꿔
     i = j;
   }
   const after = legLen(out);
-  if (after >= before - 30) { toast('이미 가장 짧은 순서예요 · 비행·숙소·식사·이동 칸은 제자리에 둬요'); return; }
-  const undo = JSON.parse(JSON.stringify(p.it)); let k = 0; p.it = p.it.map(x => x.d === d ? out[k++] : x); planSave(p); done && done();
+  if (after >= before - 30) { p.it = undo; toast('이미 가장 짧은 순서예요 · 비행·숙소·식사·이동 칸은 제자리에 둬요'); return; }
+  let k = 0; p.it = p.it.map(x => x.d === d ? out[k++] : x); planMarkDiff(p, b4op, 'app', '동선 짧게', true); planSave(p); done && done();
   const bar = el('div', { class: 'toast', style: 'pointer-events:auto;display:flex;gap:10px;align-items:center;bottom:96px' }, `⇅ 동선을 바꿨어요 · ${fmtDist(before)} → ${fmtDist(after)}`,
     el('button', { class: 'btn small', style: 'background:#fff;color:#191F28', text: '되돌리기', onclick: () => { p.it = undo; planSave(p); bar.remove(); done && done(); } }));
   document.body.append(bar); setTimeout(() => bar.remove(), 9000);
@@ -8802,7 +8803,7 @@ function planDrawSheet(p, d, done) {
           for (const x of tmp.it) { const keep = { lat: x.lat, lng: x.lng }; x.lat = null; await planGeocode({ it: [x] }, say);   // 지도 검색: 계획 둘레 3km 안일 때만 정확한 위치로
             if (Number.isFinite(x.lat) && (Number.isFinite(keep.lat) ? dist(x.lat, x.lng, keep.lat, keep.lng) < 250 : near && dist(x.lat, x.lng, near.lat, near.lng) < 3000)) /* AI가 짐작한 자리 250m 안일 때만: 산 이름만 찾혀 정상에 붙는 것 막기 */ x.ap = 0; else { x.lat = keep.lat; x.lng = keep.lng; x.ap = 1; } }
           out.forEach(x => delete x.q);
-          p.it = p.it.filter(x => x.d !== d).concat(out); p.u = Date.now(); planSave(p);
+          const b4dw = planMarkSnap(p); p.it = p.it.filter(x => x.d !== d).concat(out); p.u = Date.now(); planMarkDiff(p, b4dw, 'ai', '그린 길 읽기'); planSave(p);
           bg.remove(); toast('🗺 ' + (j2.say || '그린 길대로 일정을 고쳤어요') + (out.some(x => x.ap) ? ' · ⚠ 위치가 대략인 곳은 위 주황 상자에서 확인해 주세요' : ''), false, 8000); done && done();
         } catch (e) { go.disabled = false; say('⚠ 못 고쳤어요 · ' + (e && e.message || e)); }
       } });
@@ -9017,10 +9018,10 @@ function planNeighborFill(p) {
 // 계획 화면 '📍 위치 찾기': 위치 없는 곳·대략인 곳을 AI(열쇠 있을 때) → 지도 자료 → 앞뒤 장소로 최대한 채움
 async function planFindPlaces(p, say) {
   const before = p.it.filter(x => x.k !== 'move' && (x.lat == null || x.ap)).length;
-  let ai = false;
+  let ai = false; const b4fp = planMarkSnap(p);   // 판 -283
   try { ai = await planAiPlaces(p, String(p.name || '').split(' ')[0], say, true); } catch (e) { toast('⚠ AI로 위치를 못 찾았어요 · ' + String(e && (e.status || e.message) || e).slice(0, 50), true); }
   if (!ai) p.it.forEach(x => { if (!x.q && x.k !== 'move' && (x.lat == null || x.ap) && x.k !== 'food') x.q = x.n.replace(/\(.*?\)/g, '').trim(); });   // 열쇠가 없으면 이름 그대로 찾아 봄
-  await planGeocode(p, say); const nb = planNeighborFill(p); planSave(p);
+  await planGeocode(p, say); const nb = planNeighborFill(p); planMarkDiff(p, b4fp, ai ? 'ai' : 'app', '위치 찾기'); planSave(p);
   const exact = p.it.filter(x => x.k !== 'move' && Number.isFinite(x.lat) && !x.ap).length, approx = p.it.filter(x => x.ap).length, none = p.it.filter(x => x.k !== 'move' && x.lat == null).length;
   return { before, exact, approx, none, nb, ai };
 }
@@ -10433,8 +10434,8 @@ function planPrepSheet(p, wx) {
     (() => { const gv = () => p.guide && (p.guide.n || p.guide.tel) ? (p.guide.n || p.guide.tel) : '적기';
       const r = nrow('📞', '현지 가이드', gv(), () => planGuideEdit(p, () => { rd(); const v = r.querySelector('.st-v'); if (v) v.textContent = gv(); })); return r; })(),
     p.room && p.room.code ? nrow('🔐', '일행 권한', (() => { const S = permCached(p); if (!S || !S.own) return '보기·고치기·AI'; if (S.own.by !== trMe()) { const P = permOf(S, trMe()); return P.w ? '보기·고치기' + (P.ai ? '·AI' : '') : P.r ? '보기만' : '볼 수 없음'; } return `${(S.tk || []).length}명`; })(), () => permSheet(p, rd)) : null,
-    (p.chLog || []).length ? nrow('✎', '바뀐 기록', `${p.chLog[0].nm} · ${trAgo(p.chLog[0].t)}`, sub('✎ 일행이 바꾼 기록', el('div', { class: 'sub', text: '같이 고치기로 일행이 바꾼 것이에요 (내가 바꾼 것은 빼고, 최근 80개)' }),
-      ...p.chLog.map(z => el('div', { style: 'display:flex;gap:10px;padding:9px 0;border-top:1px solid #F0F2F5;font-size:14px' }, el('b', { style: 'flex:none;font-weight:500;color:#191F28', text: z.nm }), el('span', { style: 'flex:1;color:#4E5968', text: z.w }), el('span', { style: 'flex:none;color:#8B95A1;font-size:12.5px', text: trAgo(z.t) }))))) : null,   // 판 -193
+    (p.chLog || []).length ? nrow('✎', '바뀐 기록', `${planWhoTxt(p.chLog[0].k, p.chLog[0].nm, '', false)} · ${trAgo(p.chLog[0].t)}`, sub('✎ 누가 고쳤나', el('div', { class: 'sub', text: '나·일행·AI·앱이 바꾼 것이에요 (최근 80개) · ✨ AI는 누가 시켰는지, ⚙ 앱은 어느 휴대폰에서인지 함께 적어요' }),
+      ...p.chLog.map(z => el('div', { style: 'display:flex;gap:10px;padding:9px 0;border-top:1px solid #F0F2F5;font-size:14px' }, el('b', { style: 'flex:none;font-weight:500;color:' + (z.k === 'ai' ? '#7B61FF' : z.k === 'app' ? '#4E5968' : '#191F28'), text: planWhoTxt(z.k, z.nm, '', false) }), el('span', { style: 'flex:1;color:#4E5968', text: z.w }), el('span', { style: 'flex:none;color:#8B95A1;font-size:12.5px', text: trAgo(z.t) }))))) : null,   // 판 -193
     planRefs(p).length || planAbroad(p) ? nrow('🧳', '참고 여행상품', planRefs(p).length ? planRefs(p).map(r => r.by).filter((v, i, A) => A.indexOf(v) === i).join(' · ') : '넣기', () => planRefSheet(p, rd)) : null,
     nrow('💰', '여행 경비 · 정산', (p.exp || []).length ? `${(p.exp || []).length}건` : '적기', () => planExpSheet(p, rd)),
     planAbroad(p) || nDoc ? nrow('🎫', '예약 · 항공권', nDoc ? `캡처 ${nDoc}장` : '없음', () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); rd(); })) : null,
@@ -10882,9 +10883,10 @@ async function planHanaRefresh(p, quiet) {   // → {ch:[...]} · 실패하면 t
   if (!p.code) throw new Error('nocode');
   if (!IN_NATIVE) throw new Error('web');
   const j = await planHanaFetch(p.code), r = planFromHana(j); planTermFix(r);
+  const b4hn = planMarkSnap(p);   // 판 -283
   const ch = planHanaMerge(p, r); p.hanaAt = Date.now(); p.src = 'hanatour'; p.optV = 1; p.imgV = 2;
   if (ch.length) { planNeighborFill(p); await planGeocode(p, () => {}).catch(() => {}); }
-  p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planSave(p);
+  p.hanaCh = { at: Date.now(), L: ch.slice(0, 40) }; planMarkDiff(p, b4hn, 'app', '하나투어 다시 받기'); planSave(p);
   return { ch };
 }
 // 판 -232 (사용자 '여행사 자료는 왜 안 써?' → '만들어봐'): 하나투어 원본에서 사진만 받아 사진 없는 칸에 넣음
@@ -10917,7 +10919,7 @@ async function planHanaPhotos(p) {   // → {n: 넣은 칸 수, none: 원본에�
   const r = planFromHana(await planHanaFetch(p.code)); planTermFix(r);
   const nm = v => String(v || '').replace(/\s+/g, '');
   await planSnap(true);
-  const cur = planGet(p.id) || p; let n = 0, none = 0, fix = 0;
+  const cur = planGet(p.id) || p; let n = 0, none = 0, fix = 0; const b4ph = planMarkSnap(cur);   // 판 -283
   for (const x of cur.it || []) {
     if (!['spot', 'show', 'peak', 'food', 'stay'].includes(x.k)) continue;
     const z = r.it.find(w => w.d === x.d && nm(w.n) === nm(x.n) && (w.img || []).length) || r.it.find(w => w.k === x.k && nm(w.n) === nm(x.n) && (w.img || []).length);
@@ -10927,7 +10929,7 @@ async function planHanaPhotos(p) {   // → {n: 넣은 칸 수, none: 원본에�
       continue; }
     if (z) { x.img = z.img.slice(0, 8); n++; } else none++;
   }
-  cur.imgV = 2; planSave(cur); Object.assign(p, cur);
+  cur.imgV = 2; planMarkDiff(cur, b4ph, 'app', '여행사 사진 채우기'); planSave(cur); Object.assign(p, cur);
   return { n, none, fix };
 }
 function planHanaPhotoSheet(p, after) {
@@ -11436,7 +11438,7 @@ async function pgCtx(p, say) {
 //   pl/meta = 이름·날짜·날 수·미팅·안내, pl/{일정 id} = {it, by, nm} 또는 {del:1}, pm/{사람 id} = {n, from, a(오는 날), b(가는 날), fl, del}
 //   맞추는 법: 마지막으로 맞춘 모양(ls plSync:{계획} = {sig:{id:모양}, m, mm:{}})과 견줘 — 내가 안 고친 칸만 남의 것으로 바꾸고, 내가 고친 칸은 올림(나중에 올린 쪽이 남음)
 //   내 것만: 예약(bk)·다녀옴(ok…)은 안 올림 · 처음 들어온 휴대폰은 방 일정으로 바꾸고(같은 날·같은 이름이면 내 예약·다녀옴을 옮겨 붙임), 내 예약이 있는 칸만 방에 올림
-const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q', 'eb', 'ebt', 'ph'];   // 판 -219: ph(내 사진)도 내 휴대폰에만   // 판 -193: eb·ebt(누가·언제 고쳤나)는 받은 휴대폰에만 적어요
+const PL_PRIV = ['bk', 'ok', 'okT', 'okA', 'okNo', 'okNav', 'q', 'eb', 'ebt', 'ebk', 'ebw', 'ph'];   // 판 -283: ebk(누가: me·p·ai·app)·ebw(무엇)도 내 휴대폰에만   // 판 -219: ph(내 사진)도 내 휴대폰에만   // 판 -193: eb·ebt(누가·언제 고쳤나)는 받은 휴대폰에만 적어요
 function planMineIns(list, y) {   // 내 일정을 그날 시각 자리에 끼움 (시각 없으면 그날 끝)
   let endDay = -1, lastLE = -1, firstGT = -1; list.forEach((z, i) => { if (z.d <= y.d) endDay = i; if (z.d === y.d && y.t && z.t) { if (z.t <= y.t) lastLE = i; else if (firstGT < 0) firstGT = i; } });
   list.splice(!y.t ? endDay + 1 : lastLE >= 0 ? lastLE + 1 : firstGT >= 0 ? firstGT : endDay + 1, 0, y);
@@ -11446,7 +11448,35 @@ function plSig(o) { return JSON.stringify(o, Object.keys(o).sort()); }
 function plMeta(p) { return { name: p.name || '', start: p.start || '', nd: p.nd || 1, meet: p.meet || null, info: p.info || null, nameEn: p.nameEn || '', nameEnS: p.nameEnS || '' }; }
 function planShareSoon(id) { clearTimeout(planShareSoon.tm); planShareSoon.tm = setTimeout(async () => { const p = planGet(id); if (p && await planShareSync(p) && window.mpdPlanRedraw) window.mpdPlanRedraw(); }, 1500); }
 // 판 -193 (사용자 '누가 고쳤는지 알게해둬'): 같이 고치기로 일행이 바꾼 일정에 '✎ 이름 · 언제'(x.eb·x.ebt), 계획에 변경 기록 p.chLog=[{t,nm,w}](80개)
-function plLog(p, r, w) { const nm = r.nm || '일행'; p.chLog = p.chLog || []; p.chLog.unshift({ t: r._t || Date.now(), nm, w }); p.chLog = p.chLog.slice(0, 80); }
+function plLog(p, r, w, ex) { const nm = r.nm || '일행'; p.chLog = p.chLog || []; ex = ex || {};
+  const z0 = p.chLog[0];   // 판 -283: 같은 AI·앱 한 번(g = 그때 시각)에 바뀐 칸은 한 줄로 묶어 'n곳'
+  if (ex.g && z0 && z0.g === ex.g && z0.nm === nm) { z0.c = (z0.c || 1) + 1; z0.w = `${ex.wh || '고침'} · ${z0.c}곳`; return; }
+  p.chLog.unshift(Object.assign({ t: r._t || Date.now(), nm, w }, ex.k ? { k: ex.k } : {}, ex.wh ? { wh: ex.wh } : {}, ex.g ? { g: ex.g } : {}, ex.me ? { me: 1 } : {})); p.chLog = p.chLog.slice(0, 80); }
+// 판 -283 (사용자 'AI가 고친것도 알게해. 어쨌건 누가 고쳤는지 알게해'): 일정 칸마다 누가 고쳤나 — 나(me)·일행(p)·AI(ai)·앱(app)
+//   AI·앱이 바꿀 때 planMarkSnap → (바꾸기) → planMarkDiff(p, 앞 모습, 'ai'|'app', '무엇') : 바뀐 칸에 x.ew={k,w,n(누가 시켰나),t}(일행에게도 감) + 내 휴대폰 표시(eb·ebk·ebw·ebt) + 바뀐 기록 한 줄
+//   일행 휴대폰은 ew가 15분 안이면 'AI(○○ 요청)'·'앱(○○ 휴대폰)'으로, 아니면 사람 이름으로 적음 · 같이 고치기로 내가 고친 칸도 '나'로 남김
+var planDelWho = {};
+const PLAN_EW_FRESH = 15 * 60000;
+function planMarkSnap(p) { const m = {}; (p.it || []).forEach(x => { m[x.id] = plSig(plPub(x)); }); return m; }
+function planMarkDiff(p, b4, k, w, ordAlso) {
+  const n = String(trName() || '').trim() || '나', t = Date.now(), ew = { k, w: w || '', n, t }; let c = 0, a = 0, dl = 0;
+  const prevOf = (x, i) => { for (let j = i - 1; j >= 0; j--) if (p.it[j].d === x.d) return p.it[j].id; return ''; };
+  const ord0 = ordAlso ? b4.__ord || {} : null;
+  (p.it || []).forEach((x, i) => { const same = b4[x.id] === plSig(plPub(x)) && (!ord0 || ord0[x.id] === prevOf(x, i)); if (same) return;
+    if (b4[x.id]) c++; else a++; x.ew = ew; x.eb = n; x.ebk = k; x.ebw = w || ''; x.ebt = t; });
+  Object.keys(b4).forEach(id => { if (id !== '__ord' && !(p.it || []).some(x => x.id === id)) { dl++; planDelWho[id] = ew; } });
+  if (c + a + dl) plLog(p, { nm: n, _t: t }, [a ? `넣음 ${a}곳` : '', c ? `고침 ${c}곳` : '', dl ? `뺌 ${dl}곳` : ''].filter(Boolean).join(' · '), { k, wh: w, me: 1 });
+  return c + a + dl;
+}
+function planMarkSnapOrd(p) { const m = planMarkSnap(p), o = {}; (p.it || []).forEach((x, i) => { let pv = ''; for (let j = i - 1; j >= 0; j--) if (p.it[j].d === x.d) { pv = p.it[j].id; break; } o[x.id] = pv; }); m.__ord = o; return m; }
+// 누가 고쳤나 한 줄(일정 칸·바뀐 기록)
+function planWhoTxt(k, nm, w, EN) {   // w가 없으면 짧게(일정 칸), 있으면 무엇까지(바뀐 기록)
+  if (k === 'ai') return EN ? `✨ AI${w ? ' · ' + w : ''} · asked by ${nm}` : `✨ AI${w ? ' · ' + w : ''} · ${nm} 요청`;
+  if (k === 'app') return EN ? `⚙ App${w ? ' · ' + w : ''} · ${nm}'s phone` : `⚙ 앱${w ? ' · ' + w : ''} · ${nm} 휴대폰`;
+  if (k === 'me') return EN ? '✎ Me' : '✎ 나';
+  return `✎ ${nm}`;
+}
+function planEwFresh(ew, t) { return !!(ew && ew.t && (ew.k === 'ai' || ew.k === 'app') && Math.abs((t || Date.now()) - ew.t) < PLAN_EW_FRESH); }
 async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바뀌었으면 true
   if (!p || !p.room || !p.room.code || planShareSync.busy) return false; planShareSync.busy = 1; let local = false;
   try {
@@ -11478,14 +11508,15 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
     } else {
       for (const r of rem) {
         const i = p.it.findIndex(x => x.id === r.id), L = i >= 0 ? p.it[i] : null; if (L && L.mine) continue;
-        if (r.del) { if (L && (plSig(Object.assign(plPub(L), { ord: sIx(L) })) === st.sig[r.id] || !st.sig[r.id])) { p.it.splice(i, 1); local = true; if (r.by && r.by !== trMe()) plLog(p, r, `뺌 · ${L.d + 1}일차 ${L.n}`); } delete st.sig[r.id]; continue; }
+        if (r.del) { if (L && (plSig(Object.assign(plPub(L), { ord: sIx(L) })) === st.sig[r.id] || !st.sig[r.id])) { p.it.splice(i, 1); local = true; if (r.by && r.by !== trMe()) { const ew = planEwFresh(r.ew, r._t) ? r.ew : null; if (ew) plLog(p, { nm: ew.n, _t: r._t }, `${ew.w || '뺌'} · 1곳`, { k: ew.k, wh: ew.w, g: ew.t }); else plLog(p, r, `뺌 · ${L.d + 1}일차 ${L.n}`); } } delete st.sig[r.id]; continue; }
         if (!r.it) continue; const rs = plSig(r.it);
-        if (!L) { if (!(r.id in st.sig)) { const x = Object.assign({}, r.it); delete x.ord; x.id = r.id; if (r.by && r.by !== trMe()) { x.eb = r.nm || '일행'; x.ebt = r._t || Date.now(); plLog(p, r, `넣음 · ${x.d + 1}일차 ${x.n}`); } p.it.push(x); st.sig[r.id] = rs; local = true; } continue; }
+        if (!L) { if (!(r.id in st.sig)) { const x = Object.assign({}, r.it); delete x.ord; x.id = r.id; if (r.by && r.by !== trMe()) { const ew = planEwFresh(r.it.ew, r._t) ? r.it.ew : null; x.eb = ew ? ew.n : (r.nm || '일행'); x.ebk = ew ? ew.k : 'p'; x.ebw = ew ? ew.w : ''; x.ebt = r._t || Date.now(); plLog(p, ew ? { nm: ew.n, _t: r._t } : r, ew ? `${ew.w || '넣음'} · 1곳` : `넣음 · ${x.d + 1}일차 ${x.n}`, ew ? { k: ew.k, wh: ew.w, g: ew.t } : null); } p.it.push(x); st.sig[r.id] = rs; local = true; } continue; }
         const lsg = plSig(Object.assign(plPub(L), { ord: sIx(L) }));
         if (lsg === rs) { st.sig[r.id] = rs; continue; }
         if (lsg === st.sig[r.id]) { const keep = {}; PL_PRIV.forEach(k => { if (L[k] != null) keep[k] = L[k]; }); const x = Object.assign({}, r.it, keep); delete x.ord; x.id = r.id;
           if (r.by && r.by !== trMe()) { const pb = plPub(L), nb = plPub(x), what = pb.n !== nb.n ? `이름 ${pb.n} → ${nb.n}` : pb.d !== nb.d ? `${pb.d + 1}일차 → ${nb.d + 1}일차 · ${nb.n}` : (pb.t || '') !== (nb.t || '') ? `시각 ${pb.t || '없음'} → ${nb.t || '없음'} · ${nb.n}` : (pb.lat !== nb.lat || pb.lng !== nb.lng) ? `위치 · ${nb.n}` : `고침 · ${nb.n}`;
-            x.eb = r.nm || '일행'; x.ebt = r._t || Date.now(); plLog(p, r, `${nb.d + 1}일차 ${what}`); }
+            const ew = planEwFresh(r.it.ew, r._t) ? r.it.ew : null; x.eb = ew ? ew.n : (r.nm || '일행'); x.ebk = ew ? ew.k : 'p'; x.ebw = ew ? ew.w : ''; x.ebt = r._t || Date.now();
+            if (ew) plLog(p, { nm: ew.n, _t: r._t }, `${ew.w || '고침'} · 1곳`, { k: ew.k, wh: ew.w, g: ew.t }); else plLog(p, r, `${nb.d + 1}일차 ${what}`); }
           p.it[i] = x; st.sig[r.id] = rs; local = true; }
       }
       if (local) {   // 차례(ord)대로
@@ -11512,8 +11543,12 @@ async function planShareSync(p, opt = {}) {   // → 이 휴대폰 계획이 바
     const by = trMe(), nm = trName() || '일행', ups = [], put = (pr, undo) => ups.push(Promise.resolve(pr).catch(e => { undo(); throw e; }));   // 판 -218: 못 올린 칸만 다음에 다시 (예전엔 하나라도 못 올리면 맞춘 모양을 통째로 버려, 다음 맞추기가 '처음 들어옴'으로 내 사람·일정을 방 것으로 덮었음)
     if (canW) {
     if (!meta || plSig(plMeta(p)) !== st.m) { const o0 = st.m; put(trPut(R, 'pl', 'meta', { m: plMeta(p), by, nm }), () => { st.m = o0; }); st.m = plSig(plMeta(p)); }
-    myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { const o0 = st.sig[o.id]; put(trPut(R, 'pl', o.id, { it: o, by, nm }), () => { if (o0 == null) delete st.sig[o.id]; else st.sig[o.id] = o0; }); st.sig[o.id] = sg; } });
-    Object.keys(st.sig).forEach(id => { if (!shd().some(x => x.id === id)) { const o0 = st.sig[id]; put(trPut(R, 'pl', id, { del: 1, by, nm }), () => { st.sig[id] = o0; }); delete st.sig[id]; } });
+    const had = !first && Object.keys(st.sig).length > 0, now = Date.now(), mineLog = [];   // 판 -283: 내가 고친 칸도 '나'로 남김(처음 올릴 때는 빼고, AI·앱이 고친 칸은 이미 적었으니 빼고)
+    myIt().forEach(o => { const sg = plSig(o); if (st.sig[o.id] !== sg) { const o0 = st.sig[o.id]; put(trPut(R, 'pl', o.id, { it: o, by, nm }), () => { if (o0 == null) delete st.sig[o.id]; else st.sig[o.id] = o0; }); st.sig[o.id] = sg;
+      const X = p.it.find(z => z.id === o.id); if (had && X && !((X.ebk === 'ai' || X.ebk === 'app') && now - (X.ebt || 0) < PLAN_EW_FRESH)) {
+        X.eb = nm; X.ebk = 'me'; X.ebw = ''; X.ebt = now; mineLog.push(`${o0 == null ? '넣음' : '고침'} · ${X.d + 1}일차 ${X.n}`); } } });
+    Object.keys(st.sig).forEach(id => { if (!shd().some(x => x.id === id)) { const o0 = st.sig[id]; const dw = planDelWho[id]; put(trPut(R, 'pl', id, Object.assign({ del: 1, by, nm }, dw ? { ew: dw } : {})), () => { st.sig[id] = o0; }); delete st.sig[id]; if (had && !dw) mineLog.push(`뺌 · ${id}`); } });
+    if (mineLog.length) { if (mineLog.length > 3) plLog(p, { nm, _t: now }, `일정 ${mineLog.length}곳 바꿈`, { k: 'me', me: 1 }); else mineLog.reverse().forEach(w => plLog(p, { nm, _t: now }, w.replace(/^뺌 · .*/, '뺌 · 1곳'), { k: 'me', me: 1 })); local = true; }
     }
     // 함께 가는 사람
     p.mem = p.mem || []; st.mm = st.mm || {};
@@ -11609,10 +11644,11 @@ ${mem.map(m => JSON.stringify({ id: m.id, n: m.n })).join('\n')}` }] });
   toast(`✨ AI 사용 끝 · 일정 영어로 옮기기 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
   const tb = (res.content || []).find(z => z.type === 'text'); const j = JSON.parse((/\{[\s\S]*\}/.exec(tb ? tb.text : '') || ['{}'])[0]);
   let n = 0;
+  const b4tr = planMarkSnap(p);   // 판 -283
   (j.items || []).forEach(z => { const x = p.it.find(y => y.id === z.id); if (x && z.en) { x.en = String(z.en).slice(0, 100); x.enm = String(z.enm || '').slice(0, 300); x.enS = sg(x); n++; } });
   (j.mem || []).forEach(z => { const m = (p.mem || []).find(y => y.id === z.id); if (m && z.en) { m.en = String(z.en).slice(0, 30); m.enS = m.n; } });
   if (j.name) { p.nameEn = String(j.name).slice(0, 60); p.nameEnS = p.name; }
-  planSave(p); return n;
+  planMarkDiff(p, b4tr, 'ai', '영어 이름'); planSave(p); return n;
 }
 function planMemDays(p, m) {   // 이 사람이 함께하는 날(0부터) 목록
   const a = m.a ? planDayOfDate(p, m.a) : 0, b = m.b ? planDayOfDate(p, m.b) : p.nd - 1;
@@ -11710,7 +11746,7 @@ function planMakeSheet(p) {
   // 판 -145 (사용자 계획 도우미 캡처 '반영해!라고 하고 싶은데'): 있던 일정 바꾸기(ch: 시각·날 옮기기·빼기) + 새 곳 넣기(items)를 한 번에
   const applyAll = async (m, chs, picks, btn) => {
     if (btn) { btn.disabled = true; btn.textContent = '반영하는 중…'; }
-    let nc = 0, nd = 0;
+    let nc = 0, nd = 0; const b4 = planMarkSnap(p);   // 판 -283: AI가 고친 칸 표시
     for (const c of chs) { const x = p.it.find(y => y.id === c.id); if (!x) continue;
       if (c.del) { p.it.splice(p.it.indexOf(x), 1); nd++; continue; }
       if (c.d != null) x.d = Math.max(0, Math.min(p.nd - 1, c.d)); if (c.t != null) x.t = c.t;
@@ -11718,7 +11754,7 @@ function planMakeSheet(p) {
     const add = picks.map(z => ({ id: planNewId(), d: Math.max(0, Math.min(p.nd - 1, +z.d || 0)), t: /^\d{1,2}:\d{2}$/.test(z.t || '') ? String(z.t).padStart(5, '0') : '', n: String(z.n || '장소').slice(0, 60), k: PLAN_KINDS[z.k] ? z.k : 'spot', m: String(z.why || '').slice(0, 200), q: String(z.q || '').slice(0, 100),
       lat: Number.isFinite(+z.lat) && z.lat !== null ? +(+z.lat).toFixed(5) : null, lng: Number.isFinite(+z.lng) && z.lng !== null ? +(+z.lng).toFixed(5) : null, ai: 1, lt: z.how ? String(z.how).slice(0, 80) : undefined }));
     add.forEach(x => { x.ap = x.lat != null ? 1 : 0; planMineIns(p.it, x); });   // 있던 차례는 그대로, 새 곳은 그날 시각 자리에(시각 없으면 그날 끝)
-    planSave(p); if (add.length) { try { await planGeocode(p, say); } catch {} planSave(p); }
+    planMarkDiff(p, b4, 'ai', '계획 도우미'); planSave(p); if (add.length) { try { await planGeocode(p, say); } catch {} planSave(p); }
     m.added = add.length; m.chDone = nc + nd; m.applied = 1; ls.set(HK, hist.slice(-30));
     const ok = add.filter(x => x.lat != null && !x.ap).length, ap = add.filter(x => x.ap).length;
     say(`✅ 반영했어요 · ${[nc ? `바꾼 곳 ${nc}` : '', nd ? `뺀 곳 ${nd}` : '', add.length ? `넣은 곳 ${add.length}(위치 정확 ${ok}${ap ? ` · 대략 ${ap}` : ''})` : ''].filter(Boolean).join(' · ') || '바꿀 게 없었어요'}`);
@@ -12231,6 +12267,7 @@ fromEn/toEn은 공항의 영어 정식 이름(예 "Incheon International Airport
 }
 function planDayOfDate(p, ymd) { const a = planDate(p, 0); if (!a || !ymd) return null; return Math.round((new Date(ymd + 'T00:00:00') - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5); }
 async function planBookApply(p, R, docId, say) {   // 읽은 예약을 일정에 넣어요 → {n, lines, fix}
+  const b4bk = planMarkSnap(p);   // 판 -283
   const F = R.flights.slice().sort((a, b) => (a.date + a.dep).localeCompare(b.date + b.dep)), out = { n: 0, lines: [], fix: null };
   if (!p.start && F.length) { p.start = F[0].date; const last = F[F.length - 1].date; p.nd = Math.max(p.nd || 1, planDayOfDate(p, last) + 1); out.lines.push(`📅 출발하는 날을 ${F[0].date}로 정했어요`); }
   if (F.length >= 2 && p.start) {   // 첫 비행 = 첫날, 마지막 비행 = 마지막 날이 아니면 맞추기 제안
@@ -12260,6 +12297,7 @@ async function planBookApply(p, R, docId, say) {   // 읽은 예약을 일정에
     }
     out.lines.push(`🏨 ${h.n} · ${h.in}${h.out ? ' ~ ' + h.out : ''}${h.ref ? ` · 예약번호 ${h.ref}` : ''}`);
   }
+  planMarkDiff(p, b4bk, 'ai', '예약 캡처 읽기');
   return out;
 }
 function planDocSheet(p, redraw) {
@@ -12871,7 +12909,7 @@ function viewPlanOne(id) {
   function row(x, i, d, nx, legged) {   // ✈ 일정 한 칸 (새 디자인 tvItem) · legged = 바로 위 구간 줄에 길찾기가 있음
     const hasLoc = Number.isFinite(x.lat), isNx = i === nx, EN = planEN(p), fr = planFrTxt(p, x), mine = planVis(p, x);
     const mt = x.k === 'move' ? `${x.n || ''} ${x.m || ''}` : '', mic = !mt ? '' : PLAN_RX.R.test(mt) ? '🚆' : PLAN_RX.C.test(mt) ? (/택시|taxi/i.test(mt) ? '🚕' : /버스|bus|셔틀|리무진/i.test(mt) ? '🚌' : '🚗') : PLAN_RX.F.test(mt) ? '⛴' : PLAN_RX.W.test(mt) ? '👣' : '';   // 판 -161: 이동 칸 그림을 가는 방법대로
-    const it = tvItem({ mine: planShared(p) && x.mine ? (String(trName() || (EN ? 'Me' : '나')).trim().slice(0, 1) || true) : false, mineTag: EN ? 'Only me' : '나만', ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + (/도착(\s|$)/.test(x.n || '') && !/출발/.test(x.n || '') ? ' 도착' : ' 출발') : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: [x.eb && x.ebt && Date.now() - x.ebt < 14 * 864e5 ? `✎ ${x.eb} · ${trAgo(x.ebt)}` : ''].concat([x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '']).filter(Boolean).join(' · '), thumb: planThumb(x, p), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
+    const it = tvItem({ mine: planShared(p) && x.mine ? (String(trName() || (EN ? 'Me' : '나')).trim().slice(0, 1) || true) : false, mineTag: EN ? 'Only me' : '나만', ic: mic, k: x.k, t: x.k === 'fly' && x.t ? x.t + (/도착(\s|$)/.test(x.n || '') && !/출발/.test(x.n || '') ? ' 도착' : ' 출발') : x.t, no: rowNo && rowNo.has(x) ? String(rowNo.get(x)) : '', meta: [x.eb && x.ebt && Date.now() - x.ebt < 14 * 864e5 ? `${planWhoTxt(x.ebk, x.eb, '', EN)} · ${trAgo(x.ebt)}` : ''].concat([x.k === 'fly' && planFlyT(x).arr ? `${planFlyT(x).arr} 도착` : x.ai ? '✨ AI 추천' : x.opt ? (x.opt === 2 ? '선택관광 · 스페셜포함' : '선택관광') : x.k === 'stay' && x.url ? `${x.bkSite || bookSite(x.url)} 예약` : x.k === 'stay' && Array.isArray(x.cands) && x.cands.length > 1 && !x.hfix ? `확정 전 · 후보 ${x.cands.length}곳` : '']).filter(Boolean).join(' · '), thumb: planThumb(x, p), n: EN && x.en ? x.en : x.n, on: isNx, ok: x.ok, nx: isNx ? (EN ? 'Next' : '다음 갈 곳') : '', onName: () => viewItem(x),
       extra: [
         EN && x.enm ? el('div', { class: 'tv-m', text: x.enm }) : null,
         x.hg ? el('div', { class: 'tv-m', style: 'color:#C2410C;font-weight:800', text: '⚠ 하나투어 일정에서 빠졌어요 · 여행사에 확인해 보세요' }) : null,
@@ -13037,7 +13075,7 @@ function viewPlanOne(id) {
   }
   permSync(p).then(S => { if (S) drawHead(); }).catch(() => {});   // 판 -201: 권한 받기 → 맨 위 줄   // 판 -139: 계획 도우미가 일정을 넣은 뒤
   // 판 -140: 같이 고치기 — 열 때 한 번, 화면을 보는 동안 15초마다 방과 맞춤
-  if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; const n0 = (planGet(p.id) || p).chLog ? (planGet(p.id) || p).chLog.length : 0; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); const L = (p.chLog || []), nn = L.length - n0; if (nn > 0) { const who = [...new Set(L.slice(0, nn).map(z => z.nm))].join('·'); toast(`✎ ${who} 님이 일정을 ${nn}가지 바꿨어요 · 준비·정보 > 바뀐 기록`, false, 6000); } } }).catch(() => {}); };
+  if (p.room && p.room.code) { const tick = () => { if (document.hidden || !document.body.contains(list)) return; const n0 = (planGet(p.id) || p).chLog ? (planGet(p.id) || p).chLog.length : 0; planShareSync(p).then(ch => { if (ch) { Object.assign(p, planGet(p.id) || {}); drawAll(); const L = (p.chLog || []), nn = L.length - n0; const nw = L.slice(0, Math.max(0, nn)).filter(z => !z.me); if (nw.length) { const who = [...new Set(nw.map(z => z.k === 'ai' ? `AI(${z.nm} 요청)` : z.k === 'app' ? `앱(${z.nm} 휴대폰)` : z.nm + ' 님'))].join('·'); toast(`✎ ${who}이 일정을 바꿨어요 · 준비·정보 > 바뀐 기록`, false, 6000); } } }).catch(() => {}); };
     setTimeout(tick, 800); const iv = setInterval(() => { if (!document.body.contains(list)) return clearInterval(iv); tick(); }, 15000); }
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
