@@ -3563,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-271-postai';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-272-posttoast';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 후기 만들기: 고른 사진을 찍은 시각 순서대로, 찍은 곳 이름과 사진 메모를 붙여 글을 엮어요 · Claude 열쇠가 있으면 AI가 사진을 직접 보고 제목과 글을 써요 · 블로그로 공유할 때 알림 글도 맞췄어요";
+const UI_NOTES = "여행 후기 만들기에서 블로그로 바꿨는데 '인스타 글 칸에 붙여 넣으세요' 알림이 남아 있던 것을 고쳤어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9747,7 +9747,7 @@ async function planPostSheet(p) {
   const re = () => { if (edited) return; const c = aiC[aiSig()]; ta.value = c || postText(p, kind, L.length, picks()); if (!c) aiGo(); };
   const aiS = el('div', { style: 'font-size:12.5px;color:#D2462A;min-height:0' });
   ta.addEventListener('input', () => { edited = true; });
-  const paintSeg = () => seg.replaceChildren(...[['ig', '인스타그램'], ['bl', '블로그 후기']].map(([k, t]) => { const b = segB(t, k === kind); b.onclick = () => { kind = k; edited = false; re(); paintSeg(); }; return b; }));
+  const paintSeg = () => seg.replaceChildren(...[['ig', '인스타그램'], ['bl', '블로그 후기']].map(([k, t]) => { const b = segB(t, k === kind); b.onclick = () => { kind = k; edited = false; ok.textContent = ''; re(); paintSeg(); }; return b; }));
   const paintGrid = () => { st.textContent = L.length ? `${p._r ? '이 기록' : '여행 날짜'}에 찍은 사진 ${L.length}장 · 고른 사진 ${sel.length}장 · 눌러서 넣고 빼요` : p._r ? '이 기록에 사진이 없어요 · ⋯ 수정하기에서 사진을 더해 보세요' : '아직 이 여행 날짜에 찍은 사진이 없어요 · MPD로 찍은 사진, 일행 채팅에 올린 사진' + (window.mdNativePhotos ? ', 휴대폰 사진첩 사진' : '') + '을 가져와요';
     grid.replaceChildren(...L.map(o => { const i = sel.indexOf(o.k); return el('button', { type: 'button', style: `position:relative;padding:0;border:none;background:#EEF1F4;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;outline:${i >= 0 ? '3px solid #FF6B4A' : 'none'};outline-offset:-3px`,
       onclick: () => { const j = sel.indexOf(o.k); if (j >= 0) sel.splice(j, 1); else if (sel.length < 10) sel.push(o.k); else return toast('사진은 10장까지 골라요 (인스타 한 번에 10장)'); paintGrid(); re(); names(); } },
