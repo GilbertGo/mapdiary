@@ -1393,6 +1393,19 @@ html.vw-lt .vw-top1.has-hero{padding-top:0!important}
 .hs-card .t2{left:10%;top:18%;width:40%;height:4%;border-radius:3px;background:#C9CDD2}
 .hs-card .c1{left:10%;top:27%;width:80%;height:40%;border-radius:8px;background:linear-gradient(160deg,#9CC3D9,#4C7DA6)}
 .hs-card .c2{left:10%;top:72%;width:80%;height:9%;border-radius:6px;background:#191F28}
+.sbk-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:rgba(233,226,214,.94);font:600 14px Pretendard,sans-serif;color:#5A4433}.sbk-x{border:none;background:#FBF5EA;border-radius:999px;padding:8px 14px;font:600 14px Pretendard,sans-serif;color:#5A4433;cursor:pointer}
+.sbk-in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:22px;padding:6px 16px calc(40px + env(safe-area-inset-bottom,0px));color:#5A4433;font-family:"Gowun Dodum",Pretendard,sans-serif}
+.sbk-pg{background:#FBF5EA;border-radius:6px 18px 18px 6px;box-shadow:0 1px 0 #d8ccb8,0 10px 24px rgba(90,68,51,.16);padding:20px 18px 24px;position:relative;overflow:hidden}
+.sbk-cover h1{font-family:"Nanum Pen Script",cursive;font-size:clamp(42px,12vw,60px);line-height:1;margin:6px 0 4px;font-weight:400;color:#5A4433;text-wrap:balance}
+.sbk-s{font-size:13.5px;color:#8C7663;line-height:1.5}.sbk-dh{display:flex;align-items:baseline;gap:10px}.sbk-dh b{font-family:"Nanum Pen Script",cursive;font-size:40px;font-weight:400;line-height:1;color:#E4603F}.sbk-dh span{font-size:13.5px;color:#8C7663}
+.sbk .sbk-pg h2{color:#5A4433!important;font-family:"Nanum Pen Script",cursive;font-weight:400;font-size:30px;margin:2px 0 0;line-height:1.1;color:#5A4433}
+.sbk-map{width:100%;height:auto;display:block;margin-top:8px}
+.sbk-ph{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px;margin-top:12px}
+.sbk-pol{background:#fff;padding:7px 7px 30px;box-shadow:0 3px 10px rgba(90,68,51,.18);position:relative;margin:0;cursor:pointer}.sbk-pol:nth-child(odd){transform:rotate(-2.2deg)}.sbk-pol:nth-child(even){transform:rotate(1.8deg)}
+.sbk-pol img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#EEE6D8}.sbk-pol figcaption{position:absolute;left:8px;right:8px;bottom:5px;font-family:"Nanum Pen Script",cursive;font-size:21px;line-height:1;color:#5A4433;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbk-no{position:absolute;top:-9px;left:-9px;width:28px;height:28px;border-radius:50%;background:#E4603F;color:#fff;font:700 14px/28px "Gowun Dodum",sans-serif;text-align:center;box-shadow:0 2px 0 #b8492f}
+.sbk-tape{position:absolute;top:-8px;left:50%;width:56px;height:16px;margin-left:-28px;background:rgba(240,214,160,.75);transform:rotate(-3deg)}
+@media (prefers-reduced-motion:no-preference){.sbk-walk{animation:sbkgo 1.6s linear infinite}@keyframes sbkgo{to{stroke-dashoffset:-26}}}
 </style>
 </head>
 <body>
@@ -3550,9 +3563,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-262-post';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-263-storybook';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 다녀와서 올릴 후기 글을 앱이 만들어 줘요 · 여행 계획 ⋯ 더보기 → 여행 후기 만들기 · 인스타그램 글과 블로그 후기 글, 여행 날짜에 찍은 사진을 골라 공유·복사";
+const UI_NOTES = "다녀온 기록으로 그림 앨범을 만들어요 · 내 MPD 기록 ⋯ 더보기 → 그림 앨범 보기 · 동화책 그림 같은 약도에 다닌 길과 사진 찍은 곳 번호, 아래에 같은 번호의 사진";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -13656,6 +13669,94 @@ function officialEdit(t, guessMs) {
       } }))));
   document.body.append(sb);
 }
+// ---------- 🎨 그림 앨범 (판 -263, 2026-11-19 사용자 '사진앨범도. 일반 사진첩이 아니라 찍은 곳과 이동한 경로가 약도로 보이게, 약도는 동화책 삽화 스타일' → 샘플 → '좋아 만들어봐. 이미 다녀온 곳 만들어보게') ----------
+//   내 MPD 하나 보기 ⋯ 더보기 '그림 앨범 보기' → storyBook(t): 날마다 한 장(여러 날 여행은 날 기록마다) = 손으로 그린 약도(실제 기록한 길을 산호 점선으로, 사진 찍은 곳 번호, ★ 좋은 곳·출발·도착 이름, 장식 언덕·나무·구름·나침반) + 같은 번호의 폴라로이드 사진.
+//   그림이라 너무 붙은 점은 조금 벌려요(정확한 지도 아님). 기록·사진은 읽기만
+function sbProj(pts, W, H, pad) {
+  const la = pts.map(p => p[0]), lo = pts.map(p => p[1]), mid = (Math.min(...la) + Math.max(...la)) / 2, k = Math.cos(mid * Math.PI / 180);
+  const x0 = Math.min(...lo), x1 = Math.max(...lo), y0 = Math.min(...la), y1 = Math.max(...la), sw = (x1 - x0) * k || 1e-4, sh = (y1 - y0) || 1e-4;
+  const sc = Math.min((W - pad * 2) / sw, (H - pad * 2) / sh), ox = (W - sw * sc) / 2, oy = (H - sh * sc) / 2;
+  return (lat, lng) => [ox + (lng - x0) * k * sc, oy + (y1 - lat) * sc];
+}
+async function storyBook(t) {
+  const x = pastTrips().find(y => y.t === t); if (!x) return;
+  if (!document.getElementById('sbFont')) document.head.append(el('link', { id: 'sbFont', rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Gowun+Dodum&display=swap' }));
+  const isA = String(t).startsWith('album_'), days = isA ? ((albumGet(t) || {}).days || []) : [t];
+  const NS = 'http://www.w3.org/2000/svg', mk = (tg, a, kids) => { const e = document.createElementNS(NS, tg); for (const k in a) e.setAttribute(k, a[k]); (kids || []).forEach(c => e.appendChild(c)); return e; };
+  const tx = (s, a) => mk('text', Object.assign({ 'font-family': 'Nanum Pen Script,cursive', fill: '#5A4433', stroke: '#FBF5EA', 'stroke-width': 3.5, 'paint-order': 'stroke' }, a), [document.createTextNode(s)]);
+  const hm = ts => { const d = new Date(ts), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${(h % 12) || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const wrap = el('div', { class: 'sheet-bg sbk', style: 'z-index:4400;background:#E9E2D6;overflow:auto;display:block', onclick: e => { if (e.target === wrap) wrap.remove(); } });
+  const book = el('div', { class: 'sbk-in' });
+  wrap.append(el('div', { class: 'sbk-top' }, el('button', { type: 'button', class: 'sbk-x', onclick: () => wrap.remove() }, '‹ 기록으로'), el('span', { text: '그림 앨범' })), book);
+  document.body.append(wrap); ovGuard();
+  const info = x.info || {}, d0 = new Date(info.startAt || Date.now());
+  book.append(el('section', { class: 'sbk-pg sbk-cover' }, el('div', { class: 'sbk-s', text: 'MAP PHOTO DIARY · 그림 앨범' }), el('h1', { text: info.name || '나의 기록' }),
+    el('div', { class: 'sbk-s', text: [info.dateText || `${d0.getFullYear()}년 ${d0.getMonth() + 1}월 ${d0.getDate()}일`, info.durText].filter(Boolean).join(' · ') })));
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let di = 0; di < days.length; di++) {
+    const dt = days[di], tr = (ls.get('track:' + dt, []) || []).filter(q => q && Number.isFinite(q[0])), phs = (await photoImgs(dt)), spots = (ls.get('walkSpots:' + dt, []) || []).filter(s => Number.isFinite(s.lat)), wp = ls.get('walkPlaces:' + dt, {}) || {};
+    if (tr.length < 2 && !phs.length) continue;
+    const dd = new Date((tr[0] && tr[0][2]) || (phs[0] && phs[0].ts) || Date.now()), nm = ls.get('trackName:' + dt, '') || info.name || '';
+    const pg = el('section', { class: 'sbk-pg' }, el('div', { class: 'sbk-dh' }, isA ? el('b', { text: `${di + 1}일차` }) : null, el('span', { text: `${dd.getMonth() + 1}월 ${dd.getDate()}일 (${'일월화수목금토'[dd.getDay()]})` })), (t0 => isA && t0 ? el('h2', { text: t0 }) : null)(String(nm).replace(info.name || '\u0000', '').replace(/^\s*[·\-–]?\s*\d+\s*일차\s*$/, '').trim()));
+    // 사진: 12장까지 고르게, 위치 있는 건 약도 번호로 묶음(그림에서 28px 안)
+    const pick = phs.length <= 12 ? phs : Array.from({ length: 12 }, (_, i) => phs[Math.round(i * (phs.length - 1) / 11)]);
+    const loc = pick.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    const all = [...tr.map(q => [q[0], q[1]]), ...loc.map(p => [p.lat, p.lng]), ...spots.map(s => [s.lat, s.lng])];
+    const W = 340; let H = 250;
+    if (all.length >= 2) {
+      const la = all.map(p => p[0]), lo = all.map(p => p[1]), asp = ((Math.max(...la) - Math.min(...la)) || 1e-4) / (((Math.max(...lo) - Math.min(...lo)) * Math.cos(la[0] * Math.PI / 180)) || 1e-4);
+      H = Math.round(Math.max(210, Math.min(380, (W - 70) * asp + 70)));
+      const f = sbProj(all, W, H, 34), svg = mk('svg', { class: 'sbk-map', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '그림 약도' });
+      svg.appendChild(mk('defs', {}, [mk('filter', { id: 'sbr' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .035, numOctaves: 2, seed: di + 3 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 3 })]),
+        mk('filter', { id: 'sbw' + di }, [mk('feTurbulence', { type: 'fractalNoise', baseFrequency: .015, numOctaves: 3, seed: di + 9 }), mk('feDisplacementMap', { in: 'SourceGraphic', scale: 22 }), mk('feGaussianBlur', { stdDeviation: 1.2 })])]));
+      // 길(그림 좌표로 3px 넘게 떨어진 점만, 400개까지)
+      const R = []; for (const q of tr) { const p = f(q[0], q[1]); if (!R.length || Math.hypot(p[0] - R[R.length - 1][0], p[1] - R[R.length - 1][1]) > 3) R.push(p); }
+      const Rs = R.length > 400 ? R.filter((_, i) => i % Math.ceil(R.length / 400) === 0 || i === R.length - 1) : R;
+      const near = (x0, y0, r) => Rs.some(p => Math.hypot(p[0] - x0, p[1] - y0) < r);
+      const bg = mk('g', { filter: `url(#sbw${di})` });
+      for (let i = 0; i < 6; i++) bg.appendChild(mk('ellipse', { cx: (rnd() * W).toFixed(0), cy: (rnd() * H).toFixed(0), rx: (50 + rnd() * 70).toFixed(0), ry: (30 + rnd() * 40).toFixed(0), fill: i % 3 ? '#9DB88E' : '#CDBDA6', opacity: .16 }));
+      svg.appendChild(bg);
+      const deco = mk('g', { filter: `url(#sbr${di})` });
+      for (let i = 0, n = 0; i < 200 && n < 14; i++) { const x1 = 14 + rnd() * (W - 28), y1 = 30 + rnd() * (H - 40); if (near(x1, y1, 26)) continue; n++;
+        if (rnd() < .55) { const r1 = 5 + rnd() * 5; deco.appendChild(mk('line', { x1, y1, x2: x1, y2: y1 - r1 - 4, stroke: '#5A4433', 'stroke-width': 1 })); deco.appendChild(mk('circle', { cx: x1, cy: y1 - r1 - 6, r: r1, fill: '#9DB88E', stroke: '#5A4433', 'stroke-width': .8, opacity: .85 })); }
+        else { const w1 = 18 + rnd() * 16, h1 = 8 + rnd() * 10; deco.appendChild(mk('path', { d: `M${x1 - w1 / 2} ${y1} Q${x1} ${y1 - h1 * 2} ${x1 + w1 / 2} ${y1} Z`, fill: '#CDBDA6', stroke: '#5A4433', 'stroke-width': .8, opacity: .8 })); } }
+      [[20 + rnd() * 50, 24, 1.1], [W - 80 + rnd() * 20, 30, .9]].forEach(([cx, cy, s]) => deco.appendChild(mk('path', { d: `M${cx} ${cy} q${4 * s} ${-8 * s} ${10 * s} ${-3 * s} q${6 * s} ${-9 * s} ${14 * s} ${-1 * s} q${7 * s} 0 ${6 * s} ${5 * s} Z`, fill: '#fff', stroke: '#5A4433', 'stroke-width': .7 })));
+      svg.appendChild(deco);
+      if (Rs.length > 1) { let dP = `M${Rs[0][0].toFixed(1)} ${Rs[0][1].toFixed(1)}`; for (let i = 1; i < Rs.length; i++) { const a = Rs[i - 1], b = Rs[i]; dP += ` Q${a[0].toFixed(1)} ${a[1].toFixed(1)} ${((a[0] + b[0]) / 2).toFixed(1)} ${((a[1] + b[1]) / 2).toFixed(1)}`; } dP += ` L${Rs[Rs.length - 1][0].toFixed(1)} ${Rs[Rs.length - 1][1].toFixed(1)}`;
+        svg.appendChild(mk('path', { d: dP, fill: 'none', stroke: '#fff', 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: .85, filter: `url(#sbr${di})` }));
+        svg.appendChild(mk('path', { class: 'sbk-walk', d: dP, fill: 'none', stroke: '#E4603F', 'stroke-width': 2.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': '6 7', filter: `url(#sbr${di})` })); }
+      const marks = [], boxes = [];   // 번호 묶기
+      loc.forEach(p => { const q = f(p.lat, p.lng), g = marks.find(m => Math.hypot(m.x - q[0], m.y - q[1]) < 28); if (g) g.ph.push(p); else marks.push({ x: q[0], y: q[1], ph: [p] }); });
+      marks.forEach((m, i) => { m.no = i + 1; m.ph.forEach(p => p._no = m.no); });
+      const lab = [];   // 이름: 출발·도착·★
+      if (Rs.length > 1) { lab.push({ p: Rs[0], n: wp.start || '출발', k: 'home' }); if (Math.hypot(Rs[0][0] - Rs[Rs.length - 1][0], Rs[0][1] - Rs[Rs.length - 1][1]) > 24) lab.push({ p: Rs[Rs.length - 1], n: wp.end || '도착', k: 'end' }); }
+      spots.slice(0, 8).forEach(s => { if (s.n) lab.push({ p: f(s.lat, s.lng), n: String(s.n).slice(0, 12), k: 'star' }); });
+      lab.forEach(L0 => { const [x1, y1] = L0.p, g = mk('g', { transform: `translate(${x1.toFixed(1)} ${y1.toFixed(1)})` });
+        if (L0.k === 'home') { g.appendChild(mk('path', { d: 'M-8 4 L-8 -3 L0 -10 L8 -3 L8 4 Z', fill: '#fff', stroke: '#5A4433', 'stroke-width': 1.2, 'stroke-linejoin': 'round' })); g.appendChild(mk('rect', { x: -2, y: -2, width: 4, height: 6, fill: '#E4603F' })); }
+        else if (L0.k === 'end') g.appendChild(mk('path', { d: 'M-1 6 L-1 -11 L9 -7 L-1 -3', fill: '#E4603F', stroke: '#5A4433', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }));
+        else g.appendChild(mk('path', { d: 'M0 -7 L2 -2 L7 -2 L3 1.5 L4.5 7 L0 3.5 L-4.5 7 L-3 1.5 L-7 -2 L-2 -2 Z', fill: '#F4C25A', stroke: '#5A4433', 'stroke-width': .9 }));
+        svg.appendChild(g); boxes.push([x1 - 10, y1 - 12, x1 + 10, y1 + 8]); });
+      marks.forEach(m => { const g = mk('g', { transform: `translate(${m.x.toFixed(1)} ${m.y.toFixed(1)})` }); g.appendChild(mk('circle', { r: 10, fill: '#E4603F', stroke: '#fff', 'stroke-width': 2 }));
+        g.appendChild(mk('text', { y: 4.5, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: '#fff', 'font-family': 'Gowun Dodum,sans-serif' }, [document.createTextNode(String(m.no))])); svg.appendChild(g); boxes.push([m.x - 11, m.y - 11, m.x + 11, m.y + 11]); });
+      const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+      lab.forEach(L0 => { const [x1, y1] = L0.p, w = [...L0.n].length * 8.6 + 4, r0 = 12;
+        const C = [[x1 + r0, y1 - 9, 'start'], [x1 - r0 - w, y1 - 9, 'end'], [x1 - w / 2, y1 - 30, 'middle'], [x1 - w / 2, y1 + 10, 'middle']].map(([bx, by, an]) => ({ b: [bx, by, bx + w, by + 18], an }));
+        const c = C.find(c => c.b[0] >= 2 && c.b[2] <= W - 2 && c.b[1] >= 2 && c.b[3] <= H - 2 && !boxes.some(q => hit(c.b, q))) || C.find(c => c.b[0] >= 2 && c.b[2] <= W - 2) || C[0]; boxes.push(c.b);
+        svg.appendChild(tx(L0.n, { x: (c.an === 'start' ? c.b[0] : c.an === 'end' ? c.b[2] : (c.b[0] + c.b[2]) / 2).toFixed(1), y: (c.b[1] + 14).toFixed(1), 'text-anchor': c.an, 'font-size': 17 })); });
+      svg.appendChild(mk('g', { transform: `translate(${W - 22} ${H - 22})` }, [mk('circle', { r: 11, fill: 'none', stroke: '#5A4433', 'stroke-width': .8 }), mk('path', { d: 'M0 -10 L3 0 L0 10 L-3 0 Z', fill: '#E4603F', stroke: '#5A4433', 'stroke-width': .6 }), tx('북', { y: -14, 'text-anchor': 'middle', 'font-size': 11, stroke: 'none' })]));
+      pg.append(svg);
+    }
+    if (pick.length) { const grid = el('div', { class: 'sbk-ph' });
+      pick.forEach(p => { const sp = spots.find(s => Number.isFinite(p.lat) && dist(s.lat, s.lng, p.lat, p.lng) < 150);
+        grid.append(el('figure', { class: 'sbk-pol', onclick: () => showPhoto(p, pick) }, el('span', { class: 'sbk-tape' }), el('img', { src: phSrc(p), loading: 'lazy', decoding: 'async', alt: '' }),
+          p._no ? el('span', { class: 'sbk-no', text: String(p._no) }) : null, el('figcaption', { text: (p.m || (sp && sp.n) || hm(p.ts)).slice(0, 18) }))); });
+      pg.append(grid); }
+    else pg.append(el('div', { class: 'sbk-s', style: 'margin-top:8px', text: '이날 찍은 사진이 없어요' }));
+    book.append(pg);
+  }
+  if (book.children.length < 2) book.append(el('section', { class: 'sbk-pg' }, el('div', { class: 'sbk-s', text: '그릴 길이나 사진이 아직 없어요' })));
+  book.append(el('div', { class: 'sbk-s', style: 'text-align:center;padding:4px 0 28px', text: '그림 약도라서 붙어 있는 곳은 조금 벌려 그렸어요 · 사진을 누르면 크게 봐요' }));
+}
 async function viewMyOne(t) {
   const x = pastTrips().find(y => y.t === t);
   if (!x) { location.replace('./?my=1'); return; }
@@ -13779,6 +13880,7 @@ async function viewMyOne(t) {
       live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x)),
       go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
       phAll.some(r => !isVid(r)) ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
+      live ? null : go('그림 앨범 보기', () => storyBook(t)),   // 판 -263
       live ? null : go('가족 앨범에 올리기', () => famFromMD(t, info.name)),
       canFilm ? go(x.album ? '여행 전체 이동 영상 만들기' : '이동 영상 만들기', () => { location.href = './?film=1&t=' + encodeURIComponent(t); }) : null,
       go('GPX 받기', gpx),

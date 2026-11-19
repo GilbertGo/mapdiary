@@ -1038,6 +1038,12 @@
 - 글 `postText(p, 'ig'|'bl')`: 앱이 정한 틀(AI 안 씀) — 장소는 그날 구경·공연·정상 이름(`postPlaces`: 여행사 이름 앞부분, 마사지·라운지·VR·쇼핑·공항 등 뺌), 소개 한 줄은 여행사 안내 첫 문장(`postSnip`, 없으면 '하이라이트' 첫 줄), 꿀팁은 여행사 안내의 주의·착용·불가 문장(`postTips`, 같은 말 한 번), 걸은 거리는 여행 날짜 MPD 기록(`postWalk`, trackStats walk), 해시태그 = 여행지·장소·해외/국내·하나투어. 블로그엔 날마다 '[사진]' 자리와 '(여기에 소감을…)'. 계획·사진·기록은 읽기만
 - 시험 scratchpad `post/t.js`(실제 장가계 계획 링크 + 예시 사진 9장 + 가짜 기록), 그림 `post/ig.png`·`bl.png`. 샘플 페이지: 해설집 https://claude.ai/artifact/7ZJwWzMr6mCeWuDnguFhbG · 결산 카드 https://claude.ai/artifact/JSQa1fvpNKNxj69scUgadt · 인스타·블로그 https://claude.ai/artifact/3MfgLpyeZeMqCKATcEjVEk
 
+## 판 -263 🎨 그림 앨범 (2026-11-19, 사용자 '사진앨범도. 일반 사진첩이 아니라 찍은 곳과 이동한 경로가 약도로 보이게, 약도는 동화책 삽화 스타일' → 샘플 https://claude.ai/artifact/SCM5ZLxZePtq5SneLi93J2 → '좋아 만들어봐. 이미 다녀온 곳 만들어보게')
+- 내 MPD 하나 보기 ⋯ 더보기 '그림 앨범 보기'(기록 중엔 없음) → `storyBook(t)`: 화면 가득(`.sbk`, 뒤로가기로 닫힘) 표지(여행 이름·날짜·n박 m일) + 날마다 한 장(여러 날 여행은 날 기록마다 'n일차', 하루 기록은 한 장)
+- 약도 = SVG: 실제 기록한 길(`track:`, 그림 좌표 3px 넘게 떨어진 점, 400개까지)을 흰 테 산호 점선(천천히 움직임, 움직임 줄이기면 멈춤) · 물감 번진 땅(feTurbulence 번짐) · 장식 나무·언덕·구름(길에서 떨어진 곳, 손그림 흔들림 필터) · 출발 집·도착 깃발(walkPlaces 이름, 없으면 출발/도착) · ★ 좋은 곳 이름 · 사진 찍은 곳 산호 번호(그림에서 28px 안은 한 번호) · 나침반. 이름표는 오른쪽·왼쪽·위·아래 중 안 겹치는 자리. 비율은 다닌 범위에 맞춰 높이 210~380
+- 아래 폴라로이드(사진 12장까지 고르게, 테이프·기울임·약도와 같은 번호, 글 = 사진 메모 → 150m 안 좋은 곳 이름 → 찍은 시각), 누르면 크게 보기(`showPhoto`). 글꼴 Nanum Pen Script·Gowun Dodum(Google Fonts, `#sbFont` 한 번)
+- 기록·사진은 읽기만. 시험 scratchpad `sbk/t.js`(장가계 미리보기 백업, 여러 날 여행), 그림 `sbk/s0~3.png`
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
