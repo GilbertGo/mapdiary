@@ -3562,9 +3562,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.19-275-story';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.19-276-story2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기 ⋯ 더보기에 '포토스토리 만들기'가 생겼어요 · 대표 사진 위에 제목, 아래 사진 3장과 글이 한 장 그림으로 · 보내기·저장 · Claude 열쇠가 있으면 AI가 사진을 보고 제목과 글을 써요";
+const UI_NOTES = "여행 계획 ⋯ 더보기에도 '포토스토리 만들기'가 생겼어요 · 여행 날짜에 찍은 사진 모두(내 MPD 사진·휴대폰 사진첩·일행 채팅 사진)로 한 장 그림을 만들어요 · 여러 날 여행 기록 보기 ⋯ 에서도 돼요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -9513,25 +9513,36 @@ function recPost(t) {
 // 판 -275 📖 포토스토리 (2026-11-19 사용자가 다른 앱 '포토스토리' 캡처를 보냄): 기록 하나로 사진 이야기 카드 한 장
 //   큰 대표 사진 위에 '사진 이야기 · 날짜' + 제목 + 장소, 아래 사진 3장 + 글 몇 줄 → 그림(1080px) 그대로 보내기·저장
 //   Claude 열쇠(trBotKey)가 있으면 사진 4장과 기록 사실을 보고 AI(FA_MODEL)가 제목·한 줄·글을 씀(알림 두 번·AI 사용 기록), 없으면 기록 이름·장소·메모로
-async function photoStory(t) {
+async function photoStory(t, plan) {   // 판 -276: plan(여행 계획)을 주면 여행 날짜 사진 모두(이 휴대폰 MPD 사진·휴대폰 사진첩·일행 채팅 사진)로
+  let all, info, album, ids, d0, where = '', names = [], note = '', planSub = '';
+  if (plan) {
+    const L = await postPhotos(plan); all = L.map(o => ({ id: o.k, ts: o.ts, m: o.m || '', get: o.get }));
+    if (!all.length) { toast('여행 날짜에 찍은 사진이 아직 없어요'); return; }
+    info = { name: plan.name }; album = plan.nd > 1; ids = [];
+    d0 = planDate(plan, 0) || new Date(all[0].ts);
+    where = planDestName(plan) || ''; planSub = plan.nd > 1 ? `${plan.nd - 1}박 ${plan.nd}일` : ''; if (String(plan.name || '').replace(/\s/g, '').includes(planSub.replace(/\s/g, ''))) planSub = '';
+    for (let d = 0; d < plan.nd; d++) postPlaces(plan, d).forEach(q => { if (!names.includes(q.n)) names.push(q.n); });
+  } else {
   const x = pastTrips().find(y => y.t === t); if (!x) return;
-  const all = await photoImgs(t); if (!all.length) { toast('사진이 있는 기록에서 만들 수 있어요'); return; }
-  const info = x.info, album = String(t).startsWith('album_'), a = album ? albumGet(t) : null, ids = album && a ? a.days : [t];
-  const tr = trackLoad(t), d0 = new Date(tr.length ? tr[0][2] : info.startAt || Date.now());
-  const pad = n => String(n).padStart(2, '0'), dTxt = `${d0.getFullYear()}.${pad(d0.getMonth() + 1)}.${pad(d0.getDate())}`;
+  all = await photoImgs(t); if (!all.length) { toast('사진이 있는 기록에서 만들 수 있어요'); return; }
+  info = x.info; album = String(t).startsWith('album_'); const a = album ? albumGet(t) : null; ids = album && a ? a.days : [t];
+  const tr = trackLoad(t); d0 = new Date(tr.length ? tr[0][2] : info.startAt || Date.now());
   const gen = n => !n || /^(출발|도착)( 지점)?$|들른 곳$|좋았던 곳$|^지금 여기$|^마지막 위치$/.test(String(n).trim());
-  const where = ((ls.get('walkWhere:' + t, null) || ls.get('walkWhere:' + ids[0], null) || {}).n) || '';
-  const names = []; ids.forEach(id => { const wp = ls.get('walkPlaces:' + id, {}) || {}; [wp.start, ...(ls.get('walkSummits:' + id, []) || []).map(q => q && q.n), ...(ls.get('walkSpots:' + id, []) || []).map(q => q && q.n), wp.end].forEach(n => { n = String(n || '').trim(); if (!gen(n) && !names.includes(n)) names.push(n); }); });
-  const note = String(ls.get('walkNote:' + (album ? ids[0] : t), '') || '').trim();
+  where = ((ls.get('walkWhere:' + t, null) || ls.get('walkWhere:' + ids[0], null) || {}).n) || '';
+  ids.forEach(id => { const wp = ls.get('walkPlaces:' + id, {}) || {}; [wp.start, ...(ls.get('walkSummits:' + id, []) || []).map(q => q && q.n), ...(ls.get('walkSpots:' + id, []) || []).map(q => q && q.n), wp.end].forEach(n => { n = String(n || '').trim(); if (!gen(n) && !names.includes(n)) names.push(n); }); });
+  note = String(ls.get('walkNote:' + (album ? ids[0] : t), '') || '').trim();
+  }
+  const pad = n => String(n).padStart(2, '0'), dTxt = `${d0.getFullYear()}.${pad(d0.getMonth() + 1)}.${pad(d0.getDate())}`;
+  const blobOf = async r => r.blob || (r.get ? (r._b || (r._b = await r.get())) : r.thumb);
   const S = { cov: null, pick: [], title: '', sub: '', text: '', ai: false };
   const choose = (shift) => {   // 대표 사진 + 고르게 3장(대표 사진 빼고)
-    const cid = coverId(t, all); S.cov = all.find(r => r.id === cid) || all[0];
+    const cid = plan ? (all[Math.floor(all.length / 2)] || {}).id : coverId(t, all); S.cov = all.find(r => r.id === cid) || all[0];
     const rest = all.filter(r => r !== S.cov); const n = Math.min(3, rest.length), out = [];
     for (let i = 0; i < n; i++) out.push(rest[(Math.floor((i + .5) * rest.length / n) + (shift || 0)) % rest.length]);
     S.pick = [...new Set(out)];
   };
   choose(0);
-  S.title = info.name || '그날의 기록'; S.sub = [where, names.slice(0, 2).join(' · ')].filter(Boolean).join(' · ') || (album ? `${ids.length - 1}박 ${ids.length}일` : '');
+  S.title = info.name || '그날의 기록'; S.sub = [planSub, where, names.slice(0, plan ? 1 : 2).join(' · ')].filter(Boolean).join(' · ') || (album && ids.length ? `${ids.length - 1}박 ${ids.length}일` : '');
   S.text = note ? note.split('\n').slice(0, 3).join(' ') : (S.cov.m || '');
   const bg = el('div', { class: 'sheet-bg ps-bg', style: 'z-index:4300;background:#F2F5F9;align-items:stretch' });
   const img = el('img', { alt: '포토스토리', style: 'width:100%;display:block;border-radius:22px;box-shadow:0 8px 28px rgba(16,42,67,.16);background:#E3EAF2;min-height:300px' });
@@ -9543,7 +9554,7 @@ async function photoStory(t) {
     const tL = wrap(S.title, W - P * 2 - 10, `800 76px ${F}`, 3), bodyL = S.text ? wrap(S.text, W - P * 2 - 70, `500 38px ${F}`, 6) : [];
     const thH = S.pick.length ? Math.floor((W - P * 2 - 24 * 2) / 3) : 0, H = HH + (thH ? thH + 64 : 24) + (bodyL.length ? bodyL.length * 56 + 60 : 0) + 30;
     c.width = W; c.height = H; g.fillStyle = '#EEF4F2'; g.fillRect(0, 0, W, H);
-    const pic = async r => { const bm = await createImageBitmap(r.blob || r.thumb); return bm; };
+    const pic = async r => { const bm = await createImageBitmap(await blobOf(r)); return bm; };
     const cover = (bm, x, y, w, h, rad) => { g.save(); g.beginPath(); g.roundRect(x, y, w, h, rad); g.clip(); const s = Math.max(w / bm.width, h / bm.height), dw = bm.width * s, dh = bm.height * s; g.drawImage(bm, x + (w - dw) / 2, y + (h - dh) / 2.4, dw, dh); g.restore(); };
     try { const bm = await pic(S.cov); cover(bm, 0, 0, W, HH, 0); bm.close && bm.close(); } catch { g.fillStyle = '#9FB3C8'; g.fillRect(0, 0, W, HH); }
     const gr = g.createLinearGradient(0, HH * .42, 0, HH); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.66)'); g.fillStyle = gr; g.fillRect(0, 0, W, HH);
@@ -9561,9 +9572,9 @@ async function photoStory(t) {
   async function aiWrite() {
     const key = trBotKey(); if (!key || busy) return; busy = true; st.textContent = '✨ AI가 사진을 보고 글을 쓰는 중…';
     try {
-      const facts = [`기록 이름: ${info.name}`, `날짜: ${dTxt}`, where ? `장소: ${where}` : '', names.length ? `지나간 곳: ${names.slice(0, 8).join(', ')}` : '', note ? `내 메모: ${note.slice(0, 300)}` : ''].filter(Boolean).join('\n');
+      const facts = [`${plan ? '여행' : '기록'} 이름: ${info.name}`, `날짜: ${dTxt}${planSub ? ' · ' + planSub : ''}`, where ? `장소: ${where}` : '', names.length ? `지나간 곳: ${names.slice(0, 8).join(', ')}` : '', note ? `내 메모: ${note.slice(0, 300)}` : ''].filter(Boolean).join('\n');
       const content = [];
-      for (const r of [S.cov, ...S.pick]) { try { content.push({ type: 'text', text: `사진${r.m ? ' · 내 메모: ' + r.m : ''}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await postImg64(r.blob || r.thumb) } }); } catch {} }
+      for (const r of [S.cov, ...S.pick]) { try { content.push({ type: 'text', text: `사진${r.m ? ' · 내 메모: ' + r.m : ''}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await postImg64(await blobOf(r)) } }); } catch {} }
       content.push({ type: 'text', text: `위는 내가 그날 찍은 사진이고, 아래는 앱이 내 기록에서 모은 사실이에요.\n${facts}\n\n이걸로 '사진 이야기' 카드 글을 한국어로 써 주세요.\n- title: 그날을 담은 짧고 감성적인 제목(18자 안팎, 사진에서 보이는 것으로)\n- sub: 장소를 담은 짧은 한 줄(20자 안팎, 위 사실의 장소 이름 그대로)\n- text: 2~3문장, 내가 쓴 것처럼 따뜻하게\n지킬 것: 사진에 보이는 것과 위 사실만. 장소·사람 이름·숫자를 지어내지 말고, 사진 속 사람을 누구라고 단정하지 말 것.\n답은 JSON 하나: {"title":"","sub":"","text":""}` });
       toast(`✨ AI를 써요 · 포토스토리 글 · 사진 ${content.filter(q => q.type === 'image').length}장을 보내요`, true);
       const { default: Anthropic } = await import(TALK_SDK);
@@ -12511,6 +12522,7 @@ function viewPlanOne(id) {
     const bg = labSheet(p.name,
       go('🗺 지도에서 경로 고치기', () => planMapEdit(p, day < 0 ? 0 : day, () => drawAll())),
       go('📝 여행 후기 만들기 (블로그·인스타)', () => planPostSheet(p)),   // 판 -262
+      go('📖 포토스토리 만들기 (여행 사진 전체)', () => photoStory(null, p)),   // 판 -276
       go('🎬 미리 보기 영상 만들기', () => { location.href = './?film=1&plan=' + encodeURIComponent(p.id); }),
       go(`🎫 예약 · 항공권${(p.docs || []).length ? ' · ' + p.docs.length + '장' : ''}`, () => planDocSheet(p, () => { Object.assign(p, planGet(p.id) || {}); drawAll(); })),
       go('🗺 그린 길 사진으로 일정 고치기', () => planDrawSheet(p, day < 0 ? 0 : day, drawAll)),
