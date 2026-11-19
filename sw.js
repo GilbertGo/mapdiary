@@ -5,6 +5,7 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
   if (e.request.mode !== 'navigate') return;
+  if (new URL(e.request.url).pathname.includes('/photostory/')) return;   // 포토스토리(따로 앱)는 건드리지 않아요: 그 화면을 MPD 첫 화면 자리에 넣지 않게
   // 늘 새 화면을 받아요 (브라우저에 잠깐 남아 있는 옛 화면을 쓰지 않게 cache: 'no-cache')
   e.respondWith(fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./', copy)); }
