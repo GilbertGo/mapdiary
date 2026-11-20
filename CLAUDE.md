@@ -1198,6 +1198,12 @@
 - AI 시스템 글: 기본 취향은 앱이 이미 물었으니 따르고, 빈 건 흔한 쪽으로 짐작해 '○○로 짐작했어요' 한 줄, 질문은 꼭 필요한 것(근교 당일치기 등) 1~2개만, '[질문에 답했어요]·[질문 건너뜀]·[여행 취향대로]' 뒤엔 절대 안 묻기
 - 시험 scratchpad `q135/t290.js` 12/12(가짜 SDK), `t16.js` 6/6, 그림 `q135/q290a.png`·`q290b.png`. 실제 Claude 답은 확인 못 함
 
+## 🧪 자동 시험 (2026-11-21, 사용자 'MPD 잘 개발하려면? 체계적으로' → 추천 1번 '해봐')
+- `tests/run.mjs`(Playwright, `tests/package.json` playwright 1.63·leaflet 1.9.4): 저장소를 `/mapdiary/`로 띄우고 바깥 요청은 모두 막음(Leaflet은 tests/node_modules, MQTT·카카오는 가짜). 화면 코드가 module이라 시험이 쓸 함수만 index.html을 보낼 때 `window.__T`로 꺼냄(`EXPOSE`, 저장소 파일은 그대로)
+- 지금 15개: 주요 화면 10곳이 오류 없이 열림(첫 화면·내 MPD·기록 하나·여행 계획·등산·걷기·러닝·자전거·발견·이야기 지도) · 지운 사진 다시 넣어도 안 살아남 · 지운 계획을 예전 화면이 저장해도·다른 기기 모음으로 와도 안 살아남 · 1안·2안 계획을 열어도 그대로 · 기록 보기만 하면 길 자료 그대로
+- `.github/workflows/test.yml`: main·main-jethsj·claude/** 올릴 때·PR마다 저절로. **빨간 X면 합치지 말 것**
+- **새 기능·고침을 할 때 그 사고를 막는 시험을 run.mjs에 같이 더할 것**(scratchpad에만 두면 세션이 끝나면 사라짐). 돌리기: `cd tests && npm i && npm test`(클라우드는 브라우저가 /opt/pw-browsers에 있어 install 필요 없음)
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
