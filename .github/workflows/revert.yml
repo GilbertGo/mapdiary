@@ -1,0 +1,88 @@
+name: 앞 판으로 되돌리기
+
+# 휴대폰 GitHub 앱이나 웹에서 Actions → '앞 판으로 되돌리기' → Run workflow.
+# 판 칸을 비우면 바로 앞 판으로, '-290'처럼 적으면 그 판으로 돌아가요.
+# 앱 화면 파일만 되돌리고 시험·안내 글·휴대폰/시계 앱 코드는 그대로 둬요.
+# 기록·사진·계획(휴대폰 안 자료)은 건드리지 않아요.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pan:
+        description: '돌아갈 판 (비우면 바로 앞 판, 예: -290)'
+        required: false
+        default: ''
+      dry:
+        description: '시험으로만 (실제로 되돌리지 않음)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: revert
+  cancel-in-progress: false
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 돌아갈 판 찾기
+        id: find
+        env:
+          PAN: ${{ github.event.inputs.pan }}
+        run: |
+          ver() { git show "$1:index.html" 2>/dev/null | grep -o "UI_VER = '[^']*'" | head -1 | sed "s/UI_VER = '//;s/'//"; }
+          NOW=$(ver HEAD)
+          echo "지금 판: $NOW"
+          TARGET=""; TV=""
+          for c in $(git rev-list --first-parent HEAD | head -400); do
+            v=$(ver "$c")
+            [ -z "$v" ] && continue
+            [ "$v" = "$NOW" ] && continue
+            if [ -z "$PAN" ] || echo "$v" | grep -q -- "$PAN"; then TARGET=$c; TV=$v; break; fi
+          done
+          if [ -z "$TARGET" ]; then echo "::error::돌아갈 판을 찾지 못했어요 ($PAN)"; exit 1; fi
+          echo "돌아갈 판: $TV ($TARGET)"
+          echo "now=$NOW" >> $GITHUB_OUTPUT
+          echo "tv=$TV" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+
+      - name: 화면 파일 되돌리기
+        if: ${{ github.event.inputs.dry != 'true' }}
+        env:
+          T: ${{ steps.find.outputs.target }}
+          NOW: ${{ steps.find.outputs.now }}
+          TV: ${{ steps.find.outputs.tv }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          # 웹 화면 파일만 (시험·안내·앱 코드·작업 규칙은 그대로)
+          git checkout "$T" -- . \
+            ':(exclude).github' ':(exclude).claude' ':(exclude)tests' \
+            ':(exclude)runapp' ':(exclude)watchapp' \
+            ':(exclude)CLAUDE.md' ':(exclude)정한것.md'
+          D=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')
+          printf '\n- ⏪ **되돌림**(%s, Actions): 판 %s → 판 %s. 그 사이 고친 것은 git 기록에 남아 있음. 다시 올리려면 main에서 새 가지를 따서 고친 뒤 새 판 번호로\n' "$D" "$NOW" "$TV" >> 정한것.md
+          git add -A
+          if git diff --cached --quiet; then echo "바뀐 게 없어요"; exit 0; fi
+          git commit -m "되돌림: 판 $NOW → 판 $TV [규칙예외]"
+          git push origin HEAD:main
+
+      - name: 화면 다시 올리기 (GitHub Pages)
+        if: ${{ github.event.inputs.dry != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Pages가 알아서 올려요"
+
+      - name: 결과
+        run: |
+          echo "### ⏪ ${{ github.event.inputs.dry == 'true' && '(시험) ' || '' }}판 ${{ steps.find.outputs.now }} → 판 ${{ steps.find.outputs.tv }}" >> $GITHUB_STEP_SUMMARY
+          echo "1~2분 뒤 https://gilbertgo.github.io/mapdiary/ 에 반영돼요." >> $GITHUB_STEP_SUMMARY
