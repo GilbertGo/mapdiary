@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-293-errlog';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-294-backupgone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "앱에서 오류가 나면 휴대폰이 스스로 적어 둬요 · 나 화면 맨 아래 오류 기록에서 볼 수 있어요 · 안 된다고 한마디만 하시면 개발 쪽에서 어떤 오류인지 바로 봐요 · 위치나 사진 같은 내 기록은 적지 않아요";
+const UI_NOTES = "지운 기록이 예전 백업 파일을 불러올 때 되살아나던 것을 고쳤어요 · 지운 사진은 예전부터 안 살아났어요 · 자동 시험을 29개로 늘렸어요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -13691,9 +13691,13 @@ async function backupLoad(file) {
   if (!data || data.app !== 'mapdiary' || typeof data.ls !== 'object') return toast('Map Photo Diary 백업 파일이 아니에요');
   let nRec = 0, nPh = 0;
   const parse = v => { try { return JSON.parse(v); } catch { return null; } };
+  // 판 -294 (자동 시험이 찾음): 지운 기록(recGone)을 먼저 합치고, 지운 기록의 칸은 백업에 있어도 다시 넣지 않아요
+  { const rg = parse(data.ls.recGone); if (rg && typeof rg === 'object' && !Array.isArray(rg)) ls.set('recGone', Object.assign({}, rg, goneAll())); }
+  const goneNow = goneAll();
   for (const [k, v] of Object.entries(data.ls)) {
     if (typeof v !== 'string') continue;
     if (MD_KEYS.some(p => k.startsWith(p))) {
+      { const p0 = MD_KEYS.find(p => k.startsWith(p)), rid0 = k.slice(p0.length); if (rid0 in goneNow) continue; }
       const cur = localStorage.getItem(k);
       if (k.startsWith('track:')) { const a = parse(v), b = parse(cur); if (!Array.isArray(a)) continue; if (!Array.isArray(b) || a.length > b.length) { if (!Array.isArray(b)) nRec++; localStorage.setItem(k, v); } }
       else if (cur == null) localStorage.setItem(k, v);
