@@ -22,8 +22,8 @@ if 'index.html' in changed:
     elif not re.search(r'^\+.*const UI_NOTES =', diff, re.M):
         miss.append("UI_VER를 바꿨는데 UI_NOTES(새로워진 점, '화면이 새로 바뀌었어요' 창)를 안 고쳤어요")
 code = [f for f in changed if f == 'index.html' or f.startswith(('runapp/', 'watchapp/', '.github/'))]
-if code and 'CLAUDE.md' not in changed:
-    miss.append('앱을 고쳤는데 CLAUDE.md(인수인계)를 안 고쳤어요')
+if code and 'CLAUDE.md' not in changed and 'docs/기록.md' not in changed:
+    miss.append('앱을 고쳤는데 docs/기록.md(판 기록)나 CLAUDE.md(인수인계)를 안 고쳤어요')
 for app in ('runapp', 'watchapp'):
     if any(f.startswith(app + '/') and not f.endswith('CHANGES.txt') for f in changed) and f'{app}/CHANGES.txt' not in changed:
         miss.append(f'{app}/를 고쳤는데 {app}/CHANGES.txt 첫 줄(새 판 창의 새로워진 점)을 안 고쳤어요')
