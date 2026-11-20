@@ -3577,9 +3577,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-291-ask2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-292-filmauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "일정 추천받기가 꼭 필요한 것만 먼저 물어봐요 · 몇 명·누구와·연령대·여행 목적·여행 스타일·걷기 · 모두 누르기만 하면 되고 귀찮으면 바로 '건너뛰고 추천받기' · 함께 가는 사람이 넣어져 있으면 인원은 미리 골라 둬요 · 한 번 답하면 다음엔 안 물어요(바꾸려면 '여행 취향 바꾸기')";
+const UI_NOTES = "영상 만들기가 기록 종류에 맞는 스타일을 저절로 골라요 · 러닝과 자전거는 스포츠 스타일 · 여러 날 여행과 비행기 탄 기록은 여행 스타일 · 그 밖은 시네마틱 스타일 · 다른 스타일을 누르면 그 기록은 그걸로 기억해요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6598,7 +6598,7 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
   const opt1 = (lab, node) => el('div', { class: 'fm-opt' }, el('div', { class: 'lab', text: lab }), node);
   const styleBox = el('div', { class: 'fm-sty' }, Object.values(FILM_STYLES).map(st => el('button', { type: 'button', class: opt.style === st.k ? 'on' : '', 'data-k': st.k, onclick: e => { opt.style = st.k; save(); if (S.rec && !S.gpx && !S.plan) { const o = styMan(); if (st.k === filmAutoStyle(S.rec)) delete o[S.rec]; else o[S.rec] = st.k; const ks = Object.keys(o); if (ks.length > 200) delete o[ks[0]]; ls.set('filmStyleMan', o); } styPaint(); redraw(); } },
     el('i', { text: '추천' }), el('b', { text: st.name }), el('span', { text: st.say }))));
-  const styPaint = () => { const rec = S.plan ? 'trip' : S.gpx ? 'cine' : filmAutoStyle(S.rec); styleBox.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.k === opt.style); const i = b.querySelector('i'); if (i) i.style.display = b.dataset.k === rec ? '' : 'none'; }); };
+  const styPaint = () => { const rec = S.plan ? 'trip' : S.gpx ? 'cine' : filmAutoStyle(S.rec); styleBox.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.k === opt.style); const i = b.querySelector('i'); if (i) i.style.display = b.dataset.k === rec ? '' : 'none'; }); setTimeout(() => { const b = styleBox.querySelector('button.on'); if (b && styleBox.isConnected) styleBox.scrollLeft += b.getBoundingClientRect().left - styleBox.getBoundingClientRect().left - 16; }, 60); };   // 고른 스타일이 화면 밖이면 보이게
   styPaint();
   const bar = el('i'), prog = el('div', { class: 'sub', text: '' }), result = el('div', { class: 'fm-card', style: 'display:none' });
   const go = el('button', { class: 'fm-go', type: 'button', text: '🎬 영상 만들기', onclick: () => { if (!S.busy) stage.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); filmMake(S, opt, { cv, bar, prog, result, go, stage }); } });
