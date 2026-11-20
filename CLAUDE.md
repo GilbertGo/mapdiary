@@ -1209,6 +1209,11 @@
 - `errUp`: 켠 뒤 8초·새 오류 5초 뒤(1분에 한 번까지) `fsPut('rooms/mpderr/e/{myId}', {id, v, w(연 곳), ua, at, L: 최근 30})`, 보낸 때 `errUpAt`·`errUpTry`(새 키). LAB_QUIET·인터넷 없으면 안 함. rooms 규칙(d·t·o)이라 규칙 안 바꿈
 - 보는 곳: 나(프로필) 맨 아래 '도움 → 🐞 오류 기록 n개' → `errSheet`(최근 30개 · 복사 · 다시 보내기 · 비우기)
 - **사용자가 '안 돼'라고 하면**: `rooms/mpderr/e` 목록을 읽어 그 시각·판 오류를 봄(읽기 공개). 이 클라우드는 firestore.googleapis.com이 막혀 있어 PC 앱 브라우저나 사용자가 복사해 준 글로. privacy.html(한·영)에 적음. 시험 tests/run.mjs '오류 기록'
+## ⏪ 앞 판으로 되돌리기 (2026-11-21, 사용자 '시험판은 더 혼란스럽다' → 시험판 주소 대신 '그래')
+- 시험판 주소(githack 등)는 앞으로 안 씀(저장소가 따로라 기록이 안 보였음). 대신 운영 주소 하나 + 자동 시험 + 되돌리기
+- `.github/workflows/revert.yml` '앞 판으로 되돌리기'(workflow_dispatch): main 기록을 거슬러 `UI_VER`가 다른 첫 판(또는 입력 '판' 예 -290)을 찾아, 웹 화면 파일만 그 판으로(.github·.claude·tests·runapp·watchapp·CLAUDE.md·정한것.md는 그대로) 커밋 '되돌림: 판 A → 판 B [규칙예외]'·main에 push·Pages 빌드 요청, 정한것.md 끝에 ⏪ 한 줄. 'dry'면 찾기만. 휴대폰 기록·사진·계획은 안 건드림
+- 사용자가 '되돌려'라고 하면 Claude가 이 워크플로를 돌림(gh로 못 돌리면 사용자에게 https://github.com/GilbertGo/mapdiary/actions/workflows/revert.yml → Run workflow). 사용자 혼자서도 같은 곳에서 누를 수 있음
+- 되돌린 뒤 다시 고칠 때는 main에서 새 가지를 따고, 되돌린 커밋 앞의 고친 것을 git 기록에서 꺼내 새 판 번호로
 
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
