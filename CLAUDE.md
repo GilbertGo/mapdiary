@@ -1157,6 +1157,14 @@
 - 같이 고침: '⇅ 동선 짧게'가 시각을 먼저 바꾼 뒤 되돌리기 사본을 떠서 되돌리기가 시각을 못 되돌리던 것 → 시작할 때 사본
 - 예전 판에서 생긴 '✎ 아빠'(사진 속 '48분 전' 세 칸)가 실제로 사람이었는지 앱 저절로였는지는 확인 못 함(그 휴대폰 자료 없음). 시험 scratchpad `who/t.js`(휴대폰 둘, 가짜 Firestore: 동선 짧게 → 양쪽 '⚙ 앱 · 아빠 휴대폰', 20분 뒤 직접 고침 → A '✎ 나'·B '✎ 아빠', 나머지 칸은 그대로 앱, 바뀐 기록 한 줄) 6/6. AI 흐름은 같은 함수지만 실제 AI로는 시험 못 함
 
+## 판 -284 어느 여행사·블로그든 원문 사진을 장소 칸에 (2026-11-20, 사용자 '왜 일정만 보내? 사진은?' → '그럼 다른 여행사는' → '그따위로 일했다고? 일일이 맞추게?')
+- 예전엔 하나투어만 여행사 사진을 장소 칸에 넣고(그 사이트 전용 코드), 다른 여행사·블로그 주소로 만든 계획은 페이지 사진을 버렸음
+- `planBlogParse`가 본문 사진을 `planPageImgs`로 모음(data-src·srcset 등, 로고·아이콘·단추·gif·svg·작은 그림 빼고, 150장까지) → 글 속 자리 ⟦In⟧ → `planPageImgCtx`가 사진마다 설명(alt·title·figcaption)·바로 위 글 3줄·바로 아래 글 1줄. 반환에 `imgs`(lines·text에는 표시가 안 남음)
+- `planImgMatch`: 장소 이름 조각(`planImgKeys`)이 가까운 글에 있으면 그 장소(가까운 글·긴 낱말 먼저) — 돈 0원. `planImgAi`: 열쇠 있고 'AI로 읽기'면 못 짝지은 사진의 둘레 글만 `FA_MODEL`에 보내 [[사진, 장소]] (사진은 안 보냄, 알림 두 번·labAiLog '원문 사진 짝짓기'). `planImgFill`: 사진 없는 칸에만 x.img(8장)·`x.imgSrc` 'page'
+- `planBlogRun`(계획 만들 때) 끝에 저절로, 이미 있는 블로그·여행사 계획은 ⋯ '📷 원문 사진 채우기'(`planPagePhotoSheet`, 누를 때만, planSnap·planMarkDiff)
+- http:// 사진은 앱 화면(https)에서 막혀서 `planImgSrc`가 앱(CapacitorHttp)으로 받아 IndexedDB mpdTrip 'rimg:주소'(새 키)에 두고 보여 줌(`planImgBg`·`planImgNow`), 웹은 https로 바꿔 시도. 계획 링크(`planPack`)로는 안 감(하나투어 사진만)
+- 시험 scratchpad `mo/t.js`(가짜 여행사 표 페이지: 사진 5장 모두 맞는 장소, 로고·단추 빠짐). **실제 모터아웃도어 페이지는 이 클라우드에서 못 열어 확인 못 함**
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
