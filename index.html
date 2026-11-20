@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-294-backupgone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-295-filmopen';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지운 기록이 예전 백업 파일을 불러올 때 되살아나던 것을 고쳤어요 · 지운 사진은 예전부터 안 살아났어요 · 자동 시험을 29개로 늘렸어요";
+const UI_NOTES = "영상 시작이 새로워졌어요 · 처음에 그날의 대표 사진이 화면 가득 나와요 · 여행 영상은 하늘 높이에서 출발점으로 내려앉아요 · 등산과 걷기와 러닝은 다닌 길이 먼저 그려진 뒤 출발해요 · 영상 맨 앞에 끝 장면이 잠깐 비치던 것을 없앴어요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -6398,6 +6398,14 @@ function filmCamTrack(o) {
     return { a: { lat, lng }, br: filmBear(z, b.d - z.d < 5 ? filmAt(P, D) : b) };
   };
   const zBase = zRun + st.zoom + adv.z, MAXT = st.turn / FILM_FPS, runEnd = plan.tIn + plan.tRun;
+  // 시작 모양 (판 -294): 대표 사진(plan.tHero)이 걷힌 뒤부터 u 0→1. 맞으면 카메라를 넣고 true
+  const openCam = (tt, s, zt, pt, br) => {
+    if (!o.open) return false; const tH = plan.tHero || 0, u = Math.max(0, Math.min(1, (tt - tH) / Math.max(0.1, plan.tIn - tH)));
+    if (o.open === 'sky') { const e2 = filmEase(u), zs = Math.min(4.6, over.zoom - 2.5);
+      out.push({ center: [s.a.lng, s.a.lat], zoom: zs + (zt - zs) * e2, pitch: pt * filmEase(Math.max(0, (u - 0.45) / 0.55)), bearing: (br * filmEase(Math.max(0, (u - 0.4) / 0.6)) - 25 * (1 - e2) + 360) % 360, dh: 0 }); return true; }
+    const e3 = filmEase(Math.max(0, (u - 0.72) / 0.28));   // draw: 위에서 길이 다 그려진 뒤 내려앉아요
+    out.push({ center: [over.center.lng + (s.a.lng - over.center.lng) * e3, over.center.lat + (s.a.lat - over.center.lat) * e3], zoom: over.zoom + (zt - over.zoom) * e3, pitch: pt * e3, bearing: (br * e3 + 360) % 360, dh: 0 }); return true;
+  };
   let bear = camAt(0).br, z = zBase;
   // 이동 덩어리가 있으면(여러 날 여행·차로 간 곳) 2026-11-15 방식: 걷는 곳은 가까이, 차는 그 구간 전체가 보이게, 비행은 나라 전체가 보이게 멀리
   //   장마다 목표(확대·기울기·북쪽 위)를 정하고 앞뒤 0.45초로 부드럽게 이어요 → 차에 타기 조금 전부터 멀어지고, 내리면 다시 다가가요
@@ -6420,6 +6428,7 @@ function filmCamTrack(o) {
       if (tt < plan.tIn) {   // 처음: 전체 코스를 내려다보다 출발점으로 내려앉음 (첫 목표 높이로)
         const hold = st.hold, u = tt / plan.tIn, e = filmEase(Math.max(0, (u - hold) / (1 - hold))), s = camAt(0), zt0 = Z.length ? Z[0] : zBase, p0 = PT.length ? PT[0] : pitch;
         bear = s.br; const drift = hold ? -8 * (1 - Math.min(1, u / hold)) : 0, nb0 = NB.length ? NB[0] : 0, b0 = (bear + filmAng(bear, 0) * nb0 + 360) % 360;
+        if (openCam(tt, s, zt0, p0, b0)) { z = zt0; continue; }
         out.push({ center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zt0 - over.zoom) * e, pitch: st.p0 + (p0 - st.p0) * e, bearing: (drift * (1 - e) + filmAng(0, b0) * e + 360) % 360, dh: 0 });
         z = zt0;
       } else if (tt < runEnd && f - f0 < fol.length) {
@@ -6443,6 +6452,7 @@ function filmCamTrack(o) {
       const hold = st.hold, u = tt / plan.tIn, e = filmEase(Math.max(0, (u - hold) / (1 - hold))), s = camAt(0);
       bear = s.br; z = zBase;
       const drift = hold ? -8 * (1 - Math.min(1, u / hold)) : 0;
+      if (openCam(tt, s, zBase, pitch, bear)) continue;
       out.push({ center: [over.center.lng + (s.a.lng - over.center.lng) * e, over.center.lat + (s.a.lat - over.center.lat) * e], zoom: over.zoom + (zBase - over.zoom) * e,
         pitch: st.p0 + (pitch - st.p0) * e, bearing: (drift * (1 - e) + bear * e + 360) % 360, dh: 0 });
     } else if (tt < runEnd) {   // 길 따라가기: 이야기 짜기 표대로 (강조할 자리에서 천천히·조금 다가감)
@@ -7257,8 +7267,13 @@ async function filmMake(S, opt, U) {
     // 이야기 짜기
     const days = filmDays(src, P), runs0 = filmRuns(P, D, days.map(x => x.d));
     // 큰 사진·처음 대표 사진 (2026-11-15 '받은 사람이 이 여행을 가 보고 싶게'): 스포츠·짧은 영상은 안 함
+    // 시작 모양 (판 -294, 사용자가 세 가지 시험 영상을 보고 '다 좋네' → 기록 종류대로): 처음 대표 사진(스포츠 빼고) 뒤에
+    //   여행(여러 날·비행·여행 스타일) = 하늘 높이에서 출발점으로 내려앉기 'sky' / 그 밖 = 다닌 길이 먼저 그려지고 내려앉기 'draw'
+    //   끝 장면을 첫 장에 넣던 것(판 -63)은 없앰: 첫 장이 대표 사진 또는 길 그림이라 갤러리·카톡 미리보기도 그걸로 보여요
+    const OPT0 = window.__filmOpen || '';   // 시험용: 'hero' | 'sky' | 'draw'
+    const OPEN = OPT0 ? (OPT0 === 'hero' ? '' : OPT0) : st.k === 'sport' ? 'draw' : (st.k === 'trip' || days.length > 1 || (path.fly && path.fly.length)) ? 'sky' : 'draw';
     let heroG = null;
-    if (st.k !== 'sport' && T >= 25 && F.route.length) {
+    if ((OPT0 ? OPT0 === 'hero' : st.k !== 'sport' && T >= 25) && F.route.length) {
       const cand = F.route.filter(g => !g.p.v), dOf = g => { let n = 0; for (const x of days) if (x.d <= g.d + 0.01) n = x.n; return n; };
       let big = cand.filter(g => g.star);
       if (!big.length && (st.k === 'trip' || st.k === 'memo' || src.plan) && cand.length >= 3) {   // ★가 없으면 날마다 한 장(메모 있는 사진 먼저, 없으면 그날 가운데 사진)
@@ -7268,7 +7283,7 @@ async function filmMake(S, opt, U) {
       big = big.slice(0, days.length > 1 ? 5 : 3); big.forEach(g => { g.big = true; });
       heroG = cand.find(g => g.star) || big.find(g => g.p.m) || big[0] || cand[Math.floor(cand.length / 2)] || null;
     }
-    const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st), runs: runs0, days, hero: heroG ? FILM_HERO : 0 });
+    const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st), runs: runs0, days, hero: (heroG ? FILM_HERO : 0) + (OPEN ? 1.4 : 0) });
     plan.tHero = heroG ? FILM_HERO : 0;
     let heroBm = null; if (heroG) { try { heroBm = await createImageBitmap(heroG.p.blob, { resizeWidth: 1080, resizeQuality: 'high' }); } catch { plan.tHero = 0; } }
     days.forEach(x => { const nx = days.find(q => q.n === x.n + 1), d1 = nx ? nx.d : D; x.names = labels.filter(l => l.d >= x.d && l.d < d1 && !l.stay && l.plan !== 'fly' && l.plan !== 'stay').concat(labels.filter(l => l.d >= x.d && l.d < d1 && l.stay)).map(l => l.name).filter((v, i, L) => v && L.indexOf(v) === i).slice(0, 3); });
@@ -7345,7 +7360,7 @@ async function filmMake(S, opt, U) {
         // 출발·도착 공항(한국)도 땅 위 점이라 들어가요 → 가장 많이 다닌 곳만 보이게: 비행 사이(현지) 점으로 다시
         const mid = coords.filter((_, i) => { const f0 = fl[0], f1 = fl[fl.length - 1]; return fl.length > 1 ? i > f0.ib && i < f1.ia : i > f0.ib; });
         if (mid.length > 1) { const mb = mid.reduce((bb, c) => bb.extend(c), new maplibregl.LngLatBounds(mid[0], mid[0])); fullCar = map.cameraForBounds(mb, { padding: fpad }) || fullCar; } } }
-    const cams = filmCamTrack({ P, D, plan, st, adv, over, full, fullCar, zRun, pitch: PITCH, N, look, fly: path.fly });
+    const cams = filmCamTrack({ P, D, plan, st, adv, over, full, fullCar, zRun, pitch: PITCH, N, look, fly: path.fly, open: OPEN });
     // 영상 굳히기 (조각은 모아 두었다가 ①영상만 ②음악 넣은 판 두 번 묶어요)
     const chunks = []; let encErr = null;
     const enc = new VideoEncoder({ output: (ch, meta) => chunks.push({ ch, meta }), error: e => { encErr = e; } });
@@ -7408,8 +7423,8 @@ async function filmMake(S, opt, U) {
     //   맨 처음 한 장은 끝나기 1초 전 모습(시네마틱이 어두워지기 전)을 그리고, 그다음 0.4초 동안 그 그림이 옅어지며 처음 장면으로 넘어가요
     const coverF = Math.max(1, N - Math.round(FILM_FPS * 1.0)), coverFade = Math.round(FILM_FPS * 0.4); let coverBm = null;
     let vehNow = '';
-    for (let k = 0; k < N; k++) {
-      const f = k === 0 ? coverF : k;
+    for (let k = 0; k < N; k++) { if (window.__filmCut && k >= window.__filmCut) break;
+      const f = k === 0 && !OPT0 && !OPEN ? coverF : k;
       if (S.stop) throw new Error('멈췄어요');
       if (encErr) throw encErr;
       const tt = f / FILM_FPS, cm = cams[f], dh = cm.dh;
@@ -7452,7 +7467,7 @@ async function filmMake(S, opt, U) {
           for (let i = 0; i < coords.length; i += step) pts.push(map.project(coords[i]));
           pts.push(map.project(coords[coords.length - 1]));
           // 끝 장면: 길이 처음부터 끝까지 다시 그려지며 빛나는 점이 따라감 (1.6초)
-          const drawK = tt >= runEnd ? filmEase(Math.min(1, (tt - runEnd - 0.2) / 1.6)) : 1, nShow = Math.max(1, Math.round(pts.length * drawK)), sp = pts.slice(0, nShow);
+          const drawK = tt >= runEnd ? filmEase(Math.min(1, (tt - runEnd - 0.2) / 1.6)) : OPEN === 'draw' ? filmEase(Math.min(1, Math.max(0, (tt - plan.tHero - 0.3) / ((plan.tIn - plan.tHero) * 0.5)))) : 1, nShow = Math.max(1, Math.round(pts.length * drawK)), sp = pts.slice(0, nShow);
           const line = (L) => { c.beginPath(); L.forEach((q, i) => i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y)); };
           c.lineJoin = c.lineCap = 'round';
           if (drawK < 1) { line(pts); c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 4; c.stroke(); }
@@ -7659,7 +7674,7 @@ async function filmMake(S, opt, U) {
         const a = Math.min(1, (plan.tHero + 0.7 - tt) / 0.7), k = tt / (plan.tHero + 0.7), memo = LOOK === 'memo';
         c.save(); c.globalAlpha = a; filmCover(c, heroBm, W, H, 1.12 - 0.1 * k, 0, k);
         const bg = c.createLinearGradient(0, H * 0.42, 0, H); bg.addColorStop(0, 'rgba(0,0,0,0)'); bg.addColorStop(1, memo ? 'rgba(40,22,10,.85)' : 'rgba(0,0,0,.8)'); c.fillStyle = bg; c.fillRect(0, H * 0.42, W, H * 0.58);
-        const ta = filmEase(Math.min(1, Math.max(0, (tt - 0.25) / 0.7))), up = (1 - ta) * 30; c.globalAlpha = a * ta; c.textAlign = 'center'; shadow(20); c.fillStyle = '#fff';
+        const ta = 1, up = 0; c.globalAlpha = a * ta; c.textAlign = 'center'; shadow(20); c.fillStyle = '#fff';   // 판 -294: 첫 장(갤러리·카톡 미리보기)부터 제목이 다 보이게
         let y = Math.round(LAND ? H * 0.62 : H * 0.7) + up;
         const head = src.plan ? (src.durText || '') + ' · 여행 미리 보기' : days.length > 1 ? (src.durText || `${days.length}일`) + ' 여행' : memo ? '그날의 기억' : LOOK === 'cine' ? 'A JOURNEY' : '오늘의 길';
         c.fillStyle = col; c.font = FN(800, 28); c.letterSpacing = '6px'; c.fillText(head, CX, y - 86); c.letterSpacing = '0px'; c.fillStyle = '#fff';
@@ -7761,7 +7776,7 @@ async function filmMake(S, opt, U) {
       c.save(); c.font = FN(500, 15); c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'right'; c.fillText(mtype === 'map' ? '지도 © OpenStreetMap · OpenFreeMap · 지형 AWS' : '지도 Esri · 지형 AWS Terrain Tiles', W - 16, H - 16); c.restore();
       if (grain) { c.save(); c.globalCompositeOperation = 'overlay'; c.globalAlpha = 0.16; const ox = Math.floor(Math.random() * 256), oy = Math.floor(Math.random() * 256); c.translate(-ox, -oy); c.fillStyle = c.createPattern(grain, 'repeat'); c.fillRect(0, 0, W + 256, H + 256); c.restore(); }
       if (LOOK === 'cine') { const fa = tt > T - 0.8 ? Math.min(0.85, (tt - (T - 0.8)) / 0.8) : 0; if (fa > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, fa)})`; c.fillRect(0, 0, W, H); } }   // 끝에서 어둡게 닫힘 (처음 장은 갤러리 미리보기라 검게 하지 않음)
-      if (k === 0) { try { coverBm = await createImageBitmap(U.cv); } catch {} }
+      if (k === 0 && !OPT0 && !OPEN) { try { coverBm = await createImageBitmap(U.cv); } catch {} }
       else if (coverBm && k <= coverFade) { c.save(); c.globalAlpha = 1 - k / (coverFade + 1); c.drawImage(coverBm, 0, 0, W, H); c.restore(); if (k === coverFade) { try { coverBm.close(); } catch {} coverBm = null; } }
       const vf = new VideoFrame(U.cv, { timestamp: Math.round(k * 1e6 / FILM_FPS), duration: Math.round(1e6 / FILM_FPS) });
       enc.encode(vf, { keyFrame: k % (FILM_FPS * 2) === 0 }); vf.close();
@@ -7780,6 +7795,7 @@ async function filmMake(S, opt, U) {
       m.finalize(); return tg.buffer; };
     say('영상을 묶고 검사하는 중…', 0.88);
     const vBuf = mux(null), vChk = filmCheck(vBuf, T, false);
+    if (window.__filmCut) window.__vBuf = vBuf;
     if (!vChk.ok) throw new Error('영상 검사에서 걸렸어요 · ' + vChk.why.join(' · '));
     let out = { buf: vBuf, chk: vChk, music: null, mNote: '' };
     // ② 음악 넣은 판 (따로 굳혀 묶고 검사, 실패하면 ①을 그대로)
