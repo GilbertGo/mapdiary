@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge'];
+const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -156,6 +156,27 @@ await test('기록 보기만 하면 길 자료 그대로', async page => {
   await page.goto(BASE + '?my=1'); await sleep(1500);
   const after = await page.evaluate(t => localStorage.getItem('track:' + t), t);
   ok(before === after, '기록의 길 자료가 바뀌었어요');
+});
+
+// ─── 6. 오류가 나면 휴대폰에 적어 둠 (판 -293) · 주소의 # 뒤 열쇠·? 뒤 값은 안 적음 ───
+await test('오류 기록 · 적고 보여 줌 · 열쇠는 안 적음', async page => {
+  await page.goto(BASE + '?my=1&t=walk_secret1#k=SECRETKEY');
+  await sleep(1500);
+  await page.evaluate(() => { setTimeout(() => { throw new Error('시험 오류 하나'); }, 0); Promise.reject(new Error('시험 약속 오류')); });
+  await sleep(500);
+  const L = await page.evaluate(() => JSON.parse(localStorage.getItem('errLog') || '[]'));
+  ok(L.some(e => e.m.includes('시험 오류 하나')), '오류가 안 적혔어요');
+  ok(L.some(e => e.m.includes('시험 약속 오류')), '약속 오류가 안 적혔어요');
+  const raw = JSON.stringify(L);
+  ok(!raw.includes('SECRETKEY') && !raw.includes('walk_secret1'), '주소 속 열쇠·값이 적혔어요');
+  ok(L[0].v && L[0].v !== '?', '판 번호가 안 적혔어요');
+  await page.goto(BASE); await sleep(1500);
+  page.errs = [];
+  await page.evaluate(() => __T.errSheet());
+  await sleep(300);
+  const txt = await page.evaluate(() => document.body.innerText);
+  ok(txt.includes('시험 오류 하나'), '오류 기록 창에 안 보여요');
+  noErr(page, '오류 기록 창');
 });
 
 await browser.close();
