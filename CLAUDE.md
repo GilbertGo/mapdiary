@@ -1165,6 +1165,12 @@
 - http:// 사진은 앱 화면(https)에서 막혀서 `planImgSrc`가 앱(CapacitorHttp)으로 받아 IndexedDB mpdTrip 'rimg:주소'(새 키)에 두고 보여 줌(`planImgBg`·`planImgNow`), 웹은 https로 바꿔 시도. 계획 링크(`planPack`)로는 안 감(하나투어 사진만)
 - 시험 scratchpad `mo/t.js`(가짜 여행사 표 페이지: 사진 5장 모두 맞는 장소, 로고·단추 빠짐). **실제 모터아웃도어 페이지는 이 클라우드에서 못 열어 확인 못 함**
 
+## 판 -285 앱에서 http:// 여행사 주소 열기 (2026-11-20, 사용자 앱 캡처 'Cleartext HTTP traffic to www.motoroutdoor.com not permitted' · '고친거야?')
+- 까닭: 안드로이드 앱(CapacitorHttp)은 보안 규칙으로 http:// 주소를 안 열어 판 -284 사진 짝짓기 전 단계에서 멈춤
+- `planGetHtml`: 앱에서 실패하면(또는 웹에서 http 주소면) r.jina.ai(https)를 거쳐 받음, 그래도 안 되면 '페이지를 받지 못했어요 · 까닭'. 새 APK 필요 없음
+- http 사진은 `planImgNow`가 https 사진 중계 images.weserv.nl로 바꿔 보여 줌(앱·웹 모두, 예전 판 -284의 CapacitorHttp 받기 길은 안 씀)
+- 실제 모터아웃도어 페이지·r.jina.ai·weserv는 이 클라우드에서 막혀 확인 못 함
+
 ## 앱 설정 (2026-10-20)
 - 사용자 '앱 설정 메뉴를 만들고 앱 메인화면 사진 선택은 거기로'. 맨 위 띠의 '내 기록'·'내 MPD' 왼쪽 톱니바퀴(`roleBar`의 gear, `.r3-bgic`) → `appSettings()` 아래 창: **화면**(러닝 첫 화면 사진 → `runHeroPick`, 화면 분위기 바닷가/산) · **나**(내 이름 → `nickEdit`) · **러닝**(주간 러닝 목표 `weekGoal`, 1km 음성 안내 `runVoice`) · **연결**(시계 연결·구글 로그인 → 내 MPD로) · 맨 아래 '지금 연 곳 · 화면 판'. 바꾼 게 있으면 닫을 때 다시 불러옴(기록 중이면 안 함). `runHeroUrl`·`runHeroPick`·`watchBgSend`는 전역 함수로 옮김(nickEdit 아래)
 
