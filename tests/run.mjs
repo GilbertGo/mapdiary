@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet'];
+const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -177,6 +177,106 @@ await test('오류 기록 · 적고 보여 줌 · 열쇠는 안 적음', async p
   const txt = await page.evaluate(() => document.body.innerText);
   ok(txt.includes('시험 오류 하나'), '오류 기록 창에 안 보여요');
   noErr(page, '오류 기록 창');
+});
+
+// ─── 7. 늦게 온 위치는 시각 자리에 끼움 (판 -259) ───
+await test('늦게 온 위치가 출발 쪽으로 되돌아가는 선을 만들지 않음', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    const t = 'walk_late01', n = Date.now();
+    __T.trackAdd(t, 37.50, 127.00, 5, null, null, null, null, n - 600000);
+    __T.trackAdd(t, 37.52, 127.00, 5, null, null, null, null, n - 60000);
+    __T.trackAdd(t, 37.51, 127.00, 5, null, null, null, null, n - 300000);   // 화면이 꺼진 동안 모였다 늦게 온 점
+    return __T.trackLoad(t).map(q => [q[0], q[2]]);
+  });
+  ok(r.length === 3, '점 3개가 아니에요: ' + r.length);
+  ok(r[0][0] === 37.5 && r[1][0] === 37.51 && r[2][0] === 37.52, '시각 순서가 아니에요: ' + JSON.stringify(r));
+  ok(r[0][1] < r[1][1] && r[1][1] < r[2][1], '시각이 거꾸로예요');
+});
+
+// ─── 8. 차 기록에 GPS 튐이 있어도 비행으로 안 셈 (판 -258) ───
+await test('GPS 한 번 튐은 비행이 아님 · 김포→제주는 비행', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    const car = __T.flyFlags([500, 3000, 500], [30, 20, 30]);   // 3km를 20초에 (GPS 튐)
+    const jump = __T.flyFlags([450000], [3600]);               // 끊겼다가 450km를 1시간
+    return { car: car.some(Boolean), jump: jump[0] };
+  });
+  ok(!r.car, 'GPS 튐을 비행으로 셌어요');
+  ok(r.jump, '김포→제주 같은 큰 건너뜀을 비행으로 못 셌어요');
+});
+
+// ─── 9. 계획 복사(1안·2안)는 원래 계획을 안 건드림 (판 -210) ───
+await test('계획 복사는 새 번호 · 원래 계획 그대로', async page => {
+  await page.goto(BASE + '?plan=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    const p = { id: 'pl_cp_a', name: '부산 여행', start: '2026-12-01', nd: 2, it: [{ id: 'x1', d: 0, t: '10:00', n: '해운대', k: 'spot', lat: 35.16, lng: 129.16, ok: 1 }], room: { code: 'tabc' } };
+    __T.planSave(p);
+    const before = JSON.stringify(__T.planAll().find(x => x.id === 'pl_cp_a'));
+    const c = __T.planCopy(__T.planAll().find(x => x.id === 'pl_cp_a'), '부산 여행 2안');
+    const after = JSON.stringify(__T.planAll().find(x => x.id === 'pl_cp_a'));
+    return { same: before === after, cid: c.id, cn: c.name, cit: c.it[0].id, ok: c.it[0].ok, room: c.room, n: __T.planAll().length };
+  });
+  ok(r.same, '복사하면서 원래 계획이 바뀌었어요');
+  ok(r.cid !== 'pl_cp_a' && r.cit !== 'x1', '복사본이 같은 번호를 써요');
+  ok(!r.ok && !r.room, '다녀옴 표시나 여행 방이 복사본에 따라왔어요');
+  ok(r.n === 2, '계획이 2개가 아니에요: ' + r.n);
+});
+
+// ─── 10. 계획 링크로 보내고 받으면 일정이 그대로 ───
+await test('계획 링크 묶기·풀기 하면 일정이 그대로', async page => {
+  await page.goto(BASE + '?plan=1'); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const p = { id: 'pl_pk', name: '오사카 1안', start: '2026-12-11', nd: 3, it: [
+      { id: 'a', d: 0, t: '10:35', n: '인천공항', k: 'fly', m: '출발', lat: 37.46, lng: 126.44 },
+      { id: 'b', d: 1, t: '18:00', n: '도톤보리', k: 'spot', m: '', lat: 34.6687, lng: 135.5013 },
+      { id: 'c', d: 2, t: '', n: '숙소', k: 'stay', m: '', lat: null, lng: null }] };
+    const q = await __T.planUnpack(await __T.planPack(p));
+    return { name: q.name, start: q.start, nd: q.nd, it: q.it.map(x => [x.d, x.t, x.n, x.k, x.lat]) };
+  });
+  ok(r.name === '오사카 1안' && r.start === '2026-12-11' && r.nd === 3, '이름·날짜가 달라졌어요: ' + JSON.stringify(r));
+  ok(JSON.stringify(r.it) === JSON.stringify([[0, '10:35', '인천공항', 'fly', 37.46], [1, '18:00', '도톤보리', 'spot', 34.6687], [2, '', '숙소', 'stay', null]]), '일정이 달라졌어요: ' + JSON.stringify(r.it));
+});
+
+// ─── 11. 백업을 불러와도 지운 사진·기록이 안 살아남 ───
+await test('백업 불러오기: 지운 사진·기록은 안 살아남 · 남은 건 그대로', async page => {
+  const t = await seed(page);
+  const r = await page.evaluate(async t => {
+    const mk = id => ({ id, t, ts: Date.now(), lat: 37.4, lng: 127.29, blob: new Blob([new Uint8Array([255, 216, 255, 217])], { type: 'image/jpeg' }), thumb: new Blob([new Uint8Array([255, 216, 255, 217])], { type: 'image/jpeg' }) });
+    await __T.photoPut(mk('ph_bk1')); await __T.photoPut(mk('ph_bk2'));
+    const { data } = await __T.backupMake();        // 두 장 다 있을 때 만든 백업
+    await __T.photoDel('ph_bk1');                     // 그 뒤에 한 장 지움
+    const t2 = 'walk_bkgone';
+    localStorage.setItem('track:' + t2, JSON.stringify([[37, 127, 1], [37.01, 127, 2]]));
+    const { data: d2 } = await __T.backupMake();
+    localStorage.removeItem('track:' + t2); __T.goneMark([t2]);   // 기록 하나 지움
+    const f = o => new File([JSON.stringify(o)], 'b.json', { type: 'application/json' });
+    await __T.backupLoad(f(data)); await __T.backupLoad(f(d2));
+    return { ph: (await __T.photoList(t)).map(p => p.id).sort(), rec: localStorage.getItem('track:' + t2), keep: !!localStorage.getItem('track:' + t) };
+  }, t);
+  ok(!r.ph.includes('ph_bk1'), '지운 사진이 백업에서 되살아났어요');
+  ok(r.ph.includes('ph_bk2'), '남은 사진이 없어졌어요');
+  ok(r.keep, '남은 기록이 없어졌어요');
+  ok(r.rec == null, '지운 기록이 백업에서 되살아났어요');
+});
+
+// ─── 12. 더 많은 화면이 오류 없이 열림 ───
+for (const s of ['?film=1&t=walk_test0001', '?plan=1&p=pl_scr', '?plan=1&p=pl_scr&info=1', '?walk=1&mode=date', '?walk=1&mode=pgolf', '?talk=1', '?game=1']) {
+  await test('화면 열림 · ' + s, async page => {
+    await seed(page);
+    await page.evaluate(() => localStorage.setItem('tripPlans', JSON.stringify([{ id: 'pl_scr', name: '제주 2박 3일', start: '2026-12-20', nd: 3, at: 1, it: [{ id: 'q1', d: 0, t: '10:00', n: '성산일출봉', k: 'spot', lat: 33.458, lng: 126.942 }, { id: 'q2', d: 0, t: '13:00', n: '점심', k: 'food', lat: 33.46, lng: 126.93 }] }])));
+    page.errs = [];
+    await page.goto(BASE + s); await sleep(2500);
+    noErr(page, s);
+    ok(await page.evaluate(() => document.body.innerText.trim().length) > 10, '화면이 비어 있어요');
+  });
+}
+await test('나(설정) 창이 오류 없이 열림', async page => {
+  await seed(page); await page.goto(BASE); await sleep(1500); page.errs = [];
+  await page.evaluate(() => __T.errSheet && document.querySelector('.c-ph-av') ? document.querySelector('.c-ph-av').click() : null);
+  await sleep(600);
+  noErr(page, '나 창');
+  ok(await page.evaluate(() => /Claude 열쇠|오류 기록/.test(document.body.innerText)), '나 창의 줄이 안 보여요');
 });
 
 await browser.close();
