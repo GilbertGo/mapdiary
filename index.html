@@ -3577,7 +3577,7 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.20-288-ask';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-289-ask';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = "AI 묻기(일정 짜기)가 먼저 몇 가지를 물어봐요 · 여행 성격·걷기·꼭 갈 곳 같은 걸 눌러서 답하면 거기에 맞춰 일정을 추천해요 · 한 번 답한 건 기억해서 다시 안 물어요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
@@ -6638,7 +6638,7 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
     S.plan ? null : el('div', { class: 'fm-pick' }, pickIc, pickTx, el('span', { class: 'ch', text: recs.length ? '바꾸기 ›' : '' }), recs.length ? recSel : null),
     el('div', { class: 'fm-card' }, el('h2', { text: '스타일' }), styleBox),
     el('div', { class: 'fm-card' },
-      opt1('길이', chips([[15, '15초'], [30, '30초'], [45, '45초'], [60, '1분'], [90, '1분 30초'], [120, '2분']], () => opt.sec, v => { opt.sec = v; })),
+      opt1('길이', chips([[15, '15초'], [30, '30초 · 추천'], [45, '45초'], [60, '1분'], [90, '1분 30초'], [120, '2분']], () => opt.sec, v => { opt.sec = v; })),
       opt1('화면', chips([['9:16', '세로 · 휴대폰'], ['16:9', '가로 · TV']], () => opt.ratio, v => { opt.ratio = v; })),
       opt1('지도', chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도'], ['dark', '🌙 어두운 지도']], () => opt.map, v => { opt.map = v; }))),
     phCard,
@@ -6710,7 +6710,9 @@ function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, st
   const A = String(S.rec).startsWith('album_') ? albumGet(S.rec) : null;
   // 여러 날 여행: 날마다 시작 시각(화면에 'n일차'), 'n박 m일'
   const days = A ? (A.days || []).map(d => { const tr = trackLoad(d); return tr.length ? tr[0][2] : null; }).filter(Boolean).sort((a, b) => a - b) : null, ai = A ? albumInfo(S.rec) : null;
-  return { rows, name: A ? A.name : ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end, total, ms, t0: rows.length ? rows[0][2] : null, days: days && days.length > 1 ? days : null, durText: ai && ai.durText };
+  // 판 -288: 날마다 기온(기록 보기에서 받아 둔 walkWx, 없으면 빈칸) → 아래 숫자 줄 '기온'
+  const wx = (A ? (A.days || []) : [S.rec]).map(d => { const w = ls.get('walkWx:' + d, null), tr = trackLoad(d); return w && w.lo != null && tr.length ? [tr[0][2], Math.round((w.lo + w.hi) / 2)] : null; }).filter(Boolean).sort((a, b) => a[0] - b[0]);
+  return { rows, name: A ? A.name : ls.get('trackName:' + S.rec, '나들이'), mode: ls.get('walkMode:' + S.rec, 'trek'), t: S.rec, start: wp.start, end: wp.end, total, ms, t0: rows.length ? rows[0][2] : null, days: days && days.length > 1 ? days : null, durText: ai && ai.durText, wx: wx.length ? wx : null };
 }
 // 🗓 여행 계획 → 영상 (2026-11-15 사용자 '세계 최고의 여행 계획 영상'): 계획한 장소를 날마다 차례로 이어 미리 보는 길을 만들어요
 //   장소 사이가 100km 넘으면 ✈(시속 900km 곡선), 1.5km 넘으면 🚌 차(시속 40km), 그 밖은 걸어서 · 구경하는 곳은 둘레를 천천히 한 바퀴(둘러보기)
@@ -7285,6 +7287,26 @@ async function filmMake(S, opt, U) {
     const shadow = (b) => { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = b; };
     // 여러 날 여행 (2026-11-15): 지금 날 · 'n일차 · 11월 25일 (수)' 딱지 · 날이 바뀔 때 큰 카드
     const dayAt = d => { let x = null; for (const q of days) if (q.d <= d + 0.01) x = q; return x || days[0] || null; };
+    // 판 -288 아래 숫자 줄 (Polarsteps 영상을 보고, 사용자 '해보자'): 모든 스타일이 같은 자리에 세 칸 · 작은 이름 + 큰 값, 숫자만 바뀜
+    //   ① 여러 날이면 '날 2/4', 아니면 '시간' ② '거리' ③ 스포츠 '페이스'(자전거 '속도') · 기온 있으면 '기온' · 아니면 '오른 높이'
+    const barCols = (dh, cur) => {
+      const sd = shownAt(dh), ms = msAt(cur.ts), dy = days.length ? dayAt(dh) : null, L = [];
+      const hms = v => { const q = Math.round(v / 1000), h = Math.floor(q / 3600), m = Math.floor(q % 3600 / 60), s2 = q % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}` : `${m}:${String(s2).padStart(2, '0')}`; };
+      L.push(dy ? ['날', `${dy.n}/${days.length}`] : ['시간', totMs > 0 ? hms(ms) : '-']);
+      L.push(['거리', `${(sd / 1000).toFixed(sd < 10000 ? 2 : 1)} km`]);
+      let wxNow = null; if (src.wx) for (const w of src.wx) if (cur.ts >= w[0] - 3600e3 || wxNow == null) wxNow = w[1];
+      const up = Math.round(gain[cur.i] || 0);
+      if (st.k === 'sport') L.push([bike ? '속도 km/h' : '페이스 /km', (filmPace(ms, sd, bike) || '-').replace(/\/km$|km\/h$/, '')]);
+      else if (wxNow != null) L.push(['기온', `${wxNow}°C`]);
+      else L.push(['오른 높이', `↑ ${up}m`]);
+      return L; };
+    const statBar = (dh, cur, yv, small) => {   // yv = 값 글자 바닥 줄
+      const L = barCols(dh, cur), n = L.length, cw = (W - 80) / n;
+      c.save(); c.textAlign = 'center'; shadow(small ? 0 : 12);
+      L.forEach(([k, v], i) => { const x = 40 + cw * (i + .5);
+        c.fillStyle = 'rgba(255,255,255,.72)'; c.font = FN(600, small ? 18 : 24); c.fillText(k, x, yv - (small ? 30 : 50));
+        c.fillStyle = '#fff'; c.font = FN(800, small ? 30 : 46); c.fillText(filmFit(c, v, cw - 10), x, yv); });
+      c.restore(); };
     const dayDate = x => { const q = new Date(x.ts); return `${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]})`; };
     const dayPill = (x, px, py) => {
       c.save(); const t1 = `${x.n}일차`, t2 = ` · ${dayDate(x)}`; c.font = FN(900, 30); const w1 = c.measureText(t1).width; c.font = FN(700, 24); const w2 = c.measureText(t2).width, w = w1 + w2 + 36, h = 50;
@@ -7465,23 +7487,12 @@ async function filmMake(S, opt, U) {
         // 여러 날 여행: 지금 며칠째인지 늘 보이는 딱지 (2026-11-15 사용자 '지금 며칠째인지 늘 보이게')
         if (days.length) { const dy = dayAt(dh); if (dy) dayPill(dy, 40, LOOK === 'cine' ? BAR + 18 : LOOK === 'memo' ? 40 : opt.title ? 116 : 60); }
       }
-      // 아래: 거리·지난 시간 (+ 스포츠: 페이스·오른 높이)
-      if (LOOK !== 'cine' && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
-        c.save(); c.textAlign = 'left'; shadow(12); c.fillStyle = '#fff';
-        const sd = shownAt(dh), sTxt = (sd / 1000).toFixed(sd < 10000 ? 2 : 1), ms = msAt(cur.ts), yB = H - (info >= 2 ? 120 : 92);
-        c.font = FN(800, 92); c.fillText(sTxt, 40, yB); const w = c.measureText(sTxt).width;
-        c.font = FN(700, 36); c.fillStyle = col; c.fillText('km', 50 + w, yB - 2);
-        if (totMs > 0) { c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = FN(700, 34); c.fillText(timeTxt(cur.ts), W - 40, yB - 4); }
-        if (info >= 2) {
-          const pc = filmPace(ms, sd, bike), up = Math.round(gain[cur.i] || 0), parts = [pc, up >= 5 && !elevOn ? `↑ ${up}m` : ''].filter(Boolean);
-          if (parts.length) { c.textAlign = 'left'; c.font = FN(700, 30); c.fillStyle = 'rgba(255,255,255,.92)'; c.fillText(filmFit(c, parts.join('   '), W - 80), 40, H - 66); }
-        }
-        c.restore();
-      }
+      // 아래: 숫자 줄 세 칸 (판 -288, 모든 스타일 같은 자리)
+      if (LOOK !== 'cine' && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) statBar(dh, cur, H - 70, false);
       const upEnd = info >= 0 && elevOn && st.k !== 'sport' && Math.round(gain[P.length - 1] || 0) >= 20 ? Math.round(gain[P.length - 1]) : 0;
       // 높이 그림: 거리 숫자 위 (산 모양 전체 + 지나온 곳 색칠 + 지금 자리 점), 오르막이면 '⛰ 오르막 8%'
       if (elevOn && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
-        const x0 = 40, x1 = W - 40, eh = 54, eb = LOOK === 'cine' ? H - BAR - 26 : H - (info >= 2 ? 232 : 204), et = eb - eh, EX = d => x0 + (x1 - x0) * d / D, EY = a => eb - (a - aLo) / Math.max(40, aHi - aLo) * eh;
+        const x0 = 40, x1 = W - 40, eh = 54, eb = LOOK === 'cine' ? H - BAR - 26 : H - 196, et = eb - eh, EX = d => x0 + (x1 - x0) * d / D, EY = a => eb - (a - aLo) / Math.max(40, aHi - aLo) * eh;
         c.save(); const area = () => { c.beginPath(); c.moveTo(x0, eb); prof.forEach(([d, a]) => c.lineTo(EX(d), EY(a))); c.lineTo(x1, eb); c.closePath(); };
         area(); c.fillStyle = 'rgba(255,255,255,.16)'; c.fill(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.6)'; c.stroke();
         c.save(); c.beginPath(); c.rect(x0, et - 4, EX(dh) - x0, eh + 8); c.clip(); area(); c.globalAlpha = 0.6; c.fillStyle = col; c.fill(); c.restore();
@@ -7599,8 +7610,7 @@ async function filmMake(S, opt, U) {
         if (tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {   // 띠 안: 위 제목, 아래 거리·시간 한 줄
           c.save(); c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,.9)';
           if (opt.title) { c.letterSpacing = '4px'; c.font = FN(500, LAND ? 22 : 26); c.fillText(filmFit(c, src.name.toUpperCase(), W - 80), CX, BAR / 2 + 9); }
-          if (info >= 1) { const sd = shownAt(dh), ms = msAt(cur.ts), parts = [`${(sd / 1000).toFixed(2)} KM`, totMs > 0 ? timeTxt(cur.ts) : ''].filter(Boolean);
-            c.letterSpacing = '6px'; c.font = FN(600, LAND ? 26 : 32); c.fillText(parts.join('    ·    '), CX, H - BAR / 2 + 11); }
+          if (info >= 1) { c.letterSpacing = '0px'; statBar(dh, cur, H - BAR / 2 + 26, true); }
           c.letterSpacing = '0px'; c.restore();
         } }
       // 날이 바뀔 때 큰 'n일차' 카드 (2026-11-15 사용자 '1일차·2일차 구분이 눈에 잘 안 띄어'): 그동안 카메라는 멈춰 있어요
