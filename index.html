@@ -1425,6 +1425,27 @@ html.tv-page .tv-it.ok .tv-nx{background:none;color:#E0522F;padding:0}
 </head>
 <body>
 <div id="app" class="wrap"><p class="sub">불러오는 중…</p></div>
+<script>
+// 🐞 오류 기록(판 -293, 2026-11-21): 화면에서 오류가 나면 이 휴대폰에 적어 둬요(최근 50개). 주소의 # 뒤(열쇠)와 ? 뒤 값은 적지 않아요
+(function () {
+  var K = 'errLog';
+  function q() { try { var o = new URLSearchParams(location.search), a = []; o.forEach(function (v, k) { a.push(k === 'mode' || k === 'g' ? k + '=' + v.slice(0, 12) : k); }); return location.pathname.split('/').pop() + (a.length ? '?' + a.join('&') : ''); } catch (e) { return ''; } }
+  function add(m, st) {
+    try {
+      m = String(m || '알 수 없는 오류').slice(0, 300);
+      if (/ResizeObserver loop/.test(m)) return;
+      var L = JSON.parse(localStorage.getItem(K) || '[]'), t = Date.now(), l = L[L.length - 1];
+      if (l && l.m === m && t - l.t < 60000) { l.n = (l.n || 1) + 1; l.t = t; }
+      else L.push({ t: t, v: window.MPD_VER || '?', m: m, s: String(st || '').split('\n').slice(0, 4).join('\n').replace(/https?:\/\/[^\s)]*\/([^\/\s)?#]+)[^\s)]*/g, '$1').slice(0, 400), u: q() });
+      localStorage.setItem(K, JSON.stringify(L.slice(-50)));
+      if (window.mpdErrUp) window.mpdErrUp();
+    } catch (e) {}
+  }
+  window.mpdErr = add;
+  addEventListener('error', function (e) { if (e && e.target && e.target !== window && e.target.tagName) return; add(e.message || 'Script error', e.error && e.error.stack || (e.filename ? e.filename.split('/').pop() + ':' + e.lineno : '')); });
+  addEventListener('unhandledrejection', function (e) { var r = e && e.reason; add('(약속) ' + (r && r.message || r), r && r.stack); });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
@@ -3577,9 +3598,10 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-292-filmauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-293-errlog';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "영상 만들기가 기록 종류에 맞는 스타일을 저절로 골라요 · 러닝과 자전거는 스포츠 스타일 · 여러 날 여행과 비행기 탄 기록은 여행 스타일 · 그 밖은 시네마틱 스타일 · 다른 스타일을 누르면 그 기록은 그걸로 기억해요";
+const UI_NOTES = "앱에서 오류가 나면 휴대폰이 스스로 적어 둬요 · 나 화면 맨 아래 오류 기록에서 볼 수 있어요 · 안 된다고 한마디만 하시면 개발 쪽에서 어떤 오류인지 바로 봐요 · 위치나 사진 같은 내 기록은 적지 않아요";
+window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4478,6 +4500,40 @@ function profileEdit(done, pick) {
       (sb && sb.remove ? sb : document.querySelector('.sheet-bg:last-of-type'))?.remove(); toast('프로필을 저장했어요'); done && done(); } }));
   if (pick) setTimeout(() => inp.click(), 50);
 }
+// 🐞 오류 기록(판 -293): 머리의 작은 스크립트가 errLog에 적고, 여기서 보여 주고 올려요
+//   올리는 곳 rooms/mpderr/e/{기기 번호} = {d: JSON, t} — 개발 쪽이 '안 돼요' 때 읽어 봐요. 1분에 한 번까지, 위치·사진·주소 값은 안 들어가요
+function errList() { const L = ls.get('errLog', []); return Array.isArray(L) ? L : []; }
+let errUpT = null;
+function errUp(now) {
+  if (LAB_QUIET || !navigator.onLine) return;
+  clearTimeout(errUpT);
+  errUpT = setTimeout(async () => {
+    const L = errList(), last = ls.get('errUpAt', 0);
+    if (!L.length || (L[L.length - 1].t <= last && !now)) return;
+    if (!now && Date.now() - (ls.get('errUpTry', 0)) < 60000) { errUp(); return; }
+    ls.set('errUpTry', Date.now());
+    try {
+      await fsPut(`rooms/mpderr/e/${uid}`, JSON.stringify({ id: uid, v: UI_VER, w: whereNow().t, ua: navigator.userAgent.slice(0, 160), at: Date.now(), L: L.slice(-30) }));
+      ls.set('errUpAt', L[L.length - 1].t);
+    } catch {}
+  }, now ? 0 : 5000);
+}
+window.mpdErrUp = () => errUp();
+setTimeout(() => errUp(), 8000);   // 켤 때 못 보낸 오류가 있으면
+function errSheet() {
+  const L = errList().slice().reverse(), f = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${fmtClock(t)}`; };
+  const txt = () => `MPD 오류 기록 · 기기 ${uid} · 판 ${UI_VER} · ${whereNow().t}\n` + L.map(e => `${f(e.t)} [${e.v}] ${e.u || ''} ${e.m}${e.n > 1 ? ` (×${e.n})` : ''}`).join('\n');
+  const up = ls.get('errUpAt', 0);
+  labSheet('🐞 오류 기록',
+    el('div', { class: 'sub', text: L.length ? `최근 ${L.length}개 · ${up ? '개발 쪽에 보냈어요' : '아직 못 보냈어요'} · 기기 번호 ${uid}` : '오류가 없어요 👍' }),
+    ...L.slice(0, 30).map(e => el('div', { style: 'background:#F5F6F8;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;word-break:break-all' },
+      el('div', { style: 'color:#8B95A1;font-size:12px', text: `${f(e.t)} · 판 ${e.v}${e.u ? ' · ' + e.u : ''}${e.n > 1 ? ` · ${e.n}번` : ''}` }),
+      el('div', { style: 'font-weight:600', text: e.m }))),
+    L.length ? el('div', { class: 'row', style: 'gap:8px' },
+      el('button', { class: 'btn grow', onclick: async () => { try { await navigator.clipboard.writeText(txt()); toast('복사했어요 · 개발 쪽에 붙여 넣어 주세요'); } catch { prompt('복사해 주세요', txt()); } } }, '복사'),
+      el('button', { class: 'btn ghost grow', onclick: () => { errUp(true); toast('개발 쪽에 다시 보냈어요'); } }, '다시 보내기')) : null,
+    L.length ? el('button', { class: 'link', onclick: e => { ls.set('errLog', []); ls.set('errUpAt', 0); e.target.closest('.sheet-bg').remove(); toast('오류 기록을 비웠어요'); } }, '오류 기록 비우기') : null);
+}
 function appSettings() {
   let changed = false;
   const cb = el('div', { class: 'sheet-bg', style: 'z-index:3100', onclick: e => { if (e.target === cb) close(); } });
@@ -4520,6 +4576,7 @@ function appSettings() {
       row('⌚', '시계 연결', watchGet() ? '연결됨' : '안 함', () => { location.href = './?my=1'; }),
       row('☁️', '기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '안 함';
         const L = ls.get('cloudLast', null); return !L ? '아직' : !L.ok || L.bad ? '⚠ 다시' : `✅ ${L.n}개`; })(), () => { location.href = './?my=1'; })),
+      head('도움'), grp(row('🐞', '오류 기록', (() => { const n = errList().length; return n ? `${n}개` : '없음'; })(), errSheet)),
       el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` })].filter(Boolean));
   };
   paint();

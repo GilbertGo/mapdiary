@@ -1204,6 +1204,11 @@
 - `.github/workflows/test.yml`: main·main-jethsj·claude/** 올릴 때·PR마다 저절로. **빨간 X면 합치지 말 것**
 - **새 기능·고침을 할 때 그 사고를 막는 시험을 run.mjs에 같이 더할 것**(scratchpad에만 두면 세션이 끝나면 사라짐). 돌리기: `cd tests && npm i && npm test`(클라우드는 브라우저가 /opt/pw-browsers에 있어 install 필요 없음)
 
+## 🐞 휴대폰 오류 기록 (2026-11-21, 판 -293, 사용자 'ㅇㅋ' — '안 돼'라고만 해도 어떤 오류인지 보이게)
+- index.html 머리(leaflet 앞) 작은 일반 스크립트가 `error`·`unhandledrejection`을 받아 새 키 `ls errLog`=[{t, v(판 `window.MPD_VER`), m(300자), s(짧은 stack, 주소는 파일 이름만), u(화면 이름 + ? 뒤 이름만, mode·g만 값, # 뒤는 안 적음), n(1분 안 같은 오류 횟수)}] 최근 50개. ResizeObserver 오류는 뺌
+- `errUp`: 켠 뒤 8초·새 오류 5초 뒤(1분에 한 번까지) `fsPut('rooms/mpderr/e/{myId}', {id, v, w(연 곳), ua, at, L: 최근 30})`, 보낸 때 `errUpAt`·`errUpTry`(새 키). LAB_QUIET·인터넷 없으면 안 함. rooms 규칙(d·t·o)이라 규칙 안 바꿈
+- 보는 곳: 나(프로필) 맨 아래 '도움 → 🐞 오류 기록 n개' → `errSheet`(최근 30개 · 복사 · 다시 보내기 · 비우기)
+- **사용자가 '안 돼'라고 하면**: `rooms/mpderr/e` 목록을 읽어 그 시각·판 오류를 봄(읽기 공개). 이 클라우드는 firestore.googleapis.com이 막혀 있어 PC 앱 브라우저나 사용자가 복사해 준 글로. privacy.html(한·영)에 적음. 시험 tests/run.mjs '오류 기록'
 ## ⏪ 앞 판으로 되돌리기 (2026-11-21, 사용자 '시험판은 더 혼란스럽다' → 시험판 주소 대신 '그래')
 - 시험판 주소(githack 등)는 앞으로 안 씀(저장소가 따로라 기록이 안 보였음). 대신 운영 주소 하나 + 자동 시험 + 되돌리기
 - `.github/workflows/revert.yml` '앞 판으로 되돌리기'(workflow_dispatch): main 기록을 거슬러 `UI_VER`가 다른 첫 판(또는 입력 '판' 예 -290)을 찾아, 웹 화면 파일만 그 판으로(.github·.claude·tests·runapp·watchapp·CLAUDE.md·정한것.md는 그대로) 커밋 '되돌림: 판 A → 판 B [규칙예외]'·main에 push·Pages 빌드 요청, 정한것.md 끝에 ⏪ 한 줄. 'dry'면 찾기만. 휴대폰 기록·사진·계획은 안 건드림
