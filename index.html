@@ -3577,9 +3577,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-289-ask';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-290-filmauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "AI 묻기(일정 짜기)가 먼저 몇 가지를 물어봐요 · 여행 성격·걷기·꼭 갈 곳 같은 걸 눌러서 답하면 거기에 맞춰 일정을 추천해요 · 한 번 답한 건 기억해서 다시 안 물어요";
+const UI_NOTES = "영상 만들기가 기록 종류에 맞는 스타일을 저절로 골라요 · 러닝·자전거는 스포츠(페이스·구간 통과·FINISH) · 여러 날 여행·비행기 탄 기록은 여행(날마다 DAY 카드·큰 사진) · 그 밖은 시네마틱 · 다른 스타일을 누르면 그 기록은 그걸로 기억해요";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -6024,6 +6024,16 @@ function filmLoad(src, css) {
   });
 }
 // 기록 고르기용 목록: 하루 기록만(여러 날 여행 전체는 아직 안 함)
+// 기록 종류에 맞는 영상 스타일 (2026-11-21 '해외여행은 폴라스텝스처럼, 마라톤은 다르게'): 러닝·자전거 → 스포츠 · 여러 날 여행·비행·여행 모드 → 여행 · 그 밖 → 시네마틱
+function filmAutoStyle(t) {
+  if (!t) return 'cine';
+  if (String(t).startsWith('album_')) return 'trip';
+  const m = ls.get('walkMode:' + t, 'trek');
+  if (m === 'run' || m === 'bike') return 'sport';
+  if (m === 'travel') return 'trip';
+  try { const tr = trackLoad(t); if (tr.length > 1 && trackModes(tr, modeByK(m).car).includes('f')) return 'trip'; } catch {}
+  return 'cine';
+}
 function filmRecs() {
   // 여러 날 여행도 하나의 영상으로 (2026-11-14 '김포에서 제주 2박3일'): 여행 전체가 맨 앞 줄, 그날그날 기록도 따로 고를 수 있어요
   let L = []; try { const live = ls.get('walkNow', null); L = pastTrips().filter(x => !x.album || !(albumGet(x.t)?.days || []).includes(live)); } catch {}
@@ -6570,11 +6580,13 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
   const opt = Object.assign({ style: 'cine', ratio: '9:16', map: 'sat', sec: 30, music: 'auto', vol: 70, title: true, date: true, stats: true, places: true, photos: true, elev: true, hide: ls.get('hideEnds', true), rhythm: 'mid', height: 'mid', phTime: 'mid', info: 'auto' }, ls.get('filmOpt', {}));
   if (!FILM_STYLES[opt.style]) opt.style = 'cine';
   filmDims(opt);
+  const styMan = () => ls.get('filmStyleMan', {}) || {};   // 기록마다 손으로 고른 스타일 (없으면 기록 종류대로)
   const S = { rec: qs.get('t') || '', gpx: null, file: null, busy: false, stop: false, ph: {}, plan: qs.get('plan') ? planGet(qs.get('plan')) : null };
   const recs = filmRecs(); if (!S.rec && recs.length && !S.plan && !qs.get('plan')) S.rec = recs[0].t;
   const planMiss = qs.get('plan') && !S.plan;
   if (IN_KAKAO && !FILM_TEST && S.plan) { try { if (!sessionStorage.getItem('filmKakaoOut')) { sessionStorage.setItem('filmKakaoOut', '1'); setTimeout(() => filmKakaoOut(S.plan), 400); } } catch {} }   // 계획 영상 주소인데 이 휴대폰(이 브라우저)에 그 계획이 없을 때 → 기록으로 넘어가지 않게
   if (planMiss) S.rec = '';
+  if (S.rec && !S.plan) opt.style = styMan()[S.rec] || filmAutoStyle(S.rec);
   if (S.plan) { S.rec = ''; const po = ls.get('filmOptPlan', null); if (po) Object.assign(opt, po); else { opt.style = 'trip'; opt.sec = Math.max(opt.sec, 60); } opt.hide = false; }   // 🗓 계획 영상: 처음엔 여행 스타일·1분
   const KEEP = ['style', 'ratio', 'map', 'sec', 'vol', 'title', 'date', 'stats', 'elev', 'places', 'photos', 'rhythm', 'height', 'phTime', 'info'];
   const save = () => { const o = {}; KEEP.forEach(k => { o[k] = opt[k]; }); o.music = opt.music === 'file' ? 'auto' : opt.music; ls.set(S.plan ? 'filmOptPlan' : 'filmOpt', o); };   // 계획 영상 설정은 따로
@@ -6584,8 +6596,10 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
   const chips = (list, get, set) => el('div', { class: 'fm-chips' }, list.map(([v, txt]) => el('button', { class: 'fm-chip' + (get() === v ? ' on' : ''), type: 'button', text: txt, onclick: e => { set(v); save(); e.target.parentNode.querySelectorAll('.fm-chip').forEach(b => b.classList.toggle('on', b === e.target)); redraw(); sumPaint(); } })));
   const ck = (k, txt) => el('label', { class: 'ck' }, el('input', { type: 'checkbox', checked: opt[k] ? true : null, onchange: e => { opt[k] = e.target.checked; save(); redraw(); } }), txt);
   const opt1 = (lab, node) => el('div', { class: 'fm-opt' }, el('div', { class: 'lab', text: lab }), node);
-  const styleBox = el('div', { class: 'fm-sty' }, Object.values(FILM_STYLES).map(st => el('button', { type: 'button', class: opt.style === st.k ? 'on' : '', onclick: e => { opt.style = st.k; save(); styleBox.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.currentTarget)); redraw(); } },
-    st.k === 'cine' ? el('i', { text: '추천' }) : null, el('b', { text: st.name }), el('span', { text: st.say }))));
+  const styleBox = el('div', { class: 'fm-sty' }, Object.values(FILM_STYLES).map(st => el('button', { type: 'button', class: opt.style === st.k ? 'on' : '', 'data-k': st.k, onclick: e => { opt.style = st.k; save(); if (S.rec && !S.gpx && !S.plan) { const o = styMan(); if (st.k === filmAutoStyle(S.rec)) delete o[S.rec]; else o[S.rec] = st.k; const ks = Object.keys(o); if (ks.length > 200) delete o[ks[0]]; ls.set('filmStyleMan', o); } styPaint(); redraw(); } },
+    el('i', { text: '추천' }), el('b', { text: st.name }), el('span', { text: st.say }))));
+  const styPaint = () => { const rec = S.plan ? 'trip' : S.gpx ? 'cine' : filmAutoStyle(S.rec); styleBox.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.k === opt.style); const i = b.querySelector('i'); if (i) i.style.display = b.dataset.k === rec ? '' : 'none'; }); };
+  styPaint();
   const bar = el('i'), prog = el('div', { class: 'sub', text: '' }), result = el('div', { class: 'fm-card', style: 'display:none' });
   const go = el('button', { class: 'fm-go', type: 'button', text: '🎬 영상 만들기', onclick: () => { if (!S.busy) stage.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); filmMake(S, opt, { cv, bar, prog, result, go, stage }); } });
   // 강조할 사진(★): 누르면 크게·길게, 카메라도 그 자리에서 더 천천히 (기록마다 따로 기억)
@@ -6607,7 +6621,7 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
       L.length > 10 ? el('button', { class: 'fm-more', type: 'button', text: `사진 ${L.length}장 모두 보기 ›`, onclick: e => { grid.classList.remove('cut'); e.currentTarget.remove(); } }) : null);
   };
   // 어떤 길로: 한 줄 카드(누르면 기록 고르기). 고르기 창은 휴대폰 기본 목록
-  const recSel = el('select', { 'aria-label': '기록 고르기', onchange: e => { S.rec = e.target.value; S.gpx = null; redraw(); drawPhs(); pickPaint(); } },
+  const recSel = el('select', { 'aria-label': '기록 고르기', onchange: e => { S.rec = e.target.value; S.gpx = null; opt.style = styMan()[S.rec] || filmAutoStyle(S.rec); save(); styPaint(); redraw(); drawPhs(); pickPaint(); } },
     recs.map(r => el('option', { value: r.t, selected: r.t === S.rec ? true : null, text: `${new Date(r.at).toLocaleDateString('ko-KR')} · ${r.name}` })));
   let phN = null; const pickTx = el('div', { class: 'tx' }), pickIc = el('div', { class: 'ic' });
   const pickPaint = n => { if (n != null) phN = n; const r = recs.find(x => x.t === S.rec);
