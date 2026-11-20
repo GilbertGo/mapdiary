@@ -1,0 +1,22 @@
+# MPD 자동 시험: 올릴 때마다 tests/run.mjs를 돌려요. 실패하면 빨간 X — 합치기 전에 고쳐야 해요.
+# 시험 내용: 주요 화면이 오류 없이 열리는지 · 지운 사진·계획이 되살아나지 않는지 · 앱이 계획·기록을 저절로 바꾸지 않는지
+name: MPD 자동 시험
+on:
+  push:
+    branches: [main, main-jethsj, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: 시험 도구 받기
+        working-directory: tests
+        run: npm i --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: 시험 돌리기
+        working-directory: tests
+        run: npm test
