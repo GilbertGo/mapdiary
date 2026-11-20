@@ -3577,9 +3577,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-290-filmauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-291-ask2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "영상 만들기가 기록 종류에 맞는 스타일을 저절로 골라요 · 러닝·자전거는 스포츠(페이스·구간 통과·FINISH) · 여러 날 여행·비행기 탄 기록은 여행(날마다 DAY 카드·큰 사진) · 그 밖은 시네마틱 · 다른 스타일을 누르면 그 기록은 그걸로 기억해요";
+const UI_NOTES = "일정 추천받기가 꼭 필요한 것만 먼저 물어봐요 · 몇 명·누구와·연령대·여행 목적·여행 스타일·걷기 · 모두 누르기만 하면 되고 귀찮으면 바로 '건너뛰고 추천받기' · 함께 가는 사람이 넣어져 있으면 인원은 미리 골라 둬요 · 한 번 답하면 다음엔 안 물어요(바꾸려면 '여행 취향 바꾸기')";
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -11899,13 +11899,23 @@ function aiLimits(guide) {   // 판 -199 (사용자 'AI의 한계도 알려 주�
     '물을 때마다 열쇠 주인 계정에 사용료가 들어요(가장 정확한 모델이라 비싼 편) · 열쇠를 나눠 받은 일행은 하루 ' + AI_SHARE_MAX + '번까지'];
   return el('details', { class: 'ai-lim' }, el('summary', { text: 'AI가 못 하는 것 · 한계 보기' }), el('ul', {}, ...L.map(t => el('li', { text: t }))));
 }
+// 판 -290 (사용자 '몇 명·연령대·친구끼리/가족·여행 목적·관광/체험/걷기 스타일 물어봐야지 · 질문 답하기 귀찮은 사람 고려도 해'): 앱이 먼저 묻는 기본 질문(AI 안 부름)
+//   누르기만 · 하나도 안 골라도 '건너뛰고 바로 추천받기' · 한 번 답한 건 ls planPref:{ID}에 남아 다시 안 물음 · 함께 가는 사람 수는 미리 골라 둠
+const PLAN_CORE = [
+  { q: '몇 명이 가요?', opts: ['혼자', '2명', '3~4명', '5~6명', '7명 이상'] },
+  { q: '누구와 가요?', opts: ['가족', '친구', '연인·부부', '동료·모임'] },
+  { q: '연령대는요?', opts: ['아이(초등 이하)', '10대', '20~30대', '40~50대', '60대 이상'], multi: true },
+  { q: '여행 목적은요?', opts: ['쉬러·힐링', '가족 추억', '기념일', '맛집·쇼핑', '새로운 경험'], multi: true },
+  { q: '어떤 여행이 좋아요?', opts: ['명소 관광', '체험·액티비티', '걷기·산책', '느긋하게 휴양', '맛집 탐방', '쇼핑'], multi: true },
+  { q: '하루에 얼마나 걸어도 돼요?', opts: ['조금만', '보통', '많이 걸어도 돼요'] }];
 function planMakeSheet(p) {
   const key = trBotKey(), HK = 'planMake:' + p.id, hist = ls.get(HK, []) || [], PK = 'planPref:' + p.id;   // 판 -288: 여행 취향 답 ls planPref:{ID}(새 키, 이 휴대폰에만 · 계획 자료는 안 바꿈)
   const list = el('div', { style: 'display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch' }), st = el('div', { class: 'dt', style: 'font-weight:700;min-height:18px' });
   const ta = el('textarea', { rows: 1, placeholder: '예: 1일차 공항 도착 뒤 일정 짜 줘', style: 'flex:1;resize:none;font:inherit;padding:10px 12px;border-radius:18px;border:1px solid var(--line);min-width:0' });
   let busy = false;
   const empty = [...Array(p.nd).keys()].filter(d => !planItems(p, d).some(x => x.k !== 'fly'));
-  const QUICK = ['일정 추천받기', empty.length ? `빈 날(${empty.map(d => d + 1 + '일차').join('·')}) 일정 짜 줘` : '이 일정 무리 없어?', '꼭 가 볼 곳 추천', '맛집 추천', '비 오는 날 갈 곳', '교통 패스 뭐가 좋아?', '이 일정 무리 없어?', '준비할 것'].filter((x, i, a) => a.indexOf(x) === i);
+  const quick = () => ['일정 추천받기', ...((ls.get('planPref:' + p.id, []) || []).some(z => z.a) ? ['여행 취향 바꾸기'] : []), empty.length ? `빈 날(${empty.map(d => d + 1 + '일차').join('·')}) 일정 짜 줘` : '이 일정 무리 없어?', '꼭 가 볼 곳 추천', '맛집 추천', '비 오는 날 갈 곳', '교통 패스 뭐가 좋아?', '이 일정 무리 없어?', '준비할 것'].filter((x, i, a) => a.indexOf(x) === i);
+  const qRow = el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding-bottom:4px' });
   const say = t => { st.textContent = t; };
   // 판 -145 (사용자 계획 도우미 캡처 '반영해!라고 하고 싶은데'): 있던 일정 바꾸기(ch: 시각·날 옮기기·빼기) + 새 곳 넣기(items)를 한 번에
   const applyAll = async (m, chs, picks, btn) => {
@@ -11934,7 +11944,9 @@ function planMakeSheet(p) {
     if (QS.length) {
       const sel = m.sel || QS.map(() => []), done = !!m.answered, lastQ = (() => { for (let i = hist.length - 1; i >= 0; i--) if (hist[i].r === 'a') return hist[i]; return null; })() === m;
       const go = el('button', { class: 'btn primary full', style: 'background:#FF6B4A;border-color:#FF6B4A;color:#fff;font-weight:800;margin-top:2px' });
-      const lab = () => { const n = sel.filter(a => a.length).length; go.textContent = n ? `답 보내고 추천받기 · ${n}/${QS.length}` : '하나 이상 골라 주세요'; go.disabled = !n; };
+      const lab = () => { const n = sel.filter(a => a.length).length; go.textContent = n ? `답 보내고 추천받기 · ${n}/${QS.length}` : (m.local ? '건너뛰고 바로 추천받기' : '하나 이상 골라 주세요'); go.disabled = !n && !m.local; };
+      if (m.local && !done && lastQ) box.append(el('button', { type: 'button', style: 'align-self:flex-start;border:none;background:none;padding:2px 0;font:700 13.5px Pretendard,sans-serif;color:#D2462A;cursor:pointer', text: '질문 건너뛰고 바로 추천받기 ›',
+        onclick: () => { const pr = (ls.get(PK, []) || []).filter(z => !QS.some(y => y.q === z.q)); ls.set(PK, [...pr, ...QS.map(q => ({ q: q.q, a: '' }))].slice(-20)); m.answered = 1; ls.set(HK, hist.slice(-30)); send('[질문 건너뜀] 모르는 건 흔한 쪽으로 짐작해서 바로 추천해 주세요.'); } }));   // 판 -290: 귀찮은 사람은 맨 위에서 한 번에
       QS.forEach((q, qi) => {
         const row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px' });
         const draw = () => faRc(row, ...q.opts.map(o => { const on = sel[qi].includes(o);
@@ -11943,11 +11955,12 @@ function planMakeSheet(p) {
         draw(); box.append(el('div', { style: 'font-weight:700;font-size:14px;margin-top:4px', text: `${qi + 1}. ${q.q}${q.multi ? ' (여럿 골라도 돼요)' : ''}` }), row);
       });
       if (!done && lastQ) { lab(); go.onclick = () => {
-        const A = QS.map((q, i) => ({ q: q.q, a: sel[i].join(', ') })).filter(z => z.a);
-        const pr = (ls.get(PK, []) || []).filter(z => !A.some(y => y.q === z.q)); ls.set(PK, [...pr, ...A].slice(-20));
+        const A0 = QS.map((q, i) => ({ q: q.q, a: sel[i].join(', ') })), A = A0.filter(z => z.a);   // 판 -290: 건너뛴 질문도 빈 답으로 남겨 다음에 다시 안 물음
+        const pr = (ls.get(PK, []) || []).filter(z => !A0.some(y => y.q === z.q)); ls.set(PK, [...pr, ...(m.local ? A0 : A)].slice(-20));
         m.answered = 1; m.sel = sel; ls.set(HK, hist.slice(-30));
+        if (!A.length) return send('[질문 건너뜀] 모르는 건 흔한 쪽으로 짐작해서 바로 추천해 주세요.');
         send('[질문에 답했어요]\n' + A.map(z => `- ${z.q}: ${z.a}`).join('\n') + '\n이 답에 맞춰 추천해 주세요.'); };
-        box.append(go, el('div', { style: 'font-size:12px;color:#6B7684', text: '고르지 않은 건 AI가 알아서 정해요 · 아래에 직접 적어 답해도 돼요' })); }
+        box.append(go, el('div', { style: 'font-size:12px;color:#6B7684', text: m.local ? '누르기만 하면 돼요 · 고르지 않은 건 AI가 흔한 쪽으로 짐작해요' : '고르지 않은 건 AI가 알아서 정해요 · 아래에 직접 적어 답해도 돼요' })); }
       else if (done) box.append(el('div', { style: 'font-size:12.5px;color:#6B7684', text: '✓ 답했어요' }));
     }
     // 판 -152 (사용자 캡처: 같은 제안 목록·반영 단추가 두 번 보여 헷갈림): 반영 안 한 제안은 가장 마지막 것만 목록·단추를 보이고, 그 앞 것은 한 줄로 접음
@@ -11968,10 +11981,19 @@ function planMakeSheet(p) {
     box.append(el('div', { style: 'font-size:11.5px;color:#8A94A0', text: 'AI 추천 · 일반 지식이라 영업시간·가격·휴무는 꼭 확인해 주세요' }));
     return box;
   };
-  const paint = () => { faRc(list, ...(hist.length ? hist.slice(-20).map(bubble) : [el('div', { class: 'sub', style: 'line-height:1.6', text: '여행 전에 일정 짜기를 도와요. 넣어 둔 비행기 시각·날짜·이미 정한 곳을 보고 무리 없는 동선으로 추천하고, 고른 곳만 일정에 넣어요.' })])); list.scrollTop = list.scrollHeight; };
+  const paint = () => { faRc(qRow, ...quick().map(q => el('button', { class: 'btn line small', style: 'white-space:nowrap;flex:none', text: q, onclick: () => send(q) }))); faRc(list, ...(hist.length ? hist.slice(-20).map(bubble) : [el('div', { class: 'sub', style: 'line-height:1.6', text: '여행 전에 일정 짜기를 도와요. 넣어 둔 비행기 시각·날짜·이미 정한 곳을 보고 무리 없는 동선으로 추천하고, 고른 곳만 일정에 넣어요.' })])); list.scrollTop = list.scrollHeight; const lq = hist[hist.length - 1], lb = list.lastElementChild; if (lq && lq.local && !lq.answered && lb) list.scrollTop += lb.getBoundingClientRect().top - list.getBoundingClientRect().top - 6; };   // 판 -290: 질문이 뜨면 질문 맨 위(건너뛰기)부터 보이게
   const send = async (x) => {
     x = String(x || ta.value).trim(); if (!x || busy) return;
     const pm = pending();
+    if (x === '일정 추천받기' || x === '여행 취향 바꾸기') {   // 판 -290: 기본 질문은 앱이 바로(AI 안 부름)
+      const PF = ls.get(PK, []) || [], all = x === '여행 취향 바꾸기', miss = PLAN_CORE.filter(q => all || !PF.some(z => z.q === q.q));
+      if (miss.length && !busy) { ta.value = ''; hist.push({ r: 'u', x, t: Date.now() });
+        const nMem = (p.mem || []).length, cnt = nMem ? (nMem === 1 ? '혼자' : nMem === 2 ? '2명' : nMem <= 4 ? '3~4명' : nMem <= 6 ? '5~6명' : '7명 이상') : '';
+        const sel = miss.map(q => { const o = PF.find(z => z.q === q.q); return o ? o.a.split(', ').filter(a => q.opts.includes(a)) : q.q === PLAN_CORE[0].q && cnt ? [cnt] : []; });
+        hist.push({ r: 'a', local: 1, x: all ? '여행 취향을 다시 골라 주세요.' : `딱 맞게 짜 드리려고 ${miss.length}가지만 여쭤볼게요.${cnt && miss[0] === PLAN_CORE[0] ? ` 인원은 함께 가는 사람(${nMem}명)으로 골라 뒀어요.` : ''} 귀찮으면 바로 건너뛰어도 돼요.`, qs: miss, sel, t: Date.now() });
+        ls.set(HK, hist.slice(-30)); paint(); return; }
+      if (!all) x = '[여행 취향대로] 일정 추천해 주세요';
+    }
     if (pm && /^(반영|적용|그대로|그렇게|좋아|오케이|ㅇㅋ|ok|네|응)\S*\s*(해|해줘|해 줘|하자|할게|해요)?[!.~ ]*$/i.test(x)) {   // 앞 제안을 AI 없이 바로 반영
       ta.value = ''; hist.push({ r: 'u', x, t: Date.now() }); paint(); await applyAll(pm, pm.ch || [], pm.items || [], null); return; }
     if (!key) return toast('Claude 열쇠를 먼저 넣어 주세요');
@@ -11986,14 +12008,14 @@ function planMakeSheet(p) {
 - 일정에 넣을 곳을 제안할 때만 items에 넣고, 설명만 할 때는 items를 빈 배열로.
 - items: d는 0부터 일차, t는 대략 HH:MM, n은 한국에서 흔히 쓰는 이름(예 '도톤보리'), k는 spot|food|stay|show (이동은 따로 일정으로 만들지 말고 n에 도착할 장소 이름만 쓰고 가는 방법은 how에, 예 n '난바' how '난카이 라피트 약 40분'), q는 지도 검색어(현지 글자나 영어 + 도시, 예 "Dotonbori, Osaka"), lat/lng는 대략 좌표(모르면 null), why는 추천 이유 25자 안.
 - text는 3~5줄로 짧게. 날마다 몇 곳인지·동선 요점만(일정 목록은 items에만, text에 되풀이하지 말 것).
-- 일정을 짜거나 추천해 달라는데 [여행 취향]이 없거나 모자라서 잘 짜기 어려우면, 이번엔 items·ch를 비우고 qs에 꼭 필요한 질문 3~5개를 내세요(여행 성격·함께 다니는 사람·걷기 정도·꼭 가고 싶은 곳/먹고 싶은 것·근교 당일치기·예산 등 중 계획에 없는 것만). 질문마다 opts에 고를 말 2~6개(짧게, 끝에 '상관없어요' 같은 말도), 여럿 골라도 되면 multi=true. text엔 한두 줄로 '맞춰 짜 드리려고 몇 가지 물어볼게요'처럼. 이미 [여행 취향]에 답이 있는 건 다시 묻지 말고, 사용자가 '[질문에 답했어요]'라고 하면 묻지 말고 바로 items로 짜세요. 설명만 원하는 질문엔 묻지 마세요.
+- 기본 취향(인원·누구와·연령대·목적·스타일·걷기)은 앱이 이미 물었어요. 답이 [여행 취향]에 있으면 꼭 따르고, 비어 있는 건 흔한 쪽으로 짐작해 text에 '○○로 짐작했어요'라고 한 줄 적으세요. 질문은 귀찮아하는 사람이 많으니 되도록 하지 말고, 정말 꼭 필요한 것(예: 근교 당일치기 여부)만 qs에 1~2개(opts 2~5개, 짧게, 여럿 골라도 되면 multi=true, 그때 items·ch는 비움). '[질문에 답했어요]'·'[질문 건너뜀]'·'[여행 취향대로]' 뒤에는 절대 묻지 말고 바로 items로 짜세요. 설명만 원하는 질문엔 묻지 마세요.
 - 계획의 일정 줄 앞 [#번호]가 그 일정 번호예요. 있던 일정의 시각·날을 바꾸거나 빼자고 제안할 때는 ch에 넣으세요(no=번호, t=새 시각 HH:MM, d=새 일차(0부터, 안 바뀌면 빼기), del=true면 빼기, why 25자 안). 사용자가 '반영해·바꿔 줘'라고 하면 앞에서 말한 제안을 ch·items로 만들어 주세요. 같은 곳을 items로 다시 넣지 마세요.
 JSON 하나로만 답하세요: {"text":"","qs":[{"q":"","opts":[""],"multi":false}],"items":[{"d":0,"t":"","n":"","k":"spot","q":"","lat":null,"lng":null,"why":"","how":""}],"ch":[{"no":1,"t":"","d":null,"del":false,"why":""}]}`;
       const msgs = []; for (const m of hist.slice(-7, -1)) msgs.push({ role: m.r === 'u' ? 'user' : 'assistant', content: m.r === 'u' ? m.x : m.x + (m.qs && m.qs.length ? '\n(질문: ' + m.qs.map(q => q.q).join(' / ') + ')' : '') + (m.items && m.items.length ? '\n(제안: ' + m.items.map(z => `${(+z.d || 0) + 1}일차 ${z.n}`).join(', ') + (m.added ? ' → 일정에 넣음' : '') + ')' : '') });
       while (msgs.length && msgs[0].role !== 'user') msgs.shift();
       for (let i = msgs.length - 1; i > 0; i--) if (msgs[i].role === msgs[i - 1].role) msgs.splice(i, 1);
       if (msgs.length && msgs[msgs.length - 1].role === 'user') msgs.pop();
-      const PF = ls.get(PK, []) || [];
+      const PF = (ls.get(PK, []) || []).filter(z => z.a);
       msgs.push({ role: 'user', content: `[지금 계획]\n${planMakeCtx(p)}\n\n[여행 취향 · 사용자가 답한 것]\n${PF.length ? PF.map(z => `- ${z.q}: ${z.a}`).join('\n') : '(아직 없음)'}\n\n[부탁]\n${x}` });
       toast('✨ AI를 써요 · 계획 도우미 · 계획(일정·날짜)을 보내요', true);
       const { default: Anthropic } = await import(TALK_SDK);
@@ -12024,7 +12046,7 @@ JSON 하나로만 답하세요: {"text":"","qs":[{"q":"","opts":[""],"multi":fal
     key ? null : el('div', { class: 'card', style: 'background:#FFF4E5' }, el('b', { text: aiSharedLeft() > 0 ? 'Claude 열쇠가 있어야 답해요' : `오늘 쓸 수 있는 ${AI_SHARE_MAX}번을 다 썼어요` }), el('div', { class: 'dt', style: 'margin-top:4px', text: '열쇠가 있는 일행이 이 계획을 MPD에서 한 번 열면, 이 휴대폰도 그 열쇠로 AI를 쓸 수 있어요' }), el('button', { class: 'btn primary full', style: 'margin-top:8px', text: '🔑 내 Claude 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) { bg.remove(); planMakeSheet(p); } } })),
     aiLimits(false), aiShareLine(p), st, list,
     el('div', { style: 'flex:none' },
-      el('div', { style: 'display:flex;gap:6px;overflow-x:auto;padding-bottom:4px' }, ...QUICK.map(q => el('button', { class: 'btn line small', style: 'white-space:nowrap;flex:none', text: q, onclick: () => send(q) }))),
+      qRow,
       el('div', { style: 'display:flex;gap:6px;align-items:flex-end;margin-top:6px' }, ta, el('button', { class: 'btn primary', style: 'flex:none', text: '보내기', onclick: () => send() })),
       el('div', { class: 'dt', style: 'font-size:11.5px;margin-top:6px' }, '물을 때 이 계획(날짜·일정·비행기 시각)을 Claude에게 보내요 · 예약번호는 안 보내요',
         hist.length ? el('a', { href: '#', style: 'margin-left:6px', text: '대화 지우기', onclick: e => { e.preventDefault(); hist.length = 0; ls.set(HK, []); paint(); } }) : null))));
