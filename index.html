@@ -3177,7 +3177,7 @@ function mdTileLayer(opt) {
   //   화면이 촘촘하고 인터넷이 되면, 붙인 뒤 선명한 벡터 지도(OpenFreeMap, 한글 이름)로 바꿔요. 못 받으면 그림 지도 그대로.
   //   기록 중 지도(배터리·산속 인터넷)와 나라 밖 계획 지도(따로 한글 지도를 붙임)는 opt.vec === false
   if (!(opt && opt.vec === false) && (window.devicePixelRatio || 1) >= 1.5 && navigator.onLine && !LAB_QUIET) base.once('add', () => {
-    koMapLayer(false).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); if (opt && opt.keep) return; setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
+    koMapLayer((opt && opt.hz) || false).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); if (opt && opt.keep) return; setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
   });
   return base;
 }
@@ -3606,7 +3606,7 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-321-viewloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-322-viewloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = "구경하는 가족도 지도에서 일행 위치를 볼 수 있어요 · 이 판부터 내 위치 공유를 켠 사람만 보여요 · 예전에 켜 둔 분은 한 번 껐다 켜 주세요";
 window.MPD_VER = UI_VER;
@@ -11611,7 +11611,7 @@ function trBubFix(map) {
   }
 }
 // 판 -256 (사용자 '위치 보기 켜기 끄기 버튼 눈에 띄게. 켜졌는지 꺼졌는지 확실히 알게'): 켜짐 = 청록 바탕 흰 글자 + 오른쪽 흰 동그라미, 꺼짐 = 흰 바탕 회색 + 왼쪽 회색 동그라미
-// 판 -321 (사용자 '일행의 위치도 보여주는게 좋겠다. 가족이 내 위치 궁금할 듯'): 구경(보기만)하는 가족도 일행 위치를 봐요
+// 판 -322 (사용자 '일행의 위치도 보여주는게 좋겠다. 가족이 내 위치 궁금할 듯'): 구경(보기만)하는 가족도 일행 위치를 봐요
 //   단, 이 판부터 '내 위치 공유'를 켠 사람만(켤 때 스위치 글에 '구경하는 가족에게도' 보임 → tripLocV:{방}) — 예전에 켜 둔 사람은 껐다 켜야 구경에게 보여요(tl.vw)
 function trVw(R) { return ls.get('tripLocV:' + R.rid, 0) ? 1 : 0; }
 function trLocSet(R, on) {
@@ -13299,7 +13299,7 @@ var JP_KYU = '駅驛県縣沢澤広廣浜濱桜櫻関關鉄鐵図圖辺邊恵惠
 function koHanjaWire(mm, jp) {   // jp: 일본 지도(지명은 바꾸지 않고, 漢 켜면 일본어 이름·우리 한자 읽기·로마자, 판 -315·316)
   const fb = {}, layers = mm.getStyle().layers.filter(l => l.metadata && l.metadata.koName);
   layers.forEach(l => { fb[l.id] = l.layout['text-field']; });
-  const dict = new Map(), cjk = new Map(), vz = new Map(); let busy = 0, T = null;
+  const dict = new Map(), cjk = new Map(), vz = new Map(), kz = new Map(), kSeen = new Set(); let busy = 0, T = null;
   const run = async () => {
     if (busy) return; busy = 1;
     try {
@@ -13307,6 +13307,11 @@ function koHanjaWire(mm, jp) {   // jp: 일본 지도(지명은 바꾸지 않고
       let add = 0;
       for (const sl of ['place', 'poi', 'water_name', 'transportation_name', 'aerodrome_label', 'mountain_peak', 'park']) {
         let fs = []; try { fs = mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }); } catch {}
+        // 판 -321 (사용자 '우리나라도. 한자병기해봐'): 우리 지명은 한글이고, 한자는 OSM 중국어 이름(name:zh-Hant)에 있음 → 그 한자를 우리 읽기로 읽어 한글 이름과 똑같을 때만(水原市 = 수원시 ✓, 首爾 ≠ 서울 ✗) 같이 보여 줌
+        for (const f of fs) { const q = f.properties || {}, n = q.name; if (!n || kSeen.has(n) || !/^[\uac00-\ud7a3]/.test(n)) continue; kSeen.add(n);
+          const hz = q['name:zh-Hant'] || q['name:zh']; if (!hz || !/[\u4e00-\u9fff]/.test(hz)) continue; const r = koHanjaRead(T, hz);
+          if (r && r.replace(/\s/g, '') === n.replace(/\s/g, '')) { kz.set(n, hz); add++; } }
+        if (jp === 'kr') continue;
         if (jp === 'vn') { for (const f of fs) { const q = f.properties || {}, n = q.name, hz = q['name:zh-Hant'] || q['name:zh'] || q['name:zh-Hans'];   // 베트남: 지명은 로마자, 한자 이름은 name:zh에 (판 -318)
             if (!n || dict.has(n) || !hz || !/[\u4e00-\u9fff]/.test(hz)) continue; dict.set(n, koHanjaRead(T, hz)); vz.set(n, hz); add++; } continue; }
         for (const f of fs) { const n = f.properties && f.properties.name; if (!n || dict.has(n) || !/[\u4e00-\u9fff]/.test(n)) continue;
@@ -13332,12 +13337,15 @@ function koHanjaWire(mm, jp) {   // jp: 일본 지도(지명은 바꾸지 않고
         mm.setLayoutProperty(l.id, 'text-field', ['case', ['!=', H, ''], ['case', ['==', base, ''], more, ['concat', base, '\n', more]], base]);
       } catch {}
       return; }
+    const kp = []; for (const [k, v] of kz) kp.push(k, v);
+    const KZ = kp.length ? ['match', ['get', 'name'], ...kp, ''] : '', W = (e, b) => on && kp.length ? ['case', ['!=', KZ, ''], ['concat', b, '\n', KZ], e] : e;
+    if (jp === 'kr') { for (const l of layers) try { mm.setLayoutProperty(l.id, 'text-field', W(fb[l.id], fb[l.id])); } catch {} return; }
     for (const l of layers) try {
       const base = pairs.length && !jp ? ['match', ['get', 'name'], ...pairs, fb[l.id]] : fb[l.id];   // 일본은 지명 그대로(한글 이름은 일본 소리)
       const rd = jp && pairs.length ? ['match', ['get', 'name'], ...pairs, ''] : '';   // 일본: 우리 한자 읽기 (大阪 → 대판)
       const cp = []; for (const [k, v] of cjk) cp.push(k, v); const nmZ = cp.length ? ['match', ['get', 'name'], ...cp, ['get', 'name']] : ['get', 'name'];
       const more = ['concat', nmZ, jp ? ['case', ['!=', rd, ''], ['concat', ' (', rd, ')'], ''] : '', ['case', ['!=', pron, ''], ['concat', '\n', pron], '']];
-      mm.setLayoutProperty(l.id, 'text-field', on ? ['case', zh, ['case', ['==', base, ''], more, ['concat', base, '\n', more]], base] : base);
+      mm.setLayoutProperty(l.id, 'text-field', W(on ? ['case', zh, ['case', ['==', base, ''], more, ['concat', base, '\n', more]], base] : base, fb[l.id]));
     } catch {}
   };
   (koHanjaWire.maps = koHanjaWire.maps || []).push(apply);
@@ -13348,10 +13356,10 @@ function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 �
   if (!map || map.__hzBtn) return; map.__hzBtn = 1;
   const C = L.Control.extend({ options: { position: 'topleft' }, onAdd() {
     const b = L.DomUtil.create('button', 'hz-btn'); L.DomEvent.disableClickPropagation(b);
-    const W = jp === 'vn' ? '한자 이름' : jp ? '일본어 이름·발음' : '한자·중국어 발음'; const paint = () => { const on = ls.get('mapHanzi', false); b.textContent = jp === 'vn' ? '漢' : jp ? 'あ' : '漢'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? W + ' 숨기기' : W + ' 같이 보기';
+    const W = jp === 'vn' || jp === 'kr' ? '한자 이름' : jp ? '일본어 이름·발음' : '한자·중국어 발음'; const paint = () => { const on = ls.get('mapHanzi', false); b.textContent = jp === 'jp' || jp === true ? 'あ' : '漢'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? W + ' 숨기기' : W + ' 같이 보기';
       b.style.cssText = `width:44px;height:44px;border-radius:14px;border:0;font:700 20px/1 serif;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;${on ? 'background:#1D9EC0;color:#fff' : 'background:#fff;color:#191F28'}`; };
     paint(); b.onclick = () => { const on = !ls.get('mapHanzi', false); ls.set('mapHanzi', on); paint(); (koHanjaWire.maps || []).forEach(f => { try { f(); } catch {} });
-      toast(on ? (jp === 'vn' ? '한자 이름과 우리 한자 읽기도 같이 보여요' : jp ? '일본어 이름과 발음도 같이 보여요' : '한자와 중국어 발음도 같이 보여요') : '같이 보던 이름을 숨겼어요'); };
+      toast(on ? (jp === 'kr' ? '지명 밑에 한자도 같이 보여요' : jp === 'vn' ? '한자 이름과 우리 한자 읽기도 같이 보여요' : jp ? '일본어 이름과 발음도 같이 보여요' : '한자와 중국어 발음도 같이 보여요') : '같이 보던 이름을 숨겼어요'); };
     return b; } });
   new C().addTo(map);
 }
@@ -13363,7 +13371,7 @@ async function koMapLayer(hanja) {
       try { await vtLoad(KO_CONTOUR_LIB); if (window.mlcontour) { const d = new mlcontour.DemSource({ url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding: 'terrarium', maxzoom: 13, worker: true, cacheSize: 60, timeoutMs: 10000 }); d.setupMaplibre(maplibregl); window.__mdDem = d; koMapStyle.s = null; } } catch {} }
     vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
-    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' ? 'vn' : false; koHanjaLoad(); ly.once('add', () => { try { koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp); else mm.once('load', () => koHanjaWire(mm, jp)); }; go(); }); }
+    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' || hanja === 'kr' ? hanja : false; koHanjaLoad(); ly.once('add', () => { try { koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp); else mm.once('load', () => koHanjaWire(mm, jp)); }; go(); }); }
     return ly;
   } catch { return null; }
 }
@@ -13711,7 +13719,7 @@ function viewPlanOne(id) {
       map.setView([37.5665, 126.978], 5);
       planDest(p).then(d => { if (d && map) { drawMap(); hero.reload(); planAbroadMap(); } }).catch(() => {});
       return; }
-    if (memV && memS) { const pp = memList().map(x => [x.lat, x.lng]); if (pp.length) { if (pp.length === 1) map.setView(pp[0], 14); else map.fitBounds(pp, { padding: [40, 40], maxZoom: 15 }); return; } }   // 판 -321: 구경(가족)은 일행이 있는 곳부터
+    if (memV && memS) { const pp = memList().map(x => [x.lat, x.lng]); if (pp.length) { if (pp.length === 1) map.setView(pp[0], 14); else map.fitBounds(pp, { padding: [40, 40], maxZoom: 15 }); return; } }   // 판 -322: 구경(가족)은 일행이 있는 곳부터
     // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
     const c = real.reduce((s, q) => [s[0] + q[0] / real.length, s[1] + q[1] / real.length], [0, 0]);
     let near = real.filter(q => dist(c[0], c[1], q[0], q[1]) < 300000); if (near.length < 2) near = real;
@@ -13755,7 +13763,7 @@ function viewPlanOne(id) {
     nw.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; if (memSwEl) memSwEl.replaceWith(nw); else mapEl.append(nw); memSwEl = nw;
   }
   async function memStart() {
-    if (!p.room || !p.room.code || !permCanR(p)) return;   // 판 -321: 구경은 '구경에게도'로 켠 일행 위치만 보고(memList), 내 위치는 안 보내요(스위치 없음)
+    if (!p.room || !p.room.code || !permCanR(p)) return;   // 판 -322: 구경은 '구경에게도'로 켠 일행 위치만 보고(memList), 내 위치는 안 보내요(스위치 없음)
     try { memR = await trRoom(p.room.code); memS = await trLoad(memR); } catch { memR = null; return; }
     memDraw(); drawMap(); if (!memV) { memSend(); memSw(); }
     const pull = async () => { if (!document.body.contains(list)) return false; if (document.hidden) return true; const n0 = memList().length; if (await trSync(memR, memS, ['tl', 'tc'])) { memDraw(); if (memList().length !== n0) drawMap(); } return true; };
@@ -13788,7 +13796,7 @@ function viewPlanOne(id) {
   setTimeout(() => {
     const pl = p.it.filter(x => Number.isFinite(x.lat)).concat(p.dest && !p.it.some(x => Number.isFinite(x.lat)) ? [p.dest] : []);
     const abroad = pl.some(x => !(x.lat > 33 && x.lat < 39 && x.lng > 124.5 && x.lng < 132));
-    map = L.map(mapEl); base = mdTileLayer({ vec: !abroad }).addTo(map); drawMap();
+    map = L.map(mapEl); base = mdTileLayer({ vec: !abroad, hz: 'kr' }).addTo(map); drawMap();   // 판 -321: 국내 계획 지도에도 漢
     memStart();   // 판 -252: 일행 위치
     addFullBtn(map, mapEl);   // 판 -255 (사용자 '지도 전체화면보기 넣고. 수정은 별도로 해'): 지도는 크게 보기만, 경로 고치기는 ⋯ 더보기로
     map.on('zoomend moveend', () => trBubFix(map));
