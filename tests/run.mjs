@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -299,6 +299,18 @@ await test('문지기 · 지운 기록·사진·계획은 어느 길로 와도 �
   ok(r.keep, '지우지 않은 기록이 안 들어왔어요');
   ok(r.ph === 0, '지운 사진이 photoPut으로 들어왔어요');
   ok(!r.plan, '지운 계획이 planSave로 들어왔어요');
+});
+
+// ─── 14. 영상 속 전체 지도(판 -297): 길 전체가 작은 지도 안에 들어감 ───
+await test('영상 전체 지도 · 길이 칸 안에 다 들어감', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const P = Array.from({ length: 50 }, (_, i) => ({ lat: 29.1 + i * 0.008, lng: 110.4 + Math.sin(i / 6) * 0.05 }));
+    const o = await __T.filmInset(P, true, 210);
+    return { w: o.cv.width, out: o.pts.filter(([x, y]) => x < 0 || y < 0 || x > 210 || y > 210).length, n: o.pts.length };
+  });
+  ok(r.w === 420, '전체 지도 그림 크기가 이상해요 ' + r.w);
+  ok(r.n === 50 && r.out === 0, '길이 전체 지도 밖으로 나가요 ' + r.out);
 });
 
 await browser.close();
