@@ -3600,7 +3600,7 @@ const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
 const UI_VER = '2026.11.21-295-filmopen';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "영상 시작이 새로워졌어요 · 처음에 그날의 대표 사진이 화면 가득 나와요 · 여행 영상은 하늘 높이에서 출발점으로 내려앉아요 · 등산과 걷기와 러닝은 다닌 길이 먼저 그려진 뒤 출발해요 · 영상 맨 앞에 끝 장면이 잠깐 비치던 것을 없앴어요";
+const UI_NOTES = "지운 기록이 시계나 다른 앱에서 다시 들어오지 못하게 한 번 더 막았어요 · 화면은 그대로예요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -5204,6 +5204,8 @@ function rowsCover(a, b, ti) {
 // 합치기. how: 'over' = 예전 MPD 동작(받은 칸으로 덮어씀, 단 휴대폰에서 고친 길은 지킴) / 'merge' = 시계 기록(길·그래프는 덮을 때만, 심박 요약은 칸 합치기, 나머지는 없을 때만) / 'fill' = 빈 칸만 채우기
 // 돌려주는 값: want = { 키: 있어야 할 글(정확히) | true(있기만 하면 됨) | {f: 심박 요약 칸들} }, wrote = 실제로 쓴 키
 function recMerge(id, inLs, how) {
+  // 판 -295 문지기: 바깥에서 온 기록(시계·앱끼리·연결 코드)은 모두 여기를 지나요. 지운 기록(recGone)이면 아무것도 쓰지 않아요
+  if (isGone(id)) return { want: {}, wrote: [], gone: 1 };
   const want = {}, wrote = [], keepTr = trEdited(id) && !inLs['trackOrig:' + id] && !inLs['walkOfficial:' + id];
   const put = (k, v) => { try { if (localStorage.getItem(k) !== v) { localStorage.setItem(k, v); wrote.push(k); } } catch {} want[k] = v; };
   for (const [k, v] of Object.entries(inLs)) {
