@@ -502,6 +502,22 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   ok(!btns.some(x => /💬 대화|📍 위치|보내기|사진 올리기|일행 초대/.test(x)), '구경에게 대화·위치·보내기·올리기·초대가 보여요: ' + btns.filter(x => /대화|위치|보내기|올리기|초대/.test(x)).join(','));
 });
 
+await test('기록 고르기 · 덜 쓰는 모드는 더보기 안 (판 -306)', async page => {
+  await page.goto(BASE); await sleep(800);
+  await page.evaluate(() => localStorage.removeItem('lastMode'));
+  await page.goto(BASE); await sleep(1200);
+  const r = await page.evaluate(async () => {
+    const b = [...document.querySelectorAll('a,button')].find(x => /기록하기|기록 시작하기/.test(x.textContent)); if (!b) return { none: 1 }; b.click(); await new Promise(z => setTimeout(z, 300));
+    const n0 = [...document.querySelectorAll('.sheet .modes .mode')].map(x => x.textContent.trim());
+    document.querySelector('.sheet .modes .mode.more').click();
+    const n1 = [...document.querySelectorAll('.sheet .modes .mode')].map(x => x.textContent.trim());
+    return { n0, n1 };
+  });
+  ok(r.n0 && r.n0.length === 8 && !r.n0.some(x => /파크골프|캠핑|백패킹/.test(x)) && /더보기/.test(r.n0[7]), '처음 화면 모드가 이상해요 ' + JSON.stringify(r));
+  ok(r.n1.length === 10 && r.n1.some(x => /파크골프/.test(x)), '더보기를 눌러도 다 안 나와요 ' + JSON.stringify(r.n1));
+  noErr(page, '기록 고르기');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
