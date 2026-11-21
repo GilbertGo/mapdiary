@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync'];
+const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -549,6 +549,23 @@ await test('첫 화면 꾸미기·바탕 사진이 같은 계정 다른 기기�
   ok(r.pc.pick === null, '받은 바탕보다 예전에 고른 사진이 남음');
   ok(r.g3 === 0 && r.cl === 9000, '더 나중에 꾸민 것이 클라우드에 안 올라감');
   noErr(page, '첫 화면 꾸미기 맞추기');
+});
+
+await test('계획 사진 주소가 다른 기기로 감 · 이미 있는 사진은 안 바뀜 (판 -324)', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(() => {
+    __T.planSave({ id: 'pA', name: '호도협 1안', nd: 3, it: [] }); __T.planSave({ id: 'pB', name: '호도협 2안', nd: 3, it: [] });
+    localStorage.setItem('planHero:pA', JSON.stringify({ u: 'https://upload.wikimedia.org/a.jpg', v: 7, at: 1 }));
+    const sent = __T.planHeroAll();
+    localStorage.removeItem('planHero:pA'); localStorage.setItem('planHero:pB', JSON.stringify({ u: 'https://upload.wikimedia.org/mine.jpg', v: 7, at: 1 }));
+    const n = __T.planHeroTake(Object.assign({}, sent, { pB: { u: 'https://upload.wikimedia.org/other.jpg', v: 7 }, pX: { u: 'https://x/y.jpg', v: 7 } }));
+    return { keys: Object.keys(sent), n, a: JSON.parse(localStorage.getItem('planHero:pA')).u, b: JSON.parse(localStorage.getItem('planHero:pB')).u, x: localStorage.getItem('planHero:pX') };
+  });
+  ok(r.keys.join() === 'pA', '보낼 사진 목록이 틀림 ' + JSON.stringify(r));
+  ok(r.n === 1 && r.a === 'https://upload.wikimedia.org/a.jpg', '없는 계획 사진을 못 받음');
+  ok(r.b === 'https://upload.wikimedia.org/mine.jpg', '이미 보여 준 계획 사진이 바뀜');
+  ok(r.x === null, '이 기기에 없는 계획에 사진을 만듦');
+  noErr(page, '계획 사진 맞추기');
 });
 
 await test('기록 고르기 · 덜 쓰는 모드는 더보기 안 (판 -306)', async page => {
