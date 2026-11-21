@@ -488,7 +488,15 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   const st = await page.evaluate(() => ({ mem: __T.planAll().find(x => x.id === 'pview1').mem.length, v: __T.permIsV(__T.planAll().find(x => x.id === 'pview1')) }));
   ok(st.mem === 2, '목록에 없는 이름이 함께 가는 사람에 저절로 들어갔어요 ' + st.mem);
   ok(st.v, '목록에 없는 이름이 구경이 아니에요');
+  await page.evaluate(async () => { const R = await __T.trRoom('tviewertest0001'), t = Date.now();   // 판 -321: 구경은 '구경에게도'로 켠 일행 위치만
+    await __T.trSet('room:' + R.rid, { v: 1, last: { tc: t, tp: t, tl: t, tm: t }, tc: [{ id: 'c1', by: 'u1', nm: '성식', x: '비밀 대화', t }], tp: [], tm: [],
+      tl: [{ id: 'u1', by: 'u1', nm: '성식', lat: 34.69, lng: 135.5, at: t, t, vw: 1 }, { id: 'u2', by: 'u2', nm: '유진', lat: 34.7, lng: 135.51, at: t, t }] }); });
   await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500); noErr(page, '구경 계획 화면');
+  await sleep(1500);
+  const pins = await page.$$eval('.tr-pin', a => a.length), mapTxt = await page.evaluate(() => (document.querySelector('.mapbox') || document.body).innerText);
+  ok(pins === 1, '구경에게는 위치 공유를 구경에게도 켠 사람 1명만 보여야 해요: ' + pins);
+  ok(!/비밀 대화/.test(mapTxt), '구경 지도에 일행 대화 말풍선이 보여요');
+  ok(!/내 위치 공유/.test(await page.evaluate(() => document.body.innerText)), '구경에게 내 위치 공유 스위치가 보여요');
   const bar = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
   ok(!bar.some(x => /AI 묻기/.test(x)), '구경에게 AI 묻기가 보여요: ' + bar.join(','));
   ok(bar.some(x => /사진/.test(x)) && !bar.some(x => /일행 채팅/.test(x)), "구경 아래 메뉴는 '일행 채팅' 대신 '사진'이어야 해요: " + bar.join(','));
