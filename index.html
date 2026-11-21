@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-300-split';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-301-splitvid';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "영상 만들기 화면 칸에 세 칸이 생겼어요 · 위는 여행 전체 지도, 가운데는 길을 따라가는 지도, 아래는 찍은 사진과 설명이에요 · 처음과 끝 장면, 일차 카드는 화면 가득 그대로예요";
+const UI_NOTES = "세 칸 영상의 아래 칸에서 동영상이 실제로 움직여요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -7869,11 +7869,12 @@ async function filmMake(S, opt, U) {
           const y0 = SA + SB;
           if (ph && ph.img && !ph.big) {
             const g2 = spPan.getContext('2d'), m = 24, sq = SC - m * 2; g2.clearRect(0, 0, W, SC); g2.fillStyle = '#0E1218'; g2.fillRect(0, 0, W, SC);
-            const cover = (im, x, y, w, h, r) => { g2.save(); g2.beginPath(); g2.roundRect(x, y, w, h, r); g2.clip(); const k2 = Math.max(w / im.width, h / im.height); g2.drawImage(im, x + (w - im.width * k2) / 2, y + (h - im.height * k2) / 2, im.width * k2, im.height * k2); g2.restore(); };
+            const cover = (im, x, y, w, h, r) => { const iw = im.videoWidth || im.width, ih = im.videoHeight || im.height; g2.save(); g2.beginPath(); g2.roundRect(x, y, w, h, r); g2.clip(); const k2 = Math.max(w / iw, h / ih); g2.drawImage(im, x + (w - iw * k2) / 2, y + (h - ih * k2) / 2, iw * k2, ih * k2); g2.restore(); };
             const ims = ph.imgs.filter(Boolean).slice(0, 4);
             if (ims.length === 2) { const cl = (sq - 6) / 2; ims.forEach((im, i) => cover(im, m + i * (cl + 6), m, cl, sq, 12)); }   // 두 장은 나란히 세로로 길게
             else if (ims.length > 2) { const cc = 2, gp = 6, cl = (sq - gp) / 2; ims.forEach((im, i) => cover(im, m + (i % cc) * (cl + gp), m + Math.floor(i / cc) * (cl + gp), cl, cl, 10)); }
-            else cover(ph.img, m, m, sq, sq, 16);
+            else { cover(vidOk ? ph.vid.el : ph.img, m, m, sq, sq, 16);   // 동영상은 아래 칸에서도 움직여요 (판 -301)
+              if (ph.p.v && !vidOk) { g2.fillStyle = 'rgba(0,0,0,.45)'; g2.beginPath(); g2.arc(m + sq / 2, m + sq / 2, 30, 0, 7); g2.fill(); g2.fillStyle = '#fff'; g2.beginPath(); g2.moveTo(m + sq / 2 - 9, m + sq / 2 - 14); g2.lineTo(m + sq / 2 + 15, m + sq / 2); g2.lineTo(m + sq / 2 - 9, m + sq / 2 + 14); g2.fill(); } }
             const g0 = ph.ps[0], tx = m + sq + 26, tw = W - tx - m;
             const lb = g0.d != null ? labels.filter(l => Math.abs(l.d - g0.d) < 400).sort((a, b) => Math.abs(a.d - g0.d) - Math.abs(b.d - g0.d))[0] : null;
             const memo = (g0.p.m || '').trim(), main = memo || (lb ? lb.n : '') || src.name;
