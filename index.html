@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-309-fund';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-310-noref';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 경비에 회비(공금)를 넣을 수 있어요 · 가정마다 걷은 회비와 각자 따로 낸 돈을 함께 셈해서 끝에 공금에서 가정마다 돌려줄 돈을 보여 줘요 · 쓴 돈은 금액만 넣으면 저장돼요 · 낸 사람과 날짜와 분류는 아래 한 줄을 눌러 바꿔요";
+const UI_NOTES = "지도에 보이던 77 400 같은 도로 번호 표지를 뺐어요 · 여행 경비에 회비(공금)를 넣을 수 있어요 · 가정마다 걷은 회비와 각자 따로 낸 돈을 함께 셈해서 끝에 공금에서 가정마다 돌려줄 돈을 보여 줘요 · 쓴 돈은 금액만 넣으면 저장돼요 · 낸 사람과 날짜와 분류는 아래 한 줄을 눌러 바꿔요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13103,6 +13103,8 @@ async function koMapStyle() {
   const nm = keep => ['case', ['has', 'name:ko'], ['get', 'name:ko'], ['has', 'name:en'], ['get', 'name:en'],
     ['all', ['has', 'name_en'], ['!=', ['get', 'name_en'], ['get', 'name']]], ['get', 'name_en'], ['has', 'name:latin'], ['get', 'name:latin'], keep ? ['get', 'name'] : ''];
   const st = vtStyle(await vtGet(FILM_LIB.osm, 'json'));
+  // 판 -310 (사용자 지도 캡처 '이 숫자들은 뭐야?'): 도로 번호 표지(77·357·400·'13;25' 같은 국도·지방도 번호)는 우리 지도에 쓸모가 없어 뺌
+  st.layers = (st.layers || []).filter(l => !/shield/i.test(l.id || '') && !(l.layout && /"ref"/.test(JSON.stringify(l.layout['text-field'] || '')) && !/name/.test(JSON.stringify(l.layout['text-field'] || ''))));
   for (const l of st.layers || []) { const tf = l.layout && l.layout['text-field']; if (tf && /name/.test(JSON.stringify(tf))) { l.layout['text-field'] = nm(/label_(city|town|state|country)|airport/.test(l.id)); l.metadata = Object.assign({}, l.metadata, { koName: 1 }); } }
   koMapStyle.s = st; return JSON.parse(JSON.stringify(st));
 }
