@@ -3600,7 +3600,7 @@ const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
 const UI_VER = '2026.11.22-319-camread';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "베트남 여행 지도에도 漢 단추가 생겼어요 · 중국 일본 베트남 여행 화면 아래에 비춰 읽기가 생겼어요 · 카메라로 간판이나 메뉴를 비추고 단추를 누르면 글자마다 발음과 뜻과 우리 한자 읽기가 나와요";
+const UI_NOTES = "중국어와 일본어 칸 맨 위에 카메라로 비춰 읽기가 생겼어요 · 간판이나 메뉴를 비추고 단추를 누르면 글자마다 발음과 뜻과 우리 한자 읽기가 나와요 · 베트남 여행은 아래 메뉴 비춰 읽기 칸에서";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -12678,14 +12678,18 @@ JSON 하나로만: {"items":[{"t":"","p":"","s":"","m":"","box":[0,0,0,0]}]}` }]
 function planSaySheet(p) {
   const btn = (c, k, y) => el('button', { class: 'btn line', style: 'display:flex;justify-content:space-between;gap:8px;text-align:left;width:100%', onclick: () => planSayShow(c, k, y) }, el('span', { text: k }), el('b', { text: c }));
   const H = planSayHotels(p);
+  // 판 -319 (사용자 '"중국어" 탭을 활용해도 되고'): 비춰 읽기는 따로 탭 대신 이 창 맨 위 큰 줄로 (아래 메뉴가 늘지 않게)
+  const cam = p ? el('button', { onclick: e => { const t = e.currentTarget.closest('.sheet-bg'); if (t) t.remove(); camRead(p); }, style: 'display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;border-radius:16px;background:#191F28;color:#fff;text-align:left' },
+    el('span', { style: 'flex:none;width:40px;height:40px;border-radius:12px;background:#FF6B4A;display:flex;align-items:center;justify-content:center' }, cSvg('cam', 22, '#fff')),
+    el('span', { style: 'flex:1;display:flex;flex-direction:column' }, el('b', { style: 'font-size:16px', text: '카메라로 비춰 읽기' }), el('span', { style: 'font-size:12.5px;color:#C9CED6', text: '간판·메뉴를 비추면 글자마다 발음·뜻·우리 한자 읽기' })), el('span', { style: 'color:#8B95A1', text: '›' })) : null;
   if (p && !planCN(p) && planJP(p)) {   // 일본: 호텔 이름은 한글·영어여도 그대로 보여 줌
-    return labSheet('🗣 일본어 · 누르면 크게', ...PLAN_SAY_JP.map(([c, k, y]) => btn(c, k, y)),
+    return labSheet('🗣 일본어 · 누르면 크게', cam, ...PLAN_SAY_JP.map(([c, k, y]) => btn(c, k, y)),
       el('div', { style: 'font-weight:800;margin-top:6px', text: '🚕 호텔로 갈 때' }),
       ...(H.length ? H.map(x => btn('このホテルまでお願いします：' + x.h.n, `이 호텔로 가 주세요 · ${x.h.n} (${x.days.join('·')}일차)${x.unsure ? ' · 아직 확정 아님' : ''}`, '코노 호테루마데 오네가이시마스')) : [el('div', { class: 'sub', text: '계획에 숙소가 없어요' })]),
       btn('この住所までお願いします', '이 주소로 가 주세요 (예약 화면 주소와 같이 보여 주세요)', '코노 쥬쇼마데 오네가이시마스'),
       el('div', { class: 'dt', style: 'font-size:12px', text: '앱에 적어 둔 기본 일본어예요 · 읽는 소리는 한글로 비슷하게 적은 것이에요' }));
   }
-  return labSheet('🗣 보여 주는 말 · 누르면 크게', ...PLAN_SAY_CN.map(([c, k, y]) => btn(c, k, y)),
+  return labSheet('🗣 보여 주는 말 · 누르면 크게', cam, ...PLAN_SAY_CN.map(([c, k, y]) => btn(c, k, y)),
     p ? el('div', { style: 'font-weight:800;margin-top:6px', text: '🚕 호텔로 갈 때' }) : null,
     ...(p ? (H.length ? H.map(x => x.ok ? btn('请带我去这家酒店：' + x.h.n, `이 호텔로 가 주세요 · ${x.h.n} (${x.days.join('·')}일차)`, '')
       : el('div', { style: 'padding:10px 12px;border-radius:12px;background:#FFF7ED;color:#9A3412;font-size:13.5px;line-height:1.5', text: `${x.days.join('·')}일차 숙소 '${x.h.n}': ${x.unsure ? '아직 확정된 호텔이 아니에요(여행사 예정 목록)' : '중국어 호텔 이름·주소가 계획에 없어요'} · 확정되면 가이드나 호텔 프런트에서 호텔 명함(중국어 주소)을 받아 사진으로 두고 기사님께 보여 주세요` }))
@@ -13142,7 +13146,7 @@ function tvBar(p, on) {   // 여행 화면 아래 메뉴
     room,
     el('button', { onclick: () => planPrepSheet(p, ls.get('planWx:' + p.id, null)) }, el('b', {}, cSvg('book', 22)), '준비·정보'),   // 2026-11-15 '준비 메뉴 이름은 딴것으로' — 여행 정보·함께 가는 사람·예약·체크리스트·날씨·긴급 도움을 모은 곳
     planCN(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', {}, cSvg('vol', 22)), '중국어') : planJP(p) ? el('button', { onclick: () => planSaySheet(p) }, el('b', {}, cSvg('vol', 22)), '일본어') : null,
-    planCN(p) || planJP(p) || planVN(p) ? el('button', { onclick: () => camRead(p) }, el('b', {}, cSvg('cam', 22)), '비춰 읽기') : null,   // 판 -319
+    planVN(p) ? el('button', { onclick: () => camRead(p) }, el('b', {}, cSvg('cam', 22)), '비춰 읽기') : null,   // 판 -319: 중국·일본은 '중국어/일본어' 칸 안 맨 위, 베트남은 보여 주는 말이 없어 이 칸
     el('button', { onclick: () => (k == null || k < 0) ? planMakeSheet(p) : trBotKey() ? planGuideSheet(p) : planAskSheet(p) }, el('b', {}, cSvg('spark', 22)), 'AI 묻기'));   // 2026-11-15 사용자 '도우미가 무슨 기능인지 잘 모르겠다' → 이름을 'AI 묻기'로, 창 머리에 한 줄 설명   // 판 -139: 여행 전엔 계획 도우미
   trBotStart(p);
   if (p.room && p.room.code) (async () => { try { const R = await trRoom(p.room.code), S = await trLoad(R), seen = ls.get('tripSeen:' + R.rid, 0), me = trMe(), n = S.tc.filter(m => m.t > seen && m.by !== me).length; if (n) { nw.textContent = String(n); nw.style.display = ''; } } catch {} })();
