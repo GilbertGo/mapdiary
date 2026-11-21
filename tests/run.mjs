@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet'];
+const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -406,6 +406,26 @@ await test('일행 채팅 · 같은 이름은 한 사람으로 셈', async page 
   // 판 -306: AI 묻기는 계획 화면 아래 메뉴 하나로 — 채팅 칸엔 'AI 도우미에게' 단추가 없어야 해요
   ok(!(await page.$$eval('button', bs => bs.some(b => /AI 도우미에게/.test(b.textContent)))), "일행 채팅에 'AI 도우미에게' 단추가 또 있어요");
   ok(await page.$('.tr-in') && /보내기/.test(txt), '일행 채팅 입력칸·보내기가 없어요');
+});
+
+// ─── 16. 자동 기록: 위치마다 무겁게 저장하지 않아도 길이 기록으로 남음 (판 -307 '폰이 갑자기 느려졌어') ───
+await test('자동 기록 · 가벼운 저장으로도 기록이 남음', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    localStorage.removeItem('walkNow'); localStorage.setItem('autoSt', '{}');
+    let lat = 37.5, ts = Date.now() - 3 * 3600e3, writes = 0; const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (k === 'autoSt') writes++; return set.call(this, k, v); };
+    __T.autoFix(lat, 126.9, 10, 30, ts);
+    for (let i = 0; i < 600; i++) { lat += 0.00018; ts += 1440; __T.autoFix(lat, 126.9, 10, 30, ts); }   // 차로 약 12km
+    const moving = writes;
+    for (let i = 0; i < 30; i++) { ts += 30000; __T.autoFix(lat, 126.9, 10, 30, ts); }   // 15분 머묾
+    Storage.prototype.setItem = set;
+    const ids = Object.keys(localStorage).filter(k => k.startsWith('track:'));
+    return { moving, n: ids.length, pts: ids.length ? JSON.parse(localStorage.getItem(ids[0])).length : 0, seg: __T.autoSt().seg };
+  });
+  ok(r.moving < 60, '움직이는 동안 저장이 너무 잦아요: ' + r.moving + '번');
+  ok(r.n === 1 && r.pts > 500, '머문 뒤 기록이 안 남았어요: ' + JSON.stringify(r));
+  ok(!r.seg, '기록을 끝낸 뒤에도 길을 모으고 있어요');
 });
 
 await browser.close();
