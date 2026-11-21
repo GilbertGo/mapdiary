@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-299-insetlay';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-300-split';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "영상 속 작은 지도를 오른쪽 아래로 옮기고 크게 했어요 · 위는 제목과 사진, 아래는 장소 이름과 작은 지도로 나눴어요 · 일차가 바뀌는 화면이나 큰 지도가 이미 여행지 전체를 보여 줄 때는 작은 지도를 숨겨요";
+const UI_NOTES = "영상 만들기 화면 칸에 세 칸이 생겼어요 · 위는 여행 전체 지도, 가운데는 길을 따라가는 지도, 아래는 찍은 사진과 설명이에요 · 처음과 끝 장면, 일차 카드는 화면 가득 그대로예요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -6115,23 +6115,23 @@ function filmGpx(text) {
 // 길 준비: 점 정리 → 누적 거리 → 집 가리기(앞뒤 500m, 짧으면 1/3)
 // 판 -296 전체 지도 (2026-11-21 사용자 장가계 영상 캡처 '화면 한 쪽을 할애해서 우리 여행한 곳 전체가 보이게 축척을 맞추고, 거기서도 이동 경로가 보이게')
 //   길 전체가 들어가는 축척으로 지도 조각(위성이면 Esri, 그 밖은 OSM)을 한 번 받아 작은 그림으로 만들어 두고, 장마다 다닌 길·지금 자리를 그 위에 그려요
-async function filmInset(P, sat, S, i0 = 0, i1 = P.length - 1) {   // i0~i1: 여행지에 닿은 뒤~떠나기 전 (판 -298)
-  const pad = 18, Q = P.slice(i0, i1 + 1), lat = Q.map(p => p.lat), lng = Q.map(p => p.lng);
+async function filmInset(P, sat, S, i0 = 0, i1 = P.length - 1, Sh = S, pad = 18) {   // i0~i1: 여행지에 닿은 뒤~떠나기 전 (판 -298), Sh: 세로 (판 -300 세 칸 화면은 가로로 긴 칸)
+  const Q = P.slice(i0, i1 + 1), lat = Q.map(p => p.lat), lng = Q.map(p => p.lng);
   let z = 16, box;
-  for (; z > 2; z--) { const a = mercPx(Math.max(...lat), Math.min(...lng), z), b = mercPx(Math.min(...lat), Math.max(...lng), z); box = [a[0], a[1], b[0], b[1]]; if (b[0] - a[0] <= S - pad * 2 && b[1] - a[1] <= S - pad * 2) break; }
-  const x0 = (box[0] + box[2]) / 2 - S / 2, y0 = (box[1] + box[3]) / 2 - S / 2, n = 2 ** z, R = 2;   // 두 배로 그려 선명하게
-  const cv = document.createElement('canvas'); cv.width = cv.height = S * R; const g = cv.getContext('2d'); g.scale(R, R);
-  g.fillStyle = sat ? '#1E2A22' : '#DDE3E8'; g.fillRect(0, 0, S, S);
+  for (; z > 2; z--) { const a = mercPx(Math.max(...lat), Math.min(...lng), z), b = mercPx(Math.min(...lat), Math.max(...lng), z); box = [a[0], a[1], b[0], b[1]]; if (b[0] - a[0] <= S - pad * 2 && b[1] - a[1] <= Sh - pad * 2) break; }
+  const x0 = (box[0] + box[2]) / 2 - S / 2, y0 = (box[1] + box[3]) / 2 - Sh / 2, n = 2 ** z, R = 2;   // 두 배로 그려 선명하게
+  const cv = document.createElement('canvas'); cv.width = S * R; cv.height = Sh * R; const g = cv.getContext('2d'); g.scale(R, R);
+  g.fillStyle = sat ? '#1E2A22' : '#DDE3E8'; g.fillRect(0, 0, S, Sh);
   const jobs = [];
-  for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + S) / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + S) / 256); ty++) {
+  for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + S) / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + Sh) / 256); ty++) {
     if (ty < 0 || ty >= n) continue; const x = ((tx % n) + n) % n;
     const u = sat ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${x}` : `https://tile.openstreetmap.org/${z}/${x}/${ty}.png`;
     jobs.push(loadTile(u).then(im => im && g.drawImage(im, tx * 256 - x0, ty * 256 - y0, 257, 257)));
   }
   try { await Promise.all(jobs); } catch {}
-  g.fillStyle = sat ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.12)'; g.fillRect(0, 0, S, S);
+  g.fillStyle = sat ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.12)'; g.fillRect(0, 0, S, Sh);
   const pts = P.map(p => { const q = mercPx(p.lat, p.lng, z); return [q[0] - x0, q[1] - y0]; });
-  return { cv, pts, S, i0, i1, z };
+  return { cv, pts, S, Sh, i0, i1, z };
 }
 function filmTripRange(P) {   // 판 -298: 가는 비행기 내린 뒤 ~ 오는 비행기 타기 전 [i0, i1] (비행이 없으면 처음~끝)
   let i0 = 0, i1 = P.length - 1; const fr = [];
@@ -6749,7 +6749,7 @@ html.n-page .fm .fm-card:not(.dk) h2,html.n-page .fm-keep h2{color:#15202B!impor
     el('div', { class: 'fm-card' }, el('h2', { text: '스타일' }), styleBox),
     el('div', { class: 'fm-card' },
       opt1('길이', chips([[15, '15초'], [30, '30초 · 추천'], [45, '45초'], [60, '1분'], [90, '1분 30초'], [120, '2분']], () => opt.sec, v => { opt.sec = v; })),
-      opt1('화면', chips([['9:16', '세로 · 휴대폰'], ['16:9', '가로 · TV']], () => opt.ratio, v => { opt.ratio = v; })),
+      opt1('화면', chips([['9:16', '세로 · 휴대폰'], ['16:9', '가로 · TV'], ['split', '세 칸 · 지도와 사진']], () => opt.ratio, v => { opt.ratio = v; })),
       opt1('지도', chips([['sat', '🛰 위성 사진'], ['map', '🗺 일반 지도'], ['dark', '🌙 어두운 지도']], () => opt.map, v => { opt.map = v; }))),
     phCard,
     el('details', { class: 'fm-card' }, el('summary', {}, '음악', musSum),
@@ -7257,7 +7257,7 @@ async function filmMake(S, opt, U) {
       : `고른 기록 '${src.name}'의 길이 ${path ? Math.round(path.D) : 0}m뿐이라 영상을 만들 수 없어요 · 위 '어떤 길로'에서 다른 기록을 골라 주세요`;
     U.prog.textContent = '⚠ ' + m; return toast(m, false, 7000); }
   if (typeof VideoEncoder === 'undefined') return toast('이 브라우저는 영상 만들기(WebCodecs)를 지원하지 않아요 · 크롬이나 MPD 앱에서 열어 주세요');
-  filmDims(opt); const W = FILM_W, H = FILM_H, CX = W / 2, LAND = W > H;
+  filmDims(opt); const W = FILM_W, H = FILM_H, CX = W / 2, LAND = W > H, SPLIT = opt.ratio === 'split' && !LAND;   // SPLIT: 세 칸 화면 (판 -300)
   const st = FILM_STYLES[opt.style] || FILM_STYLES.cine, adv = filmAdv(opt, st);
   S.busy = true; S.stop = false; U.go.textContent = '■ 그만 만들기'; U.result.style.display = 'none'; const tMake = Date.now();
   const say = (t, p) => { U.prog.textContent = t; if (p != null) U.bar.style.width = (p * 100).toFixed(1) + '%'; };
@@ -7309,7 +7309,7 @@ async function filmMake(S, opt, U) {
         const G = new Map(); cand.forEach(g => { const k = days.length > 1 ? dOf(g) : Math.min(2, Math.floor(g.d / D * 3)); if (!G.has(k)) G.set(k, []); G.get(k).push(g); });
         for (const L of G.values()) { const m = L.filter(g => g.p.m).sort((a, b) => String(b.p.m).length - String(a.p.m).length)[0]; big.push(m || L[Math.floor(L.length / 2)]); }
       }
-      big = big.slice(0, days.length > 1 ? 5 : 3); big.forEach(g => { g.big = true; });
+      big = SPLIT ? [] : big.slice(0, days.length > 1 ? 5 : 3); big.forEach(g => { g.big = true; });   // 세 칸 화면은 사진이 아래 칸에 나와서 화면 가득 사진은 안 씀
       heroG = cand.find(g => g.star) || big.find(g => g.p.m) || big[0] || cand[Math.floor(cand.length / 2)] || null;
     }
     const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st), runs: runs0, days, hero: (heroG ? FILM_HERO : 0) + (OPEN ? 1.4 : 0) });
@@ -7454,11 +7454,15 @@ async function filmMake(S, opt, U) {
     let vehNow = '';
     // 판 -296 전체 지도: 다닌 곳이 1.5km 넘거나 여러 날이면 (추억 스타일은 폴라로이드 자리라 빼요)
     let inset = null, insetW = 0;
+    // 판 -300 세 칸 화면 (2026-11-21 사용자 '삼분할' → '1.전체경로지도 2.국부경로지도 3.찍은사진·설명'): 길을 따라가는 동안 위 전체 지도 / 가운데 3D 지도 / 아래 사진과 설명
+    const SA = Math.round(H * 0.28), SB = Math.round(H * 0.44), SC = H - SA - SB;
+    let topMap = null, spPan = null, spPanT = null;   // spPanT: 잘라 쓸 화면 사본, spPan: 아래 칸(사진이 바뀔 때까지 남겨 둠)
+    if (SPLIT && P.length > 1) { say('전체 지도를 준비하는 중…'); const [a0, a1] = filmTripRange(P); try { topMap = await filmInset(P, mtype === 'sat', W, a0, a1, SA, 34); } catch {} }
     if (LOOK !== 'memo' && P.length > 2) {
       // 판 -298 (사용자 '작은 지도는 여행지 도착해서 떠날 때까지로 한정하자'): 처음 비행(가는 비행기) 뒤 ~ 마지막 비행(오는 비행기) 앞만
       const [i0, i1] = filmTripRange(P);
       const la = P.slice(i0, i1 + 1).map(p => p.lat), ln = P.slice(i0, i1 + 1).map(p => p.lng);
-      if (i1 - i0 > 2 && (days.length > 1 || dist(Math.min(...la), Math.min(...ln), Math.max(...la), Math.max(...ln)) > 1500)) { say('전체 지도를 준비하는 중…'); try { inset = await filmInset(P, mtype === 'sat', LAND ? 200 : 260, i0, i1); } catch {} }
+      if (!SPLIT && i1 - i0 > 2 && (days.length > 1 || dist(Math.min(...la), Math.min(...ln), Math.max(...la), Math.max(...ln)) > 1500)) { say('전체 지도를 준비하는 중…'); try { inset = await filmInset(P, mtype === 'sat', LAND ? 200 : 260, i0, i1); } catch {} }
     }
     for (let k = window.__filmFrom || 0; k < N; k++) { if (window.__filmCut && k >= window.__filmCut) break;
       const f = k === 0 && !OPT0 && !OPEN ? coverF : k;
@@ -7550,7 +7554,8 @@ async function filmMake(S, opt, U) {
         if (one && ph.p.v && ph.p.blob) ph.vid = await filmVidOpen(ph.p.blob); }   // 동영상: 카드 안에서 실제로 움직이게(소리 없이)
       const vidOk = ph && ph.vid && ph.ps.length === 1 ? await filmVidSeek(ph.vid, tt - ph.s) : false;
       let box = null;
-      if (ph && ph.ps.length > 1 && ph.imgs.some(Boolean)) {   // 여러 장 카드: 2·3·4장 → 2칸, 그 이상 3칸, 정사각 칸
+      if (SPLIT && tt >= plan.tIn) {}   // 세 칸: 사진은 아래 칸에
+      else if (ph && ph.ps.length > 1 && ph.imgs.some(Boolean)) {   // 여러 장 카드: 2·3·4장 → 2칸, 그 이상 3칸, 정사각 칸
         const n = ph.ps.length, cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols), gap = 6, y = LAND ? 96 : 175;
         let bw = Math.min(W * (LAND ? 0.36 : 0.6), st.card[0] * 1.55 * (ph.star ? 1.15 : 1)), cell = (bw - gap * (cols - 1)) / cols, bh = rows * cell + gap * (rows - 1);
         const maxH = H - y - (info >= 1 ? (elevOn ? 330 : 250) : 120); if (bh > maxH) { const f = maxH / bh; bw *= f; bh = maxH; cell *= f; }
@@ -7596,7 +7601,7 @@ async function filmMake(S, opt, U) {
         c.restore();
       }
       // 위: 작은 제목·날짜 (따라가는 동안)
-      if (tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
+      if (!SPLIT && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
         c.save(); c.textAlign = 'left'; c.fillStyle = '#fff'; shadow(10);
         const tw = box ? Math.max(200, box.x - 60) : W - 80;
         if (LOOK === 'cine') {}   // 시네마틱 제목은 위 검은 띠 안에 (띠를 그린 뒤)
@@ -7636,10 +7641,10 @@ async function filmMake(S, opt, U) {
         }
       }
       // 아래: 숫자 줄 세 칸 (판 -288, 모든 스타일 같은 자리)
-      if (LOOK !== 'cine' && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) statBar(dh, cur, H - 70, false);
+      if (!SPLIT && LOOK !== 'cine' && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) statBar(dh, cur, H - 70, false);
       const upEnd = info >= 0 && elevOn && st.k !== 'sport' && Math.round(gain[P.length - 1] || 0) >= 20 ? Math.round(gain[P.length - 1]) : 0;
       // 높이 그림: 거리 숫자 위 (산 모양 전체 + 지나온 곳 색칠 + 지금 자리 점), 오르막이면 '⛰ 오르막 8%'
-      if (elevOn && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
+      if (!SPLIT && elevOn && info >= 1 && tt >= plan.tIn && tt < (plan.tEnd || runEnd)) {
         const x0 = 40, x1 = W - 40, eh = 54, eb = LOOK === 'cine' ? H - BAR - 26 : H - 196, et = eb - eh, EX = d => x0 + (x1 - x0) * d / D, EY = a => eb - (a - aLo) / Math.max(40, aHi - aLo) * eh;
         c.save(); const area = () => { c.beginPath(); c.moveTo(x0, eb); prof.forEach(([d, a]) => c.lineTo(EX(d), EY(a))); c.lineTo(x1, eb); c.closePath(); };
         area(); c.fillStyle = 'rgba(255,255,255,.16)'; c.fill(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.6)'; c.stroke();
@@ -7659,7 +7664,7 @@ async function filmMake(S, opt, U) {
           c.fillStyle = col; c.beginPath(); c.roundRect(CX - w / 2, y, w, 66, 33); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(txt, CX, y + 47); c.restore(); }
       }
       // 여행: 장소를 지날 때 아래 이름 띠
-      if (st.k === 'trip' && opt.places) {
+      if (!SPLIT && st.k === 'trip' && opt.places) {
         const l = labels.find(q => q.t != null && tt >= q.t - 0.3 && tt < q.t + (q.food ? 3.4 : 2.2) && tt < runEnd);
         if (l && l.food) {   // 🍽 맛집 카드: 이름 · 메뉴 · 가격 · 별점 · 메모
           const f = l.food, a = Math.max(0, Math.min(1, (tt - l.t + 0.3) / 0.3, (l.t + 3.4 - tt) / 0.4)), cw = W - 80;
@@ -7832,6 +7837,64 @@ async function filmMake(S, opt, U) {
         // 로고
         c.textAlign = 'center'; c.font = FN(700, 22); c.letterSpacing = '5px'; c.fillStyle = 'rgba(255,255,255,.75)'; c.shadowBlur = 8; c.fillText('MAP PHOTO DIARY', LAND ? PC : CX, BAR ? H - BAR / 2 + 8 : H - 46); c.letterSpacing = '0px';
         c.restore();
+      }
+      if (SPLIT) {   // 판 -300 세 칸: 그려 둔 화면에서 3D 지도 가운데를 잘라 가운데 칸에, 위는 전체 지도, 아래는 사진과 설명
+        const end = plan.tEnd || runEnd;
+        let sa = Math.max(0, Math.min(1, (tt - plan.tIn) / 0.5, (end - tt) / 0.5));
+        for (const h of (plan.holds || [])) if (tt > h.t0 - 0.6 && tt < h.t1 + 0.7) sa = Math.min(sa, Math.max(0, (h.t0 - 0.25 - tt) / 0.35, (tt - h.t1 - 0.35) / 0.35));
+        if (ph && ph.big) sa = 0;
+        if (sa > 0) {
+          if (!spPanT) { spPanT = document.createElement('canvas'); spPanT.width = W; spPanT.height = H; spPan = document.createElement('canvas'); spPan.width = W; spPan.height = SC; spPan.has = false; }
+          const tg = spPanT.getContext('2d'); tg.clearRect(0, 0, W, H); tg.drawImage(U.cv, 0, 0);
+          const hp = map.project([cur.lng, cur.lat]), cropTop = Math.max(0, Math.min(H - SB, hp.y - SB * 0.55));
+          c.save(); c.globalAlpha = sa; c.fillStyle = '#0B0F14'; c.fillRect(0, 0, W, H);
+          c.drawImage(spPanT, 0, cropTop, W, SB, 0, SA, W, SB);
+          // 1. 전체 경로 지도
+          if (topMap) {
+            c.drawImage(topMap.cv, 0, 0, W, SA);
+            const tp = i => topMap.pts[i], ci = Math.max(topMap.i0, Math.min(topMap.i1, cur.i)), j = Math.min(topMap.i1, ci + 1), fr = P[j].d > P[ci].d ? Math.max(0, Math.min(1, (Math.min(dh, P[topMap.i1].d) - P[ci].d) / (P[j].d - P[ci].d))) : 0;
+            const hx = tp(ci)[0] + (tp(j)[0] - tp(ci)[0]) * fr, hy = tp(ci)[1] + (tp(j)[1] - tp(ci)[1]) * fr;
+            const ln = (i0, i1, w, cc, last) => { c.beginPath(); for (let i = i0; i <= i1; i++) { const q = tp(i); if (i === i0) c.moveTo(q[0], q[1]); else c.lineTo(q[0], q[1]); } if (last) c.lineTo(last[0], last[1]); c.lineWidth = w; c.strokeStyle = cc; c.lineJoin = c.lineCap = 'round'; c.stroke(); };
+            ln(topMap.i0, topMap.i1, 4, 'rgba(255,255,255,.6)'); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 5; ln(topMap.i0, ci, 5, col, [hx, hy]); c.shadowBlur = 0;
+            const s0 = tp(topMap.i0); c.fillStyle = '#fff'; c.beginPath(); c.arc(s0[0], s0[1], 5, 0, 7); c.fill();
+            const pr = (tt * 1.4) % 1; c.strokeStyle = `rgba(255,255,255,${0.85 * (1 - pr)})`; c.lineWidth = 2.5; c.beginPath(); c.arc(hx, hy, 8 + pr * 16, 0, 7); c.stroke();
+            c.fillStyle = '#fff'; c.beginPath(); c.arc(hx, hy, 9, 0, 7); c.fill(); c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
+          }
+          { const gr = c.createLinearGradient(0, 0, 0, 120); gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gr; c.fillRect(0, 0, W, 120); }
+          c.textAlign = 'left'; c.fillStyle = '#fff'; shadow(8); c.font = FN(800, 30); c.fillText(filmFit(c, src.name, days.length ? W * 0.5 : W - 56), 28, 48); c.shadowBlur = 0;
+          if (days.length) { const dy = dayAt(dh); if (dy) { c.save(); c.translate(W - 28, 0); c.scale(0.8, 0.8); c.font = FN(900, 30); const w1 = c.measureText(`${dy.n}일차`).width; c.font = FN(700, 24); const w2 = c.measureText(` · ${dayDate(dy)}`).width; dayPill(dy, -(w1 + w2 + 36), 16); c.restore(); } }
+          // 칸 사이 선
+          c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, SA - 1, W, 2); c.fillRect(0, SA + SB - 1, W, 2);
+          // 3. 찍은 사진·설명
+          const y0 = SA + SB;
+          if (ph && ph.img && !ph.big) {
+            const g2 = spPan.getContext('2d'), m = 24, sq = SC - m * 2; g2.clearRect(0, 0, W, SC); g2.fillStyle = '#0E1218'; g2.fillRect(0, 0, W, SC);
+            const cover = (im, x, y, w, h, r) => { g2.save(); g2.beginPath(); g2.roundRect(x, y, w, h, r); g2.clip(); const k2 = Math.max(w / im.width, h / im.height); g2.drawImage(im, x + (w - im.width * k2) / 2, y + (h - im.height * k2) / 2, im.width * k2, im.height * k2); g2.restore(); };
+            const ims = ph.imgs.filter(Boolean).slice(0, 4);
+            if (ims.length === 2) { const cl = (sq - 6) / 2; ims.forEach((im, i) => cover(im, m + i * (cl + 6), m, cl, sq, 12)); }   // 두 장은 나란히 세로로 길게
+            else if (ims.length > 2) { const cc = 2, gp = 6, cl = (sq - gp) / 2; ims.forEach((im, i) => cover(im, m + (i % cc) * (cl + gp), m + Math.floor(i / cc) * (cl + gp), cl, cl, 10)); }
+            else cover(ph.img, m, m, sq, sq, 16);
+            const g0 = ph.ps[0], tx = m + sq + 26, tw = W - tx - m;
+            const lb = g0.d != null ? labels.filter(l => Math.abs(l.d - g0.d) < 400).sort((a, b) => Math.abs(a.d - g0.d) - Math.abs(b.d - g0.d))[0] : null;
+            const memo = (g0.p.m || '').trim(), main = memo || (lb ? lb.n : '') || src.name;
+            g2.textAlign = 'left'; g2.fillStyle = col; g2.font = FN(800, 22);
+            g2.fillText(ph.ps.length > 1 ? `사진 ${ph.n0 + 1}–${ph.n0 + ph.ps.length} / ${photos.length}` : `사진 ${ph.n0 + 1} / ${photos.length}`, tx, m + 30);
+            g2.fillStyle = '#fff'; g2.font = FN(800, 32); let yy = m + 84; filmWrap(g2, main, tw).slice(0, memo ? 4 : 2).forEach(t => { g2.fillText(t, tx, yy); yy += 42; });
+            if (memo && lb) { g2.fillStyle = 'rgba(255,255,255,.7)'; g2.font = FN(600, 24); g2.fillText(filmFit(g2, '📍 ' + lb.n, tw), tx, yy + 6); yy += 40; }
+            if (g0.p.ts) { const q = new Date(g0.p.ts); g2.fillStyle = 'rgba(255,255,255,.55)'; g2.font = FN(500, 22); g2.fillText(`${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]}) ${q.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })}`, tx, yy + 4); }
+            spPan.has = true;
+            const pa = Math.max(0, Math.min(1, (tt - ph.s) / 0.35));
+            c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC); c.globalAlpha = sa * (0.45 + 0.55 * pa); c.drawImage(spPan, 0, y0); c.globalAlpha = sa;
+          } else if (spPan.has) { c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC); c.globalAlpha = sa * 0.45; c.drawImage(spPan, 0, y0); c.globalAlpha = sa; }
+          else {   // 아직 사진이 없으면: 지나는 곳 이름과 거리
+            c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC);
+            const lb = labels.filter(l => l.d <= dh + 200).sort((a, b) => b.d - a.d)[0];
+            c.textAlign = 'left'; c.fillStyle = col; c.font = FN(800, 24); c.fillText(lb ? '지나는 곳' : '오늘의 길', 32, y0 + 70);
+            c.fillStyle = '#fff'; c.font = FN(800, 40); c.fillText(filmFit(c, lb ? lb.n : src.name, W - 64), 32, y0 + 126);
+            c.fillStyle = 'rgba(255,255,255,.6)'; c.font = FN(600, 28); c.fillText(filmKm(shownAt(dh)), 32, y0 + 180);
+          }
+          c.restore();
+        }
       }
       { const cr = heroBm && tt < plan.tHero + 0.7 ? heroG.p.credit : ph && ph.p && ph.p.credit && ph.ps.length === 1 ? ph.p.credit : null;   // 위키미디어 사진: 찍은 사람·사용 조건
         if (cr) { c.save(); c.font = FN(500, 16); c.fillStyle = 'rgba(255,255,255,.8)'; c.textAlign = 'right'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 6; c.fillText(filmFit(c, `사진 ${cr.by}${cr.lic ? ' · ' + cr.lic : ''} · Wikimedia Commons`, W - 32), W - 16, H - 38); c.restore(); } }

@@ -331,6 +331,17 @@ await test('영상 전체 지도 · 여행지 도착~떠나기 전만 (판 -298)
   ok(r.plain[0] === 0 && r.plain[1] === 39, '비행 없는 기록은 처음~끝이어야 해요');
 });
 
+await test('세 칸 화면 · 위 전체 지도는 가로로 긴 칸에 길이 다 들어감 (판 -300)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const P = Array.from({ length: 60 }, (_, i) => ({ lat: 29.1 + i * 0.004, lng: 110.4 + i * 0.01 }));
+    const o = await __T.filmInset(P, true, 720, 0, 59, 358, 34);
+    return { w: o.cv.width, h: o.cv.height, out: o.pts.filter(([x, y]) => x < 0 || y < 0 || x > 720 || y > 358).length };
+  });
+  ok(r.w === 1440 && r.h === 716, '위 칸 지도 크기가 이상해요 ' + r.w + 'x' + r.h);
+  ok(r.out === 0, '길이 위 칸 지도 밖으로 나가요 ' + r.out);
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
