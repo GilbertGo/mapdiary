@@ -3600,8 +3600,11 @@ const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
 const UI_VER = '2026.11.21-304-herokeep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 계획 맨 위 사진을 휴대폰에 저장해 둬요 · 인터넷이 느리거나 끊겨도 사진이 사라지지 않아요";
+const UI_NOTES = "보고 있는 화면이 저절로 다시 열리지 않게 했어요 · 다른 기기에서 기록이 와도 알림만 띄우고 화면은 그대로예요 · 첫 화면 바탕 사진이 몇 초 뒤 바뀌던 것을 고쳤어요 · 한 번 정해진 바탕 사진은 그대로 남아요";
 window.MPD_VER = UI_VER;
+// 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
+var MD_TOUCHED = false;
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(e => addEventListener(e, () => { MD_TOUCHED = true; }, { capture: true, passive: true }));
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
 // 카카오 JavaScript 키가 들어 있으면 카카오톡 공유를 써요
@@ -4995,6 +4998,7 @@ async function cloudSync(quiet) {
   cloudBusy = false; cloudProgSet('');
   const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   let again = false; try { again = Date.now() - +(sessionStorage.getItem('cloudReload') || 0) < 120000; } catch {}   // 받자마자 또 받는 일이 생겨도 다시 불러오기를 되풀이하지 않게
+  if (down && MD_TOUCHED) { toast('☁ ' + msg + ' · 화면을 다시 열면 보여요', 0, 6000); return; }
   if (down && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
   document.dispatchEvent(new Event('md-cloud'));
@@ -13950,7 +13954,7 @@ async function syncPull() {
   if (!n && !u) return;
   const msg = n ? `${[...from].join('·')}에서 기록 ${n}개를 가져왔어요${WEAR_SELF ? ' · 내 MPD에서 볼 수 있어요' : ''}` : '';
   const qs0 = new URLSearchParams(location.search);
-  if (!location.search || qs0.get('my')) { try { if (msg) sessionStorage.setItem('mdToast', msg); } catch {} location.reload(); } else if (msg) toast(msg);   // 첫 화면·내 MPD면 다시 그려요
+  if (!MD_TOUCHED && (!location.search || qs0.get('my'))) { try { if (msg) sessionStorage.setItem('mdToast', msg); } catch {} location.reload(); } else if (msg) toast(msg + (MD_TOUCHED && (!location.search || qs0.get('my')) ? ' · 화면을 다시 열면 보여요' : ''), 0, 6000);   // 첫 화면·내 MPD면 다시 그려요
 }
 if (window.mdNativeSync && !LAB_QUIET) {
   setTimeout(() => { syncPush(); syncPull(); }, 1500);
@@ -16759,7 +16763,7 @@ function homeDecoEdit() {
     el('div', { class: 'deco-bar' },
       el('button', { type: 'button', onclick: addSheet }, cSvg('img', 20), el('span', { text: '사진 넣기' })),
       el('button', { type: 'button', onclick: () => { runHeroPick(() => { paintBg(); dirty = true; }, 'homeHero'); const L = [...document.querySelectorAll('.sheet-bg')].pop(); if (L) L.style.zIndex = '4700'; } }, cSvg('palette', 20), el('span', { text: '바탕 바꾸기' })),
-      el('button', { type: 'button', onclick: () => { pins = JSON.parse(JSON.stringify(window.__cHomeAuto || [])); ls.set('homeDeco', null); dirty = true; redraw(); toast('처음 모습(최근 기록 사진)으로 돌렸어요'); } }, cSvg('again', 20), el('span', { text: '처음 모습' }))));
+      el('button', { type: 'button', onclick: () => { pins = JSON.parse(JSON.stringify(window.__cHomeAuto || [])); ls.set('homeDeco', null); ls.set('homeBgPick', null); dirty = true; redraw(); toast('처음 모습(최근 기록 사진)으로 돌렸어요'); } }, cSvg('again', 20), el('span', { text: '처음 모습' }))));
   document.body.append(wrap); paintBg(); setTimeout(redraw, 30); ovGuard && ovGuard();
 }
 // 판 -250 처음 쓰는 사람 첫 화면(2026-11-17 시안 B '예시로 미리 보여 주기', 사용자 'B로 해'): 기록이 하나도 없고 기록 중도 아니고 꾸민 첫 화면도 없을 때만.
@@ -16946,10 +16950,16 @@ async function cHomeBg(bg, withPh, nBub) {
   const imgs = p => p.v ? null : p, set = p => { const u = p.blob ? URL.createObjectURL(p.blob) : p.thumb; bg.style.backgroundImage = `url("${u}")`; };
   const head = withPh[0], bubs = withPh.slice(1, 1 + nBub), rest = withPh.slice(1 + nBub);
   const cand = [head.first, ...head.ph.filter(p => p !== head.first), ...bubs.flatMap(r => r.ph.filter(p => p !== r.first)), ...rest.flatMap(r => r.ph)].filter(p => p && imgs(p)).slice(0, 40);
+  // 판 -296 (사용자 '사진도 바뀌고 그래, 내 의도와 관계없이'): 한 번 보여 준 바탕 사진은 기억해 두고 그대로(그 사진을 지우거나 꾸미기로 바꿀 때만 바뀜),
+  //   예전엔 열 때마다 가장 최근 사진을 먼저 보였다가 몇 초 뒤 '사람 없는 사진'으로 바꿔 끼워서 화면이 저절로 바뀌어 보였음
+  const keep = ls.get('homeBgPick', null);
+  if (keep) { const hit = withPh.flatMap(r => r.ph).find(p => p && p.id === keep); if (hit && !phIsGone(hit.id)) return set(hit); }
+  const pick = p => { ls.set('homeBgPick', p.id); set(p); };
   const known0 = cand.find(p => phPeopleKnown(p) === 0);
-  if (known0) return set(known0);                                   // 예전에 사람 없다고 본 사진이 있으면 바로
-  if (phPeopleKnown(head.first) !== 1) set(head.first);             // 모르면 일단 예전처럼(가장 최근 대표 사진), 사람이 있으면 아래에서 바꿈
-  for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) return; if (h === 0) return set(p); }
+  if (known0) return pick(known0);                                  // 예전에 사람 없다고 본 사진이 있으면 그것
+  // 처음 한 번만: 사람 없는 사진을 찾은 뒤에 보여 주고(중간에 바꿔 끼우지 않음), 못 찾으면 가장 최근 대표 사진
+  for (const p of cand) { if (!bg.isConnected) return; const h = await phHasPeople(p); if (h === null) break; if (h === 0) return pick(p); }
+  if (bg.isConnected) pick(head.first);
 }
 
 /* Independent design experiment with REAL MPD photos/locations/routes.

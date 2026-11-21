@@ -199,6 +199,15 @@ public class MdAppPlugin extends Plugin {
         getActivity().runOnUiThread(() -> bridge.setServerBasePath(p));
     }
 
+    // 판 -296: 다음에 켤 때부터만 새 화면으로(지금 보는 화면은 그대로). 쓰는 도중에 화면이 바뀌던 것 고침
+    @PluginMethod
+    public void setWebNext(PluginCall call) {
+        String p = call.getString("path");
+        if (p == null) { call.reject("no path"); return; }
+        getContext().getSharedPreferences("CapWebViewSettings", Activity.MODE_PRIVATE).edit().putString("serverBasePath", p).commit();
+        call.resolve();
+    }
+
     @PluginMethod
     public void syncPut(PluginCall call) {
         String id = call.getString("id"), data = call.getString("data");
