@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark'];
+const EXPOSE = ['photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -277,6 +277,28 @@ await test('나(설정) 창이 오류 없이 열림', async page => {
   await sleep(600);
   noErr(page, '나 창');
   ok(await page.evaluate(() => /Claude 열쇠|오류 기록/.test(document.body.innerText)), '나 창의 줄이 안 보여요');
+});
+
+// ─── 13. 문지기: 바깥에서 오는 기록·사진·계획은 지운 표시가 있으면 못 들어옴 (판 -295) ───
+await test('문지기 · 지운 기록·사진·계획은 어느 길로 와도 안 들어옴', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const id = 'run_wgate1', tr = JSON.stringify([[37, 127, 1], [37.01, 127, 2]]);
+    __T.goneMark([id]);
+    const m = __T.recMerge(id, { ['track:' + id]: tr, ['walkMode:' + id]: '"run"' }, 'over');
+    const rec = localStorage.getItem('track:' + id);
+    const keep = 'run_wgate2', m2 = __T.recMerge(keep, { ['track:' + keep]: tr }, 'over');
+    await __T.photoPut({ id: 'ph_g1', t: keep, ts: 1, blob: new Blob(['x']), thumb: new Blob(['x']) }); await __T.photoDel('ph_g1');
+    await __T.photoPut({ id: 'ph_g1', t: keep, ts: 1, blob: new Blob(['x']), thumb: new Blob(['x']) });
+    const ph = (await __T.photoList(keep)).length;
+    __T.planSave({ id: 'pl_g1', name: '지운 계획', start: '2026-12-01', nd: 1, it: [] }); __T.planDel('pl_g1');
+    __T.planSave({ id: 'pl_g1', name: '지운 계획', start: '2026-12-01', nd: 1, it: [] });
+    return { gone: m.gone, rec, keep: localStorage.getItem('track:' + keep) === tr && !m2.gone, ph, plan: __T.planAll().some(p => p.id === 'pl_g1') };
+  });
+  ok(r.gone && r.rec == null, '지운 기록이 recMerge로 들어왔어요');
+  ok(r.keep, '지우지 않은 기록이 안 들어왔어요');
+  ok(r.ph === 0, '지운 사진이 photoPut으로 들어왔어요');
+  ok(!r.plan, '지운 계획이 planSave로 들어왔어요');
 });
 
 await browser.close();
