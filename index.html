@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-320-viewer';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-321-viewloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 초대에 구경(보기만)이 생겼어요 · 함께 가는 사람 목록에 없는 이름으로 들어오면 일정과 사진만 보고 대화와 위치와 경비와 예약은 안 보여요 · 주인은 준비 정보의 일행 권한에서 이름 옆을 눌러 일행과 구경과 못 봄을 바꿔요";
+const UI_NOTES = "구경하는 가족도 지도에서 일행 위치를 볼 수 있어요 · 이 판부터 내 위치 공유를 켠 사람만 보여요 · 예전에 켜 둔 분은 한 번 껐다 켜 주세요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -11227,7 +11227,7 @@ async function viewTripRoom(code, title, planId) {
     let lastSent = 0;
     locWatch = navigator.geolocation.watchPosition(pos => {
       if (Date.now() - lastSent < 60000 || document.hidden) return; lastSent = Date.now();
-      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now() };
+      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now(), vw: trVw(R) };
       trPut(R, 'tl', me, o).then(() => { const i = S.tl.findIndex(x => x.by === me); if (i >= 0) S.tl[i] = Object.assign(S.tl[i], o); else S.tl.push(Object.assign({ id: me }, o)); drawPins(); }).catch(() => {});
     }, () => toast('⚠ 위치를 받지 못했어요 · 위치 권한을 확인해 주세요'), { enableHighAccuracy: true, maximumAge: 30000 });
   }
@@ -11533,7 +11533,7 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
         tg(D.w, '고치기', async () => { D.w = D.w ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r),
         tg(D.ai, 'AI', async () => { D.ai = D.ai ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r || !trOwnKey())),
       el('ul', { class: 'pm-note' },
-        el('li', { text: '함께 가는 사람 목록에 없는 이름은 구경으로 들어와요. 구경은 일정과 사진만 보고, 대화·위치·경비·예약은 못 봐요. 이름 옆을 누르면 일행 → 구경 → 못 봄.' }),
+        el('li', { text: '함께 가는 사람 목록에 없는 이름은 구경으로 들어와요. 구경은 일정·사진과 위치 공유를 켠 일행 위치만 보고, 대화·경비·예약은 못 봐요. 이름 옆을 누르면 일행 → 구경 → 못 봄.' }),
         el('li', { text: 'AI는 내 Claude 열쇠를 허락한 사람의 휴대폰에만 잠가서 보내요(사용료는 내 계정, 한 사람 하루 ' + AI_SHARE_MAX + '번). 끄면 그 사람 휴대폰에서 지워져요.' }),
         el('li', { text: '보기·고치기는 앱이 막는 거예요. 링크를 가진 사람이 마음먹고 앱을 뜯으면 우회할 수 있어요. 링크는 믿는 사람에게만 보내 주세요.' }),
         trOwnKey() ? null : el('li', { text: '이 휴대폰에 Claude 열쇠가 없어서 AI 권한은 줄 수 없어요.' })));
@@ -11545,7 +11545,7 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
 }
 function permLine(p, rd) {   // 계획 화면 맨 위 작은 줄: 주인 = 새로 들어온 사람 · 일행 = 내 권한
   const S = permCached(p), EN0 = planEN(p);
-  const vBan = nm => el('div', { class: 'pm-ban ro' }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중이에요' }), el('span', { text: EN0 ? `You can see the plan and photos · chat, locations, costs and bookings are for the group only` : `일정과 사진을 볼 수 있어요 · 일행 대화·위치·경비·예약은 일행만 봐요${nm ? ` · 일행이 되려면 ${nm} 님께 말해 주세요` : ''}` }));   // 판 -320
+  const vBan = nm => el('div', { class: 'pm-ban ro' }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중이에요' }), el('span', { text: EN0 ? `You can see the plan, photos and where the group is · chat, costs and bookings are for the group only` : `일정과 사진과 일행 위치를 볼 수 있어요 · 일행 대화·경비·예약은 일행만 봐요${nm ? ` · 일행이 되려면 ${nm} 님께 말해 주세요` : ''}` }));   // 판 -320
   if (!S || !S.own || !S.perm) return permIsV(p) ? vBan('') : null;
   if (S.own.by === trMe()) { const n = (S.tk || []).filter(x => !(S.perm.m || {})[x.by]).length; if (!n) return null;
     return el('button', { type: 'button', class: 'pm-ban', onclick: () => permSheet(p, rd) }, el('b', { text: `👋 새로 들어온 사람 ${n}명` }), el('span', { text: '권한 정하기 ›' })); }
@@ -11611,17 +11611,20 @@ function trBubFix(map) {
   }
 }
 // 판 -256 (사용자 '위치 보기 켜기 끄기 버튼 눈에 띄게. 켜졌는지 꺼졌는지 확실히 알게'): 켜짐 = 청록 바탕 흰 글자 + 오른쪽 흰 동그라미, 꺼짐 = 흰 바탕 회색 + 왼쪽 회색 동그라미
+// 판 -321 (사용자 '일행의 위치도 보여주는게 좋겠다. 가족이 내 위치 궁금할 듯'): 구경(보기만)하는 가족도 일행 위치를 봐요
+//   단, 이 판부터 '내 위치 공유'를 켠 사람만(켤 때 스위치 글에 '구경하는 가족에게도' 보임 → tripLocV:{방}) — 예전에 켜 둔 사람은 껐다 켜야 구경에게 보여요(tl.vw)
+function trVw(R) { return ls.get('tripLocV:' + R.rid, 0) ? 1 : 0; }
 function trLocSet(R, on) {
-  ls.set('tripLoc:' + R.rid, !!on);
+  ls.set('tripLoc:' + R.rid, !!on); ls.set('tripLocV:' + R.rid, on ? 1 : 0);
   if (!on) trPut(R, 'tl', trMe(), { by: trMe(), nm: trName(), at: Date.now(), off: 1, t: Date.now() }).catch(() => {});
   try { tripLocBg(); } catch {}
-  toast(on ? '📍 내 위치 공유를 켰어요 · 일행 지도에 내가 보여요' : '내 위치 공유를 껐어요 · 일행 지도에서 내가 사라져요');
+  toast(on ? '📍 내 위치 공유를 켰어요 · 일행과 구경하는 가족 지도에 내가 보여요' : '내 위치 공유를 껐어요 · 지도에서 내가 사라져요');
 }
 function trLocSwitch(R, after, big) {
   const on = !!ls.get('tripLoc:' + R.rid, false);
   return el('button', { type: 'button', class: 'tr-sw' + (on ? ' on' : '') + (big ? ' big' : ''), 'aria-pressed': on ? 'true' : 'false',
     onclick: e => { e.stopPropagation(); trLocSet(R, !on); after && after(!on); } },
-    el('span', { class: 'tr-sw-t' }, el('b', { text: on ? '내 위치 공유 켜짐' : '내 위치 공유 꺼짐' }), big ? el('small', { text: on ? '일행 지도에 내 위치가 보여요 · 누르면 꺼요' : '누르면 일행 지도에 내 위치가 보여요' }) : null),
+    el('span', { class: 'tr-sw-t' }, el('b', { text: on ? '내 위치 공유 켜짐' : '내 위치 공유 꺼짐' }), big ? el('small', { text: on ? (trVw(R) ? '일행과 구경하는 가족에게 내 위치가 보여요 · 누르면 꺼요' : '일행 지도에 내 위치가 보여요 · 누르면 꺼요') : '누르면 일행과 구경하는 가족에게 내 위치가 보여요' }) : null),
     el('i', { class: 'tr-sw-k' }));
 }
 function trDot(by, nm) { return el('span', { title: nm || '', style: `flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${trCol(by)};color:#fff;font:800 11px Pretendard,sans-serif`, text: String(nm || '?').trim().slice(0, 1) || '?' }); }
@@ -13708,6 +13711,7 @@ function viewPlanOne(id) {
       map.setView([37.5665, 126.978], 5);
       planDest(p).then(d => { if (d && map) { drawMap(); hero.reload(); planAbroadMap(); } }).catch(() => {});
       return; }
+    if (memV && memS) { const pp = memList().map(x => [x.lat, x.lng]); if (pp.length) { if (pp.length === 1) map.setView(pp[0], 14); else map.fitBounds(pp, { padding: [40, 40], maxZoom: 15 }); return; } }   // 판 -321: 구경(가족)은 일행이 있는 곳부터
     // 비행기로 먼 곳(공항 사이)이 섞이면 현지만 보이게: 가운데에서 300km 넘게 떨어진 점은 빼고 맞춤
     const c = real.reduce((s, q) => [s[0] + q[0] / real.length, s[1] + q[1] / real.length], [0, 0]);
     let near = real.filter(q => dist(c[0], c[1], q[0], q[1]) < 300000); if (near.length < 2) near = real;
@@ -13717,7 +13721,8 @@ function viewPlanOne(id) {
   //   · 12시간 넘은 위치는 안 보임 · 5분 넘게 안 바뀐 위치는 회색 점선(현재 위치 아님) · 30초마다 새로
   //   · 내가 켜 두었으면 이 화면이 열려 있는 동안에도 1분마다 내 위치를 보냄 · 켜고 끄기는 일행 채팅 위치 칸 그대로
   let memR = null, memS = null, memLay = null, memWatch = null;
-  function memList() { if (!memS) return []; const me = trMe(); return memS.tl.filter(x => !x.off && Number.isFinite(x.lat) && Date.now() - x.at < 12 * 3600000 && (x.by !== me || ls.get('tripLoc:' + memR.rid, false))); }
+  var memV = permIsV(p);   // var: drawMap이 먼저 불려도 TDZ 없이
+  function memList() { if (!memS) return []; const me = trMe(); return memS.tl.filter(x => !x.off && Number.isFinite(x.lat) && Date.now() - x.at < 12 * 3600000 && (!memV || x.vw) && (x.by !== me || ls.get('tripLoc:' + memR.rid, false))); }
   function memKey() {
     if (!memR) return [];
     const on = !!ls.get('tripLoc:' + memR.rid, false), n = memList().length, EN = planEN(p);
@@ -13728,9 +13733,9 @@ function viewPlanOne(id) {
   function memDraw() {
     if (!map || !memS) return; if (!memLay) memLay = L.layerGroup().addTo(map); memLay.clearLayers(); const me = trMe();
     for (const x of memList()) { const old = trLocOld(x), nm = String(x.nm || '일행').trim(), c = old ? '#ADB5BD' : trCol(x.by);
-      L.marker([x.lat, x.lng], { zIndexOffset: 900, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="tr-pin" style="position:relative;width:30px;height:30px;border-radius:50%;background:${c};color:#fff;font:700 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2.5px ${old ? 'dashed #fff' : 'solid #fff'};box-shadow:0 1px 6px rgba(0,0,0,.4);opacity:${old ? .75 : 1}">${(nm.slice(0, 1) || '?').replace(/[<&]/g, '')}${trBubbleHtml(trLastMsg(memS, x.by), 38, nm)}</div>` }) })
+      L.marker([x.lat, x.lng], { zIndexOffset: 900, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="tr-pin" style="position:relative;width:30px;height:30px;border-radius:50%;background:${c};color:#fff;font:700 13px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2.5px ${old ? 'dashed #fff' : 'solid #fff'};box-shadow:0 1px 6px rgba(0,0,0,.4);opacity:${old ? .75 : 1}">${(nm.slice(0, 1) || '?').replace(/[<&]/g, '')}${trBubbleHtml(memV ? null : trLastMsg(memS, x.by), 38, nm)}</div>` }) })
         .bindTooltip(el('span', { text: `${nm}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · 마지막 ' + trHm(x.at) : '지금 · ' + trAgo(x.at)}` }), { direction: 'top', offset: [0, -14] })
-        .on('click', e => { if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.tr-bub')) { ls.set('tripTab', 'chat'); location.href = `./?plan=1&p=${encodeURIComponent(p.id)}&room=1`; return; } toast(`${nm}${x.by === me ? ' (나)' : ''} · ${old ? `현재 위치 아님 · 마지막 ${trHm(x.at)} (${trAgo(x.at)})` : '지금 · ' + trAgo(x.at)}${x.acc ? ` · 오차 ${x.acc}m` : ''}`); }).addTo(memLay); }
+        .on('click', e => { if (!memV && e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.tr-bub')) { ls.set('tripTab', 'chat'); location.href = `./?plan=1&p=${encodeURIComponent(p.id)}&room=1`; return; } toast(`${nm}${x.by === me ? ' (나)' : ''} · ${old ? `현재 위치 아님 · 마지막 ${trHm(x.at)} (${trAgo(x.at)})` : '지금 · ' + trAgo(x.at)}${x.acc ? ` · 오차 ${x.acc}m` : ''}`); }).addTo(memLay); }
     requestAnimationFrame(() => trBubFix(map));
   }
   function memSend() {
@@ -13740,7 +13745,7 @@ function viewPlanOne(id) {
     if (memWatch != null || !navigator.geolocation) return; let last = 0; const me = trMe();
     memWatch = navigator.geolocation.watchPosition(pos => {
       if (Date.now() - last < 60000 || document.hidden || !document.body.contains(list)) return; last = Date.now();
-      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now() };
+      const o = { by: me, nm: trName(), lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), acc: Math.round(pos.coords.accuracy), at: Date.now(), t: Date.now(), vw: trVw(memR) };
       trPut(memR, 'tl', me, o).then(() => { const i = memS.tl.findIndex(x => x.by === me); if (i >= 0) memS.tl[i] = Object.assign(memS.tl[i], o); else memS.tl.push(Object.assign({ id: me }, o)); trSet('room:' + memR.rid, memS); memDraw(); }).catch(() => {});
     }, () => {}, { enableHighAccuracy: true, maximumAge: 30000 });
   }
@@ -13750,9 +13755,9 @@ function viewPlanOne(id) {
     nw.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; if (memSwEl) memSwEl.replaceWith(nw); else mapEl.append(nw); memSwEl = nw;
   }
   async function memStart() {
-    if (!p.room || !p.room.code || !permCanR(p) || permIsV(p)) return;   // 판 -320: 구경은 일행 위치를 안 보고 내 위치도 안 보내요
+    if (!p.room || !p.room.code || !permCanR(p)) return;   // 판 -321: 구경은 '구경에게도'로 켠 일행 위치만 보고(memList), 내 위치는 안 보내요(스위치 없음)
     try { memR = await trRoom(p.room.code); memS = await trLoad(memR); } catch { memR = null; return; }
-    memDraw(); drawMap(); memSend(); memSw();
+    memDraw(); drawMap(); if (!memV) { memSend(); memSw(); }
     const pull = async () => { if (!document.body.contains(list)) return false; if (document.hidden) return true; const n0 = memList().length; if (await trSync(memR, memS, ['tl', 'tc'])) { memDraw(); if (memList().length !== n0) drawMap(); } return true; };
     await pull(); const iv = setInterval(async () => { if (!(await pull())) { clearInterval(iv); memSend(); } }, 15000);
   }
@@ -14057,7 +14062,7 @@ async function tripLocBg() {
   tripBgWatch = navigator.geolocation.watchPosition(g => {
     if (Date.now() - tripBgLast < 60000 || !(g.coords.accuracy < 200)) return; tripBgLast = Date.now();
     const me = trMe(), o = { by: me, nm: trName(), lat: +g.coords.latitude.toFixed(5), lng: +g.coords.longitude.toFixed(5), acc: Math.round(g.coords.accuracy), at: Date.now(), t: Date.now(), bg: 1 };
-    for (const R of tripBgRooms) trPut(R, 'tl', me, o).then(async () => { const S = await trLoad(R), i = S.tl.findIndex(x => x.by === me); if (i >= 0) S.tl[i] = Object.assign(S.tl[i], o); else S.tl.push(Object.assign({ id: me }, o)); await trSet('room:' + R.rid, S); document.dispatchEvent(new CustomEvent('trip-loc-sent')); }).catch(() => {});
+    for (const R of tripBgRooms) trPut(R, 'tl', me, Object.assign({}, o, { vw: trVw(R) })).then(async () => { const S = await trLoad(R), i = S.tl.findIndex(x => x.by === me); if (i >= 0) S.tl[i] = Object.assign(S.tl[i], o); else S.tl.push(Object.assign({ id: me }, o, { vw: trVw(R) })); await trSet('room:' + R.rid, S); document.dispatchEvent(new CustomEvent('trip-loc-sent')); }).catch(() => {});
   }, () => {}, { enableHighAccuracy: true, mdBg: { title: 'MPD 일행과 위치 공유 중', message: '끄기: MPD → 일행 채팅 → 위치 → 내 위치 같이 보기 끄기', distanceFilter: 0 } });
 }
 if (!LAB_QUIET) setTimeout(() => tripLocBg().catch(() => {}), 2500);
