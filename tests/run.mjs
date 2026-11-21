@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
+const EXPOSE = ['koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -594,6 +594,28 @@ await test('기록 고르기 · 덜 쓰는 모드는 더보기 안 (판 -306)', 
   ok(r.n0 && r.n0.length === 8 && !r.n0.some(x => /파크골프|캠핑|백패킹/.test(x)) && /더보기/.test(r.n0[7]), '처음 화면 모드가 이상해요 ' + JSON.stringify(r));
   ok(r.n1.length === 10 && r.n1.some(x => /파크골프/.test(x)), '더보기를 눌러도 다 안 나와요 ' + JSON.stringify(r.n1));
   noErr(page, '기록 고르기');
+});
+
+await test('지도 이름 · 나라마다 같은 차례 (판 -327)', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const T = await __T.koHanjaLoad(), G = (la, ln) => ({ geometry: { coordinates: [ln, la] } });
+    const f = (q, la, ln) => __T.koNameInfo(T, q, __T.koPlaceCC(G(la, ln)));
+    return {
+      osaka: f({ name: '大阪市', 'name:ko': '오사카시', 'name:en': 'Osaka' }, 34.69, 135.5),
+      fuku: f({ name: '福岡市', 'name:ko': '후쿠오카시', 'name:en': 'Fukuoka' }, 33.59, 130.4),
+      zjj: f({ name: '张家界市', 'name:ko': '장자제시', 'name:en': 'Zhangjiajie' }, 29.12, 110.48),
+      suwon: f({ name: '수원시', 'name:zh-Hant': '水原市', 'name:en': 'Suwon' }, 37.26, 127.03),
+      seoul: f({ name: '서울특별시', 'name:zh-Hant': '首爾特別市', 'name:en': 'Seoul' }, 37.56, 126.97),
+      hanoi: f({ name: 'Hà Nội', 'name:zh-Hant': '河內市', 'name:ko': '하노이', 'name:en': 'Hanoi' }, 21.03, 105.85) };
+  });
+  ok(r.osaka && r.osaka.on === '大阪市\n대판시\n오사카시\nOsaka' && r.osaka.off === '', '일본 도시가 이상해요 ' + JSON.stringify(r.osaka));
+  ok(r.fuku && r.fuku.off === '' && /^福岡市\n복강시\n후쿠오카시/.test(r.fuku.on), '대마도 쪽 일본 도시가 중국처럼 읽혀요 ' + JSON.stringify(r.fuku));
+  ok(r.zjj && r.zjj.on.split('\n')[0] === '张家界市' && r.zjj.on.split('\n')[1] === '장가계시' && /장자제시\nZhangjiajie$/.test(r.zjj.on) && r.zjj.off === '장가계시', '중국 도시가 이상해요 ' + JSON.stringify(r.zjj));
+  ok(r.suwon && r.suwon.on === '수원시\n水原市\nSuwon', '우리나라는 한국어·한자·영어 ' + JSON.stringify(r.suwon));
+  ok(r.seoul === null, '서울은 한자 읽기가 달라 그대로');
+  ok(r.hanoi && r.hanoi.on === '河內市\n하내시\n하노이\nHanoi', '베트남 ' + JSON.stringify(r.hanoi));
+  noErr(page, '지도 이름');
 });
 
 await browser.close();
