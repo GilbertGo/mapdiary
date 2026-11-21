@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
+const EXPOSE = ['expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -440,6 +440,18 @@ await test('여행 경비 · 회비(공금) + 내가 쓴 돈 정산 (판 -309)',
   ok(r.left === 150000, '남은 공금이 15만 원이어야 해요 ' + r.left);
   ok(JSON.stringify(r.tr) === JSON.stringify(['pot>h1:90000', 'pot>h2:30000', 'pot>h3:30000']), '공금에서 9만·3만·3만을 돌려줘야 해요 ' + JSON.stringify(r.tr));
   ok(r.g === 'meal', '저녁 훠궈는 식사로 짐작해야 해요 ' + r.g);
+});
+
+await test('여행 경비 · 가정 이름은 함께 가는 사람으로 (판 -325)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const mem = [{ id: 'a', n: '성식' }, { id: 'b', n: '영희' }, { id: 'c', n: '철수' }, { id: 'd', n: '민지' }];
+    const p1 = { id: 'x', mem, fund: { on: 1, per: 300000, hh: [{ id: 'h1', m: ['a', 'b'] }, { id: 'h2', m: ['c', 'd'] }] } };
+    const p2 = { id: 'y', fund: { on: 1, per: 300000, hh: [{ id: 'h1' }, { id: 'h2' }, { id: 'h3' }] } };
+    return [__T.expWho(p1).map(w => w.n), __T.expWho(p2).map(w => w.n)];
+  });
+  ok(JSON.stringify(r[0]) === JSON.stringify(['성식·영희', '철수·민지']), '가정 이름이 사람 이름이어야 해요 ' + JSON.stringify(r[0]));
+  ok(JSON.stringify(r[1]) === JSON.stringify(['우리 집', '가정 2', '가정 3']), '사람이 없으면 우리 집·가정 2·가정 3 ' + JSON.stringify(r[1]));
 });
 
 // ─── 17. 비춰 읽기: 중국·일본은 '중국어/일본어' 칸 안, 베트남은 따로 칸, 베트남엔 '중국어' 없음 (판 -318·319) ───

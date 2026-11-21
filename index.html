@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-324-planpic';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-325-household';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면 여행 계획에 사진이 나와요 · 로그인하면 휴대폰에서 고른 계획 사진이 PC에도 같이 보여요";
+const UI_NOTES = "여행 경비 회비에서 가정 이름을 따로 적지 않아요 · 함께 가는 사람의 이름을 눌러 같은 가정끼리 묶으면 이름으로 가정이 보여요 · 함께 가는 사람이 없으면 몇 가정인지만 골라요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8699,8 +8699,14 @@ function planOptimize(p, d, done) {   // 구경 장소끼리만 순서를 바꿔
 const EXP_CAT = [['meal', '🍽', '식사'], ['cafe', '☕', '카페·간식'], ['move', '🚕', '교통'], ['ticket', '🎫', '입장료'], ['shop', '🛍', '쇼핑'], ['stay', '🏨', '숙소'], ['etc', '💳', '기타']];
 function expCur(p) { const c = DEST_CC[(p.dest && p.dest.cc) || (planJP(p) ? 'jp' : planCN(p) ? 'cn' : '')]; return c ? c.cur : ''; }
 function expWho(p) {   // 나누는 단위: 회비를 걷었으면 가정(집), 아니면 함께 가는 사람
-  if (expFundOn(p)) return p.fund.hh.map(h => ({ id: h.id, n: h.n || '가정' }));
+  if (expFundOn(p)) return p.fund.hh.map((h, i) => ({ id: h.id, n: expHHName(p, h, i) }));
   const M = (p.mem || []).filter(m => m.n); return M.length ? M.map(m => ({ id: m.id, n: m.n })) : [{ id: 'me', n: trName() || '나' }]; }
+// 판 -325 (사용자 '가정 이름 넣는 건 왜? 왠지 이상한데' → '그렇게해'): 가정 이름은 따로 적지 않고 함께 가는 사람을 묶은 것(h.m)으로 '성식·영희' · 사람이 없으면 '우리 집'·'가정 2'
+function expHHName(p, h, i) {
+  const M = (p.mem || []).filter(m => m.n), nm = (h.m || []).map(id => (M.find(m => m.id === id) || {}).n).filter(Boolean);
+  if (nm.length) return nm.join('·');
+  return h.n || (i ? `가정 ${i + 1}` : '우리 집');
+}
 // 판 -305 (사용자 '총무가 쓴 돈도 있고, 내가 쓴 돈도 있으면?' · '가정당 30만원 걷었어'): 회비(공금) = 낸 사람 하나 'pot'(몫은 없음)
 //   p.fund={on,per(가정당),cur,hh:[{id,n}],u} · 가정이 낸 회비는 그 가정이 낸 돈 · 공금이 쓴 돈은 공금이 낸 돈 → 끝에 남은 공금을 가정마다 돌려줌(모자라면 더 걷음)
 function expFundOn(p) { return !!(p && p.fund && p.fund.on && (p.fund.hh || []).length); }
@@ -8720,20 +8726,45 @@ function expCalc(p, rate) {   // 합계(원) · 단위마다 낸 돈·쓸 몫 ·
   for (const g of give) { let need = -g.net; for (const r of get) { if (need < 1) break; const m = Math.min(need, r.net); if (m < 1) continue; tr.push({ from: g.n, fid: g.id, to: r.n, tid: r.id, v: m }); r.net -= m; need -= m; } }
   return { tot, miss, L: L.filter(x => x.id !== 'pot'), tr, n: W.length, F, potIn, potOut, potLeft: potIn - potOut };
 }
-function expFundEdit(p, done) {   // 회비 정하기: 가정마다 얼마 · 가정 이름
-  const f = JSON.parse(JSON.stringify(p.fund || { on: 1, per: 300000, cur: 'KRW', hh: [] }));
-  if (!f.hh.length) { const n = Math.max(2, Math.round(((p.mem || []).filter(m => m.n).length || 6) / 2)); f.hh = [...Array(n)].map((_, i) => ({ id: 'h' + rid(6), n: i ? `${i + 1}가정` : '우리 집' })); }
+function expFundEdit(p, done) {   // 판 -325: 회비 정하기 = 가정마다 얼마 + 함께 가는 사람을 가정으로 묶기(이름을 누르면 다음 가정으로) · 사람이 없으면 가정 수만
+  const f = JSON.parse(JSON.stringify(p.fund || { on: 1, per: 300000, cur: 'KRW', hh: [] })), M = (p.mem || []).filter(m => m.n);
+  const me = ls.get('planMe:' + p.id, '');
+  let grp = {};   // 사람 id → 가정 번호(0부터)
+  if (M.length) {
+    f.hh.forEach((h, i) => (h.m || []).forEach(id => { if (M.some(m => m.id === id)) grp[id] = i; }));
+    if (!Object.keys(grp).length) { const L = M.slice(); const mi = L.findIndex(m => m.id === me); if (mi > 0) L.unshift(L.splice(mi, 1)[0]); L.forEach((m, k) => { grp[m.id] = Math.floor(k / 2); }); }   // 처음엔 적은 차례대로 둘씩(나는 첫 가정)
+    M.forEach(m => { if (!(m.id in grp)) grp[m.id] = 0; });
+  }
+  let cnt = M.length ? 0 : (f.hh.length || 3);
   const box = el('div', { class: 'stack', style: 'gap:10px' }), sb = labSheet('회비', box);
   const per = el('input', { type: 'number', inputmode: 'numeric', value: f.per || '', placeholder: '300000', style: 'font:800 26px Pretendard,sans-serif;width:100%;box-sizing:border-box;border:none;border-bottom:2px solid #E5E8EB;padding:6px 0;background:none' });
-  function draw() { faRc(box, el('div', { class: 'sub', text: '가정마다 낸 회비 (원)' }), per,
-    el('div', { class: 'sub', style: 'margin-top:6px', text: `가정 ${f.hh.length}곳 · 이름을 눌러 바꿔요` }),
-    el('div', { class: 'st-grp' }, ...f.hh.map((h, i) => el('div', { class: 'st-row', style: 'gap:8px' },
-      el('input', { type: 'text', value: h.n, maxlength: 16, style: 'flex:1;min-width:0;border:none;background:none;font:600 16px Pretendard,sans-serif', oninput: ev => { h.n = ev.target.value; } }),
-      f.hh.length > 2 ? el('button', { class: 'btn small line', text: '빼기', onclick: () => { f.hh.splice(i, 1); draw(); } }) : null))),
-    f.hh.length < 12 ? el('button', { class: 'btn line full', text: '+ 가정 더하기', onclick: () => { f.hh.push({ id: 'h' + rid(6), n: `${f.hh.length + 1}가정` }); draw(); } }) : null,
-    el('button', { class: 'btn primary full', style: 'background:#191F28;border:none', text: '저장', onclick: () => { const v = +per.value; if (!(v > 0)) { toast('회비를 적어 주세요'); return; }
-      f.per = v; f.cur = 'KRW'; f.on = 1; f.hh.forEach((h, i) => { h.n = String(h.n || '').trim() || `${i + 1}가정`; }); f.u = Date.now(); p.fund = f; sb.remove(); done && done(); } }),
-    p.fund && p.fund.on ? el('button', { class: 'btn line full', style: 'color:#E5383B', text: '회비 없이 셈하기', onclick: () => { p.fund = Object.assign({}, p.fund, { on: 0, u: Date.now() }); sb.remove(); done && done(); } }) : null); }
+  const groups = () => { const n = Math.max(0, ...Object.values(grp)) + 1; return [...Array(n)].map((_, i) => M.filter(m => grp[m.id] === i)).filter(g => g.length); };
+  function draw() {
+    let body;
+    if (M.length) { const G = groups();
+      body = [el('div', { class: 'sub', style: 'margin-top:6px', text: `가정 ${G.length}곳 · 이름을 누르면 다음 가정으로 옮겨요` }),
+        el('div', { class: 'st-grp' }, ...G.map((g, i) => el('div', { class: 'st-row', style: 'gap:8px;flex-wrap:wrap' },
+          el('span', { class: 'sub', style: 'width:52px;flex:none', text: `가정 ${i + 1}` }),
+          ...g.map(m => el('button', { class: 'btn small ' + (m.id === me ? 'dark' : 'line'), text: m.n, onclick: () => {
+            const G0 = groups(), cur = G0.findIndex(x => x.includes(m)), nx = cur + 1 >= G0.length ? (G0[cur].length > 1 ? G0.length : 0) : cur + 1;
+            const order = G0.map(x => x[0].id); M.forEach(z => { grp[z.id] = order.indexOf(G0.find(x => x.includes(z))[0].id); });   // 번호를 0부터 다시
+            grp[m.id] = nx; draw(); } }))))),
+        M.length < 2 ? el('div', { class: 'sub', text: '함께 가는 사람을 더 넣으면 가정으로 묶을 수 있어요' }) : null];
+    } else {
+      body = [el('div', { class: 'sub', style: 'margin-top:6px', text: '몇 가정이에요?' }),
+        el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, ...[2, 3, 4, 5, 6, 7, 8].map(n => el('button', { class: 'btn small ' + (cnt === n ? 'dark' : 'line'), text: n + '가정', onclick: () => { cnt = n; draw(); } }))),
+        el('div', { class: 'sub', style: 'font-size:12.5px', text: `우리 집${[...Array(Math.max(0, cnt - 1))].map((_, i) => ' · 가정 ' + (i + 2)).join('')} · 준비·정보의 함께 가는 사람을 넣으면 이름으로 보여요` })];
+    }
+    faRc(box, el('div', { class: 'sub', text: '가정마다 낸 회비 (원)' }), per, ...body,
+      el('button', { class: 'btn primary full', style: 'background:#191F28;border:none', text: '저장', onclick: () => { const v = +per.value; if (!(v > 0)) { toast('회비를 적어 주세요'); return; }
+        const old = f.hh || [];
+        if (M.length) { const G = groups(); if (G.length < 2) { toast('가정이 둘 이상이어야 나눠요'); return; }
+          f.hh = G.map((g, i) => { const ids = g.map(m => m.id), keep = old.find(h => (h.m || []).some(id => ids.includes(id))) || old[i]; return { id: (keep && keep.id) || 'h' + rid(6), m: ids }; });
+          const seen = new Set(); f.hh.forEach(h => { if (seen.has(h.id)) h.id = 'h' + rid(6); seen.add(h.id); }); }
+        else f.hh = [...Array(cnt)].map((_, i) => ({ id: (old[i] && old[i].id) || 'h' + rid(6) }));
+        f.per = v; f.cur = 'KRW'; f.on = 1; f.u = Date.now(); p.fund = f; sb.remove(); done && done(); } }),
+      p.fund && p.fund.on ? el('button', { class: 'btn line full', style: 'color:#E5383B', text: '회비 없이 셈하기', onclick: () => { p.fund = Object.assign({}, p.fund, { on: 0, u: Date.now() }); sb.remove(); done && done(); } }) : null);
+  }
   draw();
 }
 async function planExpSheet(p, redraw) {
