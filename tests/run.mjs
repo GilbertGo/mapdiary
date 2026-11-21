@@ -370,6 +370,22 @@ await test('계획 맨 위 사진 · 저장해 둔 사진은 인터넷 없이도
   ok(r && r.img && r.bg.startsWith('url("blob'), '저장해 둔 맨 위 사진이 안 보여요 ' + JSON.stringify(r));
 });
 
+// ─── 14. 첫 화면 바탕 사진이 저절로 바뀌지 않음 (판 -296 '사진도 바뀌고 그래') ───
+await test('첫 화면 바탕 사진은 새 기록이 생겨도 그대로', async page => {
+  const t = await seed(page);
+  const jpg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
+  const put = async (id, tid, ts) => page.evaluate(async ([id, tid, ts, u]) => { const b = await (await fetch(u)).blob(); await __T.photoPut({ id, t: tid, ts, lat: 37.4, lng: 127.29, blob: b, thumb: b }); }, [id, tid, ts, jpg]);
+  await put('ph_bg1', t, new Date('2026-11-01T10:10:00+09:00').getTime());
+  await page.goto(BASE); await sleep(2500);
+  const first = await page.evaluate(() => JSON.parse(localStorage.getItem('homeBgPick') || 'null'));
+  ok(first === 'ph_bg1', '첫 바탕 사진을 기억하지 않았어요: ' + first);
+  await page.evaluate(() => { const id = 'walk_test0002', t0 = new Date('2026-11-10T10:00:00+09:00').getTime(), tr = []; for (let i = 0; i < 30; i++) tr.push([37.5 + i * 0.0002, 127.0, t0 + i * 30000]); localStorage.setItem('track:' + id, JSON.stringify(tr)); localStorage.setItem('walkMode:' + id, '"trek"'); });
+  await put('ph_bg2', 'walk_test0002', new Date('2026-11-10T10:05:00+09:00').getTime());
+  await page.goto(BASE); await sleep(2500);
+  const again = await page.evaluate(() => JSON.parse(localStorage.getItem('homeBgPick') || 'null'));
+  ok(again === 'ph_bg1', '새 기록이 생기자 바탕 사진이 바뀌었어요: ' + again);
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
