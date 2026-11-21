@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-313-landmark';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-314-hanzi';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도에서 사라졌던 공원과 학교와 도서관과 교회 같은 랜드마크 이름이 다시 보여요 · 산 이름은 이름 있는 산만 보이고 멀리서 볼 땐 높은 산만 나와요 · 버스 정류장은 가까이 볼 때만 나와서 지도가 덜 복잡해요";
+const UI_NOTES = "중국 여행 지도 왼쪽 위 漢 단추를 누르면 지명 밑에 한자와 중국어 발음이 같이 보여요 · 다시 누르면 숨겨요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13184,12 +13184,31 @@ function koHanjaWire(mm) {
         for (const f of fs) { const n = f.properties && f.properties.name; if (!n || dict.has(n) || !/[\u4e00-\u9fff]/.test(n)) continue; dict.set(n, koHanjaRead(T, n)); add++; }
       }
       if (!add) return;
-      const pairs = []; for (const [k, v] of dict) if (v) pairs.push(k, v);
-      if (!pairs.length) return;
-      for (const l of layers) try { mm.setLayoutProperty(l.id, 'text-field', ['match', ['get', 'name'], ...pairs, fb[l.id]]); } catch {}
+      apply();
     } finally { busy = 0; }
   };
+  // 판 -314 (사용자 '기본은 이렇게 보여 주고 한자도 같이 한자의 중국 발음까지 · 원하는 때만'): '漢' 단추를 켜면 이름 밑에 한자와 중국어 발음(병음, 성조 없이)
+  const apply = () => {
+    const pairs = []; for (const [k, v] of dict) if (v) pairs.push(k, v);
+    const zh = ['all', ['has', 'name'], ['>=', ['get', 'name'], '\u4e00'], ['<', ['get', 'name'], '\ua000']], on = ls.get('mapHanzi', false);
+    for (const l of layers) try {
+      const base = pairs.length ? ['match', ['get', 'name'], ...pairs, fb[l.id]] : fb[l.id];
+      mm.setLayoutProperty(l.id, 'text-field', on ? ['case', zh, ['concat', base, '\n', ['get', 'name'], ['case', ['has', 'name:latin'], ['concat', '\n', ['get', 'name:latin']], '']], base] : base);
+    } catch {}
+  };
+  (koHanjaWire.maps = koHanjaWire.maps || []).push(apply);
   let tm = 0; mm.on('idle', () => { clearTimeout(tm); tm = setTimeout(run, 300); });
+}
+function koHanziBtn(map) {   // 판 -314: 중국 지도 왼쪽 위(확대 단추 밑) '漢' — 누르면 한자·병음 같이 보기 켬/끔(이 휴대폰에 기억)
+  if (!map || map.__hzBtn) return; map.__hzBtn = 1;
+  const C = L.Control.extend({ options: { position: 'topleft' }, onAdd() {
+    const b = L.DomUtil.create('button', 'hz-btn'); L.DomEvent.disableClickPropagation(b);
+    const paint = () => { const on = ls.get('mapHanzi', false); b.textContent = '漢'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? '한자·중국어 발음 숨기기' : '한자·중국어 발음 같이 보기';
+      b.style.cssText = `width:44px;height:44px;border-radius:14px;border:0;font:700 20px/1 serif;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;${on ? 'background:#1D9EC0;color:#fff' : 'background:#fff;color:#191F28'}`; };
+    paint(); b.onclick = () => { const on = !ls.get('mapHanzi', false); ls.set('mapHanzi', on); paint(); (koHanjaWire.maps || []).forEach(f => { try { f(); } catch {} });
+      toast(on ? '한자와 중국어 발음도 같이 보여요' : '한자와 중국어 발음을 숨겼어요'); };
+    return b; } });
+  new C().addTo(map);
 }
 async function koMapLayer(hanja) {
   try {
@@ -13199,7 +13218,7 @@ async function koMapLayer(hanja) {
       try { await vtLoad(KO_CONTOUR_LIB); if (window.mlcontour) { const d = new mlcontour.DemSource({ url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding: 'terrarium', maxzoom: 13, worker: true, cacheSize: 60, timeoutMs: 10000 }); d.setupMaplibre(maplibregl); window.__mdDem = d; koMapStyle.s = null; } } catch {} }
     vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
-    if (hanja) { koHanjaLoad(); ly.once('add', () => { const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm); else mm.once('load', () => koHanjaWire(mm)); }; go(); }); }
+    if (hanja) { koHanjaLoad(); ly.once('add', () => { try { koHanziBtn(ly._map); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm); else mm.once('load', () => koHanjaWire(mm)); }; go(); }); }
     return ly;
   } catch { return null; }
 }
