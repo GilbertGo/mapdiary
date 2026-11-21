@@ -22,6 +22,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>사진</b>: 사용자가 찍거나 고른 사진, 그리고 사용자가 허락하면 기록한 시간에 휴대폰으로 찍은 사진을 기록에 넣습니다. 휴대폰 안에만 저장됩니다.</li>
 <li><b>움직임 센서·걸음·심박</b>(MPD Run, 워치): 케이던스·달리기 자세·심박을 보여 주는 데만 쓰고 휴대폰·시계 안에만 저장합니다.</li>
 <li><b>마이크</b>('대화 정리' 기능을 켤 때만): 휴대폰의 음성 인식으로 말을 글로 바꿉니다. 소리 파일은 저장하지 않습니다. 사용자가 직접 넣은 Anthropic API 열쇠가 있을 때만, 받아 적은 글을 정리하려고 Anthropic(Claude)에 보냅니다.</li>
+<li><b>카메라</b>('비춰 읽기'를 열 때만): 간판·메뉴를 비추고 단추를 누른 그 한 장만 글자를 읽기 위해 사용자가 넣은(또는 일행이 나눠 준) Anthropic API 열쇠로 Anthropic에 보냅니다. 사진은 휴대폰에도 서버에도 남기지 않습니다.</li>
 <li><b>구글·카카오 로그인</b>(사용자가 고를 때만): 구글 계정 이메일·이름 또는 카카오 닉네임과 기록·사진을 Google Firebase(서울 리전)의 그 사용자 칸에 저장해 다른 기기와 맞춥니다. 본인만 읽고 쓸 수 있습니다.</li>
 <li><b>오류 기록</b>: 앱에서 오류가 나면 오류 글, 화면 판, 연 화면 이름(주소 값 없이), 휴대폰·브라우저 종류, 이 휴대폰의 무작위 번호를 휴대폰에 적어 두고 Google Firebase에 올려 고치는 데만 씁니다. 위치·사진·기록 내용은 들어가지 않습니다. 나 화면 → 오류 기록에서 보고 비울 수 있습니다.</li>
 </ul>
@@ -62,6 +63,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>Photos</b> you take or choose, and, with your permission, photos taken during a recording, are attached to that record on the device.</li>
 <li><b>Motion sensors, steps and heart rate</b> are used only to show cadence, running form and heart rate, and are stored on the phone or watch.</li>
 <li><b>Microphone</b> is used only by the optional "conversation notes" feature, via on-device/system speech recognition. No audio is stored. Transcribed text is sent to Anthropic only if you enter your own API key.</li>
+<li><b>Camera</b> is used only when you open "Read with camera": the single frame you capture is sent to Anthropic (with your own or a shared API key) to read the text on signs or menus. The photo is not stored on the phone or any server.</li>
 <li><b>Google or Kakao sign-in</b> (optional) stores your email, name or Kakao nickname and records in your own space in Google Firebase to sync your devices; only you can access it.</li>
 <li>When you choose to share a link or post to a group, the record (title, route, places, notes, photos and photo location/time) is uploaded <b>encrypted</b> to Google Firebase; the key stays in the link fragment, so servers cannot read it. Start/end areas are hidden by default. (Plain links made before 8 Nov 2026 encrypted only the photos and were also posted to a public MQTT server.)</li>
 <li>To let only the author edit or remove group and group-run posts, the app creates an <b>anonymous ID</b> on this phone (Firebase anonymous sign-in, no name or email) and attaches it to those posts.</li>
