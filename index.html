@@ -3598,7 +3598,7 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-305-fund';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-309-fund';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = "여행 경비에 회비(공금)를 넣을 수 있어요 · 가정마다 걷은 회비와 각자 따로 낸 돈을 함께 셈해서 끝에 공금에서 가정마다 돌려줄 돈을 보여 줘요 · 쓴 돈은 금액만 넣으면 저장돼요 · 낸 사람과 날짜와 분류는 아래 한 줄을 눌러 바꿔요";
 window.MPD_VER = UI_VER;
@@ -4567,12 +4567,12 @@ function appSettings() {
       row('⚖️', '몸무게', bodyKg() ? `${bodyKg()} kg` : '안 정함', () => { const v = prompt('몸무게(kg)를 적어 주세요. 칼로리를 셈할 때만 쓰고 이 휴대폰에만 남아요 (비우면 지움)', bodyKg() || ''); if (v === null) return; const n = parseFloat(v); ls.set('bodyKg', n >= 25 && n <= 200 ? Math.round(n) : 0); done(); }),
       ),
       AUTO_OK ? head('기록') : null, AUTO_OK ? grp(
-      row('🛰', '자동 기록', autoOn() ? '켬' : '끔', () => { const on = !autoOn(); ls.set('autoRec', on);
+      row('🛰', '자동 기록', autoOn() ? '켜짐' : '꺼짐', () => { const on = !autoOn(); ls.set('autoRec', on);
         if (on) { autoStart(); toast('🛰 자동 기록을 켰어요 · 다닌 길이 저절로 기록돼요'); } else { autoStop(); toast('자동 기록을 껐어요 · 지금까지 모은 길은 기록으로 남겼어요'); } paint(); }),
       ) : null,
       head('러닝'), grp(
       row('🎯', '주간 러닝 목표', wg ? `${wg} km` : '안 정함', () => { const v = prompt('이번 주에 몇 km 달릴까요? (비우면 목표 없음)', wg || ''); if (v === null) return; const n = parseFloat(v); ls.set('weekGoal', n > 0 ? Math.min(500, n) : 0); done(); }),
-      row('🔊', '1km 음성 안내', voice ? '켬' : '끔', () => { ls.set('runVoice', !voice); done(); }),
+      row('🔊', '1km 음성 안내', voice ? '켜짐' : '꺼짐', () => { ls.set('runVoice', !voice); done(); }),
       ),
       head('연결'), grp(
       row('📸', '가족 앨범', '', () => { location.href = './?album=1'; }),
@@ -11054,12 +11054,19 @@ async function viewTripRoom(code, title, planId) {
   { const pp = planId ? planGet(planId) : planOfRoom(code); if (pp && !permCanR(pp)) return viewPlanOne(pp.id); }   // 판 -201: 보기 권한이 꺼지면 방도 못 봐요
   const R = await trRoom(code), S = await trLoad(R), me = trMe();
   let tab = ls.get('tripTab', 'chat'), photoBusy = false, map = null, mlay = null, locWatch = null, drv = await driveToken(false), toAI = false;
-  try { toAI = sessionStorage.getItem('tripTo:' + R.rid) === '1'; } catch {}
+  // 판 -306: AI에게 묻기는 계획 화면 아래 메뉴 'AI 묻기' 하나로 — 일행 채팅은 일행끼리 대화만 (toAI는 늘 false)
   const p = planId ? planGet(planId) : null;
   { const pe = p || planOfRoom(code); if (pe) planEnWatch(pe); }   // 판 -207: 영어 초대로 연 일행은 일행 채팅 글자도 영어로
   const top = el('div', { class: 'stack', style: 'gap:6px' }), body = el('div', { class: 'stack', style: 'gap:8px' }), foot = el('div');
-  const people = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && !m.has(x.by)) m.set(x.by, x.nm && x.nm !== '일행' ? x.nm : ''); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && x.nm && x.nm !== '일행' && !m.get(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
-  const nmOf = by => { const pp = people(), n = pp.get(by); if (!n) return '이름 없음'; const same = [...pp].filter(([, v]) => v === n).map(([k]) => k); return same.length > 1 ? `${n} ${'①②③④⑤⑥⑦⑧⑨'[same.indexOf(by)] || ''}` : n; };   // 판 -135: 동명이인은 ①②
+  const people0 = () => { const m = new Map(); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && !m.has(x.by)) m.set(x.by, x.nm && x.nm !== '일행' ? x.nm : ''); for (const a of [S.tm, S.tl, S.tc, S.tp]) for (const x of a) if (x.by && !x.bot && x.nm && x.nm !== '일행' && !m.get(x.by)) m.set(x.by, x.nm); if (trName()) m.set(me, trName()); return m; };
+  // 판 -306 (사용자 '참석자가 왜 이렇게 많지?'): 사람은 휴대폰·브라우저마다 번호가 달라서, 같은 사람이 앱·크롬·카톡·컴퓨터에서 열면 여러 명으로 셌음
+  //   → 이름이 같으면(띄어쓰기·대소문자 무시) 한 사람으로 보이게(자료는 그대로, 화면만). 그 사람의 다른 기기 번호는 alias로 같은 사람에 붙임
+  const nk = v => String(v || '').replace(/\s+/g, '').toLowerCase();
+  const people = () => { const m0 = people0(), g = new Map(), m = new Map();
+    for (const [k, v] of m0) { const key = v ? nk(v) : '#' + k; if (!g.has(key)) g.set(key, []); g.get(key).push(k); }
+    for (const ks of g.values()) { const r = ks.includes(me) ? me : ks[0]; m.set(r, m0.get(r) || m0.get(ks[0])); }
+    return m; };
+  const nmOf = by => { const pp = people(), m0 = people0(); const n = pp.get(by) || m0.get(by); return n || '이름 없음'; };   // 판 -306: 같은 이름은 한 사람(판 -306, 예전 ①② 번호는 뺌)   // 판 -135: 동명이인은 ①②
   const live = () => S.tp.filter(x => !x.del);
   const dayOf = ts => { if (!p || !p.start) return null; const d = Math.floor((new Date(ts).setHours(0, 0, 0, 0) - planDate(p, 0)) / 864e5); return d >= 0 && d < p.nd ? d : null; };
   function drawTop() {
@@ -11126,7 +11133,6 @@ async function viewTripRoom(code, title, planId) {
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     try { const dr = sessionStorage.getItem('tripDraft'); if (dr) { sessionStorage.removeItem('tripDraft'); ta.value = dr; } } catch {}
     faRc(foot, el('div', { style: `position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(${IN_NATIVE ? 56 : 8}px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px` },
-      el('div', { style: 'display:flex;gap:6px' }, seg(!toAI, '💬 일행에게', () => setTo(false)), seg(toAI, '✨ AI 도우미에게', () => setTo(true))),
       toAI ? el('div', { style: `font-size:12.5px;font-weight:700;color:${who.ok ? '#1D7FA0' : '#C2410C'}`, text: who.t + (who.ok ? '' : ' · 지금 보내면 답이 늦거나 오지 않을 수 있어요') }) : null,
       el('div', { style: 'display:flex;gap:6px;align-items:flex-end' },
         toAI ? null : el('button', { class: 'btn line small', text: '📷', title: '사진 올리기', 'aria-label': '사진 올리기', onclick: () => fileIn.click() }), ta,
@@ -11244,7 +11250,7 @@ function planRoomCard(p, tile) {
   const box = tile ? el('a', { class: 'tv-tile', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1' }) : el('a', { class: 'card', href: './?plan=1&p=' + encodeURIComponent(p.id) + '&room=1', style: 'display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:12px 14px;border:2px solid var(--pine)' });
   const paint = (S, R) => {
     const seen = R ? ls.get('tripSeen:' + R.rid, 0) : 0, me = trMe(), nw = S ? S.tc.filter(m => m.t > seen && m.by !== me).length : 0, ph = S ? S.tp.filter(x => !x.del).length : 0;
-    const pp = new Set(S ? [...S.tm, ...S.tc, ...S.tp].map(x => x.by).filter(Boolean) : []);
+    const pp = new Set(S ? [...S.tm, ...S.tc, ...S.tp].filter(x => x.by && !x.bot).map(x => x.nm && x.nm !== '일행' ? x.nm.replace(/\s+/g, '').toLowerCase() : '#' + x.by) : []);   // 판 -306: 같은 이름은 한 사람
     if (tile) { const AC = ['#1D9EC0', '#F2665E', '#7B61FF', '#3A7BD5', '#E8457A'], nm = S ? [...new Map([...S.tm, ...S.tc, ...S.tp].filter(x => x.by && x.nm).map(x => [x.by, x.nm])).values()].slice(0, 4) : [];
       return faRc(box, el('b', {}, cSvg('chat', 18), '일행 채팅', nw ? el('span', { class: 'nb', text: String(nw) }) : null), el('p', { text: S ? `함께 ${pp.size}명 · 사진 ${ph}장` : '대화 · 사진 · 일행 위치' }),
         nm.length ? el('div', { class: 'av' }, ...nm.map((n, i) => el('span', { style: `background:${AC[i % AC.length]}`, text: String(n).slice(0, 1) }))) : null); }
@@ -13757,7 +13763,13 @@ if (window.mdNativeBackup && !LAB_QUIET) setTimeout(autoBackup, 20000);
 // AUTO_OK·AUTO_* 값은 route() 앞(IN_NATIVE 아래)에 있어요: 첫 화면이 이 줄보다 먼저 그려져서(TDZ)
 function autoOn() { return AUTO_OK && ls.get('autoRec', true) !== false; }
 let autoWatch = null;
-function autoSt() { const s = ls.get('autoSt', null); return s && typeof s === 'object' && !Array.isArray(s) ? s : {}; }
+// 판 -307 (사용자 '폰이 갑자기 느려졌어'): 예전엔 위치가 올 때마다(차로 1~2초마다) 모으는 길 전체를 읽고(JSON 풀기) 다시 썼음 → 길이 길수록 무거움.
+//   이제 메모리에 두고, 휴대폰 저장은 15초에 한 번 + 기록을 끝낼 때·앱을 내려놓을 때만
+var autoMem = null, autoSaveT = 0;
+function autoSt() { if (autoMem) return autoMem; const s = ls.get('autoSt', null); autoMem = s && typeof s === 'object' && !Array.isArray(s) ? s : {}; return autoMem; }
+function autoPut(S, now) { autoMem = S; if (now || Date.now() - autoSaveT > 15000) { autoSaveT = Date.now(); ls.set('autoSt', S); } }
+addEventListener('visibilitychange', () => { if (document.hidden && autoMem) autoPut(autoMem, true); });
+addEventListener('pagehide', () => { if (autoMem) autoPut(autoMem, true); });
 function autoKind(tr) {
   const v = [];
   for (let i = 1; i < tr.length; i++) { const dt = (tr[i][2] - tr[i - 1][2]) / 1000; if (dt > 0 && dt < 300) v.push(dist(tr[i - 1][0], tr[i - 1][1], tr[i][0], tr[i][1]) / dt * 3.6); }
@@ -13779,7 +13791,7 @@ function autoSave(seg, i) {
 function autoFix(lat, lng, acc, alt, ts) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || (Number.isFinite(acc) && acc > 60)) return;
   const S = autoSt(), p = [+lat.toFixed(6), +lng.toFixed(6), ts]; if (Number.isFinite(alt)) p.push(Math.round(alt));
-  const fresh = () => { S.seg = null; S.c = p; S.ci = 0; S.last = p; S.rb = [p]; ls.set('autoSt', S); };
+  const fresh = () => { S.seg = null; S.c = p; S.ci = 0; S.last = p; S.rb = [p]; autoPut(S, true); };
   if (ls.get('walkNow', null)) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 손으로 하는 기록 중엔 쉬어요
   if (!S.c || !S.last || ts - S.last[2] > AUTO_STAY_MS) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 처음이거나 위치가 오래 끊겼다가 다시
   if (ts <= S.last[2]) return;
@@ -13798,13 +13810,13 @@ function autoFix(lat, lng, acc, alt, ts) {
     add(); S.c = p; S.ci = S.seg.length - 1;
   }
   S.rb = S.seg ? [] : [...(S.rb || []), p].slice(-40);   // 머무는 동안 최근 점(출발한 곳 찾기용)
-  S.last = p; ls.set('autoSt', S);
+  S.last = p; autoPut(S, !S.seg);
 }
 // 앱을 켤 때: 오래 쉬던 길은 먼저 끝내고, 위치 받기를 켜요
 function autoStart() {
   if (!autoOn() || autoWatch != null) return;
   const S = autoSt();
-  if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', { c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }); }
+  if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); autoPut({ c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }, true); }
   if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
   try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(true); } catch {}   // 알림 창 🎙 대화 기록 단추(새 APK부터)
   autoWatch = navigator.geolocation.watchPosition(g => autoFix(g.coords.latitude, g.coords.longitude, g.coords.accuracy, g.coords.altitude, g.timestamp || Date.now()), () => {},
@@ -13813,7 +13825,7 @@ function autoStart() {
 function autoStop() {
   if (autoWatch != null) { navigator.geolocation.clearWatch(autoWatch); autoWatch = null; }
   try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(false); } catch {}
-  const S = autoSt(); if (S.seg) autoSave(S.seg, S.seg.length - 1); ls.set('autoSt', {});
+  const S = autoSt(); if (S.seg) autoSave(S.seg, S.seg.length - 1); autoPut({}, true);
 }
 // 첫 화면·설정에 보이는 지금 상태
 function autoStatus() {

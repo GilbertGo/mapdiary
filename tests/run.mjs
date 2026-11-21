@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'expCalc', 'expGuess'];
+const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -386,7 +386,49 @@ await test('첫 화면 바탕 사진은 새 기록이 생겨도 그대로', asyn
   ok(again === 'ph_bg1', '새 기록이 생기자 바탕 사진이 바뀌었어요: ' + again);
 });
 
-await test('여행 경비 · 회비(공금) + 내가 쓴 돈 정산 (판 -305)', async page => {
+// ─── 15. 일행 채팅: 같은 사람이 여러 기기로 들어와도 한 사람 (판 -306 '참석자가 왜 이렇게 많지?') ───
+await test('일행 채팅 · 같은 이름은 한 사람으로 셈', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  await page.evaluate(async () => {
+    localStorage.setItem('tripMe', JSON.stringify('meA')); localStorage.setItem('nick', JSON.stringify('길벗'));
+    const R = await __T.trRoom('tpeopletest0001'), t = Date.now();
+    await __T.trSet('room:' + R.rid, { v: 1, last: { tc: t, tp: t, tl: t, tm: t }, tl: [], tp: [],
+      tm: [{ by: 'meA', nm: '길벗', t }, { by: 'meB', nm: '길벗', t }, { by: 'meC', nm: '길벗 ', t }, { by: 'jA', nm: 'jin', t }, { by: 'jB', nm: 'Jin', t }, { by: 'jung', nm: '정은', t }],
+      tc: [{ id: 'c1', by: 'meB', nm: '길벗', x: '멋지다 앱', t }] });
+  });
+  page.errs = [];
+  await page.goto(BASE + '?troom=1#tr=tpeopletest0001&n=길벗'); await sleep(2500);
+  noErr(page, '일행 채팅');
+  const txt = await page.evaluate(() => document.body.innerText);
+  ok(/함께하는 사람 3명/.test(txt), '3명이 아니에요: ' + (txt.match(/함께하는 사람 \d+명/) || [''])[0]);
+  ok(!/①|②|③/.test(txt), '같은 사람에 ①② 번호가 붙었어요');
+  ok(/길벗\(나\)/.test(txt), '내 이름에 (나)가 없어요');
+  // 판 -306: AI 묻기는 계획 화면 아래 메뉴 하나로 — 채팅 칸엔 'AI 도우미에게' 단추가 없어야 해요
+  ok(!(await page.$$eval('button', bs => bs.some(b => /AI 도우미에게/.test(b.textContent)))), "일행 채팅에 'AI 도우미에게' 단추가 또 있어요");
+  ok(await page.$('.tr-in') && /보내기/.test(txt), '일행 채팅 입력칸·보내기가 없어요');
+});
+
+// ─── 16. 자동 기록: 위치마다 무겁게 저장하지 않아도 길이 기록으로 남음 (판 -307 '폰이 갑자기 느려졌어') ───
+await test('자동 기록 · 가벼운 저장으로도 기록이 남음', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    localStorage.removeItem('walkNow'); localStorage.setItem('autoSt', '{}');
+    let lat = 37.5, ts = Date.now() - 3 * 3600e3, writes = 0; const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (k === 'autoSt') writes++; return set.call(this, k, v); };
+    __T.autoFix(lat, 126.9, 10, 30, ts);
+    for (let i = 0; i < 600; i++) { lat += 0.00018; ts += 1440; __T.autoFix(lat, 126.9, 10, 30, ts); }   // 차로 약 12km
+    const moving = writes;
+    for (let i = 0; i < 30; i++) { ts += 30000; __T.autoFix(lat, 126.9, 10, 30, ts); }   // 15분 머묾
+    Storage.prototype.setItem = set;
+    const ids = Object.keys(localStorage).filter(k => k.startsWith('track:'));
+    return { moving, n: ids.length, pts: ids.length ? JSON.parse(localStorage.getItem(ids[0])).length : 0, seg: __T.autoSt().seg };
+  });
+  ok(r.moving < 60, '움직이는 동안 저장이 너무 잦아요: ' + r.moving + '번');
+  ok(r.n === 1 && r.pts > 500, '머문 뒤 기록이 안 남았어요: ' + JSON.stringify(r));
+  ok(!r.seg, '기록을 끝낸 뒤에도 길을 모으고 있어요');
+});
+
+await test('여행 경비 · 회비(공금) + 내가 쓴 돈 정산 (판 -309)', async page => {
   await seed(page); await page.goto(BASE); await sleep(800);
   const r = await page.evaluate(() => {
     const hh = [{ id: 'h1', n: '우리 집' }, { id: 'h2', n: '2가정' }, { id: 'h3', n: '3가정' }];
