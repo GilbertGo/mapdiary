@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-324-scope';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-324-planpic';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "구경(보기만)이 볼 수 있는 것과 일행만 보는 것이 화면에 나눠 보여요 · 준비 정보에 일행만 보는 정보 묶음이 생겼고 채팅 칸과 사진 칸에도 누가 보는지 적혀 있어요 · 구경하는 분은 맨 위 안내를 누르면 자세히 볼 수 있어요";
+const UI_NOTES = "첫 화면 여행 계획에 사진이 나와요 · 로그인하면 휴대폰에서 고른 계획 사진이 PC에도 같이 보여요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4996,7 +4996,8 @@ async function cloudSync(quiet) {
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
     if (one.me && typeof one.me === 'object' && (+one.me.at || 0) > (ls.get('myAt', 0) || 0)) { ls.set('nick', String(one.me.nick || ls.get('nick', '')).slice(0, 20)); ls.set('myBio', String(one.me.bio || '').slice(0, 40)); ls.set('myPhoto', /^data:image\//.test(one.me.ph || '') ? one.me.ph : ''); ls.set('myAt', +one.me.at); }
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone, one.planInto, one.planAlive);   // 🗓 여행 계획도 모음에(2026-11-14)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
+    planHeroTake(one.planHero);   // 판 -324: 계획 사진 주소도(이 기기에 없는 계획 사진만 채움)
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), planHero: planHeroAll(), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     if (mine1 !== oneR) await cPut('x/one', mine1);
     try { dcGot = await decoSync(cGet, cPut); } catch {}   // 판 -323: 첫 화면 꾸미기·바탕 사진도 같은 계정이면 다른 기기(PC)에 (사진이 커서 x/one과 따로)
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
@@ -5024,6 +5025,11 @@ async function decoSync(get, put) {
   }
   return got;
 }
+// 판 -324: 계획 맨 위 사진 주소 모음(작은 글자뿐, 일행 채팅 사진은 기기 안 그림이라 안 보냄) · 받을 땐 이 기기에 사진이 없는 계획만 채움(한 번 보여 준 사진은 그대로)
+function planHeroAll() { const o = {}; for (const p of planAll()) { const h = ls.get('planHero:' + p.id, null); if (h && /^https:\/\//.test(h.u || '')) o[p.id] = h; } return o; }
+function planHeroTake(m) { if (!m || typeof m !== 'object') return 0; let n = 0; const ids = new Set(planAll().map(p => p.id));
+  for (const [id, h] of Object.entries(m)) { if (!ids.has(id) || !h || !/^https:\/\//.test(h.u || '') || ls.get('planHero:' + id, null)) continue; ls.set('planHero:' + id, Object.assign({}, h, { at: Date.now() })); n++; }
+  return n; }
 // 지운 기록: 로그인한 적이 있으면 다음 맞추기 때 클라우드에서도 지워요
 function cloudForget(ids) { if (!ls.get('cloudSig', null)) return; ls.set('cloudGone', [...new Set([...ls.get('cloudGone', []), ...ids])]); }
 // ---------- 앱 안 구글 로그인 (2026-10-19 사용자 '만들어': 앱과 크롬 기록을 하나로) ----------
@@ -12623,13 +12629,22 @@ function planHomeSection() {
   const row = p => { const k = planToday(p), on = k != null && k >= 0 && k < p.nd, h = ls.get('planHero:' + p.id, null), w = (ls.get('planWx:' + p.id, null) || {}).days || [];
     const wx = w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : '';
     let nx = null; if (on) { try { const its = planItems(p, k), ni = planNext(p, k); nx = ni >= 0 ? its[ni] : null; } catch {} }
-    const th = el('span', { class: 'hp-th' }); if (h && h.u) th.style.backgroundImage = `url("${h.u}")`; else th.append(cSvg('plane', 22, '#fff'));
+    const th = el('span', { class: 'hp-th' }); if (h && h.u) th.style.backgroundImage = `url("${h.u}")`; else { th.append(cSvg('plane', 22, '#fff')); planRowPic(p, th); }
     return el('a', { class: 'hp-row' + (on ? ' on' : ''), href: './?plan=1&p=' + encodeURIComponent(p.id) }, th,
       el('span', { class: 'hp-tx' }, el('b', { text: p.name || '여행' }),
         el('small', { text: [on ? `여행 중 · ${k + 1}일차` : planStatus(p), p.start ? planDayLabel(p, 0) + (on ? '' : ' 출발') : '날짜 미정', wx].filter(Boolean).join(' · ') }),
         on ? el('small', { class: 'nx', text: nx ? `다음 · ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null),
       el('span', { class: 'go', text: '›' })); };
   return el('div', { class: 'hp' }, head, ...(up.length ? up.map(row) : [el('a', { class: 'hp-row', href: './?plan=1#plNew' }, el('span', { class: 'hp-th' }, cSvg('plane', 22, '#fff')), el('span', { class: 'hp-tx' }, el('b', { text: '여행 계획 만들기' }), el('small', { text: '여행사 일정·블로그 글로도 만들 수 있어요' })), el('span', { class: 'go', text: '›' }))]));
+}
+// 판 -324 (사용자 PC 첫 화면 캡처 '여행 계획은 왜 안바뀜? · 사진이 없잖아'): 사진(planHero)은 그 계획을 연 기기에서만 찾아져서, 계획을 안 열어 본 PC는 비행기 그림만 나왔음.
+//   이제 ① 로그인 맞추기로 다른 기기가 고른 사진 주소를 받고(x/one planHero, 이미 있는 건 안 바꿈) ② 그래도 없으면 첫 화면에서 바로 찾아 채워요(빈 칸만 채움)
+function planRowPic(p, th) {
+  const put = u => { if (!th.isConnected || !u) return; th.replaceChildren(); th.style.backgroundImage = `url("${String(u).replace(/"/g, '%22')}")`; };
+  setTimeout(async () => { try {
+    const h = await trGet('hero:' + p.id); if (h && h.b instanceof Blob) return put(URL.createObjectURL(h.b));
+    const im = await tvHeroImg(p); if (im && im.u) put(im.u);
+  } catch {} }, 600);
 }
 function planHomeCard() {
   let p = null; try { p = planCur(); } catch {} if (!p) return null;
