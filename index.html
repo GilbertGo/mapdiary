@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-303-mapsharp';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-304-herokeep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록하는 화면의 지도가 선명해졌어요 · 글자와 길이 또렷하고 이름이 한글로 나와요 · 인터넷이 끊기면 전에 본 지도가 그대로 보여요";
+const UI_NOTES = "여행 계획 맨 위 사진을 휴대폰에 저장해 둬요 · 인터넷이 느리거나 끊겨도 사진이 사라지지 않아요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -12825,7 +12825,7 @@ async function tvHeroCands(p) {
 }
 async function tvHeroImg(p, again) {
   try { if (!again && p.room && p.room.code) { const R = await trRoom(p.room.code), S = await trLoad(R), L = S.tp.filter(x => !x.del && x.n && !x.pi).sort((a, b) => ((b.w > b.h) - (a.w > a.h)) || (b.t - a.t));
-    for (const ph of L.slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
+    for (const ph of L.filter(x => !x.v).slice(0, 3)) { const b = await trGet('full:' + ph.id); if (b instanceof Blob && /^image\//.test(b.type || 'image/')) return { u: URL.createObjectURL(b), room: 1 }; } } } catch {}
   const k = 'planHero:' + p.id, c = ls.get(k, null); if (!again && c && c.u && c.v === 7 && Date.now() - c.at < 30 * 864e5) return c;
   const skip = ls.get('planHeroSkip:' + p.id, []) || [];
   const L = await tvHeroCands(p); let cand = L.filter(x => !skip.includes(x.u));
@@ -12838,9 +12838,14 @@ function tvHero(p, o = {}) {
   const hin = el('div', { class: 'tv-hin' }), box = el('div', { class: 'tv-hero' + (o.sm ? ' sm' : '') }, hin);
   const paint = () => faRc(hin, o.d ? el('div', { class: 'tv-d', text: o.d }) : null, el('h1', { text: o.title || p.name }), o.line ? el('div', { class: 'tv-hl', text: o.line }) : null, o.chips || null);
   paint(); box.repaint = (x) => { Object.assign(o, x || {}); paint(); };
+  // 판 -304 (사용자 장가계 계획 캡처 '장가계 사진이 왜 없어졌지?'): 맨 위 사진을 이 휴대폰에 그림으로 저장해 두고(mpdTrip 'hero:{계획}') 먼저 보여 줘요.
+  //   예전엔 열 때마다 바깥 주소에서 다시 받아, 인터넷이 느리면(15초) '못 연다'로 보고 기억까지 지워 빈 하늘색만 남았어요
+  const put = u => { box.style.backgroundImage = `url("${String(u).replace(/"/g, '%22')}")`; box.classList.add('img'); };
+  if (p) trGet('hero:' + p.id).then(h => { if (h && h.b instanceof Blob && box.isConnected && !box.classList.contains('img')) put(URL.createObjectURL(h.b)); });
   const show = again => { if (!p) return; tvHeroImg(p, again).then(async im => { if (!im || !box.isConnected) return;
-    if (!im.room && !(await tvImgOk(im.u))) { try { localStorage.removeItem('planHero:' + p.id); } catch {} return; }
-    box.style.backgroundImage = `url("${im.u.replace(/"/g, '%22')}")`; box.classList.add('img');
+    if (!im.room && !(await tvImgOk(im.u))) return;   // 못 열면 저장해 둔 사진을 그대로 둬요(기억도 지우지 않음)
+    put(im.u);
+    if (!im.room) { const h0 = await trGet('hero:' + p.id); if (!h0 || h0.u !== im.u) fetchT(im.u, {}, 30000).then(r => r.ok ? r.blob() : null).then(b => { if (b && b.size && /^image\//.test(b.type || 'image/')) trSet('hero:' + p.id, { u: im.u, b, at: Date.now() }); }).catch(() => {}); }
     box.querySelectorAll('.tv-credit,.tv-swap').forEach(x => x.remove());
     if (im.t && im.src === 'hana') box.append(el('span', { class: 'tv-credit', text: '사진 · 하나투어 · ' + String(im.t).slice(0, 14) }));
     else if (im.t) box.append(el('a', { class: 'tv-credit', href: im.src === 'cm' ? im.page || 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(im.t) : (im.src === 'kw' ? 'https://ko.wikipedia.org/wiki/' : 'https://en.wikipedia.org/wiki/') + encodeURIComponent(im.t), target: '_blank', rel: 'noopener', text: im.src === 'cm' ? '사진 · 위키미디어 공용' : '사진 · 위키백과' }));
