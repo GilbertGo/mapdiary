@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -340,6 +340,22 @@ await test('세 칸 화면 · 위 전체 지도는 가로로 긴 칸에 길이 �
   });
   ok(r.w === 1440 && r.h === 716, '위 칸 지도 크기가 이상해요 ' + r.w + 'x' + r.h);
   ok(r.out === 0, '길이 위 칸 지도 밖으로 나가요 ' + r.out);
+});
+
+await test('계획 영상 사진 · 여행사 사진이 먼저, 없으면 공개 사진 (판 -302)', async page => {
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  let cm = 0;
+  await page.route('**/image.hanatour.com/**', r => r.fulfill({ body: PNG, contentType: 'image/png' }));
+  await page.route('**/commons.wikimedia.org/**', r => { cm++; r.abort(); });
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const a = { n: '천문산', k: 'spot', d: 0, lat: 29.05, lng: 110.48, img: ['https://image.hanatour.com/a/resize/400_0/x.jpg'] }, b = { n: '보봉호수', k: 'spot', d: 1, lat: 29.33, lng: 110.43 };
+    const p = { id: 'tp1', name: '시험', it: [a, b] }, src = { plan: p, spots: [{ x: a, n: a.n, lat: a.lat, lng: a.lng, ts: 1, pk: 'spot' }, { x: b, n: b.n, lat: b.lat, lng: b.lng, ts: 2, pk: 'spot' }] };
+    const L = await __T.planPhotos(src); return L.map(q => q.from + ':' + q.m);
+  });
+  ok(r[0] === 'agency:천문산', '천문산은 여행사 사진이어야 해요 ' + JSON.stringify(r));
+  ok(r.length === 1, '사진이 없는 곳은 지나가야 해요 ' + JSON.stringify(r));
+  ok(cm >= 1, '여행사·구글 사진이 없으면 공개 사진을 찾아봐야 해요');
 });
 
 await browser.close();
