@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -356,6 +356,18 @@ await test('계획 영상 사진 · 여행사 사진이 먼저, 없으면 공개
   ok(r[0] === 'agency:천문산', '천문산은 여행사 사진이어야 해요 ' + JSON.stringify(r));
   ok(r.length === 1, '사진이 없는 곳은 지나가야 해요 ' + JSON.stringify(r));
   ok(cm >= 1, '여행사·구글 사진이 없으면 공개 사진을 찾아봐야 해요');
+});
+
+await test('계획 맨 위 사진 · 저장해 둔 사진은 인터넷 없이도 보임 (판 -304)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  await page.evaluate(async () => {
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tp9', name: '시험 여행', start: '2026-12-01', nd: 2, it: [], at: 1, u: 1 }]));
+    const cv = document.createElement('canvas'); cv.width = cv.height = 8; const b = await new Promise(r => cv.toBlob(r, 'image/png'));
+    await __T.trSet('hero:tp9', { u: 'https://example.com/x.jpg', b, at: Date.now() });
+  });
+  await page.goto(BASE + '?plan=1&p=tp9'); await sleep(2500);
+  const r = await page.evaluate(() => { const h = document.querySelector('.tv-hero'); return h ? { img: h.classList.contains('img'), bg: h.style.backgroundImage.slice(0, 9) } : null; });
+  ok(r && r.img && r.bg.startsWith('url("blob'), '저장해 둔 맨 위 사진이 안 보여요 ' + JSON.stringify(r));
 });
 
 await browser.close();
