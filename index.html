@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-311-mapinfo';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-312-peaks';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도에 산 정상 이름과 높이가 보여요 · 산길과 임도를 갈색 점선으로 진하게 보여요 · 지하철역과 버스 정류장 그림이 보여요 · 가까이 보면 화장실과 약수터와 전망대가 보여요 · 등고선이 보여서 오르막과 내리막을 지도에서 알 수 있어요";
+const UI_NOTES = "지도에 산 이름이 너무 많이 보이던 것을 줄였어요 · 이름 없는 봉우리는 빼고 멀리서 볼 땐 높은 산만 나오고 확대할수록 작은 산이 나와요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13119,9 +13119,11 @@ async function koMapStyle() {
       l.layout['icon-size'] = 1; l.layout['text-font'] = NS; l.layout['text-field'] = nm(false); }
   }
   st.layers.splice(at('waterway_line_label'), 0,
-    { id: 'md_peak', type: 'symbol', source: 'openmaptiles', 'source-layer': 'mountain_peak', minzoom: 10, filter: ['match', ['get', 'class'], ['peak', 'volcano'], true, false],   // ② 산 정상 이름과 높이
-      layout: { 'icon-image': 'mountain_11', 'text-field': ['case', ['has', 'ele'], ['concat', nm(false), '\n', ['to-string', ['get', 'ele']], 'm'], nm(false)], 'text-font': NB, 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 0.7], 'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ele'], 0]] },
-      paint: Object.assign({ 'text-color': '#5A3A1E' }, halo), metadata: { koName: 1 } },
+    // 판 -312 (사용자 '산 이름만 많이 보인다'): 이름 없는 봉우리는 빼고, 멀리서는 높은 산만 → 확대할수록 작은 산까지
+    ...[[10, 12, 300], [12, 13, 150], [13, 24, 0]].map(([z0, z1, h]) => ({ id: 'md_peak' + z0, type: 'symbol', source: 'openmaptiles', 'source-layer': 'mountain_peak', minzoom: z0, maxzoom: z1,
+      filter: ['all', ['match', ['get', 'class'], ['peak', 'volcano'], true, false], ['any', ['has', 'name:ko'], ['has', 'name']], ['>=', ['coalesce', ['get', 'ele'], 0], h]],
+      layout: { 'icon-image': 'mountain_11', 'text-field': ['case', ['has', 'ele'], ['concat', nm(true), '\n', ['to-string', ['get', 'ele']], 'm'], nm(true)], 'text-font': NB, 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 0.7], 'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ele'], 0]] },
+      paint: Object.assign({ 'text-color': '#5A3A1E' }, halo), metadata: { koName: 1 } })),
     { id: 'md_amenity', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 14,   // ④ 화장실·약수터(마시는 물)·전망대
       filter: ['any', ['match', ['get', 'class'], ['toilets', 'drinking_water'], true, false], ['match', ['get', 'subclass'], ['toilets', 'drinking_water', 'viewpoint', 'spring'], true, false]],
       layout: { 'icon-image': ['match', ['get', 'subclass'], 'viewpoint', '', 'spring', 'drinking_water_11', ['match', ['get', 'class'], 'toilets', 'toilets_11', 'drinking_water_11']],
