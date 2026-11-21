@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -384,6 +384,28 @@ await test('첫 화면 바탕 사진은 새 기록이 생겨도 그대로', asyn
   await page.goto(BASE); await sleep(2500);
   const again = await page.evaluate(() => JSON.parse(localStorage.getItem('homeBgPick') || 'null'));
   ok(again === 'ph_bg1', '새 기록이 생기자 바탕 사진이 바뀌었어요: ' + again);
+});
+
+// ─── 15. 일행 채팅: 같은 사람이 여러 기기로 들어와도 한 사람 (판 -306 '참석자가 왜 이렇게 많지?') ───
+await test('일행 채팅 · 같은 이름은 한 사람으로 셈', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  await page.evaluate(async () => {
+    localStorage.setItem('tripMe', JSON.stringify('meA')); localStorage.setItem('nick', JSON.stringify('길벗'));
+    const R = await __T.trRoom('tpeopletest0001'), t = Date.now();
+    await __T.trSet('room:' + R.rid, { v: 1, last: { tc: t, tp: t, tl: t, tm: t }, tl: [], tp: [],
+      tm: [{ by: 'meA', nm: '길벗', t }, { by: 'meB', nm: '길벗', t }, { by: 'meC', nm: '길벗 ', t }, { by: 'jA', nm: 'jin', t }, { by: 'jB', nm: 'Jin', t }, { by: 'jung', nm: '정은', t }],
+      tc: [{ id: 'c1', by: 'meB', nm: '길벗', x: '멋지다 앱', t }] });
+  });
+  page.errs = [];
+  await page.goto(BASE + '?troom=1#tr=tpeopletest0001&n=길벗'); await sleep(2500);
+  noErr(page, '일행 채팅');
+  const txt = await page.evaluate(() => document.body.innerText);
+  ok(/함께하는 사람 3명/.test(txt), '3명이 아니에요: ' + (txt.match(/함께하는 사람 \d+명/) || [''])[0]);
+  ok(!/①|②|③/.test(txt), '같은 사람에 ①② 번호가 붙었어요');
+  ok(/길벗\(나\)/.test(txt), '내 이름에 (나)가 없어요');
+  // 판 -306: AI 묻기는 계획 화면 아래 메뉴 하나로 — 채팅 칸엔 'AI 도우미에게' 단추가 없어야 해요
+  ok(!(await page.$$eval('button', bs => bs.some(b => /AI 도우미에게/.test(b.textContent)))), "일행 채팅에 'AI 도우미에게' 단추가 또 있어요");
+  ok(await page.$('.tr-in') && /보내기/.test(txt), '일행 채팅 입력칸·보내기가 없어요');
 });
 
 await browser.close();
