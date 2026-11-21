@@ -442,6 +442,21 @@ await test('여행 경비 · 회비(공금) + 내가 쓴 돈 정산 (판 -309)',
   ok(r.g === 'meal', '저녁 훠궈는 식사로 짐작해야 해요 ' + r.g);
 });
 
+// ─── 17. 비춰 읽기 탭: 중국·일본·베트남 계획에만, 베트남엔 '중국어' 탭 없음 (판 -318·319) ───
+await test('비춰 읽기 탭 · 베트남 계획엔 중국어 메뉴 없음', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  await page.evaluate(() => { __T.planSave({ id: 'pvn1', name: '하노이', start: '2026-12-01', nd: 2, it: [{ id: 'a', d: 0, t: '09:00', n: '호안끼엠', k: 'spot', lat: 21.0287, lng: 105.8524 }], at: Date.now(), u: Date.now() });
+    __T.planSave({ id: 'pkr1', name: '서울', start: '2026-12-01', nd: 1, it: [{ id: 'a', d: 0, t: '09:00', n: '경복궁', k: 'spot', lat: 37.5796, lng: 126.977 }], at: Date.now(), u: Date.now() }); });
+  page.errs = [];
+  await page.goto(BASE + '?plan=1&p=pvn1'); await sleep(1500); noErr(page, '하노이 계획');
+  const vn = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
+  ok(vn.some(x => /비춰 읽기/.test(x)), '베트남 계획에 비춰 읽기가 없어요: ' + vn.join(','));
+  ok(!vn.some(x => /중국어/.test(x)), '베트남 계획에 중국어 메뉴가 나와요');
+  await page.goto(BASE + '?plan=1&p=pkr1'); await sleep(1500);
+  const kr = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
+  ok(!kr.some(x => /비춰 읽기/.test(x)), '국내 계획에 비춰 읽기가 나와요');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
