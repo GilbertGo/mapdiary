@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-322-viewloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-323-decosync';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "구경하는 가족도 지도에서 일행 위치를 볼 수 있어요 · 이 판부터 내 위치 공유를 켠 사람만 보여요 · 예전에 켜 둔 분은 한 번 껐다 켜 주세요";
+const UI_NOTES = "첫 화면 꾸미기와 바탕 사진도 같은 계정이면 PC·다른 휴대폰에 같이 보여요 · 휴대폰에서 한 번 맞춘 뒤 PC를 다시 열면 바뀌어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4459,14 +4459,14 @@ function runHeroPick(after, key = 'runHero') {
   const run = key === 'runHero', cur = ls.get(key, ''), cb = el('div', { class: 'sheet-bg', style: 'z-index:3200', onclick: e => { if (e.target === cb) cb.remove(); } });
   const inp = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set(key, url); } catch (e) { ls.set(key, await shrinkImage(f, 900, 'url', .75)); }
+    try { const url = await shrinkImage(f, 1400, 'url', .82); try { ls.set(key, url); } catch (e) { ls.set(key, await shrinkImage(f, 900, 'url', .75)); } if (!run) ls.set('homeHeroAt', Date.now());
       cb.remove(); toast('바탕 사진을 바꿨어요' + (run && watchGet() ? ' · 시계에도 보내요' : '')); if (run) watchBgSend(); if (after) after(); }
     catch (e) { toast('사진을 못 읽었어요. 다른 사진으로 해 주세요'); } } });
   cb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '바탕 사진 바꾸기' }, el('h2', { text: run ? '러닝 첫 화면 사진' : '첫 화면 사진' }),
-    el('p', { class: 'sub', style: 'margin:0', text: (run ? '러닝 첫 화면과 준비 화면' : '앱 첫 화면') + ' 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요. 이 휴대폰에만 저장돼요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: (run ? '러닝 첫 화면과 준비 화면' : '앱 첫 화면') + ' 뒤에 깔리는 사진이에요. 세로 사진이 잘 어울려요.' + (run ? ' 이 휴대폰에만 저장돼요.' : ' 로그인하면 같은 계정의 다른 기기에도 같이 보여요.') }),
     el('div', { style: `height:180px;border-radius:14px;background:#0b2036 center/cover no-repeat url("${run ? runHeroUrl() : homeHeroUrl()}")` }),
     el('button', { class: 'btn full', text: '📷 휴대폰 사진에서 고르기', onclick: () => inp.click() }), inp,
-    cur ? el('button', { class: 'btn line small full', text: run ? '↺ 기본 사진으로 되돌리기' : '↺ 러닝 첫 화면 사진과 같게', onclick: () => { ls.set(key, ''); cb.remove(); toast('기본 사진으로 돌렸어요'); if (run) watchBgSend(); if (after) after(); } }) : null,
+    cur ? el('button', { class: 'btn line small full', text: run ? '↺ 기본 사진으로 되돌리기' : '↺ 러닝 첫 화면 사진과 같게', onclick: () => { ls.set(key, ''); if (!run) ls.set('homeHeroAt', Date.now()); cb.remove(); toast('기본 사진으로 돌렸어요'); if (run) watchBgSend(); if (after) after(); } }) : null,
     !run ? null : watchGet() ? el('button', { class: 'btn line small full', text: '⌚ 지금 사진을 시계에도 보내기', onclick: async e => { e.target.disabled = true; toast(await watchBgSend() ? '시계로 보냈어요. 시계 MPD Run을 다시 열면 바뀌어요' : '보내지 못했어요. 인터넷을 확인해 주세요'); e.target.disabled = false; } })
       : el('div', { class: 'sub', style: 'font-size:13px', text: '⌚ 시계와 연결돼 있으면(내 MPD → 시계 기록 받기) 시계 첫 화면 사진도 같이 바뀌어요.' }),
     el('button', { class: 'btn line small full', text: '닫기', onclick: () => cb.remove() })));
@@ -4923,7 +4923,7 @@ function cloudProgSet(t) { cloudProg = t; document.querySelectorAll('.cl-prog').
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
   cloudProgSet('맞추는 중… 목록 받는 중');
-  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '';
+  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '', dcGot = 0;
   document.dispatchEvent(new Event('md-cloud'));   // 카드를 '⏳ 맞추는 중'으로 바로 다시 그려요(2026-10-21 앱 켜자마자 저절로 맞추는 중인데 카드는 '아직 안 맞춤'이라 단추가 반응 없어 보였음)
   // 로그아웃하면 cloudSig가 null로 남아서(2026-10-21 앱에서 'Cannot read properties of null') {}로. 다른 계정(구글↔카카오)으로 바뀌면 처음부터 맞춰요
   const same = ls.get('cloudUid', null) === cloudUser.uid;
@@ -4998,18 +4998,31 @@ async function cloudSync(quiet) {
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone, one.planInto, one.planAlive);   // 🗓 여행 계획도 모음에(2026-11-14)
     const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     if (mine1 !== oneR) await cPut('x/one', mine1);
+    try { dcGot = await decoSync(cGet, cPut); } catch {}   // 판 -323: 첫 화면 꾸미기·바탕 사진도 같은 계정이면 다른 기기(PC)에 (사진이 커서 x/one과 따로)
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
     ls.set('cloudLast', { at: Date.now(), ok: 1, n: mine.length, c: inCloud, bad, why: why.slice(0, 40), ph: Object.keys(phSent).length });
   } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); cloudBusy = false;
     ls.set('cloudLast', { at: Date.now(), ok: 0, why: String(e && e.message || e).slice(0, 60) }); cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
   cloudBusy = false; cloudProgSet('');
-  const msg = [down ? `기록 ${down}개를 받았어요` : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
+  const msg = [down ? `기록 ${down}개를 받았어요` : '', dcGot ? '첫 화면 꾸미기를 받았어요' : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   let again = false; try { again = Date.now() - +(sessionStorage.getItem('cloudReload') || 0) < 120000; } catch {}   // 받자마자 또 받는 일이 생겨도 다시 불러오기를 되풀이하지 않게
-  if (down && MD_TOUCHED) { toast('☁ ' + msg + ' · 화면을 다시 열면 보여요', 0, 6000); return; }
-  if (down && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
+  if ((down || dcGot) && MD_TOUCHED) { toast('☁ ' + msg + ' · 화면을 다시 열면 보여요', 0, 6000); return; }
+  if ((down || dcGot) && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
   document.dispatchEvent(new Event('md-cloud'));
+}
+// 판 -323 (사용자 'PC에서 카카오 로그인 했는데 폰에서 한거와 달라'): 첫 화면 꾸미기(homeDeco 말풍선)·바탕 사진(homeHero)이 이 기기에만 있었음.
+//   x/deco·x/hero에 따로 두고(사진이 커서 x/one 1MB를 넘지 않게) 더 나중에 바꾼 쪽을 따라요. 받은 건 다음에 열 때 보임(보고 있는 화면은 안 바꿈). 받으면 1
+async function decoSync(get, put) {
+  let got = 0;
+  for (const [doc, key, atKey, ok] of [['x/deco', 'homeDeco', 'homeDecoAt', v => v === null || (v && Array.isArray(v.pins))], ['x/hero', 'homeHero', 'homeHeroAt', v => v === '' || /^data:image\//.test(v || '')]]) {
+    let r = null; try { r = JSON.parse(await get(doc) || 'null'); } catch {}
+    const mine = ls.get(key, key === 'homeHero' ? '' : null), la = +(ls.get(atKey, 0) || (key === 'homeDeco' ? mine && mine.at : mine && 1) || 0), ra = +(r && r.at || 0);
+    if (ra > la && r && ok(r.v)) { ls.set(key, r.v); ls.set(atKey, ra); if (key === 'homeHero' && r.v) ls.set('homeBgPick', null); got = 1; }
+    else if (la > ra) await put(doc, JSON.stringify({ v: mine, at: la }));
+  }
+  return got;
 }
 // 지운 기록: 로그인한 적이 있으면 다음 맞추기 때 클라우드에서도 지워요
 function cloudForget(ids) { if (!ls.get('cloudSig', null)) return; ls.set('cloudGone', [...new Set([...ls.get('cloudGone', []), ...ids])]); }
@@ -17019,7 +17032,7 @@ function homeDecoEdit() {
   const edit = { changed: () => { dirty = true; } };
   const redraw = () => decoDraw(layer, wrap, pins, edit);
   const close = () => { wrap.remove(); };
-  const save = () => { ls.set('homeDeco', { pins: pins.filter(q => !q.gone).map(({ gone, ...q }) => q), at: Date.now() }); close(); try { history.scrollRestoration = 'manual'; } catch {} scrollTo(0, 0); location.reload(); };
+  const save = () => { ls.set('homeDeco', { pins: pins.filter(q => !q.gone).map(({ gone, ...q }) => q), at: Date.now() }); ls.set('homeDecoAt', Date.now()); close(); try { history.scrollRestoration = 'manual'; } catch {} scrollTo(0, 0); location.reload(); };
   const addSheet = () => {
     if (pins.filter(q => !q.gone).length >= 8) return toast('사진은 8장까지 놓을 수 있어요');
     const put = q => { pins.push(Object.assign({ x: 30 + Math.random() * 40, y: 25 + Math.random() * 30, s: 100, a: Date.now() }, q)); dirty = true; redraw(); };

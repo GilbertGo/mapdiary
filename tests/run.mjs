@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess'];
+const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -508,6 +508,31 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(2000); noErr(page, '구경 일행 채팅');
   const btns = await page.$$eval('button', bs => bs.map(b => b.textContent));
   ok(!btns.some(x => /💬 대화|📍 위치|보내기|사진 올리기|일행 초대/.test(x)), '구경에게 대화·위치·보내기·올리기·초대가 보여요: ' + btns.filter(x => /대화|위치|보내기|올리기|초대/.test(x)).join(','));
+});
+
+await test('첫 화면 꾸미기·바탕 사진이 같은 계정 다른 기기로 감 (판 -323)', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(async () => {
+    const cloud = {}, get = async k => cloud[k] ?? null, put = async (k, v) => { cloud[k] = v; };
+    const deco = { pins: [{ k: 'r', t: 'walk_a', pid: 'p1', x: 30, y: 40, s: 100, a: 1 }], at: 5000 }, hero = 'data:image/jpeg;base64,AAAA';
+    // 휴대폰: 꾸민 첫 화면 + 예전에 고른 바탕(시각 없음) → 올림
+    localStorage.clear(); localStorage.setItem('homeDeco', JSON.stringify(deco)); localStorage.setItem('homeHero', JSON.stringify(hero));
+    const g1 = await __T.decoSync(get, put);
+    // PC: 아무것도 없음 → 받음
+    localStorage.clear(); localStorage.setItem('homeBgPick', JSON.stringify('old'));
+    const g2 = await __T.decoSync(get, put);
+    const pc = { deco: JSON.parse(localStorage.getItem('homeDeco')), hero: JSON.parse(localStorage.getItem('homeHero')), pick: JSON.parse(localStorage.getItem('homeBgPick')) };
+    // PC에서 더 나중에 꾸밈 → 휴대폰의 예전 것이 덮지 않음
+    localStorage.setItem('homeDeco', JSON.stringify({ pins: [], at: 9000 })); localStorage.setItem('homeDecoAt', '9000');
+    const g3 = await __T.decoSync(get, put);
+    return { g1, g2, g3, pc, cl: JSON.parse(cloud['x/deco']).at };
+  });
+  ok(r.g1 === 0 && r.g2 === 1, '받음 표시가 틀림 ' + JSON.stringify(r));
+  ok(r.pc.deco && r.pc.deco.pins.length === 1 && r.pc.deco.pins[0].pid === 'p1', 'PC가 꾸미기를 못 받음');
+  ok(r.pc.hero === 'data:image/jpeg;base64,AAAA', 'PC가 바탕 사진을 못 받음');
+  ok(r.pc.pick === null, '받은 바탕보다 예전에 고른 사진이 남음');
+  ok(r.g3 === 0 && r.cl === 9000, '더 나중에 꾸민 것이 클라우드에 안 올라감');
+  noErr(page, '첫 화면 꾸미기 맞추기');
 });
 
 await test('기록 고르기 · 덜 쓰는 모드는 더보기 안 (판 -306)', async page => {
