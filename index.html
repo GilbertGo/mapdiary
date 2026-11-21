@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-326-herosize';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-327-maplang';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 경비 회비에서 가정 이름을 따로 적지 않아요 · 함께 가는 사람의 이름을 눌러 같은 가정끼리 묶으면 이름으로 가정이 보여요 · 함께 가는 사람이 없으면 몇 가정인지만 골라요 · 큰 바탕 사진도 PC와 다른 휴대폰으로 넘어가요";
+const UI_NOTES = "지도 漢·あ를 켜면 나라마다 같은 차례로 보여요 · 외국은 한자, 한국 발음, 현지 발음, 영어 (大阪市 대판시 오사카시 Osaka) · 우리나라는 한국어, 한자, 영어 (수원시 水原市 Suwon) · 중국 지도에 보이던 일본 도시가 대판시로 바뀌던 것을 고쳤어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13370,10 +13370,45 @@ function koHanjaRead(T, n) {
 }
 // 일본 신자체 → 정자(우리 한자 읽기 표에 있는 글자로): 駅→驛 등 (판 -316)
 var JP_KYU = '駅驛県縣沢澤広廣浜濱桜櫻関關鉄鐵図圖辺邊恵惠栄榮円圓竜龍斎齋戸戶徳德黒黑渋澁稲稻伝傳学學来來万萬国國芸藝豊豐宝寶将將条條楽樂薬藥経經総總発發塩鹽売賣読讀歩步険險滝瀧継繼続續両兩亀龜神神祇祇郷鄉朗朗隣鄰'.match(/../gu) || [];
-function koHanjaWire(mm, jp) {   // jp: 일본 지도(지명은 바꾸지 않고, 漢 켜면 일본어 이름·우리 한자 읽기·로마자, 판 -315·316)
+// 판 -327 (사용자 '지도 언어 · 혼란스럽지 않게' → '한자. 한자어 한국 발음. 한자어 현지 발음. 영어발음' · '한국어는 한국어, 한자, 영어'):
+//   예전엔 지도 모드(중국·일본·베트남·국내)마다 줄 순서가 달랐고, 중국 지도에 보이는 일본 도시가 '대판시'처럼 우리 한자 읽기로 바뀌어 헷갈렸음
+//   → 지도 모드가 아니라 '그 장소가 어느 나라인가'(장소 위치)로 정하고, 漢·あ를 켜면 모든 나라를 같은 차례로:
+//      외국 '大阪市 / 대판시 / 오사카시 / Osaka' · '张家界 / 장가계 / 장자제 / Zhangjiajie' · '河內市 / 하내시 / 하노이 / Hanoi'
+//      우리나라 '수원시 / 水原市 / Suwon'   (같은 글이 겹치면 한 번만)
+//   끈 때: 중국·대만·홍콩만 여행사처럼 우리 한자 읽기(장가계), 일본·베트남·우리나라는 한글 이름 그대로(오사카시)
+function koPlaceCC(f) {   // 장소 위치로 나라 짐작: 'jp' · 'vn' · '' (그 밖)
+  try { let c = f.geometry && f.geometry.coordinates; while (Array.isArray(c) && Array.isArray(c[0])) c = c[0]; if (!c || !isFinite(c[1])) return '';
+    const la = c[1], ln = c[0];
+    if (la > 24 && la < 46 && ln > 122.9 && ln < 146) return 'jp';
+    if (la > 8.2 && la < 23.4 && ln > 102.1 && ln < 109.5 && !(la > 22.6 && (ln < 103.4 || ln > 106.6)) && !(ln > 108.5 && la > 17.9) && !(ln < 104.5 && la > 13.9 && la < 22.4)) return 'vn';
+  } catch {} return '';
+}
+function koNameLines(a) { const o = []; for (const x of a) { const s = String(x || '').trim(); if (s && !o.some(y => y.replace(/[\s\-]/g, '').toLowerCase() === s.replace(/[\s\-]/g, '').toLowerCase())) o.push(s); } return o.join('\n'); }
+function koNameInfo(T, q, cc) {   // 한 장소 이름 → { on: 켰을 때 글, off: 껐을 때 바꿀 이름(없으면 '') }
+  const n = q.name; if (!n) return null;
+  const ko = q['name:ko'] || q.name_ko || '', en = q['name:en'] || q.name_en || q['name:ja-Latn'] || q['name:latin'] || '';
+  const HZ = /[一-鿿]/;
+  if (/^[가-힣]/.test(n)) {   // 우리나라: 한국어 / 한자 / 영어 (한자를 우리 읽기로 읽어 이름과 똑같을 때만, 首爾 ≠ 서울)
+    const hz = q['name:zh-Hant'] || q['name:zh']; if (!hz || !HZ.test(hz)) return null; const r = koHanjaRead(T, hz);
+    if (!r || r.replace(/\s/g, '') !== n.replace(/\s/g, '')) return null;
+    return { on: koNameLines([n, hz, en]), off: '' };
+  }
+  if (!HZ.test(n) && !/[぀-ヿ]/.test(n)) {   // 베트남: 이름은 로마자, 한자는 name:zh에
+    if (cc !== 'vn') return null; const hz = q['name:zh-Hant'] || q['name:zh'] || q['name:zh-Hans']; if (!hz || !HZ.test(hz)) return null;
+    return { on: koNameLines([hz, koHanjaRead(T, hz), ko, q['name:en'] || n]), off: '' };
+  }
+  const h = /[A-Za-z]/.test(n) ? (n.match(/^[^A-Za-z]+/) || [''])[0].trim() || n : n;   // 홍콩·마카오 '香港 Hong Kong' → 한자 부분만
+  if (cc === 'jp' || /[぀-ヿ]/.test(n)) {   // 일본: 한글 이름은 일본 소리라 그대로, 한자 읽기는 신자체를 정자로 바꿔서
+    let k = h; if (/[぀-ヿ]/.test(k)) k = ''; else for (const c of JP_KYU) k = k.split(c[0]).join(c[1]);
+    return { on: koNameLines([h, k && koHanjaRead(T, k), ko, en]), off: '' };
+  }
+  const r = koHanjaRead(T, h);   // 중국·대만·홍콩
+  return { on: koNameLines([h, r, ko, en || (h !== n ? n.slice(h.length) : '')]), off: r || '' };
+}
+function koHanjaWire(mm, jp) {   // jp: 지도 모드(단추 모양만 다름 · 이름 고르기는 장소 위치로, 판 -327)
   const fb = {}, layers = mm.getStyle().layers.filter(l => l.metadata && l.metadata.koName);
   layers.forEach(l => { fb[l.id] = l.layout['text-field']; });
-  const dict = new Map(), cjk = new Map(), vz = new Map(), kz = new Map(), kSeen = new Set(); let busy = 0, T = null;
+  const ON = new Map(), OFF = new Map(); let busy = 0, T = null;
   const run = async () => {
     if (busy) return; busy = 1;
     try {
@@ -13381,46 +13416,15 @@ function koHanjaWire(mm, jp) {   // jp: 일본 지도(지명은 바꾸지 않고
       let add = 0;
       for (const sl of ['place', 'poi', 'water_name', 'transportation_name', 'aerodrome_label', 'mountain_peak', 'park']) {
         let fs = []; try { fs = mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }); } catch {}
-        // 판 -321 (사용자 '우리나라도. 한자병기해봐'): 우리 지명은 한글이고, 한자는 OSM 중국어 이름(name:zh-Hant)에 있음 → 그 한자를 우리 읽기로 읽어 한글 이름과 똑같을 때만(水原市 = 수원시 ✓, 首爾 ≠ 서울 ✗) 같이 보여 줌
-        for (const f of fs) { const q = f.properties || {}, n = q.name; if (!n || kSeen.has(n) || !/^[\uac00-\ud7a3]/.test(n)) continue; kSeen.add(n);
-          const hz = q['name:zh-Hant'] || q['name:zh']; if (!hz || !/[\u4e00-\u9fff]/.test(hz)) continue; const r = koHanjaRead(T, hz);
-          if (r && r.replace(/\s/g, '') === n.replace(/\s/g, '')) { kz.set(n, hz); add++; } }
-        if (jp === 'kr') continue;
-        if (jp === 'vn') { for (const f of fs) { const q = f.properties || {}, n = q.name, hz = q['name:zh-Hant'] || q['name:zh'] || q['name:zh-Hans'];   // 베트남: 지명은 로마자, 한자 이름은 name:zh에 (판 -318)
-            if (!n || dict.has(n) || !hz || !/[\u4e00-\u9fff]/.test(hz)) continue; dict.set(n, koHanjaRead(T, hz)); vz.set(n, hz); add++; } continue; }
-        for (const f of fs) { const n = f.properties && f.properties.name; if (!n || dict.has(n) || !/[\u4e00-\u9fff]/.test(n)) continue;
-          // 홍콩·마카오는 이름이 '香港 Hong Kong'처럼 한자 + 영어(광둥어 소리)라 한자 부분만 읽고 보여 줌 (판 -317)
-          const h = /[A-Za-z]/.test(n) ? (n.match(/^[^A-Za-z]+/) || [''])[0].trim() : n; if (h !== n && h) cjk.set(n, h);
-          if (jp) { if (/[\u3040-\u30ff]/.test(n)) { dict.set(n, null); continue; } let k = h; for (const c of JP_KYU) k = k.split(c[0]).join(c[1]); dict.set(n, koHanjaRead(T, k)); } else dict.set(n, h ? koHanjaRead(T, h) : null); add++; }
+        for (const f of fs) { const q = f.properties || {}, n = q.name; if (!n || ON.has(n)) continue;
+          const v = koNameInfo(T, q, koPlaceCC(f)); ON.set(n, v ? v.on : ''); if (v && v.off) OFF.set(n, v.off); if (v) add++; }
       }
-      if (!add) return;
-      apply();
+      if (add) apply();
     } finally { busy = 0; }
   };
-  // 판 -314 (사용자 '기본은 이렇게 보여 주고 한자도 같이 한자의 중국 발음까지 · 원하는 때만'): '漢' 단추를 켜면 이름 밑에 한자와 중국어 발음(병음, 성조 없이)
   const apply = () => {
-    const pairs = []; for (const [k, v] of dict) if (v) pairs.push(k, v);
-    // 중국: 한자(U+4E00~) · 병음 / 일본: 한자·가나(U+3040~) · 로마자(장음 표시 있는 name:ja-Latn 먼저)
-    const zh = ['all', ['has', 'name'], ['>=', ['get', 'name'], jp ? '\u3040' : '\u4e00'], ['<', ['get', 'name'], '\ua000']], on = ls.get('mapHanzi', false);
-    const pron = jp ? ['coalesce', ['get', 'name:ja-Latn'], ['get', 'name:latin'], ''] : ['coalesce', ['get', 'name:latin'], ''];
-    if (jp === 'vn') { const hz = []; for (const [k, v] of vz) hz.push(k, v);
-      for (const l of layers) try { const base = fb[l.id];
-        if (!on || !hz.length) { mm.setLayoutProperty(l.id, 'text-field', base); continue; }
-        const H = ['match', ['get', 'name'], ...hz, ''], R = pairs.length ? ['match', ['get', 'name'], ...pairs, ''] : '';
-        const more = ['concat', H, ['case', ['!=', R, ''], ['concat', ' (', R, ')'], ''], ['case', ['==', base, ['get', 'name']], '', ['concat', '\n', ['get', 'name']]]];
-        mm.setLayoutProperty(l.id, 'text-field', ['case', ['!=', H, ''], ['case', ['==', base, ''], more, ['concat', base, '\n', more]], base]);
-      } catch {}
-      return; }
-    const kp = []; for (const [k, v] of kz) kp.push(k, v);
-    const KZ = kp.length ? ['match', ['get', 'name'], ...kp, ''] : '', W = (e, b) => on && kp.length ? ['case', ['!=', KZ, ''], ['concat', b, '\n', KZ], e] : e;
-    if (jp === 'kr') { for (const l of layers) try { mm.setLayoutProperty(l.id, 'text-field', W(fb[l.id], fb[l.id])); } catch {} return; }
-    for (const l of layers) try {
-      const base = pairs.length && !jp ? ['match', ['get', 'name'], ...pairs, fb[l.id]] : fb[l.id];   // 일본은 지명 그대로(한글 이름은 일본 소리)
-      const rd = jp && pairs.length ? ['match', ['get', 'name'], ...pairs, ''] : '';   // 일본: 우리 한자 읽기 (大阪 → 대판)
-      const cp = []; for (const [k, v] of cjk) cp.push(k, v); const nmZ = cp.length ? ['match', ['get', 'name'], ...cp, ['get', 'name']] : ['get', 'name'];
-      const more = ['concat', nmZ, jp ? ['case', ['!=', rd, ''], ['concat', ' (', rd, ')'], ''] : '', ['case', ['!=', pron, ''], ['concat', '\n', pron], '']];
-      mm.setLayoutProperty(l.id, 'text-field', W(on ? ['case', zh, ['case', ['==', base, ''], more, ['concat', base, '\n', more]], base] : base, fb[l.id]));
-    } catch {}
+    const on = ls.get('mapHanzi', false), M = on ? ON : OFF, pairs = []; for (const [k, v] of M) if (v) pairs.push(k, v);
+    for (const l of layers) try { mm.setLayoutProperty(l.id, 'text-field', pairs.length ? ['match', ['get', 'name'], ...pairs, fb[l.id]] : fb[l.id]); } catch {}
   };
   (koHanjaWire.maps = koHanjaWire.maps || []).push(apply);
   if (ls.get('mapHanzi', false)) apply();
@@ -13430,10 +13434,10 @@ function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 �
   if (!map || map.__hzBtn) return; map.__hzBtn = 1;
   const C = L.Control.extend({ options: { position: 'topleft' }, onAdd() {
     const b = L.DomUtil.create('button', 'hz-btn'); L.DomEvent.disableClickPropagation(b);
-    const W = jp === 'vn' || jp === 'kr' ? '한자 이름' : jp ? '일본어 이름·발음' : '한자·중국어 발음'; const paint = () => { const on = ls.get('mapHanzi', false); b.textContent = jp === 'jp' || jp === true ? 'あ' : '漢'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? W + ' 숨기기' : W + ' 같이 보기';
+    const W = '한자·발음'; const paint = () => { const on = ls.get('mapHanzi', false); b.textContent = jp === 'jp' || jp === true ? 'あ' : '漢'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? W + ' 숨기기' : W + ' 같이 보기';
       b.style.cssText = `width:44px;height:44px;border-radius:14px;border:0;font:700 20px/1 serif;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;${on ? 'background:#1D9EC0;color:#fff' : 'background:#fff;color:#191F28'}`; };
     paint(); b.onclick = () => { const on = !ls.get('mapHanzi', false); ls.set('mapHanzi', on); paint(); (koHanjaWire.maps || []).forEach(f => { try { f(); } catch {} });
-      toast(on ? (jp === 'kr' ? '지명 밑에 한자도 같이 보여요' : jp === 'vn' ? '한자 이름과 우리 한자 읽기도 같이 보여요' : jp ? '일본어 이름과 발음도 같이 보여요' : '한자와 중국어 발음도 같이 보여요') : '같이 보던 이름을 숨겼어요'); };
+      toast(on ? '외국은 한자 · 한국 발음 · 현지 발음 · 영어, 우리나라는 한국어 · 한자 · 영어로 보여요' : '같이 보던 이름을 숨겼어요'); };
     return b; } });
   new C().addTo(map);
 }

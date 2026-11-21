@@ -22,6 +22,7 @@
 - 바깥 서비스: OSM 지도 조각·OpenFreeMap·Nominatim·Overpass·OSRM/Valhalla·Open-Meteo·위키백과/위키미디어·구글 Places(`GPL_KEY`, 하루 150곳)·카카오 공유(`KAKAO_JS_KEY`)·Claude(사용자가 넣은 `claudeKey`, 여행 AI는 `TRIP_MODEL`, 나머지 `FA_MODEL`). 쓸 때마다 알림 두 번 + `labAiLog`. 바깥 자료를 새로 쓰면 `privacy.html`(한·영)도 고침
 - 안드로이드 앱(`runapp/`, Capacitor): MPD 전체·MPD Run(예전 'MPD 파크골프' 따로 앱은 2026-11-21 판 -305부터 안 만듦, 파크골프는 MPD 안 모드). `native.js`가 백그라운드 위치·TTS·공유·저장을 바꿔 끼움, 화면은 `liveUpdate`로 저절로 새로(기록 중엔 안 바뀜), **휴대폰 기능을 바꿀 때만 새 APK**(GitHub Actions가 만듦, 서명 `runapp/debug.keystore` 바꾸지 말 것). 받는 주소 …/releases/latest/download/MPD.apk · MPD_run.apk
 - 갤럭시워치 앱(`watchapp/`, Kotlin, MPD Run 워치): 시계 혼자 기록, 휴대폰 MPD Run 앱으로 Data Layer 전송. 받는 주소 …/releases/download/watch/MPD_run_watch.apk(릴리스 설명 글 형식 바꾸지 말 것)
+- 지도 이름(漢·あ, 판 -327): 나라는 지도 모드가 아니라 장소 위치로(`koPlaceCC`). 켜면 외국 '한자/한국 한자음/현지 발음/영어', 우리나라 '한국어/한자/영어' — 이 차례를 바꾸지 말 것(`koNameInfo`)
 - 큰 덩어리(이름으로 docs/기록.md를 찾을 것): 기록 화면(모드마다 첫 화면·대시보드)·내 MPD(`viewMyOne`)·공유 카드/링크·여행 계획(`viewPlanOne`, 하나투어·블로그 가져오기, 일행 채팅·같이 고치기·권한·AI 묻기)·이동 영상(`viewFilm`)·포토스토리/포토북/그림 앨범/여행 후기·가족 앨범·자동 기록·대화 기록·클라우드 맞추기·백업
 
 ## 꼭 지킬 자료 규칙 (사고가 났던 것)
