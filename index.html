@@ -1228,11 +1228,11 @@ html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .pm-ls{display:flex;flex-direction:column;gap:2px;background:#fff;border-radius:16px;padding:4px 0}
 .pm-row{display:flex;align-items:center;gap:8px;padding:10px 12px}.pm-av{width:34px;height:34px;border-radius:50%;background:#E8F4F8;color:#1D9EC0;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
 .pm-nm{flex:1;min-width:0;display:flex;flex-direction:column}.pm-nm b{font-size:15px;font-weight:600;color:#191F28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pm-nm span{font-size:12px;color:#8B95A1}
-.pm-t{flex:none;border:1px solid #E5E8EB;background:#fff;color:#8B95A1;border-radius:999px;padding:6px 10px;font:500 13px Pretendard,sans-serif}.pm-t.on{background:#191F28;border-color:#191F28;color:#fff}.pm-t:disabled{opacity:.35}.pm-rl{min-width:52px}.pm-rl.v{background:#E8F3FF;border-color:#E8F3FF;color:#1B64DA}.pm-rl.no{background:#FDECEC;border-color:#FDECEC;color:#C2410C}
+.pm-t{flex:none;border:1px solid #E5E8EB;background:#fff;color:#8B95A1;border-radius:999px;padding:6px 10px;font:500 13px Pretendard,sans-serif}.pm-t.on{background:#191F28;border-color:#191F28;color:#fff}.pm-t:disabled{opacity:.35}.iv-vh{margin-top:8px;padding:10px 12px;border-radius:12px;background:#EEF6FF;display:flex;flex-direction:column;gap:2px}.iv-vh b{font-size:13.5px;color:#1B64DA}.iv-vh span{font-size:12.5px;color:#4E5968}.pm-scw{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pm-sc{border-radius:14px;padding:12px;font-size:13.5px;line-height:1.7}.pm-sc b{display:block;font-size:14px;margin-bottom:2px}.pm-sc.ok{background:#EEF6FF;color:#1B4F9C}.pm-sc.no{background:#F4F5F7;color:#4E5968}.pm-rl{min-width:52px}.pm-rl.v{background:#E8F3FF;border-color:#E8F3FF;color:#1B64DA}.pm-rl.no{background:#FDECEC;border-color:#FDECEC;color:#C2410C}
 .pm-def{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F7F8FA;border-radius:14px;padding:10px 12px}.pm-def span{flex:1;font-size:13.5px;color:#4E5968;min-width:120px}
 .pm-note{margin:0;padding-left:18px;font-size:12.5px;color:#6B7684;line-height:1.5;display:flex;flex-direction:column;gap:4px}.pm-empty{font-size:13.5px;color:#8B95A1;padding:14px;background:#fff;border-radius:14px}.pm-me{font-size:14px;color:#191F28;background:#fff;border-radius:14px;padding:12px}
 .pm-ban{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:none;border-radius:14px;background:#FFF1EC;padding:10px 14px;font:inherit;cursor:pointer}.pm-ban b{font-size:14px;font-weight:600;color:#D2462A}.pm-ban span{font-size:12.5px;color:#6B7684}
-.pm-ban.ro{background:#F2F4F6;cursor:default}.pm-ban.ro b{color:#191F28}
+.pm-ban.ro{background:#F2F4F6;cursor:default}.pm-ban.ro b{color:#191F28}.pm-ban.v{background:#EEF6FF}.pm-ban.v b{color:#1B64DA}
 .tr-ov{position:fixed;inset:0;z-index:5300;cursor:pointer}
 .tr-hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(15,20,30,.62);transition:all .28s ease;pointer-events:none;outline:2px solid rgba(255,255,255,.9)}
 .tr-tip{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;background:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.3);cursor:default}
@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-322-viewloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-323-scope';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "구경하는 가족도 지도에서 일행 위치를 볼 수 있어요 · 이 판부터 내 위치 공유를 켠 사람만 보여요 · 예전에 켜 둔 분은 한 번 껐다 켜 주세요";
+const UI_NOTES = "구경(보기만)이 볼 수 있는 것과 일행만 보는 것이 화면에 나눠 보여요 · 준비 정보에 일행만 보는 정보 묶음이 생겼고 채팅 칸과 사진 칸에도 누가 보는지 적혀 있어요 · 구경하는 분은 맨 위 안내를 누르면 자세히 볼 수 있어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -10513,6 +10513,9 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
   const inp = el('input', { type: 'text', placeholder: E('이름이나 별명', 'Your name or nickname'), maxlength: 20, value: '', autocomplete: 'off', class: 'iv-in' });
   const M0 = ((planGet(p.id) || p).mem || []).filter(m => m && m.n && !m.snd); let pick = null;   // snd = 초대를 보낸 사람(그 사람 휴대폰의 '나')이라 빼요 ·   // 판 -261 (사용자 '초대받은 사람이 미리 넣은 이름 골라서 들어오게 해'): 주인이 미리 넣은 이름 칩
   const chs = M0.length ? el('div', { class: 'iv-chs' }, ...M0.map(m => el('button', { type: 'button', class: 'iv-ch', text: m.n, onclick: e => { pick = m.id; inp.value = m.n; inp.classList.remove('err'); chs.querySelectorAll('.iv-ch').forEach(b => b.classList.toggle('on', b === e.currentTarget)); } }))) : null;
+  const vHint = el('div', { class: 'iv-vh', style: 'display:none' });   // 판 -323: 목록에 없는 이름을 적는 동안 '구경으로 들어가요'를 미리
+  const vPaint = () => { const v = inp.value.trim(), out = !!(chs && v && !M0.some(m => permNk(m.n) === permNk(v))); vHint.style.display = out ? '' : 'none'; if (out) faRc(vHint, el('b', { text: E('목록에 없는 이름이라 구경(보기만)으로 들어가요', 'Not on the list, so you join as a viewer') }), el('span', { text: E('일정·사진·일행 위치는 보여요 · 대화·경비·예약은 일행만 봐요', 'You see the plan, photos and group location · chat, costs and bookings are for the group') })); };
+  inp.addEventListener('input', vPaint);
   inp.addEventListener('input', () => { const c = chs && [...chs.children].find(b => b.classList.contains('on')); if (c && c.textContent !== inp.value.trim()) { c.classList.remove('on'); pick = null; } });
   const save = () => { const v = inp.value.trim().slice(0, 20); if (!v) { inp.focus(); inp.classList.add('err'); return; }
     ls.set('nick', v); const q = planGet(p.id) || p; q.mem = q.mem || [];
@@ -10527,7 +10530,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
       el('div', { class: 'iv-k', text: E('여행 초대', 'TRIP INVITATION') }),
       el('div', { class: 'iv-t', text: nm }),
       el('div', { class: 'iv-s', text: EN ? enDate() : [planNights(p), p.start ? planDayLabel(p, 0) + ' 출발' : ''].filter(Boolean).join(' · ') }),
-            el('label', { class: 'iv-lb', style: 'margin-top:18px', text: chs ? E('나는 누구인가요?', 'Who are you?') : E('일행에게 보일 이름', 'Name shown to the group') }), chs, chs ? el('label', { class: 'iv-lb', style: 'font-weight:500;color:#8B95A1', text: E('목록에 없으면 직접 적기 · 일정과 사진을 볼 수 있어요', 'Not listed? Type your name · you can view the plan and photos') }) : null, inp,
+            el('label', { class: 'iv-lb', style: 'margin-top:18px', text: chs ? E('나는 누구인가요?', 'Who are you?') : E('일행에게 보일 이름', 'Name shown to the group') }), chs, chs ? el('label', { class: 'iv-lb', style: 'font-weight:500;color:#8B95A1', text: E('목록에 없으면 직접 적기', 'Not listed? Type your name') }) : null, inp, vHint,
       el('button', { class: 'iv-go', text: E('다음', 'Next'), onclick: save })));
   const howTo = v => {   // 판 -197 (사용자 '간단한 사용법도 띄우고 나서 시작'): 이름 다음에 사용법 한 장
     const lg = (() => { try { return planCN(p) ? E('중국어', 'Chinese') : planJP(p) ? E('일본어', 'Japanese') : ''; } catch { return ''; } })();
@@ -10858,6 +10861,7 @@ function planPrepSheet(p, wx) {
   const nm0 = (p.dest && p.dest.n) || planDestName(p) || '여행지', nMem = (p.mem || []).length, nDoc = (p.docs || []).length;
   body.append(H('여행 정보'), grp(
     nrow('📘', `${nm0} 여행 정보`, planAbroad(p) ? '소개·환율' : '소개·볼거리', './?plan=1&p=' + encodeURIComponent(p.id) + '&info=1'),
+    ), V ? '' : H(planShared(p) ? '🔒 일행만 보는 정보' : '내 여행 정보'), V ? '' : grp(   // 판 -323 (사용자 '여행멤버가 아닌 사람이 볼수 있는 것과 볼수 없는 것 … 티가 나게'): 구경도 보는 것 / 일행만 나눔
     V ? null : nrow('👥', '함께 가는 사람', nMem ? `${nMem}명` : p.shOn ? '같이 고치는 중' : '나 혼자', () => planMemSheet(p, rd)),
     V ? null : (() => { const gv = () => p.guide && (p.guide.n || p.guide.tel) ? (p.guide.n || p.guide.tel) : '적기';
       const r = nrow('📞', '현지 가이드', gv(), () => planGuideEdit(p, () => { rd(); const v = r.querySelector('.st-v'); if (v) v.textContent = gv(); })); return r; })(),
@@ -11085,7 +11089,7 @@ async function viewTripRoom(code, title, planId) {
     const tb = (k, t) => el('button', { class: 'btn small ' + (tab === k ? 'dark' : 'line'), style: 'flex:1', text: t, onclick: () => { tab = k; ls.set('tripTab', k); draw(); } });
     faRc(top, 
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
-      V ? el('div', { class: 'sub', text: '👁 구경하는 중이에요 · 일행이 올린 사진을 볼 수 있어요' }) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
+      V ? el('button', { type: 'button', class: 'pm-ban v', onclick: () => { const S0 = permCached(p || planOfRoom(code)); permVSheet(S0 && S0.own && S0.own.nm || ''); } }, el('b', { text: '👁 구경하는 중' }), el('span', { text: '일행이 올린 사진을 볼 수 있어요 · 대화는 일행만 ›' })) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
         el('div', { style: 'flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center' }, el('span', { class: 'sub', text: `함께하는 사람 ${pp.size}명${[...pp.values()].filter(v => !v).length ? ` (이름 안 적은 ${[...pp.values()].filter(v => !v).length}명 포함)` : ''}` }),
           ...[...pp.keys()].map(k => el('span', { style: 'display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#4E5968' }, trDot(k, pp.get(k)), nmOf(k) + (k === me ? '(나)' : ''))),
           S.err ? el('span', { class: 'sub', style: 'color:#C2410C', text: '⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' }) : null),
@@ -11132,7 +11136,7 @@ async function viewTripRoom(code, title, planId) {
     for (const m of msgs.slice(-300)) { const dl = new Date(m.t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }); if (dl !== lastDay) { lastDay = dl; box.append(el('div', { class: 'dt', style: 'text-align:center;font-weight:700', text: dl })); } box.append(bubble(m)); }
     // 판 -135 (개선 지시서 2번): 받는 사람을 입력칸 위에서 글자로 고름 — 💬 일행에게 / ✨ AI 도우미에게 (판 -132의 '?로 끝나면 AI에게'는 없앰: 일반 대화는 AI로 가지 않아요)
     const who = trBotWho(S);
-    const ta = el('textarea', { class: 'tr-in', rows: 1, placeholder: !trName() ? '먼저 위에 이름을 적어 주세요' : toAI ? 'AI 도우미에게 물어볼 것 (일행도 같이 봐요)' : '일행에게 보낼 말', style: `flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:${toAI ? '2px solid #FF8A6B' : '1px solid var(--line)'}` });
+    const ta = el('textarea', { class: 'tr-in', rows: 1, placeholder: !trName() ? '먼저 위에 이름을 적어 주세요' : toAI ? 'AI 도우미에게 물어볼 것 (일행도 같이 봐요)' : '일행에게 보낼 말 (일행만 봐요)', style: `flex:1;min-width:0;resize:none;font:inherit;padding:10px;border-radius:14px;border:${toAI ? '2px solid #FF8A6B' : '1px solid var(--line)'}` });
     const seg = (on, t, f) => el('button', { type: 'button', style: `flex:1;border:none;border-radius:10px;padding:8px 6px;font:700 14px Pretendard,sans-serif;cursor:pointer;${on ? 'background:#15202B;color:#fff' : 'background:#F1F3F5;color:#4E5968'}`, text: t, onclick: f });
     const setTo = v => { toAI = v; try { sessionStorage.setItem('tripTo:' + R.rid, v ? '1' : '0'); } catch {} const keep = ta.value; draw(true); setTimeout(() => { const t = document.querySelector('.tr-in'); if (t) { t.value = keep; t.focus(); } }, 30); };
     const ask = async () => { const x = ta.value.trim(); if (!x) return toast('물어볼 것을 적어 주세요'); if (!trName()) return toast('먼저 맨 위에 내 이름을 적어 주세요'); if (ask.busy) return; ask.busy = 1; ta.value = '';
@@ -11170,7 +11174,7 @@ async function viewTripRoom(code, title, planId) {
     faRc(body, status, V ? null : autoBox,
       V ? el('div', { class: 'dt', text: `사진 ${L.length}장` }) : el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center' },
         el('button', { class: 'btn primary', text: '📷 사진 올리기', onclick: () => fileIn.click() }),
-        el('div', { class: 'dt', text: `${L.length}장 · 방에 ${Math.max(0, TR_MAX - L.length)}장 더 넣을 수 있어요` })),
+        el('div', { class: 'dt', text: `${L.length}장 · 구경하는 가족도 봐요 · ${Math.max(0, TR_MAX - L.length)}장 더 넣을 수 있어요` })),   // 판 -323
       V ? null : drvBox,
       ...(L.length ? [...groups].flatMap(([k, a]) => [el('div', { style: 'font-weight:800;margin-top:6px', text: `${k} · ${a.length}장` }),
         el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:4px' }, ...a.map(ph => el('div', { style: 'position:relative;aspect-ratio:1;cursor:pointer', onclick: () => trViewer(R, L, L.indexOf(ph)) },
@@ -11465,6 +11469,11 @@ function permOf(S, id) { if (!S || !S.perm) return PERM_ALL; if (S.own && S.own.
   if (S.mn && S.mn.length && nm && !S.mn.includes(permNk(nm))) return { r: D.r ? 1 : 0, w: 0, ai: 0, v: 1 };
   return Object.assign({ v: 0 }, D); }
 function permCached(p) { const S = p && p.room && p.room.code ? (ls.get('tripPermC:' + p.room.code, null)) : null; if (S) S.mn = ((planGet(p.id) || p).mem || []).map(m => permNk(m.n)).filter(Boolean); return S; }
+// 판 -323: 구경(보기만)이 보는 것 / 일행만 보는 것 — 구경 안내·주인 권한 창·초대 이름 창에서 같은 모양
+var PERM_SEE = ['일정과 지도', '여행 정보와 날씨', '일행이 올린 사진', '위치 공유를 켠 일행 위치'], PERM_HIDE = ['일행 대화', '함께 가는 사람과 가이드 전화', '경비와 정산', '예약과 항공권', '출발 미팅과 여행사 안내', 'AI 묻기와 일정 고치기'];
+function permScope() { const col = (ok, t, L) => el('div', { class: 'pm-sc ' + (ok ? 'ok' : 'no') }, el('b', { text: t }), ...L.map(x => el('div', { text: (ok ? '✓ ' : '✕ ') + x })));
+  return el('div', { class: 'pm-scw' }, col(1, '👁 구경도 보는 것', PERM_SEE), col(0, '🔒 일행만 보는 것', PERM_HIDE)); }
+function permVSheet(nm) { return labSheet('👁 구경하는 중이에요', el('div', { class: 'dt', style: 'margin-bottom:10px', text: `함께 가는 사람 목록에 없는 이름으로 들어와서 보기만 할 수 있어요.${nm ? ` 일행이 되려면 ${nm} 님께 말해 주세요.` : ''}` }), permScope()); }
 function permIsV(p) { if (!p) return false; const S = permCached(p); if (S && S.own && S.perm) return S.own.by !== trMe() && !!permOf(S, trMe()).v; return !!ls.get('planV:' + p.id, 0) && !(p.room && p.room.mk); }   // 아직 권한을 못 받았으면 들어올 때 남긴 표시로
 async function permSync(p, force) {
   if (!p || !p.room || !p.room.code) return null;
@@ -11528,12 +11537,13 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
           el('button', { type: 'button', class: 'pm-t on pm-rl' + (P.v ? ' v' : !P.r ? ' no' : ''), text: rl, 'aria-label': `${x.nm || ''} 역할 바꾸기`, onclick: () => role(x, rl) }),
           tg(P.w, '고치기', () => set(x.by, 'w'), !P.r || P.v), tg(P.ai, 'AI', () => set(x.by, 'ai'), !P.r || P.v || !trOwnKey())); }))
         : el('div', { class: 'pm-empty', text: '아직 들어온 사람이 없어요. 초대 링크를 받은 사람이 계획을 열면 여기에 나와요.' }),
+      permScope(),
       el('div', { class: 'pm-def' }, el('span', { text: '새로 들어온 일행 기본' }),
         tg(D.r, '보기', async () => { D.r = D.r ? 0 : 1; if (!D.r) { D.w = 0; D.ai = 0; } paint(); await permSave(p, S).catch(() => {}); }),
         tg(D.w, '고치기', async () => { D.w = D.w ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r),
         tg(D.ai, 'AI', async () => { D.ai = D.ai ? 0 : 1; paint(); await permSave(p, S).catch(() => {}); }, !D.r || !trOwnKey())),
       el('ul', { class: 'pm-note' },
-        el('li', { text: '함께 가는 사람 목록에 없는 이름은 구경으로 들어와요. 구경은 일정·사진과 위치 공유를 켠 일행 위치만 보고, 대화·경비·예약은 못 봐요. 이름 옆을 누르면 일행 → 구경 → 못 봄.' }),
+        el('li', { text: '함께 가는 사람 목록에 없는 이름은 구경으로 들어와요. 이름 옆을 누르면 일행 → 구경 → 못 봄.' }),
         el('li', { text: 'AI는 내 Claude 열쇠를 허락한 사람의 휴대폰에만 잠가서 보내요(사용료는 내 계정, 한 사람 하루 ' + AI_SHARE_MAX + '번). 끄면 그 사람 휴대폰에서 지워져요.' }),
         el('li', { text: '보기·고치기는 앱이 막는 거예요. 링크를 가진 사람이 마음먹고 앱을 뜯으면 우회할 수 있어요. 링크는 믿는 사람에게만 보내 주세요.' }),
         trOwnKey() ? null : el('li', { text: '이 휴대폰에 Claude 열쇠가 없어서 AI 권한은 줄 수 없어요.' })));
@@ -11545,7 +11555,8 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
 }
 function permLine(p, rd) {   // 계획 화면 맨 위 작은 줄: 주인 = 새로 들어온 사람 · 일행 = 내 권한
   const S = permCached(p), EN0 = planEN(p);
-  const vBan = nm => el('div', { class: 'pm-ban ro' }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중이에요' }), el('span', { text: EN0 ? `You can see the plan, photos and where the group is · chat, costs and bookings are for the group only` : `일정과 사진과 일행 위치를 볼 수 있어요 · 일행 대화·경비·예약은 일행만 봐요${nm ? ` · 일행이 되려면 ${nm} 님께 말해 주세요` : ''}` }));   // 판 -320
+  const vSheet = permVSheet;
+  const vBan = nm => el('button', { type: 'button', class: 'pm-ban v', onclick: () => vSheet(nm) }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중' }), el('span', { text: EN0 ? `Plan, photos and group location · chat, costs and bookings are for the group only ›` : `일정·사진·일행 위치만 보여요 · 대화·경비·예약은 일행만 ›` }));   // 판 -320 · 판 -323: 누르면 보는 것 / 일행만 보는 것
   if (!S || !S.own || !S.perm) return permIsV(p) ? vBan('') : null;
   if (S.own.by === trMe()) { const n = (S.tk || []).filter(x => !(S.perm.m || {})[x.by]).length; if (!n) return null;
     return el('button', { type: 'button', class: 'pm-ban', onclick: () => permSheet(p, rd) }, el('b', { text: `👋 새로 들어온 사람 ${n}명` }), el('span', { text: '권한 정하기 ›' })); }

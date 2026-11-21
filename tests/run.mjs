@@ -484,6 +484,10 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   if (!(await page.$('.iv-in'))) await page.evaluate(() => __T.planAskName(__T.planAll().find(x => x.id === 'pview1'), true));
   await sleep(400);
   ok(await page.$('.iv-in'), '초대 이름 창이 안 떠요');
+  await page.fill('.iv-in', '옆집 아저씨'); await sleep(200);
+  ok(await page.isVisible('.iv-vh'), "목록에 없는 이름을 적는데 '구경으로 들어가요' 안내가 안 보여요");   // 판 -323
+  await page.fill('.iv-in', '유진'); await sleep(200);
+  ok(!(await page.isVisible('.iv-vh')), '목록에 있는 이름인데 구경 안내가 보여요');
   await page.fill('.iv-in', '옆집 아저씨'); await page.click('.iv-go'); await sleep(800);
   const st = await page.evaluate(() => ({ mem: __T.planAll().find(x => x.id === 'pview1').mem.length, v: __T.permIsV(__T.planAll().find(x => x.id === 'pview1')) }));
   ok(st.mem === 2, '목록에 없는 이름이 함께 가는 사람에 저절로 들어갔어요 ' + st.mem);
@@ -502,9 +506,21 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   ok(bar.some(x => /사진/.test(x)) && !bar.some(x => /일행 채팅/.test(x)), "구경 아래 메뉴는 '일행 채팅' 대신 '사진'이어야 해요: " + bar.join(','));
   ok(!(await page.$('.n-ib[aria-label="일행 초대 · 일정 보내기"]')), '구경에게 초대 단추가 보여요');
   ok(/구경하는 중/.test(await page.evaluate(() => document.body.innerText)), "맨 위에 '구경하는 중' 안내가 없어요");
+  await page.click('.pm-ban.v'); await sleep(400);
+  const vs = await page.evaluate(() => document.body.innerText);
+  ok(/구경도 보는 것/.test(vs) && /일행만 보는 것/.test(vs), "구경 안내를 눌러도 '보는 것 / 일행만 보는 것'이 안 나와요");
+  await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500);
   await page.click('.tv-bar button:has-text("준비·정보")'); await sleep(500);
   const prep = await page.evaluate(() => document.body.innerText);
   ok(!/함께 가는 사람|여행 경비|예약 · 항공권|체크리스트/.test(prep), '구경에게 준비·정보의 일행 것(함께 가는 사람·경비·예약·체크리스트)이 보여요');
+  // 일행 쪽: 준비·정보에 '🔒 일행만 보는 정보' 묶음, 채팅 칸에 '일행만 봐요'
+  await page.evaluate(() => { localStorage.setItem('planV:pview1', '0'); localStorage.setItem('planMe:pview1', '"m1"'); localStorage.setItem('nick', '"성식"'); });
+  await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500);
+  await page.click('.tv-bar button:has-text("준비·정보")'); await sleep(500);
+  ok(/🔒 일행만 보는 정보/.test(await page.evaluate(() => document.body.innerText)), "일행 준비·정보에 '일행만 보는 정보' 묶음이 없어요");
+  await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(1500);
+  ok(/일행만 봐요/.test(await page.$eval('.tr-in', t => t.placeholder)), "일행 채팅 칸에 '일행만 봐요'가 없어요");
+  await page.evaluate(() => { localStorage.setItem('planV:pview1', '1'); localStorage.setItem('planMe:pview1', '"v"'); localStorage.setItem('nick', '"옆집 아저씨"'); });
   await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(2000); noErr(page, '구경 일행 채팅');
   const btns = await page.$$eval('button', bs => bs.map(b => b.textContent));
   ok(!btns.some(x => /💬 대화|📍 위치|보내기|사진 올리기|일행 초대/.test(x)), '구경에게 대화·위치·보내기·올리기·초대가 보여요: ' + btns.filter(x => /대화|위치|보내기|올리기|초대/.test(x)).join(','));
