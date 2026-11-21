@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.21-301-splitvid';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.21-302-plphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "세 칸 영상의 아래 칸에서 동영상이 실제로 움직여요";
+const UI_NOTES = "여행 계획 미리 보기 영상의 사진을 다시 골라요 · 내가 넣은 사진이 먼저이고 그다음 여행사 안내 사진과 구글 지도 사진이에요 · 셋 다 없을 때만 공개 사진 중 사람이 크게 찍히지 않은 것을 넣어요";
 window.MPD_VER = UI_VER;
 const APP_BASE = window.MD_WEB_BASE || (location.origin + location.pathname);
 addEventListener('md-native-toast', e => toast(e.detail));   // 앱에서 저장했을 때 알림
@@ -6828,7 +6828,7 @@ function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, st
 //   장소 사이가 100km 넘으면 ✈(시속 900km 곡선), 1.5km 넘으면 🚌 차(시속 40km), 그 밖은 걸어서 · 구경하는 곳은 둘레를 천천히 한 바퀴(둘러보기)
 //   실제로 다닐 길(도로)은 몰라서 직선으로 이어요. 시각이 적힌 장소는 그 시각에 닿게
 function planFilmSrc(p) {
-  const all = (p.it || []).map((x, i) => [Object.assign({}, x, { lat: +x.lat, lng: +x.lng, d: +x.d || 0 }), i]).filter(([x]) => x.lat != null && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !(x.lat === 0 && x.lng === 0)).sort((a, b) => a[0].d - b[0].d || a[1] - b[1]).map(a => a[0]);
+  const all = (p.it || []).map((x, i) => [Object.assign({}, x, { lat: +x.lat, lng: +x.lng, d: +x.d || 0 }), i]).filter(([x]) => x.lat != null && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !(x.lat === 0 && x.lng === 0)).sort((a, b) => a[0].d - b[0].d || a[1] - b[1]).map(a => (a[0].__o = p.it[a[1]], a[0]));   // __o: 원래 일정 칸(사진 찾기용, 판 -302)
   if (all.length < 2) return null;
   const rows = [], days = [], spots = [], base = planDate(p, 0) ? planDate(p, 0).getTime() : Date.now();
   const tOf = x => { const b = planDate(p, x.d); const m = /^(\d{1,2}):(\d{2})$/.exec(x.t || ''); if (!b || !m) return null; b.setHours(+m[1], +m[2], 0, 0); return b.getTime(); };
@@ -6853,7 +6853,7 @@ function planFilmSrc(p) {
       else if (dd > 5) go(x, v, dd > 1500 ? 120 : 15);
     } else { t = Math.max(t, want || t); rows.push([x.lat, x.lng, Math.round(t), null]); }
     const stay = x.k === 'food' ? 50 : x.k === 'stay' ? 30 : x.k === 'show' ? 60 : x.k === 'spot' ? 40 : 10;
-    spots.push({ n: x.n, lat: x.lat, lng: x.lng, ts: Math.round(t), te: Math.round(t + stay * 60000), pk: x.k, ap: !!x.ap, m: x.m || '', t: x.t || '', k: x.k === 'food' || x.k === 'stay' ? 'stay' : '', food: x.k === 'food' ? { menu: x.m || '' } : null });
+    spots.push({ x: x.__o, n: x.n, lat: x.lat, lng: x.lng, ts: Math.round(t), te: Math.round(t + stay * 60000), pk: x.k, ap: !!x.ap, m: x.m || '', t: x.t || '', k: x.k === 'food' || x.k === 'stay' ? 'stay' : '', food: x.k === 'food' ? { menu: x.m || '' } : null });
     t += stay * 60000;   // 판 -111: 예전엔 구경하는 곳에서 반지름 70m 원을 돌아 건물·숲 위로 걸어 다녔음 → 그 자리에 머묾
     prev = x;
   }
@@ -6862,15 +6862,16 @@ function planFilmSrc(p) {
 }
 // 계획 장소 사진: 위키미디어 공용(자유 이용 사진)에서 그 자리 둘레 사진을 찾아요 · 구경하는 곳만, 대략 위치는 빼고, 14곳까지
 var PLAN_PH = new Map();
-async function commonsPhoto(lat, lng) {
+async function commonsPhoto(lat, lng, noPeople) {   // noPeople: 사람이 크게 찍힌 사진은 건너뜀(판 -302, 이 휴대폰 안에서 사람 찾기 phHasPeople)
   const u = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${lat.toFixed(5)}%7C${lng.toFixed(5)}&ggsradius=1500&ggsnamespace=6&ggslimit=30&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=1280`;
   const r = await fetchT(u, {}, 15000); if (!r.ok) throw new Error('HTTP ' + r.status);
   const pages = Object.values(((await r.json()).query || {}).pages || {});
   const txt = h => String(h || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
   const L = pages.map(pg => ({ pg, ii: (pg.imageinfo || [])[0] })).filter(({ pg, ii }) => ii && /jpeg/.test(ii.mime) && ii.width >= 900 && ii.height >= 600 && ii.width / ii.height < 2.4 && ii.width / ii.height > 0.55 && !/map|karte|logo|sign|plan|diagram|flag|ticket|menu|receipt|screenshot|지도|안내/i.test(pg.title));
   L.sort((a, b) => Math.min(b.ii.width * b.ii.height, 12e6) * (b.ii.width >= b.ii.height ? 1.15 : 1) - Math.min(a.ii.width * a.ii.height, 12e6) * (a.ii.width >= a.ii.height ? 1.15 : 1));
-  for (const { pg, ii } of L.slice(0, 3)) {
+  for (const { pg, ii } of L.slice(0, noPeople ? 8 : 3)) {
     try { const b = await (await fetchT(ii.thumburl || ii.url, {}, 20000)).blob(); if (!b.size) continue; const md = ii.extmetadata || {};
+      if (noPeople) { let has = null; try { has = await phHasPeople({ id: 'cm:' + pg.title, blob: b }); } catch {} if (has === 1) continue; }
       return { blob: b, credit: { title: String(pg.title).replace(/^File:/, ''), by: txt(md.Artist && md.Artist.value) || '작가 미상', lic: txt(md.LicenseShortName && md.LicenseShortName.value) || '', url: ii.descriptionurl || '' } }; } catch {}
   }
   return null;
@@ -7208,12 +7209,22 @@ function placeInfoBox(x, city) {   // 장소 보기 안의 사진·소개·링�
   }).catch(() => box.replaceChildren(el('div', { class: 'sub', style: 'font-size:13px', text: '⚠ 사진·소개를 못 받았어요 (인터넷 확인) · 링크로 찾아보세요' }), linkRow(null)));
   return box;
 }
+// 판 -302 (사용자 계획 영상 캡처 '사진 선정은 어떻게 하는 거야. 아주 망했어' — 천문산에 계단에 몰린 남의 사람들 사진이 나왔음 → '1.2.3 해도 없으면 공개 사진 중 골라서 넣어'):
+//   계획 화면 일정 칸과 같은 차례 ① 내가 그 장소에 넣은 사진 ② 여행사 안내 사진 ③ 구글 지도 사진 → 그래도 없으면 ④ 위키미디어 공용 사진 중 사람이 크게 찍히지 않은 것
 async function planPhotos(src, say) {
-  const L = src.spots.filter(s => (s.pk === 'spot' || s.pk === 'show') && !s.ap).slice(0, 14), out = []; let i = 0;
-  for (const s of L) { i++; say && say(`장소 사진을 찾는 중… ${i}/${L.length} · ${s.n}`);
-    const key = s.lat.toFixed(4) + ',' + s.lng.toFixed(4); let got = PLAN_PH.get(key);
-    if (got === undefined) { try { got = await commonsPhoto(s.lat, s.lng); } catch { got = null; } PLAN_PH.set(key, got); }
-    if (got && !out.some(q => q.credit.title === got.credit.title)) out.push({ id: 'cm_' + key, ts: s.ts + 5 * 60000, lat: s.lat, lng: s.lng, blob: got.blob, thumb: got.blob, m: s.m || s.n, credit: got.credit });
+  const p = src.plan, L = src.spots.filter(s => (s.pk === 'spot' || s.pk === 'show') && !s.ap).slice(0, 14), out = [], seen = new Set(); let i = 0;
+  const blobOf = async u => { try { const r = await fetchT(u, {}, 20000); if (!r.ok) return null; const b = await r.blob(); return b.size && /^image\//.test(b.type || 'image/') ? b : null; } catch { return null; } };
+  for (const s of L) { i++; const x = s.x || {}; say && say(`장소 사진을 찾는 중… ${i}/${L.length} · ${s.n}`);
+    const key = s.lat.toFixed(4) + ',' + s.lng.toFixed(4); let got = PLAN_PH.get(key + '|v2');
+    if (got === undefined) { got = null;
+      try { if (p && Array.isArray(x.ph) && x.ph.length) { const r0 = await planPhGet(p, x.ph[0]); if (r0 && (r0.b || r0.s)) got = { blob: r0.b || r0.s, src: 'me' }; } } catch {}
+      if (!got && p) { try { const L2 = (planImgOwn(p, x) || []).filter(Boolean); for (const u of L2.slice(0, 3)) { const b = await blobOf(String(u).replace('/resize/400_0/', '/resize/1280_0/')) || await blobOf(u); if (b) { got = { blob: b, src: 'agency' }; break; } } } catch {} }
+      if (!got && p) { try { const g = await gPhoto(x.n ? x : Object.assign({}, x, { n: s.n, lat: s.lat, lng: s.lng }), p); if (g && g.u) { const b = await blobOf(g.u); if (b) got = { blob: b, src: 'google' }; } } catch {} }
+      if (!got) { try { got = await commonsPhoto(s.lat, s.lng, true); if (got) got.src = 'commons'; } catch { got = null; } }
+      PLAN_PH.set(key + '|v2', got); }
+    if (!got) continue;
+    const ck = got.credit && got.credit.title ? got.credit.title : got.src + '|' + key; if (seen.has(ck)) continue; seen.add(ck);
+    out.push({ id: 'pl_' + key, ts: s.ts + 5 * 60000, lat: s.lat, lng: s.lng, blob: got.blob, thumb: got.blob, m: s.m || s.n, credit: got.src === 'commons' ? got.credit : null, from: got.src });
   }
   return out;
 }
