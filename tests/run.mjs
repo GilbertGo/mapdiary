@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'expCalc', 'expGuess'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -384,6 +384,20 @@ await test('첫 화면 바탕 사진은 새 기록이 생겨도 그대로', asyn
   await page.goto(BASE); await sleep(2500);
   const again = await page.evaluate(() => JSON.parse(localStorage.getItem('homeBgPick') || 'null'));
   ok(again === 'ph_bg1', '새 기록이 생기자 바탕 사진이 바뀌었어요: ' + again);
+});
+
+await test('여행 경비 · 회비(공금) + 내가 쓴 돈 정산 (판 -305)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const hh = [{ id: 'h1', n: '우리 집' }, { id: 'h2', n: '2가정' }, { id: 'h3', n: '3가정' }];
+    const p = { id: 'x', nd: 3, fund: { on: 1, per: 300000, cur: 'KRW', hh }, exp: [{ id: 'e1', amt: 750000, cur: 'KRW', by: 'pot', d: 0 }, { id: 'e2', amt: 60000, cur: 'KRW', by: 'h1', d: 1 }] };
+    const C = __T.expCalc(p, null);
+    return { tot: C.tot, left: C.potLeft, tr: C.tr.map(t => t.fid + '>' + t.tid + ':' + Math.round(t.v)).sort(), g: __T.expGuess('저녁 훠궈') };
+  });
+  ok(r.tot === 810000, '쓴 돈 합계가 81만 원이어야 해요 ' + r.tot);
+  ok(r.left === 150000, '남은 공금이 15만 원이어야 해요 ' + r.left);
+  ok(JSON.stringify(r.tr) === JSON.stringify(['pot>h1:90000', 'pot>h2:30000', 'pot>h3:30000']), '공금에서 9만·3만·3만을 돌려줘야 해요 ' + JSON.stringify(r.tr));
+  ok(r.g === 'meal', '저녁 훠궈는 식사로 짐작해야 해요 ' + r.g);
 });
 
 await browser.close();
