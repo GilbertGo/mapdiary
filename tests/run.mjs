@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
+const EXPOSE = ['filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -311,6 +311,24 @@ await test('영상 전체 지도 · 길이 칸 안에 다 들어감', async page
   });
   ok(r.w === 420, '전체 지도 그림 크기가 이상해요 ' + r.w);
   ok(r.n === 50 && r.out === 0, '길이 전체 지도 밖으로 나가요 ' + r.out);
+});
+
+await test('영상 전체 지도 · 여행지 도착~떠나기 전만 (판 -298)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const home = Array.from({ length: 5 }, (_, i) => ({ lat: 37.55 + i * 0.01, lng: 126.8 }));
+    const flyA = Array.from({ length: 8 }, (_, i) => ({ lat: 37.5 - i * 1, lng: 126.8 - i * 2, fly: true }));
+    const trip = Array.from({ length: 40 }, (_, i) => ({ lat: 29.1 + i * 0.008, lng: 110.4 + Math.sin(i / 6) * 0.05 }));
+    const flyB = Array.from({ length: 8 }, (_, i) => ({ lat: 30 + i, lng: 112 + i * 2, fly: true }));
+    const P = [...home, ...flyA, ...trip, ...flyB, { lat: 37.55, lng: 126.8 }];
+    const [i0, i1] = __T.filmTripRange(P), o = await __T.filmInset(P, true, 210, i0, i1);
+    const inn = o.pts.slice(i0, i1 + 1).filter(([x, y]) => x < 0 || y < 0 || x > 210 || y > 210).length;
+    return { i0, i1, inn, homeOut: o.pts[0][0] < 0 || o.pts[0][0] > 210 || o.pts[0][1] < 0 || o.pts[0][1] > 210, plain: __T.filmTripRange(trip) };
+  });
+  ok(r.i0 === 13 && r.i1 === 52, '여행지 구간을 잘못 잡았어요 ' + r.i0 + '~' + r.i1);
+  ok(r.inn === 0, '여행지 길이 작은 지도 밖으로 나가요');
+  ok(r.homeOut, '집·비행기 구간까지 넣어 축척이 작아졌어요');
+  ok(r.plain[0] === 0 && r.plain[1] === 39, '비행 없는 기록은 처음~끝이어야 해요');
 });
 
 await browser.close();
