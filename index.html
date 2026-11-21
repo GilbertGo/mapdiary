@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-310-noref';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-311-mapinfo';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도에 보이던 77 400 같은 도로 번호 표지를 뺐어요 · 여행 경비에 회비(공금)를 넣을 수 있어요 · 가정마다 걷은 회비와 각자 따로 낸 돈을 함께 셈해서 끝에 공금에서 가정마다 돌려줄 돈을 보여 줘요 · 쓴 돈은 금액만 넣으면 저장돼요 · 낸 사람과 날짜와 분류는 아래 한 줄을 눌러 바꿔요";
+const UI_NOTES = "지도에 산 정상 이름과 높이가 보여요 · 산길과 임도를 갈색 점선으로 진하게 보여요 · 지하철역과 버스 정류장 그림이 보여요 · 가까이 보면 화장실과 약수터와 전망대가 보여요 · 등고선이 보여서 오르막과 내리막을 지도에서 알 수 있어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13097,6 +13097,7 @@ function planAutoVisit(p) {
 //   MapLibre로 그리면서 글자를 name:ko → name:en → name:latin(로마자) → name 순으로 바꿔 Leaflet 지도 밑그림으로 깔아요(@maplibre/maplibre-gl-leaflet)
 //   못 받으면 null(예전 지도 그대로) · 한 번 만든 모양은 다시 씀
 var KO_MAP_PLUGIN = 'https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js';
+var KO_CONTOUR_LIB = 'https://cdn.jsdelivr.net/npm/maplibre-contour@0.1.0/dist/index.min.js';   // 판 -311 등고선
 async function koMapStyle() {
   if (koMapStyle.s) return JSON.parse(JSON.stringify(koMapStyle.s));
   // 한글 → 영어(그 나라 이름과 다를 때만) → 로마자 읽기 → 큰 이름(도시·나라·공항)만 그 나라 글자, 작은 마을·가게·길 이름은 읽을 수 없으면 숨김
@@ -13106,6 +13107,36 @@ async function koMapStyle() {
   // 판 -310 (사용자 지도 캡처 '이 숫자들은 뭐야?'): 도로 번호 표지(77·357·400·'13;25' 같은 국도·지방도 번호)는 우리 지도에 쓸모가 없어 뺌
   st.layers = (st.layers || []).filter(l => !/shield/i.test(l.id || '') && !(l.layout && /"ref"/.test(JSON.stringify(l.layout['text-field'] || '')) && !/name/.test(JSON.stringify(l.layout['text-field'] || ''))));
   for (const l of st.layers || []) { const tf = l.layout && l.layout['text-field']; if (tf && /name/.test(JSON.stringify(tf))) { l.layout['text-field'] = nm(/label_(city|town|state|country)|airport/.test(l.id)); l.metadata = Object.assign({}, l.metadata, { koName: 1 }); } }
+  // 판 -311 (사용자 '어떤 정보가 쓸모 있을까?' → '다 넣어봐'): 걷기·등산·여행 기록에 쓸모 있는 것을 더 보이게
+  const at = id => { const i = st.layers.findIndex(l => l.id === id); return i < 0 ? st.layers.length : i; };
+  const NS = ['Noto Sans Regular'], NB = ['Noto Sans Bold'], halo = { 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 };
+  for (const l of st.layers) {
+    if (/^(road|bridge|tunnel)_path_pedestrian$/.test(l.id)) {   // ① 산길·오솔길: 흰 점선 → 진한 갈색 점선, 더 멀리서도
+      l.minzoom = 12; l.paint = Object.assign({}, l.paint, { 'line-color': '#9A5B34', 'line-opacity': 0.85, 'line-dasharray': [2, 1.2], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.8, 15, 1.6, 18, 3] }); }
+    if (l.id === 'road_service_track') l.paint = Object.assign({}, l.paint, { 'line-color': ['match', ['get', 'class'], 'track', '#C58B5B', l.paint['line-color'] || '#fff'] });   // 임도(track)도 갈색
+    if (l.id === 'poi_transit') {   // ③ 역·정류장: 그림 이름 바로잡기(지하철은 지하철 그림), 이름은 한글
+      l.layout['icon-image'] = ['match', ['get', 'subclass'], 'subway', 'railway_metro_11', ['match', ['get', 'class'], 'rail', 'railway_11', 'bus', 'bus_11', 'airport', 'airport_11', 'railway_11']];
+      l.layout['icon-size'] = 1; l.layout['text-font'] = NS; l.layout['text-field'] = nm(false); }
+  }
+  st.layers.splice(at('waterway_line_label'), 0,
+    { id: 'md_peak', type: 'symbol', source: 'openmaptiles', 'source-layer': 'mountain_peak', minzoom: 10, filter: ['match', ['get', 'class'], ['peak', 'volcano'], true, false],   // ② 산 정상 이름과 높이
+      layout: { 'icon-image': 'mountain_11', 'text-field': ['case', ['has', 'ele'], ['concat', nm(false), '\n', ['to-string', ['get', 'ele']], 'm'], nm(false)], 'text-font': NB, 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 0.7], 'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ele'], 0]] },
+      paint: Object.assign({ 'text-color': '#5A3A1E' }, halo), metadata: { koName: 1 } },
+    { id: 'md_amenity', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 14,   // ④ 화장실·약수터(마시는 물)·전망대
+      filter: ['any', ['match', ['get', 'class'], ['toilets', 'drinking_water'], true, false], ['match', ['get', 'subclass'], ['toilets', 'drinking_water', 'viewpoint', 'spring'], true, false]],
+      layout: { 'icon-image': ['match', ['get', 'subclass'], 'viewpoint', '', 'spring', 'drinking_water_11', ['match', ['get', 'class'], 'toilets', 'toilets_11', 'drinking_water_11']],
+        'text-field': ['match', ['get', 'subclass'], 'viewpoint', '전망대', 'spring', '약수터', 'drinking_water', '물', ['match', ['get', 'class'], 'toilets', '화장실', '물']],
+        'text-font': NS, 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.6], 'text-optional': true },
+      paint: Object.assign({ 'text-color': '#2E5A80' }, halo) });
+  if (window.__mdDem) {   // ⑤ 등고선: 높이 자료(AWS terrarium)로 휴대폰이 그때그때 그림 (maplibre-contour). 못 받으면 등고선 없이
+    st.sources.md_contour = { type: 'vector', tiles: [window.__mdDem.contourProtocolUrl({ thresholds: { 11: [200, 1000], 12: [100, 500], 13: [50, 250], 14: [20, 100], 15: [10, 50] }, contourLayer: 'contours', elevationKey: 'ele', levelKey: 'level' })], maxzoom: 15 };
+    st.layers.splice(at('waterway_tunnel'), 0,
+      { id: 'md_contour', type: 'line', source: 'md_contour', 'source-layer': 'contours', minzoom: 11, paint: { 'line-color': '#B08A64', 'line-opacity': ['match', ['get', 'level'], 1, 0.55, 0.3], 'line-width': ['match', ['get', 'level'], 1, 1, 0.5] } });
+    st.layers.splice(at('waterway_line_label'), 0,
+      { id: 'md_contour_label', type: 'symbol', source: 'md_contour', 'source-layer': 'contours', minzoom: 12, filter: ['>', ['get', 'level'], 0],
+        layout: { 'symbol-placement': 'line', 'text-field': ['concat', ['to-string', ['get', 'ele']], 'm'], 'text-font': NS, 'text-size': 10 },
+        paint: { 'text-color': '#8A6A48', 'text-halo-color': '#ffffff', 'text-halo-width': 1 } });
+  }
   koMapStyle.s = st; return JSON.parse(JSON.stringify(st));
 }
 // 🈶 중국·대만·홍콩 지명은 여행사처럼 우리 한자 읽기로 (2026-11-14 사용자 '지명이나 용어는 여행사에서 안내한 것과 동일하게'):
@@ -13153,6 +13184,8 @@ async function koMapLayer(hanja) {
   try {
     await vtLoad(FILM_LIB.css, true); await vtLoad(FILM_LIB.gl); await vtLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
+    if (!window.__mdDem && !koMapLayer.demTried) { koMapLayer.demTried = 1;   // 판 -311 등고선 (못 받으면 등고선만 없이)
+      try { await vtLoad(KO_CONTOUR_LIB); if (window.mlcontour) { const d = new mlcontour.DemSource({ url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding: 'terrarium', maxzoom: 13, worker: true, cacheSize: 60, timeoutMs: 10000 }); d.setupMaplibre(maplibregl); window.__mdDem = d; koMapStyle.s = null; } } catch {} }
     vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
     if (hanja) { koHanjaLoad(); ly.once('add', () => { const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm); else mm.once('load', () => koHanjaWire(mm)); }; go(); }); }
