@@ -9,7 +9,7 @@ if not re.search(r'\bgit\s+commit\b', cmd) or '[규칙예외]' in cmd:
     sys.exit(0)
 root = os.environ.get('CLAUDE_PROJECT_DIR') or os.getcwd()
 def git(*a):
-    return subprocess.run(['git', '-C', root, *a], capture_output=True, text=True).stdout
+    return subprocess.run(['git', '-c', 'core.quotepath=false', '-C', root, *a], capture_output=True, text=True).stdout
 # 아직 add 전일 수도 있어서(git add -A && git commit) 마지막 커밋과 지금 폴더를 견줘요
 changed = set(git('diff', 'HEAD', '--name-only').split()) | set(git('ls-files', '--others', '--exclude-standard').split())
 if not changed:
