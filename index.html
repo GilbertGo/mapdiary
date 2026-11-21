@@ -3598,9 +3598,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-312-peaks';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-313-landmark';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도에 산 이름이 너무 많이 보이던 것을 줄였어요 · 이름 없는 봉우리는 빼고 멀리서 볼 땐 높은 산만 나오고 확대할수록 작은 산이 나와요";
+const UI_NOTES = "지도에서 사라졌던 공원과 학교와 도서관과 교회 같은 랜드마크 이름이 다시 보여요 · 산 이름은 이름 있는 산만 보이고 멀리서 볼 땐 높은 산만 나와요 · 버스 정류장은 가까이 볼 때만 나와서 지도가 덜 복잡해요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13101,7 +13101,8 @@ var KO_CONTOUR_LIB = 'https://cdn.jsdelivr.net/npm/maplibre-contour@0.1.0/dist/i
 async function koMapStyle() {
   if (koMapStyle.s) return JSON.parse(JSON.stringify(koMapStyle.s));
   // 한글 → 영어(그 나라 이름과 다를 때만) → 로마자 읽기 → 큰 이름(도시·나라·공항)만 그 나라 글자, 작은 마을·가게·길 이름은 읽을 수 없으면 숨김
-  const nm = keep => ['case', ['has', 'name:ko'], ['get', 'name:ko'], ['has', 'name:en'], ['get', 'name:en'],
+  // 판 -313: 우리나라는 한국어 이름이 기본 이름(name)에만 있는 곳이 많아서, 기본 이름이 한글로 시작하면 그대로 씀(예전엔 숨겨서 랜드마크가 안 보였음)
+  const nm = keep => ['case', ['has', 'name:ko'], ['get', 'name:ko'], ['all', ['has', 'name'], ['>=', ['get', 'name'], '가'], ['<', ['get', 'name'], '\ud7a4']], ['get', 'name'], ['has', 'name:en'], ['get', 'name:en'],
     ['all', ['has', 'name_en'], ['!=', ['get', 'name_en'], ['get', 'name']]], ['get', 'name_en'], ['has', 'name:latin'], ['get', 'name:latin'], keep ? ['get', 'name'] : ''];
   const st = vtStyle(await vtGet(FILM_LIB.osm, 'json'));
   // 판 -310 (사용자 지도 캡처 '이 숫자들은 뭐야?'): 도로 번호 표지(77·357·400·'13;25' 같은 국도·지방도 번호)는 우리 지도에 쓸모가 없어 뺌
@@ -13113,10 +13114,13 @@ async function koMapStyle() {
   for (const l of st.layers) {
     if (/^(road|bridge|tunnel)_path_pedestrian$/.test(l.id)) {   // ① 산길·오솔길: 흰 점선 → 진한 갈색 점선, 더 멀리서도
       l.minzoom = 12; l.paint = Object.assign({}, l.paint, { 'line-color': '#9A5B34', 'line-opacity': 0.85, 'line-dasharray': [2, 1.2], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.8, 15, 1.6, 18, 3] }); }
+    if (l.id === 'poi_r1') l.minzoom = 14; if (l.id === 'poi_r7') l.minzoom = 15;
+    if (/^poi_r\d+$/.test(l.id) && l.filter) l.filter = ['all', l.filter, ['!=', ['get', 'class'], 'bus']];   // 버스 정류장은 poi_transit 한 곳에서만   // 판 -313 랜드마크(학교·병원·관광지 등)를 한 단계 먼저
     if (l.id === 'road_service_track') l.paint = Object.assign({}, l.paint, { 'line-color': ['match', ['get', 'class'], 'track', '#C58B5B', l.paint['line-color'] || '#fff'] });   // 임도(track)도 갈색
     if (l.id === 'poi_transit') {   // ③ 역·정류장: 그림 이름 바로잡기(지하철은 지하철 그림), 이름은 한글
-      l.layout['icon-image'] = ['match', ['get', 'subclass'], 'subway', 'railway_metro_11', ['match', ['get', 'class'], 'rail', 'railway_11', 'bus', 'bus_11', 'airport', 'airport_11', 'railway_11']];
-      l.layout['icon-size'] = 1; l.layout['text-font'] = NS; l.layout['text-field'] = nm(false); }
+      const ic = bus => ['match', ['get', 'subclass'], 'subway', 'railway_metro_11', ['match', ['get', 'class'], 'rail', 'railway_11', 'bus', bus, 'airport', 'airport_11', 'railway_11']];
+      l.layout['icon-image'] = ['step', ['zoom'], ic(''), 15, ic('bus_11')];   // 판 -313: 버스 정류장은 너무 많아 그림은 확대 15부터, 이름은 16부터 (역 이름은 늘)
+      l.layout['icon-size'] = 1; l.layout['text-font'] = NS; l.layout['text-field'] = ['step', ['zoom'], ['case', ['==', ['get', 'class'], 'bus'], '', nm(false)], 16, nm(false)]; }
   }
   st.layers.splice(at('waterway_line_label'), 0,
     // 판 -312 (사용자 '산 이름만 많이 보인다'): 이름 없는 봉우리는 빼고, 멀리서는 높은 산만 → 확대할수록 작은 산까지
@@ -13124,6 +13128,11 @@ async function koMapStyle() {
       filter: ['all', ['match', ['get', 'class'], ['peak', 'volcano'], true, false], ['any', ['has', 'name:ko'], ['has', 'name']], ['>=', ['coalesce', ['get', 'ele'], 0], h]],
       layout: { 'icon-image': 'mountain_11', 'text-field': ['case', ['has', 'ele'], ['concat', nm(true), '\n', ['to-string', ['get', 'ele']], 'm'], nm(true)], 'text-font': NB, 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 0.7], 'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ele'], 0]] },
       paint: Object.assign({ 'text-color': '#5A3A1E' }, halo), metadata: { koName: 1 } })),
+    { id: 'md_landmark', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 14, maxzoom: 15,   // 판 -313 큰 랜드마크(공원·관광지·박물관·도서관·병원·행정복지센터·대형마트)는 지금 크기에서도 (15부터는 원래 층이 보여 줌)
+      filter: ['all', ['match', ['get', 'class'], ['park', 'attraction', 'museum', 'library', 'hospital', 'town_hall', 'zoo', 'stadium', 'college', 'place_of_worship', 'castle', 'monument'], true, ['match', ['get', 'subclass'], ['department_store', 'mall'], true, false]], ['<=', ['coalesce', ['get', 'rank'], 99], 12]],
+      layout: { 'icon-image': ['match', ['get', 'class'], 'park', 'park_11', 'hospital', 'hospital_11', 'museum', 'museum_11', 'library', 'library_11', 'town_hall', 'town_hall_11', 'zoo', 'zoo_11', 'attraction', 'attraction_11', 'castle', 'castle_11', 'monument', 'monument_11', 'college', 'college_11', 'stadium', 'stadium_11', 'place_of_worship', 'place_of_worship_11', 'shop_11'],
+        'text-field': nm(false), 'text-font': NS, 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 0.6], 'text-max-width': 8, 'symbol-sort-key': ['coalesce', ['get', 'rank'], 99] },
+      paint: Object.assign({ 'text-color': ['match', ['get', 'class'], 'park', '#3F7A4A', '#4A5563'] }, halo), metadata: { koName: 1 } },
     { id: 'md_amenity', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 14,   // ④ 화장실·약수터(마시는 물)·전망대
       filter: ['any', ['match', ['get', 'class'], ['toilets', 'drinking_water'], true, false], ['match', ['get', 'subclass'], ['toilets', 'drinking_water', 'viewpoint', 'spring'], true, false]],
       layout: { 'icon-image': ['match', ['get', 'subclass'], 'viewpoint', '', 'spring', 'drinking_water_11', ['match', ['get', 'class'], 'toilets', 'toilets_11', 'drinking_water_11']],
