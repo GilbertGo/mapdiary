@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess'];
+const EXPOSE = ['planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -461,6 +461,45 @@ await test('비춰 읽기 탭 · 베트남 계획엔 중국어 메뉴 없음', a
   await page.goto(BASE + '?plan=1&p=pkr1'); await sleep(1500);
   const kr = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
   ok(!kr.some(x => /비춰 읽기/.test(x)), '국내 계획에 비춰 읽기가 나와요');
+});
+
+// ─── 18. 구경(보기만)과 일행 나누기 (판 -320) ───
+await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => { localStorage.setItem('nick', JSON.stringify('나그네'));
+    const S = { own: { by: 'o' }, perm: { by: 'o', m: { x: { r: 1, v: 1 }, y: { r: 0 } }, def: { r: 1, w: 1, ai: 0 } }, tk: [{ by: 'a', nm: '성 식' }, { by: 'b', nm: '옆집' }], mn: ['성식', '유진'] };
+    const a = __T.permOf(S, 'a'), b = __T.permOf(S, 'b'), x = __T.permOf(S, 'x'), y = __T.permOf(S, 'y'), b0 = __T.permOf(Object.assign({}, S, { mn: [] }), 'b'), o = __T.permOf(S, 'o');
+    return { a: [a.r, a.w, a.v], b: [b.r, b.w, b.v], x: [x.r, x.w, x.v], y: [y.r], b0: [b0.w, b0.v], o: o.w }; });
+  ok(JSON.stringify(r.a) === '[1,1,0]', '목록에 있는 이름(띄어쓰기 달라도)은 일행이어야 해요 ' + r.a);
+  ok(JSON.stringify(r.b) === '[1,0,1]', '목록에 없는 이름은 구경(보기만)이어야 해요 ' + r.b);
+  ok(JSON.stringify(r.x) === '[1,0,1]', '주인이 구경으로 정한 사람은 고치기가 꺼져야 해요 ' + r.x);
+  ok(r.y[0] === 0, "주인이 '못 봄'으로 정하면 못 봐야 해요");
+  ok(r.b0[0] === 1 && !r.b0[1], '함께 가는 사람 목록이 비었으면 예전처럼 일행이어야 해요');
+  ok(r.o === 1, '주인은 늘 다 돼야 해요');
+  // 초대 창에서 목록에 없는 이름을 적으면: 함께 가는 사람에 안 들어가고 구경
+  await page.evaluate(() => { localStorage.removeItem('nick'); __T.planSave({ id: 'pview1', name: '오사카', start: '2026-12-01', nd: 2, room: { code: 'tviewertest0001' }, shOn: 1,
+    mem: [{ id: 'm1', n: '성식' }, { id: 'm2', n: '유진' }], it: [{ id: 'a', d: 0, t: '09:00', n: '오사카성', k: 'spot', lat: 34.687, lng: 135.526 }], at: Date.now(), u: Date.now() }); });
+  page.errs = [];
+  await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500);
+  if (!(await page.$('.iv-in'))) await page.evaluate(() => __T.planAskName(__T.planAll().find(x => x.id === 'pview1'), true));
+  await sleep(400);
+  ok(await page.$('.iv-in'), '초대 이름 창이 안 떠요');
+  await page.fill('.iv-in', '옆집 아저씨'); await page.click('.iv-go'); await sleep(800);
+  const st = await page.evaluate(() => ({ mem: __T.planAll().find(x => x.id === 'pview1').mem.length, v: __T.permIsV(__T.planAll().find(x => x.id === 'pview1')) }));
+  ok(st.mem === 2, '목록에 없는 이름이 함께 가는 사람에 저절로 들어갔어요 ' + st.mem);
+  ok(st.v, '목록에 없는 이름이 구경이 아니에요');
+  await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500); noErr(page, '구경 계획 화면');
+  const bar = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
+  ok(!bar.some(x => /AI 묻기/.test(x)), '구경에게 AI 묻기가 보여요: ' + bar.join(','));
+  ok(bar.some(x => /사진/.test(x)) && !bar.some(x => /일행 채팅/.test(x)), "구경 아래 메뉴는 '일행 채팅' 대신 '사진'이어야 해요: " + bar.join(','));
+  ok(!(await page.$('.n-ib[aria-label="일행 초대 · 일정 보내기"]')), '구경에게 초대 단추가 보여요');
+  ok(/구경하는 중/.test(await page.evaluate(() => document.body.innerText)), "맨 위에 '구경하는 중' 안내가 없어요");
+  await page.click('.tv-bar button:has-text("준비·정보")'); await sleep(500);
+  const prep = await page.evaluate(() => document.body.innerText);
+  ok(!/함께 가는 사람|여행 경비|예약 · 항공권|체크리스트/.test(prep), '구경에게 준비·정보의 일행 것(함께 가는 사람·경비·예약·체크리스트)이 보여요');
+  await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(2000); noErr(page, '구경 일행 채팅');
+  const btns = await page.$$eval('button', bs => bs.map(b => b.textContent));
+  ok(!btns.some(x => /💬 대화|📍 위치|보내기|사진 올리기|일행 초대/.test(x)), '구경에게 대화·위치·보내기·올리기·초대가 보여요: ' + btns.filter(x => /대화|위치|보내기|올리기|초대/.test(x)).join(','));
 });
 
 await test('기록 고르기 · 덜 쓰는 모드는 더보기 안 (판 -306)', async page => {
