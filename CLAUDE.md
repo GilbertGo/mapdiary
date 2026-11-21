@@ -20,7 +20,7 @@
 - 저장: localStorage(`ls.get/set`, 기록 키 `track:{ID}`·`walkMode:`·`trackName:` 등 `MD_KEYS`) + IndexedDB `baldojang`(사진·동영상), `mpdTrip`(여행 방·계획 사진·읽을거리), `mpdLab`. `gilbertgo.github.io` 아래 다른 앱과 저장소를 같이 써서 **키 이름을 바꾸지 말 것**
 - 서버: Firebase 프로젝트 `map-photo-diary`(Spark 무료, Firestore 서울, REST로 씀, 공개 열쇠 `FS_KEY`). `shares/{번호}`(잠근 공유 링크, 열쇠는 링크 `#` 뒤) · `rooms/{방}/…`(모임방·여행 방·같이 달리기·시계·오류 기록, 익명 로그인 주인 표시 `o`) · `users/{uid}/…`(구글·카카오 로그인 모음) · `albums/…`(가족 앨범). 규칙은 저장소 `firestore.rules`를 사용자가 콘솔에 붙여 넣음. 공개 MQTT는 예전 링크 읽기만
 - 바깥 서비스: OSM 지도 조각·OpenFreeMap·Nominatim·Overpass·OSRM/Valhalla·Open-Meteo·위키백과/위키미디어·구글 Places(`GPL_KEY`, 하루 150곳)·카카오 공유(`KAKAO_JS_KEY`)·Claude(사용자가 넣은 `claudeKey`, 여행 AI는 `TRIP_MODEL`, 나머지 `FA_MODEL`). 쓸 때마다 알림 두 번 + `labAiLog`. 바깥 자료를 새로 쓰면 `privacy.html`(한·영)도 고침
-- 안드로이드 앱(`runapp/`, Capacitor): MPD 전체·MPD Run·MPD 파크골프. `native.js`가 백그라운드 위치·TTS·공유·저장을 바꿔 끼움, 화면은 `liveUpdate`로 저절로 새로(기록 중엔 안 바뀜), **휴대폰 기능을 바꿀 때만 새 APK**(GitHub Actions가 만듦, 서명 `runapp/debug.keystore` 바꾸지 말 것). 받는 주소 …/releases/latest/download/MPD.apk · MPD_run.apk · MPD_golf.apk
+- 안드로이드 앱(`runapp/`, Capacitor): MPD 전체·MPD Run(예전 'MPD 파크골프' 따로 앱은 2026-11-21 판 -305부터 안 만듦, 파크골프는 MPD 안 모드). `native.js`가 백그라운드 위치·TTS·공유·저장을 바꿔 끼움, 화면은 `liveUpdate`로 저절로 새로(기록 중엔 안 바뀜), **휴대폰 기능을 바꿀 때만 새 APK**(GitHub Actions가 만듦, 서명 `runapp/debug.keystore` 바꾸지 말 것). 받는 주소 …/releases/latest/download/MPD.apk · MPD_run.apk
 - 갤럭시워치 앱(`watchapp/`, Kotlin, MPD Run 워치): 시계 혼자 기록, 휴대폰 MPD Run 앱으로 Data Layer 전송. 받는 주소 …/releases/download/watch/MPD_run_watch.apk(릴리스 설명 글 형식 바꾸지 말 것)
 - 큰 덩어리(이름으로 docs/기록.md를 찾을 것): 기록 화면(모드마다 첫 화면·대시보드)·내 MPD(`viewMyOne`)·공유 카드/링크·여행 계획(`viewPlanOne`, 하나투어·블로그 가져오기, 일행 채팅·같이 고치기·권한·AI 묻기)·이동 영상(`viewFilm`)·포토스토리/포토북/그림 앨범/여행 후기·가족 앨범·자동 기록·대화 기록·클라우드 맞추기·백업
 
