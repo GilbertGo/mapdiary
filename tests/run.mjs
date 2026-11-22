@@ -262,6 +262,10 @@ await test('테이크아웃 사진 여행: 백업으로 들어가고 · 여행 �
   await page.goto(BASE + '?my=1&t=' + al.id); await sleep(2500);
   noErr(page, '여행 화면');
   ok(/산티아고 순례길/.test(await page.innerText('body')), '여행 화면에 이름이 보여야 해요');
+  // 판 -337: 여행 화면 아래 '날마다'(1일·2일·3일), 내 MPD 목록에서는 하루치가 여행 한 장으로 접힘
+  { const b = await page.innerText('body'); ok(/날마다/.test(b) && /(^|\n)3일(\n|$)/.test(b), '여행 화면에 날마다 목록(1일~3일)이 있어야 해요'); }
+  await page.goto(BASE + '?my=1'); await sleep(2500);
+  { const b = await page.innerText('body'); ok(/산티아고 순례길/.test(b) && !/산티아고 순례길 \d+일차/.test(b), '목록에는 여행 한 장만, 하루치(n일차)는 안 보여야 해요'); }
   // 판 -334 현지 시간: 1일차 첫 사진은 UTC 06:00 = 마드리드 오전 8:00(시험 브라우저는 서울 시간이라 예전엔 오후 3:00으로 보였음)
   await page.goto(BASE + '?my=1&t=' + al.days[0]); await sleep(2000);
   { const b = await page.innerText('body'); ok(/오전 8:00 ~ .* 현지 시간/.test(b), '1일차가 스페인 현지 시간(오전 8:00 ~ … 현지 시간)으로 보여야 해요: ' + (b.match(/.{0,20}현지 시간|오[전후] \d+:\d\d ~ [^\n]*/) || [''])[0]); }

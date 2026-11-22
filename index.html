@@ -1630,6 +1630,21 @@ function spotMarkers(layer, spots) {
 const foodLine = f => ['🍽 ' + (f.r ? '★'.repeat(f.r) + '☆'.repeat(5 - f.r) : '맛집'), f.menu, f.price, f.again === 1 ? '다시 갈래요' : f.again === 0 ? '한 번이면 됐어요' : ''].filter(Boolean).join(' · ');
 // 별표·들른 곳 목록 (메모가 있으면 같이)
 // ids를 주면(내 기록) 메모를 적거나 고칠 수 있어요
+// 판 -337: 여러 날 여행 화면 '날마다' — 하루치를 날짜 순으로 한 줄씩(누르면 그날 기록), 출발→도착·걸은 거리, 시간대는 그 여행 것
+function albumDayList(aid) {
+  const a = albumGet(aid); if (!a) return null;
+  const z = recTz((a.days || [])[0]), ds = (a.days || []).map(id => ({ id, tr: trackLoad(id) })).filter(o => o.tr.length >= 2).sort((p, q) => p.tr[0][2] - q.tr[0][2]);
+  if (ds.length < 2) return null;
+  const DOW = '일월화수목금토';
+  return el('div', { class: 'stack', style: 'gap:8px' }, el('b', { style: 'font-size:17px', text: '날마다' }),
+    ds.map((o, i) => { const d = tzAt(o.tr[0][2], z), wp = ls.get('walkPlaces:' + o.id, {}), M = modeOfT(o.id), st = trackStats(o.tr, M.car);
+      const where = [wp.start, wp.end].filter(Boolean); const ww = where.length === 2 && where[0] === where[1] ? where[0] : where.join(' → ');
+      return el('a', { class: 'n-row', href: `./?my=1&t=${encodeURIComponent(o.id)}` },
+        el('span', { class: 'th', style: 'font-weight:800;font-size:15px;color:#1D9EC0', text: `${i + 1}일` }),
+        el('div', { style: 'min-width:0;flex:1' }, el('h4', { text: `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})` }),
+          el('p', { text: [ww, st.walk >= 50 ? `걸은 ${fmtDist(st.walk)}` : ''].filter(Boolean).join(' · ') })),
+        el('span', { class: 'chv', text: '›' })); }));
+}
 function spotList(spots, ids) {
   const ss = (spots || []).filter(s => s && s.n);
   if (!ss.length) return null;
@@ -3613,9 +3628,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-336-notalk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-337-albumfold';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "대화 기록과 화면 잠금을 없앴어요 · 앱은 전원 단추로 화면을 꺼도 기록이 계속돼요 · 예전에 정리한 대화는 지우지 않았어요";
+const UI_NOTES = "여러 날 여행은 내 MPD 목록에서 한 장으로 묶여요 · 하루하루는 여행 화면 아래 날마다에서 열어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14739,9 +14754,13 @@ function viewMyList() {
       shown.map(row)];
   }
   // 판 -248: 자동 기록은 하루치를 한 줄로 접음(2개 넘을 때) → 진짜 기록이 위에 보여요. 눌러서 펼침
+  // 판 -337 (2026-11-22 사용자 산티아고 순례길 '1일차, 2일차, … 하나로 묶어서 주욱 연결되면 좋겠는데'): 여러 날 여행에 든 하루치는 목록에서 여행 한 장으로 접어요
+  //   (하루치는 여행 화면 '날마다'에서 열어요. 달력·찾기에는 그대로 나와요)
+  const inAlb = new Set(albumsLoad().flatMap(a => a.days || []));
   function listRows() {
     const out = [], seen = new Set(), dk = x => new Date(x.info.startAt).toDateString();
     for (const x of list) {
+      if (!x.album && inAlb.has(x.t)) continue;
       if (!isAuto(x)) { out.push(row(x)); continue; }
       const k = dk(x); if (seen.has(k)) continue; seen.add(k);
       const g = list.filter(y => isAuto(y) && dk(y) === k);
@@ -14780,7 +14799,7 @@ function viewMyList() {
   app.replaceChildren(el('div', { class: 'stack' },
     el('div', { class: 'n-top' }, el('a', { class: 'n-ib pill', href: './', 'aria-label': '처음 화면으로' }, cSvg('back', 18), el('span', { text: '처음 화면' })), el('span', { class: 'sp' }), ib('search', '기록 찾기', () => cSearch())),
     el('h1', { class: 'n-lt', text: '내 MPD' }),
-    el('div', { class: 'n-ls', text: `기록 ${list.length}개${yWalk > 0 ? ` · 올해 걸은 거리 ${fmtDist(yWalk)}` : ''}` }),
+    el('div', { class: 'n-ls', text: `기록 ${list.filter(x => x.album || !inAlb.has(x.t)).length}개${yWalk > 0 ? ` · 올해 걸은 거리 ${fmtDist(yWalk)}` : ''}` }),
     tabs, body,
     el('div', { class: 'n-gh', text: '기록 지키기 · 가져오기' }), ...keep));
   app.append(cTabs('book', true));
@@ -15345,6 +15364,7 @@ async function viewMyOne(t) {
         el('div', { class: 'sub', style: 'font-size:12px', text: `${fmtClock(dm.t0)}에 달리기 시작한 때부터 그 거리에 닿은 때까지(멈춘 시간 포함). GPS로 잰 거리라 대회 공식 기록과 조금 다를 수 있어요.` })); })(),
     x.album ? elevEl : null,   // 여러 날 여행은 위 그래프 묶음이 없어 높이 카드 그대로
     spotList(spots, x.album ? (albumGet(t)?.days || []) : [t]),
+    x.album ? albumDayList(t) : null,
     agBox,   // ↻ 다시 가기: 보는 것을 다 본 뒤 맨 아래에 할 일로
     (() => { const fc = M.k === 'run' && (formAvg(ls.get('walkForm:' + t, [])) || ls.get('walkWatch:' + t, null)) ? formCard(t) : null; if (!wa && !fc) return null;
       return el('details', { class: 'card vw-det' }, el('summary', { text: '시계 분석 · 달리기 자세' }), wa, fc); })(),
