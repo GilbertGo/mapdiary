@@ -188,12 +188,6 @@ input::placeholder{color:#B3AC9C}
 body.has-act .toast{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
 .toast.top,body.has-act .toast.top{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}
 .rd-stop i{width:22px;height:22px;background:#fff;border-radius:5px}
-.lock-ov{position:fixed;inset:0;z-index:5000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;padding:24px}
-.lock-ov .big{font-size:96px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
-.lock-ov .big small{font-size:24px;color:#8FA89A;margin-left:6px;letter-spacing:0}
-.lock-ov .row3{display:flex;gap:28px;margin-top:10px;text-align:center}
-.lock-ov .row3 b{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
-.lock-ov .row3 span{font-size:13px;color:#8FA89A}
 .lock-key{margin-top:48px;width:96px;height:96px;border-radius:50%;border:none;color:#fff;font-size:34px;background:conic-gradient(#F4A259 var(--p,0%),#26332C 0);display:flex;align-items:center;justify-content:center;position:relative}
 .lock-key::after{content:'';position:absolute;inset:6px;border-radius:50%;background:#111}
 .lock-key span{position:relative;z-index:1}
@@ -873,7 +867,7 @@ html.c-tabbed body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .c-ph-live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:#14253B;font-weight:700;font-size:14px;text-decoration:none}.c-ph-live i{width:9px;height:9px;border-radius:50%;background:#E4572E}
 .c-ph-pins{position:absolute;inset:0;z-index:3}
 .c-ph-chips{position:absolute;left:16px;right:120px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}.c-ph-chips>*{pointer-events:auto}
-.c-ph-auto,.c-ph-talk{display:flex;align-items:center;gap:7px;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;text-decoration:none;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-ph-auto i{flex:none;width:8px;height:8px;border-radius:50%;background:#3FD0D9;box-shadow:0 0 0 3px rgba(63,208,217,.35)}
+.c-ph-auto{display:flex;align-items:center;gap:7px;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;text-decoration:none;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-ph-auto i{flex:none;width:8px;height:8px;border-radius:50%;background:#3FD0D9;box-shadow:0 0 0 3px rgba(63,208,217,.35)}
 .c-ph-deco{position:absolute;right:16px;top:calc(96px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:5px;border:none;border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 13px Pretendard,sans-serif;cursor:pointer}.c-ph-deco svg{stroke:#fff}
 .deco{position:fixed;inset:0;z-index:4500;background:#0B1520;overflow:hidden;touch-action:none}
 .deco-bg{position:absolute;inset:0;background:#123 center/cover no-repeat}.deco-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.12)}
@@ -1183,7 +1177,7 @@ html.tv-page .tv-it .tv-b button,html.tv-page .tv-it .tv-b a{font:500 13px Prete
 .c-ph-av{width:34px!important;height:34px!important;border-width:2px!important;font-size:14px!important}
 .c-ph-chips,.c-ph-deco{top:calc(54px + env(safe-area-inset-top,0px))!important}
 .c-ph-chips{gap:6px!important}
-.c-ph-auto,.c-ph-talk,.c-ph-deco{font:500 12px Pretendard,sans-serif!important;padding:6px 11px!important}
+.c-ph-auto,.c-ph-deco{font:500 12px Pretendard,sans-serif!important;padding:6px 11px!important}
 .c-ph-deco svg{width:15px;height:15px}
 html.c-home.c-live .c-ph-top{top:calc(40px + env(safe-area-inset-top,0px))}
 html.c-home.c-live .c-ph-chips,html.c-home.c-live .c-ph-deco{top:calc(88px + env(safe-area-inset-top,0px))!important}
@@ -1495,7 +1489,7 @@ document.documentElement.dataset.theme = 'sea';   // 판 -274: 화면 분위기 
 { const d = document.createElement('div'); d.className = 'sky-clouds'; d.setAttribute('aria-hidden', 'true'); document.body.prepend(d); }   // 바닷가일 때 하늘에 흘러가는 구름
 let offset = 0;
 const now = () => Date.now() + offset;
-// 판 -334 (2026-11-22 사용자 산티아고 순례길 사진 기록에 '스페인 현지 시간으로 하는 게 좋겠다'): 기록마다 찍은 곳 시간대(walkTz:)를 두고,
+// 판 -336 (2026-11-22 사용자 산티아고 순례길 사진 기록에 '스페인 현지 시간으로 하는 게 좋겠다'): 기록마다 찍은 곳 시간대(walkTz:)를 두고,
 //   기록 보기 화면(viewMyOne)은 그 시간대로 시각·날짜를 보여요. VIEW_TZ는 그 화면에서만 정하고(화면마다 새로 열려서 다른 화면엔 안 번짐), 휴대폰 시간대와 같으면 null
 var VIEW_TZ = null;
 function devTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; } }
@@ -3619,9 +3613,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-335-albumtz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-336-notalk';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여러 날 여행의 날짜와 몇 박 며칠도 그 여행을 한 곳의 현지 날짜로 세요";
+const UI_NOTES = "대화 기록과 화면 잠금을 없앴어요 · 앱은 전원 단추로 화면을 꺼도 기록이 계속돼요 · 예전에 정리한 대화는 지우지 않았어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4305,7 +4299,7 @@ function route() {
   if (FILM_TEST) return setTimeout(viewFilm);   // 🧪 영상 2.0 시험판: 어떤 주소로 와도 영상 화면만
   if (qs.get('walk') === '1') return viewWalk();
   if (qs.get('game')) return viewGames();
-  if (qs.get('talk')) return setTimeout(viewTalk);   // 아래쪽 const가 준비된 뒤에
+  if (qs.get('talk')) { location.replace('./'); return; }   // 판 -336: 대화 기록을 없앰 · 예전 알림·링크는 첫 화면으로
   if (qs.get('applogin')) { addEventListener('hashchange', () => viewAppLogin()); return setTimeout(viewAppLogin); }   // 예전 탭에 # 뒤만 바뀌어 와도 새로 그려요
   if (LAB_QUIET) return setTimeout(viewLabCheck);   // 🔎 발견 점검 (읽기만, 2026-11-08)
   if (qs.get('lab')) return setTimeout(viewLab);   // 🧪 실험실 · AI 추억 발견 (아래쪽 const가 준비된 뒤에)
@@ -14201,7 +14195,7 @@ function autoStart() {
   const S = autoSt();
   if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); autoPut({ c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }, true); }
   if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
-  try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(true); } catch {}   // 알림 창 🎙 대화 기록 단추(새 APK부터)
+  try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(false); } catch {}   // 판 -336: 예전 APK가 띄운 알림 창 🎙 단추도 지움
   autoWatch = navigator.geolocation.watchPosition(g => autoFix(g.coords.latitude, g.coords.longitude, g.coords.accuracy, g.coords.altitude, g.timestamp || Date.now()), () => {},
     { enableHighAccuracy: true, mdBg: { title: 'MPD 자동 기록 중', message: '다닌 길을 저절로 기록해요 · 끄기: MPD → 나 → 자동 기록', distanceFilter: 20 } });
 }
@@ -14346,7 +14340,7 @@ function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) 
 function wearSelf() { return !!(window.mdNativeSync && window.MD_APP && window.MD_APP.mode === 'run'); }   // function: 라우팅이 먼저 돌아도 되게(TDZ)
 async function syncPull() {
   const S = window.mdNativeSync, WEAR_SELF = wearSelf(); if (!S || !window.MD_APP || (window.MD_APP.mode && !WEAR_SELF) || syncBusy) return;
-  syncBusy = true; let n = 0, u = 0, nTalk = 0; const from = new Set();
+  syncBusy = true; let n = 0, u = 0; const from = new Set();
   try {
     const got = ls.get('syncGot', {}), chk = ls.get('syncChk', {}) || {};
     for (const it of await S.list()) {
@@ -14354,8 +14348,7 @@ async function syncPull() {
       if (WEAR_SELF && (it.app !== 'io.github.gilbertgo.mdrun' || !/^run_w/.test(it.id))) continue;
       // 이미 받고 새 확인까지 마친 파일(syncChk = 확인한 파일 시각)은 건너뛰어요. 파일이 바뀌면(시각이 다르면) 다시 확인해요
       if (same && chk[key] === it.mtime && !rx) continue;
-      if (/^talk_w/.test(it.id)) {   // ⌚ 시계에서 받아 적은 대화: 기록이 아니라 대화 정리로 (MPD 앱에서만)
-        if (!WEAR_SELF) { try { const d = JSON.parse(await S.read(it.app, it.id)); if (d && d.app === 'mapdiary' && await talkFromWatch(it.id, d.talk)) nTalk++; } catch {} }
+      if (/^talk_w/.test(it.id)) {   // ⌚ 시계에서 받아 적은 대화: 판 -336 대화 기록을 없애서 받지 않고 건너뜀
         got[key] = it.mtime; chk[key] = it.mtime; ls.set('syncGot', got); ls.set('syncChk', chk); continue;
       }
       if (rx && rx.sig === it.mtime && Date.now() - rx.at < 10 * 60000) continue;   // 못 받은 기록은 같은 파일이면 10분에 한 번만 다시
@@ -14387,7 +14380,6 @@ async function syncPull() {
     ls.set('syncChk', chk);
     ls.set('syncGot', got);
   } catch {} finally { syncBusy = false; }
-  if (nTalk) toast(`⌚ 시계에서 대화 ${nTalk}개를 받아 정리했어요 · 그 시간 MPD 기록에 붙어요`);
   if (!n && !u) return;
   const msg = n ? `${[...from].join('·')}에서 기록 ${n}개를 가져왔어요${WEAR_SELF ? ' · 내 MPD에서 볼 수 있어요' : ''}` : '';
   const qs0 = new URLSearchParams(location.search);
@@ -15166,7 +15158,7 @@ async function viewMyOne(t) {
   document.documentElement.classList.add('n-page', 'vw-lt');
   const M = modeOfT(t), tr = trackLoad(t), st = trackStats(tr, M.car), info = x.info, live = t === ls.get('walkNow', null);
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
-  { const z = ls.get('walkTz:' + (x.album ? (albumGet(t)?.days || [])[0] : t), null); VIEW_TZ = z && typeof z === 'string' && z !== devTz() ? z : null; }   // 판 -334 찍은 곳 시간
+  { const z = ls.get('walkTz:' + (x.album ? (albumGet(t)?.days || [])[0] : t), null); VIEW_TZ = z && typeof z === 'string' && z !== devTz() ? z : null; }   // 판 -336 찍은 곳 시간
   const DOW = '일월화수목금토', d = tzD(info.startAt), d1 = tzD(info.meetAt);
   const dateText = VIEW_TZ && x.album ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]}) ~ ${d1.getMonth() + 1}월 ${d1.getDate()}일 (${DOW[d1.getDay()]})`
     : info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
@@ -15315,7 +15307,7 @@ async function viewMyOne(t) {
       el('div', { class: 'vw-ttl' }, title),
       wp.start || wp.end ? el('div', { class: 'sub', style: 'font-size:14px;margin-top:-6px', text: `${wp.start || '출발'} → ${wp.end || '도착'} · ${kTime(info.startAt)} ~ ${kTime(info.meetAt)}${VIEW_TZ ? ' 현지 시간' : ''}` }) : null,
       big3, off ? el('div', { class: 'sub', style: 'font-size:13px', text: `🏁 대회 기록으로 맞춤 · GPS ${fmtDist(st.gps)}` }) : null,
-      whereEl, noteEl, talkBox(t),
+      whereEl, noteEl,
       el('div', { class: 'vw-mapw' }, mapEl, legEl),
       phBox,
     (() => {   // 판 -238: 위 큰 숫자 셋과 겹치는 칸은 빼고, 6칸 넘으면 '자세히 보기'로 접어요
@@ -15716,91 +15708,11 @@ function gameTen(area, info) {
   area.replaceChildren(betPeopleRow(start), who, clock, btn, table, out);
   info.replaceChildren(el('span', { text: '속으로 10초를 세고 멈춰요. 3초 뒤부터 숫자가 안 보여요' })); start();
 }
-// ---------- 대화 정리 (2026-10-18, 사용자 '대화를 듣고, 앞뒤 맥락 구분하고, 정리해서 공유할 수준') ----------
-// ?talk=1. 휴대폰 음성 인식(크롬·엣지·사파리의 SpeechRecognition, ko-KR)으로 받아 적고,
-// 정리는 ① AI 정리: 이 휴대폰에 넣은 Anthropic API 열쇠(ls claudeKey, 이 휴대폰에만)로 Claude가 화제별로 나누고 결정·할 일·남은 질문을 뽑음
-//        ② 기본 정리: 열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눔
-// 받아 적는 중인 것은 ls talkDraft(앱이 꺼져도 남음), 정리한 것은 ls talkNotes(최근 30개)
+// Claude 열쇠(여행 AI·그림 읽기 등이 같이 씀). 예전 '대화 정리'에서 쓰던 이름 TALK_SDK·talkKeySheet를 그대로 둠
 const TALK_SDK = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm';
-const TALK_SCHEMA = { type: 'object', additionalProperties: false, required: ['title', 'final', 'summary', 'topics', 'decisions', 'todos', 'questions'], properties: {
-  title: { type: 'string' }, final: { type: 'array', items: { type: 'string' } }, summary: { type: 'string' },
-  topics: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'time', 'points'], properties: { title: { type: 'string' }, time: { type: 'string' }, points: { type: 'array', items: { type: 'string' } } } } },
-  decisions: { type: 'array', items: { type: 'string' } },
-  todos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['what', 'who', 'when'], properties: { what: { type: 'string' }, who: { type: 'string' }, when: { type: 'string' } } } },
-  questions: { type: 'array', items: { type: 'string' } } } };
-const TALK_SYSTEM = `당신은 대화 기록을 정리해 주는 비서입니다.
-입력은 휴대폰 음성 인식으로 받아 적은 한국어 대화입니다. 누가 말했는지는 구분되어 있지 않고, 잘못 알아들은 낱말과 끊긴 문장이 섞여 있습니다. 줄 앞의 [시:분]은 그 말이 나온 시각입니다.
-- 앞뒤 맥락을 보고 화제가 바뀌는 곳마다 나눠 topics에 순서대로 담으세요. time은 그 화제가 시작된 [시:분], points는 그 화제의 핵심을 짧은 문장 몇 개로.
-- 잘못 알아들은 말은 맥락으로 바로잡아 이해하되, 대화에 없는 내용을 지어내지 마세요. 확실하지 않으면 빼세요.
-- decisions에는 정해진 것만, todos에는 해야 할 일(who·when은 대화에 나왔을 때만, 없으면 빈 문자열), questions에는 아직 정하지 못했거나 다시 이야기해야 할 것.
-- final이 가장 중요합니다: 대화를 안 들은 사람이 이것만 읽어도 '무슨 이야기를 했고, 결국 어떻게 됐는지' 알 수 있게 최종 요약을 3~5개 짧은 문장으로 쓰세요. 결론·정해진 것을 먼저, 이유는 짧게. 대화 순서대로 늘어놓지 마세요.
-- title은 대화 전체를 나타내는 짧은 제목, summary는 대화 흐름을 두세 문장으로.
-- 쉬운 한국어 존댓말로, 카톡방에 그대로 올려도 될 만큼 짧고 깔끔하게 쓰세요.`;
-const talkHM = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const talkText = segs => segs.map(s => `[${talkHM(s.t)}] ${s.x}`).join('\n');
-async function talkAI(segs) {
-  const key = ls.get('claudeKey', '');
-  const { default: Anthropic } = await import(TALK_SDK);
-  const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });   // 열쇠는 이 휴대폰에만 있고, Anthropic으로만 보내요
-  const res = await client.beta.messages.create({
-    model: 'claude-opus-5-5', max_tokens: 16000,
-    betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',   // 안전 검사로 거절되면 서버가 다른 모델로 다시 해 봐요
-    output_config: { effort: 'medium', format: { type: 'json_schema', schema: TALK_SCHEMA } },
-    system: TALK_SYSTEM,
-    messages: [{ role: 'user', content: `다음 대화를 정리해 주세요.\n\n${talkText(segs)}` }],
-  });
-  if (res.stop_reason === 'refusal') throw new Error('refusal');
-  if (res.stop_reason === 'max_tokens') throw new Error('too-long');
-  const tb = res.content.find(b => b.type === 'text'); if (!tb) throw new Error('empty');
-  return Object.assign(JSON.parse(tb.text), { ai: 1 });
-}
-// 열쇠 없이: 30초 넘게 말이 없으면 화제가 바뀐 것으로 보고, 낱말로 결정·할 일·질문을 골라요
-function talkBasic(segs) {
-  const topics = []; let cur = null;
-  segs.forEach((s, i) => { if (!cur || s.t - segs[i - 1].t > 30000) { cur = { title: `이야기 ${topics.length + 1}`, time: talkHM(s.t), points: [] }; topics.push(cur); } cur.points.push(s.x); });
-  topics.forEach(tp => { if (tp.points.length > 6) tp.points = [...tp.points.slice(0, 3), '…', ...tp.points.slice(-2)]; });
-  const all = segs.map(s => s.x), pick = re => [...new Set(all.filter(x => re.test(x)))].slice(0, 8);
-  return { title: `${new Date(segs[0].t).getMonth() + 1}월 ${new Date(segs[0].t).getDate()}일 대화`, summary: `${talkHM(segs[0].t)}부터 ${talkHM(segs[segs.length - 1].t)}까지 나눈 이야기예요. (기본 정리: 말 사이 쉰 시간과 낱말로 대충 나눴어요)`, topics,
-    decisions: pick(/하기로|정했|결정|그걸로 하|확정|그렇게 하자/),
-    todos: pick(/해야|하자|할게|해 줘|해줘|부탁|챙겨|예약|가져|사 ?와|까지/).map(x => ({ what: x, who: '', when: '' })),
-    questions: pick(/\?|할까|까요|나요|어떡|어떻게 하/), ai: 0 };
-}
-function talkFinal(n) {   // 최종 요약 줄: AI 정리는 final, 기본 정리·예전 정리는 정한 것·할 일에서
-  if (n.final && n.final.length) return n.final;
-  return [...n.decisions.slice(0, 3), ...n.todos.slice(0, 2).map(t => `할 일: ${t.what}`)].slice(0, 5);
-}
-function talkShareText(n) {
-  const fin = talkFinal(n), L = [`📝 ${n.title}`, ''];
-  if (fin.length) L.push('🧾 최종 요약', ...fin.map((x, i) => `${i + 1}. ${x}`)); else L.push(n.summary);
-  if (n.decisions.length) L.push('', '✅ 정한 것', ...n.decisions.map(d => ` · ${d}`));
-  if (n.todos.length) L.push('', '📌 할 일', ...n.todos.map(t => ` · ${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`));
-  if (n.questions.length) L.push('', '❓ 아직 정할 것', ...n.questions.map(q => ` · ${q}`));
-  L.push('', '— 화제별 —');
-  n.topics.forEach((tp, i) => { L.push(`${i + 1}. ${tp.title}${tp.time ? ` (${tp.time})` : ''}`); tp.points.forEach(p => L.push(` · ${p}`)); });
-  L.push('', '— Map Photo Diary 대화 정리');
-  return L.join('\n');
-}
-function talkNoteView(n) {
-  const sec = (h, items, cls) => items.length ? el('div', { class: 'tk-sec' + (cls ? ' ' + cls : '') }, el('b', { text: h }), el('ul', {}, ...items.map(x => el('li', { text: x })))) : null;
-  const fin = talkFinal(n);
-  return el('div', { class: 'card tk-note' },
-    el('div', { class: 'row', style: 'justify-content:space-between;align-items:center' }, el('span', { class: 'tk-tag' + (n.ai ? ' ai' : ''), text: n.ai ? '✨ AI 정리' : '기본 정리' }), el('span', { class: 'sub', text: n.at ? new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '' })),
-    el('h2', { style: 'margin:0', text: n.title }),
-    el('div', { class: 'tk-final' }, el('b', { class: 'h', text: '🧾 최종 요약' }), fin.length ? el('ol', {}, ...fin.map(x => el('li', { text: x }))) : el('p', { text: n.summary })),
-    sec('✅ 정한 것', n.decisions), sec('📌 할 일', n.todos.map(t => `${t.what}${t.who ? ` — ${t.who}` : ''}${t.when ? ` (${t.when})` : ''}`), 'todo'), sec('❓ 아직 정할 것', n.questions),
-    n.topics.length ? el('details', { class: 'tk-more' }, el('summary', { text: `화제별 자세히 보기 (${n.topics.length}개)` }),
-      fin.length && n.summary ? el('p', { class: 'sub', style: 'margin:0 0 8px;color:var(--ink)', text: n.summary }) : null,
-      el('div', { class: 'stack', style: 'gap:10px' }, ...n.topics.map((tp, i) => el('div', { class: 'tk-topic' }, el('div', { class: 'tk-th' }, el('span', { text: i + 1 }), el('b', { text: tp.title }), tp.time ? el('small', { text: tp.time }) : null),
-        el('ul', {}, ...tp.points.map(p => el('li', { text: p }))))))) : null);
-}
-async function talkShare(n) {
-  const text = talkShareText(n);
-  if (navigator.share && !IN_KAKAO) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  navigator.clipboard.writeText(text).then(() => toast('정리한 글을 복사했어요. 카톡방에 붙여넣으세요'), () => prompt('이 글을 복사하세요', text));
-}
 async function talkKeySheet() {
   const raw = await askText('Claude 열쇠 넣기', 'Anthropic API 열쇠 (sk-ant-로 시작)', ls.get('claudeKey', ''), 'sk-ant-…',
-    '대화 정리와 가족 앨범 글귀에 같이 써요. 열쇠는 이 휴대폰에만 저장되고 Anthropic(Claude)으로만 보내요. console.anthropic.com → API Keys에서 만들어 통째로 복사해 붙여 넣어 주세요. 남에게 보내지 마세요.', 300, true);
+    '여행 AI 묻기·비춰 읽기·가족 앨범 글귀에 같이 써요. 열쇠는 이 휴대폰에만 저장되고 Anthropic(Claude)으로만 보내요. console.anthropic.com → API Keys에서 만들어 통째로 복사해 붙여 넣어 주세요. 남에게 보내지 마세요.', 300, true);
   if (raw == null) return false;
   const v = String(raw).replace(/\s+/g, '');   // 복사할 때 끼어든 띄어쓰기·줄바꿈 빼기
   ls.set('claudeKey', v);
@@ -15815,28 +15727,6 @@ async function talkKeySheet() {
 async function claudeKeyCheck(key) {
   try { const { default: Anthropic } = await import(TALK_SDK); await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).models.list({ limit: 1 }); ls.set('claudeKeyOk', { ok: 1, at: Date.now() }); return true; }
   catch (e) { const bad = e && (e.status === 401 || e.status === 403); if (bad) ls.set('claudeKeyOk', { ok: 0, at: Date.now() }); return bad ? false : null; }
-}
-// 마이크가 막혔을 때: 어디서 열었는지에 맞춰 허용하는 길을 한 장으로 보여 줘요
-function talkMicHelp(retry) {
-  const pwa = IS_APP && !IN_NATIVE;
-  const steps = IN_NATIVE ? ['휴대폰 설정 → 애플리케이션', `${(window.MD_APP && window.MD_APP.name) || 'Map Photo Diary'} → 권한 → 마이크`, "'앱 사용 중에만 허용' 고르기"]
-    : pwa ? ['휴대폰 설정 → 애플리케이션 → Chrome → 권한 → 마이크 → 허용', 'Chrome 열기 → ⋮ → 설정 → 사이트 설정 → 마이크', "'gilbertgo.github.io'를 눌러 '허용'"]
-    : ['주소창 왼쪽 자물쇠(또는 ⚙) 누르기', "권한 → 마이크 → '허용'", '안 되면: 휴대폰 설정 → 애플리케이션 → 이 브라우저 → 권한 → 마이크 → 허용'];
-  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb) sb.remove(); } });
-  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '마이크 켜기' },
-    el('h2', { text: '🎙 마이크를 켜 주세요' }),
-    el('p', { class: 'sub', style: 'margin:0', text: '마이크가 꺼져 있어서 들을 수 없어요. 한 번만 켜 두면 다음부터는 바로 돼요.' }),
-    el('ol', { style: 'margin:0;padding-left:22px;line-height:1.8' }, ...steps.map(t => el('li', { text: t }))),
-    el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => sb.remove() }),
-      el('button', { class: 'btn primary small grow', text: '켰어요, 다시 듣기', onclick: () => { sb.remove(); retry(); } }))));
-  document.body.append(sb);
-}
-// 웹: 듣기 전에 마이크를 한 번 열어 보면 브라우저가 '허용' 창을 띄워요. 막혀 있으면 false
-async function talkMicAsk() {
-  if (IN_NATIVE || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
-  try { const st = await navigator.permissions.query({ name: 'microphone' }); if (st.state === 'granted') return true; } catch {}
-  try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); return true; }
-  catch (e) { return !(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')); }
 }
 // =====================================================================
 // 🧪 실험실 · AI 추억 발견 (2026-11-07, Phase 1 실험실 MVP, 개발 가지 lab/memory-p1)
@@ -16409,122 +16299,7 @@ function viewLabCheck() {
       el('div', { class: 'stack', style: 'gap:6px;margin-top:8px' }, ...res.none.map(x => el('div', { style: 'font-size:13px' }, el('b', { text: x.rule }), el('div', { class: 'sub', text: x.why }))))));
   }, 50);
 }
-// 🎙 대화를 그 시간 MPD에 (2026-11-15 사용자 '내가 나눈 대화도 자동으로 기록 되게해' → '내가 낀 대화만'·법·배터리 까닭으로 늘 듣기는 안 하고, 시작만 한 번 누르면 나머지는 저절로)
-// 대화마다 같은 날 기록 중 시간이 가장 가까운 하나(겹치면 그것)에 붙여 보여요. 대화 시각 = 첫 말~마지막 말(t0~t1), 예전 정리는 정리한 때(at)
-function talkSpan(n) { return [n.t0 || n.at, n.t1 || n.at]; }
-function talkRecOf(n, trips) {
-  const [a, b] = talkSpan(n), day = new Date(a).toDateString(); let best = null, bd = Infinity;
-  for (const x of trips) { if (x.album) continue; const s0 = x.info.startAt, e0 = x.info.meetAt;
-    if (new Date(s0).toDateString() !== day && new Date(e0).toDateString() !== day) continue;
-    const gap = b < s0 ? s0 - b : a > e0 ? a - e0 : 0; if (gap < bd) { bd = gap; best = x.t; } }
-  return best;
-}
-// ⌚ 시계에서 받아 적은 대화(2026-11-15 '와치 써'): 시계 'MPD 대화' → 블루투스 → 휴대폰 MPD Run(mdsync/talk_w{시각}.json) → 여기 syncPull이 talk_w를 알아보고
-// 정리(열쇠 있으면 AI, 없거나 실패하면 기본)해서 talkNotes에(src = 파일 ID, watch:1). 받은 ID는 talkGot에 남겨 지워도 되살아나지 않게
-async function talkFromWatch(id, T) {
-  const got = ls.get('talkGot', {}) || {}; if (got[id]) return false;
-  const segs = (T && Array.isArray(T.segs) ? T.segs : []).filter(x => x && Number.isFinite(+x.t) && typeof x.x === 'string' && x.x.trim()).map(x => ({ t: +x.t, x: x.x.trim().slice(0, 2000) })).slice(0, 3000);
-  got[id] = Date.now(); ls.set('talkGot', got);
-  if (!segs.length) return false;
-  let note = null;
-  if (ls.get('claudeKey', '')) { try { note = await talkAI(segs); } catch {} }
-  if (!note) note = talkBasic(segs);
-  note = Object.assign({ raw: talkText(segs), t0: segs[0].t, t1: segs[segs.length - 1].t, src: id, watch: 1 }, note, { at: Date.now() });
-  const list = ls.get('talkNotes', []) || []; list.unshift(note); ls.set('talkNotes', list.slice(0, 30));
-  return true;
-}
-function talkBox(t) {
-  const all = (ls.get('talkNotes', []) || []).filter(n => n && n.at); if (!all.length) return null;
-  const trips = pastTrips(), list = all.filter(n => talkRecOf(n, trips) === t); if (!list.length) return null;
-  return el('div', { class: 'card', style: 'gap:4px' }, el('b', { text: `🎙 이 때 나눈 대화 ${list.length}개` }),
-    ...list.map(n => el('a', { class: 'member', href: `./?talk=1&n=${n.at}`, style: 'text-decoration:none;color:inherit' },
-      el('div', { class: 'grow' }, el('div', { class: 'nm', text: n.title || '대화' }),
-        el('div', { class: 'dt', text: `${fmtClock(talkSpan(n)[0])} · ${String((Array.isArray(n.final) && n.final[0]) || n.summary || '').slice(0, 60)}` })), el('span', { text: '›' }))));
-}
-function viewTalk() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let segs = ls.get('talkDraft', []), rec = null, on = false, interim = '', wake = null, note = null, busy = false;
-  const box = el('div', { class: 'stack' }), live = el('div', { class: 'tk-live' });
-  const save = () => ls.set('talkDraft', segs);
-  const drawLive = () => {
-    const parts = []; segs.forEach((s, i) => { if (!i || s.t - segs[i - 1].t > 8000) parts.push(el('div', { class: 'tk-time', text: talkHM(s.t) })); parts.push(el('span', { text: s.x + ' ' })); });
-    if (interim) parts.push(el('span', { class: 'tk-int', text: interim }));
-    live.replaceChildren(...(parts.length ? parts : [el('div', { class: 'sub center', text: on ? '듣고 있어요. 말하면 여기에 적혀요' : '아직 받아 적은 말이 없어요' })]));
-    if (on) live.scrollTop = live.scrollHeight;
-  };
-  const start = async () => {
-    if (IN_NATIVE && !window.mdNativeSpeech) {   // 예전 판 앱: 휴대폰 음성 인식이 아직 안 들어 있어요
-      if (confirm('앱을 새 판으로 바꿔야 들을 수 있어요.\n지금 받을까요? 지우지 말고 덮어 설치하면 기록은 그대로 남아요.')) location.href = APP_BASE + ({ run: 'run.html', pgolf: 'golf.html' }[(window.MD_APP || {}).mode] || 'md.html');
-      return;
-    }
-    if (!SR) return toast('이 브라우저는 음성 듣기가 안 돼요. 크롬·엣지·사파리에서 열어 주세요');
-    if (!(await talkMicAsk())) return talkMicHelp(start);
-    rec = new SR(); rec.lang = 'ko-KR'; rec.continuous = true; rec.interimResults = true;
-    rec.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i], x = r[0].transcript.trim(); if (!x) continue; if (r.isFinal) { segs.push({ t: Date.now(), x }); save(); } else interim += x + ' '; } drawLive(); };
-    // 크롬은 조용하면 저절로 멈춰서, 듣는 중이면 다시 켜요
-    rec.onend = () => { if (on) setTimeout(() => { try { rec.start(); } catch {} }, 250); };
-    rec.onerror = e => {
-      if (e.error === 'not-allowed') { on = false; draw(); talkMicHelp(start); }
-      else if (e.error === 'service-not-allowed') { on = false; draw(); toast(IN_NATIVE ? "휴대폰에 음성 인식이 없어요. 플레이스토어에서 'Google' 앱을 설치·업데이트해 주세요" : '이 브라우저는 음성 듣기가 막혀 있어요. 크롬에서 열어 주세요'); }
-    };
-    try { rec.start(); } catch {} on = true;
-    try { wake = await navigator.wakeLock.request('screen'); } catch {}
-    draw();
-  };
-  // 그만 들으면 저절로 정리해서 그 시간 MPD에 붙여요(2026-11-15 '내가 나눈 대화도 자동으로 기록 되게해')
-  const stop = auto => { on = false; interim = ''; try { rec && rec.stop(); } catch {} try { wake && wake.release(); } catch {} wake = null; draw(); if (auto && segs.length && !busy) organize(true); };
-  const organize = async auto => {
-    if (!segs.length) return toast('받아 적은 말이 없어요');
-    if (!ls.get('claudeKey', '')) { note = Object.assign(talkBasic(segs), { at: Date.now() }); return keep(auto); }
-    busy = true; draw();
-    try { note = Object.assign(await talkAI(segs), { at: Date.now() }); }
-    catch (e) {
-      const m = String(e && (e.status || e.message));
-      toast(m === '401' ? 'AI 열쇠가 맞지 않아요. 열쇠를 다시 넣어 주세요' : m === 'refusal' ? 'AI가 이 대화를 정리하지 않았어요. 기본 정리로 보여 드려요' : m === 'too-long' ? '대화가 너무 길어요. 나눠서 정리해 주세요' : 'AI 정리를 못 했어요(인터넷 확인). 기본 정리로 보여 드려요');
-      note = Object.assign(talkBasic(segs), { at: Date.now() });
-    }
-    busy = false; keep(auto);
-  };
-  // t0·t1 = 첫 말·마지막 말 시각(그 시간 MPD 찾기). auto(그만 듣기로 저절로)면 받아 적은 말을 비워 다음 🎙는 새 대화로(원문은 정리 안 raw에)
-  const keep = auto => { const list = ls.get('talkNotes', []); note = Object.assign({ raw: talkText(segs), t0: segs[0].t, t1: segs[segs.length - 1].t }, note); list.unshift(note); ls.set('talkNotes', list.slice(0, 30));
-    if (auto) { segs = []; save(); }
-    const r = talkRecOf(note, pastTrips()); toast(r ? `정리해서 '${ls.get('trackName:' + r, '그 시간 기록')}' MPD에 붙였어요` : '정리했어요 · 그 시간 MPD 기록이 생기면 거기에도 보여요');
-    draw(); scrollTo(0, 0); };
-  const toMD = n => { const w = ls.get('walkNow', null); if (!w) return; const old = ls.get('walkNote:' + w, '');
-    ls.set('walkNote:' + w, `${old ? old + '\n\n' : ''}${talkShareText(n).replace(/\n— Map Photo Diary 대화 정리$/, '')}`.slice(0, 1000)); toast('지금 기록 중인 MPD 메모에 붙였어요'); };
-  function draw() {
-    const hasKey = !!ls.get('claudeKey', ''), past = ls.get('talkNotes', []), w = ls.get('walkNow', null);
-    box.replaceChildren(...[
-      note ? talkNoteView(note) : null,
-      note ? el('div', { class: 'two' }, el('button', { class: 'btn primary', text: '📤 공유하기', onclick: () => talkShare(note) }), el('button', { class: 'btn line', text: '새 대화', onclick: () => { if (!confirm('받아 적은 말을 비우고 새로 시작할까요? (정리한 것은 아래 목록에 남아요)')) return; segs = []; save(); note = null; draw(); } })) : null,
-      note && w ? el('button', { class: 'btn line full', text: '📒 지금 기록 중인 MPD 메모에 붙이기', onclick: () => toMD(note) }) : null,
-      note ? el('h2', { style: 'margin-top:8px', text: '받아 적은 말' }) : null,
-      el('div', { class: 'card tk-card' + (on ? ' on' : '') }, live,
-        el('div', { class: 'row', style: 'gap:8px' },
-          el('button', { class: 'btn big grow ' + (on ? 'line' : 'primary'), text: on ? '■ 그만 듣기 · 정리' : segs.length ? '🎙 이어서 듣기' : '🎙 듣기 시작', onclick: () => on ? stop(true) : start() }),
-          segs.length && !on ? el('button', { class: 'btn line', 'aria-label': '받아 적은 말 고치기', text: '✎', onclick: async () => { const v = await askLong('받아 적은 말 고치기', segs.map(s => s.x).join('\n'), '', '한 줄이 한 마디예요. 잘못 알아들은 말을 고쳐요', 20000); if (v == null) return; const lines = v.split('\n').map(x => x.trim()).filter(Boolean), t0 = segs[0].t, t1 = segs[segs.length - 1].t;
-            segs = lines.map((x, i) => ({ t: segs[i] ? segs[i].t : t1 + i, x })); if (!segs.length) segs = []; else segs[0].t = t0; save(); drawLive(); } }) : null)),
-      on ? el('div', { class: 'sub center', text: '🔴 듣는 중 · 화면을 켜 두세요(꺼지면 멈춰요) · 같이 있는 사람에게 알리고 써 주세요' }) : null,
-      !on && segs.length ? el('button', { class: 'btn primary full big', disabled: busy, text: busy ? '✨ 정리하는 중… (30초쯤)' : hasKey ? '✨ AI로 정리하기' : '📝 정리하기 (기본)', onclick: organize }) : null,
-      el('div', { class: 'banner info', style: 'gap:6px' },
-        el('b', { text: hasKey ? '✨ AI 정리가 켜져 있어요' : 'AI 정리는 열쇠가 있어야 해요' }),
-        el('div', { text: hasKey ? 'Claude가 앞뒤 맥락을 보고 화제를 나누고, 정한 것·할 일·아직 정할 것을 뽑아요. 받아 적은 글만 Anthropic으로 보내요.' : '열쇠가 없으면 말 사이 쉰 시간과 낱말로 대충 나눠요. 맥락까지 보려면 Anthropic API 열쇠를 넣어 주세요.' }),
-        el('button', { class: 'btn line small', style: 'align-self:flex-start', text: hasKey ? '열쇠 바꾸기·지우기' : '🔑 열쇠 넣기', onclick: async () => { if (await talkKeySheet()) draw(); } })),
-      !SR ? el('div', { class: 'banner alert' }, el('b', { text: '이 화면에서는 음성 듣기가 안 돼요' }), el('div', { text: '크롬·엣지·사파리에서 열어 주세요. 카톡 안에서는 안 돼요.' })) : null,
-      past.length ? el('h2', { style: 'margin-top:8px', text: `정리한 대화 ${past.length}개` }) : null,
-      ...past.map((n, i) => el('div', { class: 'member', style: 'cursor:pointer', onclick: () => { note = n; draw(); scrollTo(0, 0); } },
-        el('div', { class: 'grow' }, el('div', { class: 'nm', text: n.title }), el('div', { class: 'dt', text: `${new Date(n.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${n.ai ? 'AI 정리' : '기본 정리'} · 화제 ${n.topics.length}개` })),
-        el('button', { class: 'btn line small', text: '지우기', onclick: e => { e.stopPropagation(); if (!confirm('이 정리를 지울까요?')) return; const l = ls.get('talkNotes', []); l.splice(i, 1); ls.set('talkNotes', l); if (note === n) note = null; draw(); } })))
-    ].filter(Boolean));
-    drawLive();
-  }
-  leaveWarn = () => on ? '듣는 중이에요. 나가면 듣기가 멈춰요(받아 적은 말은 남아요). 갈까요?' : null;
-  { const nAt = +qs.get('n'); if (nAt) note = (ls.get('talkNotes', []) || []).find(x => x && x.at === nAt) || null; }   // MPD 기록에서 '이 때 나눈 대화'를 눌렀을 때
-  app.replaceChildren(el('div', { class: 'stack' }, roleBar('leader', '대화 정리'), el('a', { class: 'link', href: './', style: 'align-self:flex-start;padding:0', text: '← 처음으로' }),
-    el('h1', { text: '🎙 대화 정리' }), el('div', { class: 'sub', text: '대화를 듣고 받아 적은 뒤, 화제별로 나눠 정한 것·할 일을 정리해 공유해요. 받아 적은 말은 이 휴대폰에만 남아요.' }), box));
-  draw();
-  if (qs.get('go')) { history.replaceState(null, '', location.pathname + '?talk=1'); if (!note) start(); }   // 첫 화면·알림 창 🎙: 바로 듣기
-}
+// 판 -336 (2026-11-22 사용자 '대화기록은?' → '아니 아얘 제거해'): 🎙 대화 기록·대화 정리를 없앰. 예전에 정리한 talkNotes·talkDraft는 지우지 않고 그대로 둠(보이지만 않음)
 // ---------- 1년 전 오늘 (2026-10-17 시안 B안: 첫 화면 한 줄 카드) ----------
 // 지난해들의 같은 날(앞뒤 3일)에 남긴 하루 기록. 같은 날이면 'n년 전 오늘', 아니면 'n년 전 이맘때'. 누르면 그 기록으로
 function memoryPick() {
@@ -16638,7 +16413,7 @@ function wherePill(light, plain) {
 }
 // ---------- C안 디자인: 홈 · 나의 이야기 지도 · 발견 (2026-11-08, ChatGPT와 고른 시안, 개발 가지 design/mpd-c) ----------
 // 원칙: 지도 위 사진·길은 실제로 저장된 위치·GPS 길만. 위치 없는 사진은 핀으로 쓰지 않아요. 숫자는 이 휴대폰 기록으로 셀 수 있을 때만, 범위를 적어서.
-//   기존 기능(기록 화면·내 MPD·공유·모임방·가족 앨범·실험실·게임·대화 정리·설정)은 그대로 두고 들어가는 길만 바꿔요.
+//   기존 기능(기록 화면·내 MPD·공유·모임방·가족 앨범·실험실·게임·설정)은 그대로 두고 들어가는 길만 바꿔요.
 function cSvg(n, s = 22, c = 'currentColor') {
   const P = {
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
@@ -17321,10 +17096,9 @@ function cHomePhoto() {
   bg.style.backgroundImage = `url("${homeHeroUrl()}")`;   // 사진을 읽기 전·사진이 없을 때
   { const D = ls.get('homeDeco', null); if (D && Array.isArray(D.pins)) setTimeout(() => decoDraw(layer, box, D.pins, null), 0); }
   // 꾸미기 단추(2026-11-15 사용자 '바탕화면 꾸미기 메뉴하나 만들고 사진 이동·추가·삭제 되게해')
-  if (!wNow) {   // 🛰 자동 기록 알약(MPD 앱) · 🎙 대화 기록(누르면 바로 받아 적고, 끝나면 정리해서 그 시간 MPD에)
+  if (!wNow) {   // 🛰 자동 기록 알약(MPD 앱) · 판 -336: 🎙 대화 기록은 없앰
     const chips = el('div', { class: 'c-ph-chips' });
     if (autoOn()) { const at = el('span'); chips.append(el('a', { class: 'c-ph-auto', href: './?my=1', 'aria-label': '자동 기록 · 내 기록 보기' }, el('i'), at)); cLiveTick(at, () => { at.textContent = autoStatus(); }); }
-    chips.append(el('a', { class: 'c-ph-talk', href: './?talk=1&go=1', 'aria-label': '대화 기록 시작' }, '🎙 대화 기록'));
     box.append(chips);
   }
   if (!wNow) box.append(el('button', { class: 'c-ph-deco', type: 'button', 'aria-label': '첫 화면 꾸미기', onclick: () => homeDecoEdit() }, cSvg('palette', 16), '꾸미기'));
@@ -18500,45 +18274,7 @@ function viewWalk() {
     openBrag({ name: nameOf(), startPlace: wp.start || '출발 지점', meetPlace: wp.end || '지금 여기', startAt: tr[0][2], meetAt: tr[tr.length - 1][2], route: null, phase: 'go', live: true }, id, 0, false);
   }
   const rdTile = (label, v, extra) => el('div', { class: 'rd-t' }, el('span', { class: 'lbl', text: label }), v, extra || null);
-  // ---------- 화면 잠금: 화면은 켠 채로, 잘못 눌리지 않게 막아요. 자물쇠를 3초 꾹 누르면 풀려요 ----------
-  const UNLOCK_MS = 3000;   // 자물쇠를 3초 동안 누르고 있어야 풀려요 (주머니 속에서 잘못 풀리지 않게)
-  function lockScreen() {
-    if (document.querySelector('.lock-ov')) return;
-    ls.set('lockUsed', ls.get('lockUsed', 0) + 1);
-    // 안드로이드 앱이면 '앱 고정'으로 홈·최근 앱·뒤로 버튼도 막아요 (웹은 막을 수 없어요)
-    if (window.mdNativePin) window.mdNativePin(true);
-    if (!wake) { wantWake = true; lockWake(); }
-    const big = el('div', { class: 'big' }), t1 = el('b'), t2 = el('b'), t3 = el('b'), t4 = el('b'), t5 = el('b'), t6 = el('b'), l2 = el('span'), l3 = el('span');
-    const hint = el('div', { class: 'lock-hint', text: '자물쇠를 3초 동안 꾹 누르면 풀려요' });
-    const key = el('button', { class: 'lock-key', 'aria-label': '길게 눌러 잠금 풀기' }, el('span', { text: '🔒' }));
-    const ov = el('div', { class: 'lock-ov', role: 'dialog', 'aria-label': '화면 잠금' },
-      el('div', { style: 'font-size:14px;color:#8FA89A', text: `🔒 잠금 중 · ${M().label} 기록 중` }), big, el('div', { style: 'color:#8FA89A;font-size:14px', text: `${M().did} 거리` }),
-      el('div', { class: 'row3' }, el('div', {}, t1, el('span', { text: M().k === 'run' ? '달린 시간' : '시간' })), el('div', {}, t2, l2), el('div', {}, t3, l3)),
-      M().k === 'run' ? el('div', { class: 'row3' }, el('div', {}, t4, el('span', { text: '현재 케이던스' })), el('div', {}, t5, el('span', { text: '평균 케이던스' })), el('div', {}, t6, el('span', { text: '걸음' }))) : null,
-      key, hint);
-    const upd = () => {
-      const m = M(), tr = trackLoad(id), st = trackStats(tr, m.car), km = st.walk / 1000, mv = movingMs(tr, m.car);
-      big.replaceChildren(km < 10 ? km.toFixed(2) : km.toFixed(1), el('small', { text: 'km' }));
-      t1.textContent = fmtRunTime(runElapsed());
-      if (m.k === 'run') { t2.textContent = fmtPace(st.walk, mv); l2.textContent = '평균 페이스'; t3.textContent = nowPace(tr) || '-'; l3.textContent = '현재 페이스';
-        t4.textContent = cadNow() ?? '-'; t5.textContent = cadAvg() ?? '-'; t6.textContent = motionSeen ? stepN.toLocaleString() : '-'; }
-      else if (m.k === 'bike') { t2.textContent = fmtSpeed(st.walk, mv).replace('km/h', ''); l2.textContent = '평균 km/h'; t3.textContent = ls.get('walkSpots:' + id, []).length; l3.textContent = '별표'; }
-      else { const ev = ELEV_MODES.includes(m.k) ? elevStats(tr) : null; t2.textContent = ev ? `${ev.gain}m` : ls.get('walkSpots:' + id, []).length; l2.textContent = ev ? '오른 높이' : '별표'; t3.textContent = new Date().toTimeString().slice(0, 5); l3.textContent = '지금 시각'; }
-    };
-    upd(); const iv = setInterval(upd, 1000);
-    // 길게 누르기: 3초 동안 누르고 있으면 둥근 막대가 다 차고 풀려요
-    let t0 = 0, raf = 0;
-    const tick = () => { const p = Math.min(1, (performance.now() - t0) / UNLOCK_MS); key.style.setProperty('--p', (p * 100).toFixed(0) + '%'); if (p >= 1) { unlock(); return; } raf = requestAnimationFrame(tick); };
-    const down = e => { e.preventDefault(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
-    const up = () => { cancelAnimationFrame(raf); key.style.setProperty('--p', '0%'); };
-    key.addEventListener('pointerdown', down); ['pointerup', 'pointercancel', 'pointerleave'].forEach(k => key.addEventListener(k, up));
-    const nudge = () => { hint.classList.add('nudge'); hint.textContent = '잠겨 있어요. 자물쇠를 3초 동안 꾹 누르세요'; setTimeout(() => { hint.classList.remove('nudge'); hint.textContent = '자물쇠를 3초 동안 꾹 누르면 풀려요'; }, 1600); };
-    ov.addEventListener('nudge', nudge);
-    ov.addEventListener('pointerdown', e => { if (!key.contains(e.target)) { e.preventDefault(); nudge(); } });
-    ov.addEventListener('contextmenu', e => e.preventDefault());
-    function unlock() { if (window.mdNativePin) window.mdNativePin(false); clearInterval(iv); cancelAnimationFrame(raf); ov.remove(); try { navigator.vibrate && navigator.vibrate(40); } catch {} toast('잠금을 풀었어요'); }
-    document.body.append(ov); ovGuard();
-  }
+  // 판 -336 (2026-11-22 사용자 '화면잠금도 필요한가? 기능이 별로... 좋지않은 것 같아. 제거 검토해' → '추천대로'): 🔒 화면 잠금(lockScreen·앱 고정)을 없앰 · 앱은 전원 단추로 화면을 꺼도 기록이 계속돼요
   const STAY_M = 60, STAY_MS = 10 * 60000;
   const STAY_AUTO = ['daily', 'date', 'travel', 'trek', 'hike'];   // 2026-11-07 걷기도: 벤치·카페에서 쉬어 간 곳   // 이 모드들은 묻지 않고 들른 곳으로 저절로 남겨요
   let stayA = null, stayAsk = null;
@@ -18764,7 +18500,7 @@ function viewWalk() {
   let startTitle = '';
   function start() {
     id = 'walk_' + rid(8); ls.set('walkNow', id); ls.set('walkAt', Date.now());
-    ls.set('walkMode:' + id, pick); ls.set('lastMode', pick); ls.set('trackName:' + id, `${dayName} ${modeByK(pick).label}`); if (devTz()) ls.set('walkTz:' + id, devTz());   // 판 -334: 나라 밖에서 기록하면 돌아와서도 그곳 시간으로
+    ls.set('walkMode:' + id, pick); ls.set('lastMode', pick); ls.set('trackName:' + id, `${dayName} ${modeByK(pick).label}`); if (devTz()) ls.set('walkTz:' + id, devTz());   // 판 -336: 나라 밖에서 기록하면 돌아와서도 그곳 시간으로
     if (MULTI.includes(pick) && tripSel !== 'day') {
       let a = tripSel === 'new' ? null : albumGet(tripSel);
       if (!a) { a = { id: 'album_' + rid(8), name: tripName.trim() || `${dayName} ${modeByK(pick).label}`, mode: pick, days: [], at: Date.now() }; ls.set('walkMode:' + a.id, pick); }
@@ -18982,14 +18718,12 @@ function viewWalk() {
         pausedNow ? el('div', { class: 'rd-act' }, el('div', { class: 'rd-big2' },
           el('button', { class: 'end', onclick: finish }, '■ 끝내기'), el('button', { class: 'go', onclick: () => pauseRun(false) }, '▶ 다시 시작'))) :
         el('div', { class: 'rd-act' },
-          el('button', { class: 'rd-btn', 'aria-label': '화면 잠그기', onclick: lockScreen }, ico('lock', 18), el('span', { style: 'line-height:1.05', text: '화면\n잠그기' })),
           // 사진이 가운데 큰 주황 단추(시안 B안, 2026-10-01). 끝내기는 다른 단추와 같은 색으로 맨 오른쪽
           el('button', { class: 'rd-btn', 'aria-label': '지금 있는 곳을 좋은 곳으로 남기기', onclick: addSpot }, ico('star', 22, '#F4A259'), (() => { const n = ls.get('walkSpots:' + id, []).length; return n ? `좋은 곳 ${n}` : '좋은 곳'; })()),
           el('button', { class: 'rd-cam', 'aria-label': '사진 찍기', onclick: () => camIn.click() }, ico('camera', 32), nPhotos ? `사진 ${nPhotos}` : '사진 찍기'),
           el('button', { class: 'rd-btn', 'aria-label': '지금까지 공유하기', onclick: () => shareNow() }, ico('share', 22), '공유'),
           el('button', { class: 'rd-btn', 'aria-label': '잠시 멈춤', onclick: () => pauseRun(true) }, el('span', { style: 'font-size:17px;line-height:1', text: '⏸' }), '멈춤'),
-          // 설명은 화면 잠그기를 세 번 써 볼 때까지만 (알고 나면 지도를 넓게)
-          ls.get('lockUsed', 0) < 3 ? el('div', { class: 'rd-note', text: '🔒 화면 잠그기: 켠 채로 잘못 눌림을 막아요 · 풀 때 3초 꾹' }) : null),
+          null),
         el('div', { class: 'rd', style: 'gap:6px' }, rd.spBox),
         // 공유는 아래 고정 버튼에 있어서, 여기는 사진첩에서 넣기만
         el('div', { class: 'two' }, el('button', { class: 'btn line', onclick: () => galIn.click() }, ico('camera', 18), '사진첩에서 넣기'),
@@ -19030,8 +18764,8 @@ function viewWalk() {
       guide ? tGuide : null,
       stayBanner(),
       el('div', { class: 'wakebar ' + (wake ? 'on' : 'off') },
-        el('span', { text: wake ? (IS_IOS && !IN_NATIVE ? '화면을 켜두고 있어요. 주머니에 넣을 땐 옆 버튼 대신 🔒 화면 잠그기를 눌러요.' : '화면을 켜두고 있어요. 기록이 계속돼요.') : '화면이 꺼지면 기록이 멈춰요.' }),
-        wake ? el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '🔒 화면 잠그기', onclick: lockScreen }) : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
+        el('span', { text: wake ? '화면을 켜두고 있어요. 기록이 계속돼요.' : '화면이 꺼지면 기록이 멈춰요.' }),
+        wake ? null : el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '화면 켜두기', onclick: () => { wantWake = true; lockWake(); } })),
       mapEl,
       guide ? el('button', { class: 'link', style: 'align-self:flex-start;padding:2px 0', text: '따라가는 길 지우기', onclick: () => { if (!confirm('지도에서 따라가는 길을 지울까요?')) return; guide = null; ls.set('walkGuide:' + id, null); drawGuide(); stats(); draw(); } }) : null,
       follow ? null : el('button', { class: 'btn line small', style: 'align-self:flex-start', text: '내 위치 따라가기', onclick: () => { follow = true; const tr = trackLoad(id); if (map && tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16); draw(); } }),
