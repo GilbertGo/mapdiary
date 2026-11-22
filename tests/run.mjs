@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -57,6 +57,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 let pass = 0, fail = 0;
 const fails = [];
 async function test(name, fn) {
+  if (process.env.ONLY && !name.includes(process.env.ONLY)) return;   // 하나만 돌리기: ONLY='이름 일부' npm test
   const page = await newPage();
   try { await fn(page); pass++; console.log('✅ ' + name); }
   catch (e) { fail++; fails.push(name); console.log('❌ ' + name + '\n   ' + String(e && e.message || e).split('\n').slice(0, 4).join('\n   ')); }
@@ -519,6 +520,68 @@ await test('세 칸 화면 · 위 전체 지도는 가로로 긴 칸에 길이 �
   });
   ok(r.w === 1440 && r.h === 716, '위 칸 지도 크기가 이상해요 ' + r.w + 'x' + r.h);
   ok(r.out === 0, '길이 위 칸 지도 밖으로 나가요 ' + r.out);
+});
+
+await test('세 칸 화면은 끝 장면 전까지 화면 가득으로 바뀌지 않음 (판 -349)', async () => {
+  // 사용자 '세 화면분리 고정해. 자꾸 전체화면 생기니까 어지럽기만해': 날 바뀜·대표 사진·처음 제목에서 세 칸이 풀리면 안 돼요
+  const h = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const i = h.indexOf('if (SPLIT) {   // 판 -300 세 칸'), blk = h.slice(i, i + 1600);
+  ok(i > 0, '세 칸 그리기 자리를 못 찾았어요');
+  ok(!/plan\.holds[^\n]*sa = Math\.min/.test(blk), '날이 바뀔 때 세 칸이 풀려요');
+  ok(/const sa = Math\.max\(0, Math\.min\(1, \(end - tt\) \/ 0\.5\)\)/.test(blk), '처음부터 세 칸이 아니에요');
+  ok(/dayCard\(h, a, [^\n]*\{ y: SA, h: SB \}\)/.test(h), "'n일차'가 가운데 칸 안에 안 나와요");
+  ok(/if \(!SPLIT\) for \(const h of \(plan\.holds/.test(h), "세 칸에서도 화면 가득 'n일차'가 나와요");
+  ok(/if \(SPLIT\) \{ spHero = [^\n]*heroG = null; \}/.test(h) && /if \(!SPLIT && !plan\.tHero && tt < plan\.tTitle/.test(h), '세 칸에서 처음 대표 사진·제목이 화면 가득 나와요');
+});
+
+await test('세 칸 영상 · 아래 칸 사진은 늘 지도 머리가 있는 곳에서 찍은 것 (판 -349)', async page => {
+  // 2026-11-23 사용자 '위치와 사진이 전혀 안 맞아 · MPD는 이게 기본인데': 인천 출발(1일차) 지도에 스페인 사진이 나왔음
+  //   인천 20km → 비행 → 스페인 21일 걷기(날마다 15km) · 사진 266장(위치 있는 것 250, 그중 10장은 시각이 틀림 · 위치 없는 것 16)
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const P = []; let d = 0, ts = Date.UTC(2026, 9, 3, 0, 0), prev = null;
+    const add = (lat, lng, t) => { if (prev) d += Math.hypot((lat - prev.lat) * 111000, (lng - prev.lng) * 85000); P.push({ lat, lng, ts: t, d, g: d }); prev = { lat, lng }; };
+    for (let i = 0; i <= 40; i++) add(37.45 + i * 0.001, 126.6 + i * 0.004, ts + i * 60000);   // 인천 (1일차)
+    ts = Date.UTC(2026, 9, 4, 8, 0); const days = [{ n: 1, d: 0, ts: P[0].ts }];
+    for (let k = 0; k < 21; k++) { const t0 = ts + k * 864e5; for (let i = 0; i <= 150; i++) { add(42.6 + Math.sin(i / 20) * 0.01, -5.6 + k * 0.2 + i * 0.2 / 150, t0 + i * 120000); if (i === 0) days.push({ n: k + 2, d: P[P.length - 1].d, ts: t0 }); } }
+    const D = P[P.length - 1].d;
+    const runs = [{ k: 'fly', a: P[40].d, b: P[41].d }];
+    const L = []; let id = 0;
+    for (let k = 0; k < 21; k++) for (let j = 0; j < 12; j++) { const i = 41 + k * 151 + 20 + Math.floor(j / 4) * 50 + (j % 4); const q = P[i];   // 날마다 마을 세 곳에서 4장씩
+      const bad = (k * 12 + j) % 25 === 3;   // 시각이 틀린 사진: 시각은 인천 출발 때, 위치는 스페인
+      L.push({ id: 'p' + (id++), lat: q.lat, lng: q.lng, ts: bad ? P[5].ts : q.ts, blob: 1 }); }
+    for (let k = 0; k < 4; k++) L.push({ id: 'p' + (id++), lat: 37.46, lng: 126.62 + k * 0.01, ts: P[10 + k * 5].ts, blob: 1 });
+    for (let k = 0; k < 16; k++) L.push({ id: 'p' + (id++), ts: P[41 + k * 190].ts, blob: 1 });   // 위치 없는 사진
+    const F = __T.filmPhotoPlace(L, P, D), st = __T.FILM_STYLES.trip, T = 120;
+    const sel = __T.filmSplitSel(F, P, D, { T, st, hero: 1.4, days, runs });
+    const plan = __T.filmDirector({ D, T, st, adv: { rh: 1, z: 0, phK: 1, info: 1 }, hl: sel.sel.map(c => ({ d: c.hd, w: 1 })), runs, days, hero: 1.4, phHolds: sel.holds });
+    const dbg = []; let frames = 0, bad = 0, worst = 0, shownDays = new Set(), ids = new Set(), noPin = 0;
+    for (let f = 0; f < T * 30; f++) { const tt = f / 30, at = __T.filmSplitAt(plan, tt); if (!at) continue; frames++;
+      const hd = __T.filmAt(P, plan.dOfT(tt));
+      for (const g of at.ps) { ids.add(g.p.id); if (!g.pin) { noPin++; continue; } const m = Math.hypot((hd.lat - g.pin[1]) * 111000, (hd.lng - g.pin[0]) * 85000); worst = Math.max(worst, m); if (m > 1000) { bad++; if (dbg.length < 6) dbg.push([+tt.toFixed(2), at.out ? 'out' : 'in', Math.round(m), Math.round(at.h.d), Math.round(plan.dOfT(tt)), g.p.id]); } }
+      shownDays.add(at.h.ph.day); }
+    const tEnd = plan.tIn + plan.tRun, lastT1 = Math.max(...plan.phHolds.map(h => h.t1));
+    return { dbg, frames, bad, worst: Math.round(worst), days: shownDays.size, shown: ids.size, holds: plan.phHolds.length, lastT1, tEnd, tIn: plan.tIn };
+  });
+  ok(r.bad === 0, `지도 머리와 사진이 ${r.worst}m 떨어져 나와요 (${r.bad}번)`);
+  ok(r.days >= 22, '사진이 안 나오는 날이 있어요 ' + r.days + '/22');
+  ok(r.shown >= 80, '사진이 너무 적게 나와요 ' + r.shown);
+  ok(r.lastT1 <= r.tEnd + 0.01, '사진 멈춤이 끝 장면을 넘어가요');
+  console.log('   ' + JSON.stringify(r));
+});
+
+await test('영상 첫 사진 · AI가 고른 것은 기억해서 다시 안 부르고, 그 사진을 지우면 다시 안 나옴 (판 -349)', async page => {
+  // 2026-11-23 사용자 '첫 사진 선정부터 실망!!' → AI로 고르기
+  await seed(page); await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    localStorage.setItem('filmAiHero:T1', JSON.stringify({ id: 'p7', why: '메세타 들판' }));
+    const g = id => ({ p: { id, blob: new Blob(['x']) }, ts: 1 });
+    const kept = await __T.filmAiHero('T1', [g('p1'), g('p7'), g('p9')]);
+    const gone = await __T.filmAiHero('T1', [g('p1'), g('p9')]);   // p7을 지운 뒤 (열쇠가 없으면 AI도 안 불러요)
+    return { kept, gone };
+  });
+  ok(r.kept && r.kept.id === 'p7' && r.kept.why === '메세타 들판', '기억해 둔 첫 사진을 안 써요 ' + JSON.stringify(r.kept));
+  ok(r.gone === null, '지운 사진이 첫 사진으로 다시 나와요 ' + JSON.stringify(r.gone));
 });
 
 await test('계획 영상 사진 · 여행사 사진이 먼저, 없으면 공개 사진 (판 -302)', async page => {

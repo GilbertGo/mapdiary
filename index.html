@@ -3646,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-348-ptmsg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-349-splitfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지난 날 기록하기에서 사진 위치를 못 읽을 때 까닭과 할 일을 바르게 알려 줘요";
+const UI_NOTES = "이동 영상 세 칸 화면이 끝 장면 전까지 그대로예요 · 아래 칸 사진은 지도가 그 사진 찍은 자리에 멈춰 있을 때만 나와요 · 영상 첫 사진은 AI가 사진을 보고 골라요 (★ 표시한 사진이 있으면 그것)";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -6372,6 +6372,88 @@ function filmPhotoPlace(L, P, D) {
   });
   return { intro, outro, route };
 }
+// 판 -349 영상 첫 사진은 AI가 사진을 보고 골라요 (2026-11-23 사용자 '첫 사진 선정부터 실망!!' → AI로 고르기 '1번'):
+//   예전엔 ★가 없으면 그날 가운데 순서 사진이라 물집·음식이 첫 장면이 됐어요. ★ 표시한 사진이 있으면 그게 먼저(AI 안 씀)
+//   후보는 여행 길 위 사진에서 고르게 20장(512px) · 고른 결과는 이 기기에 기억(filmAiHero:기록)해서 다시 만들 땐 돈이 안 들어요 · 그 사진을 지우면 다시 골라요
+async function filmAiHero(t, cand) {
+  const ck = 'filmAiHero:' + t, c0 = ls.get(ck, null);
+  if (c0 && c0.id != null && cand.some(g => String(g.p.id) === String(c0.id))) return c0;
+  const key = trBotKey(); if (!key || cand.length < 2) return null;
+  const byT = cand.filter(g => g.p.blob && !g.p.v).sort((a, b) => (a.ts || 0) - (b.ts || 0)), n = Math.min(20, byT.length), L = [];
+  for (let i = 0; i < n; i++) { const g = byT[Math.floor((i + 0.5) * byT.length / n)]; if (!L.includes(g)) L.push(g); }
+  const content = [];
+  for (let i = 0; i < L.length; i++) { try { const q = L[i].p.ts ? new Date(L[i].p.ts) : null; content.push({ type: 'text', text: `[${i + 1}]${q ? ` ${q.getMonth() + 1}월 ${q.getDate()}일` : ''}${L[i].p.m ? ' · 메모: ' + String(L[i].p.m).slice(0, 60) : ''}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await postImg64(L[i].p.blob, 512) } }); } catch {} }
+  if (content.length < 4) return null;
+  content.push({ type: 'text', text: '위는 한 여행에서 찍은 사진이에요. 이 여행 영상의 첫 장면(대표 사진)으로 가장 좋은 사진 하나를 골라 주세요.\n- 좋은 것: 그 여행지를 한눈에 보여 주는 풍경·길·명소, 밝고 선명한 사진, 사람이 있어도 풍경이 함께 보이는 사진\n- 피할 것: 음식·발·물집·상처·영수증·서류·표지판 글자 가까이·실내·흔들리거나 어두운 사진\n결과는 JSON 하나로만: {"n": 사진 번호, "why": "고른 까닭 15자 안팎"}' });
+  toast(`✨ AI를 써요 · 영상 첫 사진 고르기 · 사진 ${L.length}장을 보내요`, true);
+  const { default: Anthropic } = await import(TALK_SDK);
+  const res = await new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).messages.create({ model: FA_MODEL, max_tokens: 200, messages: [{ role: 'user', content }] });
+  const u = res.usage || {}, log = ls.get('labAiLog', []); log.unshift({ at: Date.now(), kind: '영상 첫 사진', inT: u.input_tokens || 0, outT: u.output_tokens || 0 }); ls.set('labAiLog', log.slice(0, 100));
+  toast(`✨ AI 사용 끝 · 영상 첫 사진 · 입력 ${u.input_tokens || '?'} · 출력 ${u.output_tokens || '?'}`, true);
+  const tb = (res.content || []).filter(q => q.type === 'text').map(q => q.text).join(''), j = JSON.parse((/\{[\s\S]*\}/.exec(tb) || ['{}'])[0]), g = L[(+j.n || 0) - 1];
+  if (!g) return null;
+  const r = { id: g.p.id, why: String(j.why || '').trim().slice(0, 30) }; ls.set(ck, r); return r;
+}
+// 판 -349 세 칸 화면 사진 (2026-11-23 사용자 '위치와 사진이 전혀 안 맞아 · MPD는 이게 기본인데'):
+//   예전엔 사진을 시간표에 줄 세워 내보내서 266장처럼 많으면 지도 머리와 따로 놀았어요(지도는 인천 출발인데 아래 칸은 스페인 식당).
+//   이제는 ① 사진 위치(GPS)로 길 위 자리를 다시 맞추고(시각으로 잡은 자리가 1km 넘게 어긋나면 찍은 곳에서 가장 가까운 길로, 길에서 3km 넘으면 안 씀)
+//   ② 가까운 사진(길 위 400m 안)끼리 한 '자리'로 묶고 ③ 영상 길이 안에 들어가는 만큼만 자리를 골라(날마다 한 곳 먼저, 사진 많은·★·메모 있는 곳)
+//   ④ 그 자리에서 카메라가 멈춰 있는 동안(phHolds) 아래 칸에 2×2로 넘겨 보여 줘요 → 화면에 나온 사진은 늘 지도 머리가 있는 곳에서 찍은 것
+var FILM_SP_PAGE = 1.6, FILM_SP_NEAR = 1000, FILM_SP_FAR = 3000, FILM_SP_GAP = 800;
+function filmSplitSel(F, P, D, o) {
+  const { T, st } = o, days = o.days || [], runs = o.runs || [];
+  const tIn = Math.min(st.inMax, T * st.inF) + (o.hero || 0), tOut = Math.min(st.outMax, T * st.outF), tRun = T - tIn - tOut;
+  const hold = days.length ? Math.min(FILM_DAY_HOLD * (T < 25 ? 0.6 : 1), tRun * 0.3 / days.length) : 0, avail = tRun - hold * days.length;
+  const Tf = Math.min(avail * 0.28, runs.reduce((a, r) => a + (r.k === 'fly' ? 2.4 : 1.8), 0));
+  const pg = T < 30 ? 1.3 : FILM_SP_PAGE, budget = Math.max(0, (avail - Tf) * 0.7);
+  let pages = Math.floor(budget / pg);
+  // ① 자리 다시 맞추기
+  const L = [];
+  for (const g of F.route) {
+    let d = g.d;
+    if (g.pin) {
+      const at = d != null ? filmAt(P, d) : null;
+      if (!at || dist(at.lat, at.lng, g.pin[1], g.pin[0]) > FILM_SP_NEAR) {
+        let best = 1e18, j = -1; for (let k = 0; k < P.length; k++) { const dd = dist(P[k].lat, P[k].lng, g.pin[1], g.pin[0]); if (dd < best) { best = dd; j = k; } }
+        if (j < 0 || best > FILM_SP_FAR) continue; d = P[j].d;
+      }
+    }
+    if (d == null) continue; L.push({ g, d });
+  }
+  L.sort((a, b) => a.d - b.d || (a.g.ts || 0) - (b.g.ts || 0));
+  // ② 자리로 묶기
+  const cl = [];
+  for (const x of L) { const c = cl[cl.length - 1], pin = x.g.pin;
+    if (c && x.d - c.d0 <= FILM_SP_GAP && (!pin || !c.pin || dist(c.pin[1], c.pin[0], pin[1], pin[0]) <= FILM_SP_GAP)) { c.L.push(x); c.d1 = x.d; }
+    else cl.push({ L: [x], d0: x.d, d1: x.d, pin: pin || null }); }
+  const dayOf = d => { let n = 1; for (const y of days) if (y.d <= d + 0.01) n = y.n; return n; };
+  cl.forEach(c => { c.n = c.L.length; c.score = c.n + 4 * c.L.filter(x => x.g.star).length + 2 * c.L.filter(x => x.g.p.m).length; c.day = dayOf(c.d0); c.pg = 0; });
+  // ③ 고르기: 날마다 가장 좋은 자리 한 곳 → 나머지 자리 → 사진 많은 자리에 쪽 더(한 자리 3쪽까지)
+  const byScore = cl.slice().sort((a, b) => b.score - a.score);
+  const firstOfDay = new Map(); for (const c of byScore) if (!firstOfDay.has(c.day)) firstOfDay.set(c.day, c);
+  for (const c of [...firstOfDay.values()].sort((a, b) => b.score - a.score)) { if (pages <= 0) break; c.pg = 1; pages--; }
+  for (const c of byScore) { if (pages <= 0) break; if (!c.pg) { c.pg = 1; pages--; } }
+  for (let more = true; more && pages > 0;) { more = false; for (const c of byScore) { if (pages <= 0) break; if (c.pg && c.pg < 3 && c.n > c.pg * 4) { c.pg++; pages--; more = true; } } }
+  // ④ 자리마다 보여 줄 사진(★·메모 먼저, 나머지는 고르게) → 찍은 차례로 쪽 나누기
+  const holds = [], sel = cl.filter(c => c.pg);
+  for (const c of sel) {
+    const k = Math.min(c.n, c.pg * 4), byT = c.L.slice().sort((a, b) => (a.g.ts || 0) - (b.g.ts || 0));
+    const pick = new Set(byT.filter(x => x.g.star).concat(byT.filter(x => x.g.p.m)).slice(0, k));
+    for (let i = 0; pick.size < k && i < byT.length * 2; i++) pick.add(byT[Math.min(byT.length - 1, Math.floor((i + 0.5) * byT.length / k)) % byT.length]);
+    for (const x of byT) { if (pick.size >= k) break; pick.add(x); }
+    const ps = byT.filter(x => pick.has(x)), np = Math.max(1, Math.ceil(ps.length / 4)), pgs = [];
+    for (let i = 0; i < np; i++) pgs.push(ps.slice(Math.round(i * ps.length / np), Math.round((i + 1) * ps.length / np)).map(x => x.g));
+    const dm = ps[Math.floor((ps.length - 1) / 2)].d;
+    c.hd = Math.max(0, Math.min(D, dm)); c.pages = pgs;
+    holds.push({ d: c.hd, dur: pgs.length * pg, ph: { pages: pgs, pg, day: c.day, n: c.n, pin: c.pin } });
+  }
+  return { holds, pg, sel, all: L.length, shown: holds.reduce((a, h) => a + h.ph.pages.reduce((b, q) => b + q.length, 0), 0) };
+}
+// 세 칸 화면 아래 칸: 지금(tt) 카메라가 멈춰 있는 사진 자리와 그 쪽 · 마지막 쪽은 멈춤이 끝나기 0.3초 전부터 흐려져서, 카메라가 움직일 땐 사진이 없어요
+function filmSplitAt(plan, tt) {
+  for (const h of (plan.phHolds || [])) if (tt >= h.t0 && tt < h.t1) { const i = Math.min(h.ph.pages.length - 1, Math.floor((tt - h.t0) / h.ph.pg)); return { h, i, ps: h.ph.pages[i], a: i === h.ph.pages.length - 1 ? Math.min(1, (h.t1 - tt) / 0.3) : 1, s: h.t0 + i * h.ph.pg }; }
+  return null;
+}
 // 장소 이름표: 좋은 곳·들른 곳(머문 시간)·정상 (+ 집 가리기가 꺼져 있으면 출발·도착)
 function filmLabels(src, P, D, opt, st) {
   const labels = [];
@@ -6409,7 +6491,10 @@ function filmDirector(o) {
     sAt[k] = s;
   }
   // 날 바뀜 멈춤: 짧은 영상(25초 미만)은 짧게, 날이 너무 많으면 남은 시간의 30%까지만
-  const hold = days.length ? Math.min(FILM_DAY_HOLD * (T < 25 ? 0.6 : 1), tRun * 0.3 / days.length) : 0, Th = hold * days.length;
+  const hold = days.length ? Math.min(FILM_DAY_HOLD * (T < 25 ? 0.6 : 1), tRun * 0.3 / days.length) : 0;
+  // 판 -349 사진 멈춤(phHolds, 세 칸 화면): 사진을 찍은 자리에서 카메라가 멈춰 있는 동안 아래 칸에 그 자리 사진 → 지도와 사진이 늘 같은 곳
+  const phH = (o.phHolds || []).filter(h => h.dur > 0 && h.d >= 0 && h.d <= D).map(h => ({ d: h.d, dur: h.dur, ph: h.ph }));
+  const Th = hold * days.length + phH.reduce((a, h) => a + h.dur, 0);
   const avail = tRun - Th;
   // 덩어리 시간: 비행 2.4초, 차는 거리에 따라 0.8~1.8초 · 모두 합쳐 남은 시간의 28%를 넘지 않게
   let Tf = 0; runs.forEach(r => { const km = (r.b - r.a) / 1000; r.T = r.k === 'fly' ? 2.4 : Math.max(0.8, Math.min(1.8, 0.6 + 0.22 * Math.sqrt(km))); Tf += r.T; });
@@ -6427,17 +6512,18 @@ function filmDirector(o) {
   { const f = avail / (c[K] || 1); for (let k = 1; k <= K; k++) c[k] *= f; }   // 칸 끝이 덩어리에 걸친 만큼 어긋난 것을 맞춤 (초 단위)
   const base = d => { const x = Math.max(0, Math.min(K, d / D * K)), i = Math.min(K - 1, Math.floor(x)), f = x - i; return c[i] + (c[i + 1] - c[i]) * f; };
   const baseInv = y => { if (y <= 0) return 0; if (y >= c[K]) return D; let lo = 0, hi = K; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= y) lo = m; else hi = m; } return D * (lo + (y - c[lo]) / ((c[hi] - c[lo]) || 1)) / K; };
-  const holds = days.map(x => ({ d: x.d, n: x.n, ts: x.ts })).sort((a, b) => a.d - b.d);
-  { let acc = 0; for (const h of holds) { h.t0 = tIn + base(h.d) + acc; h.t1 = h.t0 + hold; acc += hold; } }
-  const tOfD = d => { let acc = 0; for (const h of holds) if (h.d <= d) acc += hold; return tIn + base(d) + acc; };
-  const dOfT = t => { const y = t - tIn; let acc = 0; for (const h of holds) { const tb = base(h.d) + acc; if (y < tb) break; if (y < tb + hold) return h.d; acc += hold; } return baseInv(y - acc); };
+  const allH = days.map(x => ({ d: x.d, n: x.n, ts: x.ts, dur: hold })).concat(phH).sort((a, b) => a.d - b.d || (a.n != null ? -1 : 1) - (b.n != null ? -1 : 1));   // 같은 자리면 'n일차' 먼저
+  { let acc = 0; for (const h of allH) { h.t0 = tIn + base(h.d) + acc; h.t1 = h.t0 + h.dur; acc += h.dur; } }
+  const holds = allH.filter(h => h.n != null), phHolds = allH.filter(h => h.ph);
+  const tOfD = d => { let acc = 0; for (const h of allH) if (h.d <= d) acc += h.dur; return tIn + base(d) + acc; };
+  const dOfT = t => { const y = t - tIn; let acc = 0; for (const h of allH) { const tb = base(h.d) + acc; if (y < tb) break; if (y < tb + h.dur) return h.d; acc += h.dur; } return baseInv(y - acc); };
   const hlAt = d => sAt[Math.max(0, Math.min(K, Math.round(d / D * K)))];
   // 하이라이트(음악이 가장 차오르는 때): 강조 무게가 가장 많이 모인 곳, 없으면 따라가기의 70% 지점
   let best = -1, bk = -1; const win = Math.max(2, Math.round(K * 0.06));
   for (let k = 0; k <= K; k++) { let s = 0; for (let j = Math.max(0, k - win); j <= Math.min(K, k + win); j++) s += sAt[j]; if (s > best + 1e-9) { best = s; bk = k; } }
   const tPeak = best > 0.5 ? tOfD(D * bk / K) : tIn + tRun * 0.7;
   runs.forEach(r => { r.t0 = tOfD(r.a); r.t1 = tOfD(r.b); });
-  return { tIn, tRun, tOut, tOfD, dOfT, hlAt, tPeak: Math.max(tIn + 1, Math.min(tIn + tRun, tPeak)), K, sAt, runs, holds, hold };
+  return { tIn, tRun, tOut, tOfD, dOfT, hlAt, tPeak: Math.max(tIn + 1, Math.min(tIn + tRun, tPeak)), K, sAt, runs, holds, hold, phHolds };
 }
 function filmHighlights(route, labels, marks, st) {
   const hl = [];
@@ -7418,7 +7504,7 @@ async function filmMake(S, opt, U) {
     //   끝 장면을 첫 장에 넣던 것(판 -63)은 없앰: 첫 장이 대표 사진 또는 길 그림이라 갤러리·카톡 미리보기도 그걸로 보여요
     const OPT0 = window.__filmOpen || '';   // 시험용: 'hero' | 'sky' | 'draw'
     const OPEN = OPT0 ? (OPT0 === 'hero' ? '' : OPT0) : st.k === 'sport' ? 'draw' : (st.k === 'trip' || days.length > 1 || (path.fly && path.fly.length)) ? 'sky' : 'draw';
-    let heroG = null;
+    let heroG = null, spHero = null;
     if ((OPT0 ? OPT0 === 'hero' : st.k !== 'sport' && T >= 25) && F.route.length) {
       const cand = F.route.filter(g => !g.p.v), dOf = g => { let n = 0; for (const x of days) if (x.d <= g.d + 0.01) n = x.n; return n; };
       let big = cand.filter(g => g.star);
@@ -7427,9 +7513,14 @@ async function filmMake(S, opt, U) {
         for (const L of G.values()) { const m = L.filter(g => g.p.m).sort((a, b) => String(b.p.m).length - String(a.p.m).length)[0]; big.push(m || L[Math.floor(L.length / 2)]); }
       }
       big = SPLIT ? [] : big.slice(0, days.length > 1 ? 5 : 3); big.forEach(g => { g.big = true; });   // 세 칸 화면은 사진이 아래 칸에 나와서 화면 가득 사진은 안 씀
-      heroG = cand.find(g => g.star) || big.find(g => g.p.m) || big[0] || cand[Math.floor(cand.length / 2)] || null;
+      let ai = null;   // 판 -349: ★가 없으면 AI가 사진을 보고 첫 사진을 골라요
+      if (!cand.some(g => g.star) && src.t && st.k !== 'sport') { say('AI가 첫 사진을 고르는 중…'); try { ai = await filmAiHero(src.t, cand); } catch (e) { toast('⚠ AI가 첫 사진을 못 골랐어요' + (e && e.message ? ` (${String(e.message).slice(0, 50)})` : ''), true); } }
+      const aiG = ai ? cand.find(g => String(g.p.id) === String(ai.id)) : null; if (aiG) aiG.why = ai.why;
+      if (SPLIT) { spHero = cand.find(g => g.star) || aiG || null; heroG = null; }   // 세 칸: 화면 가득 대신 처음 장면 동안 아래 칸에
+      else heroG = cand.find(g => g.star) || aiG || big.find(g => g.p.m) || big[0] || cand[Math.floor(cand.length / 2)] || null;
     }
-    const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(F.route, labels, marks, st), runs: runs0, days, hero: (heroG ? FILM_HERO : 0) + (OPEN ? 1.4 : 0) });
+    const hero0 = (heroG ? FILM_HERO : 0) + (OPEN ? 1.4 : 0), spSel = SPLIT ? filmSplitSel(F, P, D, { T, st, hero: hero0, days, runs: runs0 }) : null;   // 판 -349 세 칸: 사진은 찍은 자리에서 멈춰서
+    const plan = filmDirector({ D, T, st, adv, hl: filmHighlights(spSel ? spSel.sel.map(c => ({ d: c.hd, star: true })) : F.route, labels, marks, st), runs: runs0, days, hero: hero0, phHolds: spSel ? spSel.holds : null });
     plan.tHero = heroG ? FILM_HERO : 0;
     let heroBm = null; if (heroG) { try { heroBm = await createImageBitmap(heroG.p.blob, { resizeWidth: 1080, resizeQuality: 'high' }); } catch { plan.tHero = 0; } }
     days.forEach(x => { const nx = days.find(q => q.n === x.n + 1), d1 = nx ? nx.d : D; x.names = labels.filter(l => l.d >= x.d && l.d < d1 && !l.stay && l.plan !== 'fly' && l.plan !== 'stay').concat(labels.filter(l => l.d >= x.d && l.d < d1 && l.stay)).map(l => l.name).filter((v, i, L) => v && L.indexOf(v) === i).slice(0, 3); });
@@ -7539,15 +7630,18 @@ async function filmMake(S, opt, U) {
         c.fillStyle = 'rgba(255,255,255,.72)'; c.font = FN(600, small ? 18 : 24); c.fillText(k, x, yv - (small ? 30 : 50));
         c.fillStyle = '#fff'; c.font = FN(800, small ? 30 : 46); c.fillText(filmFit(c, v, cw - 10), x, yv); });
       c.restore(); };
-    const dayDate = x => { const q = new Date(x.ts); return `${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]})`; };
+    // 판 -349 찍은 곳 시간: 여러 날 여행은 그날 기록의 시간대(인천 출발·스페인 걷기), 하루 기록은 그 기록 시간대
+    const tzIds = src.t ? (src.days ? ((albumGet(src.t) || {}).days || []).map(id => ({ id, t0: (ls.get('track:' + id, [])[0] || [])[2] || 0 })).filter(o => o.t0).sort((a, b) => a.t0 - b.t0) : [{ id: src.t, t0: 0 }]) : [];
+    const tzF = ts => { let id = tzIds.length ? tzIds[0].id : null; for (const o of tzIds) if (o.t0 <= ts + 60000) id = o.id; return tzAt(ts, id ? recTz(id) : null); };
+    const dayDate = x => { const q = tzF(x.ts); return `${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]})`; };
     const dayPill = (x, px, py) => {
       c.save(); const t1 = `${x.n}일차`, t2 = ` · ${dayDate(x)}`; c.font = FN(900, 30); const w1 = c.measureText(t1).width; c.font = FN(700, 24); const w2 = c.measureText(t2).width, w = w1 + w2 + 36, h = 50;
       c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 12; c.fillStyle = col; c.beginPath(); c.roundRect(px, py, w, h, h / 2); c.fill(); c.shadowBlur = 0;
       c.fillStyle = '#fff'; c.textAlign = 'left'; c.font = FN(900, 30); c.fillText(t1, px + 18, py + 35); c.font = FN(700, 24); c.fillStyle = 'rgba(255,255,255,.95)'; c.fillText(t2, px + 18 + w1, py + 34);
       c.restore(); };
-    const dayCard = (h, a, u) => {   // u: 0→1 나타나는 정도 (커지며 올라옴)
-      const x = days.find(q => q.n === h.n) || h, memo = LOOK === 'memo', cine = LOOK === 'cine', cy = LAND ? H * 0.46 : H * 0.44, up = (1 - u) * 30, sc = 0.92 + 0.08 * u;
-      c.save(); c.globalAlpha = a; c.fillStyle = memo ? 'rgba(40,24,12,.55)' : 'rgba(6,10,18,.55)'; c.fillRect(0, 0, W, H);
+    const dayCard = (h, a, u, bx) => {   // u: 0→1 나타나는 정도 (커지며 올라옴) · bx {y, h}: 세 칸 화면은 가운데 칸 안에만 작게 (판 -349)
+      const x = days.find(q => q.n === h.n) || h, memo = LOOK === 'memo', cine = LOOK === 'cine', cy = bx ? bx.y + bx.h * 0.47 : LAND ? H * 0.46 : H * 0.44, up = (1 - u) * 30, sc = (0.92 + 0.08 * u) * (bx ? 0.62 : 1);
+      c.save(); c.globalAlpha = a; c.fillStyle = memo ? 'rgba(40,24,12,.55)' : 'rgba(6,10,18,.55)'; if (bx) c.fillRect(0, bx.y, W, bx.h); else c.fillRect(0, 0, W, H);
       c.translate(CX, cy + up); c.scale(sc, sc); c.textAlign = 'center';
       c.fillStyle = col; c.font = FN(800, 30); c.letterSpacing = '10px'; c.fillText(`DAY ${x.n}`, 5, -112); c.letterSpacing = '0px';
       c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 24; c.fillStyle = '#fff'; c.font = memo ? FS(700, 140) : FN(cine ? 300 : 900, 150); c.fillText(`${x.n}일차`, 0, 30); c.shadowBlur = 0;
@@ -7573,7 +7667,7 @@ async function filmMake(S, opt, U) {
     let inset = null, insetW = 0;
     // 판 -300 세 칸 화면 (2026-11-21 사용자 '삼분할' → '1.전체경로지도 2.국부경로지도 3.찍은사진·설명'): 길을 따라가는 동안 위 전체 지도 / 가운데 3D 지도 / 아래 사진과 설명
     const SA = Math.round(H * 0.28), SB = Math.round(H * 0.44), SC = H - SA - SB;
-    let topMap = null, spPan = null, spPanT = null;   // spPanT: 잘라 쓸 화면 사본, spPan: 아래 칸(사진이 바뀔 때까지 남겨 둠)
+    let topMap = null, spPan = null, spPanT = null, spImg = null, spHeroBm = null;   // spPanT: 잘라 쓸 화면 사본, spPan: 아래 칸(사진이 바뀔 때까지 남겨 둠)
     if (SPLIT && P.length > 1) { say('전체 지도를 준비하는 중…'); const [a0, a1] = filmTripRange(P); try { topMap = await filmInset(P, mtype === 'sat', W, a0, a1, SA, 34); } catch {} }
     if (LOOK !== 'memo' && P.length > 2) {
       // 판 -298 (사용자 '작은 지도는 여행지 도착해서 떠날 때까지로 한정하자'): 처음 비행(가는 비행기) 뒤 ~ 마지막 비행(오는 비행기) 앞만
@@ -7663,7 +7757,7 @@ async function filmMake(S, opt, U) {
           c.restore();
         } }
       // 사진 카드 자리 먼저 셈 (이름표가 카드와 겹치지 않게)
-      const ph = tt < (plan.tEnd || runEnd) ? cards.find(q => tt >= q.s && tt < q.e) : null;   // 끝 장면이 시작되면 사진 카드는 내려감
+      const ph = !SPLIT && tt < (plan.tEnd || runEnd) ? cards.find(q => tt >= q.s && tt < q.e) : null;   // 끝 장면이 시작되면 사진 카드는 내려감 · 세 칸은 아래 칸이 따로(filmSplitAt)
       for (const q of cards) if (q.imgs && q !== ph && tt >= q.e) { q.imgs.forEach(im => { try { im && im.close(); } catch {} }); q.imgs = null; q.img = null; filmVidFree(q); }
       if (ph && !ph.imgs) { const one = ph.ps.length === 1; ph.imgs = [];
         for (const g of ph.ps) { try { ph.imgs.push(await createImageBitmap(g.p.v ? g.p.thumb : g.p.blob, { resizeWidth: ph.big ? 1080 : one ? (ph.star || st.k === 'memo' ? 760 : 520) : 380, resizeQuality: 'high' })); } catch { ph.imgs.push(null); } }
@@ -7671,7 +7765,7 @@ async function filmMake(S, opt, U) {
         if (one && ph.p.v && ph.p.blob) ph.vid = await filmVidOpen(ph.p.blob); }   // 동영상: 카드 안에서 실제로 움직이게(소리 없이)
       const vidOk = ph && ph.vid && ph.ps.length === 1 ? await filmVidSeek(ph.vid, tt - ph.s) : false;
       let box = null;
-      if (SPLIT && tt >= plan.tIn) {}   // 세 칸: 사진은 아래 칸에
+      if (SPLIT) {}   // 세 칸: 사진은 아래 칸에 (판 -349 처음부터)
       else if (ph && ph.ps.length > 1 && ph.imgs.some(Boolean)) {   // 여러 장 카드: 2·3·4장 → 2칸, 그 이상 3칸, 정사각 칸
         const n = ph.ps.length, cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols), gap = 6, y = LAND ? 96 : 175;
         let bw = Math.min(W * (LAND ? 0.36 : 0.6), st.card[0] * 1.55 * (ph.star ? 1.15 : 1)), cell = (bw - gap * (cols - 1)) / cols, bh = rows * cell + gap * (rows - 1);
@@ -7705,7 +7799,7 @@ async function filmMake(S, opt, U) {
         for (const l of labels) { if (l.d < dh - look * 1.5 || l.d > dh + look * 3) continue; const p = onScreen(l); if (p) pill(p.x, p.y, l.n, 'rgba(20,37,59,.86)', '#fff', st.k === 'trip' ? 30 : 26); }
       }
       // 처음 제목 카드
-      if (!plan.tHero && tt < plan.tTitle + 1.2) {
+      if (!SPLIT && !plan.tHero && tt < plan.tTitle + 1.2) {
         const a = Math.max(0, Math.min(1, 1 - (tt - plan.tTitle) / 1.0, (plan.tIn - tt) / 0.5));   // 아래 숫자가 나오기 전에 다 사라지게
         c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.fillStyle = '#fff'; shadow(18);
         let y = Math.round(LAND ? H * 0.42 : H * 0.66); if (LAND) { c.translate(W * 0.74 - CX, 0); }
@@ -7884,7 +7978,7 @@ async function filmMake(S, opt, U) {
           c.letterSpacing = '0px'; c.restore();
         } }
       // 날이 바뀔 때 큰 'n일차' 카드 (2026-11-15 사용자 '1일차·2일차 구분이 눈에 잘 안 띄어'): 그동안 카메라는 멈춰 있어요
-      for (const h of (plan.holds || [])) { if (tt < h.t0 - 0.25 || tt > h.t1 + 0.35) continue; const a = Math.max(0, Math.min(1, (tt - h.t0 + 0.25) / 0.35, (h.t1 + 0.35 - tt) / 0.4)); dayCard(h, a, filmEase(Math.min(1, (tt - h.t0 + 0.25) / 0.6))); }
+      if (!SPLIT) for (const h of (plan.holds || [])) { if (tt < h.t0 - 0.25 || tt > h.t1 + 0.35) continue; const a = Math.max(0, Math.min(1, (tt - h.t0 + 0.25) / 0.35, (h.t1 + 0.35 - tt) / 0.4)); dayCard(h, a, filmEase(Math.min(1, (tt - h.t0 + 0.25) / 0.6))); }
       // 끝 장면 (2026-11-13 '마지막 장면을 확 새롭게'): 위(가로는 왼쪽)에 길이 다시 그려지고, 아래(가로는 오른쪽) 판에
       //   작은 머리말 → 큰 제목 → 색 줄 → 숫자 칸(거리·시간·오른 높이·사진, 0부터 차오름) → 높이 산 그림 → 로고. 스타일마다 머리말·글꼴·사진이 다름
       const tE = plan.tEnd || runEnd;
@@ -7957,8 +8051,8 @@ async function filmMake(S, opt, U) {
       }
       if (SPLIT) {   // 판 -300 세 칸: 그려 둔 화면에서 3D 지도 가운데를 잘라 가운데 칸에, 위는 전체 지도, 아래는 사진과 설명
         const end = plan.tEnd || runEnd;
-        let sa = Math.max(0, Math.min(1, (tt - plan.tIn) / 0.5, (end - tt) / 0.5));
-        for (const h of (plan.holds || [])) if (tt > h.t0 - 0.6 && tt < h.t1 + 0.7) sa = Math.min(sa, Math.max(0, (h.t0 - 0.25 - tt) / 0.35, (tt - h.t1 - 0.35) / 0.35));
+        // 판 -349 (사용자 '세 화면분리 고정해. 자꾸 전체화면 생기니까 어지럽기만해'): 처음부터 끝 장면 전까지 세 칸 그대로 · 날이 바뀔 때 'n일차'는 가운데 칸 안에만
+        const sa = Math.max(0, Math.min(1, (end - tt) / 0.5));
         if (ph && ph.big) sa = 0;
         if (sa > 0) {
           if (!spPanT) { spPanT = document.createElement('canvas'); spPanT.width = W; spPanT.height = H; spPan = document.createElement('canvas'); spPan.width = W; spPan.height = SC; spPan.has = false; }
@@ -7981,33 +8075,45 @@ async function filmMake(S, opt, U) {
           c.textAlign = 'left'; c.fillStyle = '#fff'; shadow(8); c.font = FN(800, 30); c.fillText(filmFit(c, src.name, days.length ? W * 0.5 : W - 56), 28, 48); c.shadowBlur = 0;
           if (days.length) { const dy = dayAt(dh); if (dy) { c.save(); c.translate(W - 28, 0); c.scale(0.8, 0.8); c.font = FN(900, 30); const w1 = c.measureText(`${dy.n}일차`).width; c.font = FN(700, 24); const w2 = c.measureText(` · ${dayDate(dy)}`).width; dayPill(dy, -(w1 + w2 + 36), 16); c.restore(); } }
           // 칸 사이 선
+          for (const h of (plan.holds || [])) { if (tt < h.t0 - 0.25 || tt > h.t1 + 0.35) continue; const a = Math.max(0, Math.min(1, (tt - h.t0 + 0.25) / 0.35, (h.t1 + 0.35 - tt) / 0.4)); dayCard(h, a, filmEase(Math.min(1, (tt - h.t0 + 0.25) / 0.6)), { y: SA, h: SB }); }
           c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, SA - 1, W, 2); c.fillRect(0, SA + SB - 1, W, 2);
           // 3. 찍은 사진·설명
           const y0 = SA + SB;
-          if (ph && ph.img && !ph.big) {
+          const sp = filmSplitAt(plan, tt);   // 판 -349: 지금 카메라가 멈춰 있는 자리에서 찍은 사진만
+          if (sp && sp.ps.length) {
+            const key = sp.h.t0 + ':' + sp.i;
+            if (!spImg || spImg.key !== key) { if (spImg) spImg.ims.forEach(im => { try { im && im.close(); } catch {} });
+              spImg = { key, ims: [] }; for (const g of sp.ps) { try { spImg.ims.push(await createImageBitmap(g.p.v ? g.p.thumb : g.p.blob, { resizeWidth: sp.ps.length === 1 ? 640 : 400, resizeQuality: 'high' })); } catch { spImg.ims.push(null); } } }
             const g2 = spPan.getContext('2d'), m = 24, sq = SC - m * 2; g2.clearRect(0, 0, W, SC); g2.fillStyle = '#0E1218'; g2.fillRect(0, 0, W, SC);
-            const cover = (im, x, y, w, h, r) => { const iw = im.videoWidth || im.width, ih = im.videoHeight || im.height; g2.save(); g2.beginPath(); g2.roundRect(x, y, w, h, r); g2.clip(); const k2 = Math.max(w / iw, h / ih); g2.drawImage(im, x + (w - iw * k2) / 2, y + (h - ih * k2) / 2, iw * k2, ih * k2); g2.restore(); };
-            const ims = ph.imgs.filter(Boolean).slice(0, 4);
-            if (ims.length === 2) { const cl = (sq - 6) / 2; ims.forEach((im, i) => cover(im, m + i * (cl + 6), m, cl, sq, 12)); }   // 두 장은 나란히 세로로 길게
-            else if (ims.length > 2) { const cc = 2, gp = 6, cl = (sq - gp) / 2; ims.forEach((im, i) => cover(im, m + (i % cc) * (cl + gp), m + Math.floor(i / cc) * (cl + gp), cl, cl, 10)); }
-            else { cover(vidOk ? ph.vid.el : ph.img, m, m, sq, sq, 16);   // 동영상은 아래 칸에서도 움직여요 (판 -301)
-              if (ph.p.v && !vidOk) { g2.fillStyle = 'rgba(0,0,0,.45)'; g2.beginPath(); g2.arc(m + sq / 2, m + sq / 2, 30, 0, 7); g2.fill(); g2.fillStyle = '#fff'; g2.beginPath(); g2.moveTo(m + sq / 2 - 9, m + sq / 2 - 14); g2.lineTo(m + sq / 2 + 15, m + sq / 2); g2.lineTo(m + sq / 2 - 9, m + sq / 2 + 14); g2.fill(); } }
-            const g0 = ph.ps[0], tx = m + sq + 26, tw = W - tx - m;
-            const lb = g0.d != null ? labels.filter(l => Math.abs(l.d - g0.d) < 400).sort((a, b) => Math.abs(a.d - g0.d) - Math.abs(b.d - g0.d))[0] : null;
-            const memo = (g0.p.m || '').trim(), main = memo || (lb ? lb.n : '') || src.name;
+            const cover = (im, x, y, w, h, r) => { g2.save(); g2.beginPath(); g2.roundRect(x, y, w, h, r); g2.clip(); g2.fillStyle = '#1B222C'; g2.fillRect(x, y, w, h); if (im) { const k2 = Math.max(w / im.width, h / im.height); g2.drawImage(im, x + (w - im.width * k2) / 2, y + (h - im.height * k2) / 2, im.width * k2, im.height * k2); } g2.restore(); };
+            const play = (x, y, w, h) => { const cx = x + w / 2, cy = y + h / 2; g2.fillStyle = 'rgba(0,0,0,.45)'; g2.beginPath(); g2.arc(cx, cy, 24, 0, 7); g2.fill(); g2.fillStyle = '#fff'; g2.beginPath(); g2.moveTo(cx - 7, cy - 11); g2.lineTo(cx + 12, cy); g2.lineTo(cx - 7, cy + 11); g2.fill(); };
+            const n = sp.ps.length, box = n === 1 ? [[m, m, sq, sq]] : n === 2 ? [0, 1].map(i => [m + i * ((sq - 6) / 2 + 6), m, (sq - 6) / 2, sq]) : sp.ps.map((_, i) => { const cl = (sq - 6) / 2; return [m + (i % 2) * (cl + 6), m + Math.floor(i / 2) * (cl + 6), cl, cl]; });
+            sp.ps.forEach((g, i) => { const [x, y, w, h] = box[i]; cover(spImg.ims[i], x, y, w, h, n === 1 ? 16 : 10); if (g.p.v) play(x, y, w, h); if (g.star) { g2.save(); g2.strokeStyle = '#FF8A4C'; g2.lineWidth = 4; g2.beginPath(); g2.roundRect(x, y, w, h, 10); g2.stroke(); g2.restore(); } });
+            const hp = sp.h.ph, g0 = sp.ps.find(g => (g.p.m || '').trim()) || sp.ps[0], tx = m + sq + 26, tw = W - tx - m;
+            const lb = labels.filter(l => Math.abs(l.d - sp.h.d) < 800).sort((a, b) => Math.abs(a.d - sp.h.d) - Math.abs(b.d - sp.h.d))[0];
+            const memo = (g0.p.m || '').trim(), main = memo || (lb ? lb.name || lb.n : '') || (days.length ? `${hp.day}일차` : src.name);
             g2.textAlign = 'left'; g2.fillStyle = col; g2.font = FN(800, 22);
-            g2.fillText(ph.ps.length > 1 ? `사진 ${ph.n0 + 1}–${ph.n0 + ph.ps.length} / ${photos.length}` : `사진 ${ph.n0 + 1} / ${photos.length}`, tx, m + 30);
+            g2.fillText(`${days.length ? hp.day + '일차 · ' : ''}이곳 사진 ${hp.n}장${hp.pages.length > 1 ? ` · ${sp.i + 1}/${hp.pages.length}` : ''}`, tx, m + 30);
             g2.fillStyle = '#fff'; g2.font = FN(800, 32); let yy = m + 84; filmWrap(g2, main, tw).slice(0, memo ? 4 : 2).forEach(t => { g2.fillText(t, tx, yy); yy += 42; });
-            if (memo && lb) { g2.fillStyle = 'rgba(255,255,255,.7)'; g2.font = FN(600, 24); g2.fillText(filmFit(g2, '📍 ' + lb.n, tw), tx, yy + 6); yy += 40; }
-            if (g0.p.ts) { const q = new Date(g0.p.ts); g2.fillStyle = 'rgba(255,255,255,.55)'; g2.font = FN(500, 22); g2.fillText(`${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]}) ${q.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })}`, tx, yy + 4); }
-            spPan.has = true;
-            const pa = Math.max(0, Math.min(1, (tt - ph.s) / 0.35));
-            c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC); c.globalAlpha = sa * (0.45 + 0.55 * pa); c.drawImage(spPan, 0, y0); c.globalAlpha = sa;
-          } else if (spPan.has) { c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC); c.globalAlpha = sa * 0.45; c.drawImage(spPan, 0, y0); c.globalAlpha = sa; }
-          else {   // 아직 사진이 없으면: 지나는 곳 이름과 거리
+            if (memo && lb) { g2.fillStyle = 'rgba(255,255,255,.7)'; g2.font = FN(600, 24); g2.fillText(filmFit(g2, '📍 ' + (lb.name || lb.n), tw), tx, yy + 6); yy += 40; }
+            if (g0.p.ts) { const q = tzF(g0.p.ts); g2.fillStyle = 'rgba(255,255,255,.55)'; g2.font = FN(500, 22); g2.fillText(`${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]}) ${q.getHours() < 12 ? '오전' : '오후'} ${(q.getHours() % 12) || 12}:${String(q.getMinutes()).padStart(2, '0')}`, tx, yy + 4); }
+            const pa = Math.min(sp.a, Math.max(0.35, Math.min(1, (tt - sp.s) / 0.3)));
+            c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC); c.globalAlpha = sa * pa; c.drawImage(spPan, 0, y0); c.globalAlpha = sa;
+          } else if (spHero && tt < plan.tIn) {   // 판 -349 처음 장면: AI(또는 ★)가 고른 대표 사진 — 지도는 하늘에서 내려오는 중이라 '대표 사진'이라고 밝혀요
+            if (spHeroBm === null) { try { spHeroBm = await createImageBitmap(spHero.p.blob, { resizeWidth: 640, resizeQuality: 'high' }); } catch { spHeroBm = 0; } }
+            c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC);
+            if (spHeroBm) { const m = 24, sq = SC - m * 2, k2 = Math.max(sq / spHeroBm.width, sq / spHeroBm.height), ha = Math.max(0, Math.min(1, (plan.tIn - tt) / 0.3));   // 첫 장(갤러리·카톡 미리보기)부터 보이게
+              c.save(); c.globalAlpha = sa * ha; c.beginPath(); c.roundRect(m, y0 + m, sq, sq, 16); c.clip(); c.drawImage(spHeroBm, m + (sq - spHeroBm.width * k2) / 2, y0 + m + (sq - spHeroBm.height * k2) / 2, spHeroBm.width * k2, spHeroBm.height * k2); c.restore();
+              const tx = m + sq + 26, tw = W - tx - m; c.save(); c.globalAlpha = sa * ha; c.textAlign = 'left';
+              c.fillStyle = col; c.font = FN(800, 22); c.fillText('대표 사진', tx, y0 + m + 30);
+              c.fillStyle = '#fff'; c.font = FN(800, 32); let yy = y0 + m + 84; filmWrap(c, src.name, tw).slice(0, 2).forEach(t => { c.fillText(t, tx, yy); yy += 42; });
+              if (spHero.why) { c.fillStyle = 'rgba(255,255,255,.7)'; c.font = FN(600, 22); filmWrap(c, spHero.why, tw).slice(0, 2).forEach(t => { c.fillText(t, tx, yy + 4); yy += 32; }); }
+              if (spHero.p.ts) { const q = tzF(spHero.p.ts); c.fillStyle = 'rgba(255,255,255,.55)'; c.font = FN(500, 22); c.fillText(`${q.getMonth() + 1}월 ${q.getDate()}일 (${'일월화수목금토'[q.getDay()]})`, tx, yy + 10); }
+              c.restore(); }
+          } else {   // 사진 자리가 아니면: 지나는 곳 이름과 거리 (지난 사진을 남겨 두지 않아요 — 지도와 안 맞으니까)
             c.fillStyle = '#0E1218'; c.fillRect(0, y0, W, SC);
             const lb = labels.filter(l => l.d <= dh + 200).sort((a, b) => b.d - a.d)[0];
-            c.textAlign = 'left'; c.fillStyle = col; c.font = FN(800, 24); c.fillText(lb ? '지나는 곳' : '오늘의 길', 32, y0 + 70);
+            c.textAlign = 'left'; c.fillStyle = col; c.font = FN(800, 24); c.fillText(lb ? '지나는 곳' : days.length ? `${(dayAt(dh) || { n: 1 }).n}일차` : '오늘의 길', 32, y0 + 70);
             c.fillStyle = '#fff'; c.font = FN(800, 40); c.fillText(filmFit(c, lb ? lb.n : src.name, W - 64), 32, y0 + 126);
             c.fillStyle = 'rgba(255,255,255,.6)'; c.font = FN(600, 28); c.fillText(filmKm(shownAt(dh)), 32, y0 + 180);
           }
@@ -10456,8 +10562,8 @@ function postTextRec(r, kind, nPh, picks) {
   return L.filter((v, i, A) => v !== '' || A[i - 1] !== '').join('\n').trim();
 }
 // 판 -271: Claude 열쇠가 있으면 고른 사진(768px로 줄임)과 앱이 모은 사실 글을 보내 AI가 사진을 보고 후기를 써요(쓸 때마다 알림 두 번·AI 사용 기록)
-async function postImg64(blob) {
-  const bm = await createImageBitmap(blob), s = Math.min(1, 768 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+async function postImg64(blob, mx) {
+  const bm = await createImageBitmap(blob), s = Math.min(1, (mx || 768) / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
   c.width = Math.round(bm.width * s); c.height = Math.round(bm.height * s); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height); try { bm.close(); } catch {}
   return c.toDataURL('image/jpeg', .8).split(',')[1];
 }
