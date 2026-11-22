@@ -13,7 +13,7 @@
 - **index.html을 고치면 `UI_VER`(화면 판)와 `UI_NOTES`(새 판 창 글, 한 항목 안에 '·' 쓰지 말 것)를 같이** 바꿈. runapp/·watchapp/을 고치면 그 `CHANGES.txt` 첫 줄도. 커밋 훅 `.claude/hooks/check-commit.py`가 빠뜨리면 막음(정말 필요 없으면 `[규칙예외]`)
 - **자동 시험** `tests/run.mjs`(Playwright, 바깥 요청 막음, 함수는 `window.__T`로 꺼냄): `.github/workflows/test.yml`이 PR·push마다 돎. **빨간 X면 합치지 말 것**. 새 기능·고침마다 그 사고를 막는 시험을 run.mjs에 더할 것(scratchpad에만 두면 사라짐). 돌리기 `cd tests && npm i && npm test`
 - **되돌리기**: 사용자가 '되돌려'라고 하면 Actions '앞 판으로 되돌리기'(`.github/workflows/revert.yml`, 입력 '판' 비우면 바로 앞 판)를 돌림. 웹 화면 파일만 되돌리고 휴대폰 자료는 안 건드림. 사용자도 https://github.com/GilbertGo/mapdiary/actions/workflows/revert.yml 에서 누를 수 있음
-- **오류 기록**: 사용자가 '안 돼'라고 하면 먼저 Firestore `rooms/mpderr/e/{기기 번호}`(판·시각·화면·오류 글)를 봄. 이 클라우드는 firestore.googleapis.com이 막혀 PC 앱 브라우저로 읽거나, 사용자에게 나 → 🐞 오류 기록 → 복사를 부탁
+- **오류 기록**: 사용자가 '안 돼'라고 하면 먼저 Firestore `rooms/mpderr/e/{기기 번호}`(판·시각·화면·오류 글)를 봄. 이 클라우드는 firestore.googleapis.com이 막혀 PC 앱 브라우저로 읽거나, 사용자에게 나 → 🐞 오류 기록 → 복사를 부탁. **로그인 맞추기 상태**(판 -328)는 `rooms/mpderr/s/{기기 번호}`(된 때도, 판·계정 끝 4자·계획 수·방 있는 계획 수·모음 크기·멈춘 단계)
 
 ## 구조 (자세한 건 docs/기록.md)
 - `index.html` 한 파일에 HTML·CSS·JS(module 약 1.8만 줄). **라우팅이 스크립트 중간에 돌아서** 화면이 쓰는 값·함수는 `var`/`function`으로(const면 TDZ 오류)
