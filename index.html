@@ -3628,9 +3628,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-340-phototrip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-341-pathfollow';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "내 MPD 맨 아래 '사진으로 지난 여행 만들기'로 예전 여행 사진만 골라도 날마다 기록과 지도가 생겨요";
+const UI_NOTES = "사진으로 만든 여행은 사진 사이를 곧은 줄 대신 실제 걷는 길을 따라 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14448,11 +14448,30 @@ function ptWallTs(w, tz) {   // 그 시간대의 벽시계 [년,월,일,시,분,
 }
 function ptOffTs(w, off) { const sg = off[0] === '-' ? -1 : 1, mn = +off.slice(1, 3) * 60 + +off.slice(4, 6); return Date.UTC(w[0], w[1] - 1, w[2], w[3], w[4], w[5]) - sg * mn * 60000; }
 function ptDay(ts, tz) { const d = tzAt(ts, tz); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-function ptTrack(list) {   // 위치 있는 사진을 시간 순으로 잇기(100m·4분마다 점)
-  const tr = [], push = (la, ln, ts) => { const e = tr[tr.length - 1]; if (e && (ts <= e[2] || dist(e[0], e[1], la, ln) < 15)) return; tr.push([+la.toFixed(6), +ln.toFixed(6), Math.round(ts)]); };
+// 판 -341 (사용자 '길도 없는데, 이렇게 경로로 잡는 문제 해결하자' — 곧은 줄이 산을 가로질렀음): 두 사진 사이를 걷는 길 찾기(OSRM foot)로 이어요.
+//   길 찾기가 두 사진 150m 안에서 시작·끝나고, 길이가 곧은 거리×2+500m 안일 때만 그 길. 15km 넘게 떨어졌거나(차·기차) 못 찾으면 곧은 줄
+const PT_NOTE2 = '사진 사이 길은 걷는 길을 따라 짐작했어요(길을 못 찾은 곳은 곧게 이었어요). 거리·시간은 실제와 다를 수 있어요.';
+async function ptRoute(a, b, st) {
+  if (st.off) return null;
+  const d = dist(a.lat, a.lng, b.lat, b.lng); if (d >= 15000) return null;
+  for (let k = 0; k < 3; k++) {
+    try { const r = await fetchT(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`, {}, 12000);
+      if (r.status === 429) { await new Promise(z => setTimeout(z, 3000)); continue; }
+      const j = await r.json(), rt = j.routes && j.routes[0], w = j.waypoints || []; await new Promise(z => setTimeout(z, 1000));   // 공개 서버라 1초에 한 번
+      return rt && w.length === 2 && w[0].distance <= 150 && w[1].distance <= 150 && rt.distance <= d * 2 + 500 ? rt.geometry.coordinates.map(c => [c[1], c[0]]) : null;
+    } catch { st.off = 1; return null; }   // 인터넷이 안 되면 남은 것도 곧은 줄로(기다리지 않게)
+  }
+  return null;
+}
+async function ptTrack(list, st = {}, prog = () => {}) {   // 위치 있는 사진을 시간 순으로 잇기: 걷는 길 또는 곧은 줄(100m·4분마다 점)
+  const tr = [], push = (la, ln, ts) => { const e = tr[tr.length - 1]; if (e && (ts <= e[2] || dist(e[0], e[1], la, ln) < 10)) return; tr.push([+la.toFixed(6), +ln.toFixed(6), Math.round(ts)]); };
   const pts = list.filter(x => x.lat != null);
   for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[i + 1]; push(a.lat, a.lng, a.ts); if (!b) continue;
     const d = dist(a.lat, a.lng, b.lat, b.lng); if (d <= 30) continue;
+    st.n = (st.n || 0) + 1; prog(`길 찾는 중 ${st.n}`);
+    const path = await ptRoute(a, b, st);
+    if (path) { st.road = (st.road || 0) + 1; const cum = [0]; for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + dist(path[k - 1][0], path[k - 1][1], path[k][0], path[k][1]));
+      const L = cum[cum.length - 1] || 1; for (let k = 1; k < path.length - 1; k++) push(path[k][0], path[k][1], a.ts + (b.ts - a.ts) * cum[k] / L); continue; }
     const k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b.ts - a.ts) / 240000)));
     for (let s = 1; s < k; s++) { const r = s / k; push(a.lat + (b.lat - a.lat) * r, a.lng + (b.lng - a.lng) * r, a.ts + (b.ts - a.ts) * r); } }
   if (tr.length === 1) tr.push([tr[0][0], tr[0][1], tr[0][2] + 60000]);   // 위치 있는 사진이 한 장인 날도 지도에 점 하나로
@@ -14483,11 +14502,11 @@ async function ptMake(items, name, rng, prog = () => {}) {
   for (const k of keys) {
     dn++; const id = 'walk_' + hash32(AL + k), day = byDay.get(k);
     if (isGone(id)) { n += day.length; continue; }   // 지운 기록은 다시 안 만들어요
-    const tr = ptTrack(day); if (tr.length < 2) { out.noLoc++; n += day.length; continue; }
+    const st = {}, tr = await ptTrack(day, st, prog); if (tr.length < 2) { out.noLoc++; n += day.length; continue; }
     if (!Array.isArray(ls.get('track:' + id, null))) {   // 이미 있는 기록(다시 만들기)은 길·이름을 건드리지 않고 빠진 사진만 넣어요
       const located = day.filter(x => x.lat != null).length;
       ls.set('track:' + id, tr); ls.set('walkMode:' + id, 'travel'); ls.set('trackName:' + id, `${nm} ${dn}일차`); ls.set('walkAlbum:' + id, AL); ls.set('walkTz:' + id, tz);
-      ls.set('walkNote:' + id, `📷 사진 ${day.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). ${PT_NOTE}`);
+      ls.set('walkNote:' + id, `📷 사진 ${day.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). ${st.road ? PT_NOTE2 : PT_NOTE}`);
       out.days++;
     } else out.old++;
     dayIds.push(id);
@@ -14546,7 +14565,7 @@ function ptOpen() {
   }
   sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진으로 지난 여행 만들기' },
     el('h2', { text: '사진으로 지난 여행 만들기' }),
-    el('p', { class: 'sub', style: 'margin:0', text: '그때 찍은 사진의 날짜와 위치로 날마다 기록과 지도를 만들어요. 사진 사이 길은 곧게 이어 짐작하고, 시각은 그 나라 현지 시간으로 보여요. 사진첩 원본은 그대로예요.' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '그때 찍은 사진의 날짜와 위치로 날마다 기록과 지도를 만들어요. 사진 사이 길은 걷는 길을 따라 짐작하고, 시각은 그 나라 현지 시간으로 보여요. 사진첩 원본은 그대로예요.' }),
     el('label', { class: 'f', for: 'pt-n' }, '여행 이름 (선택)', iName),
     app ? el('div', { class: 'two' }, el('label', { class: 'f', for: 'pt-f' }, '첫날', iFrom), el('label', { class: 'f', for: 'pt-t' }, '마지막 날', iTo)) : null,
     app ? el('button', { class: 'btn primary', text: '이 기간 사진으로 만들기', onclick: fromRange }) : null,
