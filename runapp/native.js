@@ -271,6 +271,7 @@ if (Capacitor.isNativePlatform()) {
   window.mdNativePhotos = {
     between: async (from, to) => (await MdApp.photosBetween({ from: Math.round(from), to: Math.round(to) })).items || [],
     blob: async uri => (await fetch(Capacitor.convertFileSrc(uri))).blob(),
+    range: async (from, to) => await MdApp.photosRange({ from: Math.round(from), to: Math.round(to) }),   // 판 -340 사진으로 지난 여행 만들기: { items:[{uri,ts,name,lat,lng}], loc }
   };
 
   // ---------- 저절로 백업: 내 파일 > Documents > MapDiary 에 조금씩 이어 써요(사진이 많아도 되게). 최근 3개만 남겨요 ----------

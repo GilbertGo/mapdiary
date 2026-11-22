@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -280,6 +280,48 @@ await test('테이크아웃 사진 여행: 백업으로 들어가고 · 여행 �
   ok(q.back == null, '지운 2일차가 백업에서 되살아났어요');
   ok(q.ph1 === 6, '같은 파일을 두 번 불러와 사진이 겹쳤어요: ' + q.ph1);
   ok(q.ph2 === 0, '지운 2일차 사진이 되살아났어요: ' + q.ph2);
+});
+
+// 판 -340: 사진으로 지난 여행 만들기 — 사진 시각·위치 → 날마다 기록 + 여행 한 장, 다시 해도 안 겹치고, 지운 날은 안 살아남
+await test('사진으로 지난 여행 만들기', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(1500);
+  page.errs = [];
+  // 내 MPD 맨 아래 줄 → 창
+  await page.click('summary:has-text("사진으로 지난 여행 만들기")'); await sleep(400);
+  ok(await page.isVisible('[aria-label="사진으로 지난 여행 만들기"] >> text=사진 고르기'), '줄을 누르면 사진 고르기 창이 떠야 해요');
+  await page.evaluate(() => document.querySelector('.sheet-bg')?.remove());
+  const mk = () => page.evaluate(async () => {
+    const jpg = async c => { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48; const g = cv.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, 64, 48); return new File([await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8))], 'x.jpg', { type: 'image/jpeg' }); };
+    const P = (n, d, h, m, lat, lng, c) => ({ name: n, wall: [2018, 10, d, h, m, 0], off: '+02:00', lat, lng, c });
+    const raw = [P('a1.jpg', 5, 8, 0, 42.60, -5.57, '#a00'), P('a2.jpg', 5, 10, 0, 42.58, -5.62, '#0a0'), P('a3.jpg', 5, 11, 0, null, null, '#00a'), P('a4.jpg', 5, 13, 0, 42.55, -5.70, '#aa0'),
+      P('b1.jpg', 6, 8, 30, 42.50, -5.80, '#0aa'), P('b2.jpg', 6, 12, 0, 42.47, -5.88, '#a0a'), P('a1.jpg', 5, 8, 0, 42.60, -5.57, '#a00')];   // 마지막은 같은 사진 한 번 더
+    const items = []; for (const x of raw) items.push({ ...x, f: await jpg(x.c) });
+    return await __T.ptMake(items, '시험 여행', null);
+  });
+  const r = await mk();
+  ok(!r.err && r.n === 2 && r.days === 2 && r.ph === 6, '이틀·사진 6장(같은 사진은 한 번)이 만들어져야 해요: ' + JSON.stringify(r));
+  const q = await page.evaluate(async al => { const a = JSON.parse(localStorage.getItem('albums')).find(x => x.id === al);
+    const d = []; for (const id of a.days) { const ph = await __T.photoList(id); d.push({ id, tr: __T.trackLoad(id).length, ph: ph.length, noLoc: ph.filter(p => p.lat == null).length, tz: JSON.parse(localStorage.getItem('walkTz:' + id)), al: JSON.parse(localStorage.getItem('walkAlbum:' + id)), nm: JSON.parse(localStorage.getItem('trackName:' + id)) }); }
+    const t0 = __T.trackLoad(a.days[0])[0][2]; return { name: a.name, d, t0 }; }, r.al);
+  ok(q.name === '시험 여행' && q.d.length === 2, '여행 한 장에 이틀이 묶여야 해요: ' + JSON.stringify(q));
+  ok(q.d.every(x => x.tr >= 2 && x.al === r.al && x.tz && x.noLoc === 0), '날마다 길·여행·시간대가 있고 위치 없는 사진도 길 위에 놓여야 해요: ' + JSON.stringify(q.d));
+  ok(q.d[0].ph === 4 && q.d[1].ph === 2 && /시험 여행 1일차/.test(q.d[0].nm), '1일차 사진 4장·2일차 2장: ' + JSON.stringify(q.d));
+  ok(q.t0 === Date.UTC(2018, 9, 5, 6, 0, 0), '사진 속 시차(+02:00)로 진짜 시각을 셈해야 해요: ' + new Date(q.t0).toISOString());
+  ok(await page.evaluate(() => __T.ptWallTs([2018, 10, 5, 8, 0, 0], 'Europe/Madrid') === Date.UTC(2018, 9, 5, 6, 0, 0)), '마드리드 벽시계 8:00 = UTC 6:00');
+  // 다시 해도 겹치지 않아요
+  const r2 = await mk();
+  ok(r2.al === r.al && r2.days === 0 && r2.old === 2, '두 번째는 새 기록 없이 있던 날로: ' + JSON.stringify(r2));
+  ok(await page.evaluate(async al => { const a = JSON.parse(localStorage.getItem('albums')).find(x => x.id === al); return (await __T.photoList(a.days[0])).length; }, r.al) === 4, '다시 해도 사진이 겹치면 안 돼요');
+  // 2일차를 지우고 또 하면 되살아나면 안 돼요
+  const d2 = q.d[1].id;
+  await page.evaluate(async id => { localStorage.removeItem('track:' + id); __T.goneMark([id]); for (const p of await __T.photoList(id)) await __T.photoDel(p.id); }, d2);
+  await mk();
+  ok(await page.evaluate(async id => localStorage.getItem('track:' + id) == null && (await __T.photoList(id)).length === 0, d2), '지운 2일차가 되살아났어요');
+  // 위치 없는 사진뿐이면 만들지 않고 까닭을 알려요
+  const r3 = await page.evaluate(() => __T.ptMake([{ name: 'z.jpg', wall: [2018, 1, 1, 9, 0, 0], lat: null, lng: null }], '', null));
+  ok(r3.err === 'noloc', '위치 없는 사진만이면 noloc: ' + JSON.stringify(r3));
+  page.errs = page.errs.filter(e => !/net::|Failed to fetch|ERR_/.test(e));
+  noErr(page, '사진으로 여행 만들기');
 });
 
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)

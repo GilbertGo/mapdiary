@@ -26,6 +26,7 @@
 - **도구 `tools/takeout2mpd`**(2026-11-22, 산티아고 순례길): 구글 테이크아웃 사진·.json → MPD 백업 파일(여러 날 여행)로 만드는 Node 스크립트. 앱은 고치지 않고 '백업 불러오기'로 넣음(문지기 지남). 순례길 `routes/*.json`(OSM, Overpass가 막혀 PC 앱 브라우저로 waymarkedtrails.org에서 받음). 시험 '테이크아웃 사진 여행'(`tests/fixtures/takeout_sample.json`은 이 도구로 만든 것)
 - **현지 시간**(판 -334): 기록마다 `walkTz:`(찍은 곳 시간대, MD_KEYS)를 두고 기록 보기(`viewMyOne`)만 `VIEW_TZ`로 그 시간대 시각·날짜(`tzD`·`kTime`·`fmtClock`), 여러 날 여행 날짜·n박 m일(`albumInfo`)은 첫날 시간대(판 -335 `tzAt`·`recTz`). 새 기록은 시작할 때 휴대폰 시간대를 남김
 - **클라우드 받기는 올린 쪽이 아는 키만 지움**(판 -339 `recApply`·문서 `kv`·`MD_KEYS_OLD`): MD_KEYS에 새 키를 더해도 예전 판 앱이 그 키를 지우지 못하게. MD_KEYS_OLD는 고치지 말 것
+- **사진으로 지난 여행 만들기**(판 -340, 내 MPD 맨 아래 줄 `ptOpen`·`ptMake`): 사진 찍은 시각·위치(EXIF, 앱은 기간을 고르면 사진첩 `MdApp.photosRange`+ACCESS_MEDIA_LOCATION)로 현지 날짜마다 하루 기록 + 여행 한 장. 사진 사이는 곧은 줄, 시간대는 Open-Meteo `timezone=auto`. 지운 기록·사진은 안 살아남, 다시 해도 안 겹침(아이디를 사진에서). 휴대폰 '웹'은 안드로이드가 사진 위치를 지워 PC나 앱에서만
 - 지도 사진 동그라미 `.ph-pin`은 position:absolute(판 -338, relative면 leaflet 마커가 아래로 밀림)
 - **여러 날 여행**(판 -337): 내 MPD 목록에는 여행 한 장만(하루치는 `inAlb`로 숨김), 하루치는 여행 화면 '날마다'(`albumDayList`)에서 엶
 - 큰 덩어리(이름으로 docs/기록.md를 찾을 것): 기록 화면(모드마다 첫 화면·대시보드)·내 MPD(`viewMyOne`)·공유 카드/링크·여행 계획(`viewPlanOne`, 하나투어·블로그 가져오기, 일행 채팅·같이 고치기·권한·AI 묻기)·이동 영상(`viewFilm`)·포토스토리/포토북/그림 앨범/여행 후기·가족 앨범·자동 기록·클라우드 맞추기·백업(🎙 대화 기록·🔒 화면 잠금은 판 -336에 없앰)

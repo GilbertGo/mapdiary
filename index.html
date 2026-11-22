@@ -3628,9 +3628,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-339-cloudkeys';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-340-phototrip';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "예전 판 앱과 맞추기를 해도 기록의 현지 시간 정보가 지워지지 않아요";
+const UI_NOTES = "내 MPD 맨 아래 '사진으로 지난 여행 만들기'로 예전 여행 사진만 골라도 날마다 기록과 지도가 생겨요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -5666,7 +5666,8 @@ async function famExif(file) {   // JPEG EXIF: 찍은 시각(DateTimeOriginal)·
           if (en.type === 5) return Array.from({ length: en.cnt }, (_, i) => u32(at + i * 8) / (u32(at + i * 8 + 4) || 1));
           return en.type === 3 ? u16(en.off) : u32(en.off); };
         const ifd0 = ifd(t0 + u32(t0 + 4), [0x8769, 0x8825]), out = {};
-        if (ifd0[0x8769]) { const ex = ifd(t0 + val(ifd0[0x8769]), [0x9003]), s = val(ex[0x9003]); const m = s && /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/.exec(s); if (m) out.ts = new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime(); }
+        if (ifd0[0x8769]) { const ex = ifd(t0 + val(ifd0[0x8769]), [0x9003, 0x9011]), s = val(ex[0x9003]); const m = s && /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/.exec(s); if (m) { out.ts = new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime(); out.wall = m.slice(1, 7).map(Number); }
+          const of = ex[0x9011] && val(ex[0x9011]); if (typeof of === 'string' && /^[+-]\d\d:\d\d$/.test(of)) out.off = of; }   // 판 -340: 찍은 곳 벽시계(wall)·시차(OffsetTimeOriginal) — 사진으로 지난 여행 만들기가 현지 시간으로 씀
         if (ifd0[0x8825]) { const g = ifd(t0 + val(ifd0[0x8825]), [1, 2, 3, 4]), la = val(g[2]), lo = val(g[4]);
           if (la && lo) { const deg = a => a[0] + a[1] / 60 + a[2] / 3600; let lat = deg(la), lng = deg(lo); if (val(g[1]) === 'S') lat = -lat; if (val(g[3]) === 'W') lng = -lng; if (Math.abs(lat) > 0.01 && Math.abs(lng) > 0.01) { out.lat = +lat.toFixed(6); out.lng = +lng.toFixed(6); } } }
         return out;
@@ -14425,6 +14426,134 @@ function backupCard(n) {
       el('button', { class: 'btn primary', text: '백업하기', onclick: backupSave, disabled: !n }),
       el('button', { class: 'btn line', text: '백업 불러오기', onclick: () => inp.click() })), inp);
 }
+// ---------- 📷 사진으로 지난 여행 만들기 (판 -340) ----------
+// 2026-11-22 사용자 '산티아고순례길 아주 좋은 사례야 · 다른 사람도 쉽게 할수 있게해보자', 방법은 '둘 다'(앱은 기간만 고르면 사진첩에서 찾기 + 사진 직접 고르기)
+// tools/takeout2mpd를 앱 안으로: 사진 찍은 시각·위치(EXIF) → 현지 날짜마다 하루 기록(사진 사이는 곧은 줄로 짐작) + 여행 한 장(albums)
+// 현지 시간대: 위치 있는 사진 가운데 것으로 Open-Meteo(timezone=auto)에 물어봄, 안 되면 이 기기 시간대. 사진 속 시차(OffsetTimeOriginal)가 있으면 그걸 먼저
+// 문지기: 지운 기록(isGone)은 다시 만들지 않고, 사진은 photoPut(지운 사진은 막힘). 같은 사진을 또 넣어도 아이디가 같아 겹치지 않음. 이미 있는 하루 기록은 건드리지 않음
+const PT_NOTE = '사진 사이 길은 곧게 이어 짐작했어요. 거리·시간은 실제와 다를 수 있어요.';
+async function ptTz(lat, lng) {
+  try { const r = await fetchT(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lng.toFixed(2)}&timezone=auto&forecast_days=1&daily=sunrise`, {}, 8000);
+    const j = await r.json(); if (j && typeof j.timezone === 'string' && /\//.test(j.timezone)) return j.timezone; } catch {}
+  return devTz() || 'Asia/Seoul';
+}
+async function ptCountry(lat, lng) {
+  try { const r = await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=3&accept-language=ko&lat=${lat.toFixed(2)}&lon=${lng.toFixed(2)}`, {}, 8000);
+    const a = (await r.json()).address || {}; return String(a.country || '').slice(0, 16); } catch { return ''; }
+}
+function ptWallTs(w, tz) {   // 그 시간대의 벽시계 [년,월,일,시,분,초] → 진짜 시각(ms)
+  const want = Date.UTC(w[0], w[1] - 1, w[2], w[3], w[4], w[5]); let g = want;
+  for (let i = 0; i < 3; i++) { const d = tzAt(g, tz), got = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()); if (got === want) break; g += want - got; }
+  return g;
+}
+function ptOffTs(w, off) { const sg = off[0] === '-' ? -1 : 1, mn = +off.slice(1, 3) * 60 + +off.slice(4, 6); return Date.UTC(w[0], w[1] - 1, w[2], w[3], w[4], w[5]) - sg * mn * 60000; }
+function ptDay(ts, tz) { const d = tzAt(ts, tz); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function ptTrack(list) {   // 위치 있는 사진을 시간 순으로 잇기(100m·4분마다 점)
+  const tr = [], push = (la, ln, ts) => { const e = tr[tr.length - 1]; if (e && (ts <= e[2] || dist(e[0], e[1], la, ln) < 15)) return; tr.push([+la.toFixed(6), +ln.toFixed(6), Math.round(ts)]); };
+  const pts = list.filter(x => x.lat != null);
+  for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[i + 1]; push(a.lat, a.lng, a.ts); if (!b) continue;
+    const d = dist(a.lat, a.lng, b.lat, b.lng); if (d <= 30) continue;
+    const k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b.ts - a.ts) / 240000)));
+    for (let s = 1; s < k; s++) { const r = s / k; push(a.lat + (b.lat - a.lat) * r, a.lng + (b.lng - a.lng) * r, a.ts + (b.ts - a.ts) * r); } }
+  if (tr.length === 1) tr.push([tr[0][0], tr[0][1], tr[0][2] + 60000]);   // 위치 있는 사진이 한 장인 날도 지도에 점 하나로
+  return tr;
+}
+function ptPlace(tr, ts) {   // 위치 없는 사진: 그 시각에 있었을 길 위 자리
+  if (ts <= tr[0][2]) return tr[0]; if (ts >= tr[tr.length - 1][2]) return tr[tr.length - 1];
+  for (let i = 1; i < tr.length; i++) if (tr[i][2] >= ts) { const p = tr[i - 1], q = tr[i], r = (ts - p[2]) / ((q[2] - p[2]) || 1); return [+(p[0] + (q[0] - p[0]) * r).toFixed(6), +(p[1] + (q[1] - p[1]) * r).toFixed(6)]; }
+  return tr[tr.length - 1];
+}
+// items: [{ name, f(File) 또는 uri, ts(진짜 시각, 앱 사진첩) 또는 wall·off(EXIF), lat, lng }] · rng: ['YYYY-MM-DD','YYYY-MM-DD'] 그 현지 날짜만
+async function ptMake(items, name, rng, prog = () => {}) {
+  const G = window.mdNativePhotos, out = { days: 0, ph: 0, old: 0, noLoc: 0, bad: 0, heic: 0 };
+  const loc = items.filter(x => x.lat != null && isFinite(x.lat) && isFinite(x.lng));
+  if (!loc.length) return { ...out, err: 'noloc' };
+  loc.sort((a, b) => (a.ts || 0) - (b.ts || 0)); const mid = loc[loc.length >> 1];
+  prog('여행지 시간대를 찾는 중…'); const tz = await ptTz(mid.lat, mid.lng);
+  for (const x of items) if (!x.ts) x.ts = x.wall ? (x.off ? ptOffTs(x.wall, x.off) : ptWallTs(x.wall, tz)) : 0;
+  const seen = new Set(); let list = [];
+  for (const x of items) { if (!(x.ts > 0)) continue; const k = (x.name || '') + '|' + Math.round(x.ts / 1000); if (seen.has(k)) continue; seen.add(k); list.push(x); }
+  if (rng) list = list.filter(x => { const k = ptDay(x.ts, tz); return k >= rng[0] && k <= rng[1]; });
+  list.sort((a, b) => a.ts - b.ts);
+  const byDay = new Map(); for (const x of list) { const k = ptDay(x.ts, tz); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(x); }
+  const keys = [...byDay.keys()]; if (!keys.length) return { ...out, err: 'none' };
+  let nm = String(name || '').trim().slice(0, 30);
+  if (!nm) { const c = await ptCountry(mid.lat, mid.lng), y = keys[0].slice(0, 4), m = +keys[0].slice(5, 7); nm = c && !/대한민국|한국/.test(c) ? `${c} 여행` : `${y}년 ${m}월 여행`; }
+  const AL = 'album_' + hash32(nm + keys[0] + keys[keys.length - 1]), dayIds = [], total = list.length; let n = 0, dn = 0;
+  for (const k of keys) {
+    dn++; const id = 'walk_' + hash32(AL + k), day = byDay.get(k);
+    if (isGone(id)) { n += day.length; continue; }   // 지운 기록은 다시 안 만들어요
+    const tr = ptTrack(day); if (tr.length < 2) { out.noLoc++; n += day.length; continue; }
+    if (!Array.isArray(ls.get('track:' + id, null))) {   // 이미 있는 기록(다시 만들기)은 길·이름을 건드리지 않고 빠진 사진만 넣어요
+      const located = day.filter(x => x.lat != null).length;
+      ls.set('track:' + id, tr); ls.set('walkMode:' + id, 'travel'); ls.set('trackName:' + id, `${nm} ${dn}일차`); ls.set('walkAlbum:' + id, AL); ls.set('walkTz:' + id, tz);
+      ls.set('walkNote:' + id, `📷 사진 ${day.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). ${PT_NOTE}`);
+      out.days++;
+    } else out.old++;
+    dayIds.push(id);
+    const tr1 = ls.get('track:' + id, tr);
+    for (const x of day) {
+      n++; prog(`사진 넣는 중 ${n}/${total}`);
+      const pid = 'pt' + hash32((x.name || '') + '|' + Math.round(x.ts / 1000)) + hash32(String(Math.round(x.ts / 1000)));
+      if (phIsGone(pid) || phGoneTsOf(id).some(h => Math.abs(h - x.ts) < 3000)) continue;   // 지운 사진(번호·찍은 시각)은 다시 안 넣어요
+      try { const f = x.f || await G.blob(x.uri), bmp = await imgDecode(f), big = imgCanvas(bmp, 1280); try { bmp.close && bmp.close(); } catch {}
+        const blob = await new Promise(r => big.toBlob(r, 'image/jpeg', 0.82)); if (!blob) throw new Error('decode');
+        const at = x.lat != null ? [x.lat, x.lng] : ptPlace(tr1, x.ts);
+        if (await photoPut({ id: pid, t: id, ts: Math.round(x.ts), lat: at[0], lng: at[1], blob, thumb: imgCanvas(big, 160).toDataURL('image/jpeg', 0.7) }) !== false) out.ph++;
+      } catch (e) { if (e && e.message === 'heic') out.heic++; else out.bad++; }
+    }
+  }
+  if (!dayIds.length) return { ...out, err: 'none' };
+  const old = albumGet(AL);
+  albumSave({ ...(old || {}), id: AL, name: old ? old.name : nm, mode: 'travel', days: [...new Set([...(old ? old.days : []), ...dayIds])], at: old ? old.at : Date.now(), last: Date.now(), src: 'photos' });
+  ls.set('walkMode:' + AL, 'travel');
+  return { ...out, al: AL, name: nm, tz, n: keys.length };
+}
+function ptOpen() {
+  const G = window.mdNativePhotos, app = !!(G && G.range);
+  const iName = el('input', { type: 'text', id: 'pt-n', maxlength: 30, placeholder: '비우면 나라·날짜로 지어요' });
+  const today = new Date(), d2s = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const iFrom = el('input', { type: 'date', id: 'pt-f', max: d2s(today) }), iTo = el('input', { type: 'date', id: 'pt-t', max: d2s(today) });
+  const msg = el('p', { class: 'sub', style: 'margin:0;min-height:1.4em', role: 'status' });
+  const inp = el('input', { type: 'file', accept: 'image/jpeg,image/*', multiple: true, style: 'display:none', onchange: () => { const fs = [...inp.files]; inp.value = ''; if (fs.length) fromFiles(fs); } });
+  let busy = false;
+  const sb = el('div', { class: 'sheet-bg', style: 'z-index:4100', onclick: e => { if (e.target === sb && !busy) sb.remove(); } });
+  const prog = t => { msg.textContent = t; };
+  async function run(items, rng) {
+    const r = await ptMake(items, iName.value, rng, prog); busy = false;
+    if (r.err === 'noloc') return prog(app ? '사진에 위치 정보가 없어요. 사진을 볼 때 위치도 볼 수 있게 허락했는지 확인해 주세요.' : '사진에 위치 정보가 없어요. 휴대폰 웹에서는 안드로이드가 사진 위치를 지우고 넘겨줘요. MPD 앱이나 PC에서 해 주세요.');
+    if (r.err) return prog('그 기간에 찍은 사진이 없어요.');
+    const more = [r.old ? `있던 날 ${r.old}일은 사진만 더했어요` : '', r.noLoc ? `위치 없는 날 ${r.noLoc}일은 뺐어요` : '', r.heic ? `못 여는 HEIC 사진 ${r.heic}장` : '', r.bad ? `못 읽은 사진 ${r.bad}장` : ''].filter(Boolean).join(' · ');
+    toastLater(`'${r.name}' ${r.n}일을 만들었어요 · 사진 ${r.ph}장${more ? ' · ' + more : ''}`);
+    try { if (cloudUser) await Promise.race([cloudSync(true), new Promise(z => setTimeout(z, 1500))]); } catch {}
+    location.href = location.pathname + '?my=1&t=' + encodeURIComponent(r.al);
+  }
+  async function fromFiles(fs) {
+    if (busy) return; busy = true; const items = []; let i = 0;
+    for (const f of fs) { i++; if (i % 10 === 1) prog(`사진 읽는 중 ${i}/${fs.length}`);
+      if (/^video\//.test(f.type || '')) continue;
+      const ex = await famExif(f); items.push({ name: f.name, f, wall: ex.wall, off: ex.off, lat: ex.lat ?? null, lng: ex.lng ?? null, ts: ex.wall ? 0 : f.lastModified || 0 }); }
+    await run(items, null);
+  }
+  async function fromRange() {
+    if (busy) return; const a = iFrom.value, b = iTo.value || a; if (!a) return prog('언제부터인지 골라 주세요.');
+    const [f, t] = a <= b ? [a, b] : [b, a]; busy = true; prog('사진첩에서 찾는 중…');
+    let r; try { r = await G.range(Date.parse(f + 'T00:00:00Z') - 15 * 3600000, Date.parse(t + 'T00:00:00Z') + 39 * 3600000); }   // 시간대를 아직 몰라서 앞뒤로 넉넉히 찾고, 현지 날짜로 다시 걸러요
+    catch { busy = false; return prog('사진을 볼 수 있게 허락해 주세요 (설정 → 애플리케이션 → MPD → 권한 → 사진)'); }
+    const items = (r.items || []).map(x => ({ name: x.name, uri: x.uri, ts: +x.ts || 0, lat: isFinite(x.lat) && x.lat !== 0 ? +x.lat : null, lng: isFinite(x.lng) && x.lng !== 0 ? +x.lng : null }));
+    if (!items.length) { busy = false; return prog('그 기간에 찍은 사진이 없어요.'); }
+    prog(`사진 ${items.length}장을 찾았어요`); await run(items, [f, t]);
+  }
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진으로 지난 여행 만들기' },
+    el('h2', { text: '사진으로 지난 여행 만들기' }),
+    el('p', { class: 'sub', style: 'margin:0', text: '그때 찍은 사진의 날짜와 위치로 날마다 기록과 지도를 만들어요. 사진 사이 길은 곧게 이어 짐작하고, 시각은 그 나라 현지 시간으로 보여요. 사진첩 원본은 그대로예요.' }),
+    el('label', { class: 'f', for: 'pt-n' }, '여행 이름 (선택)', iName),
+    app ? el('div', { class: 'two' }, el('label', { class: 'f', for: 'pt-f' }, '첫날', iFrom), el('label', { class: 'f', for: 'pt-t' }, '마지막 날', iTo)) : null,
+    app ? el('button', { class: 'btn primary', text: '이 기간 사진으로 만들기', onclick: fromRange }) : null,
+    el('button', { class: 'btn ' + (app ? 'line' : 'primary'), text: app ? '사진 직접 고르기' : '사진 고르기', onclick: () => { if (!busy) inp.click(); } }),
+    msg, inp));
+  document.body.append(sb);
+}
 // ---------- 내 맛집: 모든 기록에서 맛집으로 표시한 곳(spot.food)을 사진 카드로 모아 봐요 ----------
 // 같은 이름 + 200m 안이면 한 집으로 묶어요(몇 번 갔는지). 별점·메뉴는 가장 최근에 간 것
 // 운동별 첫 화면 사진 (2026-11-07 사용자 '바꿔': 등산 첫 화면에 러닝 사진이 나와서) — 그 운동의 가장 최근 기록 사진(동영상 빼고)을 바탕으로.
@@ -14801,6 +14930,7 @@ function viewMyList() {
     fold('☁ 로그인 · 기록 모으기', acct ? `${acct.via} · ${acct.name || '로그인됨'}${acct.code ? ' ' + acct.code : ''}${cl && cl.ok ? ' · ✓' : ''}` : '로그인 안 함', cloudCard()),
     fold('⌚ 시계 기록 받기', watchGet() ? '연결됨' : wearSelf() ? '저절로 와요' : '연결 안 됨', watchCard(viewMyList)),
     fold('📥 다른 앱 기록(GPX) 가져오기', '', gpxImportBtn()),
+    (() => { const d = fold('📷 사진으로 지난 여행 만들기', '', null); d.querySelector('summary').onclick = e => { e.preventDefault(); ptOpen(); }; return d; })(),   // 판 -340: 줄을 누르면 바로 창
     fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
   ];
   app.replaceChildren(el('div', { class: 'stack' },
