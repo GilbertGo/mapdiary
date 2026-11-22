@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -299,6 +299,21 @@ await test('여러 날 여행 n박 m일은 현지 날짜로', async page => {
   const b = await page.innerText('body');
   ok(/1박 2일/.test(b) && !/2박 3일/.test(b), '마드리드 10/5~10/6 여행은 1박 2일이어야 해요: ' + (b.match(/\d+박 \d+일/) || [''])[0]);
   ok(/10월 5일 \(금\) ~ 10월 6일 \(토\)/.test(b), '날짜 범위가 현지 날짜(10월 5일 ~ 10월 6일)여야 해요');
+});
+
+// 판 -339: 예전 판이 올린 기록(kv 없음·walkTz: 없음)을 받아도 walkTz:는 남고, 새 판이 올린 기록(kv에 walkTz:)에 없으면 지움
+await test('맞추기 받기: 예전 판 기록이 walkTz:를 안 지움', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(() => {
+    const id = 'walk_kvtest01'; localStorage.setItem('walkTz:' + id, JSON.stringify('Europe/Madrid')); localStorage.setItem('walkNote:' + id, JSON.stringify('메모'));
+    __T.recApply(id, { ls: { 'track:': '[[1,2,3],[1,2,4]]', 'trackName:': '"a"' } });   // 예전 판(333): kv 없음, walkNote도 없음
+    const a = { tz: localStorage.getItem('walkTz:' + id), note: localStorage.getItem('walkNote:' + id) };
+    __T.recApply(id, { ls: { 'track:': '[[1,2,3],[1,2,4]]' }, kv: ['track:', 'trackName:', 'walkTz:'] });   // 새 판: walkTz를 일부러 뺀 것
+    return { a, b: localStorage.getItem('walkTz:' + id) };
+  });
+  ok(r.a.tz === '"Europe/Madrid"', '예전 판 기록을 받아도 walkTz:가 남아야 해요: ' + r.a.tz);
+  ok(r.a.note == null, '예전 판이 아는 키(walkNote:)는 클라우드에 없으면 지워져야 해요');
+  ok(r.b == null, '새 판이 kv에 walkTz:를 넣고 뺀 것은 지워져야 해요');
 });
 
 // ─── 11. 백업을 불러와도 지운 사진·기록이 안 살아남 ───

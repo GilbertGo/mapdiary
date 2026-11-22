@@ -3628,9 +3628,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-338-phpin';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-339-cloudkeys';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도 위 사진 동그라미가 찍은 자리에 정확히 놓여요 · 사진이 많은 기록에서 동그라미가 길 아래로 밀려 보이던 것을 고쳤어요";
+const UI_NOTES = "예전 판 앱과 맞추기를 해도 기록의 현지 시간 정보가 지워지지 않아요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4936,6 +4936,13 @@ async function cList(col) {   // [{ id, d, t }] 다 모아요
   return out;
 }
 // 기록 하나의 저장 키들 + 사진 ID 목록 → 지문
+// 판 -339 (2026-11-22 산티아고 여행이 휴대폰 맞추기 뒤 '16박 17일'로 돌아감): 예전 판 앱(휴대폰 333)은 walkTz:를 몰라서, 받은 기록을 다시 올릴 때 walkTz:를 빼고 올렸고
+//   새 판이 그걸 받으며 '클라우드에 없는 키는 지움'으로 walkTz:를 지웠음 → 받을 때는 '올린 쪽이 아는 키(kv)'만 지워요. kv가 없는 예전 기록은 판 -333까지의 키만
+var MD_KEYS_OLD = ['track:', 'trackName:', 'walkMode:', 'walkPlaces:', 'walkSpots:', 'walkGuide:', 'walkAlbum:', 'walkNote:', 'walkSplits:', 'walkSteps:', 'walkGoal:', 'walkGoalDone:', 'walkSplitSteps:', 'trackOrig:', 'walkGolf:', 'walkForm:', 'walkWatch:', 'walkOfficial:', 'walkHr:', 'walkSeries:', 'walkCover:', 'walkWhere:', 'walkWx:', 'walkTarget:', 'walkSummits:', 'walkPhOrder:'];
+function recApply(id, d) {
+  const kv = new Set(Array.isArray(d.kv) ? d.kv : MD_KEYS_OLD);
+  for (const k of MD_KEYS) { const v = d.ls[k]; if (typeof v === 'string') localStorage.setItem(k + id, v); else if (kv.has(k)) localStorage.removeItem(k + id); }
+}
 function recPack(id) { const o = {}; for (const k of MD_KEYS) { const v = localStorage.getItem(k + id); if (v != null) o[k] = v; } return o; }
 const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join(','));
 // 맞추기: 클라우드에만 있는 기록은 가져오고, 여기서 고친(지문이 바뀐) 기록은 올리고, 다른 기기에서 고친 기록은 받아요
@@ -5003,7 +5010,7 @@ async function cloudSync(quiet) {
       if (!d || typeof d.ls !== 'object') continue;
       const has = local.has(id), mine = has ? recSig(recPack(id), (await photoImgs(id)).map(p => p.id).sort()) : null;
       if (has && (mine === d.sig || sig[id] !== mine)) continue;   // 같거나, 여기서 고친 게 있으면 올리기 쪽에서
-      for (const k of MD_KEYS) { const v = d.ls[k]; if (typeof v === 'string') localStorage.setItem(k + id, v); else localStorage.removeItem(k + id); }
+      recApply(id, d);
       const havePh = new Set((await photoImgs(id)).map(p => p.id));
       for (const pid of Array.isArray(d.ph) ? d.ph : []) {
         if (havePh.has(pid) || phIsGone(pid)) continue;
@@ -5026,7 +5033,7 @@ async function cloudSync(quiet) {
         cloudProgSet(`맞추는 중… ${n}/${total} · 사진 ${phUp + 1}장째`);
         try { await cPut(`ph/${ph.id}`, JSON.stringify({ t: id, ts: ph.ts, lat: ph.lat, lng: ph.lng, m: ph.m, thumb: ph.thumb, blob: await blobUrl(ph.blob) })); phSent[ph.id] = 1; phUp++; } catch {} }
       // 기록 하나가 안 올라가도(너무 크거나 잠깐 끊김) 나머지는 계속해요
-      try { await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s })); sig[id] = s; up++; } catch (e) { bad++; why = why || String(e && e.message || e); }
+      try { await cPut(`recs/${id}`, JSON.stringify({ ls: pack, ph: phIds, sig: s, kv: MD_KEYS })); sig[id] = s; up++; } catch (e) { bad++; why = why || String(e && e.message || e); }
       ls.set('cloudSig', sig); ls.set('cloudPh', phSent);
     }
     // 3) 여행 묶음·모임방 목록·이름 등 (합치기)
