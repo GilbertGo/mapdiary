@@ -165,6 +165,7 @@ for (const [d, list] of days) {
   const ls = {
     ['track:' + id]: JSON.stringify(tr), ['walkMode:' + id]: JSON.stringify(MODE), ['trackName:' + id]: JSON.stringify(`${NAME} ${n}일차`),
     ['walkAlbum:' + id]: JSON.stringify(ALBUM),
+    ['walkTz:' + id]: JSON.stringify(TZ),   // 앱 판 -334부터 기록 보기가 이 시간대(현지 시간)로 보여요
     ['walkNote:' + id]: JSON.stringify(`📷 사진 ${list.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). 사진 사이 길은 ${route ? (route.name || '순례길') + ' 지도를 따라' : '곧게 이어'} 짐작했어요. 거리·시간은 실제와 다를 수 있어요.`),
   };
   if (start || end) ls['walkPlaces:' + id] = JSON.stringify({ ...(start ? { start } : {}), ...(end ? { end } : {}) });
