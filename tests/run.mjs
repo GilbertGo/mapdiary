@@ -326,6 +326,26 @@ await test('사진으로 지난 여행 만들기', async page => {
   noErr(page, '사진으로 여행 만들기');
 });
 
+// 판 -343: 차·비행기를 탄 기록은 지도에 👣·🚗·✈ / 걷기만 한 기록엔 안 그림
+await test('지도 길 표시: 발자국·차·비행기', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(1200);
+  const r = await page.evaluate(() => {
+    const t0 = Date.UTC(2018, 9, 20, 8), tr = [];
+    for (let i = 0; i <= 20; i++) tr.push([42.83 + i * 0.003, -8.54, t0 + i * 180000, null, 1]);                 // 걷기 6.7km 60분
+    for (let i = 1; i <= 40; i++) tr.push([42.89 + i * 0.01, -8.54 + i * 0.01, t0 + 60 * 60000 + i * 60000, null, 0]);   // 차 50km 40분
+    const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:walk_modeic1', tr); set('walkMode:walk_modeic1', 'travel');
+    set('track:walk_modeic2', tr.slice(0, 21)); set('walkMode:walk_modeic2', 'travel');
+    return 1; });
+  page.errs = [];
+  await page.goto(BASE + '?my=1&t=walk_modeic1'); await sleep(2500);
+  const a = await page.evaluate(() => [...document.querySelectorAll('.mode-ic path')].map(p => p.getAttribute('fill')));
+  ok(a.includes('#4B5563') && a.includes('#E4572E'), '차·걷기 조각에 🚗·👣이 있어야 해요: ' + a);
+  await page.goto(BASE + '?my=1&t=walk_modeic2'); await sleep(2000);
+  ok(await page.evaluate(() => document.querySelectorAll('.mode-ic').length) === 0, '걷기만 한 기록엔 그리지 않아야 해요');
+  noErr(page, '지도 길 표시');
+});
+
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
 await test('여러 날 여행 n박 m일은 현지 날짜로', async page => {
   await page.goto(BASE + '?my=1');
