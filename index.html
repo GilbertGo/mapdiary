@@ -3646,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-346-ptbatch';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-347-ptmove';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진으로 지난 여행 만들기에서 사진을 나눠 골라도 같은 이름이면 한 여행으로 이어져요";
+const UI_NOTES = "+ 기록하기에서 지난 날도 기록해요 (사진이나 다른 앱 기록 파일로)";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14598,14 +14598,16 @@ function ptOpen() {
     if (!items.length) { busy = false; return prog('그 기간에 찍은 사진이 없어요.'); }
     prog(`사진 ${items.length}장을 찾았어요`); await run(items, [f, t]);
   }
-  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '사진으로 지난 여행 만들기' },
-    el('h2', { text: '사진으로 지난 여행 만들기' }),
-    el('p', { class: 'sub', style: 'margin:0', text: '그때 찍은 사진의 날짜와 위치로 날마다 기록과 지도를 만들어요. 사진 사이 길은 걷는 길이나 찻길을 따라 짐작하고, 시각은 그 나라 현지 시간으로 보여요. 사진은 여러 번 나눠 골라도 같은 이름이면 한 여행으로 이어져요. 사진첩 원본은 그대로예요.' }),
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': '지난 날 기록하기' },
+    el('h2', { text: '지난 날 기록하기' }),
+    el('p', { class: 'sub', style: 'margin:0', text: app ? '날짜만 고르면 그때 찍은 사진으로 날마다 기록과 지도를 만들어요. 사진첩 원본은 그대로예요.' : '그때 찍은 사진을 고르면 날마다 기록과 지도를 만들어요. 나눠 골라도 같은 이름이면 한 여행으로 이어져요.' }),
     el('label', { class: 'f', for: 'pt-n' }, '여행 이름 (선택)', iName),
     app ? el('div', { class: 'two' }, el('label', { class: 'f', for: 'pt-f' }, '첫날', iFrom), el('label', { class: 'f', for: 'pt-t' }, '마지막 날', iTo)) : null,
     app ? el('button', { class: 'btn primary', text: '이 기간 사진으로 만들기', onclick: fromRange }) : null,
     el('button', { class: 'btn ' + (app ? 'line' : 'primary'), text: app ? '사진 직접 고르기' : '사진 고르기', onclick: () => { if (!busy) inp.click(); } }),
-    msg, inp));
+    msg, inp,
+    // 판 -347: 다른 앱 기록(GPX)도 지난 날 기록하기 안으로(내 MPD 맨 아래에서 옮김)
+    (() => { const gi = gpxImportBtn().querySelector('input'); return el('button', { class: 'btn ghost small', style: 'align-self:center', onclick: () => { if (!busy) { sb.remove(); document.body.append(gi); gi.click(); } } }, '다른 앱 기록 파일(GPX)로'); })()));
   document.body.append(sb);
 }
 // ---------- 내 맛집: 모든 기록에서 맛집으로 표시한 곳(spot.food)을 사진 카드로 모아 봐요 ----------
@@ -14983,8 +14985,6 @@ function viewMyList() {
   const keep = [
     fold('☁ 로그인 · 기록 모으기', acct ? `${acct.via} · ${acct.name || '로그인됨'}${acct.code ? ' ' + acct.code : ''}${cl && cl.ok ? ' · ✓' : ''}` : '로그인 안 함', cloudCard()),
     fold('⌚ 시계 기록 받기', watchGet() ? '연결됨' : wearSelf() ? '저절로 와요' : '연결 안 됨', watchCard(viewMyList)),
-    fold('📥 다른 앱 기록(GPX) 가져오기', '', gpxImportBtn()),
-    (() => { const d = fold('📷 사진으로 지난 여행 만들기', '', null); d.querySelector('summary').onclick = e => { e.preventDefault(); ptOpen(); }; return d; })(),   // 판 -340: 줄을 누르면 바로 창
     fold('💾 백업', (() => { const b = ls.get('lastBackup', 0); return b ? `${Math.max(0, Math.round((Date.now() - b) / 864e5))}일 전` : '아직 안 함'; })(), backupCard(days.length)),
   ];
   app.replaceChildren(el('div', { class: 'stack' },
@@ -16753,6 +16753,8 @@ function cRecordSheet() {
     lk ? el('p', { class: 'sub', style: 'margin:-4px 0 4px;font-size:13px;text-align:center', text: '지난번에 쓴 기록이에요 · 목표는 지난번 그대로' }) : null,
     el('p', { class: 'sub', style: 'margin:0', text: lk ? '다른 기록은 아래에서 골라요 · 고르면 그 기록의 시작 화면으로 가요' : '고르면 그 기록의 시작 화면으로 가요' }),
     modeGrid(null, k => { location.href = `?walk=1&mode=${k}`; }),
+    // 판 -347 (사용자 '기록하기 누르면 나오게 · 기록하기는 앞으로 할 것도 기록하지만, 과거도 새롭게 기록하는 거야'): 내 MPD 맨 아래에서 여기로 옮김
+    el('button', { class: 'btn line full', style: 'display:flex;align-items:center;justify-content:center;gap:8px', onclick: () => { bg.remove(); ptOpen(); } }, cSvg('clock', 20), '지난 날 기록하기'),
     el('button', { class: 'btn line full', text: '닫기', onclick: () => bg.remove() })));
   document.body.append(bg);
 }
