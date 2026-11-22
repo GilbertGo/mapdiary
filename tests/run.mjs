@@ -238,6 +238,39 @@ await test('계획 링크 묶기·풀기 하면 일정이 그대로', async page
   ok(JSON.stringify(r.it) === JSON.stringify([[0, '10:35', '인천공항', 'fly', 37.46], [1, '18:00', '도톤보리', 'spot', 34.6687], [2, '', '숙소', 'stay', null]]), '일정이 달라졌어요: ' + JSON.stringify(r.it));
 });
 
+// ─── 10b. 구글 테이크아웃 사진으로 만든 여행(tools/takeout2mpd, 산티아고 순례길) ───
+// fixtures/takeout_sample.json = 그 도구가 가짜 테이크아웃(3일 · 사진 18장, 위치 없는 사진 3장 · 같은 사진 두 폴더)으로 만든 백업
+await test('테이크아웃 사진 여행: 백업으로 들어가고 · 여행 화면 열림 · 지운 날은 안 살아남', async page => {
+  await seed(page);
+  // backupLoad는 끝에 화면을 다시 불러와서(location.reload), 불러오기마다 다시 열린 뒤 확인해요
+  const load = async () => { await Promise.all([page.waitForNavigation({ timeout: 30000 }), page.evaluate(async () => {
+    const d = await (await fetch('tests/fixtures/takeout_sample.json')).json();
+    __T.backupLoad(new File([JSON.stringify(d)], 'b.json', { type: 'application/json' })); })]); await sleep(800); };
+  const al = await page.evaluate(async () => JSON.parse((await (await fetch('tests/fixtures/takeout_sample.json')).json()).ls.albums)[0]);
+  await load();
+  const r = await page.evaluate(async al => {
+    const days = al.days.map(id => ({ id, tr: __T.trackLoad(id).length, a: JSON.parse(localStorage.getItem('walkAlbum:' + id) || 'null') }));
+    const ph = []; for (const id of al.days) ph.push((await __T.photoList(id)).length);
+    const noLoc = (await __T.photoList(al.days[0])).filter(p => p.lat == null).length;
+    return { days, ph, noLoc, inAlbums: (JSON.parse(localStorage.getItem('albums') || '[]').find(a => a.id === al.id) || {}).days };
+  }, al);
+  ok(r.days.length === 3 && r.days.every(x => x.tr > 10 && x.a === al.id), '하루 기록 3개가 여행에 묶여 길이 있어야 해요: ' + JSON.stringify(r.days));
+  ok((r.inAlbums || []).length === 3, '여행 묶음에 3일이 있어야 해요: ' + r.inAlbums);
+  ok(r.ph.join() === '6,6,6', '날마다 사진 6장(같은 사진 두 폴더는 한 번만)이어야 해요: ' + r.ph);
+  ok(r.noLoc === 0, '위치 없는 사진도 길 위 자리에 놓여야 해요');
+  page.errs = [];
+  await page.goto(BASE + '?my=1&t=' + al.id); await sleep(2500);
+  noErr(page, '여행 화면');
+  ok(/산티아고 순례길/.test(await page.innerText('body')), '여행 화면에 이름이 보여야 해요');
+  // 2일차를 지우고 같은 파일을 또 불러옴 → 2일차가 되살아나면 안 됨, 1일차 사진이 두 번 들어가도 안 됨
+  await page.evaluate(async al => { localStorage.removeItem('track:' + al.days[1]); __T.goneMark([al.days[1]]); for (const p of await __T.photoList(al.days[1])) await __T.photoDel(p.id); }, al);
+  await load();
+  const q = await page.evaluate(async al => ({ back: localStorage.getItem('track:' + al.days[1]), ph2: (await __T.photoList(al.days[1])).length, ph1: (await __T.photoList(al.days[0])).length }), al);
+  ok(q.back == null, '지운 2일차가 백업에서 되살아났어요');
+  ok(q.ph1 === 6, '같은 파일을 두 번 불러와 사진이 겹쳤어요: ' + q.ph1);
+  ok(q.ph2 === 0, '지운 2일차 사진이 되살아났어요: ' + q.ph2);
+});
+
 // ─── 11. 백업을 불러와도 지운 사진·기록이 안 살아남 ───
 await test('백업 불러오기: 지운 사진·기록은 안 살아남 · 남은 건 그대로', async page => {
   const t = await seed(page);
