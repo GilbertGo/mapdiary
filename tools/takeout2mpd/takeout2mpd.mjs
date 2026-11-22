@@ -104,7 +104,12 @@ for (const f of files) {
 media.sort((a, b) => a.ts - b.ts);
 
 // ── 여행 날짜 고르기 ──
-const dayOf = ts => new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ts));
+// --tz-east 시간대: 경도 60° 동쪽(우리나라 공항 등)에서 찍은 사진은 그 시간대 날짜로(2026-11-22 '인천 공항에서 스페인 갔다가 인천 공항으로 돌아오기까지 모두')
+const TZ_EAST = args['tz-east'] || '';
+const tzOfLL = ll => TZ_EAST && ll && ll[1] > 60 ? TZ_EAST : TZ;
+const dayIn = (ts, tz) => new Intl.DateTimeFormat('sv-SE', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ts));
+const dayOf = ts => dayIn(ts, TZ);
+const dayOfM = m => dayIn(m.ts, m.tz || TZ);
 let from = args.from, to = args.to;
 if (!from || !to) {
   if (!route) { console.error('--from/--to 또는 --route가 있어야 여행 날짜를 알 수 있어요'); process.exit(2); }
@@ -112,15 +117,16 @@ if (!from || !to) {
   if (!near.length) { console.error('길 25km 안에서 찍은 사진이 없어요. --from/--to로 날짜를 주세요'); process.exit(1); }
   from = from || dayOf(near[0].ts); to = to || dayOf(near[near.length - 1].ts);
 }
-let trip = media.filter(m => { const d = dayOf(m.ts); return d >= from && d <= to; });
+{ let last = TZ; for (const m of media) { if (m.ll) last = tzOfLL(m.ll); m.tz = m.ll ? tzOfLL(m.ll) : last; } }   // 위치 없는 사진은 바로 앞 사진 시간대
+let trip = media.filter(m => { const d = dayOfM(m); return d >= from && d <= to; });
 // 첫날 앞쪽·마지막 날 뒤쪽에서 길 25km 밖 사진(출발지 공항·다음 여행지로 가는 길)은 빼요 — 길이 있을 때만
-if (route && trip.length) {
+if (route && trip.length && !args['no-trim']) {
   const far = m => m.ll && snap(...m.ll).d > 25000, d0 = dayOf(trip[0].ts), d1 = dayOf(trip[trip.length - 1].ts); let cut = 0;
   while (trip.length && dayOf(trip[0].ts) === d0 && (far(trip[0]) || !trip[0].ll && trip.slice(1).find(x => x.ll && dayOf(x.ts) === d0) && far(trip.slice(1).find(x => x.ll)))) { trip.shift(); cut++; }
   while (trip.length && dayOf(trip[trip.length - 1].ts) === d1 && far(trip[trip.length - 1])) { trip.pop(); cut++; }
   if (cut) console.log(`첫날·마지막 날 길 25km 밖 사진 ${cut}장을 뺐어요`);
 }
-const days = new Map(); for (const m of trip) { const d = dayOf(m.ts); if (!days.has(d)) days.set(d, []); days.get(d).push(m); }
+const days = new Map(); for (const m of trip) { const d = dayOfM(m); if (!days.has(d)) days.set(d, []); days.get(d).push(m); }
 
 // ── 하루 길 만들기 ──
 function dayTrack(list) {
@@ -166,7 +172,7 @@ const lenOf = tr => { let d = 0; for (let i = 1; i < tr.length; i++) d += dist(t
 
 // ── 아이디(다시 돌려도 같은 아이디) ──
 const h = (s, n) => BigInt('0x' + crypto.createHash('sha1').update(s).digest('hex').slice(0, 15)).toString(36).padStart(n, '0').slice(-n);
-const ALBUM = 'album_' + h(NAME + from + to, 8);
+const ALBUM = args.album || 'album_' + h(NAME + from + to, 8);   // --album: 있는 여행에 날 더하기
 
 // ── 사진 줄이기(앱과 같게: 큰 것 1280px jpeg .82 · 작은 것 160px .7) ──
 const sharp = (await import('sharp')).default;
@@ -194,8 +200,11 @@ function flush() {
 }
 newPart();
 let n = 0;
+// --skip 2018-10-04..2018-10-19: 그 날들은 이미 있어서 안 만들어요(번호는 셈)
+const SKIP = args.skip ? String(args.skip).split('..') : null;
 for (const [d, list] of days) {
   n++;
+  if (SKIP && d >= SKIP[0] && d <= (SKIP[1] || SKIP[0])) continue;
   const id = 'walk_' + h(ALBUM + d, 8), { tr, onRoute, straight } = dayTrack(list);
   if (tr.length < 2) { report.days.push({ d, n, photos: list.length, located: list.filter(m => m.ll).length, skip: '위치 있는 사진이 2장 안 돼 길을 못 만들었어요' }); continue; }
   const start = townNear(tr[0][0], tr[0][1]), end = townNear(tr[tr.length - 1][0], tr[tr.length - 1][1]);
@@ -203,7 +212,7 @@ for (const [d, list] of days) {
   const ls = {
     ['track:' + id]: JSON.stringify(tr), ['walkMode:' + id]: JSON.stringify(MODE), ['trackName:' + id]: JSON.stringify(`${NAME} ${n}일차`),
     ['walkAlbum:' + id]: JSON.stringify(ALBUM),
-    ['walkTz:' + id]: JSON.stringify(TZ),   // 앱 판 -334부터 기록 보기가 이 시간대(현지 시간)로 보여요
+    ['walkTz:' + id]: JSON.stringify((() => { const c = {}; for (const m of list) c[m.tz || TZ] = (c[m.tz || TZ] || 0) + 1; return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || TZ; })()),   // 앱 판 -334부터 기록 보기가 이 시간대(현지 시간)로 보여요
     ['walkNote:' + id]: JSON.stringify(`📷 사진 ${list.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). 사진 사이 길은 ${route ? (route.name || '순례길') + ' 지도를 따라 짐작했고, 사진이 그 길에서 벗어난 곳은 사진끼리 곧게 이었어요' : '곧게 이어 짐작했어요'}. 거리·시간은 실제와 다를 수 있어요.`),
   };
   if (start || end) ls['walkPlaces:' + id] = JSON.stringify({ ...(start ? { start } : {}), ...(end ? { end } : {}) });
