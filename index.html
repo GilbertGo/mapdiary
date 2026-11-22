@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-328-clouddiag';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-329-tripme';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "로그인 맞추기가 안 될 때 어디서 왜 멈췄는지 개발 쪽이 볼 수 있게 했어요 (계획 이름과 사진은 보내지 않아요)";
+const UI_NOTES = "같은 계정으로 로그인한 PC와 휴대폰이 여행 일행에서 한 사람이 돼요 · PC에서도 일행 채팅과 AI 묻기와 초대가 보여요 · 일행 지도에 내가 두 번 나오던 것을 고쳤어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4920,6 +4920,20 @@ const recSig = (pack, phIds) => hash32(JSON.stringify(pack) + '|' + phIds.join('
 // 맞추는 동안 카드 단추에 어디까지 했는지 보여요 (처음엔 기록·사진을 모두 올려서 몇 분 걸릴 수 있어요)
 let cloudProg = '';
 function cloudProgSet(t) { cloudProg = t; document.querySelectorAll('.cl-prog').forEach(b => { b.textContent = t || '맞추는 중…'; }); }
+// 판 -329 (2026-11-22 사용자 'PC와 폰 화면이 왜 달라' → '길 꼬 모두 나야' → '니가해'): 여행 일행에서 '나'(tripMe)와 열쇠(tripPk)가 기기마다 따로라
+//   같은 카카오 계정인데 PC는 다른 사람('길')으로 들어가 구경(보기만)이 되고, 일행 지도에도 두 번 나왔음 → 로그인 모음 x/one.tripMe로 같은 계정이면 같은 '나'
+//   방 주인인 쪽(tripPermC의 own.by)이 이김(주인이 아닌 기기 것으로 바꾸면 주인 권한을 잃으니까) · 예전 '나'는 tripMeOld에 남김(되돌릴 수 있게)
+async function tripMeSync(c) {
+  const ownN = id => Object.keys(localStorage).filter(k => k.startsWith('tripPermC:')).reduce((n, k) => { const S = ls.get(k, null); return n + (S && S.own && S.own.by === id ? 1 : 0); }, 0);
+  const me = trMe(), mine = ownN(me), good = !!(c && typeof c === 'object' && /^[a-z0-9]{6,24}$/.test(String(c.id || '')) && c.pk && c.pk.pub && c.pk.prv);
+  if (good && c.id !== me && (+c.own || 0) >= mine) {
+    const old = ls.get('tripMeOld', []); ls.set('tripMeOld', [...(Array.isArray(old) ? old : []), { id: me, pk: ls.get('tripPk', null), at: Date.now() }].slice(-5));
+    ls.set('tripMe', c.id); ls.set('tripPk', c.pk); Object.keys(localStorage).filter(k => k.startsWith('tripTk:')).forEach(k => localStorage.removeItem(k));
+    return { up: { id: c.id, pk: c.pk, own: Math.max(+c.own || 0, ownN(c.id)) }, took: 1 };
+  }
+  await tkKeys();
+  return { up: { id: me, pk: ls.get('tripPk', null), own: Math.max(mine, good && c.id === me ? +c.own || 0 : 0) }, took: 0 };
+}
 // 판 -328 (2026-11-22 같은 카카오 계정인데 PC는 이름 '길벗'·계획 5, 폰은 '꼬'·계획 2 — 어느 쪽 맞추기가 왜 안 되는지 알 수 없었음):
 //   맞추기가 끝날 때마다(된 때도) 이 기기 상태를 rooms/mpderr/s/{기기 번호}에 남겨 개발 쪽이 견줘 봐요. 숫자·판·계정 끝 4자만(계획 이름·위치·사진은 안 넣음)
 function cloudDiag(o) { try { if (LAB_QUIET || !navigator.onLine) return; const P = planAll();
@@ -4927,7 +4941,7 @@ function cloudDiag(o) { try { if (LAB_QUIET || !navigator.onLine) return; const 
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
   cloudProgSet('맞추는 중… 목록 받는 중');
-  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '', dcGot = 0; let stage = '시작', oneLen = 0;   // 판 -328: 어디서 왜 못 맞췄는지 오류 기록에(개발 쪽이 읽게)
+  cloudBusy = true; let up = 0, down = 0, phUp = 0, phDown = 0, bad = 0, why = '', dcGot = 0, tmTook = 0; let stage = '시작', oneLen = 0;   // 판 -328: 어디서 왜 못 맞췄는지 오류 기록에(개발 쪽이 읽게)
   document.dispatchEvent(new Event('md-cloud'));   // 카드를 '⏳ 맞추는 중'으로 바로 다시 그려요(2026-10-21 앱 켜자마자 저절로 맞추는 중인데 카드는 '아직 안 맞춤'이라 단추가 반응 없어 보였음)
   // 로그아웃하면 cloudSig가 null로 남아서(2026-10-21 앱에서 'Cannot read properties of null') {}로. 다른 계정(구글↔카카오)으로 바뀌면 처음부터 맞춰요
   const same = ls.get('cloudUid', null) === cloudUser.uid;
@@ -5001,8 +5015,9 @@ async function cloudSync(quiet) {
     if (one.nick && !ls.get('nick', '')) ls.set('nick', one.nick);
     if (one.me && typeof one.me === 'object' && (+one.me.at || 0) > (ls.get('myAt', 0) || 0)) { ls.set('nick', String(one.me.nick || ls.get('nick', '')).slice(0, 20)); ls.set('myBio', String(one.me.bio || '').slice(0, 40)); ls.set('myPhoto', /^data:image\//.test(one.me.ph || '') ? one.me.ph : ''); ls.set('myAt', +one.me.at); }
     if (Array.isArray(one.plans) || one.planGone) planMerge(one.plans, one.planGone, one.planInto, one.planAlive);   // 🗓 여행 계획도 모음에(2026-11-14)
-    planHeroTake(one.planHero);   // 판 -324: 계획 사진 주소도(이 기기에 없는 계획 사진만 채움)
-    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), planHero: planHeroAll(), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
+    planHeroTake(one.planHero);
+    const TM = await tripMeSync(one.tripMe); tmTook = TM.took;   // 판 -329: 같은 계정이면 여행 일행에서도 같은 사람   // 판 -324: 계획 사진 주소도(이 기기에 없는 계획 사진만 채움)
+    const mine1 = JSON.stringify({ albums: albumsLoad(), rooms: ls.get('rooms', []), myPosts: ls.get('myPosts', []), nick: ls.get('nick', ''), plans: planAll(), planGone: ls.get('planGone', {}), planInto: ls.get('planInto', {}), planAlive: ls.get('planAlive', {}), planHero: planHeroAll(), phGone: phGoneAll(), phGoneTs: phGoneTsAll(), recGone: goneAll(), tripMe: TM.up, me: { nick: ls.get('nick', ''), bio: ls.get('myBio', ''), ph: ls.get('myPhoto', ''), at: ls.get('myAt', 0) } });
     oneLen = mine1.length; stage = '모음 올리기'; if (mine1 !== oneR) await cPut('x/one', mine1);
     try { dcGot = await decoSync(cGet, cPut); } catch {}   // 판 -323: 첫 화면 꾸미기·바탕 사진도 같은 계정이면 다른 기기(PC)에 (사진이 커서 x/one과 따로)
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
@@ -5014,10 +5029,10 @@ async function cloudSync(quiet) {
     try { window.mpdErr && window.mpdErr(`☁ 클라우드 맞추기 못 함 · ${stage} · ${String(e && e.message || e).slice(0, 80)} · 모음 ${Math.round(oneLen / 1024)}KB · 계획 ${planAll().length} · 계정 #${String(cloudUser && cloudUser.uid || '').slice(-4).toUpperCase()}`); } catch {}
     ls.set('cloudLast', { at: Date.now(), ok: 0, why: String(e && e.message || e).slice(0, 60) }); cloudProgSet(''); if (!quiet) toast(`클라우드와 맞추지 못했어요 (${String(e && e.message || e).slice(0, 60)}). '↻ 지금 맞추기'를 다시 눌러 주세요`); document.dispatchEvent(new Event('md-cloud')); return; }
   cloudBusy = false; cloudProgSet('');
-  const msg = [down ? `기록 ${down}개를 받았어요` : '', dcGot ? '첫 화면 꾸미기를 받았어요' : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
+  const msg = [down ? `기록 ${down}개를 받았어요` : '', dcGot ? '첫 화면 꾸미기를 받았어요' : '', tmTook ? '여행 일행에서 다른 기기와 같은 사람이 됐어요' : '', up ? `기록 ${up}개를 올렸어요` : '', phDown ? `사진 ${phDown}장 받음` : '', phUp ? `사진 ${phUp}장 올림` : '', bad ? `${bad}개는 못 올림(${why.slice(0, 24)}) · 다음에 다시 해 봐요` : ''].filter(Boolean).join(' · ');
   let again = false; try { again = Date.now() - +(sessionStorage.getItem('cloudReload') || 0) < 120000; } catch {}   // 받자마자 또 받는 일이 생겨도 다시 불러오기를 되풀이하지 않게
-  if ((down || dcGot) && MD_TOUCHED) { toast('☁ ' + msg + ' · 화면을 다시 열면 보여요', 0, 6000); return; }
-  if ((down || dcGot) && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
+  if ((down || dcGot || tmTook) && MD_TOUCHED) { toast('☁ ' + msg + ' · 화면을 다시 열면 보여요', 0, 6000); return; }
+  if ((down || dcGot || tmTook) && !again && (!location.search || qs.get('my'))) { try { sessionStorage.setItem('mdToast', '☁ ' + msg); sessionStorage.setItem('cloudReload', String(Date.now())); } catch {} location.reload(); return; }
   if (msg && !quiet) toast('☁ ' + msg); else if (!quiet) toast('☁ 클라우드와 같아요');
   document.dispatchEvent(new Event('md-cloud'));
 }
