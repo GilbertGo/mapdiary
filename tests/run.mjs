@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -287,8 +287,10 @@ await test('사진으로 지난 여행 만들기', async page => {
   await page.goto(BASE + '?my=1'); await sleep(1500);
   page.errs = [];
   // 내 MPD 맨 아래 줄 → 창
-  await page.click('summary:has-text("사진으로 지난 여행 만들기")'); await sleep(400);
-  ok(await page.isVisible('[aria-label="사진으로 지난 여행 만들기"] >> text=사진 고르기'), '줄을 누르면 사진 고르기 창이 떠야 해요');
+  // 판 -347: '+ 기록하기' 창 안 '지난 날 기록하기'
+  await page.evaluate(() => __T.cRecordSheet()); await sleep(300);
+  await page.click('button:has-text("지난 날 기록하기")'); await sleep(400);
+  ok(await page.isVisible('[aria-label="지난 날 기록하기"] >> text=사진 고르기'), '기록하기 → 지난 날 사진으로 기록하기 창이 떠야 해요');
   await page.evaluate(() => document.querySelector('.sheet-bg')?.remove());
   const mk = () => page.evaluate(async () => {
     const jpg = async c => { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48; const g = cv.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, 64, 48); return new File([await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8))], 'x.jpg', { type: 'image/jpeg' }); };
