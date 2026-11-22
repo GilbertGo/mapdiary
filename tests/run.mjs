@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -317,6 +317,8 @@ await test('사진으로 지난 여행 만들기', async page => {
   await page.evaluate(async id => { localStorage.removeItem('track:' + id); __T.goneMark([id]); for (const p of await __T.photoList(id)) await __T.photoDel(p.id); }, d2);
   await mk();
   ok(await page.evaluate(async id => localStorage.getItem('track:' + id) == null && (await __T.photoList(id)).length === 0, d2), '지운 2일차가 되살아났어요');
+  // 판 -342: 비행기(인천→마드리드)는 길 찾기를 묻지 않고 곧은 줄
+  ok(await page.evaluate(async () => { const st = {}; const r = await __T.ptRoute({ lat: 37.46, lng: 126.44, ts: 0 }, { lat: 40.47, lng: -3.57, ts: 13 * 3600000 }, st); return r === null && !st.off; }), '비행기 구간은 길 찾기 없이 곧은 줄이어야 해요');
   // 위치 없는 사진뿐이면 만들지 않고 까닭을 알려요
   const r3 = await page.evaluate(() => __T.ptMake([{ name: 'z.jpg', wall: [2018, 1, 1, 9, 0, 0], lat: null, lng: null }], '', null));
   ok(r3.err === 'noloc', '위치 없는 사진만이면 noloc: ' + JSON.stringify(r3));
