@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync'];
+const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -641,6 +641,38 @@ await test('지도 이름 · 나라마다 같은 차례 (판 -327)', async page 
   ok(r.seoul === null, '서울은 한자 읽기가 달라 그대로');
   ok(r.hanoi && r.hanoi.on === '河內市\n하내시\n하노이\nHanoi', '베트남 ' + JSON.stringify(r.hanoi));
   noErr(page, '지도 이름');
+});
+
+// ─── 판 -331: 일행 권한 표 ───
+await test('일행 권한 · 들어온 사람 표(일행 여부·권한·보는 범위)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  await page.evaluate(() => { const t = Date.now();
+    localStorage.setItem('tripMe', '"ownr"'); localStorage.setItem('nick', '"성식"');
+    __T.planSave({ id: 'ptab1', name: '제주', start: '2026-12-10', nd: 2, room: { code: 'tpermtable00001', mk: 'x' }, shOn: 1,
+      mem: [{ id: 'm1', n: '성식' }, { id: 'm2', n: '유진' }, { id: 'm3', n: '민수' }], it: [], at: t, u: t });
+    localStorage.setItem('tripPermC:tpermtable00001', JSON.stringify({ own: { by: 'ownr', nm: '성식' }, perm: { by: 'ownr', m: { u1: { r: 1, w: 1, ai: 0 } }, def: { r: 1, w: 1, ai: 0 } },
+      tk: [{ by: 'u1', nm: '유진', t: t - 3600e3 }, { by: 'u1pc', nm: '유 진', t: t - 60e3 }, { by: 'u2', nm: '옆집', t }] })); });
+  page.errs = [];
+  await page.evaluate(() => __T.permSheet(__T.planAll().find(x => x.id === 'ptab1'), () => {})); await sleep(700);
+  noErr(page, '일행 권한 표');
+  const rows = await page.$$eval('.pm-tb tbody tr', trs => trs.map(tr => [...tr.querySelectorAll('td')].map(td => td.innerText.replace(/\s+/g, ' ').trim())));
+  ok(rows.length === 4, '줄이 4개(주인·유진·옆집·민수)여야 해요: ' + JSON.stringify(rows));
+  const r = n => rows.find(x => x[0].startsWith(n)) || [];
+  ok(/주인/.test(r('성식')[1]) && r('성식')[4] === '전체', '주인 줄이 이상해요 ' + r('성식'));
+  ok(r('유진')[1] === '일행' && /기기 2대/.test(r('유진')[0]) && r('유진')[4] === '전체', '유진(기기 2대)이 한 줄 일행 전체여야 해요 ' + r('유진'));
+  ok(r('옆집')[1] === '구경' && /목록에 없음/.test(r('옆집')[0]) && r('옆집')[4] === '일정·사진·위치', '옆집은 구경, 일정·사진·위치여야 해요 ' + r('옆집'));
+  ok(/아직 안 들어옴/.test(r('민수')[0]), '민수는 아직 안 들어옴이어야 해요 ' + r('민수'));
+  await page.screenshot({ path: process.env.SHOT || '/tmp/pm_tab.png' });
+  // 구분 칸: 구경 → 못 봄 → 일행(이때 함께 가는 사람에 들어감)
+  const tap = async () => { await page.click('.pm-tb tr:has-text("옆집") .pm-rl'); await sleep(300); };
+  await tap(); ok(/못 봄/.test(await page.innerText('.pm-tb tr:has-text("옆집")')), '구경을 누르면 못 봄이 돼야 해요');
+  await tap(); const t3 = await page.innerText('.pm-tb tr:has-text("옆집")');
+  ok(/일행/.test(t3) && /전체/.test(t3), '못 봄을 누르면 일행·전체가 돼야 해요 ' + t3);
+  ok(await page.evaluate(() => __T.planAll().find(x => x.id === 'ptab1').mem.some(m => m.n === '옆집')), '일행으로 바꾸면 함께 가는 사람에 들어가야 해요');
+  // 같은 사람 두 기기는 고치기도 같이
+  await page.click('.pm-tb tr:has-text("유진") .pm-ck'); await sleep(300);
+  ok(/✕/.test(await page.innerText('.pm-tb tr:has-text("유진") .pm-ck')), '유진 고치기를 누르면 ✕가 돼야 해요');
+  ok(await page.$$eval('.pm-tb tbody tr', trs => trs.filter(tr => /유진/.test(tr.innerText)).length) === 1, '같은 사람 두 기기는 한 줄이어야 해요');
 });
 
 await browser.close();
