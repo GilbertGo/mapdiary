@@ -38,6 +38,10 @@ function snap(lat, lng) {   // 길에서 가장 가까운 점
   for (let i = 0; i < route.pts.length; i++) { const p = route.pts[i], d = dist(lat, lng, p[0], p[1]); if (d < bd) { bd = d; bi = i; } }
   return { i: bi, d: bd };
 }
+function segDist(p, a, b) {   // 점 p에서 선분 a-b까지 m (좁은 곳이라 평면으로)
+  const kx = Math.cos(rad(a[0])) * 111320, ky = 110540, ax = a[1] * kx, ay = a[0] * ky, bx = b[1] * kx - ax, by = b[0] * ky - ay, px = p[1] * kx - ax, py = p[0] * ky - ay, L = bx * bx + by * by;
+  const t = L ? Math.max(0, Math.min(1, (px * bx + py * by) / L)) : 0; return Math.hypot(px - t * bx, py - t * by);
+}
 function townNear(lat, lng, max = 3000) {
   if (!route || !route.towns) return null;
   let b = null, bd = max; for (const t of route.towns) { const d = dist(lat, lng, t.lat, t.lng); if (d < bd) { bd = d; b = t.n; } } return b;
@@ -128,8 +132,13 @@ function dayTrack(list) {
     const b = pts[k + 1]; if (!b || !route) continue;
     const sa = snap(...a.ll), sb = snap(...b.ll), direct = dist(...a.ll, ...b.ll);
     const along = sb.i > sa.i ? route.cum[sb.i] - route.cum[sa.i] : 0;
-    if (sa.d < 2000 && sb.d < 2000 && sb.i > sa.i + 1 && along < direct * 2.5 + 3000) {   // 둘 다 길 가까이 · 앞으로 · 너무 돌아가지 않으면 길을 따라
-      const span = sa.d + along + sb.d, at = done => a.ts + (b.ts - a.ts) * done / span;
+    const at0 = (ts0, ts1, span) => done => ts0 + (ts1 - ts0) * done / (span || 1);
+    // 길을 따르는 건: 두 사진이 모두 길에서 400m 안 · 앞으로 · 길이 두 사진 사이 곧은 줄에서 크게 벗어나지 않을 때만
+    //   (2026-11-22 사용자 '여기 경로가 이상하다' — 오르비고 다리 뒤 Villares·Santibáñez 쪽 갈래길 사진을 N-120 옆 큰길(OSM 순례길)로 끌어내려 V자로 오르내림)
+    let follow = sa.d <= 400 && sb.d <= 400 && sb.i > sa.i + 1 && along <= direct * 1.6 + 400;
+    if (follow) { const lim = Math.max(400, direct * 0.35); for (let i = sa.i; i <= sb.i && follow; i++) if (segDist(route.pts[i], a.ll, b.ll) > lim) follow = false; }
+    if (follow) {
+      const span = sa.d + along + sb.d, at = at0(a.ts, b.ts, span);
       // 앱은 5분 넘게 점이 없이 150m 넘게 건너뛴 곳을 '끊긴 구간'(점선, 걸은 거리에서 뺌)으로 봐요 → 길 점 사이를 100m·4분 안 간격으로 채워요
       let prev = [a.ll[0], a.ll[1]], pd = 0;
       for (let i = sa.i + 1; i <= sb.i; i++) {
@@ -139,7 +148,11 @@ function dayTrack(list) {
         prev = p; pd = d;
       }
       onRoute++;
-    } else if (direct > 30) straight++;
+    } else if (direct > 30) {   // 곧은 줄도 같은 간격으로 채워요(걷기·차는 빠르기로 앱이 나눠요)
+      const at = at0(a.ts, b.ts, direct), k = Math.max(1, Math.ceil(direct / 100), Math.ceil((b.ts - a.ts) / 240000));
+      for (let s = 1; s < k; s++) { const r = s / k; push(a.ll[0] + (b.ll[0] - a.ll[0]) * r, a.ll[1] + (b.ll[1] - a.ll[1]) * r, at(direct * r)); }
+      straight++;
+    }
   }
   return { tr, onRoute, straight };
 }
@@ -191,7 +204,7 @@ for (const [d, list] of days) {
     ['track:' + id]: JSON.stringify(tr), ['walkMode:' + id]: JSON.stringify(MODE), ['trackName:' + id]: JSON.stringify(`${NAME} ${n}일차`),
     ['walkAlbum:' + id]: JSON.stringify(ALBUM),
     ['walkTz:' + id]: JSON.stringify(TZ),   // 앱 판 -334부터 기록 보기가 이 시간대(현지 시간)로 보여요
-    ['walkNote:' + id]: JSON.stringify(`📷 사진 ${list.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). 사진 사이 길은 ${route ? (route.name || '순례길') + ' 지도를 따라' : '곧게 이어'} 짐작했어요. 거리·시간은 실제와 다를 수 있어요.`),
+    ['walkNote:' + id]: JSON.stringify(`📷 사진 ${list.length}장으로 거꾸로 만든 기록이에요(위치 있는 사진 ${located}장). 사진 사이 길은 ${route ? (route.name || '순례길') + ' 지도를 따라 짐작했고, 사진이 그 길에서 벗어난 곳은 사진끼리 곧게 이었어요' : '곧게 이어 짐작했어요'}. 거리·시간은 실제와 다를 수 있어요.`),
   };
   if (start || end) ls['walkPlaces:' + id] = JSON.stringify({ ...(start ? { start } : {}), ...(end ? { end } : {}) });
   const phs = [];
