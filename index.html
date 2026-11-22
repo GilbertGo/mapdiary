@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-332-oneperson';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-333-memberlogin';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "일행 지도에 같은 사람은 한 번만 보여요 · 폰 웹과 앱과 PC를 오가도 같은 이름이면 가장 최근 위치 하나만 · 내 예전 기기 위치는 나로 셈";
+const UI_NOTES = "여행 일행은 카카오나 구글로 로그인해요 · 로그인하면 휴대폰 웹과 앱과 컴퓨터가 한 사람이 돼요 · 로그인 안 하면 일정과 사진만 볼 수 있어요 · 혼자 기록하기와 공유 링크 보기는 로그인 없이 돼요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -9055,7 +9055,7 @@ async function planShare(p) {   // 판 -96: 사용자 캡처 '초대 받았는�
     faRc(enNote, !t.en ? null : el('div', { class: 'dt', style: 'line-height:1.5' }, '받는 사람 화면(이름 창·둘러보기·계획 화면)이 영어로 나와요.',
       miss ? el('div', { style: 'margin-top:6px;color:#D2462A' }, `장소 ${miss}곳이 아직 영어 이름이 없어 한국어로 보여요. `,
         trBotKey() ? el('button', { type: 'button', class: 'btn line small', style: 'margin-top:6px', text: '🌐 AI로 영어 이름 만들기', onclick: async e => { e.target.disabled = true; try { await planTranslate(p, x => { e.target.textContent = x; }); Object.assign(p, planGet(p.id) || {}); url = null; st.textContent = '🔗 영어 이름을 넣어 링크를 다시 만드는 중…'; [kb, other].forEach(b => b && (b.disabled = true)); url = await planLink(planGet(p.id) || p); st.textContent = '✅ 보낼 준비가 됐어요'; [kb, other].forEach(b => b && (b.disabled = false)); paint(); } catch (er) { e.target.disabled = false; e.target.textContent = '⚠ 못 했어요 · 다시'; } } }) : el('span', { text: 'Claude 열쇠가 있으면 AI로 만들 수 있어요.' })) : null)); };
-  const bg = labSheet('👋 일행에게 일정 보내기', seg, el('div', { class: 'sub', text: '받은 일행은 링크를 누르면 일정·지도·일행 채팅에 바로 들어와요. 로그인은 필요 없어요.' }), enNote, prev, st, ...(kb ? [kb] : []), other);
+  const bg = labSheet('👋 일행에게 일정 보내기', seg, el('div', { class: 'sub', text: '받은 일행은 링크를 누르면 일정·지도에 바로 들어와요. 일행 채팅·위치·일정 고치기는 카카오나 구글로 한 번 로그인하면 돼요.' }), enNote, prev, st, ...(kb ? [kb] : []), other);
   paint();
   [kb, other].forEach(b => b && (b.disabled = true));
   const prepImg = async () => {   // 여행지 사진(없으면 찾아서)을 카카오에 올려 둠
@@ -10599,7 +10599,7 @@ function planAskName(p, force) {   // 판 -196 (사용자 '초대 열면 간단�
     let m = (pick && q.mem.find(x => x.id === pick)) || q.mem.find(x => permNk(x.n) === permNk(v));
     if (!m && q.mem.length) { ls.set('planMe:' + q.id, 'v'); ls.set('planV:' + q.id, 1); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} bg.remove(); toast(E(`${v} 님, 반가워요 · 일정과 사진을 볼 수 있어요`, `Welcome, ${v} · you can view the plan and photos`), 0, 5000); return; }   // 판 -320: 목록에 없는 이름은 구경(보기만) · 함께 가는 사람에 저절로 넣지 않음
     if (!m) { m = { id: 'm' + rid(6), n: v, from: '', a: '', b: '', fl: '' }; q.mem.push(m); planSave(q); }
-    ls.set('planMe:' + q.id, m.id); ls.set('planV:' + q.id, 0); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} bg.remove(); toast(E(`${v} 님, 반가워요 · 화면을 짧게 둘러볼게요`, `Welcome, ${v} · a quick tour`)); setTimeout(() => planTour(planGet(p.id) || p), 600); };   // 판 -203: 글 목록(howTo) 대신 실제 화면 둘러보기
+    ls.set('planMe:' + q.id, m.id); ls.set('planV:' + q.id, 0); try { window.mpdPlanRedraw && window.mpdPlanRedraw(); } catch {} bg.remove(); toast(E(`${v} 님, 반가워요 · 화면을 짧게 둘러볼게요`, `Welcome, ${v} · a quick tour`)); setTimeout(() => { const q2 = planGet(p.id) || p; if (trLoginNeed(q2)) trLoginSheet(q2); else planTour(q2); }, 600); };   // 판 -333: 로그인 안 했으면 둘러보기 대신 로그인부터   // 판 -203: 글 목록(howTo) 대신 실제 화면 둘러보기
   const li = (ic, t, d) => el('div', { class: 'iv-li' }, el('span', { class: 'iv-ic' }, cSvg(ic, 20)), el('div', {}, el('b', { text: t }), el('span', { text: d })));
   const card = el('div', { class: 'iv' },
     el('div', { class: 'iv-img' + (hero && hero.u ? '' : ' none'), style: hero && hero.u ? `background-image:url("${hero.u}")` : '' }),
@@ -11166,7 +11166,7 @@ async function viewTripRoom(code, title, planId) {
     const tb = (k, t) => el('button', { class: 'btn small ' + (tab === k ? 'dark' : 'line'), style: 'flex:1', text: t, onclick: () => { tab = k; ls.set('tripTab', k); draw(); } });
     faRc(top, 
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
-      V ? el('button', { type: 'button', class: 'pm-ban v', onclick: () => { const S0 = permCached(p || planOfRoom(code)); permVSheet(S0 && S0.own && S0.own.nm || ''); } }, el('b', { text: '👁 구경하는 중' }), el('span', { text: '일행이 올린 사진을 볼 수 있어요 · 대화는 일행만 ›' })) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
+      V && trLoginNeed(p || planOfRoom(code)) && !permIsV0(p || planOfRoom(code)) ? trLoginBan(p || planOfRoom(code)) : V ? el('button', { type: 'button', class: 'pm-ban v', onclick: () => { const S0 = permCached(p || planOfRoom(code)); permVSheet(S0 && S0.own && S0.own.nm || ''); } }, el('b', { text: '👁 구경하는 중' }), el('span', { text: '일행이 올린 사진을 볼 수 있어요 · 대화는 일행만 ›' })) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
         el('div', { style: 'flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center' }, el('span', { class: 'sub', text: `함께하는 사람 ${pp.size}명${[...pp.values()].filter(v => !v).length ? ` (이름 안 적은 ${[...pp.values()].filter(v => !v).length}명 포함)` : ''}` }),
           ...[...pp.keys()].map(k => el('span', { style: 'display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#4E5968' }, trDot(k, pp.get(k)), nmOf(k) + (k === me ? '(나)' : ''))),
           S.err ? el('span', { class: 'sub', style: 'color:#C2410C', text: '⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' }) : null),
@@ -11551,7 +11551,28 @@ var PERM_SEE = ['일정과 지도', '여행 정보와 날씨', '일행이 올린
 function permScope() { const col = (ok, t, L) => el('div', { class: 'pm-sc ' + (ok ? 'ok' : 'no') }, el('b', { text: t }), ...L.map(x => el('div', { text: (ok ? '✓ ' : '✕ ') + x })));
   return el('div', { class: 'pm-scw' }, col(1, '👁 구경도 보는 것', PERM_SEE), col(0, '🔒 일행만 보는 것', PERM_HIDE)); }
 function permVSheet(nm) { return labSheet('👁 구경하는 중이에요', el('div', { class: 'dt', style: 'margin-bottom:10px', text: `함께 가는 사람 목록에 없는 이름으로 들어와서 보기만 할 수 있어요.${nm ? ` 일행이 되려면 ${nm} 님께 말해 주세요.` : ''}` }), permScope()); }
-function permIsV(p) { if (!p) return false; const S = permCached(p); if (S && S.own && S.perm) return S.own.by !== trMe() && !!permOf(S, trMe()).v; return !!ls.get('planV:' + p.id, 0) && !(p.room && p.room.mk); }   // 아직 권한을 못 받았으면 들어올 때 남긴 표시로
+// 판 -333 (2026-11-22 사용자 '웹앱도 무조건 카카오 or 구글로 로그인하게 하면 어떨까?' → '그래 그러면 여행 멤버는 무조건 로그인' · '웹앱이든 그냥 앱이든'):
+//   일행(대화·위치·일정 고치기·AI)은 카카오나 구글 로그인을 한 사람만 · 로그인 안 했으면 구경(일정·사진만) + '로그인하면 일행이 돼요'
+//   같은 계정이면 폰 웹·앱·PC가 한 사람(판 -329 tripMe). 방 주인 기기는 그대로 · 혼자 기록·공유 링크 보기는 로그인 없이
+function trLoggedIn() { return IN_NATIVE ? !!(ls.get('cloudRt', null) || {}).uid : !!cloudUser || (!!ls.get('cloudOn', false) && !!ls.get('cloudUid', '')); }
+function trLoginNeed(p) { if (!p || !p.room || !p.room.code) return false; const S = permCached(p);
+  if (S && S.own) { if (S.own.by === trMe()) return false; } else if (p.room.mk) return false;
+  return !trLoggedIn(); }
+function trLoginSheet(p) {
+  const EN = planEN(p), t0 = Date.now();
+  const go = kind => { ls.set('cloudOn', true); cloudWatch(); cloudLogin(kind); };
+  const gb = el('button', { class: 'btn line full', onclick: () => go('google') }, el('b', { text: 'G', style: 'font-family:Arial,sans-serif;font-size:18px' }), EN ? ' Sign in with Google' : ' 구글로 로그인');
+  const bg = labSheet(EN ? '🔒 Sign in to join the group' : '🔒 일행은 로그인해요',
+    el('div', { class: 'dt', style: 'margin-bottom:10px', text: EN ? 'Sign in once to chat, share location and edit the plan with the group. Your phone, app and computer become one person. Without signing in you can still view the plan and photos.' : '한 번만 로그인하면 일행과 대화·위치·일정 고치기를 함께 해요. 휴대폰 웹·앱·컴퓨터가 한 사람이 돼요. 로그인 안 하면 일정과 사진만 볼 수 있어요.' }),
+    kakaoBtn(() => go('kakao'), EN ? 'Sign in with Kakao' : '카카오로 로그인'), ...(IN_KAKAO ? [] : [gb]));
+  const done = () => { if (!trLoggedIn() || cloudBusy || ((ls.get('cloudLast', null) || {}).at || 0) < t0) return; document.removeEventListener('md-cloud', done); toastLater(EN ? '✅ Signed in · you are in the group' : '✅ 로그인했어요 · 이제 일행이에요'); location.reload(); };
+  document.addEventListener('md-cloud', done);
+  return bg;
+}
+function trLoginBan(p) { const EN = planEN(p);
+  return el('button', { type: 'button', class: 'pm-ban v', onclick: () => trLoginSheet(p) }, el('b', { text: EN ? '🔒 Sign in to join the group' : '🔒 로그인하면 일행이 돼요' }), el('span', { text: EN ? 'Now you can view the plan and photos only ›' : '지금은 일정과 사진만 보여요 · 카카오로 한 번이면 돼요 ›' })); }
+function permIsV(p) { return permIsV0(p) || trLoginNeed(p); }   // 판 -333: 일행 자리여도 로그인 안 했으면 구경
+function permIsV0(p) { if (!p) return false; const S = permCached(p); if (S && S.own && S.perm) return S.own.by !== trMe() && !!permOf(S, trMe()).v; return !!ls.get('planV:' + p.id, 0) && !(p.room && p.room.mk); }   // 아직 권한을 못 받았으면 들어올 때 남긴 표시로
 async function permSync(p, force) {
   if (!p || !p.room || !p.room.code) return null;
   const R = await trRoom(p.room.code), me = trMe(), CK = 'tripPermC:' + p.room.code;
@@ -11648,6 +11669,7 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
   return bg;
 }
 function permLine(p, rd) {   // 계획 화면 맨 위 작은 줄: 주인 = 새로 들어온 사람 · 일행 = 내 권한
+  if (trLoginNeed(p) && !permIsV0(p)) return trLoginBan(p);   // 판 -333: 일행 자리인데 로그인만 안 한 사람(목록에 없는 이름은 그대로 구경 안내)
   const S = permCached(p), EN0 = planEN(p);
   const vSheet = permVSheet;
   const vBan = nm => el('button', { type: 'button', class: 'pm-ban v', onclick: () => vSheet(nm) }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중' }), el('span', { text: EN0 ? `Plan, photos and group location · chat, costs and bookings are for the group only ›` : `일정·사진·일행 위치만 보여요 · 대화·경비·예약은 일행만 ›` }));   // 판 -320 · 판 -324: 누르면 보는 것 / 일행만 보는 것

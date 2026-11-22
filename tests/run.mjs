@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne'];
+const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -526,13 +526,13 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   const prep = await page.evaluate(() => document.body.innerText);
   ok(!/함께 가는 사람|여행 경비|예약 · 항공권|체크리스트/.test(prep), '구경에게 준비·정보의 일행 것(함께 가는 사람·경비·예약·체크리스트)이 보여요');
   // 일행 쪽: 준비·정보에 '🔒 일행만 보는 정보' 묶음, 채팅 칸에 '일행만 봐요'
-  await page.evaluate(() => { localStorage.setItem('planV:pview1', '0'); localStorage.setItem('planMe:pview1', '"m1"'); localStorage.setItem('nick', '"성식"'); });
+  await page.evaluate(() => { localStorage.setItem('planV:pview1', '0'); localStorage.setItem('planMe:pview1', '"m1"'); localStorage.setItem('nick', '"성식"'); localStorage.setItem('cloudOn', 'true'); localStorage.setItem('cloudUid', '"uidTEST"'); });   // 판 -333: 일행은 로그인한 사람
   await page.goto(BASE + '?plan=1&p=pview1'); await sleep(1500);
   await page.click('.tv-bar button:has-text("준비·정보")'); await sleep(500);
   ok(/🔒 일행만 보는 정보/.test(await page.evaluate(() => document.body.innerText)), "일행 준비·정보에 '일행만 보는 정보' 묶음이 없어요");
   await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(1500);
   ok(/일행만 봐요/.test(await page.$eval('.tr-in', t => t.placeholder)), "일행 채팅 칸에 '일행만 봐요'가 없어요");
-  await page.evaluate(() => { localStorage.setItem('planV:pview1', '1'); localStorage.setItem('planMe:pview1', '"v"'); localStorage.setItem('nick', '"옆집 아저씨"'); });
+  await page.evaluate(() => { localStorage.setItem('planV:pview1', '1'); localStorage.setItem('planMe:pview1', '"v"'); localStorage.setItem('nick', '"옆집 아저씨"'); localStorage.setItem('cloudOn', 'false'); });
   await page.goto(BASE + '?plan=1&p=pview1&room=1'); await sleep(2000); noErr(page, '구경 일행 채팅');
   const btns = await page.$$eval('button', bs => bs.map(b => b.textContent));
   ok(!btns.some(x => /💬 대화|📍 위치|보내기|사진 올리기|일행 초대/.test(x)), '구경에게 대화·위치·보내기·올리기·초대가 보여요: ' + btns.filter(x => /대화|위치|보내기|올리기|초대/.test(x)).join(','));
@@ -600,6 +600,28 @@ await test('일행 지도 · 같은 사람은 한 번만 (웹·앱·PC를 오가
   });
   ok(JSON.stringify(r) === JSON.stringify(['app222', 'mom333', 'nowme1234x']), '같은 사람이 여러 번 보임 ' + JSON.stringify(r));
   noErr(page, '일행 지도 한 사람');
+});
+
+await test('여행 일행은 로그인해야 · 안 하면 구경 (판 -333)', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(() => {
+    localStorage.setItem('tripMe', '"memb1234xx"');
+    localStorage.setItem('tripPermC:tcode1', JSON.stringify({ own: { by: 'owner1234x', nm: '성식' }, perm: { by: 'owner1234x', m: {}, def: { r: 1, w: 1, ai: 0 } } }));
+    const p = { id: 'pl1', name: '장가계', it: [], room: { code: 'tcode1' }, mem: [{ n: '유진' }] };
+    localStorage.setItem('nick', '"유진"');
+    const a = [__T.trLoginNeed(p), __T.permIsV(p), __T.permIsV0(p)];
+    localStorage.setItem('cloudOn', 'true'); localStorage.setItem('cloudUid', '"uidABCD"');
+    const b = [__T.trLoginNeed(p), __T.permIsV(p)];
+    localStorage.setItem('cloudOn', 'false'); localStorage.setItem('tripMe', '"owner1234x"');
+    const c = [__T.trLoginNeed(p), __T.permIsV(p)];
+    const solo = __T.trLoginNeed({ id: 'x', it: [] });
+    return { a, b, c, solo };
+  });
+  ok(r.a[0] === true && r.a[1] === true && r.a[2] === false, '로그인 안 한 일행이 구경이 아님 ' + JSON.stringify(r));
+  ok(r.b[0] === false && r.b[1] === false, '로그인한 일행이 아직 구경 ' + JSON.stringify(r));
+  ok(r.c[0] === false && r.c[1] === false, '방 주인 기기가 로그인을 요구받음 ' + JSON.stringify(r));
+  ok(r.solo === false, '일행 방 없는 계획에 로그인을 요구함');
+  noErr(page, '일행 로그인');
 });
 
 await test('계획 사진 주소가 다른 기기로 감 · 이미 있는 사진은 안 바뀜 (판 -324)', async page => {
