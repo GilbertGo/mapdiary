@@ -326,6 +326,24 @@ await test('사진으로 지난 여행 만들기', async page => {
   noErr(page, '사진으로 여행 만들기');
 });
 
+// 판 -344: 인천 출발(서울 시간)·스페인 날이 섞인 여행은 첫날·끝날을 그날 시간대로
+await test('나라를 오간 여행 n박 m일', async page => {
+  await page.goto(BASE + '?my=1');
+  await page.evaluate(() => {
+    const A = 'album_tzmix1', d1 = 'walk_tzmix001', d2 = 'walk_tzmix002', set = (k, v) => localStorage.setItem(k, JSON.stringify(v)), t = s => new Date(s).getTime();
+    set('track:' + d1, [[37.53, 126.63, t('2018-10-03T05:00:00+09:00')], [37.45, 126.44, t('2018-10-03T19:00:00+09:00')]]); set('walkTz:' + d1, 'Asia/Seoul');
+    set('track:' + d2, [[42.6, -5.57, t('2018-10-04T08:00:00+02:00')], [42.55, -5.7, t('2018-10-04T15:00:00+02:00')]]); set('walkTz:' + d2, 'Europe/Madrid');
+    for (const d of [d1, d2]) { set('walkMode:' + d, 'travel'); set('walkAlbum:' + d, A); }
+    set('walkMode:' + A, 'travel'); set('albums', [{ id: A, name: '섞인 시간대', mode: 'travel', days: [d2, d1], at: 1 }]);
+  });
+  page.errs = [];
+  await page.goto(BASE + '?my=1&t=album_tzmix1'); await sleep(2500);
+  const b = await page.innerText('body');
+  ok(/1박 2일/.test(b), '인천 10/3 새벽 출발~레온 10/4는 1박 2일: ' + (b.match(/\d+박 \d+일/) || [''])[0]);
+  ok(/10월 3일/.test(b), '날마다 첫날은 서울 날짜 10월 3일');
+  noErr(page, '섞인 시간대 여행');
+});
+
 // 판 -343: 차·비행기를 탄 기록은 지도에 👣·🚗·✈ / 걷기만 한 기록엔 안 그림
 await test('지도 길 표시: 발자국·차·비행기', async page => {
   await page.goto(BASE + '?my=1'); await sleep(1200);
