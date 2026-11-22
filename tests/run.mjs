@@ -319,6 +319,20 @@ await test('사진으로 지난 여행 만들기', async page => {
   ok(await page.evaluate(async id => localStorage.getItem('track:' + id) == null && (await __T.photoList(id)).length === 0, d2), '지운 2일차가 되살아났어요');
   // 판 -342: 비행기(인천→마드리드)는 길 찾기를 묻지 않고 곧은 줄
   ok(await page.evaluate(async () => { const st = {}; const r = await __T.ptRoute({ lat: 37.46, lng: 126.44, ts: 0 }, { lat: 40.47, lng: -3.57, ts: 13 * 3600000 }, st); return r === null && !st.off; }), '비행기 구간은 길 찾기 없이 곧은 줄이어야 해요');
+  // 판 -346: 같은 이름으로 나눠 넣으면 한 여행에 이어 붙고, 같은 날이면 길을 다시 그려요
+  const r4 = await page.evaluate(async () => {
+    const jpg = async () => { const cv = document.createElement('canvas'); cv.width = 32; cv.height = 24; return new File([await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8))], 'y.jpg', { type: 'image/jpeg' }); };
+    const P = (n, d, h, lat, lng) => ({ name: n, wall: [2025, 1, d, h, 0, 0], off: '+08:00', lat, lng });
+    const b1 = [P('h1.jpg', 9, 10, 22.30, 114.17), P('h2.jpg', 9, 12, 22.28, 114.16)], b2 = [P('h3.jpg', 9, 15, 22.27, 114.15), P('h4.jpg', 10, 10, 22.29, 114.17), P('h5.jpg', 10, 12, 22.31, 114.18)];
+    for (const x of [...b1, ...b2]) x.f = await jpg();
+    const a = await __T.ptMake(b1, '진호와 홍콩', null), b = await __T.ptMake(b2, '진호와 홍콩', null);
+    const al = JSON.parse(localStorage.getItem('albums')).filter(x => x.name === '진호와 홍콩');
+    const d1 = al[0].days.find(id => JSON.parse(localStorage.getItem('track:' + id))[0][2] < Date.UTC(2025, 0, 9, 12));
+    return { same: a.al === b.al, n: al.length, days: al[0].days.length, more: b.more, ph1: (await __T.photoList(d1)).length, last: __T.trackLoad(d1).at(-1).slice(0, 2), names: al[0].days.map(id => JSON.parse(localStorage.getItem('trackName:' + id))).sort() };
+  });
+  ok(r4.same && r4.n === 1 && r4.days === 2 && r4.more, '나눠 넣어도 한 여행이어야 해요: ' + JSON.stringify(r4));
+  ok(r4.ph1 === 3 && r4.last[0] === 22.27, '첫날은 사진 3장이고 길이 세 번째 사진까지 이어져야 해요: ' + JSON.stringify(r4));
+  ok(r4.names.join() === '진호와 홍콩 1일차,진호와 홍콩 2일차', '날 이름이 날짜 차례: ' + r4.names);
   // 위치 없는 사진뿐이면 만들지 않고 까닭을 알려요
   const r3 = await page.evaluate(() => __T.ptMake([{ name: 'z.jpg', wall: [2018, 1, 1, 9, 0, 0], lat: null, lng: null }], '', null));
   ok(r3.err === 'noloc', '위치 없는 사진만이면 noloc: ' + JSON.stringify(r3));
