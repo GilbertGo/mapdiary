@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-329-tripme';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-330-tripme2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "같은 계정으로 로그인한 PC와 휴대폰이 여행 일행에서 한 사람이 돼요 · PC에서도 일행 채팅과 AI 묻기와 초대가 보여요 · 일행 지도에 내가 두 번 나오던 것을 고쳤어요";
+const UI_NOTES = "같은 계정으로 로그인한 PC와 휴대폰이 여행 일행에서 한 사람이 됐는지 개발 쪽이 확인할 수 있게 했어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4937,7 +4937,7 @@ async function tripMeSync(c) {
 // 판 -328 (2026-11-22 같은 카카오 계정인데 PC는 이름 '길벗'·계획 5, 폰은 '꼬'·계획 2 — 어느 쪽 맞추기가 왜 안 되는지 알 수 없었음):
 //   맞추기가 끝날 때마다(된 때도) 이 기기 상태를 rooms/mpderr/s/{기기 번호}에 남겨 개발 쪽이 견줘 봐요. 숫자·판·계정 끝 4자만(계획 이름·위치·사진은 안 넣음)
 function cloudDiag(o) { try { if (LAB_QUIET || !navigator.onLine) return; const P = planAll();
-  fsPut(`rooms/mpderr/s/${uid}`, JSON.stringify(Object.assign({ id: uid, v: UI_VER, at: Date.now(), ua: navigator.userAgent.slice(0, 120), app: IN_NATIVE ? 1 : 0, acct: '#' + String(cloudUser && cloudUser.uid || '').slice(-4).toUpperCase(), plans: P.length, rooms: P.filter(p => p.room && p.room.code).length, gone: Object.keys(ls.get('planGone', {}) || {}).length, myAt: ls.get('myAt', 0) || 0, nickLen: String(ls.get('nick', '') || '').length }, o))).catch(() => {}); } catch {} }
+  fsPut(`rooms/mpderr/s/${uid}`, JSON.stringify(Object.assign({ id: uid, v: UI_VER, at: Date.now(), ua: navigator.userAgent.slice(0, 120), app: IN_NATIVE ? 1 : 0, acct: '#' + String(cloudUser && cloudUser.uid || '').slice(-4).toUpperCase(), plans: P.length, rooms: P.filter(p => p.room && p.room.code).length, gone: Object.keys(ls.get('planGone', {}) || {}).length, me: String(ls.get('tripMe', '') || '').slice(-4), meOwn: Object.keys(localStorage).filter(k => k.startsWith('tripPermC:')).reduce((n, k) => { const S = ls.get(k, null); return n + (S && S.own && S.own.by === ls.get('tripMe', '') ? 1 : 0); }, 0), meOld: (ls.get('tripMeOld', []) || []).length, myAt: ls.get('myAt', 0) || 0, nickLen: String(ls.get('nick', '') || '').length }, o))).catch(() => {}); } catch {} }
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
   cloudProgSet('맞추는 중… 목록 받는 중');
@@ -5023,7 +5023,7 @@ async function cloudSync(quiet) {
     ls.set('cloudSig', sig); ls.set('cloudPh', phSent); ls.set('cloudAt', Date.now());
     const mine = [...local].filter(id => id !== live), inCloud = mine.filter(id => sig[id]).length;
     ls.set('cloudLast', { at: Date.now(), ok: 1, n: mine.length, c: inCloud, bad, why: why.slice(0, 40), ph: Object.keys(phSent).length });
-    cloudDiag({ ok: 1, oneKB: Math.round(oneLen / 1024), oneSame: mine1 === oneR ? 1 : 0, remotePlans: Array.isArray(one.plans) ? one.plans.length : -1, remoteMeAt: one.me && +one.me.at || 0, up, down, bad });
+    cloudDiag({ ok: 1, oneKB: Math.round(oneLen / 1024), oneSame: mine1 === oneR ? 1 : 0, remotePlans: Array.isArray(one.plans) ? one.plans.length : -1, remoteMeAt: one.me && +one.me.at || 0, cMe: one.tripMe && String(one.tripMe.id || '').slice(-4) || '', cOwn: one.tripMe && +one.tripMe.own || 0, tmTook, up, down, bad });
   } catch (e) { ls.set('cloudSig', sig); ls.set('cloudPh', phSent); cloudBusy = false;
     cloudDiag({ ok: 0, stage, why: String(e && e.message || e).slice(0, 80), oneKB: Math.round(oneLen / 1024) });
     try { window.mpdErr && window.mpdErr(`☁ 클라우드 맞추기 못 함 · ${stage} · ${String(e && e.message || e).slice(0, 80)} · 모음 ${Math.round(oneLen / 1024)}KB · 계획 ${planAll().length} · 계정 #${String(cloudUser && cloudUser.uid || '').slice(-4).toUpperCase()}`); } catch {}
