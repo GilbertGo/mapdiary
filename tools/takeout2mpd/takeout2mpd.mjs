@@ -66,15 +66,33 @@ function sideOf(f) {   // 사진 파일의 짝 .json: 'IMG(1).jpg'는 제목 'IM
 const geo = g => g && Number.isFinite(+g.latitude) && Number.isFinite(+g.longitude) && !(+g.latitude === 0 && +g.longitude === 0) ? [+(+g.latitude).toFixed(6), +(+g.longitude).toFixed(6)] : null;
 
 const exifr = (await import('exifr')).default;
+const EXIF_TZ = args['exif-tz'] || TZ;
+// 'YYYY:MM:DD HH:MM:SS'(그 시간대 벽시계) → UTC ms
+function wallToTs(s, off, tz) {
+  const m = /^(\d{4}):(\d\d):(\d\d)[ T](\d\d):(\d\d):(\d\d)/.exec(s || ''); if (!m) return 0;
+  const asUtc = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+  const o = /^([+-])(\d\d):?(\d\d)$/.exec(off || ''); if (o) return asUtc - (o[1] === '-' ? -1 : 1) * (o[2] * 60 + +o[3]) * 60000;
+  const offOf = t => { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(new Date(t))) p[x.type] = +x.value;
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - t; };
+  let t = asUtc - offOf(asUtc); t = asUtc - offOf(t); return t;
+}
+function gpsOf(ex) {
+  const dms = v => Array.isArray(v) ? v[0] + v[1] / 60 + v[2] / 3600 : +v;
+  let la = ex.latitude, lo = ex.longitude;
+  if (!Number.isFinite(la) && ex.GPSLatitude != null) { la = dms(ex.GPSLatitude) * (ex.GPSLatitudeRef === 'S' ? -1 : 1); lo = dms(ex.GPSLongitude) * (ex.GPSLongitudeRef === 'W' ? -1 : 1); }
+  return Number.isFinite(la) && Number.isFinite(lo) && !(la === 0 && lo === 0) ? [+la.toFixed(6), +lo.toFixed(6)] : null;
+}
 const media = [], seen = new Set(), skipped = { noTime: [], video: 0, dup: 0 };
 for (const f of files) {
   if (!IMG.test(f) && !VID.test(f)) continue;
   const j = sideOf(f); let ts = j ? +j.photoTakenTime.timestamp * 1000 : 0, ll = j ? geo(j.geoData) || geo(j.geoDataExif) : null, src = j ? 'json' : '';
-  if (!ts || !ll) { try { const ex = await exifr.parse(f, { gps: true, pick: ['DateTimeOriginal', 'CreateDate', 'latitude', 'longitude', 'OffsetTimeOriginal'] }); if (ex) {
-    if (!ts && ex.DateTimeOriginal instanceof Date) { ts = ex.DateTimeOriginal.getTime(); src = 'exif'; }
-    if (!ll && Number.isFinite(ex.latitude)) ll = [+ex.latitude.toFixed(6), +ex.longitude.toFixed(6)]; } } catch {} }
+  if (!ts || !ll) { try { const ex = await exifr.parse(f, { gps: true, reviveValues: false }); if (ex) {
+    // EXIF 찍은 시각은 시간대 없는 '그곳 시계' 글자예요 → OffsetTimeOriginal이 있으면 그것으로, 없으면 --exif-tz(기본 --tz) 시간대로 읽어요
+    //   GPS 시각(GPSTimeStamp)은 안 써요: 2018 산티아고 갤럭시 노트8 사진은 GPS 시각이 구글 .json 시각보다 1시간씩 어긋났어요(서머타임). 파일 이름도 저장한 때라 안 써요
+    if (!ts && typeof ex.DateTimeOriginal === 'string') { ts = wallToTs(ex.DateTimeOriginal, ex.OffsetTimeOriginal, EXIF_TZ); if (ts) src = 'exif'; }
+    if (!ll) { const g = gpsOf(ex); if (g) ll = g; } } } catch {} }
   if (!ts) { skipped.noTime.push(path.relative(args.takeout, f)); continue; }
-  const key = path.basename(f).replace(/\(\d+\)(?=\.)/, '') + '|' + ts;   // 앨범 폴더와 'Photos from 2018' 폴더에 같은 사진이 두 번 들어 있어요
+  const key = path.basename(f).replace(/\(\d+\)(?=\.)/, '').replace(/-(edited|수정됨)(?=\.)/i, '') + '|' + Math.round(ts / 1000);   // '-edited'·'(0)' 사본도 한 장으로   // 앨범 폴더와 'Photos from 2018' 폴더에 같은 사진이 두 번 들어 있어요
   if (seen.has(key)) { skipped.dup++; continue; } seen.add(key);
   if (VID.test(f)) { skipped.video++; continue; }   // 동영상은 아직 안 넣어요(백업 파일이 너무 커져서)
   media.push({ f, ts, ll, src, title: j ? j.title : path.basename(f) });
@@ -90,7 +108,14 @@ if (!from || !to) {
   if (!near.length) { console.error('길 25km 안에서 찍은 사진이 없어요. --from/--to로 날짜를 주세요'); process.exit(1); }
   from = from || dayOf(near[0].ts); to = to || dayOf(near[near.length - 1].ts);
 }
-const trip = media.filter(m => { const d = dayOf(m.ts); return d >= from && d <= to; });
+let trip = media.filter(m => { const d = dayOf(m.ts); return d >= from && d <= to; });
+// 첫날 앞쪽·마지막 날 뒤쪽에서 길 25km 밖 사진(출발지 공항·다음 여행지로 가는 길)은 빼요 — 길이 있을 때만
+if (route && trip.length) {
+  const far = m => m.ll && snap(...m.ll).d > 25000, d0 = dayOf(trip[0].ts), d1 = dayOf(trip[trip.length - 1].ts); let cut = 0;
+  while (trip.length && dayOf(trip[0].ts) === d0 && (far(trip[0]) || !trip[0].ll && trip.slice(1).find(x => x.ll && dayOf(x.ts) === d0) && far(trip.slice(1).find(x => x.ll)))) { trip.shift(); cut++; }
+  while (trip.length && dayOf(trip[trip.length - 1].ts) === d1 && far(trip[trip.length - 1])) { trip.pop(); cut++; }
+  if (cut) console.log(`첫날·마지막 날 길 25km 밖 사진 ${cut}장을 뺐어요`);
+}
 const days = new Map(); for (const m of trip) { const d = dayOf(m.ts); if (!days.has(d)) days.set(d, []); days.get(d).push(m); }
 
 // ── 하루 길 만들기 ──

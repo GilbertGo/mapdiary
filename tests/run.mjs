@@ -275,6 +275,25 @@ await test('테이크아웃 사진 여행: 백업으로 들어가고 · 여행 �
   ok(q.ph2 === 0, '지운 2일차 사진이 되살아났어요: ' + q.ph2);
 });
 
+// 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
+await test('여러 날 여행 n박 m일은 현지 날짜로', async page => {
+  await page.goto(BASE + '?my=1');
+  await page.evaluate(() => {
+    const A = 'album_tztest1', d1 = 'walk_tzday001', d2 = 'walk_tzday002', set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    const t = (s) => new Date(s).getTime();
+    set('track:' + d1, [[42.6, -5.57, t('2018-10-05T08:00:00+02:00')], [42.55, -5.7, t('2018-10-05T15:00:00+02:00')]]);
+    set('track:' + d2, [[42.5, -5.8, t('2018-10-06T08:00:00+02:00')], [42.47, -5.88, t('2018-10-06T23:00:00+02:00')]]);
+    for (const d of [d1, d2]) { set('walkMode:' + d, 'travel'); set('walkAlbum:' + d, A); set('walkTz:' + d, 'Europe/Madrid'); }
+    set('walkMode:' + A, 'travel'); set('albums', [{ id: A, name: '시간대 시험', mode: 'travel', days: [d1, d2], at: 1 }]);
+  });
+  page.errs = [];
+  await page.goto(BASE + '?my=1&t=album_tztest1'); await sleep(2500);
+  noErr(page, '여행 화면');
+  const b = await page.innerText('body');
+  ok(/1박 2일/.test(b) && !/2박 3일/.test(b), '마드리드 10/5~10/6 여행은 1박 2일이어야 해요: ' + (b.match(/\d+박 \d+일/) || [''])[0]);
+  ok(/10월 5일 \(금\) ~ 10월 6일 \(토\)/.test(b), '날짜 범위가 현지 날짜(10월 5일 ~ 10월 6일)여야 해요');
+});
+
 // ─── 11. 백업을 불러와도 지운 사진·기록이 안 살아남 ───
 await test('백업 불러오기: 지운 사진·기록은 안 살아남 · 남은 건 그대로', async page => {
   const t = await seed(page);
