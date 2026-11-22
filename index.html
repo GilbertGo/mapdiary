@@ -1769,7 +1769,7 @@ function albumInfo(aid) {
   const s = tzAt(tr[0][2], tz1((byT[0] || {}).id || a.days[0])), e = tzAt(tr[tr.length - 1][2], tz1((byT[byT.length - 1] || {}).id || a.days[0]));
   const day0 = new Date(s.getFullYear(), s.getMonth(), s.getDate()), day1 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
   const nights = Math.round((day1 - day0) / 864e5), wd = d => '일월화수목금토'[d.getDay()];
-  const range = nights ? `${s.getFullYear()}년 ${s.getMonth() + 1}월 ${s.getDate()}일 (${wd(s)}) ~ ${e.getMonth() !== s.getMonth() ? e.getMonth() + 1 + '월 ' : ''}${e.getDate()}일 (${wd(e)})` : null;
+  const range = nights ? `${s.getFullYear()}년 ${s.getMonth() + 1}월 ${s.getDate()}일 (${wd(s)}) ~ ${e.getMonth() + 1}월 ${e.getDate()}일 (${wd(e)})` : null;
   const firstP = ls.get('walkPlaces:' + a.days[0], {}), lastP = ls.get('walkPlaces:' + a.days[a.days.length - 1], {}), own = ls.get('walkPlaces:' + aid, {});
   return { name: a.name, startPlace: own.start || firstP.start || '출발 지점', meetPlace: own.end || lastP.end || '도착 지점', startAt: tr[0][2], meetAt: tr[tr.length - 1][2],
     route: null, phase: 'go', dateText: range, durText: nights ? `${nights}박 ${nights + 1}일` : null, days: a.days.length };
@@ -3646,7 +3646,7 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-344-albumtz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-345-albumtz2';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
 const UI_NOTES = "나라를 오간 여행은 출발한 날과 돌아온 날을 그곳 시간으로 세어 몇 박 며칠이 바르게 나와요";
 window.MPD_VER = UI_VER;
@@ -15360,7 +15360,7 @@ async function viewMyOne(t) {
   const spots = spotsOf(t), wp = ls.get('walkPlaces:' + t, {});
   { const z = ls.get('walkTz:' + (x.album ? (albumGet(t)?.days || [])[0] : t), null); VIEW_TZ = z && typeof z === 'string' && z !== devTz() ? z : null; }   // 판 -336 찍은 곳 시간
   const DOW = '일월화수목금토', d = tzD(info.startAt), d1 = tzD(info.meetAt);
-  const dateText = VIEW_TZ && x.album ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]}) ~ ${d1.getMonth() + 1}월 ${d1.getDate()}일 (${DOW[d1.getDay()]})`
+  const dateText = x.album && info.dateText ? info.dateText : VIEW_TZ && x.album ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]}) ~ ${d1.getMonth() + 1}월 ${d1.getDate()}일 (${DOW[d1.getDay()]})`
     : info.dateText || `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
   const mapEl = el('div', { class: 'mapbox', style: 'height:40vh;min-height:250px' }), legEl = el('div'), pickEl = el('div', { class: 'card vw-pick', style: 'display:none' });
   const agBox = againBox(t, { name: info.name });
