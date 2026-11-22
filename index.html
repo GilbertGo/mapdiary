@@ -3646,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-347-ptmove';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-348-ptmsg';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "+ 기록하기에서 지난 날도 기록해요 (사진이나 다른 앱 기록 파일로)";
+const UI_NOTES = "지난 날 기록하기에서 사진 위치를 못 읽을 때 까닭과 할 일을 바르게 알려 줘요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14575,7 +14575,10 @@ function ptOpen() {
   const prog = t => { msg.textContent = t; };
   async function run(items, rng) {
     const r = await ptMake(items, iName.value, rng, prog); busy = false;
-    if (r.err === 'noloc') return prog(app ? '사진에 위치 정보가 없어요. 사진을 볼 때 위치도 볼 수 있게 허락했는지 확인해 주세요.' : '사진에 위치 정보가 없어요. 휴대폰 웹에서는 안드로이드가 사진 위치를 지우고 넘겨줘요. MPD 앱이나 PC에서 해 주세요.');
+    if (r.err === 'noloc') { // 판 -348 (사용자 캡처 '메세지 읽어봐' — 예전 앱에서 사진을 400장 골랐는데 '휴대폰 웹에서는…'이라고 엉뚱하게 안내했음): 앱·웹·예전 앱을 나눠 바르게
+      msg.replaceChildren(app ? '사진에 위치 정보가 없어요. 휴대폰 설정 → 애플리케이션 → MPD → 권한 → 사진에서 위치도 볼 수 있게 허락해 주세요.'
+        : window.MD_NATIVE ? el('span', {}, '이 앱 판에서는 안드로이드가 고른 사진의 위치를 지우고 넘겨줘서 기록을 못 만들어요. 새 앱을 깔면 날짜만 고르면 돼요: ', el('a', { href: 'https://github.com/GilbertGo/mapdiary/releases/latest/download/MPD.apk', text: '새 MPD 앱 받기' }))
+        : '사진에 위치 정보가 없어요. 휴대폰 웹(크롬)에서는 안드로이드가 사진 위치를 지우고 넘겨줘요. MPD 앱이나 PC에서 해 주세요.'); return; }
     if (r.err) return prog('그 기간에 찍은 사진이 없어요.');
     const more = [r.old ? `있던 날 ${r.old}일은 사진만 더했어요` : '', r.noLoc ? `위치 없는 날 ${r.noLoc}일은 뺐어요` : '', r.heic ? `못 여는 HEIC 사진 ${r.heic}장` : '', r.bad ? `못 읽은 사진 ${r.bad}장` : ''].filter(Boolean).join(' · ');
     toastLater(`'${r.name}' ${r.n}일을 ${r.more ? '이어 붙였어요' : '만들었어요'} · 사진 ${r.ph}장${more ? ' · ' + more : ''}`);
@@ -14604,7 +14607,10 @@ function ptOpen() {
     el('label', { class: 'f', for: 'pt-n' }, '여행 이름 (선택)', iName),
     app ? el('div', { class: 'two' }, el('label', { class: 'f', for: 'pt-f' }, '첫날', iFrom), el('label', { class: 'f', for: 'pt-t' }, '마지막 날', iTo)) : null,
     app ? el('button', { class: 'btn primary', text: '이 기간 사진으로 만들기', onclick: fromRange }) : null,
-    el('button', { class: 'btn ' + (app ? 'line' : 'primary'), text: app ? '사진 직접 고르기' : '사진 고르기', onclick: () => { if (!busy) inp.click(); } }),
+    // 판 -348: 예전 앱(사진첩 찾기 없음)은 고른 사진의 위치가 지워져 헛수고라 고르기 전에 새 앱을 먼저 안내
+    window.MD_NATIVE && !app ? el('div', { class: 'card', style: 'padding:12px 14px' }, el('b', { text: '새 앱이 필요해요' }), el('p', { class: 'sub', style: 'margin:4px 0 8px', text: '이 앱 판에서는 안드로이드가 사진 위치를 지우고 넘겨줘서 기록을 만들 수 없어요. 새 앱을 깔면 첫날과 마지막 날만 고르면 돼요.' }),
+      el('a', { class: 'btn primary full', href: 'https://github.com/GilbertGo/mapdiary/releases/latest/download/MPD.apk', text: '새 MPD 앱 받기' }))
+    : el('button', { class: 'btn ' + (app ? 'line' : 'primary'), text: app ? '사진 직접 고르기' : '사진 고르기', onclick: () => { if (!busy) inp.click(); } }),
     msg, inp,
     // 판 -347: 다른 앱 기록(GPX)도 지난 날 기록하기 안으로(내 MPD 맨 아래에서 옮김)
     (() => { const gi = gpxImportBtn().querySelector('input'); return el('button', { class: 'btn ghost small', style: 'align-self:center', onclick: () => { if (!busy) { sb.remove(); document.body.append(gi); gi.click(); } } }, '다른 앱 기록 파일(GPX)로'); })()));

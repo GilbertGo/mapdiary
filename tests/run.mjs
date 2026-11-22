@@ -292,6 +292,8 @@ await test('사진으로 지난 여행 만들기', async page => {
   await page.click('button:has-text("지난 날 기록하기")'); await sleep(400);
   ok(await page.isVisible('[aria-label="지난 날 기록하기"] >> text=사진 고르기'), '기록하기 → 지난 날 사진으로 기록하기 창이 떠야 해요');
   await page.evaluate(() => document.querySelector('.sheet-bg')?.remove());
+  // 판 -348: 예전 앱(MD_NATIVE인데 사진첩 찾기 없음)은 고르기 대신 새 앱 안내
+  ok(await page.evaluate(async () => { window.MD_NATIVE = 1; __T.ptOpen(); await new Promise(r => setTimeout(r, 200)); const t = document.querySelector('.sheet-bg').innerText; document.querySelector('.sheet-bg').remove(); delete window.MD_NATIVE; return /새 앱이 필요해요/.test(t) && !/사진 고르기/.test(t); }), '예전 앱에선 새 앱 안내가 나와야 해요');
   const mk = () => page.evaluate(async () => {
     const jpg = async c => { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48; const g = cv.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, 64, 48); return new File([await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8))], 'x.jpg', { type: 'image/jpeg' }); };
     const P = (n, d, h, m, lat, lng, c) => ({ name: n, wall: [2018, 10, d, h, m, 0], off: '+02:00', lat, lng, c });
