@@ -1,0 +1,7 @@
+{
+  "name": "mpd-takeout2mpd",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node takeout2mpd.mjs" },
+  "dependencies": { "sharp": "0.34.4", "exifr": "7.1.3" }
+}
