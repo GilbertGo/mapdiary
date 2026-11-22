@@ -572,6 +572,7 @@ html .rh3 .role.r3-bar,html[data-theme=sea] .rh3 .role.r3-bar{background:none!im
 .wk-bar{display:block;height:6px;border-radius:3px;background:var(--soft);margin-top:5px;overflow:hidden}.wk-bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .wk-gr.ok .wk-gi{color:#fff;background:var(--pine);border-radius:50%;font-size:14px;line-height:26px;height:26px}.wk-gr.ok .wk-gt span{color:var(--pine);font-weight:800}
 .fly-ic svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+.mode-ic{display:flex!important;align-items:center;justify-content:center;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .wk-dpin b{display:block;font-size:26px;line-height:34px;text-align:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
 .wk-g{font-size:15px;font-weight:800;color:var(--accent)}.wk-s{font-size:12px;color:var(--muted)}
 .r3-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1}
@@ -3083,10 +3084,25 @@ const RUN_STYLE = {
 };
 // 비행 구간 가운데에 ✈ (지도마다)
 function flyMarks(layer, runs) {
+  modeMarks(layer, runs);
   for (const r of runs) { if (r.k !== 'f' || r.pts.length < 2) continue;
     const P = r.pts, i = Math.floor(P.length / 2), a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
     const br = Math.atan2((b[1] - a[1]) * Math.cos(a[0] * Math.PI / 180), b[0] - a[0]) * 180 / Math.PI;
     L.marker(P[i], { interactive: false, icon: L.divIcon({ className: 'fly-ic', iconSize: [30, 30], iconAnchor: [15, 15], html: `<svg viewBox="0 0 24 24" width="26" height="26" style="transform:rotate(${br.toFixed(0)}deg)"><path d="${FLY_PATH}" fill="#0277BD" stroke="#fff" stroke-width="1.6" paint-order="stroke"/></svg>` }) }).addTo(layer); }
+}
+// 판 -343 (사용자 '걸어간 길은 발자국. 차로 간 길은 차. 비행경로는 비행기 넣어'): 걸은 조각 가운데 👣, 차 조각 가운데 🚗 (흰 동그라미).
+//   지도가 어지럽지 않게 전체 길이의 4%·300m 넘는 조각에만, 많으면 긴 것부터 12개까지. 걸은 길만 있는 기록(산행·러닝)은 안 그려요
+var FOOT_PATH = 'M8.6 2.2c1.6-.1 2.6 1.7 2.6 4.1 0 2.3-.9 4.5-2.4 4.6-1.5.1-2.6-2-2.6-4.3 0-2.5.9-4.3 2.4-4.4zM6.4 12.3l4.3-.4c.2 1.4.1 2.9-1.9 3.1-1.8.2-2.3-1.2-2.4-2.7zM15.4 7.2c1.5.1 2.4 1.9 2.4 4.4 0 2.3-1.1 4.4-2.6 4.3-1.5-.1-2.4-2.3-2.4-4.6 0-2.4 1-4.2 2.6-4.1zM13.3 17l4.3.4c-.1 1.5-.6 2.9-2.4 2.7-2-.2-2.1-1.7-1.9-3.1z';
+var CAR_PATH = 'M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z';
+function modeMarks(layer, runs) {
+  if (!runs.some(r => r.k === 'c' || r.k === 'f')) return;
+  const len = P => { let d = 0; for (let k = 1; k < P.length; k++) d += dist(P[k - 1][0], P[k - 1][1], P[k][0], P[k][1]); return d; };
+  const rs = runs.filter(r => (r.k === 'w' || r.k === 'c') && r.pts.length >= 2).map(r => ({ r, d: len(r.pts) })), tot = rs.reduce((a, x) => a + x.d, 0);
+  rs.filter(x => x.d >= 300 && x.d >= tot * 0.04).sort((a, b) => b.d - a.d).slice(0, 12).forEach(({ r, d }) => {
+    let acc = 0, at = r.pts[0]; for (let k = 1; k < r.pts.length; k++) { acc += dist(r.pts[k - 1][0], r.pts[k - 1][1], r.pts[k][0], r.pts[k][1]); if (acc >= d / 2) { at = r.pts[k]; break; } }
+    const c = r.k === 'c' ? '#4B5563' : '#E4572E';
+    L.marker(at, { interactive: false, icon: L.divIcon({ className: 'mode-ic', iconSize: [26, 26], iconAnchor: [13, 13], html: `<svg viewBox="0 0 24 24" width="16" height="16"><path d="${r.k === 'c' ? CAR_PATH : FOOT_PATH}" fill="${c}"/></svg>` }) }).addTo(layer);
+  });
 }
 var FLY_PATH = 'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';   // 위를 보는 비행기 그림 (지도·카드)
 // 같은 방식끼리 이어진 조각으로 나눠요: [{ k: 'w'|'c'|'g', car, pts: [[lat,lng], ...] }]
@@ -3628,9 +3644,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-342-carroute';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-343-modeicons';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진으로 만든 여행에서 차로 간 곳은 찻길을 따라 이어요";
+const UI_NOTES = "차나 비행기도 탄 기록은 지도에 걸어간 길 발자국, 차로 간 길 자동차, 비행 경로 비행기가 보여요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14471,14 +14487,14 @@ async function ptRoute(a, b, st) {
   const p = await ptAsk('car', a, b, st, 500, d * 2 + 2000); if (p) st.car = (st.car || 0) + 1; return p;
 }
 async function ptTrack(list, st = {}, prog = () => {}) {   // 위치 있는 사진을 시간 순으로 잇기: 걷는 길 또는 곧은 줄(100m·4분마다 점)
-  const tr = [], push = (la, ln, ts) => { const e = tr[tr.length - 1]; if (e && (ts <= e[2] || dist(e[0], e[1], la, ln) < 10)) return; tr.push([+la.toFixed(6), +ln.toFixed(6), Math.round(ts)]); };
+  const tr = [], push = (la, ln, ts, sh) => { const e = tr[tr.length - 1]; if (e && (ts <= e[2] || dist(e[0], e[1], la, ln) < 10)) return; tr.push(sh == null ? [+la.toFixed(6), +ln.toFixed(6), Math.round(ts)] : [+la.toFixed(6), +ln.toFixed(6), Math.round(ts), null, sh]); };
   const pts = list.filter(x => x.lat != null);
   for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[i + 1]; push(a.lat, a.lng, a.ts); if (!b) continue;
     const d = dist(a.lat, a.lng, b.lat, b.lng); if (d <= 30) continue;
     st.n = (st.n || 0) + 1; prog(`길 찾는 중 ${st.n}`);
-    const path = await ptRoute(a, b, st);
+    const c0 = st.car || 0, path = await ptRoute(a, b, st), sh = (st.car || 0) > c0 ? 0 : 1;   // 판 -343: 찻길 점은 흔들림 0(차), 걷는 길 점은 1(걷기) → 지도에 🚗·👣
     if (path) { st.road = (st.road || 0) + 1; const cum = [0]; for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + dist(path[k - 1][0], path[k - 1][1], path[k][0], path[k][1]));
-      const L = cum[cum.length - 1] || 1; for (let k = 1; k < path.length - 1; k++) push(path[k][0], path[k][1], a.ts + (b.ts - a.ts) * cum[k] / L); continue; }
+      const L = cum[cum.length - 1] || 1; for (let k = 1; k < path.length - 1; k++) push(path[k][0], path[k][1], a.ts + (b.ts - a.ts) * cum[k] / L, sh); continue; }
     const k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b.ts - a.ts) / 240000)));
     for (let s = 1; s < k; s++) { const r = s / k; push(a.lat + (b.lat - a.lat) * r, a.lng + (b.lng - a.lng) * r, a.ts + (b.ts - a.ts) * r); } }
   if (tr.length === 1) tr.push([tr[0][0], tr[0][1], tr[0][2] + 60000]);   // 위치 있는 사진이 한 장인 날도 지도에 점 하나로
