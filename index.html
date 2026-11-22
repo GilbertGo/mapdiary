@@ -1500,9 +1500,12 @@ const now = () => Date.now() + offset;
 var VIEW_TZ = null;
 function devTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; } }
 // ts를 VIEW_TZ의 그 시각처럼 읽히는 Date로(getHours·getDate가 현지 값). VIEW_TZ가 없으면 그냥 Date
-function tzD(ts) {
-  const d = new Date(ts); if (!VIEW_TZ) return d;
-  try { const o = {}; for (const p of new Intl.DateTimeFormat('en-US', { timeZone: VIEW_TZ, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(d)) o[p.type] = +p.value;
+function tzD(ts) { return tzAt(ts, VIEW_TZ); }
+// 판 -335: 여행 묶음(albumInfo)은 첫날 시간대로 날짜·n박 m일을 셈(목록·여행 화면이 같은 값)
+function recTz(id) { const z = ls.get('walkTz:' + id, null); return z && typeof z === 'string' && z !== devTz() ? z : null; }
+function tzAt(ts, tz) {
+  const d = new Date(ts); if (!tz) return d;
+  try { const o = {}; for (const p of new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(d)) o[p.type] = +p.value;
     return new Date(o.year, o.month - 1, o.day, o.hour, o.minute, o.second); } catch { return d; }
 }
 function fmtClock(ts) { const d = tzD(ts); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
@@ -1751,7 +1754,7 @@ function albumTrack(aid) {
 // 자랑 카드·목록용 여행 정보 (날짜 범위, n박 m일)
 function albumInfo(aid) {
   const a = albumGet(aid), tr = albumTrack(aid); if (!a || tr.length < 2) return null;
-  const s = new Date(tr[0][2]), e = new Date(tr[tr.length - 1][2]);
+  const z = recTz(a.days[0]), s = tzAt(tr[0][2], z), e = tzAt(tr[tr.length - 1][2], z);
   const day0 = new Date(s.getFullYear(), s.getMonth(), s.getDate()), day1 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
   const nights = Math.round((day1 - day0) / 864e5), wd = d => '일월화수목금토'[d.getDay()];
   const range = nights ? `${s.getFullYear()}년 ${s.getMonth() + 1}월 ${s.getDate()}일 (${wd(s)}) ~ ${e.getMonth() !== s.getMonth() ? e.getMonth() + 1 + '월 ' : ''}${e.getDate()}일 (${wd(e)})` : null;
@@ -3616,9 +3619,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-334-localtime';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-335-albumtz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 보기에서 시각과 날짜를 그 기록을 한 곳의 현지 시간으로 보여요 · 나라 밖 여행 기록은 돌아와서 봐도 그곳 시간 그대로예요 · 이제부터 하는 기록은 휴대폰 시간대를 같이 남겨요";
+const UI_NOTES = "여러 날 여행의 날짜와 몇 박 며칠도 그 여행을 한 곳의 현지 날짜로 세요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
