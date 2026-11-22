@@ -1638,7 +1638,7 @@ function albumDayList(aid) {
   if (ds.length < 2) return null;
   const DOW = '일월화수목금토';
   return el('div', { class: 'stack', style: 'gap:8px' }, el('b', { style: 'font-size:17px', text: '날마다' }),
-    ds.map((o, i) => { const d = tzAt(o.tr[0][2], z), wp = ls.get('walkPlaces:' + o.id, {}), M = modeOfT(o.id), st = trackStats(o.tr, M.car);
+    ds.map((o, i) => { const d = tzAt(o.tr[0][2], ls.get('walkTz:' + o.id, null) ? recTz(o.id) : z), wp = ls.get('walkPlaces:' + o.id, {}), M = modeOfT(o.id), st = trackStats(o.tr, M.car);
       const where = [wp.start, wp.end].filter(Boolean); const ww = where.length === 2 && where[0] === where[1] ? where[0] : where.join(' → ');
       return el('a', { class: 'n-row', href: `./?my=1&t=${encodeURIComponent(o.id)}` },
         el('span', { class: 'th', style: 'font-weight:800;font-size:15px;color:#1D9EC0', text: `${i + 1}일` }),
@@ -1764,7 +1764,9 @@ function albumTrack(aid) {
 // 자랑 카드·목록용 여행 정보 (날짜 범위, n박 m일)
 function albumInfo(aid) {
   const a = albumGet(aid), tr = albumTrack(aid); if (!a || tr.length < 2) return null;
-  const z = recTz(a.days[0]), s = tzAt(tr[0][2], z), e = tzAt(tr[tr.length - 1][2], z);
+  // 판 -344: 첫날 시작은 첫날 시간대, 끝은 마지막 날 시간대로(인천 출발·도착 + 스페인 여행이 스페인 시간으로 세어 22박 23일로 나왔음)
+  const tz1 = id => ls.get('walkTz:' + id, null) ? recTz(id) : recTz(a.days[0]), byT = a.days.map(id => ({ id, tr: ls.get('track:' + id, []) })).filter(o => o.tr.length).sort((p, q) => p.tr[0][2] - q.tr[0][2]);
+  const s = tzAt(tr[0][2], tz1((byT[0] || {}).id || a.days[0])), e = tzAt(tr[tr.length - 1][2], tz1((byT[byT.length - 1] || {}).id || a.days[0]));
   const day0 = new Date(s.getFullYear(), s.getMonth(), s.getDate()), day1 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
   const nights = Math.round((day1 - day0) / 864e5), wd = d => '일월화수목금토'[d.getDay()];
   const range = nights ? `${s.getFullYear()}년 ${s.getMonth() + 1}월 ${s.getDate()}일 (${wd(s)}) ~ ${e.getMonth() !== s.getMonth() ? e.getMonth() + 1 + '월 ' : ''}${e.getDate()}일 (${wd(e)})` : null;
@@ -3644,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-343-modeicons';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-344-albumtz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "차나 비행기도 탄 기록은 지도에 걸어간 길 발자국, 차로 간 길 자동차, 비행 경로 비행기가 보여요";
+const UI_NOTES = "나라를 오간 여행은 출발한 날과 돌아온 날을 그곳 시간으로 세어 몇 박 며칠이 바르게 나와요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
