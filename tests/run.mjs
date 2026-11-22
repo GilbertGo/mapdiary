@@ -270,6 +270,9 @@ await test('테이크아웃 사진 여행: 백업으로 들어가고 · 여행 �
   await page.goto(BASE + '?my=1&t=' + al.days[0]); await sleep(2000);
   { const b = await page.innerText('body'); ok(/오전 8:00 ~ .* 현지 시간/.test(b), '1일차가 스페인 현지 시간(오전 8:00 ~ … 현지 시간)으로 보여야 해요: ' + (b.match(/.{0,20}현지 시간|오[전후] \d+:\d\d ~ [^\n]*/) || [''])[0]); }
   noErr(page, '하루 기록 화면');
+  // 판 -338: 사진 동그라미는 absolute여야 찍은 자리에 놓여요(relative면 앞 동그라미만큼 아래로 밀림)
+  { const pos = await page.evaluate(() => { const p = document.querySelector('.leaflet-marker-icon.ph-pin'); return p ? getComputedStyle(p).position : 'none'; });
+    ok(pos === 'absolute', '지도 사진 동그라미 position이 absolute여야 해요: ' + pos); }
   // 2일차를 지우고 같은 파일을 또 불러옴 → 2일차가 되살아나면 안 됨, 1일차 사진이 두 번 들어가도 안 됨
   await page.evaluate(async al => { localStorage.removeItem('track:' + al.days[1]); __T.goneMark([al.days[1]]); for (const p of await __T.photoList(al.days[1])) await __T.photoDel(p.id); }, al);
   await load();
