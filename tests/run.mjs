@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake'];
+const EXPOSE = ['koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -561,6 +561,31 @@ await test('첫 화면 꾸미기·바탕 사진이 같은 계정 다른 기기�
   ok(r.pc.pick === null, '받은 바탕보다 예전에 고른 사진이 남음');
   ok(r.g3 === 0 && r.cl === 9000, '더 나중에 꾸민 것이 클라우드에 안 올라감');
   noErr(page, '첫 화면 꾸미기 맞추기');
+});
+
+await test('같은 계정이면 여행 일행에서도 같은 사람 · 방 주인 쪽이 이김 (판 -329)', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(async () => {
+    const S = by => JSON.stringify({ own: { by, nm: '길벗' }, perm: { by, m: {}, def: { r: 1, w: 1, ai: 0 } } });
+    // PC(주인 아님)가 먼저 맞춤 → 자기 '나'를 올림
+    localStorage.clear(); localStorage.setItem('tripMe', '"pcpcpcpc11"'); localStorage.setItem('tripPermC:tx1', S('phph2222ph'));
+    const a = await __T.tripMeSync(null);
+    // 휴대폰(방 주인)이 맞춤 → PC 것을 받지 않고 자기 것을 올림
+    localStorage.clear(); localStorage.setItem('tripMe', '"phph2222ph"'); localStorage.setItem('tripPermC:tx1', S('phph2222ph'));
+    const b = await __T.tripMeSync(a.up); const phPk = JSON.parse(localStorage.getItem('tripPk'));
+    // PC가 다시 맞춤 → 휴대폰의 '나'와 열쇠를 받아 주인이 됨, 예전 '나'는 남김
+    localStorage.clear(); localStorage.setItem('tripMe', '"pcpcpcpc11"'); localStorage.setItem('tripPermC:tx1', S('phph2222ph')); localStorage.setItem('tripTk:r1', '{"nm":"길벗"}');
+    const c = await __T.tripMeSync(b.up);
+    const p = { id: 'px', room: { code: 'tx1' }, mem: [{ n: '고성식' }] };
+    return { a: a.took, aId: a.up.id, b: b.took, bId: b.up.id, bOwn: b.up.own, c: c.took, me: JSON.parse(localStorage.getItem('tripMe')), samePk: JSON.stringify(JSON.parse(localStorage.getItem('tripPk'))) === JSON.stringify(phPk),
+      old: JSON.parse(localStorage.getItem('tripMeOld'))[0].id, tk: localStorage.getItem('tripTk:r1'), v: __T.permIsV(p) };
+  });
+  ok(r.a === 0 && r.aId === 'pcpcpcpc11', 'PC가 처음 올릴 때 틀림 ' + JSON.stringify(r));
+  ok(r.b === 0 && r.bId === 'phph2222ph' && r.bOwn === 1, '방 주인 휴대폰이 주인 아닌 PC의 나로 바뀜 ' + JSON.stringify(r));
+  ok(r.c === 1 && r.me === 'phph2222ph' && r.samePk, 'PC가 휴대폰의 나·열쇠를 못 받음 ' + JSON.stringify(r));
+  ok(r.old === 'pcpcpcpc11' && r.tk === null, '예전 나를 안 남겼거나 이름 표시를 다시 안 올림 ' + JSON.stringify(r));
+  ok(r.v === false, 'PC가 아직 구경(보기만)으로 보임');
+  noErr(page, '여행 일행 같은 사람');
 });
 
 await test('계획 사진 주소가 다른 기기로 감 · 이미 있는 사진은 안 바뀜 (판 -324)', async page => {
