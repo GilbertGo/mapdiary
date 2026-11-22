@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync'];
+const EXPOSE = ['permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -586,6 +586,20 @@ await test('같은 계정이면 여행 일행에서도 같은 사람 · 방 주�
   ok(r.old === 'pcpcpcpc11' && r.tk === null, '예전 나를 안 남겼거나 이름 표시를 다시 안 올림 ' + JSON.stringify(r));
   ok(r.v === false, 'PC가 아직 구경(보기만)으로 보임');
   noErr(page, '여행 일행 같은 사람');
+});
+
+await test('일행 지도 · 같은 사람은 한 번만 (웹·앱·PC를 오가도) (판 -332)', async page => {
+  await page.goto(BASE + '?my=1');
+  const r = await page.evaluate(() => {
+    localStorage.setItem('tripMe', '"nowme1234x"'); localStorage.setItem('tripMeOld', JSON.stringify([{ id: 'oldpc1234x' }]));
+    const t = Date.now();
+    const L = [{ by: 'web111', nm: '유진', at: t - 600000, lat: 1, lng: 1 }, { by: 'app222', nm: ' 유 진', at: t - 1000, lat: 2, lng: 2 },
+      { by: 'oldpc1234x', nm: '길벗', at: t - 900000, lat: 3, lng: 3 }, { by: 'nowme1234x', nm: '길벗', at: t - 2000, lat: 4, lng: 4 },
+      { by: 'mom333', nm: '엄마', at: t - 5000, lat: 5, lng: 5 }];
+    return __T.trLocOne(L).map(x => x.by).sort();
+  });
+  ok(JSON.stringify(r) === JSON.stringify(['app222', 'mom333', 'nowme1234x']), '같은 사람이 여러 번 보임 ' + JSON.stringify(r));
+  noErr(page, '일행 지도 한 사람');
 });
 
 await test('계획 사진 주소가 다른 기기로 감 · 이미 있는 사진은 안 바뀜 (판 -324)', async page => {

@@ -3606,9 +3606,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.22-331-permtable';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.22-332-oneperson';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "일행 권한이 표로 바뀌었어요 · 들어온 사람마다 일행인지 구경인지와 고치기와 AI와 보는 범위를 한눈에 봐요 · 휴대폰과 컴퓨터로 들어온 같은 사람은 한 줄로 묶이고 아직 안 들어온 일행도 보여요";
+const UI_NOTES = "일행 지도에 같은 사람은 한 번만 보여요 · 폰 웹과 앱과 PC를 오가도 같은 이름이면 가장 최근 위치 하나만 · 내 예전 기기 위치는 나로 셈";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4936,7 +4936,7 @@ async function tripMeSync(c) {
 }
 // 판 -328 (2026-11-22 같은 카카오 계정인데 PC는 이름 '길벗'·계획 5, 폰은 '꼬'·계획 2 — 어느 쪽 맞추기가 왜 안 되는지 알 수 없었음):
 //   맞추기가 끝날 때마다(된 때도) 이 기기 상태를 rooms/mpderr/s/{기기 번호}에 남겨 개발 쪽이 견줘 봐요. 숫자·판·계정 끝 4자만(계획 이름·위치·사진은 안 넣음)
-function cloudDiag(o) { try { if (LAB_QUIET || !navigator.onLine) return; const P = planAll();
+function cloudDiag(o) { try { if (LAB_QUIET || !navigator.onLine) return; cloudDiag.sent = 1; const P = planAll();
   fsPut(`rooms/mpderr/s/${uid}`, JSON.stringify(Object.assign({ id: uid, v: UI_VER, at: Date.now(), ua: navigator.userAgent.slice(0, 120), app: IN_NATIVE ? 1 : 0, acct: '#' + String(cloudUser && cloudUser.uid || '').slice(-4).toUpperCase(), plans: P.length, rooms: P.filter(p => p.room && p.room.code).length, gone: Object.keys(ls.get('planGone', {}) || {}).length, me: String(ls.get('tripMe', '') || '').slice(-4), meOwn: Object.keys(localStorage).filter(k => k.startsWith('tripPermC:')).reduce((n, k) => { const S = ls.get(k, null); return n + (S && S.own && S.own.by === ls.get('tripMe', '') ? 1 : 0); }, 0), meOld: (ls.get('tripMeOld', []) || []).length, myAt: ls.get('myAt', 0) || 0, nickLen: String(ls.get('nick', '') || '').length }, o))).catch(() => {}); } catch {} }
 async function cloudSync(quiet) {
   if (!cloudUser || cloudBusy) return;
@@ -11294,7 +11294,7 @@ async function viewTripRoom(code, title, planId) {
   }
   function drawPins() {
     if (!map || !mlay) return; mlay.clearLayers(); const pts = [];
-    for (const x of S.tl) { if (x.off || !Number.isFinite(x.lat)) continue; const old = trLocOld(x); pts.push([x.lat, x.lng]);
+    for (const x of trLocOne(S.tl.filter(x => !x.off && Number.isFinite(x.lat)))) { const old = trLocOld(x); pts.push([x.lat, x.lng]);
       L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div class="tr-pin" style="position:absolute;transform:translate(-50%,-100%);width:max-content;white-space:nowrap;background:${old ? '#E9ECEF' : trCol(x.by)};color:${old ? '#4E5968' : '#fff'};font:800 13px Pretendard,sans-serif;padding:4px 9px;border-radius:14px;border:2px ${old ? 'dashed #8B95A1' : 'solid #fff'};box-shadow:0 1px 4px rgba(0,0,0,.35)">${String(x.nm || '일행').replace(/[<&]/g, '')}${x.by === me ? ' (나)' : ''} · ${old ? '현재 위치 아님 · ' + trHm(x.at) : trAgo(x.at)}${trBubbleHtml(trLastMsg(S, x.by), 34, x.nm || '일행')}</div>` }) }).addTo(mlay); }
     if (!map._trTap) { map._trTap = 1; map.getContainer().addEventListener('click', e => { if (e.target.closest && e.target.closest('.tr-bub')) { tab = 'chat'; ls.set('tripTab', 'chat'); draw(); } }); }
     requestAnimationFrame(() => trBubFix(map));
@@ -11663,6 +11663,15 @@ function permCanR(p) { const S = permCached(p); return !S || !S.own || S.own.by 
 
 // 판 -135 (개선 지시서 2번): 답해 줄 휴대폰 상태를 설정 용어 없이 · ok=지금 보내면 답이 올 수 있음
 // 판 -135: 위치가 3분 넘게 안 바뀌면 '현재 위치 아님' (1분마다 보내니 세 번 빠짐)
+// 판 -332 (2026-11-22 사용자 '여기에 꼬는 왜 나오지?' → '폰에서 웹앱도 쓸 가능성이 있단 말이야. 나도 그렇고 다른 사람도' → '웹앱 써보다가 앱 설치할 수도 있잖아'):
+//   한 사람이 폰 크롬(웹)과 앱, PC를 오가면 기기마다 '나'가 따로 생겨 일행 지도에 같은 사람이 여럿 보였음
+//   → 지도 위치는 사람마다 하나: 같은 이름(띄어쓰기·대소문자 무시)이면 가장 최근 위치 하나만, 내 예전 '나'(tripMeOld)는 나로 셈
+function trLocOne(L) {
+  const me = trMe(), old = new Set((ls.get('tripMeOld', []) || []).map(o => o && o.id).filter(Boolean)), best = new Map();
+  for (const x of L || []) { const k = old.has(x.by) || x.by === me ? '\u0001me' : (permNk(x.nm) || '\u0002' + x.by); const b = best.get(k);
+    if (!b || (+x.at || 0) > (+b.at || 0) || ((+x.at || 0) === (+b.at || 0) && x.by === me)) best.set(k, x); }
+  return [...best.values()];
+}
 function trLocOld(x) { return !x || Date.now() - x.at > 5 * 60000; }   // 판 -253: 3분 → 5분(화면이 꺼진 휴대폰은 1분보다 조금 늦게 보낼 수 있어서)
 // 판 -135 (개선 지시서 6번): 일행마다 늘 같은 색 점 + 이름 첫 글자 — 이름이 같아도 사람(번호)마다 색이 달라요
 var TR_COLS = ['#0277BD', '#E8590C', '#7B61FF', '#D6336C', '#1D9EC0', '#5C3D2E', '#364FC7', '#C2255C'];
@@ -13848,7 +13857,7 @@ function viewPlanOne(id) {
   //   · 내가 켜 두었으면 이 화면이 열려 있는 동안에도 1분마다 내 위치를 보냄 · 켜고 끄기는 일행 채팅 위치 칸 그대로
   let memR = null, memS = null, memLay = null, memWatch = null;
   var memV = permIsV(p);   // var: drawMap이 먼저 불려도 TDZ 없이
-  function memList() { if (!memS) return []; const me = trMe(); return memS.tl.filter(x => !x.off && Number.isFinite(x.lat) && Date.now() - x.at < 12 * 3600000 && (!memV || x.vw) && (x.by !== me || ls.get('tripLoc:' + memR.rid, false))); }
+  function memList() { if (!memS) return []; const me = trMe(), mine = new Set([me, ...(ls.get('tripMeOld', []) || []).map(o => o && o.id)]); return trLocOne(memS.tl.filter(x => !x.off && Number.isFinite(x.lat) && Date.now() - x.at < 12 * 3600000 && (!memV || x.vw) && (!mine.has(x.by) || ls.get('tripLoc:' + memR.rid, false)))); }
   function memKey() {
     if (!memR) return [];
     const on = !!ls.get('tripLoc:' + memR.rid, false), n = memList().length, EN = planEN(p);
@@ -13931,6 +13940,7 @@ function viewPlanOne(id) {
 }
 route();
 if (!LAB_QUIET) cloudWatch();
+if (!LAB_QUIET) setTimeout(() => { if (!cloudDiag.sent) cloudDiag({ ok: -1, auth: cloudUser ? 1 : 0, on: ls.get('cloudOn', false) ? 1 : 0, nm: ls.get('cloudName', '') ? 1 : 0, rt: ls.get('cloudRt', null) ? 1 : 0 }); }, 25000);   // 판 -332: 맞추기를 안 한 기기도(로그인이 풀렸나) 개발 쪽에서 보이게
 if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
 setTimeout(() => { try { const m = sessionStorage.getItem('toastNext'); if (m) { sessionStorage.removeItem('toastNext'); toast(m, false, m.length > 40 ? 7000 : 3000); } } catch {} }, 700);
 // 새 판이 기다리고 있는지 알려 줘요 (2026-10-29 사용자가 길 누르기가 안 된다고 했는데, 기록 중이라 앱이 화면을 안 바꾸고 있었음):
