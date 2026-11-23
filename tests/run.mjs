@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1042,6 +1042,27 @@ await test('한자 읽기 이름은 층마다 그 층 이름만 · 1200개까지
   ok(!r.cityHasRoad, '도시 이름 층에 길 이름까지 통째로 넣어요');
   ok(r.road > 0 && r.road <= 1200, '길 이름 층 이름 수가 너무 많아요: ' + r.road);
   noErr(page, '한자 읽기 이름');
+});
+
+// ─── 판 -357: 사진으로 만든 여행에서 배로 바다를 건넌 곧은 줄이 걸어간 것으로 보이던 것 ───
+await test('길 없는 곧은 줄(배)은 걷기가 아니라 탈것 · 영상은 배', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const D = (a, b) => { const R = 6371000, x = (b[1] - a[1]) * Math.PI / 180 * Math.cos((a[0] + b[0]) / 2 * Math.PI / 180), y = (b[0] - a[0]) * Math.PI / 180; return Math.hypot(x, y) * R; };
+    const mk = sh => { const tr = [], line = (a, b) => { const d = D(a, b), k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b[2] - a[2]) / 240000))); for (let s = 1; s < k; s++) { const q = s / k; tr.push([a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q, a[2] + (b[2] - a[2]) * q, null, sh]); } tr.push(b); };
+      const t0 = Date.UTC(2025, 0, 11, 1), HK = [22.287, 114.152, t0], MO = [22.197, 113.56, t0 + 3 * 3600000];   // 홍콩 → 마카오 배 약 61km, 사진 사이 3시간(시속 약 20km)
+      // 배 타기 전 걸은 길(흔들림 1, 굽은 길)
+      for (let i = 0; i < 30; i++) tr.push([22.29 + Math.sin(i / 3) * 0.0008, 114.16 - i * 0.00026, t0 - (30 - i) * 30000, null, 1]);
+      tr.push(HK); line(HK, MO); return tr; };
+    const tr = mk(null), m = __T.trackModes(tr, 15), sea = m.slice(31);
+    const P = __T.filmPath(tr, false, 6, 3.5).P, boat = P.filter(p => p.boat).length;
+    const plan = __T.filmPath(mk(0), false, 6, 3.5).P.filter(p => p.boat).length;
+    return { walkOnSea: (sea.match(/w/g) || []).length, seaLen: sea.length, boat, plan };
+  });
+  ok(r.walkOnSea === 0, `바다 위 곧은 줄 ${r.seaLen}점 가운데 ${r.walkOnSea}점이 걷기예요`);
+  ok(r.boat > 100, '이동 영상에서 바다 건너기가 배로 안 나와요');
+  ok(r.plan === 0, '흔들림 값이 있는 곧은 줄(계획 미리 보기)까지 배로 그려요');
+  noErr(page, '배');
 });
 
 await browser.close();

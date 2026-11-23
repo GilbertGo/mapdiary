@@ -3013,6 +3013,19 @@ function flyArc(a, b, n) {
   for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t, x = u * u * a[1] * k + 2 * u * t * cx + t * t * b[1] * k, y = u * u * a[0] + 2 * u * t * cy + t * t * b[0]; out.push([y, x / k]); }
   return out;
 }
+// 흔들림 값 없이 한 줄로 곧게(2도 안쪽) 3조각 넘게 이어진 곳 = 사진 사이를 곧은 줄로 이은 곳(길을 못 찾음): [{i0, i1, d, sec}] (점 번호 i0~i1)
+//   GPS로 잰 길은 이렇게 곧지 않아요. pts: [[lat, lng, ts, 높이, 흔들림], …] (흔들림 자리에 'x'면 끊음)
+function noRoadRuns(tr) {
+  const out = [], ang = (a, b) => Math.abs(((a - b + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+  for (let i = 1; i < tr.length;) {
+    if (tr[i][4] != null) { i++; continue; }
+    const kx = Math.cos(tr[i][0] * Math.PI / 180), hd = k => Math.atan2(tr[k][0] - tr[k - 1][0], (tr[k][1] - tr[k - 1][1]) * kx), h0 = hd(i);
+    let j = i; while (j + 1 < tr.length && tr[j + 1][4] == null && ang(hd(j + 1), h0) < 0.035) j++;
+    if (j - i >= 2) out.push({ i0: i - 1, i1: j, d: dist(tr[i - 1][0], tr[i - 1][1], tr[j][0], tr[j][1]), sec: (tr[j][2] - tr[i - 1][2]) / 1000 });
+    i = j + 1;
+  }
+  return out;
+}
 function trackModesCalc(tr, kmh) {
   const lim = kmh ? kmh / 3.6 : CAR_MS;
   const segD = k => dist(tr[k - 1][0], tr[k - 1][1], tr[k][0], tr[k][1]);
@@ -3065,21 +3078,11 @@ function trackModesCalc(tr, kmh) {
   // ③ 흔들리며 간 곳은 모드 기준보다 느리면 걸은(달린) 길
   for (let i = 1; i < m.length; i++) if (m[i] === 'c' && sh(i) === 1 && segV(i) <= lim) m[i] = 'w';
   smooth();
-  // ④ 판 -355 (사용자 홍콩→서울 지도 캡처 '비행기와 차가 같이?'): 사진으로 만든 여행은 길을 못 찾은 사진 사이(바다 위·비행)를 곧은 줄로 이어서,
-  //   비행기 안·공항에서 찍은 사진 때문에 그 사이 평균이 느려지면(시속 324km 아래) 비행 일부가 🚗으로 보였음
-  //   → 흔들림 값 없는 차 구간 가운데 한 줄로 곧게 80km 넘게 시속 150km 넘게 이어진 곳은 비행 (GPS로 잰 찻길은 이렇게 곧지 않고, 배는 이보다 느려요)
-  for (let i = 1; i < m.length; i++) {
-    if (m[i] !== 'c' || tr[i][4] != null) continue;
-    let j = i; while (j + 1 < m.length && m[j + 1] === 'c' && tr[j + 1][4] == null) j++;
-    const kx = Math.cos(tr[i][0] * Math.PI / 180), hd = k => Math.atan2(tr[k][0] - tr[k - 1][0], (tr[k][1] - tr[k - 1][1]) * kx);
-    let a = i;
-    for (let k = i + 1; k <= j + 1; k++) {
-      if (k <= j && Math.abs(((hd(k) - hd(a) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) < 0.035) continue;   // 2도 안쪽이면 같은 곧은 줄
-      const P = tr[a - 1], Q = tr[k - 1], d = dist(P[0], P[1], Q[0], Q[1]), sec = (Q[2] - P[2]) / 1000;
-      if (d > 80000 && sec > 0 && d / sec > 150 / 3.6) for (let q = a; q < k; q++) m[q] = 'f';
-      a = k;
-    }
-    i = j;
+  // ④ 판 -355·-357: 사진으로 만든 여행은 길을 못 찾은 사진 사이(바다 위·비행)를 곧은 줄로 이어요(흔들림 값 없음). 그 곧은 줄을
+  //   80km·시속 150km 넘으면 비행(사용자 '비행기와 차가 같이?'), 3km·시속 5km 넘으면 탈것(배·차, 사용자 '바다위를 걸어가네. 배타고 간건데')
+  for (const r of noRoadRuns(tr)) {
+    const v = r.sec > 0 ? r.d / r.sec : 0, k = r.d > 80000 && v > 150 / 3.6 ? 'f' : r.d >= 3000 && v >= 5 / 3.6 ? 'c' : null;
+    if (k) for (let q = r.i0 + 1; q <= r.i1; q++) if (m[q] === 'w' || m[q] === 'c') m[q] = k;
   }
   return m.join('');
 }
@@ -3111,6 +3114,7 @@ function flyMarks(layer, runs) {
 // 판 -343 (사용자 '걸어간 길은 발자국. 차로 간 길은 차. 비행경로는 비행기 넣어'): 걸은 조각 가운데 👣, 차 조각 가운데 🚗 (흰 동그라미).
 //   지도가 어지럽지 않게 전체 길이의 4%·300m 넘는 조각에만, 많으면 긴 것부터 12개까지. 걸은 길만 있는 기록(산행·러닝)은 안 그려요
 var FOOT_PATH = 'M8.6 2.2c1.6-.1 2.6 1.7 2.6 4.1 0 2.3-.9 4.5-2.4 4.6-1.5.1-2.6-2-2.6-4.3 0-2.5.9-4.3 2.4-4.4zM6.4 12.3l4.3-.4c.2 1.4.1 2.9-1.9 3.1-1.8.2-2.3-1.2-2.4-2.7zM15.4 7.2c1.5.1 2.4 1.9 2.4 4.4 0 2.3-1.1 4.4-2.6 4.3-1.5-.1-2.4-2.3-2.4-4.6 0-2.4 1-4.2 2.6-4.1zM13.3 17l4.3.4c-.1 1.5-.6 2.9-2.4 2.7-2-.2-2.1-1.7-1.9-3.1z';
+var SHIP_PATH = 'M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.34-.42-.6-.5L20 10.62V6c0-1.1-.9-2-2-2h-3V1H9v3H6c-1.1 0-2 .9-2 2v4.62l-1.29.42c-.26.08-.48.26-.6.5s-.15.52-.06.78L3.95 19zM6 6h12v3.97L12 8 6 9.97V6z';   // ⛴ 판 -357: 길 없는 곧은 탈것 줄(바다 건너기)
 var CAR_PATH = 'M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z';
 function modeMarks(layer, runs) {
   if (!runs.some(r => r.k === 'c' || r.k === 'f')) return;
@@ -3118,8 +3122,8 @@ function modeMarks(layer, runs) {
   const rs = runs.filter(r => (r.k === 'w' || r.k === 'c') && r.pts.length >= 2).map(r => ({ r, d: len(r.pts) })), tot = rs.reduce((a, x) => a + x.d, 0);
   rs.filter(x => x.d >= 300 && x.d >= tot * 0.04).sort((a, b) => b.d - a.d).slice(0, 12).forEach(({ r, d }) => {
     let acc = 0, at = r.pts[0]; for (let k = 1; k < r.pts.length; k++) { acc += dist(r.pts[k - 1][0], r.pts[k - 1][1], r.pts[k][0], r.pts[k][1]); if (acc >= d / 2) { at = r.pts[k]; break; } }
-    const c = r.k === 'c' ? '#4B5563' : '#E4572E';
-    L.marker(at, { interactive: false, icon: L.divIcon({ className: 'mode-ic', iconSize: [26, 26], iconAnchor: [13, 13], html: `<svg viewBox="0 0 24 24" width="16" height="16"><path d="${r.k === 'c' ? CAR_PATH : FOOT_PATH}" fill="${c}"/></svg>` }) }).addTo(layer);
+    const c = r.k === 'c' ? '#4B5563' : '#E4572E', ship = r.k === 'c' && noRoadRuns(r.pts.map(p => [p[0], p[1], 0])).some(x => x.d >= 3000 && x.d >= d * 0.6);   // 판 -357: 곧은 줄로 이은 탈것(바다 건너기)은 ⛴
+    L.marker(at, { interactive: false, icon: L.divIcon({ className: 'mode-ic', iconSize: [26, 26], iconAnchor: [13, 13], html: `<svg viewBox="0 0 24 24" width="16" height="16"><path d="${ship ? SHIP_PATH : r.k === 'c' ? CAR_PATH : FOOT_PATH}" fill="${c}"/></svg>` }) }).addTo(layer);
   });
 }
 var FLY_PATH = 'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';   // 위를 보는 비행기 그림 (지도·카드)
@@ -3662,9 +3666,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-356-hanjalite';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-357-boat';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "홍콩처럼 이름이 많은 중국 지역 지도를 크게 볼 때 지도가 비거나 거칠게 보이던 것을 고쳤어요 · 한글 읽기 이름을 넣는 일을 훨씬 가볍게 했어요";
+const UI_NOTES = "사진으로 만든 여행에서 배로 바다를 건넌 길이 걸어간 것처럼 보이던 것을 고쳤어요 · 지도와 이동 영상에 배 그림으로 보여요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -6287,7 +6291,7 @@ function filmTripRange(P) {   // 판 -298: 가는 비행기 내린 뒤 ~ 오는 
   return [i0, i1];
 }
 function filmPath(rows, hide, carMs, fastMs) {
-  let P = rows.filter(q => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(q => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null }));
+  let P = rows.filter(q => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(q => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null, sh: q[4] }));
   // 5m 안 겹친 점은 하나로(카메라 방향이 흔들리지 않게)
   const Q = []; for (const p of P) { const l = Q[Q.length - 1]; if (!l || dist(l.lat, l.lng, p.lat, p.lng) >= 5) Q.push(p); }
   if (Q.length < 2) return null;
@@ -6302,8 +6306,13 @@ function filmPath(rows, hide, carMs, fastMs) {
     if (fly) { b.alt = null; if (dd <= 30000) a.alt = null; }   // 비행기 안 높이(수천 m)는 높이 그림에서 빼요
     R.push(Object.assign(b, { fly, car: !fly && b.ts > a.ts && dd / ((b.ts - a.ts) / 1000) > (carMs || 6) }));
   }
+  // ⛴ 판 -357 (사용자 '바다위를 걸어가네. 배타고 간건데'): 사진 사이를 곧은 줄로 이은 곳(길을 못 찾음, 바다 건너기)이 3km·시속 5km 넘으면 배, 80km·시속 150km 넘으면 비행
+  for (const r of noRoadRuns(R.map(p => [p.lat, p.lng, p.ts, null, p.fly ? 'x' : p.sh]))) {
+    const v = r.sec > 0 ? r.d / r.sec : 0, fl = r.d > 80000 && v > 150 / 3.6;
+    if (fl || (r.d >= 3000 && v >= 5 / 3.6)) for (let q = r.i0 + 1; q <= r.i1; q++) { const p = R[q]; if (fl) { p.fly = true; p.car = false; p.alt = null; } else { p.boat = true; p.car = true; } }
+  }
   // 🚗 차로 간 곳 (2026-11-14 사용자 '차량 이동은 🚗 아이콘이 이동하게'): 앞뒤 5점 중 3점 넘게 빠르면 차 (신호 대기·GPS 튐에 깜빡이지 않게)
-  { const c0 = R.map(p => !!p.car); for (let i = 0; i < R.length; i++) { if (R[i].fly) { R[i].car = false; continue; } let n = 0, m = 0; for (let j = Math.max(1, i - 2); j <= Math.min(R.length - 1, i + 2); j++) { m++; if (c0[j]) n++; } R[i].car = m > 0 && n * 2 > m; } }
+  { const c0 = R.map(p => !!p.car); for (let i = 0; i < R.length; i++) { if (R[i].fly) { R[i].car = false; continue; } if (R[i].boat) continue; let n = 0, m = 0; for (let j = Math.max(1, i - 2); j <= Math.min(R.length - 1, i + 2); j++) { m++; if (c0[j]) n++; } R[i].car = m > 0 && n * 2 > m; } }
   // 빠른 이동(2026-11-15 사용자 '차·비행기 구간은 짧게, 멀리서'): 차·케이블카·배처럼 걷는 것보다 확실히 빠른 곳 (fastMs 넘게, 앞뒤 5점 중 3점 넘게)
   { const fm = fastMs || 3.5, f0 = R.map((p, i) => { if (!i || p.fly) return false; const a = R[i - 1], s = (p.ts - a.ts) / 1000; return p.car || (s > 0 && dist(a.lat, a.lng, p.lat, p.lng) / s > fm); });
     for (let i = 0; i < R.length; i++) { if (R[i].fly) { R[i].fast = false; continue; } let n = 0, m = 0; for (let j = Math.max(1, i - 2); j <= Math.min(R.length - 1, i + 2); j++) { m++; if (f0[j]) n++; } R[i].fast = R[i].car || (m > 0 && n * 2 > m); } }
@@ -6315,7 +6324,7 @@ function filmPath(rows, hide, carMs, fastMs) {
   const Dfull = P[P.length - 1].g;
   if (hide && D > 300) {
     const cut = Math.min(500, D / 3), a = P.findIndex(p => p.d >= cut), b = P.length - 1 - [...P].reverse().findIndex(p => D - p.d >= cut);
-    if (a > 0 && b > a + 1) { off = P[a].d; P = cum(P.slice(a, b + 1).map((p, i) => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt, fly: i ? p.fly : false, car: i ? p.car : false, fast: i ? p.fast : false }))); D = P[P.length - 1].d; }
+    if (a > 0 && b > a + 1) { off = P[a].d; P = cum(P.slice(a, b + 1).map((p, i) => ({ lat: p.lat, lng: p.lng, ts: p.ts, alt: p.alt, fly: i ? p.fly : false, car: i ? p.car : false, boat: i ? p.boat : false, fast: i ? p.fast : false }))); D = P[P.length - 1].d; }
   }
   // off: 가린 앞부분 길이, Dfull: 가리기 전 전체 길이(비행 뺀 땅 위 거리) (화면 거리 숫자는 이걸로 셈, 2026-11-13 '10km인데 9km로 나와')
   //   fly: 비행 구간 [{a, b}] (d 기준)
@@ -6614,6 +6623,7 @@ function filmPhotoTimes(F, plan, st, adv, T, order) {
 // 이동 영상의 움직이는 그림 선 (24칸, MPD 모드 아이콘과 같은 선): 비행기(위에서 본 모습)·차·걷기·러닝·자전거
 var FILM_VEH = { fly: ICONS.travel, run: ICONS.run, bike: ICONS.bike,
   car: ['M4 16.5V12l2.2-5h11.6L20 12v4.5', 'M3 12h18', 'M6.5 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.9 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M3 16.5h3.5', 'M10.1 16.5h3.8', 'M17.5 16.5H21'],
+  boat: ['M12 10.2V14', 'M12 2v3', 'M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6', 'M19.4 20A11.6 11.6 0 0 0 21 14l-8.2-3.6a2 2 0 0 0-1.6 0L3 14a11.6 11.6 0 0 0 2.8 7.8', 'M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1'],   // ⛴ 판 -357
   walk: ['M12.4 3.6a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.2 7.6l-1.6 6.4', 'M11.6 14l2.6 2.9.4 4.1', 'M11.6 14l-2 3.4-1.6 3.6', 'M13 8.6l2.4 2.6 2.2.8', 'M13 8.6l-2.8 1.6-1 3'] };
 var FILM_PH_MIN = 3, FILM_VID_MIN = 3.5, FILM_BIG_MIN = 3.6, FILM_HERO = 2.8;   // 큰 사진(화면 가득) 3.6초 · 처음 대표 사진 2.8초 (2026-11-15)   // 사진 카드 최소 3초(2026-11-14 사용자 '사진 볼 시간 여유있게', 예전 2초)
    // 동영상은 혼자 한 카드, 3.5초 동안 실제로 움직여요(2026-11-13 사용자 '동영상 추가는 안 되나?' → '고쳐')
@@ -7059,7 +7069,7 @@ function filmSrc(S) {   // 고른 기록 또는 GPX → {rows, name, mode, t, st
 // 🗓 여행 계획 → 영상 (2026-11-15 사용자 '세계 최고의 여행 계획 영상'): 계획한 장소를 날마다 차례로 이어 미리 보는 길을 만들어요
 //   장소 사이가 100km 넘으면 ✈(시속 900km 곡선), 1.5km 넘으면 🚌 차(시속 40km), 그 밖은 걸어서 · 구경하는 곳은 둘레를 천천히 한 바퀴(둘러보기)
 //   실제로 다닐 길(도로)은 몰라서 직선으로 이어요. 시각이 적힌 장소는 그 시각에 닿게
-function planFilmSrc(p) {
+function planFilmSrc(p) {   // 점 다섯째 값 0: 계획 미리 보기 곧은 줄은 '길 없는 곧은 줄(배)'로 보지 않게(판 -357)
   const all = (p.it || []).map((x, i) => [Object.assign({}, x, { lat: +x.lat, lng: +x.lng, d: +x.d || 0 }), i]).filter(([x]) => x.lat != null && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !(x.lat === 0 && x.lng === 0)).sort((a, b) => a[0].d - b[0].d || a[1] - b[1]).map(a => (a[0].__o = p.it[a[1]], a[0]));   // __o: 원래 일정 칸(사진 찾기용, 판 -302)
   if (all.length < 2) return null;
   const rows = [], days = [], spots = [], base = planDate(p, 0) ? planDate(p, 0).getTime() : Date.now();
@@ -7072,18 +7082,18 @@ function planFilmSrc(p) {
     const dd = cum[cum.length - 1], n = Math.max(1, Math.ceil(dd / stepM)), t0 = t; let j = 1;
     for (let k = 1; k <= n; k++) { const s = dd * k / n; while (j < L.length - 1 && cum[j] < s) j++;
       const seg = cum[j] - cum[j - 1], f = seg > 0 ? (s - cum[j - 1]) / seg : 1;
-      rows.push([L[j - 1][0] + (L[j][0] - L[j - 1][0]) * f, L[j - 1][1] + (L[j][1] - L[j - 1][1]) * f, Math.round(t0 + dd / v * 1000 * k / n), null]); }
+      rows.push([L[j - 1][0] + (L[j][0] - L[j - 1][0]) * f, L[j - 1][1] + (L[j][1] - L[j - 1][1]) * f, Math.round(t0 + dd / v * 1000 * k / n), null, 0]); }
     t = t0 + dd / v * 1000; };
   for (const x of all) {
-    if (x.d !== day) { const ds = base + x.d * 864e5 + 8 * 36e5; t = Math.max(t == null ? 0 : t + 60000, ds); day = x.d; if (prev) rows.push([prev.lat, prev.lng, Math.round(t), null]); days.push(Math.round(t)); }
+    if (x.d !== day) { const ds = base + x.d * 864e5 + 8 * 36e5; t = Math.max(t == null ? 0 : t + 60000, ds); day = x.d; if (prev) rows.push([prev.lat, prev.lng, Math.round(t), null, 0]); days.push(Math.round(t)); }
     const want = tOf(x);
     if (prev) {
       const dd = dist(prev.lat, prev.lng, x.lat, x.lng);
       const v = dd > 100000 ? 250 : dd > 1500 ? 11 : 1.3, need = dd / v * 1000;
-      if (want && want - need > t + 60000) { t = want - need; rows.push([prev.lat, prev.lng, Math.round(t), null]); }   // 떠날 때까지 그 자리에서 기다림
-      if (dd > 100000) { t += need; rows.push([x.lat, x.lng, Math.round(t), null]); }   // ✈ (영상이 곡선으로 그려요)
+      if (want && want - need > t + 60000) { t = want - need; rows.push([prev.lat, prev.lng, Math.round(t), null, 0]); }   // 떠날 때까지 그 자리에서 기다림
+      if (dd > 100000) { t += need; rows.push([x.lat, x.lng, Math.round(t), null, 0]); }   // ✈ (영상이 곡선으로 그려요)
       else if (dd > 5) go(x, v, dd > 1500 ? 120 : 15);
-    } else { t = Math.max(t, want || t); rows.push([x.lat, x.lng, Math.round(t), null]); }
+    } else { t = Math.max(t, want || t); rows.push([x.lat, x.lng, Math.round(t), null, 0]); }
     const stay = x.k === 'food' ? 50 : x.k === 'stay' ? 30 : x.k === 'show' ? 60 : x.k === 'spot' ? 40 : 10;
     spots.push({ x: x.__o, n: x.n, lat: x.lat, lng: x.lng, ts: Math.round(t), te: Math.round(t + stay * 60000), pk: x.k, ap: !!x.ap, m: x.m || '', t: x.t || '', k: x.k === 'food' || x.k === 'stay' ? 'stay' : '', food: x.k === 'food' ? { menu: x.m || '' } : null });
     t += stay * 60000;   // 판 -111: 예전엔 구경하는 곳에서 반지름 70m 원을 돌아 건물·숲 위로 걸어 다녔음 → 그 자리에 머묾
@@ -7736,7 +7746,7 @@ async function filmMake(S, opt, U) {
       let g = c.createLinearGradient(0, 0, 0, gTop); g.addColorStop(0, `rgba(0,0,0,${lt ? .62 : .55})`); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, gTop);
       g = c.createLinearGradient(0, H - gBot, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, `rgba(0,0,0,${lt ? .42 : .3})`); g.addColorStop(1, `rgba(0,0,0,${lt ? .8 : .68})`); c.fillStyle = g; c.fillRect(0, H - gBot, W, gBot);
       // ✈️·🚗 탈것 (2026-11-14 사용자 '비행기 이동은 ✈️가, 차량 이동은 🚗 아이콘이 이동하게'): 따라가는 동안 지금 자리 점 대신 탈것 그림
-      { const nx = P[Math.min(P.length - 1, cur.i + 1)], veh = tt >= plan.tIn && tt < runEnd ? (nx.fly ? 'fly' : nx.car ? 'car' : src.mode === 'run' ? 'run' : src.mode === 'bike' ? 'bike' : 'walk') : '';   // 걷기 🚶·러닝 🏃·자전거 🚴도 (같은 날 '도보 이동은? 러닝은? 자전거도')
+      { const nx = P[Math.min(P.length - 1, cur.i + 1)], veh = tt >= plan.tIn && tt < runEnd ? (nx.fly ? 'fly' : nx.boat ? 'boat' : nx.car ? 'car' : src.mode === 'run' ? 'run' : src.mode === 'bike' ? 'bike' : 'walk') : '';   // 걷기 🚶·러닝 🏃·자전거 🚴도 (같은 날 '도보 이동은? 러닝은? 자전거도')
         if (veh !== vehNow) { vehNow = veh; try { map.setPaintProperty('head', 'circle-opacity', veh ? 0 : 1); map.setPaintProperty('head', 'circle-stroke-opacity', veh ? 0 : 1); } catch {} }
         if (veh) {
           const a = map.project([cur.lng, cur.lat]), ah = filmAt(P, Math.min(D, dh + Math.max(30, look * 0.3))), b2 = map.project([ah.lng, ah.lat]), an = Math.atan2(b2.y - a.y, b2.x - a.x);
