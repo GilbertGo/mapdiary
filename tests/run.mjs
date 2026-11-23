@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG'];
+const EXPOSE = ['cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'guestLink', 'guestDrop', 'shrinkImage'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1123,6 +1123,89 @@ await test('영상: 사진으로 만든 찻길·배 위 사진 바닷길은 걷�
   ok(r.carB > r.nB * 0.9, `사진으로 만든 찻길(흔들림 0)을 걷기로 그려요: 차 ${r.carB}/${r.nB}`);
   ok(r.carC === 0, '계획 미리 보기까지 흔들림 값으로 차를 갈라요');
   noErr(page, '영상 걷기/탈것');
+});
+
+// ─── 판 -360: 들어와서 보기 — 받은 사람도 내 기록 화면 그대로 (사진 전부·대표 사진), 받은 사람 자료는 안 건드림, 지운 사진·기록은 링크에서도 ───
+await test('들어와서 보기: 받은 사람도 내 화면 그대로 · 지우면 링크에서도', async page => {
+  const store = new Map(), FS = 'https://firestore.googleapis.com/v1/projects/map-photo-diary/databases/(default)/documents/';
+  const fsRoute = async route => { const req = route.request(), u = req.url(), path = decodeURIComponent(u.slice(FS.length).split('?')[0]);
+    if (req.method() === 'PATCH') { const f = JSON.parse(req.postData() || '{}').fields || {}; store.set(path, f.d ? f.d.stringValue : ''); return route.fulfill({ status: 200, body: '{}', contentType: 'application/json' }); }
+    if (req.method() === 'DELETE') { store.delete(path); return route.fulfill({ status: 200, body: '{}', contentType: 'application/json' }); }
+    if (!store.has(path)) return route.fulfill({ status: 404, body: '{}', contentType: 'application/json' });
+    return route.fulfill({ status: 200, body: JSON.stringify({ fields: { d: { stringValue: store.get(path) } } }), contentType: 'application/json' }); };
+  await page.route(u => u.href.startsWith(FS), fsRoute);
+  const t = await seed(page);
+  const url = await page.evaluate(async t => {
+    const jpg = async (c) => { const cv = document.createElement('canvas'); cv.width = 400; cv.height = 300; const g = cv.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, 400, 300); return await new Promise(r => cv.toBlob(r, 'image/jpeg', .8)); };
+    const tr = JSON.parse(localStorage.getItem('track:' + t));
+    for (let i = 0; i < 5; i++) { const b = await jpg(['red', 'green', 'blue', 'orange', 'purple'][i]); await __T.photoPut({ id: 'ph_g' + i, t, ts: tr[i * 10][2], lat: tr[i * 10][0], lng: tr[i * 10][1], blob: b, thumb: await __T.shrinkImage(b, 120, 'url', .7) }); }
+    localStorage.setItem('walkCover:' + t, JSON.stringify('ph_g3'));
+    localStorage.setItem('walkNote:' + t, JSON.stringify('친구들과 즐거운 하루'));
+    return await __T.guestLink({ t, hide: 0, ph: 1 });
+  }, t);
+  ok(/\?v=gv[a-z0-9]+#k=/.test(url), '링크 모양이 이상해요: ' + url);
+  ok([...store.keys()].some(k => /\/m\/h$/.test(k)) && [...store.keys()].filter(k => /\/p\//.test(k)).length >= 5, '서버에 본문·사진이 안 올라갔어요');
+  ok(![...store.values()].some(v => v.includes('시험 걷기') || v.includes('친구들과')), '서버에 잠그지 않은 글이 있어요');
+  // 받은 사람(다른 휴대폰): 자기 기록이 하나 있음
+  const rp = await newPage(); await rp.route(u => u.href.startsWith(FS), fsRoute);
+  try {
+    await rp.goto(BASE + '?my=1'); await rp.evaluate(() => { localStorage.setItem('track:mine_1', JSON.stringify([[37.5, 127, 1, 0], [37.51, 127.01, 60000, 0]])); localStorage.setItem('trackName:mine_1', JSON.stringify('내 산책')); });
+    const before = await rp.evaluate(() => JSON.stringify(Object.keys(localStorage).sort()));
+    await rp.goto(url.replace(/^.*?\?/, BASE + '?')); await sleep(3500);
+    const v = await rp.evaluate(() => ({ h1: document.querySelector('.vw-ttl h1')?.textContent, hero: !!document.querySelector('.vw-hero:not([hidden]) img'), gal: document.querySelectorAll('.gallery img').length,
+      note: document.body.innerText.includes('친구들과 즐거운 하루'), more: !!document.querySelector('[aria-label="더보기"]'), share: !!document.querySelector('.vb-r [aria-label="공유"]'), mine: document.body.innerText.includes('내 산책'),
+      keys: JSON.stringify(Object.keys(localStorage).sort()) }));
+    ok(v.h1 === '시험 걷기', '제목이 안 보여요: ' + v.h1);
+    ok(v.hero, '대표 사진이 안 보여요');
+    ok(v.gal === 5, '사진이 다 안 보여요: ' + v.gal);
+    ok(v.note, '메모가 안 보여요');
+    ok(!v.more && !v.share, '받은 사람에게 보낸 사람 전용 단추(더보기·공유)가 보여요');
+    ok(!v.mine, '받은 사람 자기 기록이 섞였어요');
+    ok(v.keys === before, '받은 사람 휴대폰 저장 칸이 바뀌었어요');
+    noErr(rp, '받은 화면');
+    if (process.env.SHOT) await rp.screenshot({ path: process.env.SHOT, fullPage: true });
+    // 보낸 사람이 사진 하나를 지우면 링크에서도 빠져요
+    await page.evaluate(async () => { await __T.photoDel('ph_g1'); }); await sleep(3000);
+    await rp.reload(); await sleep(3000);
+    const g2 = await rp.evaluate(() => document.querySelectorAll('.gallery img').length);
+    ok(g2 === 4, '지운 사진이 받은 링크에 남아 있어요: ' + g2);
+    // 기록을 지우면 서버에서도 지워요
+    await page.evaluate(async t => { await __T.guestDrop(t); }, t);
+    ok(![...store.keys()].some(k => k.includes('/rooms/gv') || k.startsWith('rooms/gv')), '기록을 지웠는데 서버에 남았어요: ' + [...store.keys()].slice(0, 3).join(','));
+  } finally { await rp.ctx.close(); }
+  noErr(page, '보낸 쪽');
+});
+
+await test('들어와서 보기: 여러 날 여행도 날마다까지 그대로', async page => {
+  const store = new Map(), FS = 'https://firestore.googleapis.com/v1/projects/map-photo-diary/databases/(default)/documents/';
+  const fsRoute = async route => { const req = route.request(), u = req.url(), path = decodeURIComponent(u.slice(FS.length).split('?')[0]);
+    if (req.method() === 'PATCH') { const f = JSON.parse(req.postData() || '{}').fields || {}; store.set(path, f.d ? f.d.stringValue : ''); return route.fulfill({ status: 200, body: '{}', contentType: 'application/json' }); }
+    if (req.method() === 'DELETE') { store.delete(path); return route.fulfill({ status: 200, body: '{}', contentType: 'application/json' }); }
+    if (!store.has(path)) return route.fulfill({ status: 404, body: '{}', contentType: 'application/json' });
+    return route.fulfill({ status: 200, body: JSON.stringify({ fields: { d: { stringValue: store.get(path) } } }), contentType: 'application/json' }); };
+  await page.route(u => u.href.startsWith(FS), fsRoute);
+  await page.goto(BASE + '?my=1');
+  const url = await page.evaluate(async () => {
+    const days = [];
+    for (let d = 0; d < 2; d++) { const id = 'walk_trip' + d, t0 = new Date(`2025-01-${String(9 + d).padStart(2, "0")}T10:00:00+08:00`).getTime(), tr = [];
+      for (let i = 0; i < 40; i++) tr.push([22.28 + i * 0.0003 + d * 0.01, 114.15 + i * 0.0002, t0 + i * 60000, 10, 1]);
+      localStorage.setItem('track:' + id, JSON.stringify(tr)); localStorage.setItem('trackName:' + id, JSON.stringify('홍콩 ' + (d + 1) + '일')); localStorage.setItem('walkMode:' + id, JSON.stringify('travel')); localStorage.setItem('walkAlbum:' + id, JSON.stringify('album_hk')); days.push(id); }
+    localStorage.setItem('albums', JSON.stringify([{ id: 'album_hk', name: '홍콩 · 마카오 여행', days }]));
+    localStorage.setItem('walkMode:album_hk', JSON.stringify('travel'));
+    return await __T.guestLink({ t: 'album_hk', hide: 0, ph: 1 });
+  });
+  const rp = await newPage(); await rp.route(u => u.href.startsWith(FS), fsRoute);
+  try {
+    await rp.goto(url.replace(/^.*?\?/, BASE + '?')); await sleep(3000);
+    const v = await rp.evaluate(() => ({ h1: document.querySelector('.vw-ttl h1')?.textContent, days: [...document.querySelectorAll('a.n-row')].map(a => a.getAttribute('href')), txt: document.body.innerText }));
+    ok(v.h1 === '홍콩 · 마카오 여행', '여행 제목이 안 보여요: ' + v.h1);
+    ok(v.days.length === 2 && v.days.every(h => /\?v=gv[a-z0-9]+&d=walk_trip\d#k=/.test(h)), '날마다 줄이 받은 링크 안으로 안 이어져요: ' + v.days.join(' '));
+    ok(/1박 2일/.test(v.txt), '기간이 안 보여요: ' + v.txt.slice(0, 200).replace(/\n/g, ' / '));
+    await rp.goto(new URL(v.days[1], rp.url()).href); await sleep(2500);
+    const d2 = await rp.evaluate(() => document.querySelector('.vw-ttl h1')?.textContent);
+    ok(d2 === '홍콩 2일', '날 하나를 열면 그날이 안 보여요: ' + d2);
+    noErr(rp, '받은 여행');
+  } finally { await rp.ctx.close(); }
 });
 
 await browser.close();
