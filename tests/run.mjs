@@ -1100,6 +1100,31 @@ await test('차로 다닌 기록 카드 거리 글은 한 번씩', async page =>
   noErr(page, '첫 화면');
 });
 
+// ─── 판 -359: 영상도 기록 지도와 같은 걷기/탈것 나누기 (찻길 흔들림 0 · 배 위 사진으로 꺾인 곧은 줄) ───
+await test('영상: 사진으로 만든 찻길·배 위 사진 바닷길은 걷기가 아니라 탈것', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const D = (a, b) => { const R = 6371000, x = (b[1] - a[1]) * Math.PI / 180 * Math.cos((a[0] + b[0]) / 2 * Math.PI / 180), y = (b[0] - a[0]) * Math.PI / 180; return Math.hypot(x, y) * R; };
+    const line = (tr, a, b, sh) => { const d = D(a, b), k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b[2] - a[2]) / 240000))); for (let s = 1; s < k; s++) { const q = s / k; tr.push([a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q, a[2] + (b[2] - a[2]) * q, null, sh]); } tr.push(b.concat([null, sh])); };
+    const t0 = Date.UTC(2025, 0, 11, 1), h = 3600000;
+    // ① 배: 배 위에서 찍은 사진 4장으로 꺾인 바닷길 (사진 사이 2~2.5km, 평균 시속 약 12km)
+    const A = []; A.push([22.197, 113.56, t0, null, 1]);
+    const S = [[22.205, 113.58], [22.215, 113.60], [22.222, 113.62], [22.235, 113.64], [22.245, 113.66]];
+    S.forEach((p, i) => line(A, A[A.length - 1].slice(0, 3), [p[0], p[1], t0 + (i + 1) * 0.2 * h], null));
+    const fa = __T.filmPath(A, false, 6, 3.5).P, boat = fa.filter(p => p.boat).length, walkA = fa.slice(1).filter(p => !p.car && !p.fly).length;
+    // ② 찻길(흔들림 0): 굽은 길 15km를 2시간(시속 7.5km, 기다린 시간 포함)
+    const B = []; for (let i = 0; i <= 150; i++) B.push([22.3 + Math.sin(i / 9) * 0.01, 114.0 + i * 0.00095, t0 + i * 48000, null, 0]);
+    const fb = __T.filmPath(B, false, 6, 3.5).P, carB = fb.slice(1).filter(p => p.car).length;
+    // ③ 계획 미리 보기(plain)는 예전대로 빠르기로만
+    const fc = __T.filmPath(B, false, 6, 3.5, true).P, carC = fc.slice(1).filter(p => p.car).length;
+    return { boat, walkA, nA: fa.length, carB, nB: fb.length, carC };
+  });
+  ok(r.walkA === 0 && r.boat > 0, `배 위 사진으로 꺾인 바닷길 ${r.nA}점 가운데 ${r.walkA}점을 걷기로 그려요(배 ${r.boat}점)`);
+  ok(r.carB > r.nB * 0.9, `사진으로 만든 찻길(흔들림 0)을 걷기로 그려요: 차 ${r.carB}/${r.nB}`);
+  ok(r.carC === 0, '계획 미리 보기까지 흔들림 값으로 차를 갈라요');
+  noErr(page, '영상 걷기/탈것');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
