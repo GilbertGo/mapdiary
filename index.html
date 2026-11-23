@@ -3646,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-349-splitfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-350-apkcard';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "이동 영상 세 칸 화면이 끝 장면 전까지 그대로예요 · 아래 칸 사진은 지도가 그 사진 찍은 자리에 멈춰 있을 때만 나와요 · 영상 첫 사진은 AI가 사진을 보고 골라요 (★ 표시한 사진이 있으면 그것)";
+const UI_NOTES = "안드로이드 휴대폰 브라우저 첫 화면 맨 아래 카드가 'MPD 앱 받기'로 바뀌었어요 · 받기 한 번이면 내려받고 남은 순서만 짧게 알려 줘요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4862,8 +4862,32 @@ function howToInstall() {
 }
 // 카톡에서 첫 화면을 열면 바로 기본 브라우저로 넘겨요 (추가는 첫 화면 맨 아래 '바탕화면에 추가' 카드에서)
 const kakaoOut = () => { const u = new URL(location.href); u.searchParams.set('install', '1'); location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(u.href); };
+// 판 -350 (사용자 'MPD앱 설치 편하게 하자'): 안드로이드 휴대폰 브라우저(웹·바탕화면 웹앱)에서는 '바탕화면에 추가' 대신 진짜 앱 받기 카드.
+// 웹은 화면을 끄면 기록이 멈추고 사진 위치도 못 읽어서. 누르면 바로 APK를 받고 남은 순서(파일 열기·출처 허용·설치·로그인)만 짧게 보여 줘요
+var IS_ANDROID_WEB = /Android/i.test(navigator.userAgent) && !IN_NATIVE;
+var MPD_APK = 'https://github.com/GilbertGo/mapdiary/releases/latest/download/MPD.apk';
+function apkGet() {
+  if (IN_KAKAO) return kakaoOut();   // 카톡 안에선 받은 파일을 못 열어서 먼저 브라우저로
+  location.href = MPD_APK;
+  const sb = el('div', { class: 'sheet-bg', onclick: e => { if (e.target === sb) sb.remove(); } });
+  sb.append(el('div', { class: 'sheet', role: 'dialog', 'aria-label': 'MPD 앱 설치' },
+    el('h2', { text: '받는 중이에요' }),
+    el('ol', { style: 'margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px' },
+      ["다 받으면 알림이나 화면 아래에 뜨는 'MPD.apk'를 눌러요", "'출처를 알 수 없는 앱'이 나오면 설정 → '이 출처 허용'을 켜고 돌아와요", "'설치'를 누르고, 처음 열 때 위치·알림을 허용해요"].map(s => el('li', { text: s }))),
+    el('p', { class: 'sub', style: 'margin:0', text: cloudUser ? '앱에서도 같은 계정으로 로그인하면 지금 기록이 그대로 와요. 새 판은 앱 안에서 바로 받아요.' : '지금 웹에 있는 기록은 앱으로 저절로 넘어가지 않아요. 여기서 로그인해 두고 앱에서도 같은 계정으로 로그인하면 그대로 와요. 새 판은 앱 안에서 바로 받아요.' }),
+    el('button', { class: 'btn primary full', text: '알겠어요', onclick: () => sb.remove() })));
+  document.body.append(sb);
+}
 function drawInstall() {
   if (!installSlot) return;
+  if (IS_ANDROID_WEB) {
+    if (ls.get('apkHide', false)) return installSlot.replaceChildren();
+    return installSlot.replaceChildren(el('div', { class: 'card row', style: 'gap:12px;align-items:center;padding:14px 16px' },
+      el('img', { src: 'icon-192.png', alt: '', width: 44, height: 44, style: 'border-radius:12px;flex:none' }),
+      el('div', { class: 'grow' }, el('b', { text: 'MPD 앱 받기' }), el('div', { class: 'sub', style: 'font-size:14px', text: '화면을 꺼도 기록되고 사진 위치도 읽어요' })),
+      el('button', { class: 'btn small dark', style: 'height:38px;white-space:nowrap', text: '받기', onclick: apkGet }),
+      el('button', { class: 'link', style: 'padding:4px;color:var(--muted)', 'aria-label': '앱 받기 안내 닫기', text: '✕', onclick: () => { ls.set('apkHide', true); drawInstall(); } })));
+  }
   // 개발자 보기(devMode): 앱으로 열었거나 ✕로 숨겼어도 카드를 보여 줘요. 첫 화면 'MPD' 딱지를 5번 누르면 켜고 꺼요
   const dev = false;   // 판 -274 개발자 보기 뺌
   if (!dev && (IS_APP || ls.get('installHide', false) || (ls.get('installed', false) && !installEv))) return installSlot.replaceChildren();
