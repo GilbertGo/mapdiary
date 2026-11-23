@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1063,6 +1063,23 @@ await test('길 없는 곧은 줄(배)은 걷기가 아니라 탈것 · 영상�
   ok(r.boat > 100, '이동 영상에서 바다 건너기가 배로 안 나와요');
   ok(r.plan === 0, '흔들림 값이 있는 곧은 줄(계획 미리 보기)까지 배로 그려요');
   noErr(page, '배');
+});
+
+// ─── 판 -358: 기록에서 고른 대표 사진을 영상 첫 사진으로 ───
+await test('영상 첫 사진은 고른 대표 사진 먼저', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const cand = [{ p: { id: 'a' } }, { p: { id: 'b' }, star: true }, { p: { id: 'c' } }, { p: { id: 'v', v: 1 } }];
+    localStorage.removeItem('walkCover:album_x'); const none = __T.filmCoverG('album_x', cand);
+    localStorage.setItem('walkCover:album_x', JSON.stringify('c')); const got = __T.filmCoverG('album_x', cand);
+    localStorage.setItem('walkCover:album_x', JSON.stringify('none')); const pic = __T.filmCoverG('album_x', cand);
+    localStorage.setItem('walkCover:album_x', JSON.stringify('v')); const vid = __T.filmCoverG('album_x', cand);
+    localStorage.removeItem('walkCover:album_x');
+    return { none, got: got && got.p.id, pic, vid };
+  });
+  ok(r.got === 'c', '고른 대표 사진을 영상 첫 사진으로 안 써요');
+  ok(r.none === null && r.pic === null && r.vid === null, '고르지 않았는데(또는 풍경 그림·동영상) 대표 사진으로 잡아요');
+  noErr(page, '영상 첫 사진');
 });
 
 await browser.close();
