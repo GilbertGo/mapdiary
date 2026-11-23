@@ -67,6 +67,14 @@ import java.net.URL;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.provider.MediaStore;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -88,9 +96,45 @@ import java.nio.charset.StandardCharsets;
 @CapacitorPlugin(name = "MdApp", permissions = {
     @Permission(strings = { "android.permission.READ_MEDIA_IMAGES" }, alias = "photos"),
     @Permission(strings = { "android.permission.READ_EXTERNAL_STORAGE" }, alias = "photosOld"),
-    @Permission(strings = { "android.permission.ACCESS_MEDIA_LOCATION" }, alias = "mediaLoc")
+    @Permission(strings = { "android.permission.ACCESS_MEDIA_LOCATION" }, alias = "mediaLoc"),
+    @Permission(strings = { "android.permission.ACTIVITY_RECOGNITION" }, alias = "steps")
 })
 public class MdAppPlugin extends Plugin {
+    // 판 -363 화면을 꺼도 걸음 세기 (2026-11-24 사용자 '화면꺼도 걸음 세개해'): 휴대폰 걸음 센서(TYPE_STEP_COUNTER, 켠 뒤 걸은 수를 휴대폰이 셈)를
+    // 앱이 살아 있는 동안 계속 붙잡아 두고(붙잡은 앱이 없으면 세지 않는 휴대폰도 있어서), 웹 화면은 stepsNow로 지금 값만 읽어 기록 시작 때 값과 빼요.
+    // 안드로이드 10부터 '신체 활동' 권한이 있어야 해요(ask:true일 때만 물어요)
+    static SensorManager stSm; static SensorEventListener stL; static volatile float stN = -1; static volatile long stAt = 0;
+    void stReg() {
+        if (stL != null) return;
+        SensorManager sm = (SensorManager) getContext().getApplicationContext().getSystemService(Context.SENSOR_SERVICE);
+        Sensor sn = sm == null ? null : sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+        if (sn == null) return;
+        SensorEventListener l = new SensorEventListener() {
+            @Override public void onSensorChanged(SensorEvent e) { stN = e.values[0]; stAt = System.currentTimeMillis(); }
+            @Override public void onAccuracyChanged(Sensor x, int a) { }
+        };
+        if (sm.registerListener(l, sn, SensorManager.SENSOR_DELAY_NORMAL, 10000000)) { stSm = sm; stL = l; }   // 10초까지 모아서 받아 배터리를 아껴요(읽을 땐 flush)
+    }
+    boolean stPermOk() { return Build.VERSION.SDK_INT < 29 || getPermissionState("steps") == PermissionState.GRANTED; }
+    @PluginMethod
+    public void stepsNow(PluginCall call) {
+        if (!stPermOk() && Boolean.TRUE.equals(call.getBoolean("ask", false))) { requestPermissionForAlias("steps", call, "stepsPerm"); return; }
+        stRead(call);
+    }
+    @PermissionCallback
+    private void stepsPerm(PluginCall call) { stRead(call); }
+    void stRead(PluginCall call) {
+        boolean ok = stPermOk();
+        if (ok) stReg();
+        if (stSm != null && stL != null) try { stSm.flush(stL); } catch (Exception e) { }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            JSObject r = new JSObject();
+            r.put("perm", ok); r.put("has", stL != null); r.put("n", (double) stN); r.put("at", stAt);
+            r.put("boot", System.currentTimeMillis() - SystemClock.elapsedRealtime());
+            call.resolve(r);
+        }, stN < 0 ? 1500 : 400);
+    }
+
     // 갤러리 사진 찾기: 기록한 시간(from~to, ms)에 찍은 사진. 이 앱이 넣은 'MapDiary' 앨범과 스크린샷은 빼요
     String photoAlias() { return Build.VERSION.SDK_INT >= 33 ? "photos" : "photosOld"; }
 
@@ -375,7 +419,7 @@ const mf = 'android/app/src/main/AndroidManifest.xml', PERM = 'io.github.gilbert
 let m = readFileSync(mf, 'utf8');
 if (!m.includes('</application>') || !m.includes('</manifest>')) throw new Error('AndroidManifest 모양이 달라요');
 m = m.replace('</application>', `    <receiver android:name="${appId}.MdUpdateReceiver" android:exported="false" />\n    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
-  .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
+  .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />\n    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
 writeFileSync(mf, m);
 console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);
 // 시계 기록 받기 (2026-10-20 사용자 '와치에 러닝 데이터 폰으로 보내기 어렵다' → '저절로 연결'): 시계 MPD Run(같은 이름 io.github.gilbertgo.mdrun·같은 서명)이

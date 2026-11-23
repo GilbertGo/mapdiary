@@ -1210,6 +1210,7 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-sum{display:flex;align-items:baseline;gap:8px;padding:0 2px}
 .mh-sum b{font:700 22px Pretendard,sans-serif;letter-spacing:-.02em;color:#14253B}
 .mh-sum span{font:500 14.5px Pretendard,sans-serif;color:#61758B}
+.mh-steps{margin-left:auto;font:600 14.5px Pretendard,sans-serif;font-style:normal;color:#1D9EC0;white-space:nowrap}
 .mh-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border:none;border-radius:16px;background:#191F28;color:#fff;font:600 17px Pretendard,sans-serif;text-decoration:none;cursor:pointer;box-shadow:0 4px 14px rgba(25,31,40,.18)}
 .mh-go .pl{font-size:26px;font-weight:300;line-height:1;margin-top:-2px}
 .mh-go.live{background:#E5383B;justify-content:flex-start;padding:0 18px;gap:10px}
@@ -3721,9 +3722,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-362-homemap';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-363-steps';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면을 지도 중심으로 바꿨어요 · 지도는 손가락으로 밀고 벌려 보고, 아래 판을 올리면 최근 이야기와 바로 가기가 나와요 · 여행 중이면 오늘 일정이 지도에 번호로 나와요 · 예전 사진 첫 화면은 나 → 화면 → 첫 화면 모양에서 고를 수 있어요";
+const UI_NOTES = "MPD 앱이면 화면을 꺼도 걸음을 세요 · 기록 중 걸음 수가 휴대폰 걸음 센서로 따라잡아요 · 첫 화면에 오늘 걸음 수가 나와요(만보계) · 새 앱(APK)을 받아야 하고 처음 한 번 신체 활동 권한을 물어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14382,6 +14383,37 @@ route();
 if (!LAB_QUIET) cloudWatch();
 if (!LAB_QUIET) setTimeout(() => { if (!cloudDiag.sent) cloudDiag({ ok: -1, auth: cloudUser ? 1 : 0, on: ls.get('cloudOn', false) ? 1 : 0, nm: ls.get('cloudName', '') ? 1 : 0, rt: ls.get('cloudRt', null) ? 1 : 0 }); }, 25000);   // 판 -332: 맞추기를 안 한 기기도(로그인이 풀렸나) 개발 쪽에서 보이게
 if (!LAB_QUIET) setTimeout(uiNewCheck, 1500);
+// 판 -363 오늘 걸음(만보계, 사용자 '만보계까지 모두 배포해' · '화면꺼도 걸음 세개해'): 안드로이드 앱이면 휴대폰 걸음 센서(켠 뒤 걸은 수)를 읽어 오늘 걸음을 셈.
+//   stepDay = { d 날짜, base 오늘 0보인 센서 값, boot 휴대폰 켠 시각, prev 오늘 휴대폰을 다시 켜기 전까지 걸음, ap 1이면 오늘 처음 읽은 때부터(그 앞은 모름), v 오늘 걸음 }
+//   자정 뒤 처음 읽을 때: 휴대폰을 오늘 켰으면 0부터(정확), 어제 저녁 6시 뒤에 읽은 값이 있으면 그 값부터, 아니면 지금부터(ap). 앱이 떠 있는 동안 5분마다·화면을 켤 때 읽어요
+function stepYmd(t) { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function stepDayFeed(r, now = Date.now()) {
+  const today = stepYmd(now), mid = new Date(now); mid.setHours(0, 0, 0, 0);
+  const same = (a, b) => Math.abs((a || 0) - (b || 0)) < 120000, Lst = ls.get('stepLast', null);
+  let D = ls.get('stepDay', null);
+  if (!D || D.d !== today) {
+    let base = r.n, ap = 1;
+    if (r.boot >= +mid) { base = 0; ap = 0; }
+    else if (Lst && same(Lst.boot, r.boot) && Lst.c <= r.n && Lst.t < +mid && Lst.t >= +mid - 6 * 3600e3) { base = Lst.c; ap = 0; }
+    D = { d: today, base, boot: r.boot, prev: 0, ap };
+  } else if (!same(D.boot, r.boot) || r.n < D.base) {   // 오늘 휴대폰을 다시 켬: 그 전까지 걸음은 남기고 0부터
+    D.prev += Lst && same(Lst.boot, D.boot) ? Math.max(0, Lst.c - D.base) : 0; D.base = 0; D.boot = r.boot;
+  }
+  D.v = Math.max(0, Math.round(D.prev + r.n - D.base)); D.at = now;
+  ls.set('stepDay', D); ls.set('stepLast', { t: now, c: r.n, boot: r.boot });
+  return D;
+}
+function stepToday() { const D = ls.get('stepDay', null); return D && D.d === stepYmd(Date.now()) ? D : null; }
+async function stepDaySample(ask) {
+  if (!window.mdNativeSteps) return null;
+  try { const r = await window.mdNativeSteps.now(ask); if (ask) ls.set('stepAsked', true); if (r && r.has && r.n >= 0) { const D = stepDayFeed(r); dispatchEvent(new CustomEvent('md-steps', { detail: D })); return D; } } catch {}
+  return null;
+}
+if (window.mdNativeSteps && !LAB_QUIET) {
+  setTimeout(() => stepDaySample(!ls.get('stepAsked', false) && !/[?&]walk=1/.test(location.search)), 2500);   // 처음 한 번만 '신체 활동' 권한을 물어요(기록 화면은 거기서 물어요)
+  setInterval(() => stepDaySample(false), 300000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) stepDaySample(false); });
+}
 setTimeout(() => { try { const m = sessionStorage.getItem('toastNext'); if (m) { sessionStorage.removeItem('toastNext'); toast(m, false, m.length > 40 ? 7000 : 3000); } } catch {} }, 700);
 // 새 판이 기다리고 있는지 알려 줘요 (2026-10-29 사용자가 길 누르기가 안 된다고 했는데, 기록 중이라 앱이 화면을 안 바꾸고 있었음):
 // 서버의 UI_VER가 지금보다 새것이면 → 기록 중이면 '기록을 끝내면 바뀌어요' 알림(판마다 한 번), 웹이면 '새로고침' 알림. ⚙ 설정 맨 아래에도
@@ -17692,9 +17724,12 @@ function viewLandingMap(memSlot) {
     cLiveTick(go, () => { b.textContent = `기록 중 · ${cLiveName(wNow)}`; s.textContent = `${cLiveTime(wNow)} · 이어서 ›`; }); }
   else go = el('button', { class: 'mh-go', type: 'button', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
   const sr = wNow ? staleRec() : null;
+  // 판 -363 오늘 걸음(앱만): 걸음 센서로 센 오늘 걸음 수. 오늘 처음 읽은 때부터만 셀 수 있으면 '앱 켠 뒤'
+  const stepEl = el('em', { class: 'mh-steps' }), stepPaint = D => { stepEl.textContent = D && D.v != null ? `${D.ap ? '앱 켠 뒤 ' : '오늘 '}${D.v.toLocaleString()}보` : ''; };
+  stepPaint(stepToday()); addEventListener('md-steps', e => stepPaint(e.detail));
   const peekEl = el('div', { class: 'mh-peek' },
     el('i', { class: 'mh-grab', 'aria-hidden': 'true' }),
-    el('div', { class: 'mh-sum' }, el('b', { text: `${now.getMonth() + 1}월` }), el('span', { text: n ? `기록 ${n}번${walk >= 50 ? ` · ${fmtDist(walk)}` : ''}` : '이번 달 기록이 아직 없어요' })),
+    el('div', { class: 'mh-sum' }, el('b', { text: `${now.getMonth() + 1}월` }), el('span', { text: n ? `기록 ${n}번${walk >= 50 ? ` · ${fmtDist(walk)}` : ''}` : '이번 달 기록이 아직 없어요' }), stepEl),
     sr ? staleBox(sr, 'mh-stale') : null,
     cur ? mhTrip(cur) : null,
     go);
@@ -18252,7 +18287,7 @@ function viewWalk() {
     tSteps.append(el('div', { class: 'wk-t' },
       el('div', { class: 'wk-n' }, el('b', { text: stepN.toLocaleString() }), el('small', { text: '보' })),
       el('div', { class: 'wk-g', text: noSensor ? '휴대폰을 몸에 지니고 걸으면 걸음을 세요' : stepN >= sg ? `🎉 오늘 목표 ${sg.toLocaleString()}보 달성!` : `${sg >= 10000 && sg % 10000 === 0 ? (sg / 10000 === 1 ? '만' : sg / 10000 + '만') : sg.toLocaleString()} 보까지 ${(sg - stepN).toLocaleString()}보` }),
-      el('div', { class: 'wk-s', text: c ? `지금 1분에 ${c}걸음${c >= 110 ? ' · 빠르게 걷는 중' : ''}` : '화면이 켜져 있을 때 세요 · 누르면 목표 바꾸기' })));
+      el('div', { class: 'wk-s', text: c ? `지금 1분에 ${c}걸음${c >= 110 ? ' · 빠르게 걷는 중' : ''}` : nsOn ? '화면을 꺼도 세요 · 누르면 목표 바꾸기' : '화면이 켜져 있을 때 세요 · 누르면 목표 바꾸기' })));
     walkGoalPaint();
   }
   let stepTimes = [], stepN = id ? (ls.get('walkSteps:' + id, {}).n || 0) : 0, motionOn = false, motionSeen = 0, sm = 0, base = 9.8, armed = true, lastStep = 0;
@@ -18263,7 +18298,7 @@ function viewWalk() {
     if (M().k === 'run') formSample(a, mag);
     const sec = Math.floor(Date.now() / 1000), lb = shakeB[shakeB.length - 1];
     if (!lb || lb.s !== sec) { shakeB.push({ s: sec, n: 1, ss: (mag - base) ** 2, st: 0 }); if (shakeB.length > 25) shakeB.shift(); } else { lb.n++; lb.ss += (mag - base) ** 2; }
-    if (armed && sm > base + 1.5 && Date.now() - lastStep > 250 && !pausedNow) {
+    if (armed && sm > base + 1.5 && Date.now() - lastStep > 250 && !pausedNow && !nsOn) {   // 판 -363: 앱 걸음 센서를 쓰는 동안은 흔들림으로 세지 않음(두 번 세지 않게)
       const iv = Date.now() - lastStep;
       armed = false; lastStep = Date.now(); stepTimes.push(lastStep); stepN++; shakeB[shakeB.length - 1].st++;
       if (M().k === 'run') formStep(iv);
@@ -18338,6 +18373,32 @@ function viewWalk() {
     motionOn = true;
     const go = () => addEventListener('devicemotion', onMotion);
     if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') go(); }).catch(() => {}); else go();   // 아이폰은 허락을 받아야 해요
+  }
+  // 판 -363 화면을 꺼도 걸음 세기(2026-11-24 사용자 '화면꺼도 걸음 세개해'): 안드로이드 앱이면 휴대폰 걸음 센서 값을 읽어
+  //   기록 시작 때 값(walkStepBase:{ID} = {c 센서 값, boot 휴대폰 켠 시각, add 그때까지 센 걸음})과의 차이로 셈. 화면이 꺼져 있어도 휴대폰이 세어 두니까 켜면 따라잡아요.
+  //   멈춘 동안은 기준을 지우고 다시 시작할 때 새로 잡아요(멈춘 동안 걸음은 안 셈). 휴대폰을 다시 켜면(센서 값이 0부터) 그때 걸음까지 더해 새 기준
+  var nsBase = id ? ls.get('walkStepBase:' + id, null) : null, nsOn = false, nsIv = 0, nsBusy = false;
+  function nsStart() {
+    if (nsIv || !id || !window.mdNativeSteps) return;
+    nsTick(!ls.get('stepAsked', false)); ls.set('stepAsked', true); nsIv = setInterval(() => nsTick(false), 2500);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) nsTick(false); });
+  }
+  async function nsTick(ask) {
+    if (nsBusy || !id) return; nsBusy = true;
+    try {
+      const r = await window.mdNativeSteps.now(ask); if (!r || !r.has || !(r.n >= 0)) return;
+      if (pausedNow) { if (nsBase) { nsBase = null; ls.set('walkStepBase:' + id, null); } return; }
+      if (!nsBase || Math.abs((nsBase.boot || 0) - r.boot) > 120000 || r.n < nsBase.c) { nsBase = { c: r.n, boot: r.boot, add: stepN }; ls.set('walkStepBase:' + id, nsBase); }
+      nsOn = true; motionSeen = Date.now();
+      const v = nsBase.add + Math.round(r.n - nsBase.c);
+      if (v > stepN) {   // 케이던스(최근 20초)도 이어지게 새 걸음을 지난번 읽은 때부터 고르게 나눠 넣음
+        const now = Date.now(), t0 = Math.max(nsTick.at || now - 4000, now - 20000), d = Math.min(v - stepN, 400);
+        for (let i = 1; i <= d; i++) stepTimes.push(Math.round(t0 + (now - t0) * i / d));
+        stepN = v; ls.set('walkSteps:' + id, { n: stepN });
+        if (isWalkK()) stepsPaint();
+      }
+      nsTick.at = Date.now();
+    } catch {} finally { nsBusy = false; }
   }
   function cadNow() {   // 최근 20초 걸음으로
     const now = Date.now(); stepTimes = stepTimes.filter(t => now - t < 20000);
@@ -19381,7 +19442,7 @@ function viewWalk() {
         } }, ico(pick, 20), `이 기록은 끝내고 새 ${modeByK(pick).label} 시작`));
       return;
     }
-    startGps(); ensureMap(); motionStart(); drawCad();
+    startGps(); ensureMap(); motionStart(); nsStart(); drawCad();
     if (M().k === 'run') {
       if (!mapEl.style.height.endsWith('px')) mapEl.style.height = '25vh'; mapEl.style.minHeight = '150px'; document.body.classList.add('has-act');
       const voice = ls.get('runVoice', true);
