@@ -1201,7 +1201,8 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-map.leaflet-container{background:#E9EEF1;font-family:inherit}
 .mh-map .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
 .mh-map .leaflet-top{top:calc(60px + env(safe-area-inset-top,0px))}
-.c-ph-top.mh-top{position:absolute;left:0;right:0;top:0;margin:0;z-index:30;padding-bottom:28px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.78) 55%,rgba(255,255,255,0));pointer-events:none!important}
+.c-ph-top.mh-top{position:fixed;left:0;right:0;top:0;margin:0;z-index:30;padding-bottom:28px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.78) 55%,rgba(255,255,255,0));pointer-events:none!important;transition:background .2s,box-shadow .2s,padding .2s}
+.c-ph-top.mh-top.solid{background:#F7FAFC;box-shadow:0 1px 0 rgba(20,37,59,.08);padding-bottom:8px}   /* 판 -365: 판을 올리면 머리 줄이 상태 표시줄 밑으로 밀려 잘리던 것 → 늘 위에, 판이 닿으면 흰 바탕 */
 .c-ph-top.mh-top>*{pointer-events:auto}
 .mh-sp{margin:0 -20px}
 .mh-sheet{position:relative;z-index:10;margin:0 -20px;padding:8px 20px 28px;background:#F7FAFC;border-radius:26px 26px 0 0;box-shadow:0 -8px 28px rgba(20,37,59,.16);display:flex;flex-direction:column;gap:18px;min-height:calc(100svh - 70px);padding-bottom:calc(40px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
@@ -3723,9 +3724,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-364-homefix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-365-homehead';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면 기록하기 단추가 휴대폰 아래 단추 줄에 가려지던 것을 고쳤어요 · 지도 바탕이 늦게 와도 빈 화면 대신 지도가 보여요 · 여행 카드 글이 밝은 사진 위에서도 잘 읽혀요";
+const UI_NOTES = "첫 화면에서 아래 판을 올려도 맨 위 MPD 글자가 상태 표시줄 밑으로 잘리지 않아요 · 앱을 막 깔았을 때 앱 켠 뒤 0보는 안 보여요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -17726,7 +17727,7 @@ function viewLandingMap(memSlot) {
   else go = el('button', { class: 'mh-go', type: 'button', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
   const sr = wNow ? staleRec() : null;
   // 판 -363 오늘 걸음(앱만): 걸음 센서로 센 오늘 걸음 수. 오늘 처음 읽은 때부터만 셀 수 있으면 '앱 켠 뒤'
-  const stepEl = el('em', { class: 'mh-steps' }), stepPaint = D => { stepEl.textContent = D && D.v != null ? `${D.ap ? '앱 켠 뒤 ' : '오늘 '}${D.v.toLocaleString()}보` : ''; };
+  const stepEl = el('em', { class: 'mh-steps' }), stepPaint = D => { stepEl.textContent = D && D.v != null && !(D.ap && D.v < 1) ? `${D.ap ? '앱 켠 뒤 ' : '오늘 '}${D.v.toLocaleString()}보` : ''; };   // 판 -365: 막 깐 뒤 '앱 켠 뒤 0보'는 안 보임
   stepPaint(stepToday()); addEventListener('md-steps', e => stepPaint(e.detail));
   const peekEl = el('div', { class: 'mh-peek' },
     el('i', { class: 'mh-grab', 'aria-hidden': 'true' }),
@@ -17743,6 +17744,8 @@ function viewLandingMap(memSlot) {
     el('div', { class: 'c-foot', style: 'text-align:center', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }));
   const sp = el('div', { class: 'mh-sp' }), top = cHomeTop(true); top.classList.add('mh-top');
   app.replaceChildren(map, top, sp, sheet, cTabs('home'));
+  const solid = () => top.classList.toggle('solid', sheet.getBoundingClientRect().top < top.offsetHeight);
+  addEventListener('scroll', solid, { passive: true }); setTimeout(solid, 450);
   // 처음 보이는 판 높이 = 지금 할 일까지(기록하기 단추 아래). 나머지는 밀어 올리면 보여요
   // 판 -364: 휴대폰 아래 단추 줄(내비게이션 바)만큼(:root padding-bottom = safe-area 아래)도 빼서 기록하기 단추가 그 밑에 깔리지 않게
   const fit = () => { const cs = getComputedStyle(document.documentElement), pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0, h = Math.min(innerHeight * .55, peekEl.offsetHeight + 28);
