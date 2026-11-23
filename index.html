@@ -3021,7 +3021,9 @@ function noRoadRuns(tr) {
     if (tr[i][4] != null) { i++; continue; }
     const kx = Math.cos(tr[i][0] * Math.PI / 180), hd = k => Math.atan2(tr[k][0] - tr[k - 1][0], (tr[k][1] - tr[k - 1][1]) * kx), h0 = hd(i);
     let j = i; while (j + 1 < tr.length && tr[j + 1][4] == null && ang(hd(j + 1), h0) < 0.035) j++;
-    if (j - i >= 2) out.push({ i0: i - 1, i1: j, d: dist(tr[i - 1][0], tr[i - 1][1], tr[j][0], tr[j][1]), sec: (tr[j][2] - tr[i - 1][2]) / 1000 });
+    if (j - i >= 2) { const d = dist(tr[i - 1][0], tr[i - 1][1], tr[j][0], tr[j][1]), l = out[out.length - 1];
+      if (l && l.i1 === i - 1) { l.i1 = j; l.d += d; l.sec = (tr[j][2] - tr[l.i0][2]) / 1000; }   // 판 -359: 배 위에서 찍은 사진처럼 곧은 줄이 꺾여 이어지면 한 덩어리로
+      else out.push({ i0: i - 1, i1: j, d, sec: (tr[j][2] - tr[i - 1][2]) / 1000 }); }
     i = j + 1;
   }
   return out;
@@ -3673,9 +3675,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-359-sharefix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-359-filmmodes';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "차로 다닌 기록의 카드에 걸은 거리가 두 번 다르게 나오던 것을 고쳤어요 · 공유 창을 다시 열어도 같은 카드면 사진을 다시 올리지 않고 전에 만든 링크를 그대로 써요";
+const UI_NOTES = "이동 영상에서 차나 배로 간 길을 걸어가는 것처럼 그리던 것을 고쳤어요 · 영상도 기록 지도와 같은 방법으로 걷기와 탈것을 나눠요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -6302,8 +6304,11 @@ function filmTripRange(P) {   // 판 -298: 가는 비행기 내린 뒤 ~ 오는 
   const lf = fr[fr.length - 1]; if (lf && lf[1] > P.length / 2 && lf[0] - 1 > i0) i1 = lf[0] - 1;
   return [i0, i1];
 }
-function filmPath(rows, hide, carMs, fastMs) {
-  let P = rows.filter(q => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(q => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null, sh: q[4] }));
+function filmPath(rows, hide, carMs, fastMs, plain) {
+  // 판 -359 (사용자 홍콩·마카오 영상: 바다 위를 🚶로 건넘): 예전엔 영상만 빠르기로 차를 갈라서, 사진으로 만든 찻길(흔들림 0)이나 배를 사진 사이 시간이 길면 걷기로 그렸어요
+  //   → 기록 지도와 같은 걷기/차/비행 나누기(trackModes)를 같이 써요. plain: 계획 미리 보기(점이 짐작이라 안 씀)
+  let M = null; if (!plain) try { M = trackModes(rows, (carMs || 6) * 3.6); } catch {}
+  let P = rows.map((q, i) => [q, i]).filter(([q]) => q && Number.isFinite(q[0]) && Number.isFinite(q[1]) && !(q[0] === 0 && q[1] === 0)).map(([q, i]) => ({ lat: q[0], lng: q[1], ts: q[2], alt: Number.isFinite(q[3]) ? q[3] : null, sh: q[4], m: M ? M[i] : null }));
   // 5m 안 겹친 점은 하나로(카메라 방향이 흔들리지 않게)
   const Q = []; for (const p of P) { const l = Q[Q.length - 1]; if (!l || dist(l.lat, l.lng, p.lat, p.lng) >= 5) Q.push(p); }
   if (Q.length < 2) return null;
@@ -6313,13 +6318,13 @@ function filmPath(rows, hide, carMs, fastMs) {
   const QD = [0], QT = [0]; for (let i = 1; i < Q.length; i++) { QD.push(dist(Q[i - 1].lat, Q[i - 1].lng, Q[i].lat, Q[i].lng)); QT.push((Q[i].ts - Q[i - 1].ts) / 1000); }
   const QF = flyFlags(QD, QT);
   for (let i = 1; i < Q.length; i++) {
-    const a = Q[i - 1], b = Q[i], dd = QD[i], fly = QF[i];
+    const a = Q[i - 1], b = Q[i], dd = QD[i], fly = QF[i] || b.m === 'f';
     if (fly && dd > 30000) { const arc = flyArc([a.lat, a.lng], [b.lat, b.lng], 48); for (let k = 1; k < arc.length - 1; k++) R.push({ lat: arc[k][0], lng: arc[k][1], ts: a.ts + (b.ts - a.ts) * k / (arc.length - 1), alt: null, fly: true }); }
     if (fly) { b.alt = null; if (dd <= 30000) a.alt = null; }   // 비행기 안 높이(수천 m)는 높이 그림에서 빼요
-    R.push(Object.assign(b, { fly, car: !fly && b.ts > a.ts && dd / ((b.ts - a.ts) / 1000) > (carMs || 6) }));
+    R.push(Object.assign(b, { fly, car: !fly && (b.m === 'c' || (b.ts > a.ts && dd / ((b.ts - a.ts) / 1000) > (carMs || 6))) }));
   }
   // ⛴ 판 -357 (사용자 '바다위를 걸어가네. 배타고 간건데'): 사진 사이를 곧은 줄로 이은 곳(길을 못 찾음, 바다 건너기)이 3km·시속 5km 넘으면 배, 80km·시속 150km 넘으면 비행
-  for (const r of noRoadRuns(R.map(p => [p.lat, p.lng, p.ts, null, p.fly ? 'x' : p.sh]))) {
+  if (!plain) for (const r of noRoadRuns(R.map(p => [p.lat, p.lng, p.ts, null, p.fly ? 'x' : p.sh]))) {
     const v = r.sec > 0 ? r.d / r.sec : 0, fl = r.d > 80000 && v > 150 / 3.6;
     if (fl || (r.d >= 3000 && v >= 5 / 3.6)) for (let q = r.i0 + 1; q <= r.i1; q++) { const p = R[q]; if (fl) { p.fly = true; p.car = false; p.alt = null; } else { p.boat = true; p.car = true; } }
   }
@@ -7035,7 +7040,7 @@ async function filmBoard(S, opt, cv) {
   const seq = (filmBoard.n = (filmBoard.n || 0) + 1);
   const c = cv.getContext('2d'), Wd = cv.width, Hd = cv.height; c.fillStyle = '#111'; c.fillRect(0, 0, Wd, Hd);
   const src = filmSrc(S); if (!src) return;
-  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode)); if (!path) return;
+  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode), !!src.plan); if (!path) return;
   const st = FILM_STYLES[opt.style] || FILM_STYLES.cine, adv = filmAdv(opt, st), { P, D } = path, T = opt.sec, TOT = filmTotal(src, path);
   let F = { intro: [], outro: [], route: [] };
   if (opt.photos && src.t) { S.ph = S.ph || {}; if (!S.ph[src.t]) S.ph[src.t] = await filmPhotos(src.t); if (seq !== filmBoard.n) return; const star = new Set(ls.get('filmStar:' + src.t, []) || []); F = filmPhotoPlace(S.ph[src.t], P, D); [...F.intro, ...F.route, ...F.outro].forEach(g => { g.star = star.has(g.p.id); }); }
@@ -7058,7 +7063,7 @@ function filmPoster(S, opt, cv) {   // 만들기 전 첫 장(제목 카드) 미�
   const src = filmSrc(S), c = cv.getContext('2d'), W = FILM_W, H = FILM_H;
   c.fillStyle = '#0B1220'; c.fillRect(0, 0, W, H);
   if (!src) return;
-  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode)); if (!path) return;
+  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode), !!src.plan); if (!path) return;
   const { P } = path, D = filmTotal(src, path), b = P.reduce((a, p) => ({ n: Math.max(a.n, p.lat), s: Math.min(a.s, p.lat), e: Math.max(a.e, p.lng), w: Math.min(a.w, p.lng) }), { n: -90, s: 90, e: -180, w: 180 });
   const k = Math.cos((b.n + b.s) / 2 * Math.PI / 180), sx = (b.e - b.w) * k || 1e-6, sy = (b.n - b.s) || 1e-6, sc = Math.min(W * 0.78 / sx, H * 0.56 / sy);
   c.strokeStyle = FILM_COL[src.mode] || '#FF6B4A'; c.lineWidth = 8; c.lineJoin = c.lineCap = 'round'; c.beginPath();
@@ -7519,7 +7524,7 @@ async function filmMake(S, opt, U) {
     U.go.disabled = true; if (!U.prog.textContent) U.prog.textContent = '장소 사이 실제 길을 받는 중…';
     await S.rtP; U.go.disabled = false; }
   const src = filmSrc(S); if (!src) return toast(S.plan ? `'${S.plan.name}'에 위치가 있는 장소가 2곳이 안 돼요 · 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요` : qs.get('plan') ? '이 계획을 지금 연 앱·브라우저에서 찾지 못했어요 · 계획을 만든 곳에서 열어 주세요' : '기록이나 GPX 파일을 골라 주세요', false, 7000);
-  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode));
+  const path = filmPath(src.rows, opt.hide, src.mode === 'bike' ? 12.5 : 6, filmFastMs(src.mode), !!src.plan);
   if (!path || path.D < 50) {   // 까닭을 그대로 보여 줘요 (2026-11-15 사용자 캡처 '길이 너무 짧아서…'만 떠서 무엇이 문제인지 몰랐음)
     const m = src.plan ? `'${src.plan.name}'에서 위치가 있는 장소가 ${src.spots ? src.spots.length : 0}곳이라 길을 만들 수 없어요 · 계획 화면 '📍 위치 찾기'로 위치를 넣어 주세요`
       : `고른 기록 '${src.name}'의 길이 ${path ? Math.round(path.D) : 0}m뿐이라 영상을 만들 수 없어요 · 위 '어떤 길로'에서 다른 기록을 골라 주세요`;
