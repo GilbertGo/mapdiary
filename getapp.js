@@ -7,8 +7,9 @@
   const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), WEB = A.mode ? './?walk=1&mode=' + A.mode : './';
   const page = location.href.split('#')[0];
   const $ = id => document.getElementById(id);
-  document.title = A.name + ' 받기';
-  $('t').textContent = `${A.emoji} ${A.name}`;
+  const MD = !A.mode;   // md.html: 장점을 먼저 보여 주는 소개 쪽(판 -351). 제목·글은 쪽에 있는 그대로, 받기는 단추를 눌렀을 때
+  const how = () => { const h = $('how'); if (h) { h.classList.add('on'); setTimeout(() => h.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); } };
+  if (!MD) { document.title = A.name + ' 받기'; $('t').textContent = `${A.emoji} ${A.name}`; }
   $('w').textContent = A.what;
   $('dl').href = APK;
   if (kakao && android) {
@@ -21,13 +22,16 @@
   if (ios) {
     if (navigator.standalone) { location.replace(WEB); return; }   // 홈 화면 아이콘으로 열었으면 바로 기록 화면
     if (kakao) { $('msg').textContent = 'Safari로 여는 중이에요…'; location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(page); }
-    document.title = A.name;
+    if (!MD) document.title = A.name;
     $('msg').textContent = '아이폰은 웹앱으로 써요. 홈 화면에 추가하면 앱처럼 열려요';
-    $('dl').textContent = '▶ 지금 바로 열기'; $('dl').href = WEB;
+    $('dl').textContent = MD ? '지금 바로 열기' : '▶ 지금 바로 열기'; $('dl').href = WEB;
+    if (MD) { $('t').textContent = '가입 없이 바로 써요 · 무료'; how(); $('how').querySelector('h3').textContent = '홈 화면에 추가하기'; }
     $('steps').innerHTML = `<li>Safari 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b> → <b>추가</b></li><li>홈 화면의 <b>${A.name}</b> 아이콘을 눌러 열어요</li><li>처음에 <b>위치</b>는 '앱을 사용하는 동안 허용', <b>동작</b> 센서도 허용해요</li><li>⚠ 아이폰은 화면이 꺼지면 기록이 멈춰요. 화면을 켜 둔 채 <b>화면 잠그기</b>를 눌러 두세요</li>`;
     return;
   }
+  if (!android && MD) { $('dl').textContent = '웹으로 열기'; $('dl').href = WEB; $('t').textContent = '휴대폰에서 이 주소를 열면 앱을 받을 수 있어요'; return; }
   if (!android) { $('msg').textContent = '휴대폰에서 열어 주세요. 컴퓨터에서는 웹으로 써요: gilbertgo.github.io/mapdiary'; $('dl').textContent = '▶ 웹으로 열기'; $('dl').href = WEB; return; }
+  if (MD) { $('dl').href = APK; $('dl').addEventListener('click', how); return; }   // 소개 쪽은 읽고 나서 '무료로 받기' 한 번
   // 크롬(또는 다른 브라우저): 한 번 바로 내려받기
   $('msg').textContent = '내려받기를 시작했어요. 다 받으면 아래 순서대로 설치해 주세요';
   try { if (!sessionStorage.getItem('got' + A.apk)) { sessionStorage.setItem('got' + A.apk, '1'); setTimeout(() => { location.href = APK; }, 600); } } catch { setTimeout(() => { location.href = APK; }, 600); }
