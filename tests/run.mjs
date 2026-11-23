@@ -971,6 +971,22 @@ await test('컴퓨터 첫 화면은 바탕화면에 추가 그대로', async pag
   ok(!txt.includes('MPD 앱 받기'), '컴퓨터에 앱 받기 카드가 나와요');
 });
 
+// ─── 판 -351: 지인에게 보내는 앱 받기 쪽(md.html)은 장점을 먼저, 받기는 누를 때만 ───
+await test('앱 받기 쪽은 장점을 먼저 보여 주고 누를 때 받음', async page => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14; SM-S921N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' }));
+  let got = 0;
+  await page.route('**/MPD.apk', r => { got++; r.fulfill({ body: 'x', headers: { 'content-disposition': 'attachment; filename=MPD.apk' } }); });
+  await page.goto(BASE + 'md.html'); await sleep(1500);
+  const txt = await page.evaluate(() => document.body.innerText);
+  for (const w of ['지난 여행도 사진만으로', '지도 위 이동 영상', '링크 하나로 공유']) ok(txt.includes(w), '장점 글이 없어요: ' + w);
+  ok(got === 0, '열자마자 저절로 내려받아요');
+  ok(await page.evaluate(() => !!document.querySelector('meta[property="og:image"]')), '카톡 미리보기 그림이 없어요');
+  await page.click('#dl'); await sleep(800);
+  ok(got === 1, '무료로 받기를 눌러도 안 받아요');
+  ok(await page.evaluate(() => document.getElementById('how').classList.contains('on')), '설치 순서가 안 나와요');
+  noErr(page, 'md.html');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
