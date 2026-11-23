@@ -1269,6 +1269,14 @@ await test('걸음 센서 · 화면을 꺼도 기록 걸음이 따라잡음 · �
   ok(d.c === 0 && d.ap === 1, '어제 값이 없을 때는 앱 켠 뒤부터라고 표시해야 해요');
 });
 
+await test('지도 첫 화면 · 휴대폰 아래 단추 줄이 있어도 기록하기 단추가 그 위에 (판 -364)', async page => {
+  await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = ':root{padding-bottom:48px!important}'; document.head.append(st); }));
+  await seed(page); await page.goto(BASE); await sleep(2000);
+  const b = await page.evaluate(() => document.querySelector('.mh-go').getBoundingClientRect().bottom);
+  ok(b <= 844 - 48, `기록하기 단추가 아래 단추 줄 밑으로 내려가요(아래 끝 ${Math.round(b)}px, ${844 - 48}px 위여야)`);
+  noErr(page, '아래 단추 줄');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
