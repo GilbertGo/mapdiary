@@ -1218,11 +1218,12 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-go.live span{flex:none;font-size:14px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.22)}
 .mh-trip{position:relative;display:block;height:128px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0277BD,#1D9EC0) center/cover no-repeat;color:#fff;text-decoration:none}
 .mh-trip .bg{position:absolute;inset:0;background:center/cover no-repeat}
-.mh-trip::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(8,20,32,.72),rgba(8,20,32,.12) 75%)}
+.mh-trip::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(8,20,32,.78),rgba(8,20,32,.42))}   /* 판 -364: 밝은 하늘 사진 위 글도 읽히게 */
+.mh-trip .in{text-shadow:0 1px 4px rgba(0,0,0,.35)}
 .mh-trip .in{position:absolute;z-index:2;left:16px;right:56px;bottom:14px;display:flex;flex-direction:column;gap:2px}
 .mh-trip small{font:500 13px Pretendard,sans-serif;opacity:.92}
 .mh-trip b{font:700 21px Pretendard,sans-serif;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mh-trip span{font:500 14.5px Pretendard,sans-serif}
+.mh-trip span{font:500 14.5px Pretendard,sans-serif;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .mh-trip .ar{position:absolute;z-index:2;right:14px;bottom:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);color:#14253B;font:400 22px/34px Pretendard,sans-serif;font-style:normal;text-align:center}
 .mh-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#191F28;color:#fff;font:700 13px Pretendard,sans-serif;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);box-sizing:border-box}.mh-num.ok{background:#8B95A1}
 .mh-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:#fff;border-radius:20px;padding:14px 4px 12px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
@@ -3722,9 +3723,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-363-steps';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-364-homefix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "MPD 앱이면 화면을 꺼도 걸음을 세요 · 기록 중 걸음 수가 휴대폰 걸음 센서로 따라잡아요 · 첫 화면에 오늘 걸음 수가 나와요(만보계) · 새 앱(APK)을 받아야 하고 처음 한 번 신체 활동 권한을 물어요";
+const UI_NOTES = "첫 화면 기록하기 단추가 휴대폰 아래 단추 줄에 가려지던 것을 고쳤어요 · 지도 바탕이 늦게 와도 빈 화면 대신 지도가 보여요 · 여행 카드 글이 밝은 사진 위에서도 잘 읽혀요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -17667,7 +17668,7 @@ function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일�
   setTimeout(async () => {
     const recs = cRecs(80);
     m = L.map(box, { zoomControl: false, attributionControl: true, scrollWheelZoom: false, tap: false, worldCopyJump: true });
-    mdTileLayer().addTo(m);
+    mdTileLayer({ keep: true }).addTo(m);   // 판 -364: 선명한 지도가 늦게 오거나 못 와도 그림 지도가 밑에 남아 빈 바탕이 안 보이게
     m.setView([36.4, 127.8], 6);   // 기록을 읽기 전·기록이 없을 때(우리나라)
     // 다닌 길: 모든 기록을 옅게, 지금 기록 중이면 빨갛게
     recs.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3.5, opacity: .45, interactive: false }).addTo(m); }));
@@ -17743,7 +17744,9 @@ function viewLandingMap(memSlot) {
   const sp = el('div', { class: 'mh-sp' }), top = cHomeTop(true); top.classList.add('mh-top');
   app.replaceChildren(map, top, sp, sheet, cTabs('home'));
   // 처음 보이는 판 높이 = 지금 할 일까지(기록하기 단추 아래). 나머지는 밀어 올리면 보여요
-  const fit = () => { const h = Math.min(innerHeight * .55, peekEl.offsetHeight + 40); sp.style.height = Math.max(160, innerHeight - h - (parseFloat(getComputedStyle(document.documentElement).paddingTop) || 0)) + 'px'; map.setPeek(h); };
+  // 판 -364: 휴대폰 아래 단추 줄(내비게이션 바)만큼(:root padding-bottom = safe-area 아래)도 빼서 기록하기 단추가 그 밑에 깔리지 않게
+  const fit = () => { const cs = getComputedStyle(document.documentElement), pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0, h = Math.min(innerHeight * .55, peekEl.offsetHeight + 28);
+    sp.style.height = Math.max(160, innerHeight - h - pt - pb) + 'px'; map.setPeek(h + pb); };
   fit(); setTimeout(fit, 400);
 }
 function cHomeCardStyle() {
