@@ -1008,6 +1008,23 @@ await test('지도 조각 목록은 인터넷이 되면 새로 · 끊기면 예�
   noErr(page, '지도 조각 목록');
 });
 
+// ─── 판 -355: 사진으로 만든 여행의 비행(곧은 줄) 가운데 🚗이 섞여 보이던 것 ───
+await test('사진으로 만든 곧은 비행 줄은 차가 아니라 비행', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const D = (a, b) => { const R = 6371000, x = (b[1] - a[1]) * Math.PI / 180 * Math.cos((a[0] + b[0]) / 2 * Math.PI / 180), y = (b[0] - a[0]) * Math.PI / 180; return Math.hypot(x, y) * R; };
+    const tr = [], line = (a, b) => { const d = D(a, b), k = Math.min(400, Math.max(1, Math.ceil(d / 100), Math.ceil((b[2] - a[2]) / 240000))); for (let s = 1; s < k; s++) { const q = s / k; tr.push([a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q, a[2] + (b[2] - a[2]) * q]); } tr.push(b); };
+    const h = 3600000, t0 = Date.UTC(2026, 10, 20, 2), HK = [22.31, 113.92, t0], AIR = [34.5, 123.5, t0 + 2.5 * h], ICN = [37.46, 126.44, t0 + 4 * h];   // 비행기 창 사진 → 인천은 시속 약 280km(평균)
+    const FERRY = [37.3, 126.2, t0 + 7 * h], F2 = [36.5, 126.2, t0 + 8.6 * h];   // 배: 곧게 89km 시속 약 55km
+    tr.push(HK); line(HK, AIR); line(AIR, ICN); tr.push([37.4601, 126.4401, t0 + 4 * h + 600000]); tr.push(FERRY); line(FERRY, F2);
+    const m = __T.trackModes(tr), i1 = tr.indexOf(AIR), i2 = tr.indexOf(ICN), i3 = tr.indexOf(FERRY);
+    return { leg2: m.slice(i1 + 1, i2 + 1), ferry: m.slice(i3 + 2, m.length) };
+  });
+  ok(!/c/.test(r.leg2) && /f/.test(r.leg2), '비행기 안 사진 → 인천 곧은 줄에 차가 섞여요: ' + r.leg2.slice(0, 40));
+  ok(!/f/.test(r.ferry), '느린 배(곧은 줄)까지 비행으로 그려요');
+  noErr(page, '비행 줄');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
