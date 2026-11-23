@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG'];
+const EXPOSE = ['cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1080,6 +1080,24 @@ await test('영상 첫 사진은 고른 대표 사진 먼저', async page => {
   ok(r.got === 'c', '고른 대표 사진을 영상 첫 사진으로 안 써요');
   ok(r.none === null && r.pic === null && r.vid === null, '고르지 않았는데(또는 풍경 그림·동영상) 대표 사진으로 잡아요');
   noErr(page, '영상 첫 사진');
+});
+
+// ─── 판 -359: 차로 다닌 기록 카드에 '걸은 거리'가 두 번(서로 다른 값) 나오지 않게 (지인 장남덕 님 '차량으로 이동한 것인데 통계는 맞는 건지?') ───
+await test('차로 다닌 기록 카드 거리 글은 한 번씩', async page => {
+  await page.goto(BASE); await sleep(1200);
+  const r = await page.evaluate(() => {
+    const t0 = Date.parse('2026-11-23T08:00:00+09:00'), tr = [];
+    for (let i = 0; i < 40; i++) tr.push([37.50 + i * 0.0001, 127.00, t0 + i * 20000, 50, 5]);          // 걷기 약 450m
+    for (let i = 1; i <= 120; i++) tr.push([37.504 + i * 0.004, 127.00 + i * 0.002, t0 + 800000 + i * 30000, 50, 0]);   // 차 약 60km (시속 60km 넘게)
+    const st = __T.trackStats(tr, false);
+    return { st, car: __T.cardDistStats(st, '걸은'), walk: __T.cardDistStats({ d: 2000, walk: 2000, fly: 0 }, '걸은') };
+  });
+  const walkLines = r.car.filter(x => x.startsWith('걸은 거리'));
+  ok(r.st.d - r.st.walk > 300, '시험 길이 차로 간 길로 안 나뉘었어요: ' + JSON.stringify(r.st));
+  ok(walkLines.length === 1, "'걸은 거리'가 " + walkLines.length + '번 나와요: ' + r.car.join(' / '));
+  ok(r.car.some(x => x.startsWith('전체 이동')), '전체 이동이 없어요');
+  ok(r.walk.length === 1 && r.walk[0].startsWith('걸은 거리'), '걷기만 한 기록 거리 글이 이상해요: ' + r.walk.join(' / '));
+  noErr(page, '첫 화면');
 });
 
 await browser.close();
