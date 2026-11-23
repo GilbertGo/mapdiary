@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -985,6 +985,27 @@ await test('앱 받기 쪽은 장점을 먼저 보여 주고 누를 때 받음',
   ok(got === 1, '무료로 받기를 눌러도 안 받아요');
   ok(await page.evaluate(() => document.getElementById('how').classList.contains('on')), '설치 순서가 안 나와요');
   noErr(page, 'md.html');
+});
+
+// ─── 판 -354: 미리 받은 예전 지도 조각 목록 때문에 지도가 거칠게(길이 바다 위로) 보이던 것 ───
+await test('지도 조각 목록은 인터넷이 되면 새로 · 끊기면 예전 판 조각이라도', async page => {
+  await page.goto(BASE); await sleep(1000);
+  const TJ = 'https://tiles.openfreemap.org/planet';
+  await page.route(TJ, r => r.fulfill({ body: JSON.stringify({ tiles: ['https://tiles.openfreemap.org/planet/NEW/{z}/{x}/{y}.pbf'] }), contentType: 'application/json' }));
+  await page.route('**/planet/NEW/**', r => r.fulfill({ status: 404, body: '' }));
+  const res = await page.evaluate(async TJ => {
+    const c = await caches.open('md-vt-v1');
+    await c.put(TJ, new Response(JSON.stringify({ tiles: ['https://tiles.openfreemap.org/planet/OLD/{z}/{x}/{y}.pbf'] })));
+    await c.put('https://tiles.openfreemap.org/planet/OLD/14/13394/7148.pbf', new Response(new Uint8Array([7, 7, 7])));
+    const j = await __T.vtGet(TJ, 'json');
+    const saved = await (await c.match(TJ)).json();
+    const b = new Uint8Array(await __T.vtGet('https://tiles.openfreemap.org/planet/NEW/14/13394/7148.pbf', 'buf'));
+    return { now: j.tiles[0], saved: saved.tiles[0], alt: [...b].join(',') };
+  }, TJ);
+  ok(/NEW/.test(res.now), '저장해 둔 예전 조각 목록을 그대로 써요: ' + res.now);
+  ok(/NEW/.test(res.saved), '저장한 조각 목록이 새것으로 안 바뀌었어요');
+  ok(res.alt === '7,7,7', '새 판 조각을 못 받을 때 예전 판으로 받아 둔 조각을 안 써요');
+  noErr(page, '지도 조각 목록');
 });
 
 await browser.close();
