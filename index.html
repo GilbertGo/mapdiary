@@ -3646,9 +3646,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-350-apkcard';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-354-vtfresh';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "안드로이드 휴대폰 브라우저 첫 화면 맨 아래 카드가 'MPD 앱 받기'로 바뀌었어요 · 받기 한 번이면 내려받고 남은 순서만 짧게 알려 줘요";
+const UI_NOTES = "지도를 미리 받아 둔 휴대폰에서 지도가 거칠게 보여 길이 바다 위로 보이던 것을 고쳤어요 · 인터넷이 되면 늘 새 지도를 받아요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -12839,11 +12839,28 @@ async function trAuto(p, say) {
 //   지도 프로그램(MapLibre·연결 조각)·지도 모양·글자(한글)·그림·장소 둘레 지도 조각(가까이 z13~14 반경 3~6km, 넓게 z7~12 전체)·한자 읽기 표
 //   지도는 'mdvt://' 주소로 바꿔 받은 것을 먼저 쓰고, 없으면 인터넷에서 (koMapStyle·koMapLayer) · 기록 ls planMap:{ID}(새 키)
 var VT_CACHE = 'md-vt-v1';
+// 판 -354 (사용자 홍콩 여행 지도 캡처 '위치가 안맞아'): 지도 조각 목록(TileJSON)엔 판 날짜가 붙은 주소(…/planet/20261115_…/{z}/{x}/{y}.pbf)가 있는데,
+//   📥 미리 받기 때 저장한 예전 목록을 늘 먼저 써서, OpenFreeMap이 예전 판을 치운 뒤엔 자세한 조각을 못 받고 멀리서 본 거친 바닷가만 늘려 보였음(길이 바다 위로 보임)
+//   → 지도 모양·조각 목록(json)은 인터넷이 되면 늘 새로 받고(저장한 게 있으면 새것으로 바꿔 둠), 안 될 때만 저장한 것.
+//     지도 조각은 저장한 것 먼저 → 인터넷 → 그래도 없으면 예전 판으로 받아 둔 같은 자리 조각(vtAlt)
 async function vtGet(url, type) {
-  let r = null; try { const c = await caches.open(VT_CACHE); r = await c.match(url); } catch {}
-  if (!r) r = await fetchT(url, {}, 20000);
+  let c = null, r = null; try { c = await caches.open(VT_CACHE); } catch {}
+  if (type === 'json') {
+    try { r = await fetchT(url, {}, 8000); if (r.ok) { if (c && await c.match(url)) await c.put(url, r.clone()).catch(() => {}); } else r = null; } catch { r = null; }
+    if (!r && c) r = await c.match(url);
+  } else {
+    if (c) r = await c.match(url);
+    if (!r) { try { r = await fetchT(url, {}, 20000); } catch { r = null; } if ((!r || !r.ok) && c) r = (await vtAlt(c, url)) || r; }
+  }
   if (!r || !r.ok) throw new Error('HTTP ' + (r && r.status));
   return type === 'json' ? r.json() : type === 'text' ? r.text() : r.arrayBuffer();
+}
+async function vtAlt(c, url) {   // 예전 판 주소로 받아 둔 같은 z/x/y 조각
+  const m = /\/planet\/[^/]+\/(\d+\/\d+\/\d+\.pbf)$/.exec(url); if (!m) return null;
+  try {
+    if (!vtAlt.m) { vtAlt.m = new Map(); for (const k of await c.keys()) { const a = /\/planet\/[^/]+\/(\d+\/\d+\/\d+\.pbf)$/.exec(k.url); if (a) vtAlt.m.set(a[1], k); } }
+    const k = vtAlt.m.get(m[1]); return k ? (await c.match(k)) || null : null;
+  } catch { return null; }
 }
 function vtProto() {   // MapLibre가 'mdvt://' 주소를 받으면 저장해 둔 것 먼저
   if (vtProto.on || !window.maplibregl || !maplibregl.addProtocol) return; vtProto.on = 1;
@@ -12881,8 +12898,9 @@ async function planOffline(p, say) {
   say('📥 지도 프로그램 받는 중…');
   let bytes = 0, n = 0, bad = 0;
   for (const u of [FILM_LIB.gl, FILM_LIB.css, KO_MAP_PLUGIN, APP_BASE.replace(/[^/]*$/, '') + 'hanja-ko.txt']) try { bytes += await put(u); } catch { bad++; }
+  for (const u of [FILM_LIB.osm]) await c.delete(u).catch(() => {});   // 판 -354: 지도 모양·조각 목록은 받을 때마다 새로(예전 판 주소가 남지 않게)
   bytes += await put(FILM_LIB.osm);
-  const st = await (await c.match(FILM_LIB.osm)).json(), src = st.sources.openmaptiles.url; bytes += await put(src);
+  const st = await (await c.match(FILM_LIB.osm)).json(), src = st.sources.openmaptiles.url; await c.delete(src).catch(() => {}); vtAlt.m = null; bytes += await put(src);
   const tj = await (await c.match(src)).json(), tpl = tj.tiles[0], maxz = tj.maxzoom || 14;
   const sp = typeof st.sprite === 'string' ? st.sprite : null; if (sp) for (const s of ['.json', '.png', '@2x.json', '@2x.png']) try { bytes += await put(sp + s); } catch {}
   const fonts = new Set(); for (const l of st.layers) { const f = l.layout && l.layout['text-font']; if (Array.isArray(f)) fonts.add(f.join(',')); }
