@@ -953,6 +953,24 @@ await test('일행 권한 · 들어온 사람 표(일행 여부·권한·보는 
   ok(await page.$$eval('.pm-tb tbody tr', trs => trs.filter(tr => /유진/.test(tr.innerText)).length) === 1, '같은 사람 두 기기는 한 줄이어야 해요');
 });
 
+// ─── 판 -350: 안드로이드 휴대폰 브라우저 첫 화면은 '바탕화면에 추가' 대신 'MPD 앱 받기' ───
+await test('안드로이드 웹 첫 화면은 앱 받기 카드', async page => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14; SM-S921N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' }));
+  await page.goto(BASE); await sleep(1500);
+  const txt = await page.evaluate(() => document.body.innerText);
+  ok(txt.includes('MPD 앱 받기'), '앱 받기 카드가 없어요');
+  ok(!txt.includes('바탕화면에 추가'), '안드로이드인데 바탕화면에 추가 카드가 나와요');
+  await page.route('**/MPD.apk', r => r.fulfill({ body: 'x', headers: { 'content-type': 'application/vnd.android.package-archive', 'content-disposition': 'attachment; filename=MPD.apk' } }));   // 휴대폰처럼 내려받기로(화면은 그대로)
+  await page.getByRole('button', { name: '받기', exact: true }).click(); await sleep(500);
+  ok(await page.evaluate(() => !!document.querySelector('[aria-label="MPD 앱 설치"]')), '받기를 눌러도 설치 순서가 안 나와요');
+  noErr(page, '안드로이드 첫 화면');
+});
+await test('컴퓨터 첫 화면은 바탕화면에 추가 그대로', async page => {
+  await page.goto(BASE); await sleep(1500);
+  const txt = await page.evaluate(() => document.body.innerText);
+  ok(!txt.includes('MPD 앱 받기'), '컴퓨터에 앱 받기 카드가 나와요');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
