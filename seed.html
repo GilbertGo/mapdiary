@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>seed</title><body>seeding…<script>
+(async () => {
+  localStorage.clear();
+  const db = await new Promise((res, rej) => { const r = indexedDB.open('baldojang', 1); r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' }).createIndex('t', 't'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const recs = [['walk_a1', '북한산 백운대', 'hike', '2026-11-22T08:00:00+09:00', 37.6500, 126.9800, 'onb-bg.jpg'], ['walk_a2', '서울숲 산책', 'trek', '2026-11-16T10:00:00+09:00', 37.5440, 127.0370, 'onb-baofeng.jpg'],
+    ['walk_a3', '인왕산 야경', 'hike', '2026-11-13T17:00:00+09:00', 37.5790, 126.9560, 'onb-furong.jpg'], ['walk_a4', '한강 러닝', 'run', '2026-11-07T07:00:00+09:00', 37.5270, 126.9300, 'run-hero-3.jpg'], ['walk_a5', '남산 둘레길', 'trek', '2026-11-03T10:00:00+09:00', 37.5510, 126.9880, 'onb-glass.jpg']];
+  const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  for (const [id, nm, md, at, la, ln, img] of recs) { const t0 = new Date(at).getTime(), tr = [];
+    for (let i = 0; i < 90; i++) tr.push([la + i * 0.00012 + Math.sin(i / 7) * 0.0006, ln + Math.cos(i / 9) * 0.0008 + i * 0.0001, t0 + i * 60000, 100 + i * 3]);
+    S('track:' + id, tr); S('trackName:' + id, nm); S('walkMode:' + id, md);
+    const bl = await (await fetch('./img/' + img)).blob(), im = await createImageBitmap(bl), cv = document.createElement('canvas'), sc = 240 / Math.max(im.width, im.height);
+    cv.width = im.width * sc; cv.height = im.height * sc; cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+    const mid = tr[45];
+    await new Promise(r => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put({ id: 'ph_' + id, t: id, ts: t0 + 2700000, lat: mid[0], lng: mid[1], blob: bl, thumb: cv.toDataURL('image/jpeg', .8) }); tx.oncomplete = r; }); }
+  S('lastMode', 'trek'); S('nick', '성식');
+  if (!location.hash.includes('notrip')) S('plans', [{ id: 'pl_zjj', name: '장가계 5일', start: '2026-11-24', nd: 5, at: Date.now(), u: Date.now(), it: [
+    { id: 'a', d: 0, t: '11:30', n: '장가계 허화 공항', k: 'move', lat: 29.1028, lng: 110.4436 }, { id: 'b', d: 0, t: '14:00', n: '천문산 케이블카', k: 'spot', lat: 29.1180, lng: 110.4790 },
+    { id: 'c', d: 0, t: '16:00', n: '천문산 천문동', k: 'spot', lat: 29.0513, lng: 110.4826 }, { id: 'd', d: 0, t: '19:00', n: '호텔', k: 'stay', lat: 29.1240, lng: 110.4790 }] }]);
+  if (location.hash.includes('rec')) { S('walkNow', 'walk_a1'); S('walkAt', Date.now() - 2400000); }
+  location.href = './index.html';
+})();
+</script>

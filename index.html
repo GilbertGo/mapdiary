@@ -1192,6 +1192,43 @@ html.c-home.c-live .c-ph-chips,html.c-home.c-live .c-ph-deco{top:calc(88px + env
 html.c-live body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .c-find{padding-top:calc(52px + env(safe-area-inset-top,0px))}
 
+
+/* 판 -360 지도 첫 화면: 화면 가득 지도 + 아래에서 올라오는 판 */
+html.mh-on #app{pointer-events:none}
+html.mh-on #app>*{pointer-events:auto}
+html.mh-on #app>.mh-sp{pointer-events:none}
+.mh-map{position:fixed;left:0;right:0;top:0;height:100lvh;z-index:0;background:#E9EEF1}
+.mh-map.leaflet-container{background:#E9EEF1;font-family:inherit}
+.mh-map .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
+.mh-map .leaflet-top{top:calc(60px + env(safe-area-inset-top,0px))}
+.c-ph-top.mh-top{position:absolute;left:0;right:0;top:0;margin:0;z-index:30;padding-bottom:28px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.78) 55%,rgba(255,255,255,0));pointer-events:none!important}
+.c-ph-top.mh-top>*{pointer-events:auto}
+.mh-sp{margin:0 -20px}
+.mh-sheet{position:relative;z-index:10;margin:0 -20px;padding:8px 20px 28px;background:#F7FAFC;border-radius:26px 26px 0 0;box-shadow:0 -8px 28px rgba(20,37,59,.16);display:flex;flex-direction:column;gap:18px;min-height:70vh}
+.mh-peek{display:flex;flex-direction:column;gap:12px}
+.mh-grab{display:block;width:40px;height:5px;border-radius:3px;background:#D3DBE1;margin:0 auto -2px}
+.mh-sum{display:flex;align-items:baseline;gap:8px;padding:0 2px}
+.mh-sum b{font:700 22px Pretendard,sans-serif;letter-spacing:-.02em;color:#14253B}
+.mh-sum span{font:500 14.5px Pretendard,sans-serif;color:#61758B}
+.mh-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border:none;border-radius:16px;background:#191F28;color:#fff;font:600 17px Pretendard,sans-serif;text-decoration:none;cursor:pointer;box-shadow:0 4px 14px rgba(25,31,40,.18)}
+.mh-go .pl{font-size:26px;font-weight:300;line-height:1;margin-top:-2px}
+.mh-go.live{background:#E5383B;justify-content:flex-start;padding:0 18px;gap:10px}
+.mh-go.live b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-weight:700}
+.mh-go.live span{flex:none;font-size:14px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.22)}
+.mh-trip{position:relative;display:block;height:128px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0277BD,#1D9EC0) center/cover no-repeat;color:#fff;text-decoration:none}
+.mh-trip::before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,20,32,.72),rgba(8,20,32,.12) 75%)}
+.mh-trip .in{position:absolute;left:16px;right:56px;bottom:14px;display:flex;flex-direction:column;gap:2px}
+.mh-trip small{font:500 13px Pretendard,sans-serif;opacity:.92}
+.mh-trip b{font:700 21px Pretendard,sans-serif;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-trip span{font:500 14.5px Pretendard,sans-serif}
+.mh-trip .ar{position:absolute;right:14px;bottom:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);color:#14253B;font:400 22px/34px Pretendard,sans-serif;font-style:normal;text-align:center}
+.mh-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#191F28;color:#fff;font:700 13px Pretendard,sans-serif;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);box-sizing:border-box}.mh-num.ok{background:#8B95A1}
+.mh-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:#fff;border-radius:20px;padding:14px 4px 12px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
+.mh-q{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#14253B;font:500 12.5px Pretendard,sans-serif;white-space:nowrap}
+.mh-q i{width:46px;height:46px;border-radius:15px;background:#EEF6FA;display:flex;align-items:center;justify-content:center;color:#1D9EC0}
+.mh-sheet .c-sec{margin:0 2px -8px}
+.mh-sheet .c-foot{font-size:12px;color:#8B95A1}
+html.mh-on .c-tabs-live{display:none}
 /* 판 -189 첫 화면 '여행 계획' 칸 */
 .hp{background:#fff;border-radius:20px;padding:6px 0 4px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
 .hp-hd{display:flex;align-items:center;gap:14px;padding:10px 18px 6px}.hp-hd b{font:600 16px Pretendard,sans-serif;color:#191F28}.hp-hd .sp{flex:1}
@@ -4636,7 +4673,7 @@ function appSettings() {
     const thumb = el('span', { class: 'st-th', style: `background-image:url("${runHeroUrl()}")` });
     const photoRow = row('', '러닝 첫 화면 사진', ls.get('runHero', '') ? '내 사진' : '기본', () => runHeroPick(done));
     photoRow.firstChild.replaceWith(thumb);
-    const hsNow = ls.get('homeStyle', 'photo'), styleRow = row('', '첫 화면 모양', (HOME_STYLES.find(x => x[0] === hsNow) || HOME_STYLES[0])[1], () => homeStyleSheet(() => paint()));   // 판 -251
+    const hsNow = homeStyleNow(), styleRow = row('', '첫 화면 모양', (HOME_STYLES.find(x => x[0] === hsNow) || HOME_STYLES[0])[1], () => homeStyleSheet(() => paint()));   // 판 -251
     const homeRow = hsNow === 'photo' ? row('', '첫 화면 꾸미기', ls.get('homeDeco', null) ? '내가 꾸밈' : '저절로', () => { cb.remove(); homeDecoEdit(); }) : null;
     if (homeRow) homeRow.firstChild.replaceWith(el('span', { class: 'st-th', style: `background-image:url("${homeHeroUrl()}")` }));
     const acc = cloudAcct(), nk = ls.get('nick', ''), L0 = ls.get('cloudLast', null);
@@ -12970,8 +13007,8 @@ function planNext(p, d) {
   let i = its.findIndex(x => !x.ok && x.t && (+x.t.split(':')[0] * 60 + +x.t.split(':')[1]) >= hm); if (i < 0) i = its.findIndex(x => !x.ok); return i;
 }
 // 판 -189 (사용자 '여행계획을 만들고 그 안에 장가계·오사카 넣어야지' → '고쳐'): 첫 화면 '여행 계획' 칸 하나에 다가오는·여행 중인 계획을 모두 한 줄씩
-function planHomeSection() {
-  const all = planAll(), up = all.filter(p => { const k = planToday(p); return k == null || k < p.nd; })
+function planHomeSection(skip) {   // skip: 지도 첫 화면 위 여행 카드에 이미 나온 계획(되풀이 안 함, 판 -360)
+  const all = planAll(), up = all.filter(p => { const k = planToday(p); return p.id !== skip && (k == null || k < p.nd); })
     .sort((x, y) => { const a = planToday(x), b = planToday(y), on = k => k != null && k >= 0; return (on(b) ? 1 : 0) - (on(a) ? 1 : 0) || String(x.start || '9999').localeCompare(String(y.start || '9999')); }).slice(0, 5);
   const head = el('div', { class: 'hp-hd' }, el('b', { text: '여행 계획' }), el('span', { class: 'sp' }),
     el('a', { href: './?plan=1#plNew', text: '+ 새 계획' }), all.length ? el('a', { href: './?plan=1', text: '전체 ›' }) : null);
@@ -17434,11 +17471,108 @@ function cHomeFirst() {
 }
 // 판 -251 첫 화면 세 가지(2026-11-17 사용자 '첫화면 종류를 세 가지 만들고, 선택할수 있게 해'): ls homeStyle = 'photo'(기본, 내 사진 + 말풍선) · 'map'(다녀온 곳이 지도에) · 'card'(깔끔한 흰 화면)
 //   고르는 곳: 나(⚙) → 화면 → '첫 화면 모양'(homeStyleSheet). 기록이 하나도 없으면 셋 다 처음 쓰는 사람 화면(cHomeFirst)
-var HOME_STYLES = [['photo', '사진', '내 사진 위에 최근 기록 말풍선'], ['map', '지도', '다녀온 곳과 사진이 지도 위에'], ['card', '카드', '흰 바탕에 이번 달 · 최근 기록']];
+var HOME_STYLES = [['map', '지도', '다닌 길과 사진이 지도 위에 · 기본'], ['photo', '사진', '내 사진 위에 최근 기록 말풍선'], ['card', '카드', '흰 바탕에 이번 달 · 최근 기록']];   // 판 -360: 지도가 기본
 function cHomeMapStyle() {
   const box = el('div', { class: 'c-ph c-mph' }), hero = cHomeHero();
   box.append(hero, cHomeTop(true));
   return box;
+}
+// 판 -360 지도 첫 화면(2026-11-24 사용자 'MPD 첫화면 설계 다시하자' → 방향 '지도 중심'): 화면 전체가 내가 다닌 지도(손가락으로 밀고 벌려 확대),
+//   아래에서 올라오는 판(지도 앱처럼)에 지금 할 일(기록 중 · 여행 중/곧 떠날 여행 · 기록하기) → 밀어 올리면 최근 이야기 · 바로 가기 · 여행 계획 · 1년 전 오늘.
+//   예전 사진·카드 모양은 나 → 화면 → '첫 화면 모양'에서 그대로 고를 수 있어요. 처음 한 번만 지도 모양으로 바꿔요(homeMapNew)
+function homeStyleNow() {
+  if (!ls.get('homeMapNew', false)) { ls.set('homeMapNew', true); ls.set('homeStyle', 'map'); }
+  return ls.get('homeStyle', 'map');
+}
+function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일정 장소를 번호 점으로 보이고 그 둘레를 먼저 보여 줘요
+  const box = el('div', { class: 'mh-map' }), wNow = ls.get('walkNow', null);
+  let m = null, focusLay = null, want = null, drawPins = null, peek = 300;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad = () => ({ paddingTopLeft: [36, 96], paddingBottomRight: [36, peek + 24] });
+  box.setPeek = v => { peek = v; };
+  box.focus = r => { want = r; if (!m || !r) return;
+    focusLay.clearLayers();
+    cSegs(r).forEach(s => { L.polyline(s, { color: '#fff', weight: 8, opacity: .95, interactive: false }).addTo(focusLay); L.polyline(s, { color: '#1D9EC0', weight: 4.5, opacity: 1, interactive: false }).addTo(focusLay); });
+    const bb = L.latLngBounds(r.tr.map(q => [q[0], q[1]])); if (r.cover) bb.extend([r.cover.lat, r.cover.lng]);
+    m.flyToBounds(bb.pad(.15), Object.assign(pad(), { maxZoom: 15, animate: !reduce, duration: .6 }));
+    if (drawPins) drawPins(r.t); };
+  setTimeout(async () => {
+    const recs = cRecs(80);
+    m = L.map(box, { zoomControl: false, attributionControl: true, scrollWheelZoom: false, tap: false, worldCopyJump: true });
+    mdTileLayer().addTo(m);
+    m.setView([36.4, 127.8], 6);   // 기록을 읽기 전·기록이 없을 때(우리나라)
+    // 다닌 길: 모든 기록을 옅게, 지금 기록 중이면 빨갛게
+    recs.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3.5, opacity: .45, interactive: false }).addTo(m); }));
+    let live = null;
+    if (wNow) { const tr = trackLoad(wNow).map(q => [q[0], q[1]]); if (tr.length > 1) live = L.polyline(tr, { color: '#E5383B', weight: 5, opacity: .95, interactive: false }).addTo(m); }
+    focusLay = L.layerGroup().addTo(m);
+    const recent = recs.slice(0, 24); await Promise.all(recent.map(cPhotos));
+    let pins = recent.filter(r => r.cover).slice(0, 12), withPh = true;
+    if (!pins.length) { pins = recent.slice(0, 8); withPh = false; }
+    const items = pins.map(r => ({ r, at: withPh ? [r.cover.lat, r.cover.lng] : (q => [q[0], q[1]])(farPoint(r.tr)) }));
+    // 처음 보이는 곳: 가장 최근에 다닌 곳 둘레(800km 안 핀만) — 나라를 오가도 지도가 너무 작아지지 않게. 밀거나 줄이면 다른 곳도 보여요
+    let tb = null;
+    if (trip && !live) { try { const k = planToday(trip), its = planItems(trip, k).filter(x => Number.isFinite(+x.lat) && Number.isFinite(+x.lng));
+      its.forEach((x, i) => L.marker([+x.lat, +x.lng], { keyboard: false, title: x.n, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<b class="mh-num${x.ok ? ' ok' : ''}">${i + 1}</b>` }) })
+        .on('click', () => { location.href = './?plan=1&p=' + encodeURIComponent(trip.id); }).addTo(m));
+      if (its.length) tb = L.latLngBounds(its.map(x => [+x.lat, +x.lng])); } catch {} }
+    const bb = live ? live.getBounds() : tb ? tb : (() => { const a = items[0] && items[0].at; if (!a) return null;
+      const near = items.filter(i => dist(a[0], a[1], i.at[0], i.at[1]) < 8e5); return L.latLngBounds(near.map(i => i.at)); })();
+    if (bb && bb.isValid()) m.fitBounds(bb.pad(.12), Object.assign(pad(), { maxZoom: 14, animate: false }));
+    const lay = L.layerGroup().addTo(m);
+    drawPins = on => { lay.clearLayers(); cCluster(m, items, 58).forEach(g => { const it = g.list[0], isOn = g.list.some(x => x.r.t === on);
+      L.marker(it.at, { icon: cPinIcon(withPh ? it.r.cover.thumb : null, { k: it.r.M.k, n: g.list.length, on: isOn }), keyboard: false, title: it.r.name, zIndexOffset: isOn ? 1000 : 0 })
+        .on('click', e => { L.DomEvent.stopPropagation(e);
+          if (g.list.length > 1) { const b2 = L.latLngBounds(g.list.map(x => x.at)); m.flyToBounds(b2.pad(.3), Object.assign(pad(), { maxZoom: Math.min(18, m.getZoom() + 3), animate: !reduce, duration: .5 })); return; }   // 묶음은 눌러서 벌려 보기(지도 앱처럼)
+          location.href = `./?my=1&t=${encodeURIComponent(it.r.t)}`; }).addTo(lay); }); };
+    drawPins(want && want.t); m.on('zoomend', () => drawPins(want && want.t));
+    if (want) box.focus(want);
+  }, 0);
+  return box;
+}
+function mhTrip(p) {   // 여행 중이거나 30일 안에 떠나는 여행: 사진 카드 하나(누르면 그 여행)
+  const k = planToday(p), on = k != null && k >= 0 && k < p.nd, w = (ls.get('planWx:' + p.id, null) || {}).days || [], h = ls.get('planHero:' + p.id, null);
+  let nx = null; if (on) { try { const its = planItems(p, k), ni = planNext(p, k); nx = ni >= 0 ? its[ni] : null; } catch {} }
+  const wx = w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : '';
+  const a = el('a', { class: 'mh-trip', href: './?plan=1&p=' + encodeURIComponent(p.id) },
+    el('div', { class: 'in' },
+      el('small', { text: [on ? `여행 중 · ${k + 1}일차` : `D-${-k}`, planDayLabel(p, on ? k : 0), wx].filter(Boolean).join(' · ') }),
+      el('b', { text: p.name || '여행' }),
+      on ? el('span', { text: nx ? `다음 · ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null),
+    el('i', { class: 'ar', text: '›' }));
+  if (h && h.u) a.style.backgroundImage = `url("${String(h.u).replace(/"/g, '%22')}")`; else planRowPic(p, a);
+  return a;
+}
+function viewLandingMap(memSlot) {
+  const wNow = ls.get('walkNow', null), now = new Date();
+  document.documentElement.classList.add('mh-on');
+  let cur = null; try { cur = wNow ? null : planCur(); } catch {}
+  const map = mhMap(cur && planToday(cur) >= 0 ? cur : null);
+  let n = 0, walk = 0;
+  try { pastTrips().filter(x => !x.album).forEach(x => { const d = new Date(x.info.startAt); if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) { n++; walk += trackStats(trackLoad(x.t), modeOfT(x.t).car).walk; } }); } catch {}
+  let go;
+  if (wNow) { const b = el('b'), s = el('span'); go = el('a', { class: 'mh-go live', href: '?walk=1', 'aria-label': '기록 중 · 이어서' }, el('i', { class: 'c-lv-dot' }), b, s);
+    cLiveTick(go, () => { b.textContent = `기록 중 · ${cLiveName(wNow)}`; s.textContent = `${cLiveTime(wNow)} · 이어서 ›`; }); }
+  else go = el('button', { class: 'mh-go', type: 'button', onclick: cRecordSheet }, el('span', { class: 'pl', text: '+' }), '기록하기');
+  const sr = wNow ? staleRec() : null;
+  const peekEl = el('div', { class: 'mh-peek' },
+    el('i', { class: 'mh-grab', 'aria-hidden': 'true' }),
+    el('div', { class: 'mh-sum' }, el('b', { text: `${now.getMonth() + 1}월` }), el('span', { text: n ? `기록 ${n}번${walk >= 50 ? ` · ${fmtDist(walk)}` : ''}` : '이번 달 기록이 아직 없어요' })),
+    sr ? staleBox(sr, 'mh-stale') : null,
+    cur ? mhTrip(cur) : null,
+    go);
+  const q = (icon, label, href) => { const a = el('a', { class: 'mh-q', href }, el('i'), el('span', { text: label })); a.firstChild.append(cSvg(icon, 22)); return a; };
+  let others = null; try { const all = planAll().filter(p => !cur || p.id !== cur.id); others = all.length || !cur ? planHomeSection(cur && cur.id) : null; } catch {}
+  const sheet = el('div', { class: 'mh-sheet c-ui' }, peekEl,
+    cStoryStrip(map),
+    el('div', { class: 'mh-quick' }, q('book', '내 MPD', './?my=1'), q('pin', '전체 지도', './?map=1'), q('spark', '발견', './?find=1'), q('img', '가족 앨범', './?album=1'), q('fork', '밥값 내기', './?game=1')),
+    others, memSlot, installSlot,
+    el('div', { class: 'c-foot', style: 'text-align:center', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }));
+  const sp = el('div', { class: 'mh-sp' }), top = cHomeTop(true); top.classList.add('mh-top');
+  app.replaceChildren(map, top, sp, sheet, cTabs('home'));
+  // 처음 보이는 판 높이 = 지금 할 일까지(기록하기 단추 아래). 나머지는 밀어 올리면 보여요
+  const fit = () => { const h = Math.min(innerHeight * .55, peekEl.offsetHeight + 28); sp.style.height = Math.max(160, innerHeight - h - (parseFloat(getComputedStyle(document.documentElement).paddingTop) || 0)) + 'px'; map.setPeek(h); };
+  fit(); setTimeout(fit, 400);
 }
 function cHomeCardStyle() {
   const wNow = ls.get('walkNow', null), nick = String(ls.get('nick', '') || '').trim(), now = new Date();
@@ -17461,7 +17595,7 @@ function cHomeCardStyle() {
   return box;
 }
 function homeStyleSheet(after) {
-  const cur = ls.get('homeStyle', 'photo');
+  const cur = homeStyleNow();
   const mini = k => { const m = el('div', { class: 'hs-mini hs-' + k });
     if (k === 'photo') m.append(el('i', { class: 'b1' }), el('i', { class: 'b2' }), el('i', { class: 'ln' }));
     else if (k === 'map') m.append(el('i', { class: 'rd' }), el('i', { class: 'p1' }), el('i', { class: 'p2' }));
@@ -17490,13 +17624,13 @@ function cHomeTop(dark) {
   else if (!nick) avatar.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.4-6 8-6s6.8 2 8 6"/></svg>';
   const top = el('div', { class: 'c-ph-top' + (dark ? ' dk' : '') }, logo, el('span', { style: 'flex:1' }),
     icBtn('검색', `<svg ${S}><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`, { type: 'button', onclick: cSearch }),
-    icBtn('알림', `<svg ${S}><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`, { type: 'button', onclick: () => cSoon('🔔 알림', '새 발견, 가족 앨범 댓글, 시계에서 온 기록 같은 소식을 여기서 모아 알려 드릴 예정이에요.') }),
+    // 판 -360: 🔔 알림은 눌러도 '만들 예정' 창뿐이라 뺌(쓸모 적은 단추는 빼기)
     avatar);
   return top;
 }
 function cHomePhoto() {
   if (cHomeEmpty()) return cHomeFirst();
-  const hs = ls.get('homeStyle', 'photo'); if (hs === 'map') return cHomeMapStyle(); if (hs === 'card') return cHomeCardStyle();
+  const hs = homeStyleNow(); if (hs === 'map') return cHomeMapStyle(); if (hs === 'card') return cHomeCardStyle();
   const box = el('div', { class: 'c-ph' }), bg = el('div', { class: 'c-ph-bg' }), layer = el('div', { class: 'c-ph-pins' });
   const wNow = ls.get('walkNow', null);
   const top = cHomeTop();
@@ -17655,6 +17789,7 @@ function viewLanding() {
   // 판 -215: 계획을 저절로 합치지 않음
   planSnap();
   const first = cHomeEmpty();   // 판 -250: 기록이 하나도 없으면 기록이 있어야 쓸모 있는 줄은 숨김
+  if (!first && homeStyleNow() === 'map') return viewLandingMap(memSlot);   // 판 -360 지도 첫 화면
   const tripCard = (() => { try { return first && !planAll().length ? null : planHomeSection(); } catch { return null; } })();   // 판 -189
   const heroEl = cHomePhoto();
   // 2026-11-15 사용자 '지저분한 정보·중복된 정보 빼': 사진 위 여행 알약은 아래 여행 카드와 같은 내용이라 뺌
