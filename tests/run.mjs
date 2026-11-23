@@ -1274,6 +1274,9 @@ await test('지도 첫 화면 · 휴대폰 아래 단추 줄이 있어도 기록
   await seed(page); await page.goto(BASE); await sleep(2000);
   const b = await page.evaluate(() => document.querySelector('.mh-go').getBoundingClientRect().bottom);
   ok(b <= 844 - 48, `기록하기 단추가 아래 단추 줄 밑으로 내려가요(아래 끝 ${Math.round(b)}px, ${844 - 48}px 위여야)`);
+  await page.evaluate(() => scrollTo(0, 99999)); await sleep(400);   // 판 -365: 판을 끝까지 올려도 머리 줄은 맨 위 그대로 · 흰 바탕
+  const hd = await page.evaluate(() => { const t = document.querySelector('.mh-top'); return { top: t.getBoundingClientRect().top, solid: t.classList.contains('solid') }; });
+  ok(hd.top === 0 && hd.solid, `판을 올리면 머리 줄이 밀려 올라가요(위 ${hd.top}px, 흰 바탕 ${hd.solid})`);
   noErr(page, '아래 단추 줄');
 });
 
