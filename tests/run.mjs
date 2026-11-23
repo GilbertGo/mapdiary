@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet'];
+const EXPOSE = ['recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1023,6 +1023,25 @@ await test('사진으로 만든 곧은 비행 줄은 차가 아니라 비행', a
   ok(!/c/.test(r.leg2) && /f/.test(r.leg2), '비행기 안 사진 → 인천 곧은 줄에 차가 섞여요: ' + r.leg2.slice(0, 40));
   ok(!/f/.test(r.ferry), '느린 배(곧은 줄)까지 비행으로 그려요');
   noErr(page, '비행 줄');
+});
+
+// ─── 판 -356: 홍콩 시내처럼 이름이 많으면 한자 읽기 이름을 모든 글자 층에 통째로 넣어 휴대폰 지도가 비었음 ───
+await test('한자 읽기 이름은 층마다 그 층 이름만 · 1200개까지', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    await __T.koHanjaLoad();
+    const calls = {}, on = {}, feats = { place: [{ properties: { name: '香港' }, geometry: { type: 'Point', coordinates: [114.16, 22.28] } }],
+      transportation_name: Array.from({ length: 1500 }, (_, i) => ({ properties: { name: '德輔道' + String.fromCharCode(0x4e00 + i) }, geometry: { type: 'Point', coordinates: [114.16, 22.28] } })) };
+    const mm = { getStyle: () => ({ layers: [{ id: 'label_city', 'source-layer': 'place', metadata: { koName: 1 }, layout: { 'text-field': 'A' } }, { id: 'highway_name', 'source-layer': 'transportation_name', metadata: { koName: 1 }, layout: { 'text-field': 'B' } }] }),
+      querySourceFeatures: (s, o) => feats[o.sourceLayer] || [], setLayoutProperty: (id, k, v) => { calls[id] = v; }, on: (e, f) => { on[e] = f; } };
+    __T.koHanjaWire(mm, false); on.idle(); await new Promise(z => setTimeout(z, 800));
+    const n = id => Array.isArray(calls[id]) ? (calls[id].length - 3) / 2 : 0;
+    return { city: n('label_city'), road: n('highway_name'), cityHasRoad: JSON.stringify(calls.label_city || '').includes('德輔道') };
+  });
+  ok(r.city >= 1, '도시 이름 층에 한자 읽기가 없어요');
+  ok(!r.cityHasRoad, '도시 이름 층에 길 이름까지 통째로 넣어요');
+  ok(r.road > 0 && r.road <= 1200, '길 이름 층 이름 수가 너무 많아요: ' + r.road);
+  noErr(page, '한자 읽기 이름');
 });
 
 await browser.close();
