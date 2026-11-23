@@ -1496,7 +1496,7 @@ var LAB_QUIET = qs.get('lab') === 'check';
 // 🧪 영상 2.0 시험판 (2026-11-13 사용자 '나안, 별도 시험용 주소'): 개발 가지를 운영 주소가 아닌 다른 주소(raw.githack.com 등)로 열면
 //   영상 화면만 보여요. 다른 주소라 운영 MPD(gilbertgo.github.io)의 기록·사진·설정을 읽지도 바꾸지도 못해요(브라우저가 주소마다 저장소를 따로 둬서).
 //   켜자마자 하는 일(공개 서버 연결·클라우드·새 판 확인·백업)도 쉬어요. 기록은 백업 파일을 불러와서 시험해요
-var FILM_TEST = /(^|\.)githack\.com$|(^|\.)statically\.io$/.test(location.hostname) || (location.hostname === '127.0.0.1' && qs.get('filmtest') === '1');
+var FILM_TEST = false && /(^|\.)githack\.com$|(^|\.)statically\.io$/.test(location.hostname) || (location.hostname === '127.0.0.1' && qs.get('filmtest') === '1');
 if (FILM_TEST) LAB_QUIET = true;
 
 // ---------- 작은 도구들 ----------
