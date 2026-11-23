@@ -618,6 +618,7 @@ await test('첫 화면 바탕 사진은 새 기록이 생겨도 그대로', asyn
   const jpg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
   const put = async (id, tid, ts) => page.evaluate(async ([id, tid, ts, u]) => { const b = await (await fetch(u)).blob(); await __T.photoPut({ id, t: tid, ts, lat: 37.4, lng: 127.29, blob: b, thumb: b }); }, [id, tid, ts, jpg]);
   await put('ph_bg1', t, new Date('2026-11-01T10:10:00+09:00').getTime());
+  await page.evaluate(() => { localStorage.setItem('homeMapNew', 'true'); localStorage.setItem('homeStyle', '"photo"'); });   // 판 -362부터 기본은 지도 첫 화면 → 사진 모양을 고른 사람
   await page.goto(BASE); await sleep(2500);
   const first = await page.evaluate(() => JSON.parse(localStorage.getItem('homeBgPick') || 'null'));
   ok(first === 'ph_bg1', '첫 바탕 사진을 기억하지 않았어요: ' + first);
@@ -1215,6 +1216,30 @@ await test('여행 경비 · 인터넷이 안 돼도 예전 환율로 셈 (판 -
     try { const o = await __T.destFx('CNY'); return o.krw + ':' + (o.old ? 'old' : 'new'); } catch (e) { return 'err'; }
   });
   ok(r === '190:old', '바깥 요청이 막혔을 때 예전 환율을 써야 해요 ' + r);
+});
+
+// ─── 판 -362: 첫 화면은 지도 중심(사용자 'MPD 첫화면 설계 다시하자' → '지도 중심') ───
+await test('지도 첫 화면 · 지도·기록하기·여행 카드 · 겹친 여행 줄 없음 · 사진 모양은 그대로 고름', async page => {
+  await seed(page);
+  await page.evaluate(() => { const d = new Date(), ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    __T.planSave({ id: 'pl_home', name: '장가계 여행', start: ymd, nd: 3, it: [{ id: 'a', d: 0, t: '23:59', n: '천문산', k: 'spot', lat: 29.05, lng: 110.48 }], at: Date.now(), u: Date.now() }); });
+  await page.goto(BASE); await sleep(2500);
+  const r = await page.evaluate(() => ({ map: !!document.querySelector('.mh-map.leaflet-container'), go: !!document.querySelector('.mh-go'), trip: (document.querySelector('.mh-trip') || {}).textContent || '',
+    num: document.querySelectorAll('.mh-num').length, rows: [...document.querySelectorAll('.hp-row b')].map(b => b.textContent), bell: !!document.querySelector('[aria-label="알림"]'), style: localStorage.getItem('homeStyle'),
+    sp: document.querySelector('.mh-sp').offsetHeight, peek: document.querySelector('.mh-peek').getBoundingClientRect().bottom }));
+  ok(r.map && r.go, '지도나 기록하기 단추가 없어요');
+  ok(r.trip.includes('장가계 여행') && r.trip.includes('1일차'), '여행 중 카드가 없어요: ' + r.trip);
+  ok(r.num === 1, '오늘 일정 장소가 지도에 번호로 안 나와요: ' + r.num);
+  ok(!r.rows.includes('장가계 여행'), '위 여행 카드와 같은 여행이 아래 목록에 또 나와요');
+  ok(!r.bell, '눌러도 만들 예정 창만 뜨는 🔔 단추가 남아 있어요');
+  ok(r.style === '"map"', '처음 한 번 지도 모양으로 안 바뀌었어요: ' + r.style);
+  ok(r.peek <= 844 + 2, `처음 화면에 기록하기 단추가 다 안 보여요(아래 끝 ${Math.round(r.peek)}px)`);
+  noErr(page, '지도 첫 화면');
+  // 사진 모양을 고른 사람은 다음에 켜도 사진 모양 그대로(다시 지도로 바꾸지 않음)
+  await page.evaluate(() => localStorage.setItem('homeStyle', '"photo"'));
+  await page.goto(BASE); await sleep(2000);
+  ok(await page.evaluate(() => !document.querySelector('.mh-map') && !!document.querySelector('.c-ph')), '사진 모양을 골랐는데 지도 첫 화면이 나와요');
+  noErr(page, '사진 첫 화면');
 });
 
 await browser.close();
