@@ -3517,6 +3517,14 @@ async function drawBragCard(o) {
   return cv;
 }
 // info: 나들이 계획, t: 나들이 ID, count: 참여 인원, allDone: 모두 도착했는지
+// 카드 거리 글: 차로 간 길이 300m 넘으면 '걸은 거리'와 '전체 이동'을 따로, 아니면 '걸은 거리' 하나 (+ 비행)
+function cardDistStats(st, did) {
+  const split = st.d - st.walk > 300, out = [];
+  if (split) out.push(`${did} 거리 ${fmtDist(st.walk)}`, `전체 이동 ${fmtDist(st.d)}`);
+  if (st.fly > 0) out.push(`✈ 비행 ${fmtDist(st.fly)}`);
+  else if (!split) out.push(`${did} 거리 ${fmtDist(st.d)}`);
+  return out;
+}
 function openBrag(info, t, count, allDone, room) {
   const plan = hasRoute(info) ? info.route : null;
   const mine = trackLoad(t).length > 1 ? trackLoad(t).map(q => [q[0], q[1]]) : null;
@@ -3552,9 +3560,8 @@ function openBrag(info, t, count, allDone, room) {
     const M = modeOfT(t), dur = ms => fmtDur(ms).replace(/ 0분$/, '');
     if (route && which === 'mine') {
       const st = trackStats(trackLoad(t), M.car);
-      if (st.d - st.walk > 300) stats.push(`${M.did} 거리 ${fmtDist(st.walk)}`, `전체 이동 ${fmtDist(st.d)}`);   // 차로 간 길이 있으면 따로
-      if (st.fly > 0) stats.push(`✈ 비행 ${fmtDist(st.fly)}`);
-      else stats.push(`${M.did} 거리 ${fmtDist(st.d)}`);
+      // 판 -359 (지인 장남덕 님 '차량으로 이동한 것인데 통계는 맞는 건지?'): 예전엔 차로 간 길이 있어도 끝에 '걸은 거리 = 전체'를 또 넣어 '걸은 거리'가 두 번, 서로 다른 값으로 나왔음
+      stats.push(...cardDistStats(st, M.did));
       if (M.k === 'trek') { const sn = (ls.get('walkSteps:' + t, {}) || {}).n || 0; if (sn >= 200) stats.push(`걸음 ${sn.toLocaleString()}보`); }   // 걷기는 걸음 수를 카드에
       if (M.k === 'run') { const mv = movingMs(trackLoad(t), M.car), sn = ls.get('walkSteps:' + t, {}).n; stats.push(`페이스 ${fmtPace(st.walk, mv)}`); if (sn > 20 && mv > 60000) stats.push(`케이던스 ${Math.round(sn / (mv / 60000))}`); }
       if (M.k === 'bike') stats.push(`평균 ${fmtSpeed(st.walk, movingMs(trackLoad(t), M.car))}`);
@@ -3666,9 +3673,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-358-filmcover';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-359-sharefix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록에서 고른 대표 사진이 있으면 이동 영상 첫 사진도 그 사진으로 나와요";
+const UI_NOTES = "차로 다닌 기록의 카드에 걸은 거리가 두 번 다르게 나오던 것을 고쳤어요 · 공유 창을 다시 열어도 같은 카드면 사진을 다시 올리지 않고 전에 만든 링크를 그대로 써요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -3712,6 +3719,10 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
   const recs = o.sharePhotos !== false && Array.isArray(o.photoRecs) ? o.photoRecs : [];
   const payload = bragSmall(o), key = JSON.stringify(payload) + '|' + recs.map(r => r.id).join(',') + (o.secret ? '|secret' : '');
   if (shortCache[key]) return shortCache[key];
+  // 판 -359 (장남덕 님 '다시 돌아오니 최초 첨부한 사진 숫자 다 올라오네'): 공유 창을 다시 열 때마다 사진을 처음부터 다 다시 올렸음 → 같은 카드·같은 사진이면 전에 만든 링크를 다시 씀(비밀코드 링크는 코드를 못 다시 보여 줘서 빼요)
+  const kh = o.secret ? '' : (() => { let h = 2166136261; for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619); return (h >>> 0).toString(36); })();
+  const saved = kh ? (ls.get('shareLinks', {}) || {})[kh] : null;
+  if (saved && saved.u) return (shortCache[key] = saved.u);
   const id = rid(8), seal = obj => sealBytes(new TextEncoder().encode(JSON.stringify(obj)), k);
   let hash = '', k = null, code = null, salt = null;
   if (o.secret) {
@@ -3744,6 +3755,7 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
   await pub(`allhere/v1/share/${id}`, o.secret ? { v: 2, salt: u8b64(salt), enc: await seal(payload) } : { v: 3, enc: await seal(payload) });
   const url = `${APP_BASE}?s=${id}${hash}`;
   if (code) shortCodes[url] = code;
+  if (kh) { const all = ls.get('shareLinks', {}) || {}; all[kh] = { u: url, at: Date.now() }; ls.set('shareLinks', Object.fromEntries(Object.entries(all).sort((x, y) => y[1].at - x[1].at).slice(0, 40))); }
   return (shortCache[key] = url);
 }
 // 보내는 사람에게 비밀코드를 보여줘요
