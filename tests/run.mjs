@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'guestLink', 'guestDrop', 'shrinkImage'];
+const EXPOSE = ['destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1240,6 +1240,33 @@ await test('지도 첫 화면 · 지도·기록하기·여행 카드 · 겹친 �
   await page.goto(BASE); await sleep(2000);
   ok(await page.evaluate(() => !document.querySelector('.mh-map') && !!document.querySelector('.c-ph')), '사진 모양을 골랐는데 지도 첫 화면이 나와요');
   noErr(page, '사진 첫 화면');
+});
+
+// ─── 판 -363: 화면을 꺼도 걸음 세기(앱 걸음 센서) · 오늘 걸음(만보계) ───
+await test('걸음 센서 · 화면을 꺼도 기록 걸음이 따라잡음 · 오늘 걸음은 자정·다시 켬도 바르게', async page => {
+  await page.addInitScript(() => { window.__stepN = 5000; window.__boot = Date.now() - 3 * 864e5;   // 휴대폰은 사흘 전에 켬
+    window.mdNativeSteps = { now: async () => ({ has: true, perm: true, n: window.__stepN, boot: window.__boot }) }; });
+  const t = await seed(page);
+  await page.evaluate(t => { localStorage.setItem('walkNow', JSON.stringify(t)); localStorage.setItem('walkAt', JSON.stringify(Date.now() - 60000)); localStorage.removeItem('walkSteps:' + t); }, t);
+  await page.goto(BASE + '?walk=1'); await sleep(1500);
+  await page.evaluate(() => { window.__stepN += 1234; }); await sleep(3500);   // 화면을 끈 동안 휴대폰이 센 걸음
+  const n1 = await page.evaluate(t => (JSON.parse(localStorage.getItem('walkSteps:' + t) || '{}')).n, t);
+  ok(n1 === 1234, '기록 걸음이 센서 값 차이와 달라요: ' + n1);
+  await page.reload(); await sleep(1200); await page.evaluate(() => { window.__stepN = 5000 + 1234 + 100; }); await sleep(3500);   // 화면을 다시 열어도 기준 그대로
+  const n2 = await page.evaluate(t => (JSON.parse(localStorage.getItem('walkSteps:' + t) || '{}')).n, t);
+  ok(n2 === 1334, '다시 열었더니 걸음이 처음부터 세져요: ' + n2);
+  noErr(page, '걸음 센서 기록');
+  const d = await page.evaluate(() => { const mid = new Date(); mid.setHours(0, 0, 0, 0); const M = +mid, out = {};
+    localStorage.removeItem('stepDay'); localStorage.removeItem('stepLast');
+    const boot = M - 3 * 864e5;
+    __T.stepDayFeed({ n: 9000, boot }, M - 2 * 3600e3);               // 어제 밤 10시에 읽음
+    out.a = __T.stepDayFeed({ n: 9500, boot }, M + 8 * 3600e3).v;     // 오늘 아침 → 어제 밤 값부터 500
+    out.b = __T.stepDayFeed({ n: 200, boot: M + 9 * 3600e3 }, M + 10 * 3600e3).v;   // 오늘 9시에 휴대폰을 다시 켬 → 500 + 200
+    localStorage.removeItem('stepDay'); localStorage.removeItem('stepLast');
+    const D = __T.stepDayFeed({ n: 4000, boot }, M + 12 * 3600e3); out.c = D.v; out.ap = D.ap;   // 어제 읽은 값이 없으면 지금부터(앱 켠 뒤)
+    return out; });
+  ok(d.a === 500 && d.b === 700, `오늘 걸음 계산이 틀려요: 아침 ${d.a}(500이어야) · 다시 켠 뒤 ${d.b}(700이어야)`);
+  ok(d.c === 0 && d.ap === 1, '어제 값이 없을 때는 앱 켠 뒤부터라고 표시해야 해요');
 });
 
 await browser.close();

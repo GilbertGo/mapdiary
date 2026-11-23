@@ -274,6 +274,10 @@ if (Capacitor.isNativePlatform()) {
     range: async (from, to) => await MdApp.photosRange({ from: Math.round(from), to: Math.round(to) }),   // 판 -340 사진으로 지난 여행 만들기: { items:[{uri,ts,name,lat,lng}], loc }
   };
 
+  // ---------- 판 -363 걸음 센서: 화면을 꺼도 걸음 세기 (MdApp.stepsNow, 예전 판 앱엔 없어서 안 만들어요) ----------
+  //   { n: 휴대폰이 켠 뒤 걸은 수(-1이면 아직 모름), boot: 켠 시각(ms), perm, has: 센서 있음 }. ask:true면 '신체 활동' 권한을 물어요
+  window.mdNativeSteps = { now: ask => MdApp.stepsNow({ ask: !!ask }) };
+
   // ---------- 저절로 백업: 내 파일 > Documents > MapDiary 에 조금씩 이어 써요(사진이 많아도 되게). 최근 3개만 남겨요 ----------
   const BK = { run: 'MDRun', pgolf: 'MDGolf' }[APP.mode] || 'MapDiary';
   let bkName = '';
