@@ -1,10 +1,10 @@
 <!doctype html><html lang="ko" data-app="md"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Map Photo Diary 받기</title>
 <!-- Map Diary -->
-<meta name="description" content="사진첩 속 여행을 지도 위에서 다시 떠나요. 찍은 사진만으로 다닌 길과 이동 영상을. 지난 여행도 사진만으로, 지도 위 이동 영상까지. 무료">
+<meta name="description" content="오늘 걷는 길도, 지난 여행도 지도 위에. 켜 두면 길과 사진이 저절로, 지난 여행은 사진만으로. 지난 여행도 사진만으로, 지도 위 이동 영상까지. 무료">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Map Photo Diary">
-<meta property="og:title" content="사진첩 속 그 여행, 지도 위에서 다시 떠나요 — Map Photo Diary">
-<meta property="og:description" content="찍은 사진만으로 다닌 길을 그리고 이동 영상까지. 무료로 받아 보세요">
-<meta property="og:image" content="https://gilbertgo.github.io/mapdiary/og-app.png?v=2"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:title" content="Map Photo Diary">
+<meta property="og:description" content="켜 두면 길과 사진이 저절로, 지난 여행은 사진만으로. 이동 영상까지 무료로">
+<meta property="og:image" content="https://gilbertgo.github.io/mapdiary/og-app.png?v=4"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:url" content="https://gilbertgo.github.io/mapdiary/md.html">
 <link rel="icon" href="icon-512.png"><link rel="apple-touch-icon" href="icon-512.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MPD"><meta name="theme-color" content="#0B1F2A">
 <style>
@@ -13,10 +13,10 @@ body{margin:0;font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Noto
 .hero{position:relative;min-height:78vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 24px 32px;color:#fff;background:#0B1F2A url(img/onb-bg.jpg) center/cover}
 .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 25%,rgba(0,0,0,.72))}
 .hero>*{position:relative;max-width:460px;width:100%;margin-left:auto;margin-right:auto}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;opacity:.95;margin-bottom:14px}
-.brand img{width:36px;height:36px;border-radius:10px}
+.brand{display:flex;align-items:center;gap:14px;font-weight:800;font-size:28px;letter-spacing:-.01em;margin-bottom:26px}
+.brand img{width:60px;height:60px;border-radius:16px}
 h1{margin:0 0 10px;font-size:34px;line-height:1.22;letter-spacing:-.02em;font-weight:800}
-#msg{margin:0 0 22px;font-size:16px;line-height:1.5;opacity:.9}
+#msg:empty{display:none}#msg{margin:0 0 22px;font-size:16px;line-height:1.5;opacity:.9}
 a.b{display:block;text-align:center;background:#fff;color:#0B1F2A;text-decoration:none;font-weight:800;font-size:18px;padding:17px;border-radius:16px}
 .free{text-align:center;font-size:13px;opacity:.8;margin-top:10px}
 main{max-width:460px;margin:0 auto;padding:28px 20px 40px}
@@ -36,8 +36,7 @@ ol{margin:0;padding-left:20px;line-height:1.75;font-size:15px;color:#374151}
 <body>
 <section class="hero">
   <div class="brand"><img src="icon-192.png" alt="">Map Photo Diary</div>
-  <h1>사진첩 속 그 여행,<br>지도 위에서 다시 떠나요</h1>
-  <p id="msg">찍은 사진만으로 다닌 길을 그리고, 그 길을 따라가는 영상까지 만들어요</p>
+    <p id="msg"></p>
   <a class="b" id="dl" href="#">무료로 받기</a>
   <div class="free" id="t">가입 없이 바로 써요 · 안드로이드 앱 · 아이폰은 웹앱</div>
 </section>
