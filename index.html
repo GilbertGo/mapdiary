@@ -3065,6 +3065,22 @@ function trackModesCalc(tr, kmh) {
   // ③ 흔들리며 간 곳은 모드 기준보다 느리면 걸은(달린) 길
   for (let i = 1; i < m.length; i++) if (m[i] === 'c' && sh(i) === 1 && segV(i) <= lim) m[i] = 'w';
   smooth();
+  // ④ 판 -355 (사용자 홍콩→서울 지도 캡처 '비행기와 차가 같이?'): 사진으로 만든 여행은 길을 못 찾은 사진 사이(바다 위·비행)를 곧은 줄로 이어서,
+  //   비행기 안·공항에서 찍은 사진 때문에 그 사이 평균이 느려지면(시속 324km 아래) 비행 일부가 🚗으로 보였음
+  //   → 흔들림 값 없는 차 구간 가운데 한 줄로 곧게 80km 넘게 시속 150km 넘게 이어진 곳은 비행 (GPS로 잰 찻길은 이렇게 곧지 않고, 배는 이보다 느려요)
+  for (let i = 1; i < m.length; i++) {
+    if (m[i] !== 'c' || tr[i][4] != null) continue;
+    let j = i; while (j + 1 < m.length && m[j + 1] === 'c' && tr[j + 1][4] == null) j++;
+    const kx = Math.cos(tr[i][0] * Math.PI / 180), hd = k => Math.atan2(tr[k][0] - tr[k - 1][0], (tr[k][1] - tr[k - 1][1]) * kx);
+    let a = i;
+    for (let k = i + 1; k <= j + 1; k++) {
+      if (k <= j && Math.abs(((hd(k) - hd(a) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) < 0.035) continue;   // 2도 안쪽이면 같은 곧은 줄
+      const P = tr[a - 1], Q = tr[k - 1], d = dist(P[0], P[1], Q[0], Q[1]), sec = (Q[2] - P[2]) / 1000;
+      if (d > 80000 && sec > 0 && d / sec > 150 / 3.6) for (let q = a; q < k; q++) m[q] = 'f';
+      a = k;
+    }
+    i = j;
+  }
   return m.join('');
 }
 // 집 가리기: 공유할 때 출발·도착 근처(HIDE_M)를 길에서 잘라 내요. 길이 짧으면 앞뒤 1/3씩만
@@ -3646,9 +3662,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.23-354-vtfresh';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.23-355-flyline';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도를 미리 받아 둔 휴대폰에서 지도가 거칠게 보여 길이 바다 위로 보이던 것을 고쳤어요 · 인터넷이 되면 늘 새 지도를 받아요";
+const UI_NOTES = "사진으로 만든 여행에서 비행기로 간 길 중간에 차 그림이 섞여 보이던 것을 고쳤어요 · 바다 위를 곧게 빨리 간 길은 비행으로 그려요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
