@@ -1216,12 +1216,13 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-go.live b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-weight:700}
 .mh-go.live span{flex:none;font-size:14px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.22)}
 .mh-trip{position:relative;display:block;height:128px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0277BD,#1D9EC0) center/cover no-repeat;color:#fff;text-decoration:none}
-.mh-trip::before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,20,32,.72),rgba(8,20,32,.12) 75%)}
-.mh-trip .in{position:absolute;left:16px;right:56px;bottom:14px;display:flex;flex-direction:column;gap:2px}
+.mh-trip .bg{position:absolute;inset:0;background:center/cover no-repeat}
+.mh-trip::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(8,20,32,.72),rgba(8,20,32,.12) 75%)}
+.mh-trip .in{position:absolute;z-index:2;left:16px;right:56px;bottom:14px;display:flex;flex-direction:column;gap:2px}
 .mh-trip small{font:500 13px Pretendard,sans-serif;opacity:.92}
 .mh-trip b{font:700 21px Pretendard,sans-serif;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mh-trip span{font:500 14.5px Pretendard,sans-serif}
-.mh-trip .ar{position:absolute;right:14px;bottom:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);color:#14253B;font:400 22px/34px Pretendard,sans-serif;font-style:normal;text-align:center}
+.mh-trip .ar{position:absolute;z-index:2;right:14px;bottom:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);color:#14253B;font:400 22px/34px Pretendard,sans-serif;font-style:normal;text-align:center}
 .mh-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#191F28;color:#fff;font:700 13px Pretendard,sans-serif;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);box-sizing:border-box}.mh-num.ok{background:#8B95A1}
 .mh-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:#fff;border-radius:20px;padding:14px 4px 12px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
 .mh-q{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#14253B;font:500 12.5px Pretendard,sans-serif;white-space:nowrap}
@@ -17534,13 +17535,14 @@ function mhTrip(p) {   // 여행 중이거나 30일 안에 떠나는 여행: 사
   const k = planToday(p), on = k != null && k >= 0 && k < p.nd, w = (ls.get('planWx:' + p.id, null) || {}).days || [], h = ls.get('planHero:' + p.id, null);
   let nx = null; if (on) { try { const its = planItems(p, k), ni = planNext(p, k); nx = ni >= 0 ? its[ni] : null; } catch {} }
   const wx = w[on ? k : 0] ? planWxLine(w[on ? k : 0], true) : '';
-  const a = el('a', { class: 'mh-trip', href: './?plan=1&p=' + encodeURIComponent(p.id) },
+  const bg = el('i', { class: 'bg' });   // planRowPic은 받은 칸을 비우고 사진을 깔아서, 글과 따로 둠
+  const a = el('a', { class: 'mh-trip', href: './?plan=1&p=' + encodeURIComponent(p.id) }, bg,
     el('div', { class: 'in' },
       el('small', { text: [on ? `여행 중 · ${k + 1}일차` : `D-${-k}`, planDayLabel(p, on ? k : 0), wx].filter(Boolean).join(' · ') }),
       el('b', { text: p.name || '여행' }),
       on ? el('span', { text: nx ? `다음 · ${nx.t ? nx.t + ' ' : ''}${nx.n}` : '오늘 일정을 다 다녀왔어요' }) : null),
     el('i', { class: 'ar', text: '›' }));
-  if (h && h.u) a.style.backgroundImage = `url("${String(h.u).replace(/"/g, '%22')}")`; else planRowPic(p, a);
+  if (h && h.u) bg.style.backgroundImage = `url("${String(h.u).replace(/"/g, '%22')}")`; else planRowPic(p, bg);
   return a;
 }
 function viewLandingMap(memSlot) {
