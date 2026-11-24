@@ -755,7 +755,7 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   const pins = await page.$$eval('.tr-pin', a => a.length), mapTxt = await page.evaluate(() => (document.querySelector('.mapbox') || document.body).innerText);
   ok(pins === 1, '구경에게는 위치 공유를 구경에게도 켠 사람 1명만 보여야 해요: ' + pins);
   ok(!/비밀 대화/.test(mapTxt), '구경 지도에 일행 대화 말풍선이 보여요');
-  ok(!/내 위치 공유/.test(await page.evaluate(() => document.body.innerText)), '구경에게 내 위치 공유 스위치가 보여요');
+  ok(!(await page.evaluate(() => !!document.querySelector('.tr-sw[aria-pressed]'))), '구경에게 내 위치 공유 스위치가 보여요');   // 판 -379부터 구경엔 켜는 스위치 대신 일행 되는 길 알약
   const bar = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
   ok(!bar.some(x => /AI 묻기/.test(x)), '구경에게 AI 묻기가 보여요: ' + bar.join(','));
   ok(bar.some(x => /사진/.test(x)) && !bar.some(x => /일행 채팅/.test(x)), "구경 아래 메뉴는 '일행 채팅' 대신 '사진'이어야 해요: " + bar.join(','));
@@ -1470,6 +1470,21 @@ await test('같은 날 둘로 나뉜 여행 기록 합치기 (판 -378)', async 
     return { w, n: G('track:walk_m1').length, gone: localStorage.getItem('track:walk_m2'), days: G('albums')[0].days, undo: !!(G('tripMergeUndo') || {}).snap };
   });
   ok(r.w === 'walk_m1' && r.n === 4 && r.gone === null && r.days.join() === 'walk_m1' && r.undo, '2일차를 1일차로 합치고 되돌리기 자료를 남겨야 해요 ' + JSON.stringify(r));
+});
+
+await test('초대받은 구경·로그인 안 한 사람도 위치 공유 자리와 로그인 안내 (판 -379)', async page => {
+  await page.goto(BASE); await sleep(600);
+  await page.evaluate(() => {
+    const d0 = new Date(), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpv', name: '장가계', start: ymd, nd: 3, it: [{ id: 'a', d: 0, n: '공항', k: 'spot', lat: 37.46, lng: 126.44 }], room: { code: 'ABCDEFGH' }, at: 1, u: 1 }]));
+    localStorage.setItem('planV:tpv', '1');
+  });
+  page.errs = [];
+  await page.goto(BASE + '?plan=1&p=tpv'); await sleep(2500);
+  const r = await page.evaluate(() => ({ pill: [...document.querySelectorAll('.tr-sw')].map(b => b.textContent).join('|'), ban: [...document.querySelectorAll('.pm-ban')].map(b => b.textContent).join('|') }));
+  ok(/로그인하면 내 위치 공유|일행만/.test(r.pill), '지도에 위치 공유 자리 안내가 있어야 해요 ' + JSON.stringify(r));
+  ok(/로그인/.test(r.ban), '맨 위 줄에 로그인 안내가 있어야 해요 ' + JSON.stringify(r));
+  noErr(page, '구경 계획');
 });
 
 await browser.close();

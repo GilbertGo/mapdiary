@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-378-daymerge';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-379-joinhint';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "초대받은 사람 지도에 내 위치 공유 자리와 로그인 안내가 늘 보여요 · 같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -11630,7 +11630,7 @@ async function viewTripRoom(code, title, planId) {
     const tb = (k, t) => el('button', { class: 'btn small ' + (tab === k ? 'dark' : 'line'), style: 'flex:1', text: t, onclick: () => { tab = k; ls.set('tripTab', k); draw(); } });
     faRc(top, 
       p ? el('a', { href: './?plan=1&p=' + encodeURIComponent(p.id), class: 'sub', style: 'text-decoration:none', text: '‹ ' + p.name }) : el('a', { href: './', class: 'sub', style: 'text-decoration:none', text: '‹ 처음으로' }),
-      V && trLoginNeed(p || planOfRoom(code)) && !permIsV0(p || planOfRoom(code)) ? trLoginBan(p || planOfRoom(code)) : V ? el('button', { type: 'button', class: 'pm-ban v', onclick: () => { const S0 = permCached(p || planOfRoom(code)); permVSheet(S0 && S0.own && S0.own.nm || ''); } }, el('b', { text: '👁 구경하는 중' }), el('span', { text: '일행이 올린 사진을 볼 수 있어요 · 대화는 일행만 ›' })) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
+      V && trLoginNeed(p || planOfRoom(code)) && !permIsV0(p || planOfRoom(code)) ? trLoginBan(p || planOfRoom(code)) : V ? el('button', { type: 'button', class: 'pm-ban v', onclick: () => { const S0 = permCached(p || planOfRoom(code)); permVSheet(S0 && S0.own && S0.own.nm || '', p || planOfRoom(code)); } }, el('b', { text: '👁 구경하는 중' }), el('span', { text: '일행이 올린 사진을 볼 수 있어요 · 대화는 일행만 ›' })) : el('div', { class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap' },
         el('div', { style: 'flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center' }, el('span', { class: 'sub', text: `함께하는 사람 ${pp.size}명${[...pp.values()].filter(v => !v).length ? ` (이름 안 적은 ${[...pp.values()].filter(v => !v).length}명 포함)` : ''}` }),
           ...[...pp.keys()].map(k => el('span', { style: 'display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#4E5968' }, trDot(k, pp.get(k)), nmOf(k) + (k === me ? '(나)' : ''))),
           S.err ? el('span', { class: 'sub', style: 'color:#C2410C', text: '⚠ 인터넷이 안 돼서 새 글을 못 받고 있어요' }) : null),
@@ -12014,7 +12014,10 @@ function permCached(p) { const S = p && p.room && p.room.code ? (ls.get('tripPer
 var PERM_SEE = ['일정과 지도', '여행 정보와 날씨', '일행이 올린 사진', '위치 공유를 켠 일행 위치'], PERM_HIDE = ['일행 대화', '함께 가는 사람과 가이드 전화', '경비와 정산', '예약과 항공권', '출발 미팅과 여행사 안내', 'AI 묻기와 일정 고치기'];
 function permScope() { const col = (ok, t, L) => el('div', { class: 'pm-sc ' + (ok ? 'ok' : 'no') }, el('b', { text: t }), ...L.map(x => el('div', { class: 'pm-li', text: x })));   // 판 -368: ✓/✕ 없이(✕가 '안 됨'으로 읽혀서) 제목으로만 나눔
   return el('div', { class: 'pm-scw' }, col(1, '👁 구경도 보는 것', PERM_SEE), col(0, '🔒 일행만 보는 것', PERM_HIDE)); }
-function permVSheet(nm) { return labSheet('👁 구경하는 중이에요', el('div', { class: 'dt', style: 'margin-bottom:10px', text: `함께 가는 사람 목록에 없는 이름으로 들어와서 보기만 할 수 있어요.${nm ? ` 일행이 되려면 ${nm} 님께 말해 주세요.` : ''}` }), permScope()); }
+function permVSheet(nm, p) {   // 판 -379 (사용자 '초대받은 사람이 본인 위치 공유하기 버튼을 못 찾겠다' · '로그인하라는 안내도 안나오던데?'): 구경 중이면 일행이 되는 길(로그인 → 주인이 일행으로)을 보이고 로그인 단추
+  const lin = trLoggedIn(), box = el('div', { class: 'dt', style: 'margin-bottom:10px', text: `지금은 보기만 할 수 있어요. 대화·내 위치 공유·경비는 일행만 돼요.${lin ? '' : ' ① 카카오나 구글로 로그인하고'} ${lin ? '' : '②'} ${nm ? nm + ' 님' : '여행 주인'}께 일행으로 바꿔 달라고 하면 돼요.` });
+  const bg = labSheet('👁 구경하는 중이에요', box, !lin && p ? el('button', { class: 'btn primary full', style: 'margin-bottom:10px', text: '카카오·구글로 로그인', onclick: () => { bg.remove(); trLoginSheet(p); } }) : null, permScope());
+  return bg; }
 // 판 -333 (2026-11-22 사용자 '웹앱도 무조건 카카오 or 구글로 로그인하게 하면 어떨까?' → '그래 그러면 여행 멤버는 무조건 로그인' · '웹앱이든 그냥 앱이든'):
 //   일행(대화·위치·일정 고치기·AI)은 카카오나 구글 로그인을 한 사람만 · 로그인 안 했으면 구경(일정·사진만) + '로그인하면 일행이 돼요'
 //   같은 계정이면 폰 웹·앱·PC가 한 사람(판 -329 tripMe). 방 주인 기기는 그대로 · 혼자 기록·공유 링크 보기는 로그인 없이
@@ -12136,8 +12139,8 @@ function permSheet(p, rd) {   // 주인: 일행마다 보기·고치기·AI
 function permLine(p, rd) {   // 계획 화면 맨 위 작은 줄: 주인 = 새로 들어온 사람 · 일행 = 내 권한
   if (trLoginNeed(p) && !permIsV0(p)) return trLoginBan(p);   // 판 -333: 일행 자리인데 로그인만 안 한 사람(목록에 없는 이름은 그대로 구경 안내)
   const S = permCached(p), EN0 = planEN(p);
-  const vSheet = permVSheet;
-  const vBan = nm => el('button', { type: 'button', class: 'pm-ban v', onclick: () => vSheet(nm) }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중' }), el('span', { text: EN0 ? `Plan, photos and group location · chat, costs and bookings are for the group only ›` : `일정·사진·일행 위치만 보여요 · 대화·경비·예약은 일행만 ›` }));   // 판 -320 · 판 -324: 누르면 보는 것 / 일행만 보는 것
+  const vSheet = nm => permVSheet(nm, p);
+  const vBan = nm => el('button', { type: 'button', class: 'pm-ban v', onclick: () => vSheet(nm) }, el('b', { text: EN0 ? '👁 Viewing' : '👁 구경하는 중' }), el('span', { text: EN0 ? `Plan, photos and group location · chat, costs and bookings are for the group only ›` : trLoggedIn() ? `일정·사진·일행 위치만 보여요 · 대화·내 위치 공유는 일행만 ›` : `일정·사진만 보여요 · 로그인하면 일행이 될 수 있어요 ›` }));   // 판 -320 · 판 -324: 누르면 보는 것 / 일행만 보는 것 · 판 -379 로그인 안내
   if (!S || !S.own || !S.perm) return permIsV(p) ? vBan('') : null;
   if (S.own.by === trMe()) { const n = (S.tk || []).filter(x => !(S.perm.m || {})[x.by]).length; if (!n) return null;
     return el('button', { type: 'button', class: 'pm-ban', onclick: () => permSheet(p, rd) }, el('b', { text: `👋 새로 들어온 사람 ${n}명` }), el('span', { text: '권한 정하기 ›' })); }
@@ -14411,10 +14414,17 @@ function viewPlanOne(id) {
     if (!memR || !mapEl) return; const nw = trLocSwitch(memR, () => { memSw(); memSend(); memDraw(); drawMap(); });
     nw.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; if (memSwEl) memSwEl.replaceWith(nw); else mapEl.append(nw); memSwEl = nw;
   }
+  function memSwHint() {   // 판 -379: 구경·로그인 안 한 사람도 스위치 자리에 '일행만' 알약 → 누르면 일행 되는 길
+    if (!mapEl || mapEl.querySelector('.tr-sw')) return; const S0 = permCached(p);
+    const b = el('button', { type: 'button', class: 'tr-sw', onclick: e => { e.stopPropagation(); if (trLoginNeed(p) && !permIsV0(p)) trLoginSheet(p); else permVSheet(S0 && S0.own && S0.own.nm || '', p); } },
+      el('span', { class: 'tr-sw-t' }, el('b', { text: trLoggedIn() ? '내 위치 공유는 일행만 ›' : '로그인하면 내 위치 공유 ›' })), el('i', { class: 'tr-sw-k' }));
+    b.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; mapEl.append(b);
+  }
   async function memStart() {
     if (!p.room || !p.room.code || !permCanR(p)) return;   // 판 -322: 구경은 '구경에게도'로 켠 일행 위치만 보고(memList), 내 위치는 안 보내요(스위치 없음)
+    if (memV) memSwHint();   // 판 -379: 방에 닿기 전에도 먼저
     try { memR = await trRoom(p.room.code); memS = await trLoad(memR); } catch { memR = null; return; }
-    memDraw(); drawMap(); if (!memV) { memSend(); memSw(); }
+    memDraw(); drawMap(); if (!memV) { memSend(); memSw(); } else memSwHint();
     const pull = async () => { if (!document.body.contains(list)) return false; if (document.hidden) return true; const n0 = memList().length; if (await trSync(memR, memS, ['tl', 'tc'])) { memDraw(); if (memList().length !== n0) drawMap(); } return true; };
     await pull(); const iv = setInterval(async () => { if (!(await pull())) { clearInterval(iv); memSend(); } }, 15000);
   }
