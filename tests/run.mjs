@@ -1410,6 +1410,28 @@ await test('여행 계획 지도 · 실제 다닌 길은 그날 점만 (판 -374
   ok(JSON.stringify(r) === '[[3],[2],0]', '날마다 그날 실제 길만 나와야 해요 ' + JSON.stringify(r));
 });
 
+await test('잘못 끝낸 기록 이어서 · 기록 지도에 오늘 일정 (판 -375)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(600);
+  await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    localStorage.removeItem('walkNow');
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpz', name: '장가계', start: ymd, nd: 3, it: [{ id: 'a', d: 0, n: '공항', k: 'spot', lat: 37.46, lng: 126.44 }, { id: 'b', d: 0, n: '카페', k: 'food', lat: 37.49, lng: 126.51 }], at: 1, u: 1 }]));
+    localStorage.setItem('albums', JSON.stringify([{ id: 'album_z', name: '장가계', mode: 'travel', days: ['walk_zz1'], at: t }]));
+    localStorage.setItem('planAlbum:tpz', '"album_z"'); localStorage.setItem('walkAlbum:walk_zz1', '"album_z"'); localStorage.setItem('walkMode:walk_zz1', '"travel"');
+    localStorage.setItem('track:walk_zz1', JSON.stringify([[37.46, 126.44, t], [37.47, 126.45, t + 6e5]]));
+  });
+  await page.goto(BASE + '?plan=1&p=tpz'); await sleep(2000);
+  const card = await page.evaluate(() => [...document.querySelectorAll('a')].some(a => /resume=walk_zz1/.test(a.href) && /이어서/.test(a.textContent)));
+  ok(card, "계획 '오늘' 칸에 '● 이어서'가 있어야 해요");
+  page.errs = [];
+  await page.goto(BASE + '?walk=1&resume=walk_zz1'); await sleep(2500);
+  const r = await page.evaluate(() => ({ now: JSON.parse(localStorage.getItem('walkNow')), url: location.search, plan: [...document.querySelectorAll('a.leaflet-control, .leaflet-control a')].some(a => /일차 일정/.test(a.textContent)), pins: [...document.querySelectorAll('.leaflet-marker-icon')].filter(m => /^[12]$/.test(m.textContent.trim())).length }));
+  ok(r.now === 'walk_zz1' && !/resume/.test(r.url), '끝낸 기록이 다시 기록 중이 돼야 해요 ' + JSON.stringify(r));
+  ok(r.plan && r.pins >= 2, '기록 지도에 오늘 일정 핀과 일정 단추가 있어야 해요 ' + JSON.stringify(r));
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
+  noErr(page, '이어서 기록');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));

@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-374-realroute';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-375-planrec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 계획 지도에 실제로 다닌 길을 짙은 남색 줄로 그려요 · 계획한 길은 예전 색 그대로라 서로 견줘 볼 수 있어요";
+const UI_NOTES = "여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8974,6 +8974,7 @@ function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk'
 var PLAN_PAST = '#AEB8C2';
 // 판 -374 (사용자 '여행계획에 지금 기록하는거 계획경로와 실제 경로를 다른 색으로 표시해'): 계획 지도에 그 계획 여행(planAlbum)의 실제 기록 길을 짙은 남색 실선(흰 테두리)으로 · 그날(계획 날짜) 점만
 var PLAN_REAL = '#111827';
+function planOfAlbum(aid) { return aid ? planAll().find(p => ls.get('planAlbum:' + p.id, '') === aid) || null : null; }
 function planRealSegs(p, d) {
   const aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid); if (!a) return [];
   const s = planDate(p, d); if (!s) return []; const t0 = +s, t1 = t0 + 864e5, out = [];
@@ -14243,7 +14244,9 @@ function viewPlanOne(id) {
         x ? el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, Number.isFinite(x.lat) ? el('button', { class: 'btn primary small', text: '길찾기', onclick: () => planGo(x) }) : null, el('button', { class: 'btn line small', text: '✓ 다녀옴', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); drawAll(); } })) : null),
       (() => { const now = ls.get('walkNow', null);   // 판 -371: 여기서 바로 여행 기록
         return now ? row('기록', '● 기록 중', ls.get('trackName:' + now, ''), el('a', { class: 'btn primary small', href: './?walk=1', text: '이어서' }))
-          : row('기록', ls.get('planAlbum:' + p.id, '') && albumGet(ls.get('planAlbum:' + p.id, '')) ? `${d + 1}일차 기록 시작` : '여행 기록 시작', '다닌 길과 사진이 이 여행 한 장에 날마다 모여요',
+          : (() => { const al = albumGet(ls.get('planAlbum:' + p.id, '')), last = al && al.days[al.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;   // 판 -375: 오늘 기록을 끝냈으면 '이어서'
+              return last && t && new Date(t).toDateString() === new Date().toDateString() ? row('기록', '⏸ 기록이 멈췄어요', `${ls.get('trackName:' + last, '')} · 마지막 ${fmtClock(t)}`, el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&resume=${encodeURIComponent(last)}`, text: '● 이어서' })) : null; })()
+          || row('기록', ls.get('planAlbum:' + p.id, '') && albumGet(ls.get('planAlbum:' + p.id, '')) ? `${d + 1}일차 기록 시작` : '여행 기록 시작', '다닌 길과 사진이 이 여행 한 장에 날마다 모여요',
             el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&mode=travel&go=1&pt=${encodeURIComponent(p.id)}`, text: '● 시작' })); })(),
       d === 0 ? row('출발 미팅', p.meet ? [p.meet.t, p.meet.n].filter(Boolean).join(' · ') : '등록된 자료 없음', p.meet ? '여행사 안내 그대로' : '항공편 시각은 미팅 시각이 아니에요 · 여행사 확정 안내로 확인해 주세요') : null,
       row('오늘 숙소', stay ? stay.n : d === p.nd - 1 ? '마지막 날 (숙소 없음)' : '등록된 숙소 없음', stay && /예정 호텔|중 한 곳|출발 전 확정/.test(stay.m || '') ? '⚠ 여행사 예정 목록 중 한 곳 · 확정된 호텔이 아닐 수 있어요' : stay ? '' : ''),
@@ -18118,6 +18121,10 @@ function viewLanding() {
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Photo Diary로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
+  // 판 -375 (사용자 '혹시 잘못해서 기록 중단되도 이어서 기록하기 기능도'): ?walk=1&resume=기록 → 끝낸 기록을 다시 기록 중으로(길·사진 그대로, 쉰 동안은 끊긴 줄)
+  { const rs = qs.get('resume'); if (rs && !ls.get('walkNow', null) && /^walk_[a-z0-9]+$/i.test(rs) && !isGone(rs)) { const tr = ls.get('track:' + rs, []);
+      if (Array.isArray(tr) && tr.length) { ls.set('walkNow', rs); ls.set('walkAt', tr[0][2]); if (ls.get('walkAlbum:' + rs, null) && planOfAlbum(ls.get('walkAlbum:' + rs, null))) ls.set('walkAutoTrip', rs); setTimeout(() => toast(`'${ls.get('trackName:' + rs, '기록')}' 이어서 기록해요`), 600); }
+      qs.delete('resume'); try { const u = new URL(location.href); u.searchParams.delete('resume'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {} } }
   let id = ls.get('walkNow', null), watch = null, wake = null, wantWake = true, map = null, line = null, dot = null, follow = true, gps = 'wait', phLayer = null, spLayer = null, lastFix = null, nPhotos = 0;
   { const nr = albumRoll(id); if (nr) { id = nr; setTimeout(() => toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`), 600); } }   // 판 -372
   let pausedNow = isPaused(id), brkNext = false;   // 잠시 멈춤 중인지 / 다시 시작한 뒤 첫 점은 앞과 잇지 않기
@@ -19364,7 +19371,7 @@ function viewWalk() {
       phLayer = L.layerGroup().addTo(map); refreshPhotos();
       spLayer = L.layerGroup().addTo(map); drawSpots();
       hLayer = L.layerGroup().addTo(map); drawHoles();
-      drawGuide();
+      drawGuide(); drawPlanDay();
       const tr = trackLoad(id);
       if (tr.length) map.setView([tr[tr.length - 1][0], tr[tr.length - 1][1]], 16);
       else if (guide) map.fitBounds(L.latLngBounds(guide.route), { padding: [30, 30] });
@@ -19487,6 +19494,16 @@ function viewWalk() {
   }
   let done = null, askResume = !!(id && qs.get('mode'));
   let askStale = id ? staleRec() : null;   // 하루 넘게 켜진 채 3시간 넘게 위치가 없는 기록: GPS를 켜기 전에 먼저 물어요(켜면 지금 위치가 더해져 끝 시각이 늘어나서)
+  // 판 -375 (사용자 '여행계획을 볼 수 있어야지 · 계획대로 가는 지도 보여야하고'): 계획 여행 기록이면 기록 지도에 오늘 일정(번호 핀 + 파란 점선)과 '일정' 단추(계획 화면)
+  function drawPlanDay() {
+    if (!map || !id) return; const p = planOfAlbum(ls.get('walkAlbum:' + id, null)); if (!p) return;
+    const d = Math.max(0, Math.min(p.nd - 1, planToday(p) ?? 0)), its = planItems(p, d).filter(x => Number.isFinite(x.lat)), ll = its.map(x => [x.lat, x.lng]);
+    const g = L.layerGroup().addTo(map);
+    if (ll.length > 1) L.polyline(ll, { color: '#0277BD', weight: 3, opacity: .8, dashArray: '6 7', interactive: false }).addTo(g);
+    its.forEach((x, i) => L.marker([x.lat, x.lng], { icon: L.divIcon({ className: '', iconSize: [24, 24], iconAnchor: [12, 12], html: `<div style="width:24px;height:24px;border-radius:50%;background:${planPast(p, d, x) ? PLAN_PAST : '#0277BD'};color:#fff;font:700 12px/24px Pretendard,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${i + 1}</div>` }) })
+      .bindTooltip(el('span', { text: `${x.t ? x.t + ' ' : ''}${x.n}` }), { direction: 'top', offset: [0, -10] }).addTo(g));
+    const C = L.control({ position: 'topleft' }); C.onAdd = () => { const a = el('a', { href: `./?plan=1&p=${encodeURIComponent(p.id)}`, style: 'display:block;background:#fff;border-radius:18px;padding:7px 12px;font:700 13px Pretendard,sans-serif;color:#191F28;box-shadow:0 1px 6px rgba(0,0,0,.25);text-decoration:none;margin-top:6px', text: `🗓 ${d + 1}일차 일정` }); L.DomEvent.disableClickPropagation(a); return a; }; C.addTo(map);
+  }
   function draw() {
     document.body.classList.remove('has-act');
     if (done) {
@@ -19498,6 +19515,7 @@ function viewWalk() {
         el('button', { class: 'btn primary full big', text: 'MPD 공유하기', onclick: () => openBrag(info, done, 0, false) }),
         (() => { const aid = ls.get('walkAlbum:' + done, null), ai = aid && albumInfo(aid);
           return ai && ai.days > 1 ? el('button', { class: 'btn line full', text: `'${ai.name}' 여행 전체 공유하기`, onclick: () => openBrag(ai, aid, 0, false) }) : null; })(),
+        el('a', { class: 'btn line full', href: `./?walk=1&resume=${encodeURIComponent(done)}`, text: '● 이어서 기록하기 (잘못 끝냈을 때)' }),   // 판 -375
         el('a', { class: 'btn line full', href: './', text: '처음으로' })].filter(Boolean));
       return;
     }
