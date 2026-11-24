@@ -1309,6 +1309,9 @@ await test('지도 한자 이름 · 다른 선명한 지도는 설정을 따르�
   ok(r.plain[0] && r.keep[0], '그냥 만든 지도가 한자 설정을 안 따라요: ' + JSON.stringify(r));
   ok(!r.plain[1] && r.plan[1] && r.cn[1], '漢 단추는 hz를 준 지도에만 나와야 해요: ' + JSON.stringify(r));
   const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const late = await page.evaluate(() => __T.mapHzArgs({ keep: true, hzLate: true }));
+  ok(late[0] && late[1] === 'late', '기록 지도는 이름 붙이기를 준비하고 단추는 나중에 붙여야 해요(판 -386): ' + JSON.stringify(late));
+  ok(/mdTileLayer\(\{ keep: true, hzLate: true \}\)/.test(src) && /function hzMaybe\(\)/.test(src), '기록 지도에 漢 단추(hzMaybe)가 빠졌어요(판 -386)');
   ok(/mdTileLayer\(\{ keep: true, ko: true \}\)/.test(src), '첫 화면 지도(mhMap)는 한글만이어야 해요(판 -367 사용자 \'첫화면은 한글로만 보여줘\')');
   const ko = await page.evaluate(() => __T.mapHzArgs({ keep: true, ko: true }));
   ok(ko[0] === false && ko[1] === false, '한글만 지도에 한자·漢 단추가 붙어요: ' + JSON.stringify(ko));
