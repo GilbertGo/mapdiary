@@ -1432,6 +1432,28 @@ await test('잘못 끝낸 기록 이어서 · 기록 지도에 오늘 일정 (�
   noErr(page, '이어서 기록');
 });
 
+await test('여행 첫날 끝낸 뒤 빈 2일차가 생기지 않게 (판 -376)', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), G = k => JSON.parse(localStorage.getItem(k));
+    S('tripPlans', [{ id: 'tpq', name: '장가계 4박 5일 · 하나투어', start: ymd, nd: 5, it: [], at: 1, u: 1 }]);
+    // 첫날 기록은 다른 여행 묶음(B)에, 계획은 빈 2일차가 든 묶음(A)에 붙어 있는 꼬인 상태
+    S('albums', [{ id: 'album_A', name: '장가계 4박 5일 · 하나투어', mode: 'travel', days: ['walk_e2'], at: t }, { id: 'album_B', name: '장가계 4박 5일 · 하나투어', mode: 'travel', days: ['walk_d1'], at: t }]);
+    S('planAlbum:tpq', 'album_A');
+    S('track:walk_d1', [[37.46, 126.44, t], [37.47, 126.45, t + 6e5], [37.48, 126.46, t + 9e5]]); S('walkMode:walk_d1', 'travel'); S('walkAlbum:walk_d1', 'album_B'); S('trackName:walk_d1', '장가계 4박 5일 · 하나투어 1일차');
+    S('track:walk_e2', [[37.48, 126.46, Date.now() - 6e4]]); S('walkMode:walk_e2', 'travel'); S('walkAlbum:walk_e2', 'album_A'); S('trackName:walk_e2', '장가계 4박 5일 · 하나투어 2일차');
+    S('walkNow', 'walk_e2'); S('walkAutoTrip', 'walk_e2'); S('walkAt', Date.now() - 6e4);
+    const w1 = window.__T.tripAutoEnsure(true, true);
+    const a1 = { w1, e2: localStorage.getItem('track:walk_e2'), d1n: G('track:walk_d1').length, plan: G('planAlbum:tpq') };
+    // 끝내기를 누른 뒤(기록 중 아님) 다시 켜도 새 기록을 만들지 않고 첫날에 이어요
+    S('walkNow', null); const w2 = window.__T.tripAutoEnsure(true, true);
+    return { ...a1, w2, alb: G('albums').map(a => a.id + ':' + a.days.join(',')) };
+  });
+  ok(r.w1 === 'walk_d1' && r.e2 === null && r.d1n === 4 && r.plan === 'album_B', '빈 2일차를 첫날 기록에 합쳐야 해요 ' + JSON.stringify(r));
+  ok(r.w2 === 'walk_d1' && !r.alb.join().includes('walk_e2'), '끝낸 뒤에도 첫날에 이어야 해요 ' + JSON.stringify(r));
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
