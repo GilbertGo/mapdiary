@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage'];
+const EXPOSE = ['mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1278,6 +1278,18 @@ await test('지도 첫 화면 · 휴대폰 아래 단추 줄이 있어도 기록
   const hd = await page.evaluate(() => { const t = document.querySelector('.mh-top'); return { top: t.getBoundingClientRect().top, solid: t.classList.contains('solid') }; });
   ok(hd.top === 0 && hd.solid, `판을 올리면 머리 줄이 밀려 올라가요(위 ${hd.top}px, 흰 바탕 ${hd.solid})`);
   noErr(page, '아래 단추 줄');
+});
+
+// ─── 판 -366: 한자 이름(漢)은 사용자가 정성 들여 정한 설정 — 새 지도에서 빠지지 않게 (사용자 '지도에 한자가 안보이네? 왜 바꿨어') ───
+await test('지도 한자 이름 · 모든 선명한 지도가 설정을 따르고 첫 화면엔 漢 단추', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => ({ plain: __T.mapHzArgs(undefined), keep: __T.mapHzArgs({ keep: true }), plan: __T.mapHzArgs({ hz: 'kr' }), cn: __T.mapHzArgs({ hz: true }) }));
+  ok(r.plain[0] && r.keep[0], '그냥 만든 지도가 한자 설정을 안 따라요: ' + JSON.stringify(r));
+  ok(!r.plain[1] && r.plan[1] && r.cn[1], '漢 단추는 hz를 준 지도에만 나와야 해요: ' + JSON.stringify(r));
+  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(/mdTileLayer\(\{ keep: true, hz: mhHz \}\)/.test(src), '첫 화면 지도(mhMap)에 漢 단추(hz)가 빠졌어요');
+  ok(!/koMapLayer\(\(opt && opt\.hz\) \|\| false\)/.test(src), 'mdTileLayer가 다시 hz 없으면 한자를 끄게 바뀌었어요');
+  noErr(page, '지도 한자');
 });
 
 await browser.close();
