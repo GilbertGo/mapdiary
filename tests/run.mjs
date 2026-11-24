@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -382,6 +382,25 @@ await test('지도 길 표시: 발자국·차·비행기', async page => {
   await page.goto(BASE + '?my=1&t=walk_modeic2'); await sleep(2000);
   ok(await page.evaluate(() => document.querySelectorAll('.mode-ic').length) === 0, '걷기만 한 기록엔 그리지 않아야 해요');
   noErr(page, '지도 길 표시');
+});
+
+// 판 -385: 앱이 사진첩 사진을 넣을 때 진짜 찍은 위치(photosRange)를 쓰고, 짐작한 자리에 놓였던 사진은 옮김(손으로 옮긴 건 그대로)
+await test('사진첩 사진의 진짜 위치', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(1000);
+  const r = await page.evaluate(async () => {
+    const id = 'walk_exif01', t0 = Date.UTC(2026, 10, 24, 2), set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:' + id, [[29.12, 110.47, t0], [29.13, 110.48, t0 + 3600e3]]); set('walkMode:' + id, 'travel');
+    const cv = document.createElement('canvas'); cv.width = 20; cv.height = 20; const b = await new Promise(r => cv.toBlob(r, 'image/jpeg'));
+    await __T.photoPut({ id: 'pold1', t: id, ts: t0 + 600e3, lat: 29.12, lng: 110.47, blob: b, thumb: '' });            // 짐작 자리
+    await __T.photoPut({ id: 'pold2', t: id, ts: t0 + 900e3, lat: 29.0, lng: 110.0, blob: b, thumb: '', mv: 1 });     // 손으로 옮김
+    window.mdNativePhotos = { between: async () => [], blob: async () => b,
+      range: async () => ({ items: [{ uri: 'u1', ts: t0 + 600e3, lat: 29.35, lng: 110.55 }, { uri: 'u2', ts: t0 + 900e3, lat: 29.36, lng: 110.56 }, { uri: 'u3', ts: t0 + 1200e3, lat: 29.37, lng: 110.57, name: 'n.jpg' }] }) };
+    await __T.galleryOffer([id]);
+    const ps = await __T.photoList(id); delete window.mdNativePhotos;
+    return ps.map(p => [Math.round(p.ts / 1000) % 10000, p.lat, p.lng]).sort((a, b) => a[0] - b[0]);
+  });
+  ok(r.length === 3, '사진 3장: ' + JSON.stringify(r));
+  ok(r[0][1] === 29.35 && r[1][1] === 29.0 && r[2][1] === 29.37, '짐작 자리는 진짜 위치로, 손으로 옮긴 건 그대로, 새 사진은 진짜 위치: ' + JSON.stringify(r));
 });
 
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
