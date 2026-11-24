@@ -3273,7 +3273,7 @@ async function tileBlob(url) {
 }
 // 판 -366 (사용자 '지도에 한자가 안보이네? 왜 바꿨어. 이거 정성들여서 설정한건데'): 지도마다 한자 이름(漢)을 따로 켜야 해서 새로 만든 첫 화면 지도에서 빠졌음
 //   → 선명한 지도는 어디서 만들든 이 휴대폰의 '한자·발음 같이 보기'(ls mapHanzi)를 따름. 漢 단추는 hz를 준 지도(계획·첫 화면)에만. 이 기본값을 끄지 말 것
-function mapHzArgs(opt) { return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }
+function mapHzArgs(opt) { if (opt && opt.ko) return [false, false]; return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }   // 판 -367: ko = 한글만(첫 화면, 사용자 '첫화면은 한글로만 보여줘')
 function mdTileLayer(opt) {
   const T = L.TileLayer.extend({
     createTile(coords, done) {
@@ -3728,9 +3728,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-366-hanja';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-367-homeko';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면 지도에도 한자 이름이 나와요(漢 단추) · 전체 지도와 기록 지도도 한자 같이 보기 설정을 따라요 · 여행 중이면 첫 화면 지도가 다음 일정 둘레를 보여 줘요";
+const UI_NOTES = "첫 화면 지도는 한글 이름만 깔끔하게 보여요 · 한자는 여행 계획 지도에서 漢 단추로";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -17663,13 +17663,11 @@ function homeStyleNow() {
 function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일정 장소를 번호 점으로 보이고 그 둘레를 먼저 보여 줘요
   const box = el('div', { class: 'mh-map' }), wNow = ls.get('walkNow', null);
   let m = null, focusLay = null, want = null, drawPins = null, peek = 300;
-  // 판 -366: 처음 보일 곳(여행 중이면 다음 일정 둘레 50km, 아니면 가장 최근 기록) — 漢 단추 모양(중국 漢·일본 あ)도 그 자리로
+  // 판 -366: 여행 중이면 처음 보일 곳은 다음 일정 둘레 50km
   let tripIts = [];
   if (trip && !wNow) { try { const k = planToday(trip), its = planItems(trip, k).filter(x => Number.isFinite(+x.lat) && Number.isFinite(+x.lng)), ni = planNext(trip, k), all = planItems(trip, k), nx = ni >= 0 ? all[ni] : null;
     const c = nx && Number.isFinite(+nx.lat) ? nx : its.find(x => !x.ok) || its[0];
     tripIts = { all: its, near: c ? its.filter(x => dist(+c.lat, +c.lng, +x.lat, +x.lng) < 5e4) : its }; } catch {} }
-  const f0 = (tripIts.near && tripIts.near[0]) || (() => { const r = cRecs(1)[0]; return r && r.tr[0] ? { lat: r.tr[0][0], lng: r.tr[0][1] } : null; })();
-  const mhHz = f0 && koInHanzi(+f0.lat, +f0.lng) ? true : f0 && koPlaceCC({ geometry: { coordinates: [+f0.lng, +f0.lat] } }) || 'kr';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pad = () => ({ paddingTopLeft: [36, 96], paddingBottomRight: [36, peek + 24] });
   box.setPeek = v => { peek = v; };
@@ -17682,7 +17680,7 @@ function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일�
   setTimeout(async () => {
     const recs = cRecs(80);
     m = L.map(box, { zoomControl: false, attributionControl: true, scrollWheelZoom: false, tap: false, worldCopyJump: true });
-    mdTileLayer({ keep: true, hz: mhHz }).addTo(m);   // 판 -366: 漢(한자 이름) 단추·설정을 계획 지도처럼 · 판 -364: 선명한 지도가 늦게 오거나 못 와도 그림 지도가 밑에 남아 빈 바탕이 안 보이게
+    mdTileLayer({ keep: true, ko: true }).addTo(m);   // 판 -367 (사용자 '첫화면지도는 그냥 한글만 나와도 될듯한데? 깔끔하게' → '첫화면은 한글로만 보여줘'): 한자 설정과 상관없이 한글만, 漢 단추 없음 · 판 -364: 선명한 지도가 늦게 오거나 못 와도 그림 지도가 밑에 남아 빈 바탕이 안 보이게
     m.setView([36.4, 127.8], 6);   // 기록을 읽기 전·기록이 없을 때(우리나라)
     // 다닌 길: 모든 기록을 옅게, 지금 기록 중이면 빨갛게
     recs.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3.5, opacity: .45, interactive: false }).addTo(m); }));
