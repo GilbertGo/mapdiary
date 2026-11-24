@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1357,6 +1357,24 @@ await test('여행 계획 오늘 칸에서 기록 시작 · 둘째 날은 같은
   const b = await page.evaluate(() => { const id = JSON.parse(localStorage.getItem('walkNow')); const aid = JSON.parse(localStorage.getItem('walkAlbum:' + id)); const al = JSON.parse(localStorage.getItem('albums')).find(x => x.id === aid); return { aid, days: al && al.days.length, name: JSON.parse(localStorage.getItem('trackName:' + id)) }; });
   ok(b.aid === a.aid && b.days === 2 && /2일차/.test(b.name), '둘째 날은 같은 여행에 이어져야 해요 ' + JSON.stringify(b));
   noErr(page, '계획에서 기록 시작');
+});
+
+await test('여러 날 여행 · 날짜가 바뀌면 저절로 다음 날 (판 -372)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(600);
+  const r = await page.evaluate(() => {
+    const mid = new Date(); mid.setHours(0, 0, 0, 0); const m = mid.getTime(), id = 'walk_rolltest1';
+    localStorage.setItem('albums', JSON.stringify([{ id: 'album_rt', name: '장가계', mode: 'travel', days: [id], at: m - 9e6 }]));
+    localStorage.setItem('walkAlbum:' + id, '"album_rt"'); localStorage.setItem('walkMode:' + id, '"travel"'); localStorage.setItem('walkNow', JSON.stringify(id)); localStorage.setItem('walkAt', String(m - 8e6));
+    localStorage.setItem('track:' + id, JSON.stringify([[29.1, 110.4, m - 7e6], [29.11, 110.41, m - 6e6], [29.12, 110.42, m + 6e5], [29.13, 110.43, m + 9e5]]));
+    localStorage.setItem('walkSpots:' + id, JSON.stringify([{ n: '어제', lat: 29.1, lng: 110.4, ts: m - 7e6 }, { n: '오늘', lat: 29.12, lng: 110.42, ts: m + 6e5 }]));
+    const nid = __T.albumRoll(id, m + 1e6), again = __T.albumRoll(nid, m + 2e6);
+    const al = JSON.parse(localStorage.getItem('albums'))[0];
+    return { nid, again, now: JSON.parse(localStorage.getItem('walkNow')), days: al.days.length, old: JSON.parse(localStorage.getItem('track:' + id)).length, nw: JSON.parse(localStorage.getItem('track:' + nid) || '[]').length,
+      name: JSON.parse(localStorage.getItem('trackName:' + nid)), sp: JSON.parse(localStorage.getItem('walkSpots:' + nid) || '[]').map(s => s.n) };
+  });
+  ok(r.nid && r.now === r.nid && r.days === 2 && r.name === '장가계 2일차', '다음 날 기록으로 넘어가야 해요 ' + JSON.stringify(r));
+  ok(r.old === 2 && r.nw === 2 && JSON.stringify(r.sp) === '["오늘"]', '자정 앞뒤로 점·들른 곳이 나뉘어야 해요 ' + JSON.stringify(r));
+  ok(r.again === null, '같은 날엔 다시 넘어가지 않아야 해요');
 });
 
 await browser.close();
