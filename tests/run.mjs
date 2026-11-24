@@ -755,7 +755,7 @@ await test('구경 · 목록에 없는 이름은 보기만, 화면도 좁게', a
   const pins = await page.$$eval('.tr-pin', a => a.length), mapTxt = await page.evaluate(() => (document.querySelector('.mapbox') || document.body).innerText);
   ok(pins === 1, '구경에게는 위치 공유를 구경에게도 켠 사람 1명만 보여야 해요: ' + pins);
   ok(!/비밀 대화/.test(mapTxt), '구경 지도에 일행 대화 말풍선이 보여요');
-  ok(!(await page.evaluate(() => !!document.querySelector('.tr-sw[aria-pressed]'))), '구경에게 내 위치 공유 스위치가 보여요');   // 판 -379부터 구경엔 켜는 스위치 대신 일행 되는 길 알약
+  
   const bar = await page.$$eval('.tv-bar button, .tv-bar a', a => a.map(x => x.textContent));
   ok(!bar.some(x => /AI 묻기/.test(x)), '구경에게 AI 묻기가 보여요: ' + bar.join(','));
   ok(bar.some(x => /사진/.test(x)) && !bar.some(x => /일행 채팅/.test(x)), "구경 아래 메뉴는 '일행 채팅' 대신 '사진'이어야 해요: " + bar.join(','));
@@ -1502,7 +1502,7 @@ await test('초대받은 구경·로그인 안 한 사람도 위치 공유 자�
   page.errs = [];
   await page.goto(BASE + '?plan=1&p=tpv'); await sleep(2500);
   const r = await page.evaluate(() => ({ pill: [...document.querySelectorAll('.tr-sw')].map(b => b.textContent).join('|'), ban: [...document.querySelectorAll('.pm-ban')].map(b => b.textContent).join('|') }));
-  ok(/로그인하면 내 위치 공유|일행만/.test(r.pill), '지도에 위치 공유 자리 안내가 있어야 해요 ' + JSON.stringify(r));
+  ok(/내 위치 공유/.test(r.pill), '지도에 내 위치 공유 스위치가 있어야 해요 (판 -380) ' + JSON.stringify(r));
   ok(/로그인/.test(r.ban), '맨 위 줄에 로그인 안내가 있어야 해요 ' + JSON.stringify(r));
   noErr(page, '구경 계획');
 });
