@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -382,6 +382,25 @@ await test('지도 길 표시: 발자국·차·비행기', async page => {
   await page.goto(BASE + '?my=1&t=walk_modeic2'); await sleep(2000);
   ok(await page.evaluate(() => document.querySelectorAll('.mode-ic').length) === 0, '걷기만 한 기록엔 그리지 않아야 해요');
   noErr(page, '지도 길 표시');
+});
+
+// 판 -385: 앱이 사진첩 사진을 넣을 때 진짜 찍은 위치(photosRange)를 쓰고, 짐작한 자리에 놓였던 사진은 옮김(손으로 옮긴 건 그대로)
+await test('사진첩 사진의 진짜 위치', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(1000);
+  const r = await page.evaluate(async () => {
+    const id = 'walk_exif01', t0 = Date.UTC(2026, 10, 24, 2), set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:' + id, [[29.12, 110.47, t0], [29.13, 110.48, t0 + 3600e3]]); set('walkMode:' + id, 'travel');
+    const cv = document.createElement('canvas'); cv.width = 20; cv.height = 20; const b = await new Promise(r => cv.toBlob(r, 'image/jpeg'));
+    await __T.photoPut({ id: 'pold1', t: id, ts: t0 + 600e3, lat: 29.12, lng: 110.47, blob: b, thumb: '' });            // 짐작 자리
+    await __T.photoPut({ id: 'pold2', t: id, ts: t0 + 900e3, lat: 29.0, lng: 110.0, blob: b, thumb: '', mv: 1 });     // 손으로 옮김
+    window.mdNativePhotos = { between: async () => [], blob: async () => b,
+      range: async () => ({ items: [{ uri: 'u1', ts: t0 + 600e3, lat: 29.35, lng: 110.55 }, { uri: 'u2', ts: t0 + 900e3, lat: 29.36, lng: 110.56 }, { uri: 'u3', ts: t0 + 1200e3, lat: 29.37, lng: 110.57, name: 'n.jpg' }] }) };
+    await __T.galleryOffer([id]);
+    const ps = await __T.photoList(id); delete window.mdNativePhotos;
+    return ps.map(p => [Math.round(p.ts / 1000) % 10000, p.lat, p.lng]).sort((a, b) => a[0] - b[0]);
+  });
+  ok(r.length === 3, '사진 3장: ' + JSON.stringify(r));
+  ok(r[0][1] === 29.35 && r[1][1] === 29.0 && r[2][1] === 29.37, '짐작 자리는 진짜 위치로, 손으로 옮긴 건 그대로, 새 사진은 진짜 위치: ' + JSON.stringify(r));
 });
 
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
@@ -1415,7 +1434,7 @@ await test('여행 계획 지도 · 실제 다닌 길은 그날 점만 (판 -374
 await test('잘못 끝낸 기록 이어서 · 기록 지도에 오늘 일정 (판 -375)', async page => {
   await seed(page); await page.goto(BASE); await sleep(600);
   await page.evaluate(() => {
-    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Math.max(d0.getTime() + 1000, Date.now() - 3600e3), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
     localStorage.removeItem('walkNow');
     localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpz', name: '장가계', start: ymd, nd: 3, it: [{ id: 'a', d: 0, n: '공항', k: 'spot', lat: 37.46, lng: 126.44 }, { id: 'b', d: 0, n: '카페', k: 'food', lat: 37.49, lng: 126.51 }], at: 1, u: 1 }]));
     localStorage.setItem('albums', JSON.stringify([{ id: 'album_z', name: '장가계', mode: 'travel', days: ['walk_zz1'], at: t }]));
@@ -1438,7 +1457,7 @@ await test('기록 지도 일정 단추 · 계획 연결이 다른 여행 묶음
   // 사용자 기록 화면 캡처 '여행계획보기 안되네': '장가계 4박 5일 · 하나투어 2일차' 기록인데 지도에 '🗓 일정'이 없음 — 계획 연결(planAlbum:)이 같은 이름의 다른 묶음을 가리킴
   await seed(page); await page.goto(BASE); await sleep(600);
   await page.evaluate(() => {
-    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Math.max(d0.getTime() + 1000, Date.now() - 3600e3), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), nm = '장가계 4박 5일 · 하나투어';
     S('tripPlans', [{ id: 'tpw', name: nm, start: ymd, nd: 5, it: [{ id: 'a', d: 0, n: '공항', k: 'spot', lat: 37.46, lng: 126.44 }, { id: 'b', d: 0, n: '카페', k: 'food', lat: 37.49, lng: 126.51 }], at: 1, u: 1 },
       { id: 'tpo', name: '장가계', start: '2025-01-01', nd: 2, it: [], at: 1, u: 1 }]);
@@ -1457,7 +1476,7 @@ await test('기록 지도 일정 단추 · 계획 연결이 다른 여행 묶음
 await test('여행 첫날 끝낸 뒤 빈 2일차가 생기지 않게 (판 -376)', async page => {
   await page.goto(BASE); await sleep(800);
   const r = await page.evaluate(() => {
-    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Math.max(d0.getTime() + 1000, Date.now() - 3600e3), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
     const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), G = k => JSON.parse(localStorage.getItem(k));
     S('tripPlans', [{ id: 'tpq', name: '장가계 4박 5일 · 하나투어', start: ymd, nd: 5, it: [], at: 1, u: 1 }]);
     // 첫날 기록은 다른 여행 묶음(B)에, 계획은 빈 2일차가 든 묶음(A)에 붙어 있는 꼬인 상태

@@ -1935,6 +1935,13 @@ async function shrinkImage(file, max, type, q) {
   return type === 'url' ? c.toDataURL('image/jpeg', q) : new Promise(r => c.toBlob(r, 'image/jpeg', q));
 }
 // 사진 위치: 방금 잡힌 위치가 있으면 그곳, 아니면 이동 기록에서 찍은 시각과 가장 가까운 지점
+// 판 -385 (사용자 장가계에서 '사진 찍은 위치가 틀리게 나온다'): 앱이 사진첩 사진을 가져올 때 안드로이드가 사진 속 위치를 지우고 넘겨줘서,
+//   찍은 시각에 가까운 길 점(photoPlace)에 놓였음 → 새 앱(photosRange: '사진 위치' 권한 + 원본 위치)이 있으면 진짜 찍은 위치를 같이 받아요
+async function galBetween(a, b) {
+  const G = window.mdNativePhotos; if (!G) return [];
+  if (G.range) try { const r = await G.range(a, b); return (r.items || []).map(x => ({ ...x, lat: Number.isFinite(x.lat) && x.lat !== 0 ? +x.lat : null, lng: Number.isFinite(x.lng) && x.lng !== 0 ? +x.lng : null })); } catch {}
+  return await G.between(a, b);
+}
 function photoPlace(t, ts, now) {
   if (now && Math.abs(now.ts - ts) < 3 * 60000) return [now.lat, now.lng];
   const tr = trackLoad(t); if (!tr.length) return null;
@@ -1949,7 +1956,7 @@ async function addPhotos(t, files, now, later) {
       // 나중에 넣는 사진은 사진 속 찍은 시각·위치(EXIF)를 먼저 써요 (2026-11-14: 아이폰은 파일 날짜가 고른 때라 길 위 자리가 틀렸어요)
       const ex = later ? await photoTsOf(f) : {};
       const ts = ex.ts || (f.lastModified && (later || Math.abs(Date.now() - f.lastModified) < 7 * 864e5) ? f.lastModified : Date.now());
-      const at = ex.lat != null ? [ex.lat, ex.lng] : photoPlace(t, ts, now);
+      const at = f.mdLL ? f.mdLL : ex.lat != null ? [ex.lat, ex.lng] : photoPlace(t, ts, now);   // 판 -385: 사진첩에서 받은 진짜 위치(mdLL)를 먼저
       let rec;
       if (/^video\//.test(f.type || '') || /\.(mp4|mov|webm|m4v|3gp)$/i.test(f.name || '')) {   // 동영상: 원본 그대로 + 첫 장면 그림
         if (f.size > VID_MAX) { toast(`동영상이 너무 커요(${Math.round(f.size / 1048576)}MB) · 300MB 아래로 잘라서 넣어 주세요`); continue; }
@@ -2034,7 +2041,7 @@ function pickPhotoPlace(rec) {
       el('div', { class: 'row' }, el('button', { class: 'btn line small grow', text: '닫기', onclick: () => close(null) }),
         el('button', { class: 'btn primary small grow', text: '이 위치로 저장', onclick: async () => {
           if (!at) return toast('지도에서 사진을 찍은 곳을 눌러 주세요');
-          rec.lat = +at[0].toFixed(6); rec.lng = +at[1].toFixed(6);
+          rec.lat = +at[0].toFixed(6); rec.lng = +at[1].toFixed(6); rec.mv = 1;   // 판 -385: 손으로 옮긴 사진은 진짜 위치로 다시 옮기지 않아요
           try { await photoPut(rec); } catch {} dispatchEvent(new Event('photo-changed')); toast('사진 위치를 바꿨어요'); close(at);
         } }))));
     document.body.append(sb);
@@ -3771,9 +3778,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-384-oneday';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.25-385-exifloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 중 같은 날 기록이 둘로 나뉘지 않아요 (다시 기록 시작을 눌러도 오늘 기록에 이어서)";
+const UI_NOTES = "앱이 사진첩 사진을 넣을 때 진짜 찍은 위치를 써요 (짐작한 자리에 놓였던 사진도 옮겨요)";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -10437,8 +10444,8 @@ function postTips(p) {   // 여행사 안내 속 '꼭 알아 둘 것' 문장(같
 async function postPhotos(p) {   // 여행 날짜 사진 [{k, ts, src(보여 줄 주소), get()=blob}] · 같은 사진(3초 안)은 한 번
   const r = postRange(p); if (!r) return []; const out = [], near = ts => out.some(o => Math.abs(o.ts - ts) < 3000);
   for (const ph of p._r ? await photoImgs(p._r.t) : await trMpdPhotos(r[0], r[1])) { if (near(ph.ts)) continue; out.push({ k: 'm:' + ph.id, ts: ph.ts, src: phSrc(ph), la: Number.isFinite(ph.lat) ? ph.lat : null, ln: Number.isFinite(ph.lng) ? ph.lng : null, m: String(ph.m || '').trim(), get: async () => ph.blob }); }
-  if (window.mdNativePhotos) try { for (const g of await window.mdNativePhotos.between(r[0], r[1])) { if (near(g.ts)) continue;
-    out.push({ k: 'g:' + g.uri, ts: g.ts, src: window.Capacitor && Capacitor.convertFileSrc ? Capacitor.convertFileSrc(g.uri) : '', get: () => window.mdNativePhotos.blob(g.uri) }); } } catch {}
+  if (window.mdNativePhotos) try { for (const g of await galBetween(r[0], r[1])) { if (near(g.ts)) continue;
+    out.push({ k: 'g:' + g.uri, ts: g.ts, la: g.lat ?? null, ln: g.lng ?? null, src: window.Capacitor && Capacitor.convertFileSrc ? Capacitor.convertFileSrc(g.uri) : '', get: () => window.mdNativePhotos.blob(g.uri) }); } } catch {}
   if (p.room && p.room.code) try { const R = await trRoom(p.room.code), S = await trLoad(R);
     for (const ph of S.tp) { if (ph.del || ph.v || !ph.th || !(ph.ts >= r[0] && ph.ts < r[1]) || near(ph.ts)) continue; out.push({ k: 't:' + ph.id, ts: ph.ts, src: ph.th, by: ph.nm, get: () => trFull(R, ph) }); } } catch {}
   return out.filter(o => o.src).sort((a, b) => a.ts - b.ts);
@@ -13117,8 +13124,8 @@ async function trMpdPhotos(a, b) {
 async function trAutoCands(p, R) {
   const a = planDate(p, 0).getTime(), b = Math.min(Date.now(), planDate(p, p.nd - 1).getTime() + 864e5), sent = ls.get('tripSent:' + R.rid, {}) || {}, out = [];
   if (b <= a) return out;
-  if (window.mdNativePhotos) try { for (const g of await window.mdNativePhotos.between(a, b)) { const k = 'g:' + g.uri; if (sent[k]) continue;
-    out.push({ k, ts: g.ts, file: async () => { const bl = await window.mdNativePhotos.blob(g.uri); return new File([bl], g.name || 'photo.jpg', { type: g.type || bl.type || 'image/jpeg', lastModified: g.ts }); } }); } } catch {}
+  if (window.mdNativePhotos) try { for (const g of await galBetween(a, b)) { const k = 'g:' + g.uri; if (sent[k]) continue;
+    out.push({ k, ts: g.ts, over: g.lat != null ? { ts: g.ts, lat: g.lat, lng: g.lng } : undefined, file: async () => { const bl = await window.mdNativePhotos.blob(g.uri); return new File([bl], g.name || 'photo.jpg', { type: g.type || bl.type || 'image/jpeg', lastModified: g.ts }); } }); } } catch {}
   for (const ph of await trMpdPhotos(a, b)) { const k = 'm:' + ph.id; if (sent[k]) continue; if (out.some(c => Math.abs(c.ts - ph.ts) < 3000) || Object.keys(sent).some(z => sent[z] && Math.abs(sent[z] - ph.ts) < 3000)) continue;
     out.push({ k, ts: ph.ts, over: { ts: ph.ts, lat: ph.lat ?? null, lng: ph.lng ?? null }, file: async () => new File([ph.blob], 'mpd.jpg', { type: ph.blob.type || 'image/jpeg', lastModified: ph.ts }) }); }
   return out.sort((x, y) => x.ts - y.ts);
@@ -14891,19 +14898,23 @@ async function galleryOffer(days, manual) {
   const found = [];
   for (const d of days) {
     const tr = trackLoad(d); if (tr.length < 2) continue;
-    let items; try { items = await G.between(tr[0][2] - 5 * 60000, tr[tr.length - 1][2] + 5 * 60000); }
+    let items; try { items = await galBetween(tr[0][2] - 5 * 60000, tr[tr.length - 1][2] + 5 * 60000); }
     catch { if (manual) toast('사진을 볼 수 있게 허락해 주세요 (설정 → 애플리케이션 → 권한 → 사진)'); return; }
-    const have = (await photoList(d)).map(p => p.ts).concat(phGoneTsOf(d));   // 판 -236: 지운 사진(찍은 시각 ±3초)은 다시 안 넣어요
+    const old = await photoList(d), have = old.map(p => p.ts).concat(phGoneTsOf(d));   // 판 -236: 지운 사진(찍은 시각 ±3초)은 다시 안 넣어요
+    // 판 -385: 이미 넣은 사진이 짐작한 자리(진짜 위치와 300m 넘게 다름)에 있으면 진짜 찍은 위치로 옮겨요(예전 자리는 ll0에 남김)
+    for (const x of items) { if (x.lat == null) continue; const p = old.find(q => Math.abs(q.ts - x.ts) < 3000 && !q.v); if (!p || p.mv) continue;
+      if (!Number.isFinite(p.lat) || dist(p.lat, p.lng, x.lat, x.lng) > 300) { try { await photoPut({ ...p, ll0: [p.lat, p.lng], lat: x.lat, lng: x.lng }); found.fixed = (found.fixed || 0) + 1; } catch {} } }
     for (const x of items) if (x && x.uri && !have.some(h => Math.abs(h - x.ts) < 3000)) found.push({ ...x, day: d });
   }
-  if (!found.length) { if (manual) toast('그 시간에 휴대폰으로 찍은 사진이 없어요'); return; }
+  if (found.fixed) { dispatchEvent(new Event('photo-changed')); toast(`사진 ${found.fixed}장을 진짜 찍은 위치로 옮겼어요`); }
+  if (!found.length) { if (manual && !found.fixed) toast('그 시간에 휴대폰으로 찍은 사진이 없어요'); return; }
   // 묻지 않고 넣어요(2026-11-07 '귀찮게 하지 마'): 그 기록 시간에 이 휴대폰으로 찍은 사진은 그 기록 것. 빼고 싶으면 사진에서 🗑 (사진첩 원본은 그대로)
   toast('사진을 넣는 중이에요…');
   const recs = [];
   for (const x of found) {
     if (phGoneTsOf(x.day).some(h => Math.abs(h - x.ts) < 3000)) continue;   // 넣는 사이에 지운 것도
-    try { const b = await G.blob(x.uri);
-      recs.push(...await addPhotos(x.day, [new File([b], x.name || 'photo.jpg', { type: b.type || x.type || 'image/jpeg', lastModified: x.ts })], null, true)); } catch {}
+    try { const b = await G.blob(x.uri), f = new File([b], x.name || 'photo.jpg', { type: b.type || x.type || 'image/jpeg', lastModified: x.ts }); if (x.lat != null) f.mdLL = [x.lat, x.lng];
+      recs.push(...await addPhotos(x.day, [f], null, true)); } catch {}
   }
   dispatchEvent(new Event('photo-changed'));
   toast(recs.length ? `그 시간에 찍은 사진 ${recs.length}장을 기록에 넣었어요 · 사진첩 원본은 그대로예요` : '사진을 넣지 못했어요');
