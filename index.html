@@ -1817,7 +1817,7 @@ function albumRoll(id, now) {
   const sp = ls.get('walkSpots:' + id, []); if (sp.length) { ls.set('walkSpots:' + id, sp.filter(s => !(s.ts >= m))); const ns = sp.filter(s => s.ts >= m); if (ns.length) ls.set('walkSpots:' + nid, ns); }
   const mode = ls.get('walkMode:' + id, 'travel'); ls.set('walkMode:' + nid, mode);
   const tz = ls.get('walkTz:' + id, null); if (tz) ls.set('walkTz:' + nid, tz);
-  a.days.push(nid); a.last = now; albumSave(a); ls.set('walkAlbum:' + nid, a.id); ls.set('trackName:' + nid, `${a.name} ${a.days.length}일차`);
+  a.days.push(nid); a.last = now; albumSave(a); ls.set('walkAlbum:' + nid, a.id); ls.set('trackName:' + nid, `${a.name} ${albumDayN(a)}일차`);
   ls.set('walkNow', nid); ls.set('walkAt', nw.length ? Math.min(nw[0][2], now) : m);
   (async () => { try { for (const p of await photoList(id)) if (p.ts >= m) await photoPut(Object.assign({}, p, { t: nid })); } catch {}
     try { syncPush(); } catch {} try { cloudSync(true); } catch {} })();
@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-381-locone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-382-sweep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 기록 중 지도에 오늘 일정과 일정 보기 단추가 다시 나와요 · 첫 화면 맨 아래에 받아 둔 새 판이나 못 받은 까닭이 보여요 · 초대받은 사람도 내 위치 공유 스위치 하나만 누르면 카카오 로그인 뒤 저절로 켜져요 · 같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "여행 계획에서 시작한 기록 이름이 계획 날짜와 같은 n일차로 붙어요 · 기록이 없을 때 발견 화면의 점검 링크를 숨겼어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8974,6 +8974,13 @@ function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk'
 var PLAN_PAST = '#AEB8C2';
 // 판 -374 (사용자 '여행계획에 지금 기록하는거 계획경로와 실제 경로를 다른 색으로 표시해'): 계획 지도에 그 계획 여행(planAlbum)의 실제 기록 길을 짙은 남색 실선(흰 테두리)으로 · 그날(계획 날짜) 점만
 var PLAN_REAL = '#111827';
+// 판 -382 (스스로 점검): 계획에 붙은 여행 기록의 'n일차'를 계획 날짜로(예전엔 기록한 날 수라, 첫날 기록을 안 했으면 계획 '2일차 기록 시작'을 눌러도 '1일차'). 계획이 없으면 예전대로
+function albumDayN(a) {
+  try { const k0 = p => { const k = planToday(p); return k != null && k >= 0 && k < p.nd ? k : null; };
+    const p = planOfAlbum(a.id) || planAll().find(q => q.name && q.name === a.name && k0(q) != null);
+    const k = p && k0(p); if (k != null) return k + 1; } catch {}
+  return a.days.length;
+}
 function planOfAlbum(aid) { return aid ? planAll().find(p => ls.get('planAlbum:' + p.id, '') === aid) || null : null; }
 // 판 -380 (사용자 기록 화면 캡처 '여행계획보기 안되네'): 기록 → 계획을 넓게 찾아요. 계획과 여행 묶음 연결(planAlbum:)이 없거나 다른 묶음을 가리켜도
 //   ① 연결 ② 여행 이름·기록 이름이 계획 이름으로 시작(가장 긴 이름) ③ 저절로 여행 기록이면 오늘 날짜 계획 — 찾기만 하고 연결은 바꾸지 않아요
@@ -14807,7 +14814,7 @@ function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖
   if (!a) { a = { id: 'album_' + rid(8), name: p.name || '여행', mode: 'travel', days: [], at: Date.now() }; ls.set('walkMode:' + a.id, 'travel'); ls.set('planAlbum:' + p.id, a.id); }
   const id = 'walk_' + rid(8);
   a.days.push(id); a.last = Date.now(); albumSave(a);
-  ls.set('walkMode:' + id, 'travel'); ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`); if (devTz()) ls.set('walkTz:' + id, devTz());
+  ls.set('walkMode:' + id, 'travel'); ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${albumDayN(a)}일차`); if (devTz()) ls.set('walkTz:' + id, devTz());
   ls.set('walkNow', id); ls.set('walkAt', Date.now()); ls.set('walkAutoTrip', id);
   setTimeout(() => toast(`🛰 '${a.name}' 여행 ${a.days.length}일차를 저절로 기록해요`), 800);
   return id;
@@ -17564,7 +17571,7 @@ async function viewDiscover() {
     D.recs.length ? el('p', { class: 'c-foot', text: `${yr.length ? `올해(${new Date().getFullYear()}년)` : '전체'} · 이 휴대폰 기록 ${R.length}개 기준. 다녀온 곳은 출발에서 500m 넘게 간 곳을 300m 안끼리 묶어 셌어요.${D.photoNote ? ' ' + D.photoNote : ''}` }) : null,
     el('div', { class: 'c-sec' }, el('h2', { text: '다시 가고 싶은 곳' }), want.length > 3 ? el('button', { type: 'button', onclick: more }, '더보기 ›') : null),
     want.length ? row : el('div', { class: 'c-card' }, el('span', { class: 'sub', text: "맛집에 '😋 다시 갈래요'를 고르거나 기록 중 ★ 좋은 곳을 남기면 여기에 모여요." })),
-    el('a', { class: 'link', href: './?lab=check', style: 'align-self:center;color:var(--c-mu);font-size:14px;padding:10px 0', text: `🔎 발견의 근거 자세히 보기 (점검 화면)${F.none.length ? ` · 보여 주지 않은 후보 ${F.none.length}개` : ''}` })].filter(Boolean));
+    D.recs.length ? el('a', { class: 'link', href: './?lab=check', style: 'align-self:center;color:var(--c-mu);font-size:14px;padding:10px 0', text: `🔎 발견의 근거 자세히 보기 (점검 화면)${F.none.length ? ` · 보여 주지 않은 후보 ${F.none.length}개` : ''}` }) : null].filter(Boolean));   // 판 -382: 기록이 없을 땐 점검 링크(후보 n개)가 헷갈려서 숨김
 }
 // 사진 하나를 id로 (그 기록의 사진 목록에서, 읽기만). 지워졌으면 null
 async function lcPhotoGet(ph) { try { const ps = await photoImgs(ph.t); return ps.find(x => x.id === ph.id) || null; } catch { return null; } }
@@ -19468,7 +19475,7 @@ function viewWalk() {
       let a = tripSel === 'new' ? null : albumGet(tripSel);
       if (!a) { a = { id: 'album_' + rid(8), name: tripName.trim() || `${dayName} ${modeByK(pick).label}`, mode: pick, days: [], at: Date.now() }; ls.set('walkMode:' + a.id, pick); }
       a.days.push(id); a.last = Date.now(); albumSave(a);
-      ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`);
+      ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${albumDayN(a)}일차`);
     }
     if (pick === 'pgolf') { const G = golfNew(); ls.set('walkGolf:' + id, G); if (G.c) ls.set('trackName:' + id, /파크골프/.test(G.c) ? `${G.c} 라운드` : `${G.c} 파크골프`); }
     if (startTitle.trim()) ls.set('trackName:' + id, startTitle.trim().slice(0, 40));
