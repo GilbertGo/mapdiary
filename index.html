@@ -2170,6 +2170,19 @@ async function savePhotos(list, base) {
     big, grid, el('button', { class: 'btn line full', text: '닫기', onclick: () => sb.remove() })));
   document.body.append(sb);
 }
+// 📍 사진 찍은 곳 (판 -369, 사용자 '사진 선택하면. 촬영한 위치를 지도에서 보여주는 기능있으면 좋겠다'): 사진 보기의 '위치' → 그 자리 지도(그날 길도 옅게)
+function photoWhere(r) {
+  const box = el('div', { style: 'position:fixed;inset:0;z-index:4200;background:#fff' });
+  const mapEl = el('div', { style: 'position:absolute;inset:0' });
+  const x = el('button', { type: 'button', 'aria-label': '닫기', style: 'position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:1000;width:44px;height:44px;border-radius:22px;border:none;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center', onclick: () => { try { m.remove(); } catch {} box.remove(); } }, cSvg('x', 22));
+  const cap = el('div', { style: 'position:absolute;left:14px;right:70px;top:calc(18px + env(safe-area-inset-top,0px));z-index:1000;font-weight:700;font-size:15px;color:#191F28;text-shadow:0 0 6px #fff', text: `${r.ts ? mdOf(r.ts) + fmtClock(r.ts) + ' · ' : ''}찍은 곳` });
+  box.append(mapEl, x, cap); document.body.append(box);
+  const m = L.map(mapEl, { zoomControl: false }).setView([r.lat, r.lng], 16); mdTileLayer({ vec: true }).addTo(m);
+  try { const tr = r.t ? trackLoad(r.t) : []; if (tr.length > 1) L.polyline(tr.map(q => [q[0], q[1]]), { color: '#E4572E', weight: 4, opacity: .55, interactive: false }).addTo(m); } catch {}
+  const src = r.thumb || phSrc(r);
+  L.marker([r.lat, r.lng], { icon: L.divIcon({ className: '', iconSize: [64, 64], iconAnchor: [32, 32], html: `<div style="width:64px;height:64px;border-radius:32px;border:4px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.35);background:#ddd center/cover no-repeat;background-image:url('${String(src).replace(/'/g, '%27')}')"></div>` }) }).addTo(m);
+  setTimeout(() => m.invalidateSize(), 60);
+}
 function showPhoto(p, list, cover) {
   const all = Array.isArray(list) && list.length ? list : [p];
   let i = Math.max(0, all.indexOf(p)), url = null;
@@ -2193,6 +2206,7 @@ function showPhoto(p, list, cover) {
     sb.style.zIndex = 4100; };
   const drawMemo = () => { const r = all[i]; memo.textContent = r.m ? `“${r.m}”` : '';
     bar.replaceChildren(bb('dl', '저장', () => savePhotos([r], 'MapDiary사진')),
+      r.lat != null && r.lng != null ? bb('pin', '위치', () => photoWhere(r)) : null,   // 판 -369 사용자 '사진 선택하면 촬영한 위치를 지도에서 보여주는 기능'
       mine(r) ? bb('trash', '삭제', async () => { if (!confirm('이 사진을 지울까요? 되돌릴 수 없어요.')) return;
         await photoDel(r.id); all.splice(i, 1); dispatchEvent(new Event('photo-changed')); toast('사진을 지웠어요'); if (!all.length) close(); else show(i); }) : null,
       mine(r) ? bb('more', '더보기', () => moreSheet(r)) : null); };
@@ -3291,7 +3305,15 @@ function mdTileLayer(opt) {
   //   기록 중 지도(배터리·산속 인터넷)와 나라 밖 계획 지도(따로 한글 지도를 붙임)는 opt.vec === false
   if (!(opt && opt.vec === false) && (window.devicePixelRatio || 1) >= 1.5 && navigator.onLine && !LAB_QUIET) base.once('add', () => {
     const [hz, btn] = mapHzArgs(opt);
-    koMapLayer(hz, { btn }).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); if (opt && opt.keep) return; setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
+    koMapLayer(hz, { btn }).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m);
+      // 판 -369 (사용자: 받은 링크·앱에서 지도가 빈 베이지 칸): 예전엔 선명한 지도가 자료를 받든 못 받든 1.5초 뒤 그림 지도를 치워 빈 칸이 남았어요
+      //   → 선명한 지도 자료가 실제로 들어온 뒤에만 그림 지도를 치우고, 12초가 지나도 안 들어오면 선명한 지도를 빼고 그림 지도를 그대로 둬요(오류 기록에도 남김)
+      const mm = ly.getMaplibreMap && ly.getMaplibreMap(); let got = false;
+      const has = () => { try { return mm.isSourceLoaded('openmaptiles') && ['water', 'place', 'transportation', 'landcover'].some(sl => mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }).length); } catch { return false; } };
+      const ok = () => { if (got) return; got = true; if (!(opt && opt.keep)) setTimeout(() => { if (base._map) m.removeLayer(base); }, 300); };
+      if (mm) { mm.on('idle', () => { if (has()) ok(); }); mm.on('error', e => { try { window.mpdErr && window.mpdErr('지도: ' + String(e && e.error && e.error.message || e && e.message || e).slice(0, 120)); } catch {} }); }
+      setTimeout(() => { if (got || !ly._map) return; if (has()) return ok(); try { window.mpdErr && window.mpdErr('지도: 12초 지나도 선명한 지도 자료를 못 받아 그림 지도로'); } catch {} if (base._map) m.removeLayer(ly); }, 12000);
+    }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
   });
   return base;
 }
@@ -3305,13 +3327,14 @@ function loadTile(src) {
 }
 async function mapTiles(g, R, px, py, pw, ph) {
   const pad = 80;   // 지도 조각을 2~3배로 키워 그려요 (글씨가 보이고 경로가 판에 꽉 차게)
+  // 판 -369 (사용자 카톡 캡처: 홍콩·마카오 여행 카드 지도가 빈 칸): 예전엔 z 4까지 맞는 게 없으면 상자는 z 4로 잰 채 z 3으로 그려
+  //   지도·길이 엉뚱한 곳에 그려졌고(빈 칸), 크기도 2배 아래로는 안 줄여 나라를 건넌 길은 칸에 못 들어갔어요 → z 2까지 · 상자는 고른 z로 · 2배 아래로도 줄여요
   let z = 17, W0, H0, box, S = 2;
-  for (; z > 3; z--) {
-    const pts = R.map(q => mercPx(q[0], q[1], z)), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-    box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-    if ((box[2] - box[0]) * 2 <= pw - pad * 2 && (box[3] - box[1]) * 2 <= ph - pad * 2) break;
-  }
-  S = Math.max(2, Math.min(3, (pw - pad * 2) / Math.max(box[2] - box[0], 1), (ph - pad * 2) / Math.max(box[3] - box[1], 1)));
+  const boxAt = z => { const pts = R.map(q => mercPx(q[0], q[1], z)), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+  for (; z >= 2; z--) { box = boxAt(z); if ((box[2] - box[0]) * 2 <= pw - pad * 2 && (box[3] - box[1]) * 2 <= ph - pad * 2) break; }
+  if (z < 2) { z = 2; box = boxAt(2); }
+  const fitS = Math.min((pw - pad * 2) / Math.max(box[2] - box[0], 1), (ph - pad * 2) / Math.max(box[3] - box[1], 1));
+  S = fitS >= 2 ? Math.min(3, fitS) : Math.max(0.5, fitS);
   W0 = pw / S; H0 = ph / S;
   const wx0 = (box[0] + box[2]) / 2 - W0 / 2, wy0 = (box[1] + box[3]) / 2 - H0 / 2, n = 2 ** z;
   const jobs = [];
@@ -3728,9 +3751,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-368-permsw';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-369-cardmap';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "일행 권한 표의 고치기와 AI가 휴대폰 설정 같은 켜기 끄기 스위치로 바뀌었어요 · 파란 스위치가 켜진 거예요 · 구경이라 줄 수 없는 칸은 비워 뒀어요";
+const UI_NOTES = "사진을 크게 볼 때 위치를 누르면 찍은 곳을 지도에서 보여줘요 · 선명한 지도를 못 받으면 빈 칸 대신 그림 지도가 남아요 · 나라를 건너간 여행의 공유 카드 지도 칸이 비던 것을 고쳤어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4759,7 +4782,7 @@ function profileEdit(done, pick) {
 }
 // 🐞 오류 기록(판 -293): 머리의 작은 스크립트가 errLog에 적고, 여기서 보여 주고 올려요
 //   올리는 곳 rooms/mpderr/e/{기기 번호} = {d: JSON, t} — 개발 쪽이 '안 돼요' 때 읽어 봐요. 1분에 한 번까지, 위치·사진·주소 값은 안 들어가요
-function errList() { const L = ls.get('errLog', []); return Array.isArray(L) ? L : []; }
+function errList() { let L = []; try { L = JSON.parse(localStorage.getItem('errLog') || '[]'); } catch {} return Array.isArray(L) ? L : []; }   // 판 -369: 받은 링크 보기(GV)에서도 머리 스크립트가 적은 그대로
 let errUpT = null;
 function errUp(now) {
   if (LAB_QUIET || !navigator.onLine) return;

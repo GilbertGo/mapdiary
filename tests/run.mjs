@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage'];
+const EXPOSE = ['mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1295,6 +1295,43 @@ await test('지도 한자 이름 · 다른 선명한 지도는 설정을 따르�
   ok(ko[0] === false && ko[1] === false, '한글만 지도에 한자·漢 단추가 붙어요: ' + JSON.stringify(ko));
   ok(!/koMapLayer\(\(opt && opt\.hz\) \|\| false\)/.test(src), 'mdTileLayer가 다시 hz 없으면 한자를 끄게 바뀌었어요');
   noErr(page, '지도 한자');
+});
+
+// ─── 판 -369: 나라를 건너간 여행(홍콩 → 인천) 공유 카드 지도 칸이 비어 있던 것 ───
+await test('공유 카드 지도: 먼 길도 칸 안에', async page => {
+  await page.route(u => u.hostname === 'tile.openstreetmap.org', r => r.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64') }));
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const g = cv.getContext('2d');
+    const out = [];
+    for (const [R, ph] of [[[[22.31, 113.92], [22.2, 113.55], [37.46, 126.44]], 250], [[[37.40, 127.29], [37.41, 127.30]], 600]]) {
+      const px = 72, py = 500, pw = 936, M = await __T.mapTiles(g, R, px, py, pw, ph);
+      out.push(M ? M.P.every(p => p[0] >= px && p[0] <= px + pw && p[1] >= py && p[1] <= py + ph) : 'null');
+    }
+    return out;
+  });
+  ok(r[0] === true, '홍콩 → 인천 길이 카드 지도 칸 밖으로 나가요: ' + r[0]);
+  ok(r[1] === true, '짧은 길이 카드 지도 칸 밖으로 나가요: ' + r[1]);
+  noErr(page, '카드 지도');
+});
+
+// ─── 판 -369: 사진 보기에서 '위치' → 찍은 곳 지도 ───
+await test('사진 보기: 위치를 누르면 찍은 곳 지도', async page => {
+  const t = await seed(page);
+  const r = await page.evaluate(async t => {
+    const b = new Blob(['x'], { type: 'image/jpeg' }), p1 = { id: 'ph_w1', t, ts: Date.now(), lat: 37.401, lng: 127.291, blob: b, thumb: '' }, p2 = { id: 'ph_w2', t, ts: Date.now(), lat: null, lng: null, blob: b, thumb: '' };
+    __T.showPhoto(p2, [p2, p1]); await new Promise(z => setTimeout(z, 200));
+    const no = !!document.querySelector('button[aria-label="위치"]');
+    document.querySelector('button[aria-label="다음 사진"]').click(); await new Promise(z => setTimeout(z, 200));
+    const btn = document.querySelector('button[aria-label="위치"]'); if (!btn) return { no, btn: false };
+    btn.click(); await new Promise(z => setTimeout(z, 600));
+    const mapOk = [...document.querySelectorAll('.leaflet-container')].some(e => e.getBoundingClientRect().width > 300), cap = document.body.innerText.includes('찍은 곳');
+    return { no, btn: true, mapOk, cap };
+  }, t);
+  ok(!r.no, '위치 없는 사진에도 위치 단추가 보여요');
+  ok(r.btn, '위치 있는 사진에 위치 단추가 없어요');
+  ok(r.mapOk && r.cap, '위치를 눌러도 찍은 곳 지도가 안 열려요');
+  noErr(page, '사진 위치');
 });
 
 await browser.close();
