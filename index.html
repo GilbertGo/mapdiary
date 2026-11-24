@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-376-tripfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-377-recup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14719,7 +14719,7 @@ function autoFix(lat, lng, acc, alt, ts) {
 // 앱을 켤 때: 오래 쉬던 길은 먼저 끝내고, 위치 받기를 켜요
 function autoStart() {
   if (!autoOn() || autoWatch != null) return;
-  try { tripAutoEnsure(true); } catch {}   // 판 -373
+  if (!ls.get('walkNow', null)) setTimeout(() => { try { tripAutoEnsure(true); } catch {} }, 6000); else { try { tripAutoEnsure(true); } catch {} }   // 판 -373 · 판 -377: 기록 중이 아니면 6초 뒤(앱 속 새 판 받기가 2.5초에 먼저 돌게)
   const S = autoSt();
   if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); autoPut({ c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }, true); }
   if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
@@ -14772,7 +14772,8 @@ function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖
   if (now || !p) return now;
   let aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid);
   { const real = tripTodayRec(p, a);   // 오늘 기록이 이미 있으면(끝내기를 눌렀어도) 그 기록에 이어서
-    if (real) { const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra) && ra !== aid) ls.set('planAlbum:' + p.id, ra);
+    if (real) { const ea = ls.get('walkAutoTrip', null); if (ea && ea !== real && ls.get('track:' + ea, null) && ls.get('track:' + ea, []).length < 2) tripMergeEmpty(ea, real);   // 판 -377: 끝내기로 멈춘 빈 자동 기록도 합쳐요
+      const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra) && ra !== aid) ls.set('planAlbum:' + p.id, ra);
       ls.set('walkNow', real); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', real); return real; } }
   if (!a) { a = { id: 'album_' + rid(8), name: p.name || '여행', mode: 'travel', days: [], at: Date.now() }; ls.set('walkMode:' + a.id, 'travel'); ls.set('planAlbum:' + p.id, a.id); }
   const id = 'walk_' + rid(8);
@@ -14783,22 +14784,31 @@ function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖
   return id;
 }
 // 판 -373 (사용자 '기록중에도 앱 업데이트는 되게 해!!'): 앱 속 native.js는 기록 중이면 새 화면을 안 받아서, 기록 중엔 이 화면이 대신 받아 두고 다음에 앱을 켤 때부터 새 판(setWebNext, 지금 화면은 그대로)
+// 판 -377 (사용자 '업데이트가 왜 안되냐? · 안되!!! 똑 같아'): 373은 앱을 켜자마자 여행 기록을 시작해서(autoStart) 앱 속 native.js(예전 APK)가 늘 '기록 중'이라 새 판을 안 받았고,
+//   이 화면 쪽 받기는 Capacitor.Plugins에서 플러그인을 못 찾으면 말없이 그만뒀음 → registerPlugin으로 찾고, 켠 뒤 아직 안 만졌으면 바로 바꿔 끼우고(setWeb), 실패하면 오류 기록에 남김
+var REC_UP_T0 = Date.now();
 async function recUpdate() {
+  let step = '시작';
   try {
-    const C = window.Capacitor, FS = C && C.Plugins && C.Plugins.Filesystem, MA = C && C.Plugins && C.Plugins.MdApp, APP = window.MD_APP, WEB = window.MD_WEB_BASE;
-    if (!IN_NATIVE || !FS || !MA || !MA.setWebNext || !APP || !WEB || !ls.get('walkNow', null)) return;
-    const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
+    const C = window.Capacitor, P = n => C && ((C.Plugins && C.Plugins[n]) || (C.registerPlugin && C.registerPlugin(n)));
+    const FS = P('Filesystem'), MA = P('MdApp'), APP = window.MD_APP, WEB = window.MD_WEB_BASE;
+    if (!IN_NATIVE || !APP || !WEB || !ls.get('walkNow', null)) return;
+    if (!FS || !MA) { window.mpdErr && window.mpdErr('새 판 받기: 플러그인 없음 ' + (!FS ? 'Filesystem' : 'MdApp')); return; }
+    step = '받기'; const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
     const txt = await r.text(), at = txt.indexOf('<script'); if (txt.length < 100000 || at < 0 || !/Map (Photo )?Diary/.test(txt)) return;
     const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)))].map(b => b.toString(16).padStart(2, '0')).join('');
-    if (h === APP.h || localStorage.getItem('mdWebNext') === h) return;
+    const fresh = !MD_TOUCHED && Date.now() - REC_UP_T0 < 20000;   // 켠 뒤 아직 화면을 안 만졌으면 바로 새 판으로(기록은 그대로 이어져요)
+    if (h === APP.h || (localStorage.getItem('mdWebNext') === h && !fresh)) return;
     const dir = 'web/' + h.slice(0, 16), html = txt.slice(0, at) + `<script>window.MD_APP=${JSON.stringify(Object.assign({}, APP, { h }))}<\/script>\n<script src="native.js"><\/script>\n` + txt.slice(at);
-    await FS.writeFile({ path: dir + '/index.html', data: html, directory: 'DATA', encoding: 'utf8', recursive: true });
+    step = '저장'; await FS.writeFile({ path: dir + '/index.html', data: html, directory: 'DATA', encoding: 'utf8', recursive: true });
     await FS.writeFile({ path: dir + '/native.js', data: await (await fetch('/native.js')).text(), directory: 'DATA', encoding: 'utf8', recursive: true });
     for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) { try { const b = await (await fetch('/' + f)).blob(); const d = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(b); }); await FS.writeFile({ path: dir + '/' + f, data: d, directory: 'DATA', recursive: true }); } catch {} }
-    const { uri } = await FS.getUri({ path: dir, directory: 'DATA' });
-    await MA.setWebNext({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')) }); localStorage.setItem('mdWebNext', h);
-    const m = /const UI_VER = '([^']+)'/.exec(txt); toast(`새 판${m ? ' ' + m[1].split('-')[1] : ''}을 받아 뒀어요 · 기록은 그대로, 앱을 다시 켜면 바뀌어요`);
-  } catch {}
+    const { uri } = await FS.getUri({ path: dir, directory: 'DATA' }), path = decodeURIComponent(uri.replace(/^file:\/\//, ''));
+    const m = /const UI_VER = '([^']+)'/.exec(txt), vn = m ? ' ' + m[1].split('-')[1] : '';
+    if (fresh && !MD_TOUCHED) { step = '바꾸기'; try { sessionStorage.setItem('mdBack', location.search + location.hash); sessionStorage.setItem('mdToast', `새 판${vn}으로 바꿨어요 · 기록은 그대로 이어져요`); } catch {} await MA.setWeb({ path }); return; }
+    step = '다음 판'; await MA.setWebNext({ path }); localStorage.setItem('mdWebNext', h);
+    toast(`새 판${vn}을 받아 뒀어요 · 기록은 그대로, 앱을 다시 켜면 바뀌어요`);
+  } catch (e) { try { window.mpdErr && window.mpdErr('새 판 받기(' + step + '): ' + (e && e.message || e)); } catch {} }
 }
 if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 3000); setInterval(recUpdate, 30 * 60000); }
 // 첫 화면·설정에 보이는 지금 상태
