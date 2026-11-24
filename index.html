@@ -1200,7 +1200,7 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-map{position:fixed;left:0;right:0;top:0;height:100lvh;z-index:0;background:#E9EEF1}
 .mh-map.leaflet-container{background:#E9EEF1;font-family:inherit}
 .mh-map .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
-.mh-map .leaflet-top{top:calc(60px + env(safe-area-inset-top,0px))}
+.mh-map .leaflet-top{top:calc(76px + env(safe-area-inset-top,0px))}
 .c-ph-top.mh-top{position:fixed;left:0;right:0;top:0;margin:0;z-index:30;padding-bottom:28px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.78) 55%,rgba(255,255,255,0));pointer-events:none!important;transition:background .2s,box-shadow .2s,padding .2s}
 .c-ph-top.mh-top.solid{background:#F7FAFC;box-shadow:0 1px 0 rgba(20,37,59,.08);padding-bottom:8px}   /* 판 -365: 판을 올리면 머리 줄이 상태 표시줄 밑으로 밀려 잘리던 것 → 늘 위에, 판이 닿으면 흰 바탕 */
 .c-ph-top.mh-top>*{pointer-events:auto}
@@ -3271,6 +3271,9 @@ async function tileBlob(url) {
     return b;
   } catch { return hit ? hit.blob() : null; }   // 인터넷이 없으면 오래된 조각이라도
 }
+// 판 -366 (사용자 '지도에 한자가 안보이네? 왜 바꿨어. 이거 정성들여서 설정한건데'): 지도마다 한자 이름(漢)을 따로 켜야 해서 새로 만든 첫 화면 지도에서 빠졌음
+//   → 선명한 지도는 어디서 만들든 이 휴대폰의 '한자·발음 같이 보기'(ls mapHanzi)를 따름. 漢 단추는 hz를 준 지도(계획·첫 화면)에만. 이 기본값을 끄지 말 것
+function mapHzArgs(opt) { return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }
 function mdTileLayer(opt) {
   const T = L.TileLayer.extend({
     createTile(coords, done) {
@@ -3287,7 +3290,8 @@ function mdTileLayer(opt) {
   //   화면이 촘촘하고 인터넷이 되면, 붙인 뒤 선명한 벡터 지도(OpenFreeMap, 한글 이름)로 바꿔요. 못 받으면 그림 지도 그대로.
   //   기록 중 지도(배터리·산속 인터넷)와 나라 밖 계획 지도(따로 한글 지도를 붙임)는 opt.vec === false
   if (!(opt && opt.vec === false) && (window.devicePixelRatio || 1) >= 1.5 && navigator.onLine && !LAB_QUIET) base.once('add', () => {
-    koMapLayer((opt && opt.hz) || false).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); if (opt && opt.keep) return; setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
+    const [hz, btn] = mapHzArgs(opt);
+    koMapLayer(hz, { btn }).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m); if (opt && opt.keep) return; setTimeout(() => { if (base._map) m.removeLayer(base); }, 1500); }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
   });
   return base;
 }
@@ -3724,9 +3728,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-365-homehead';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-366-hanja';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면에서 아래 판을 올려도 맨 위 MPD 글자가 상태 표시줄 밑으로 잘리지 않아요 · 앱을 막 깔았을 때 앱 켠 뒤 0보는 안 보여요";
+const UI_NOTES = "첫 화면 지도에도 한자 이름이 나와요(漢 단추) · 전체 지도와 기록 지도도 한자 같이 보기 설정을 따라요 · 여행 중이면 첫 화면 지도가 다음 일정 둘레를 보여 줘요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13933,7 +13937,9 @@ function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 �
     return b; } });
   new C().addTo(map);
 }
-async function koMapLayer(hanja) {
+async function koMapLayer(hanja, o) {
+  const btn = !o || o.btn !== false;   // 판 -366: 단추 없이 이름만(설정을 켰을 때만 이름 사전을 받아요)
+  if (hanja && !btn && !ls.get('mapHanzi', false)) hanja = false;
   try {
     await vtLoad(FILM_LIB.css, true); await vtLoad(FILM_LIB.gl); await vtLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
@@ -13941,7 +13947,7 @@ async function koMapLayer(hanja) {
       try { await vtLoad(KO_CONTOUR_LIB); if (window.mlcontour) { const d = new mlcontour.DemSource({ url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding: 'terrarium', maxzoom: 13, worker: true, cacheSize: 60, timeoutMs: 10000 }); d.setupMaplibre(maplibregl); window.__mdDem = d; koMapStyle.s = null; } } catch {} }
     vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
-    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' || hanja === 'kr' ? hanja : false; koHanjaLoad(); ly.once('add', () => { try { koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp); else mm.once('load', () => koHanjaWire(mm, jp)); }; go(); }); }
+    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' || hanja === 'kr' ? hanja : false; koHanjaLoad(); ly.once('add', () => { try { if (btn) koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp); else mm.once('load', () => koHanjaWire(mm, jp)); }; go(); }); }
     return ly;
   } catch { return null; }
 }
@@ -17657,6 +17663,13 @@ function homeStyleNow() {
 function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일정 장소를 번호 점으로 보이고 그 둘레를 먼저 보여 줘요
   const box = el('div', { class: 'mh-map' }), wNow = ls.get('walkNow', null);
   let m = null, focusLay = null, want = null, drawPins = null, peek = 300;
+  // 판 -366: 처음 보일 곳(여행 중이면 다음 일정 둘레 50km, 아니면 가장 최근 기록) — 漢 단추 모양(중국 漢·일본 あ)도 그 자리로
+  let tripIts = [];
+  if (trip && !wNow) { try { const k = planToday(trip), its = planItems(trip, k).filter(x => Number.isFinite(+x.lat) && Number.isFinite(+x.lng)), ni = planNext(trip, k), all = planItems(trip, k), nx = ni >= 0 ? all[ni] : null;
+    const c = nx && Number.isFinite(+nx.lat) ? nx : its.find(x => !x.ok) || its[0];
+    tripIts = { all: its, near: c ? its.filter(x => dist(+c.lat, +c.lng, +x.lat, +x.lng) < 5e4) : its }; } catch {} }
+  const f0 = (tripIts.near && tripIts.near[0]) || (() => { const r = cRecs(1)[0]; return r && r.tr[0] ? { lat: r.tr[0][0], lng: r.tr[0][1] } : null; })();
+  const mhHz = f0 && koInHanzi(+f0.lat, +f0.lng) ? true : f0 && koPlaceCC({ geometry: { coordinates: [+f0.lng, +f0.lat] } }) || 'kr';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pad = () => ({ paddingTopLeft: [36, 96], paddingBottomRight: [36, peek + 24] });
   box.setPeek = v => { peek = v; };
@@ -17669,7 +17682,7 @@ function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일�
   setTimeout(async () => {
     const recs = cRecs(80);
     m = L.map(box, { zoomControl: false, attributionControl: true, scrollWheelZoom: false, tap: false, worldCopyJump: true });
-    mdTileLayer({ keep: true }).addTo(m);   // 판 -364: 선명한 지도가 늦게 오거나 못 와도 그림 지도가 밑에 남아 빈 바탕이 안 보이게
+    mdTileLayer({ keep: true, hz: mhHz }).addTo(m);   // 판 -366: 漢(한자 이름) 단추·설정을 계획 지도처럼 · 판 -364: 선명한 지도가 늦게 오거나 못 와도 그림 지도가 밑에 남아 빈 바탕이 안 보이게
     m.setView([36.4, 127.8], 6);   // 기록을 읽기 전·기록이 없을 때(우리나라)
     // 다닌 길: 모든 기록을 옅게, 지금 기록 중이면 빨갛게
     recs.forEach(r => cSegs(r).forEach(s => { L.polyline(s, { color: '#1D9EC0', weight: 3.5, opacity: .45, interactive: false }).addTo(m); }));
@@ -17682,10 +17695,10 @@ function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일�
     const items = pins.map(r => ({ r, at: withPh ? [r.cover.lat, r.cover.lng] : (q => [q[0], q[1]])(farPoint(r.tr)) }));
     // 처음 보이는 곳: 가장 최근에 다닌 곳 둘레(800km 안 핀만) — 나라를 오가도 지도가 너무 작아지지 않게. 밀거나 줄이면 다른 곳도 보여요
     let tb = null;
-    if (trip && !live) { try { const k = planToday(trip), its = planItems(trip, k).filter(x => Number.isFinite(+x.lat) && Number.isFinite(+x.lng));
+    if (trip && !live) { try { const its = tripIts.all || [];
       its.forEach((x, i) => L.marker([+x.lat, +x.lng], { keyboard: false, title: x.n, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<b class="mh-num${x.ok ? ' ok' : ''}">${i + 1}</b>` }) })
         .on('click', () => { location.href = './?plan=1&p=' + encodeURIComponent(trip.id); }).addTo(m));
-      if (its.length) tb = L.latLngBounds(its.map(x => [+x.lat, +x.lng])); } catch {} }
+      const nr = tripIts.near && tripIts.near.length ? tripIts.near : its; if (nr.length) tb = L.latLngBounds(nr.map(x => [+x.lat, +x.lng])); } catch {} }   // 판 -366: 인천공항과 장가계를 한 번에 맞추면 그 사이(우한)만 보여서, 다음 일정 둘레만
     const bb = live ? live.getBounds() : tb ? tb : (() => { const a = items[0] && items[0].at; if (!a) return null;
       const near = items.filter(i => dist(a[0], a[1], i.at[0], i.at[1]) < 8e5); return L.latLngBounds(near.map(i => i.at)); })();
     if (bb && bb.isValid()) m.fitBounds(bb.pad(.12), Object.assign(pad(), { maxZoom: 14, animate: false }));
