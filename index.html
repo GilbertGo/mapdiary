@@ -3751,9 +3751,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-369-cardmap';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-370-triprec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진을 크게 볼 때 위치를 누르면 찍은 곳을 지도에서 보여줘요 · 선명한 지도를 못 받으면 빈 칸 대신 그림 지도가 남아요 · 나라를 건너간 여행의 공유 카드 지도 칸이 비던 것을 고쳤어요";
+const UI_NOTES = "여행 계획의 오늘 칸에서 바로 여행 기록을 시작해요 · 둘째 날부터 누르면 같은 여행에 그날이 이어져요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14201,6 +14201,10 @@ function viewPlanOne(id) {
       row('다음 갈 곳', x ? `${nx + 1}. ${x.n}` : untimed ? '앱이 짐작하지 않아요' : its.length && its.every(y => y.ok) ? '오늘 일정을 다 다녀왔어요' : '남은 일정이 없어요',
         x ? [x.t ? x.t + ' 예정' : '시각 없음', Number.isFinite(x.lat) ? '' : '지도 위치 없음'].filter(Boolean).join(' · ') : untimed ? '시각이 없는 일정이라 지금 어디쯤인지 몰라요 · 다녀온 곳을 ✓로 표시하면 다음 곳을 보여 줘요' : '',
         x ? el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, Number.isFinite(x.lat) ? el('button', { class: 'btn primary small', text: '길찾기', onclick: () => planGo(x) }) : null, el('button', { class: 'btn line small', text: '✓ 다녀옴', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); drawAll(); } })) : null),
+      (() => { const now = ls.get('walkNow', null);   // 판 -370: 여기서 바로 여행 기록
+        return now ? row('기록', '● 기록 중', ls.get('trackName:' + now, ''), el('a', { class: 'btn primary small', href: './?walk=1', text: '이어서' }))
+          : row('기록', ls.get('planAlbum:' + p.id, '') && albumGet(ls.get('planAlbum:' + p.id, '')) ? `${d + 1}일차 기록 시작` : '여행 기록 시작', '다닌 길과 사진이 이 여행 한 장에 날마다 모여요',
+            el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&mode=travel&go=1&pt=${encodeURIComponent(p.id)}`, text: '● 시작' })); })(),
       d === 0 ? row('출발 미팅', p.meet ? [p.meet.t, p.meet.n].filter(Boolean).join(' · ') : '등록된 자료 없음', p.meet ? '여행사 안내 그대로' : '항공편 시각은 미팅 시각이 아니에요 · 여행사 확정 안내로 확인해 주세요') : null,
       row('오늘 숙소', stay ? stay.n : d === p.nd - 1 ? '마지막 날 (숙소 없음)' : '등록된 숙소 없음', stay && /예정 호텔|중 한 곳|출발 전 확정/.test(stay.m || '') ? '⚠ 여행사 예정 목록 중 한 곳 · 확정된 호텔이 아닐 수 있어요' : stay ? '' : ''),
       row('가이드', g && (g.n || g.tel) ? [g.n, g.tel].filter(Boolean).join(' · ') : '등록된 연락처 없음', g && g.tel ? '' : '첫날 받으면 여기에 적어 두세요',
@@ -19410,9 +19414,13 @@ function viewWalk() {
     }
     // 바로 시작(2026-11-09 P3): 기록하기 창의 '지난번처럼 바로 시작'(&go=1) → 시작 화면을 건너뛰고 바로 기록. 한 번만(주소에서 go를 지움)
     //   러닝(3·2·1 소리)·여러 날 여행(오늘만/이어서 고르기)·파크골프(점수표 준비)는 시작 화면이 꼭 필요해서 빼요
-    if (!id && qs.get('go') === '1' && quickGo(pick)) {
-      qs.delete('go'); try { const u = new URL(location.href); u.searchParams.delete('go'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {}
-      start(); toast(`${modeByK(pick).label} 기록을 시작했어요`);
+    // 판 -370 (사용자 계획 화면 캡처 '여기서 기록하기 하는게 어때?' → 'ㅇㅋ'): 계획 '오늘' 칸 → &go=1&pt=계획 → 그 계획 이름의 여러 날 여행으로 바로(둘째 날부터는 같은 여행에 이어서)
+    const ptId = qs.get('pt'), ptPlan = ptId && MULTI.includes(pick) ? planGet(ptId) : null;
+    if (!id && qs.get('go') === '1' && (quickGo(pick) || ptPlan)) {
+      qs.delete('go'); qs.delete('pt'); try { const u = new URL(location.href); u.searchParams.delete('go'); u.searchParams.delete('pt'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch {}
+      if (ptPlan) { const aid = ls.get('planAlbum:' + ptPlan.id, ''); tripSel = aid && albumGet(aid) ? aid : 'new'; tripName = ptPlan.name || ''; }
+      start(); if (ptPlan && id) { const aid = ls.get('walkAlbum:' + id, ''); if (aid) ls.set('planAlbum:' + ptPlan.id, aid); }
+      toast(ptPlan ? `'${ptPlan.name}' 여행 ${(albumGet(ls.get('walkAlbum:' + id, '')) || { days: [1] }).days.length}일차 기록을 시작했어요` : `${modeByK(pick).label} 기록을 시작했어요`);
       // 페이지를 막 연 참이라 화면 켜두기·박자 소리가 막혔을 수 있어서, 처음 화면을 만질 때 한 번 더 켜요
       addEventListener('pointerdown', () => { if (id && !wake) { wantWake = true; lockWake(); } try { if (actx && actx.state !== 'running') actx.resume(); } catch {} }, { once: true, capture: true });
       return;

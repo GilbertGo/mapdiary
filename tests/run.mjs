@@ -1334,6 +1334,20 @@ await test('사진 보기: 위치를 누르면 찍은 곳 지도', async page =>
   noErr(page, '사진 위치');
 });
 
+await test('여행 계획 오늘 칸에서 기록 시작 · 둘째 날은 같은 여행에 (판 -370)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(600);
+  await page.evaluate(() => { localStorage.removeItem('walkNow'); localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpr1', name: '장가계 4박 5일', start: '2026-11-24', nd: 5, it: [], at: 1, u: 1 }])); });
+  await page.goto(BASE + '?walk=1&mode=travel&go=1&pt=tpr1'); await sleep(1500);
+  const a = await page.evaluate(() => { const id = JSON.parse(localStorage.getItem('walkNow')); const aid = JSON.parse(localStorage.getItem('walkAlbum:' + id)); const al = JSON.parse(localStorage.getItem('albums')).find(x => x.id === aid); return { id, aid, name: al && al.name, map: JSON.parse(localStorage.getItem('planAlbum:tpr1')), url: location.search }; });
+  ok(a.id && a.name === '장가계 4박 5일' && a.map === a.aid, '계획 이름의 여행으로 시작해야 해요 ' + JSON.stringify(a));
+  ok(!/pt=|go=/.test(a.url), '주소에서 go·pt를 지워야 해요 ' + a.url);
+  await page.evaluate(() => localStorage.removeItem('walkNow'));
+  await page.goto(BASE + '?walk=1&mode=travel&go=1&pt=tpr1'); await sleep(1500);
+  const b = await page.evaluate(() => { const id = JSON.parse(localStorage.getItem('walkNow')); const aid = JSON.parse(localStorage.getItem('walkAlbum:' + id)); const al = JSON.parse(localStorage.getItem('albums')).find(x => x.id === aid); return { aid, days: al && al.days.length, name: JSON.parse(localStorage.getItem('trackName:' + id)) }; });
+  ok(b.aid === a.aid && b.days === 2 && /2일차/.test(b.name), '둘째 날은 같은 여행에 이어져야 해요 ' + JSON.stringify(b));
+  noErr(page, '계획에서 기록 시작');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
