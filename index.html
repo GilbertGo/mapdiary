@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-372-dayroll';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-373-tripauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여러 날 여행 기록은 끝내기를 누르지 않아도 날짜가 바뀌면 저절로 다음 날 기록으로 이어져요";
+const UI_NOTES = "MPD 앱에서는 여행 계획 날짜가 되면 누르지 않아도 그 여행을 저절로 기록해요 · 날마다 n일차로 나뉘고 여행이 끝나면 저절로 끝나요 · 여행 기록 중엔 다른 화면으로 가도 기록이 이어져서 묻지 않아요 · 기록 중 지도를 줄이거나 키우면 그대로 둬요 · 기록 중에도 새 판을 받아 두고 앱을 다시 켜면 바뀌어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14679,6 +14679,8 @@ function autoFix(lat, lng, acc, alt, ts) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || (Number.isFinite(acc) && acc > 60)) return;
   const S = autoSt(), p = [+lat.toFixed(6), +lng.toFixed(6), ts]; if (Number.isFinite(alt)) p.push(Math.round(alt));
   const fresh = () => { S.seg = null; S.c = p; S.ci = 0; S.last = p; S.rb = [p]; autoPut(S, true); };
+  { const w = tripAutoEnsure();   // 판 -373: 여행 중이면 그 여행 기록에 위치를 넣어요
+    if (w && ls.get('walkAlbum:' + w, null) && !isPaused(w)) trackAdd(w, lat, lng, Number.isFinite(acc) ? acc : 10, null, alt, null, false, ts); }
   if (ls.get('walkNow', null)) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 손으로 하는 기록 중엔 쉬어요
   if (!S.c || !S.last || ts - S.last[2] > AUTO_STAY_MS) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 처음이거나 위치가 오래 끊겼다가 다시
   if (ts <= S.last[2]) return;
@@ -14702,6 +14704,7 @@ function autoFix(lat, lng, acc, alt, ts) {
 // 앱을 켤 때: 오래 쉬던 길은 먼저 끝내고, 위치 받기를 켜요
 function autoStart() {
   if (!autoOn() || autoWatch != null) return;
+  try { tripAutoEnsure(true); } catch {}   // 판 -373
   const S = autoSt();
   if (S.seg && S.last && Date.now() - S.last[2] > AUTO_STAY_MS) { autoSave(S.seg, S.seg.length - 1); autoPut({ c: S.last, ci: 0, last: S.last, seg: null, rb: [S.last] }, true); }
   if (!ls.get('autoIntro', 0)) { ls.set('autoIntro', Date.now()); setTimeout(() => toast('🛰 이제 MPD가 다닌 길을 저절로 기록해요 · 10분 넘게 머물면 한 기록으로 남아요 · 끄기: 나 → 자동 기록'), 2500); }
@@ -14714,6 +14717,48 @@ function autoStop() {
   try { window.mdNativeTalkNoti && window.mdNativeTalkNoti(false); } catch {}
   const S = autoSt(); if (S.seg) autoSave(S.seg, S.seg.length - 1); autoPut({}, true);
 }
+// 판 -373 (사용자 '자동기록하란말야'): 여행 계획 날짜 안이면 누르지 않아도 그 계획 이름의 여러 날 여행으로 저절로 기록
+//   MPD 앱(자동 기록 켬)만 · 계획 첫날~마지막 날 · 날이 바뀌면 albumRoll로 n일차 · 여행이 끝나면(마지막 날 다음) 저절로 끝 · 손으로 시작한 기록은 건드리지 않음
+//   위치는 자동 기록 받기(autoFix)가 그 기록에 넣음(기록 화면을 열어 두면 그쪽도 같이 넣지만 15m 안 같은 점은 한 번만)
+var tripAutoT = 0;
+function tripAutoPlan() { return planAll().find(p => { const d = planToday(p); return d != null && d >= 0 && d < (p.nd || 1); }) || null; }
+function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖이라 autoOn이 꺼져 있어서)
+  if (!(autoOn() || test) || (!force && Date.now() - tripAutoT < 60000)) return ls.get('walkNow', null); tripAutoT = Date.now();
+  let now = ls.get('walkNow', null); const auto = ls.get('walkAutoTrip', null);
+  if (now) { const nr = albumRoll(now); if (nr) { now = nr; if (auto) ls.set('walkAutoTrip', nr); } }
+  const p = tripAutoPlan();
+  if (now && auto === now && !p) { ls.set('walkNow', null); ls.set('walkAutoTrip', null); try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} return null; }   // 여행이 끝났어요
+  if (now || !p) return now;
+  let aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid);
+  if (!a) { a = { id: 'album_' + rid(8), name: p.name || '여행', mode: 'travel', days: [], at: Date.now() }; ls.set('walkMode:' + a.id, 'travel'); ls.set('planAlbum:' + p.id, a.id); }
+  { const last = a.days[a.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;   // 오늘 기록이 이미 있으면(끝내기를 눌렀어도) 그 기록에 이어서
+    if (last && t && new Date(t).toDateString() === new Date().toDateString()) { ls.set('walkNow', last); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', last); return last; } }
+  const id = 'walk_' + rid(8);
+  a.days.push(id); a.last = Date.now(); albumSave(a);
+  ls.set('walkMode:' + id, 'travel'); ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`); if (devTz()) ls.set('walkTz:' + id, devTz());
+  ls.set('walkNow', id); ls.set('walkAt', Date.now()); ls.set('walkAutoTrip', id);
+  setTimeout(() => toast(`🛰 '${a.name}' 여행 ${a.days.length}일차를 저절로 기록해요`), 800);
+  return id;
+}
+// 판 -373 (사용자 '기록중에도 앱 업데이트는 되게 해!!'): 앱 속 native.js는 기록 중이면 새 화면을 안 받아서, 기록 중엔 이 화면이 대신 받아 두고 다음에 앱을 켤 때부터 새 판(setWebNext, 지금 화면은 그대로)
+async function recUpdate() {
+  try {
+    const C = window.Capacitor, FS = C && C.Plugins && C.Plugins.Filesystem, MA = C && C.Plugins && C.Plugins.MdApp, APP = window.MD_APP, WEB = window.MD_WEB_BASE;
+    if (!IN_NATIVE || !FS || !MA || !MA.setWebNext || !APP || !WEB || !ls.get('walkNow', null)) return;
+    const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
+    const txt = await r.text(), at = txt.indexOf('<script'); if (txt.length < 100000 || at < 0 || !/Map (Photo )?Diary/.test(txt)) return;
+    const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)))].map(b => b.toString(16).padStart(2, '0')).join('');
+    if (h === APP.h || localStorage.getItem('mdWebNext') === h) return;
+    const dir = 'web/' + h.slice(0, 16), html = txt.slice(0, at) + `<script>window.MD_APP=${JSON.stringify(Object.assign({}, APP, { h }))}<\/script>\n<script src="native.js"><\/script>\n` + txt.slice(at);
+    await FS.writeFile({ path: dir + '/index.html', data: html, directory: 'DATA', encoding: 'utf8', recursive: true });
+    await FS.writeFile({ path: dir + '/native.js', data: await (await fetch('/native.js')).text(), directory: 'DATA', encoding: 'utf8', recursive: true });
+    for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) { try { const b = await (await fetch('/' + f)).blob(); const d = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(b); }); await FS.writeFile({ path: dir + '/' + f, data: d, directory: 'DATA', recursive: true }); } catch {} }
+    const { uri } = await FS.getUri({ path: dir, directory: 'DATA' });
+    await MA.setWebNext({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')) }); localStorage.setItem('mdWebNext', h);
+    const m = /const UI_VER = '([^']+)'/.exec(txt); toast(`새 판${m ? ' ' + m[1].split('-')[1] : ''}을 받아 뒀어요 · 기록은 그대로, 앱을 다시 켜면 바뀌어요`);
+  } catch {}
+}
+if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 20000); setInterval(recUpdate, 30 * 60000); }
 // 첫 화면·설정에 보이는 지금 상태
 function autoStatus() {
   const S = autoSt(), moving = S.seg && S.last && Date.now() - S.last[2] < AUTO_STAY_MS;
@@ -18064,7 +18109,7 @@ function viewWalk() {
   let id = ls.get('walkNow', null), watch = null, wake = null, wantWake = true, map = null, line = null, dot = null, follow = true, gps = 'wait', phLayer = null, spLayer = null, lastFix = null, nPhotos = 0;
   { const nr = albumRoll(id); if (nr) { id = nr; setTimeout(() => toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`), 600); } }   // 판 -372
   let pausedNow = isPaused(id), brkNext = false;   // 잠시 멈춤 중인지 / 다시 시작한 뒤 첫 점은 앞과 잇지 않기
-  leaveWarn = () => id && !done ? '첫 화면으로 가면 기록이 잠깐 멈춰요. 다시 들어오면 이어서 기록해요. 갈까요?' : null;
+  leaveWarn = () => id && !done && !(autoOn() && ls.get('walkAlbum:' + id, null)) ? '첫 화면으로 가면 기록이 잠깐 멈춰요. 다시 들어오면 이어서 기록해요. 갈까요?' : null;   // 판 -373: 앱의 여행 기록은 다른 화면에서도 계속 기록돼서 묻지 않아요
   let pick = qs.get('mode') || ls.get('lastMode', 'hike');   // 고른 모드
   // 따라가기: 기록에 붙은 길(guide), 시작하면 붙일 길(guideNext, 하루 지나면 버려요)
   let guide = id ? ls.get('walkGuide:' + id, null) : null, gLayer = null, gIdx = 0, gOff = false, gEnd = false;
@@ -19226,7 +19271,7 @@ function viewWalk() {
       }
       if (map) {
         if (!dot) dot = L.circleMarker(ll, { radius: 9, color: '#FFFFFF', weight: 3, fillColor: '#1E3B2F', fillOpacity: 1 }).addTo(map); else dot.setLatLng(ll);
-        if (follow) map.setView(ll, Math.max(map.getZoom(), 16));
+        if (follow) map.setView(ll, map.getZoom());   // 판 -373 (사용자 '보기 축소했는데 자동으로 다시 확대되네? 그러지마'): 줄이거나 키운 그대로 따라가요
       }
       stats(); if (was !== 'on') draw();
     }, e => { gps = e.code === 1 ? 'denied' : 'wait'; if (id) draw(); else drawGpsReady(); }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });

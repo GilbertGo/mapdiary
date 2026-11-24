@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1375,6 +1375,25 @@ await test('여러 날 여행 · 날짜가 바뀌면 저절로 다음 날 (판 -
   ok(r.nid && r.now === r.nid && r.days === 2 && r.name === '장가계 2일차', '다음 날 기록으로 넘어가야 해요 ' + JSON.stringify(r));
   ok(r.old === 2 && r.nw === 2 && JSON.stringify(r.sp) === '["오늘"]', '자정 앞뒤로 점·들른 곳이 나뉘어야 해요 ' + JSON.stringify(r));
   ok(r.again === null, '같은 날엔 다시 넘어가지 않아야 해요');
+});
+
+await test('여행 계획 날짜 안이면 저절로 여행 기록 · 끝나면 저절로 끝 (판 -373)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(600);
+  const r = await page.evaluate(() => {
+    const d = new Date(), ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    localStorage.removeItem('walkNow');
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpa1', name: '장가계 4박 5일', start: ymd(d), nd: 5, it: [], at: 1, u: 1 }, { id: 'tpa2', name: '오사카', start: ymd(new Date(d.getTime() + 20 * 864e5)), nd: 3, it: [], at: 1, u: 1 }]));
+    const id = __T.tripAutoEnsure(true, true), again = __T.tripAutoEnsure(true, true);
+    const aid = JSON.parse(localStorage.getItem('walkAlbum:' + id)), al = JSON.parse(localStorage.getItem('albums')).find(x => x.id === aid);
+    const out = { id, again, name: al && al.name, map: JSON.parse(localStorage.getItem('planAlbum:tpa1')) === aid };
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpa1', name: '장가계 4박 5일', start: ymd(new Date(d.getTime() - 9 * 864e5)), nd: 5, it: [], at: 1, u: 1 }]));
+    out.end = __T.tripAutoEnsure(true, true); out.now = localStorage.getItem('walkNow');
+    localStorage.setItem('walkNow', '"walk_manual01"'); out.manual = __T.tripAutoEnsure(true, true);
+    return out;
+  });
+  ok(r.id && r.again === r.id && r.name === '장가계 4박 5일' && r.map, '여행 날짜엔 그 계획 이름의 여행 기록이 하나만 저절로 시작돼야 해요 ' + JSON.stringify(r));
+  ok(r.end === null && (r.now === null || r.now === 'null'), '여행이 끝나면 저절로 끝나야 해요 ' + JSON.stringify(r));
+  ok(r.manual === 'walk_manual01', '손으로 시작한 기록은 건드리지 않아야 해요 ' + JSON.stringify(r));
 });
 
 await browser.close();

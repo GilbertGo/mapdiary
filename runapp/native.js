@@ -159,14 +159,13 @@ if (Capacitor.isNativePlatform()) {
   let luAt = 0;
   async function liveUpdate() {
     luAt = Date.now();
-    if (recording()) return;   // 기록 중엔 다시 열지 않아요 (다음에 켤 때)
     const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     const txt = await r.text(), at = txt.indexOf('<script');
     if (txt.length < 100000 || at < 0 || !/Map (Photo )?Diary/.test(txt)) return;   // 와이파이 로그인 화면 같은 엉뚱한 쪽이면 안 써요
     const h = await hex(txt);
-    if (h === APP.h || recording()) return;
-    if (touched && localStorage.getItem('mdWebNext') === h) return;   // 이미 다음 판으로 받아 둠
+    if (h === APP.h) return;
+    if ((touched || recording()) && localStorage.getItem('mdWebNext') === h) return;   // 이미 다음 판으로 받아 둠
     const dir = 'web/' + h.slice(0, 16);
     const html = txt.slice(0, at) + `<script>window.MD_APP=${JSON.stringify({ ...APP, h })}</script>\n<script src="native.js"></script>\n` + txt.slice(at);
     await Filesystem.writeFile({ path: dir + '/index.html', data: html, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
@@ -174,12 +173,11 @@ if (Capacitor.isNativePlatform()) {
     for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) {
       try { const b = await (await fetch('/' + f)).blob(); await Filesystem.writeFile({ path: dir + '/' + f, data: (await toB64(b)).split(',')[1], directory: Directory.Data, recursive: true }); } catch {}
     }
-    if (recording()) return;
     const { uri } = await Filesystem.getUri({ path: dir, directory: Directory.Data });
     const path = decodeURIComponent(uri.replace(/^file:\/\//, ''));
     // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고'): 예전엔 받자마자 지금 화면을 다시 열어서, 쓰는 도중에 화면이 바뀌었음
     //   → 켠 뒤 아직 화면을 안 만졌을 때만 바로 바꾸고, 그 밖엔 다음에 앱을 켤 때부터 새 화면(지금 화면은 그대로)
-    if (!touched && !document.querySelector('.sheet-bg')) {
+    if (!touched && !recording() && !document.querySelector('.sheet-bg')) {   // 기록 중이면 다음에 켤 때부터(판 -373 사용자 '기록중에도 앱 업데이트는 되게 해')
       try { sessionStorage.setItem('mdBack', location.search + location.hash); sessionStorage.setItem('mdToast', '새 화면으로 바꿨어요'); } catch {}
       await MdApp.setWeb({ path });
     } else {
