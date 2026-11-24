@@ -3314,7 +3314,8 @@ async function tileBlob(url) {
 }
 // 판 -366 (사용자 '지도에 한자가 안보이네? 왜 바꿨어. 이거 정성들여서 설정한건데'): 지도마다 한자 이름(漢)을 따로 켜야 해서 새로 만든 첫 화면 지도에서 빠졌음
 //   → 선명한 지도는 어디서 만들든 이 휴대폰의 '한자·발음 같이 보기'(ls mapHanzi)를 따름. 漢 단추는 hz를 준 지도(계획·첫 화면)에만. 이 기본값을 끄지 말 것
-function mapHzArgs(opt) { if (opt && opt.ko) return [false, false]; return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }   // 판 -367: ko = 한글만(첫 화면, 사용자 '첫화면은 한글로만 보여줘')
+function mapHzArgs(opt) { if (opt && opt.ko) return [false, false]; if (opt && opt.hzLate) return ['kr', 'late'];   // 판 -386: late = 이름 붙이기는 늘 준비, 漢 단추는 나중에(기록 지도가 외국에 있을 때)
+  return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }   // 판 -367: ko = 한글만(첫 화면, 사용자 '첫화면은 한글로만 보여줘')
 function mdTileLayer(opt) {
   const T = L.TileLayer.extend({
     createTile(coords, done) {
@@ -3778,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.25-385-exifloc';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.25-386-rechz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "앱이 사진첩 사진을 넣을 때 진짜 찍은 위치를 써요 (짐작한 자리에 놓였던 사진도 옮겨요)";
+const UI_NOTES = "외국에서 기록할 때 기록 지도에도 漢 단추가 생겨요 · 누르면 한자 옆에 한국 발음과 현지 발음이 같이 나와요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14042,8 +14043,8 @@ function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 �
   new C().addTo(map);
 }
 async function koMapLayer(hanja, o) {
-  const btn = !o || o.btn !== false;   // 판 -366: 단추 없이 이름만(설정을 켰을 때만 이름 사전을 받아요)
-  if (hanja && !btn && !ls.get('mapHanzi', false)) hanja = false;
+  const btn = !o || o.btn === undefined || o.btn === true;   // 판 -366: 단추 없이 이름만(설정을 켰을 때만 이름 사전을 받아요)
+  if (hanja && o && o.btn === false && !ls.get('mapHanzi', false)) hanja = false;   // 'late'(판 -386 기록 지도)는 단추를 나중에 붙여 켤 수 있게 늘 준비
   try {
     await vtLoad(FILM_LIB.css, true); await vtLoad(FILM_LIB.gl); await vtLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
@@ -19458,7 +19459,7 @@ function viewWalk() {
     if (ensureMap.busy) return; ensureMap.busy = true;   // 지도가 만들어지기 전에 두 번 불려도 한 번만 만들어요
     setTimeout(() => {
       map = L.map(mapEl).setView([37.5665, 126.978], 13);
-      mdTileLayer({ keep: true }).addTo(map);   // 판 -303 (사용자 기록 화면 캡처 '지도 해상도가 왜 이렇게 낮아? 더 보기 좋은 모드 없어?' → '선명하게 해'): 인터넷이 되면 선명한 지도, 밑에는 저장되는 그림 지도를 남겨 산속에서 끊겨도 지도가 비지 않게
+      mdTileLayer({ keep: true, hzLate: true }).addTo(map);   // 판 -386 (사용자 장가계 기록 지도 캡처 '한자 한국 발음.중국발음 왜 안나와?' → '넣어'): 외국에서 기록하면 漢·あ 단추(hzMaybe) · 판 -303 (사용자 기록 화면 캡처 '지도 해상도가 왜 이렇게 낮아? 더 보기 좋은 모드 없어?' → '선명하게 해'): 인터넷이 되면 선명한 지도, 밑에는 저장되는 그림 지도를 남겨 산속에서 끊겨도 지도가 비지 않게
       map.on('dragstart', () => { follow = false; draw(); });
       const fb = addFullBtn(map, mapEl);
       map.on('click', () => { if (M().k === 'run' && fb && !mapEl.classList.contains('map-full')) toggleFull(map, mapEl, fb); });   // 러닝: 작은 지도를 누르면 크게
@@ -19603,7 +19604,12 @@ function viewWalk() {
       .bindTooltip(el('span', { text: `${x.t ? x.t + ' ' : ''}${x.n}` }), { direction: 'top', offset: [0, -10] }).addTo(g));
     const C = L.control({ position: 'topleft' }); C.onAdd = () => { const a = el('a', { href: `./?plan=1&p=${encodeURIComponent(p.id)}`, style: 'display:block;background:#fff;border-radius:18px;padding:7px 12px;font:700 13px Pretendard,sans-serif;color:#191F28;box-shadow:0 1px 6px rgba(0,0,0,.25);text-decoration:none;margin-top:6px', text: `🗓 ${d + 1}일차 일정` }); L.DomEvent.disableClickPropagation(a); return a; }; C.addTo(map);
   }
+  function hzMaybe() {   // 판 -386: 지금 기록이 한자 쓰는 외국(중국·대만·홍콩·일본·베트남)이면 지도에 漢(일본 あ) 단추 — 우리나라 산행엔 안 붙여요(단추 줄이기)
+    try { if (!map || map.__hzBtn || !id) return; const tr = trackLoad(id), q = tr[tr.length - 1]; if (!q) return;
+      const k = koInHanzi(q[0], q[1]) ? true : koPlaceCC({ geometry: { coordinates: [q[1], q[0]] } }); if (k) koHanziBtn(map, k === 'jp' ? 'jp' : k); } catch {}
+  }
   function draw() {
+    hzMaybe();
     document.body.classList.remove('has-act');
     if (done) {
       const tr = trackLoad(done), st = trackStats(tr, M().car);
