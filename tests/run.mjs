@@ -1494,6 +1494,28 @@ await test('같은 날 둘로 나뉜 여행 기록 합치기 (판 -378)', async 
   ok(r.w === 'walk_m1' && r.n === 4 && r.gone === null && r.days.join() === 'walk_m1' && r.undo, '2일차를 1일차로 합치고 되돌리기 자료를 남겨야 해요 ' + JSON.stringify(r));
 });
 
+await test('여행 첫날 1일차·2일차 두 장 안 생기게 · 손으로 시작한 기록도 합침 (판 -384)', async page => {
+  // 사용자 첫 화면 캡처(여행 중 1일차인데 최근 이야기에 '1일차 800m'·'2일차 900m' 같은 날 두 장)
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Math.max(d0.getTime() + 60e3, Date.now() - 3 * 3600e3), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), G = k => JSON.parse(localStorage.getItem(k));
+    S('tripPlans', [{ id: 'tph', name: '장가계', start: ymd, nd: 5, it: [], at: 1, u: 1 }]);
+    S('albums', [{ id: 'album_H', name: '장가계', mode: 'travel', days: ['walk_h1', 'walk_h2'], at: t }]); S('planAlbum:tph', 'album_H');
+    S('track:walk_h1', [[37.46, 126.44, t], [37.47, 126.45, t + 6e5]]); S('walkMode:walk_h1', 'travel'); S('walkAlbum:walk_h1', 'album_H'); S('trackName:walk_h1', '장가계 1일차');
+    S('track:walk_h2', [[37.48, 126.46, t + 9e5], [37.49, 126.47, t + 12e5]]); S('walkMode:walk_h2', 'travel'); S('walkAlbum:walk_h2', 'album_H'); S('trackName:walk_h2', '장가계 2일차');
+    S('walkNow', 'walk_h2'); localStorage.removeItem('walkAutoTrip'); S('walkAt', t + 9e5);   // 손으로 시작한 기록(자동 기록 표시 없음)
+    const w = window.__T.tripAutoEnsure(true, true);
+    return { w, n: G('track:walk_h1').length, gone: localStorage.getItem('track:walk_h2'), days: G('albums')[0].days };
+  });
+  ok(r.w === 'walk_h1' && r.n === 4 && r.gone === null && r.days.join() === 'walk_h1', '손으로 시작한 같은 날 2일차도 1일차로 합쳐야 해요 ' + JSON.stringify(r));
+  // 오늘 기록을 끝낸 뒤 계획 '오늘' 칸에서 다시 기록 시작 → 새 'n일차'를 만들지 않고 오늘 기록에 이어서
+  await page.evaluate(() => { localStorage.removeItem('walkNow'); localStorage.removeItem('walkAutoTrip'); });
+  await page.goto(BASE + '?walk=1&mode=travel&go=1&pt=tph'); await sleep(2500);
+  const q = await page.evaluate(() => ({ now: JSON.parse(localStorage.getItem('walkNow')), days: JSON.parse(localStorage.getItem('albums'))[0].days }));
+  ok(q.now === 'walk_h1' && q.days.join() === 'walk_h1', '오늘 기록이 있으면 새 기록을 만들지 말고 이어서 해야 해요 ' + JSON.stringify(q));
+});
+
 await test('초대받은 구경·로그인 안 한 사람도 위치 공유 자리와 로그인 안내 (판 -379)', async page => {
   await page.goto(BASE); await sleep(600);
   await page.evaluate(() => {
