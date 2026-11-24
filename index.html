@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-375-planrec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-376-tripfix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14736,18 +14736,45 @@ function autoStop() {
 //   MPD 앱(자동 기록 켬)만 · 계획 첫날~마지막 날 · 날이 바뀌면 albumRoll로 n일차 · 여행이 끝나면(마지막 날 다음) 저절로 끝 · 손으로 시작한 기록은 건드리지 않음
 //   위치는 자동 기록 받기(autoFix)가 그 기록에 넣음(기록 화면을 열어 두면 그쪽도 같이 넣지만 15m 안 같은 점은 한 번만)
 var tripAutoT = 0;
-function tripAutoPlan() { return planAll().find(p => { const d = planToday(p); return d != null && d >= 0 && d < (p.nd || 1); }) || null; }
+function tripAutoPlan() { const ps = planAll().filter(p => { const d = planToday(p); return d != null && d >= 0 && d < (p.nd || 1); });
+  return ps.find(p => albumGet(ls.get('planAlbum:' + p.id, '') || '')) || ps[0] || null; }   // 판 -376: 같은 날짜 계획이 둘이면 이미 여행 기록이 붙은 쪽
+// 판 -376 (사용자 캡처: 1일차를 끝내고 다시 켜니 같은 날 빈 '2일차'가 생김): 오늘 이 여행 기록을 넓게 찾아요(여행 묶음 안 + 같은 여행 묶음 표시 + 계획 이름으로 시작하는 여행 기록), 점이 가장 많은 것
+function tripTodayRec(p, a, skip) {
+  const day = new Date().toDateString(), name = (p && p.name || '').trim(), ids = new Set((a && a.days) || []);
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('walkAlbum:')) { const id = k.slice(10); if (a && ls.get(k, '') === a.id) ids.add(id); }
+    if (name) for (const k of Object.keys(localStorage)) if (k.startsWith('trackName:')) { const id = k.slice(10); if (String(ls.get(k, '')).startsWith(name) && ls.get('walkMode:' + id, '') === 'travel') ids.add(id); } } catch {}
+  let best = null, bn = 1;
+  for (const id of ids) { if (id === skip || isGone(id)) continue; const tr = ls.get('track:' + id, []), t = tr.length ? tr[tr.length - 1][2] : 0;
+    if (t && new Date(t).toDateString() === day && tr.length > bn) { best = id; bn = tr.length; } }
+  return best;
+}
+// 빈 자동 기록(점 0~1개)을 오늘 진짜 기록에 합치고 빼요 — 점·들른 곳·사진은 옮기고, 빈 기록은 묘비를 남겨 다른 기기에서 되살아나지 않게
+function tripMergeEmpty(from, to) {
+  const tr = ls.get('track:' + from, []), tt = ls.get('track:' + to, []); if (tr.length > 1 || from === to) return false;
+  if (tr.length) ls.set('track:' + to, tt.concat(tr).sort((x, y) => x[2] - y[2]));
+  const sp = ls.get('walkSpots:' + from, []); if (sp.length) ls.set('walkSpots:' + to, ls.get('walkSpots:' + to, []).concat(sp));
+  const aid = ls.get('walkAlbum:' + from, null), a = aid && albumGet(aid); if (a) { a.days = a.days.filter(d => d !== from); albumSave(a); }
+  const ta = ls.get('walkAlbum:' + to, null), A = ta && albumGet(ta); if (A && !A.days.includes(to)) { A.days.push(to); albumSave(A); }
+  try { goneMark([from]); } catch {} MD_KEYS.forEach(k => { try { localStorage.removeItem(k + from); } catch {} });
+  (async () => { try { for (const ph of await photoList(from)) await photoPut(Object.assign({}, ph, { t: to })); } catch {} try { syncPush(); } catch {} })();
+  return true;
+}
 function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖이라 autoOn이 꺼져 있어서)
   if (!(autoOn() || test) || (!force && Date.now() - tripAutoT < 60000)) return ls.get('walkNow', null); tripAutoT = Date.now();
   let now = ls.get('walkNow', null); const auto = ls.get('walkAutoTrip', null);
   if (now) { const nr = albumRoll(now); if (nr) { now = nr; if (auto) ls.set('walkAutoTrip', nr); } }
   const p = tripAutoPlan();
   if (now && auto === now && !p) { ls.set('walkNow', null); ls.set('walkAutoTrip', null); try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} return null; }   // 여행이 끝났어요
+  if (now && p && auto === now) {   // 판 -376: 지금 자동 기록이 빈 것이고 오늘 진짜 기록이 따로 있으면 그쪽으로 합쳐요
+    const aid0 = ls.get('walkAlbum:' + now, null), real = tripTodayRec(p, aid0 && albumGet(aid0), now);
+    if (real && ls.get('track:' + now, []).length < 2 && tripMergeEmpty(now, real)) { const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra)) ls.set('planAlbum:' + p.id, ra); ls.set('walkNow', real); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', real); return real; }
+  }
   if (now || !p) return now;
   let aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid);
+  { const real = tripTodayRec(p, a);   // 오늘 기록이 이미 있으면(끝내기를 눌렀어도) 그 기록에 이어서
+    if (real) { const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra) && ra !== aid) ls.set('planAlbum:' + p.id, ra);
+      ls.set('walkNow', real); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', real); return real; } }
   if (!a) { a = { id: 'album_' + rid(8), name: p.name || '여행', mode: 'travel', days: [], at: Date.now() }; ls.set('walkMode:' + a.id, 'travel'); ls.set('planAlbum:' + p.id, a.id); }
-  { const last = a.days[a.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;   // 오늘 기록이 이미 있으면(끝내기를 눌렀어도) 그 기록에 이어서
-    if (last && t && new Date(t).toDateString() === new Date().toDateString()) { ls.set('walkNow', last); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', last); return last; } }
   const id = 'walk_' + rid(8);
   a.days.push(id); a.last = Date.now(); albumSave(a);
   ls.set('walkMode:' + id, 'travel'); ls.set('walkAlbum:' + id, a.id); ls.set('trackName:' + id, `${a.name} ${a.days.length}일차`); if (devTz()) ls.set('walkTz:' + id, devTz());
@@ -14773,7 +14800,7 @@ async function recUpdate() {
     const m = /const UI_VER = '([^']+)'/.exec(txt); toast(`새 판${m ? ' ' + m[1].split('-')[1] : ''}을 받아 뒀어요 · 기록은 그대로, 앱을 다시 켜면 바뀌어요`);
   } catch {}
 }
-if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 20000); setInterval(recUpdate, 30 * 60000); }
+if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 3000); setInterval(recUpdate, 30 * 60000); }
 // 첫 화면·설정에 보이는 지금 상태
 function autoStatus() {
   const S = autoSt(), moving = S.seg && S.last && Date.now() - S.last[2] < AUTO_STAY_MS;
