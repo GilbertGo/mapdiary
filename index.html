@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.25-386-rechz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.25-387-rechz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "외국에서 기록할 때 기록 지도에도 漢 단추가 생겨요 · 누르면 한자 옆에 한국 발음과 현지 발음이 같이 나와요";
+const UI_NOTES = "중국에서 기록 지도 단추가 あ로 잘못 나오던 것을 漢으로 고쳤어요 · 漢을 눌러 파랗게 켜면 한자 옆에 한국 발음과 중국 발음이 나와요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14031,6 +14031,10 @@ function koHanjaWire(mm, jp) {   // jp: 지도 모드(단추 모양만 다름 ·
   if (ls.get('mapHanzi', false)) apply();
   let tm = 0; mm.on('idle', () => { clearTimeout(tm); tm = setTimeout(run, 300); });
 }
+// 판 -387 (사용자 장가계 기록 지도 캡처 '발음안보여' — 중국인데 あ가 떴음): koHanziBtn은 true·'jp'면 あ라서 중국은 'cn'으로. 우리나라·그 밖은 '' (단추 없음)
+function hzKind(lat, lng) {   // 우리나라 → 베트남 → 일본 → 중국권 차례(중국 상자가 하노이를, 일본 짐작이 서울을 덮어서)
+  if (lat > 33 && lat < 39 && lng > 124.5 && lng < 132) return '';
+  const p = { it: [], dest: { lat, lng } }; if (planVN(p)) return 'vn'; if (planJP(p)) return 'jp'; return koInHanzi(lat, lng) ? 'cn' : ''; }
 function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 단추 밑) '漢' — 누르면 한자·병음 같이 보기 켬/끔(이 휴대폰에 기억)
   if (!map || map.__hzBtn) return; map.__hzBtn = 1;
   const C = L.Control.extend({ options: { position: 'topleft' }, onAdd() {
@@ -19606,7 +19610,7 @@ function viewWalk() {
   }
   function hzMaybe() {   // 판 -386: 지금 기록이 한자 쓰는 외국(중국·대만·홍콩·일본·베트남)이면 지도에 漢(일본 あ) 단추 — 우리나라 산행엔 안 붙여요(단추 줄이기)
     try { if (!map || map.__hzBtn || !id) return; const tr = trackLoad(id), q = tr[tr.length - 1]; if (!q) return;
-      const k = koInHanzi(q[0], q[1]) ? true : koPlaceCC({ geometry: { coordinates: [q[1], q[0]] } }); if (k) koHanziBtn(map, k === 'jp' ? 'jp' : k); } catch {}
+      const k = hzKind(q[0], q[1]); if (k) koHanziBtn(map, k); } catch {}
   }
   function draw() {
     hzMaybe();
