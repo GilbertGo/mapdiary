@@ -1226,7 +1226,7 @@ html.mh-on #app>.mh-sp{pointer-events:none}
 .mh-trip b{font:700 21px Pretendard,sans-serif;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mh-trip span{font:500 14.5px Pretendard,sans-serif;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .mh-trip .ar{position:absolute;z-index:2;right:14px;bottom:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);color:#14253B;font:400 22px/34px Pretendard,sans-serif;font-style:normal;text-align:center}
-.mh-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#191F28;color:#fff;font:700 13px Pretendard,sans-serif;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);box-sizing:border-box}.mh-num.ok{background:#8B95A1}
+.mh-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#191F28;color:#fff;font:700 13px Pretendard,sans-serif;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);box-sizing:border-box}.mh-num.ok{background:#AEB8C2}
 .mh-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:#fff;border-radius:20px;padding:14px 4px 12px;box-shadow:0 1px 3px rgba(20,37,59,.06)}
 .mh-q{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#14253B;font:500 12.5px Pretendard,sans-serif;white-space:nowrap}
 .mh-q i{width:46px;height:46px;border-radius:15px;background:#EEF6FA;display:flex;align-items:center;justify-content:center;color:#1D9EC0}
@@ -3751,9 +3751,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-369-cardmap';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-370-planpast';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진을 크게 볼 때 위치를 누르면 찍은 곳을 지도에서 보여줘요 · 선명한 지도를 못 받으면 빈 칸 대신 그림 지도가 남아요 · 나라를 건너간 여행의 공유 카드 지도 칸이 비던 것을 고쳤어요";
+const UI_NOTES = "여행 중에는 지도에서 이미 지나온 일정과 길은 회색으로 보이고 앞으로 갈 곳은 그날 색 그대로예요 · 첫 화면 지도 번호도 같이 맞췄어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8949,6 +8949,15 @@ function planWalkPair(a, b, p) { return planLegMode(a, b, p) === 'walk'; }
 function planCarPair(a, b, p) { return planLegMode(a, b, p) === 'car' && dist(a.lat, a.lng, b.lat, b.lng) <= 300000; }
 function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk' ? planRtGet(a, b) : k === 'car' ? planRtGet(a, b, true) : null; }
 // 지도에 두 곳 사이 선 하나: 받은 걷는 길·도로 길은 흰 테 굵은 실선, 전철은 점점선(노선 아님), 그 밖은 직선 점선
+// 판 -370 (사용자 '지도에 과거에 간길과 미래에 갈길 색깔을 다르게 하자'): 여행 중에만 지난 일정·지난 길은 회색, 앞으로는 그날 색 그대로
+//   지난 것 = 지난 날 · 오늘 다녀옴(✓) · 오늘 시각이 지난 일정. 여행 전·끝난 뒤 계획은 예전 색 그대로
+var PLAN_PAST = '#AEB8C2';
+function planPast(p, d, x, now = new Date()) {
+  const k = planToday(p); if (k == null || k < 0 || k >= p.nd) return false;
+  if (d !== k) return d < k; if (x.ok) return true;
+  if (!x.t || !/^\d{1,2}:\d{2}/.test(x.t)) return false;
+  const [h, m] = x.t.split(':').map(Number); return h * 60 + m < now.getHours() * 60 + now.getMinutes();
+}
 function planLegLine(layer, a, b, p, col, w) {
   const k = planLegMode(a, b, p), R = planLegR(a, b, p); if (k === 'none') return; w = w || 5;
   // 판 -160 (사용자 '걷는 거는 두 발, 차 이동은 차 이모티콘'): 선 가운데에 어떻게 가는지 표시
@@ -8959,8 +8968,9 @@ function planLegLine(layer, a, b, p, col, w) {
     if (big && (k === 'walk' || k === 'car')) tag(k === 'car' ? '🚗' : '👣', R.c[Math.floor(R.c.length / 2)], 1); return; }   // 판 -209: 기호만 (거리는 일정 목록 구간 줄에)
   const ll = [[a.lat, a.lng], [b.lat, b.lng]], LI = planLegInfo(a, b, p);
   if (big && (k === 'walk' || k === 'car') && LI) tag(LI.ic, null, 1);
-  if (k === 'rail') { L.polyline(ll, { color: '#fff', weight: 5, opacity: .8 }).addTo(layer); L.polyline(ll, { color: '#4E5968', weight: 2.5, opacity: .9 }).addTo(layer); tag('🚆', null, 1); return; }   // 판 -160 '점선은 뭐야?': 가는 회색 선 + 이름표
-  if (k === 'fly') { L.polyline(ll, { color: '#0277BD', weight: 2.5, opacity: .8, dashArray: '2 7', lineCap: 'round' }).addTo(layer); tag('✈', null, 1); return; }
+  const gone = col === PLAN_PAST;
+  if (k === 'rail') { L.polyline(ll, { color: '#fff', weight: 5, opacity: .8 }).addTo(layer); L.polyline(ll, { color: gone ? PLAN_PAST : '#4E5968', weight: 2.5, opacity: .9 }).addTo(layer); tag('🚆', null, 1); return; }   // 판 -160 '점선은 뭐야?': 가는 회색 선 + 이름표
+  if (k === 'fly') { L.polyline(ll, { color: gone ? PLAN_PAST : '#0277BD', weight: 2.5, opacity: .8, dashArray: '2 7', lineCap: 'round' }).addTo(layer); tag('✈', null, 1); return; }
   L.polyline(ll, { color: col, weight: 3, opacity: .75, dashArray: '6 6' }).bindTooltip(k === 'car' ? '🚗 도로 길을 받는 중이거나 못 받았어요' : '직선 (실제 길 아님)').addTo(layer);
 }
 async function planCarRoute(a, b) {   // 도로 길 (OSRM 차 → 안 되면 Valhalla auto)
@@ -14301,16 +14311,16 @@ function viewPlanOne(id) {
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
       const col0 = PLAN_COLS[d % PLAN_COLS.length], SHm = planShared(p), flm = SHm ? ls.get('planShow:' + p.id, 'all') : 'all', its = planUniq(planItems(p, d).filter(x => planVis(p, x) && (flm === 'all' || (flm === 'mine' ? x.mine : !x.mine)))), ll = []; let col = col0;
-      const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1; col = SHm && x.mine ? '#FF6B4A' : col0;   // 판 -208: 내 일정 핀은 산호
+      const NO = planNoMap(its); its.forEach((x, i) => { if (!Number.isFinite(x.lat)) return; ll.push([x.lat, x.lng]); pts.push([x.lat, x.lng]); i = (NO.get(x) || i + 1) - 1; col = planPast(p, d, x) ? PLAN_PAST : SHm && x.mine ? '#FF6B4A' : col0;   // 판 -370 지난 일정은 회색   // 판 -208: 내 일정 핀은 산호
         L.marker([x.lat, x.lng], { zIndexOffset: x.k === 'stay' ? 500 : 0, icon: x.k === 'stay' ? planStayIcon(planEN(p) && x.en ? Object.assign({}, x, { n: x.en }) : x) : L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:50%;background:${col};color:#fff;font:800 12px Pretendard,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)${x.ap ? ';opacity:.75' : ''}">${i + 1}</div>` }) })
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
       { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
-        for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, SHm && (L2[i].mine || L2[i - 1].mine) ? '#FF6B4A' : col0, 5); }
+        for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, planPast(p, d, L2[i]) ? PLAN_PAST : SHm && (L2[i].mine || L2[i - 1].mine) ? '#FF6B4A' : col0, 5); }   // 판 -370: 도착한 곳이 지났으면 그 길도 회색
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
-    { const EN = planEN(p), mineOn = planShared(p) && p.it.some(x => x.mine);   // 판 -209: 지도는 기호만, 뜻은 지도 아래 한 줄(범례) · 핀을 누르면 이름
-      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, el('span', { text: 'Tap a pin for its name' })]
-        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, el('span', { text: '핀을 누르면 이름' }), ...memKey()]).filter(Boolean))); }
+    { const EN = planEN(p), mineOn = planShared(p) && p.it.some(x => x.mine), pastOn = (k => k != null && k >= 0 && k < p.nd)(planToday(p));   // 판 -209: 지도는 기호만, 뜻은 지도 아래 한 줄(범례) · 핀을 누르면 이름
+      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), 'Done') : null, el('span', { text: 'Tap a pin for its name' })]
+        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), '지난 길') : null, el('span', { text: '핀을 누르면 이름' }), ...memKey()]).filter(Boolean))); }
     if (0) sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
     if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
     const real = pts.filter(q => q[1] > -180);
@@ -17718,7 +17728,7 @@ function mhMap(trip) {   // trip: 지금 여행 중인 계획이면 오늘 일�
     // 처음 보이는 곳: 가장 최근에 다닌 곳 둘레(800km 안 핀만) — 나라를 오가도 지도가 너무 작아지지 않게. 밀거나 줄이면 다른 곳도 보여요
     let tb = null;
     if (trip && !live) { try { const its = tripIts.all || [];
-      its.forEach((x, i) => L.marker([+x.lat, +x.lng], { keyboard: false, title: x.n, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<b class="mh-num${x.ok ? ' ok' : ''}">${i + 1}</b>` }) })
+      its.forEach((x, i) => L.marker([+x.lat, +x.lng], { keyboard: false, title: x.n, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<b class="mh-num${planPast(trip, planToday(trip), x) ? ' ok' : ''}">${i + 1}</b>` }) })
         .on('click', () => { location.href = './?plan=1&p=' + encodeURIComponent(trip.id); }).addTo(m));
       const nr = tripIts.near && tripIts.near.length ? tripIts.near : its; if (nr.length) tb = L.latLngBounds(nr.map(x => [+x.lat, +x.lng])); } catch {} }   // 판 -366: 인천공항과 장가계를 한 번에 맞추면 그 사이(우한)만 보여서, 다음 일정 둘레만
     const bb = live ? live.getBounds() : tb ? tb : (() => { const a = items[0] && items[0].at; if (!a) return null;
