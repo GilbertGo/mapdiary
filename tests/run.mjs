@@ -1432,6 +1432,26 @@ await test('잘못 끝낸 기록 이어서 · 기록 지도에 오늘 일정 (�
   noErr(page, '이어서 기록');
 });
 
+await test('기록 지도 일정 단추 · 계획 연결이 다른 여행 묶음을 가리켜도 나옴 (판 -380)', async page => {
+  // 사용자 기록 화면 캡처 '여행계획보기 안되네': '장가계 4박 5일 · 하나투어 2일차' 기록인데 지도에 '🗓 일정'이 없음 — 계획 연결(planAlbum:)이 같은 이름의 다른 묶음을 가리킴
+  await seed(page); await page.goto(BASE); await sleep(600);
+  await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Date.now() - 3600e3, ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), nm = '장가계 4박 5일 · 하나투어';
+    S('tripPlans', [{ id: 'tpw', name: nm, start: ymd, nd: 5, it: [{ id: 'a', d: 0, n: '공항', k: 'spot', lat: 37.46, lng: 126.44 }, { id: 'b', d: 0, n: '카페', k: 'food', lat: 37.49, lng: 126.51 }], at: 1, u: 1 },
+      { id: 'tpo', name: '장가계', start: '2025-01-01', nd: 2, it: [], at: 1, u: 1 }]);
+    S('albums', [{ id: 'album_A', name: nm, mode: 'travel', days: [], at: t }, { id: 'album_B', name: nm, mode: 'travel', days: ['walk_w2'], at: t }]);
+    S('planAlbum:tpw', 'album_A'); S('walkAlbum:walk_w2', 'album_B'); S('walkMode:walk_w2', 'travel'); S('trackName:walk_w2', nm + ' 2일차');
+    S('track:walk_w2', [[37.46, 126.44, t], [37.47, 126.45, t + 6e5]]); S('walkNow', 'walk_w2'); S('walkAt', t);
+  });
+  await page.goto(BASE + '?walk=1'); await sleep(2500);
+  const r = await page.evaluate(() => ({ link: ([...document.querySelectorAll('a.leaflet-control, .leaflet-control a')].find(a => /일차 일정/.test(a.textContent)) || {}).href || '', pins: [...document.querySelectorAll('.leaflet-marker-icon')].filter(e => /^[0-9]+$/.test(e.textContent.trim())).length, pa: JSON.parse(localStorage.getItem('planAlbum:tpw')) }));
+  ok(/p=tpw/.test(r.link), "기록 지도에 '일정' 단추(그 계획으로)가 있어야 해요 " + JSON.stringify(r));
+  ok(r.pins >= 2, '오늘 일정 핀이 있어야 해요 ' + JSON.stringify(r));
+  ok(r.pa === 'album_A', '계획 연결을 저절로 바꾸면 안 돼요 ' + JSON.stringify(r));
+  noErr(page, '기록 지도 일정');
+});
+
 await test('여행 첫날 끝낸 뒤 빈 2일차가 생기지 않게 (판 -376)', async page => {
   await page.goto(BASE); await sleep(800);
   const r = await page.evaluate(() => {
