@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-383-recpill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-384-oneday';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 날엔 여행 화면 맨 위에 기록 중 알약이 보여요 · 영상과 초대는 ⋯ 안으로 옮겼어요 · 여행 계획에서 시작한 기록 이름이 계획 날짜와 같은 n일차로 붙어요 · 기록이 없을 때 발견 화면의 점검 링크를 숨겼어요";
+const UI_NOTES = "여행 중 같은 날 기록이 둘로 나뉘지 않아요 (다시 기록 시작을 눌러도 오늘 기록에 이어서)";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14807,7 +14807,7 @@ function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖
   if (now) { const nr = albumRoll(now); if (nr) { now = nr; if (auto) ls.set('walkAutoTrip', nr); } }
   const p = tripAutoPlan();
   if (now && auto === now && !p) { ls.set('walkNow', null); ls.set('walkAutoTrip', null); try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} return null; }   // 여행이 끝났어요
-  if (now && p && auto === now) {   // 판 -376: 지금 자동 기록이 빈 것이고 오늘 진짜 기록이 따로 있으면 그쪽으로 합쳐요
+  if (now && p && (auto === now || (ls.get('walkMode:' + now, '') === 'travel' && (planOfRec(now) || {}).id === p.id))) {   // 판 -384: 손으로 시작한 계획 여행 기록도 같은 날 나뉘었으면 · 판 -376: 지금 자동 기록이 빈 것이고 오늘 진짜 기록이 따로 있으면 그쪽으로 합쳐요
     const aid0 = ls.get('walkAlbum:' + now, null), real = tripTodayRec(p, aid0 && albumGet(aid0), now);
     // 판 -378 (사용자 '합쳐'): 같은 날 먼저 시작한 이 여행 기록이 있으면 지금 자동 기록(잘못 생긴 'n일차')을 그쪽으로 합쳐요. 예전 모습은 tripMergeUndo에
     const same = real && (() => { const a = ls.get('track:' + now, []), b = ls.get('track:' + real, []); return a.length && b.length && b[0][2] < a[0][2] && new Date(a[0][2]).toDateString() === new Date(b[0][2]).toDateString(); })();
@@ -19477,6 +19477,11 @@ function viewWalk() {
   }
   let startTitle = '';
   function start() {
+    // 판 -384 (사용자 첫 화면 캡처: 여행 첫날인데 '1일차 800m'·'2일차 900m' 두 장): 이어 가는 여행에 오늘 기록이 이미 있으면 새로 만들지 않고 그 기록에 이어서
+    if (MULTI.includes(pick) && tripSel !== 'day' && tripSel !== 'new') { const a0 = albumGet(tripSel), real = a0 && tripTodayRec(planOfAlbum(a0.id), a0);
+      if (real) { id = real; const tr = ls.get('track:' + real, []); ls.set('walkNow', real); ls.set('walkAt', tr.length ? tr[0][2] : Date.now());
+        setTimeout(() => toast(`오늘 기록 '${ls.get('trackName:' + real, '')}'에 이어서 기록해요`), 600);
+        wantWake = true; lockWake(); startGps(); draw(); scrollTo(0, 0); return; } }
     id = 'walk_' + rid(8); ls.set('walkNow', id); ls.set('walkAt', Date.now());
     ls.set('walkMode:' + id, pick); ls.set('lastMode', pick); ls.set('trackName:' + id, `${dayName} ${modeByK(pick).label}`); if (devTz()) ls.set('walkTz:' + id, devTz());   // 판 -336: 나라 밖에서 기록하면 돌아와서도 그곳 시간으로
     if (MULTI.includes(pick) && tripSel !== 'day') {
