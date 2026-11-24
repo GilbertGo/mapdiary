@@ -1456,6 +1456,22 @@ await test('여행 첫날 끝낸 뒤 빈 2일차가 생기지 않게 (판 -376)'
   ok(r.w2 === 'walk_d1' && !r.alb.join().includes('walk_e2') && !r.alb.join().includes('walk_e3'), '끝낸 뒤에도 첫날에 이어야 해요 ' + JSON.stringify(r));
 });
 
+await test('같은 날 둘로 나뉜 여행 기록 합치기 (판 -378)', async page => {
+  await page.goto(BASE); await sleep(800);
+  const r = await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = Math.max(d0.getTime() + 60e3, Date.now() - 3 * 3600e3), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    const S = (k, v) => localStorage.setItem(k, JSON.stringify(v)), G = k => JSON.parse(localStorage.getItem(k));
+    S('tripPlans', [{ id: 'tpm', name: '장가계', start: ymd, nd: 5, it: [], at: 1, u: 1 }]);
+    S('albums', [{ id: 'album_M', name: '장가계', mode: 'travel', days: ['walk_m1', 'walk_m2'], at: t }]); S('planAlbum:tpm', 'album_M');
+    S('track:walk_m1', [[37.46, 126.44, t], [37.47, 126.45, t + 6e5]]); S('walkMode:walk_m1', 'travel'); S('walkAlbum:walk_m1', 'album_M'); S('trackName:walk_m1', '장가계 1일차');
+    S('track:walk_m2', [[37.48, 126.46, t + 9e5], [37.49, 126.47, t + 12e5]]); S('walkMode:walk_m2', 'travel'); S('walkAlbum:walk_m2', 'album_M'); S('trackName:walk_m2', '장가계 2일차');
+    S('walkNow', 'walk_m2'); S('walkAutoTrip', 'walk_m2'); S('walkAt', t + 9e5);
+    const w = window.__T.tripAutoEnsure(true, true);
+    return { w, n: G('track:walk_m1').length, gone: localStorage.getItem('track:walk_m2'), days: G('albums')[0].days, undo: !!(G('tripMergeUndo') || {}).snap };
+  });
+  ok(r.w === 'walk_m1' && r.n === 4 && r.gone === null && r.days.join() === 'walk_m1' && r.undo, '2일차를 1일차로 합치고 되돌리기 자료를 남겨야 해요 ' + JSON.stringify(r));
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));

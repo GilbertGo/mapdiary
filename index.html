@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-377-recup';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-378-daymerge';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14239,15 +14239,15 @@ function viewPlanOne(id) {
     const untimed = !its.some(y => y.t) && !its.some(y => y.ok);
     return el('div', { style: 'background:#fff;border-radius:18px;padding:12px 14px;margin:4px 0 8px;border:2px solid #FF8A6B' },
       el('div', {}, el('div', { style: 'font:800 17px Pretendard,sans-serif;white-space:nowrap', text: `오늘 · ${d + 1}일차` }), el('div', { class: 'dt', text: `${planDayLabel(p, d)} · 지금 ${now.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} (휴대폰 시계)` })),
-      row('다음 갈 곳', x ? `${nx + 1}. ${x.n}` : untimed ? '앱이 짐작하지 않아요' : its.length && its.every(y => y.ok) ? '오늘 일정을 다 다녀왔어요' : '남은 일정이 없어요',
-        x ? [x.t ? x.t + ' 예정' : '시각 없음', Number.isFinite(x.lat) ? '' : '지도 위치 없음'].filter(Boolean).join(' · ') : untimed ? '시각이 없는 일정이라 지금 어디쯤인지 몰라요 · 다녀온 곳을 ✓로 표시하면 다음 곳을 보여 줘요' : '',
-        x ? el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, Number.isFinite(x.lat) ? el('button', { class: 'btn primary small', text: '길찾기', onclick: () => planGo(x) }) : null, el('button', { class: 'btn line small', text: '✓ 다녀옴', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); drawAll(); } })) : null),
-      (() => { const now = ls.get('walkNow', null);   // 판 -371: 여기서 바로 여행 기록
+      (() => { const now = ls.get('walkNow', null);   // 판 -371: 여기서 바로 여행 기록 · 판 -378 (사용자 '기록중 위치 부적절'): 정보 칸 사이가 아니라 제목 바로 아래
         return now ? row('기록', '● 기록 중', ls.get('trackName:' + now, ''), el('a', { class: 'btn primary small', href: './?walk=1', text: '이어서' }))
           : (() => { const al = albumGet(ls.get('planAlbum:' + p.id, '')), last = al && al.days[al.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;   // 판 -375: 오늘 기록을 끝냈으면 '이어서'
               return last && t && new Date(t).toDateString() === new Date().toDateString() ? row('기록', '⏸ 기록이 멈췄어요', `${ls.get('trackName:' + last, '')} · 마지막 ${fmtClock(t)}`, el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&resume=${encodeURIComponent(last)}`, text: '● 이어서' })) : null; })()
           || row('기록', ls.get('planAlbum:' + p.id, '') && albumGet(ls.get('planAlbum:' + p.id, '')) ? `${d + 1}일차 기록 시작` : '여행 기록 시작', '다닌 길과 사진이 이 여행 한 장에 날마다 모여요',
             el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&mode=travel&go=1&pt=${encodeURIComponent(p.id)}`, text: '● 시작' })); })(),
+      row('다음 갈 곳', x ? `${nx + 1}. ${x.n}` : untimed ? '앱이 짐작하지 않아요' : its.length && its.every(y => y.ok) ? '오늘 일정을 다 다녀왔어요' : '남은 일정이 없어요',
+        x ? [x.t ? x.t + ' 예정' : '시각 없음', Number.isFinite(x.lat) ? '' : '지도 위치 없음'].filter(Boolean).join(' · ') : untimed ? '시각이 없는 일정이라 지금 어디쯤인지 몰라요 · 다녀온 곳을 ✓로 표시하면 다음 곳을 보여 줘요' : '',
+        x ? el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, Number.isFinite(x.lat) ? el('button', { class: 'btn primary small', text: '길찾기', onclick: () => planGo(x) }) : null, el('button', { class: 'btn line small', text: '✓ 다녀옴', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); drawAll(); } })) : null),
       d === 0 ? row('출발 미팅', p.meet ? [p.meet.t, p.meet.n].filter(Boolean).join(' · ') : '등록된 자료 없음', p.meet ? '여행사 안내 그대로' : '항공편 시각은 미팅 시각이 아니에요 · 여행사 확정 안내로 확인해 주세요') : null,
       row('오늘 숙소', stay ? stay.n : d === p.nd - 1 ? '마지막 날 (숙소 없음)' : '등록된 숙소 없음', stay && /예정 호텔|중 한 곳|출발 전 확정/.test(stay.m || '') ? '⚠ 여행사 예정 목록 중 한 곳 · 확정된 호텔이 아닐 수 있어요' : stay ? '' : ''),
       row('가이드', g && (g.n || g.tel) ? [g.n, g.tel].filter(Boolean).join(' · ') : '등록된 연락처 없음', g && g.tel ? '' : '첫날 받으면 여기에 적어 두세요',
@@ -14749,8 +14749,11 @@ function tripTodayRec(p, a, skip) {
   return best;
 }
 // 빈 자동 기록(점 0~1개)을 오늘 진짜 기록에 합치고 빼요 — 점·들른 곳·사진은 옮기고, 빈 기록은 묘비를 남겨 다른 기기에서 되살아나지 않게
-function tripMergeEmpty(from, to) {
-  const tr = ls.get('track:' + from, []), tt = ls.get('track:' + to, []); if (tr.length > 1 || from === to) return false;
+function tripMergeEmpty(from, to, all) {   // all: 점이 있어도 합침(판 -378, 같은 날 잘못 나뉜 기록)
+  const tr = ls.get('track:' + from, []), tt = ls.get('track:' + to, []); if ((tr.length > 1 && !all) || from === to) return false;
+  if (all) { const snap = {}; MD_KEYS.forEach(k => { const v = localStorage.getItem(k + from); if (v != null) snap[k + from] = v; const w = localStorage.getItem(k + to); if (w != null) snap[k + to] = w; });   // 되돌리기용 예전 모습(이 휴대폰에만)
+    ls.set('tripMergeUndo', { at: Date.now(), from, to, snap, albums: localStorage.getItem('albums') }); }
+  { const a = ls.get('walkSteps:' + from, null), b = ls.get('walkSteps:' + to, null); if (a && a.n) ls.set('walkSteps:' + to, { ...(b || {}), n: ((b && b.n) || 0) + a.n }); }
   if (tr.length) ls.set('track:' + to, tt.concat(tr).sort((x, y) => x[2] - y[2]));
   const sp = ls.get('walkSpots:' + from, []); if (sp.length) ls.set('walkSpots:' + to, ls.get('walkSpots:' + to, []).concat(sp));
   const aid = ls.get('walkAlbum:' + from, null), a = aid && albumGet(aid); if (a) { a.days = a.days.filter(d => d !== from); albumSave(a); }
@@ -14767,7 +14770,9 @@ function tripAutoEnsure(force, test) {   // test: 자동 시험에서만(앱 밖
   if (now && auto === now && !p) { ls.set('walkNow', null); ls.set('walkAutoTrip', null); try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {} return null; }   // 여행이 끝났어요
   if (now && p && auto === now) {   // 판 -376: 지금 자동 기록이 빈 것이고 오늘 진짜 기록이 따로 있으면 그쪽으로 합쳐요
     const aid0 = ls.get('walkAlbum:' + now, null), real = tripTodayRec(p, aid0 && albumGet(aid0), now);
-    if (real && ls.get('track:' + now, []).length < 2 && tripMergeEmpty(now, real)) { const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra)) ls.set('planAlbum:' + p.id, ra); ls.set('walkNow', real); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', real); return real; }
+    // 판 -378 (사용자 '합쳐'): 같은 날 먼저 시작한 이 여행 기록이 있으면 지금 자동 기록(잘못 생긴 'n일차')을 그쪽으로 합쳐요. 예전 모습은 tripMergeUndo에
+    const same = real && (() => { const a = ls.get('track:' + now, []), b = ls.get('track:' + real, []); return a.length && b.length && b[0][2] < a[0][2] && new Date(a[0][2]).toDateString() === new Date(b[0][2]).toDateString(); })();
+    if (real && (ls.get('track:' + now, []).length < 2 || same) && tripMergeEmpty(now, real, same)) { if (same) { try { syncPush(); } catch {} setTimeout(() => { toast(`같은 날 둘로 나뉜 기록을 '${ls.get('trackName:' + real, '1일차')}' 하나로 합쳤어요`); if (/[?&]walk=1/.test(location.search)) setTimeout(() => location.replace('./?walk=1'), 1500); }, 600); } const tr = ls.get('track:' + real, []), ra = ls.get('walkAlbum:' + real, null); if (ra && albumGet(ra)) ls.set('planAlbum:' + p.id, ra); ls.set('walkNow', real); ls.set('walkAt', tr[0][2]); ls.set('walkAutoTrip', real); return real; }
   }
   if (now || !p) return now;
   let aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid);
