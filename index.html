@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-379-joinhint';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-380-planlink';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "초대받은 사람 지도에 내 위치 공유 자리와 로그인 안내가 늘 보여요 · 같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "여행 기록 중 지도에 오늘 일정과 일정 보기 단추가 다시 나와요 (계획과 기록 연결이 꼬여도 이름으로 찾아요)";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8975,6 +8975,16 @@ var PLAN_PAST = '#AEB8C2';
 // 판 -374 (사용자 '여행계획에 지금 기록하는거 계획경로와 실제 경로를 다른 색으로 표시해'): 계획 지도에 그 계획 여행(planAlbum)의 실제 기록 길을 짙은 남색 실선(흰 테두리)으로 · 그날(계획 날짜) 점만
 var PLAN_REAL = '#111827';
 function planOfAlbum(aid) { return aid ? planAll().find(p => ls.get('planAlbum:' + p.id, '') === aid) || null : null; }
+// 판 -380 (사용자 기록 화면 캡처 '여행계획보기 안되네'): 기록 → 계획을 넓게 찾아요. 계획과 여행 묶음 연결(planAlbum:)이 없거나 다른 묶음을 가리켜도
+//   ① 연결 ② 여행 이름·기록 이름이 계획 이름으로 시작(가장 긴 이름) ③ 저절로 여행 기록이면 오늘 날짜 계획 — 찾기만 하고 연결은 바꾸지 않아요
+function planOfRec(id) {
+  if (!id) return null; const aid = ls.get('walkAlbum:' + id, null), p0 = planOfAlbum(aid); if (p0) return p0;
+  const a = aid && albumGet(aid), nm = [a && a.name, ls.get('trackName:' + id, '')].map(x => String(x || '').trim()).filter(Boolean);
+  const byName = planAll().filter(p => { const pn = String(p.name || '').trim(); return pn.length >= 2 && nm.some(x => x === pn || x.startsWith(pn + ' ')); }).sort((x, y) => String(y.name).length - String(x.name).length);
+  if (byName.length) { const td = byName.find(p => { const d = planToday(p); return d != null && d >= 0 && d < (p.nd || 1); }); return td || byName[0]; }
+  if (ls.get('walkAutoTrip', null) === id && ls.get('walkMode:' + id, '') === 'travel') return tripAutoPlan();
+  return null;
+}
 function planRealSegs(p, d) {
   const aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid); if (!a) return [];
   const s = planDate(p, d); if (!s) return []; const t0 = +s, t1 = t0 + 864e5, out = [];
@@ -19548,7 +19558,7 @@ function viewWalk() {
   let askStale = id ? staleRec() : null;   // 하루 넘게 켜진 채 3시간 넘게 위치가 없는 기록: GPS를 켜기 전에 먼저 물어요(켜면 지금 위치가 더해져 끝 시각이 늘어나서)
   // 판 -375 (사용자 '여행계획을 볼 수 있어야지 · 계획대로 가는 지도 보여야하고'): 계획 여행 기록이면 기록 지도에 오늘 일정(번호 핀 + 파란 점선)과 '일정' 단추(계획 화면)
   function drawPlanDay() {
-    if (!map || !id) return; const p = planOfAlbum(ls.get('walkAlbum:' + id, null)); if (!p) return;
+    if (!map || !id) return; const p = planOfRec(id); if (!p) return;
     const d = Math.max(0, Math.min(p.nd - 1, planToday(p) ?? 0)), its = planItems(p, d).filter(x => Number.isFinite(x.lat)), ll = its.map(x => [x.lat, x.lng]);
     const g = L.layerGroup().addTo(map);
     if (ll.length > 1) L.polyline(ll, { color: '#0277BD', weight: 3, opacity: .8, dashArray: '6 7', interactive: false }).addTo(g);
