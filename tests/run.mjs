@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1394,6 +1394,20 @@ await test('여행 계획 날짜 안이면 저절로 여행 기록 · 끝나면 
   ok(r.id && r.again === r.id && r.name === '장가계 4박 5일' && r.map, '여행 날짜엔 그 계획 이름의 여행 기록이 하나만 저절로 시작돼야 해요 ' + JSON.stringify(r));
   ok(r.end === null && (r.now === null || r.now === 'null'), '여행이 끝나면 저절로 끝나야 해요 ' + JSON.stringify(r));
   ok(r.manual === 'walk_manual01', '손으로 시작한 기록은 건드리지 않아야 해요 ' + JSON.stringify(r));
+});
+
+await test('여행 계획 지도 · 실제 다닌 길은 그날 점만 (판 -374)', async page => {
+  await seed(page); await page.goto(BASE); await sleep(600);
+  const r = await page.evaluate(() => {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const t = d0.getTime(), ymd = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+    localStorage.setItem('albums', JSON.stringify([{ id: 'album_rr', name: 'x', mode: 'travel', days: ['walk_rr1', 'walk_rr2'], at: t }]));
+    localStorage.setItem('planAlbum:prr', '"album_rr"');
+    localStorage.setItem('track:walk_rr1', JSON.stringify([[37.5, 126.4, t + 1e6], [37.51, 126.41, t + 2e6], [37.52, 126.42, t + 3e6]]));
+    localStorage.setItem('track:walk_rr2', JSON.stringify([[29.1, 110.4, t + 864e5 + 1e6], [29.11, 110.41, t + 864e5 + 2e6]]));
+    const p = { id: 'prr', start: ymd, nd: 3 };
+    return [__T.planRealSegs(p, 0).map(s => s.length), __T.planRealSegs(p, 1).map(s => s.length), __T.planRealSegs(p, 2).length];
+  });
+  ok(JSON.stringify(r) === '[[3],[2],0]', '날마다 그날 실제 길만 나와야 해요 ' + JSON.stringify(r));
 });
 
 await browser.close();

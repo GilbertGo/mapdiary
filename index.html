@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-373-tripauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-374-realroute';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "MPD 앱에서는 여행 계획 날짜가 되면 누르지 않아도 그 여행을 저절로 기록해요 · 날마다 n일차로 나뉘고 여행이 끝나면 저절로 끝나요 · 여행 기록 중엔 다른 화면으로 가도 기록이 이어져서 묻지 않아요 · 기록 중 지도를 줄이거나 키우면 그대로 둬요 · 기록 중에도 새 판을 받아 두고 앱을 다시 켜면 바뀌어요";
+const UI_NOTES = "여행 계획 지도에 실제로 다닌 길을 짙은 남색 줄로 그려요 · 계획한 길은 예전 색 그대로라 서로 견줘 볼 수 있어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -8972,6 +8972,16 @@ function planLegR(a, b, p) { const k = planLegMode(a, b, p); return k === 'walk'
 // 판 -370 (사용자 '지도에 과거에 간길과 미래에 갈길 색깔을 다르게 하자'): 여행 중에만 지난 일정·지난 길은 회색, 앞으로는 그날 색 그대로
 //   지난 것 = 지난 날 · 오늘 다녀옴(✓) · 오늘 시각이 지난 일정. 여행 전·끝난 뒤 계획은 예전 색 그대로
 var PLAN_PAST = '#AEB8C2';
+// 판 -374 (사용자 '여행계획에 지금 기록하는거 계획경로와 실제 경로를 다른 색으로 표시해'): 계획 지도에 그 계획 여행(planAlbum)의 실제 기록 길을 짙은 남색 실선(흰 테두리)으로 · 그날(계획 날짜) 점만
+var PLAN_REAL = '#111827';
+function planRealSegs(p, d) {
+  const aid = ls.get('planAlbum:' + p.id, ''), a = aid && albumGet(aid); if (!a) return [];
+  const s = planDate(p, d); if (!s) return []; const t0 = +s, t1 = t0 + 864e5, out = [];
+  a.days.forEach(id => { const tr = ls.get('track:' + id, []); if (!Array.isArray(tr)) return; let sg = [];
+    tr.forEach(q => { if (q[2] >= t0 && q[2] < t1) { if (q[5] === 1 && sg.length > 1) { out.push(sg); sg = []; } sg.push([q[0], q[1]]); } });
+    if (sg.length > 1) out.push(sg); });
+  return out;
+}
 function planPast(p, d, x, now = new Date()) {
   const k = planToday(p); if (k == null || k < 0 || k >= p.nd) return false;
   if (d !== k) return d < k; if (x.ok) return true;
@@ -14329,8 +14339,9 @@ function viewPlanOne(id) {
     }
     list.replaceChildren(...out);
   }
+  let realOn = 0;
   function drawMap() {
-    if (!map) return; if (layer) layer.remove(); layer = L.layerGroup().addTo(map);
+    if (!map) return; if (layer) layer.remove(); layer = L.layerGroup().addTo(map); realOn = 0;
     const pts = [];
     for (let d = 0; d < p.nd; d++) {
       if (day !== -1 && day !== d) continue;
@@ -14340,11 +14351,12 @@ function viewPlanOne(id) {
           .bindTooltip(el('span', { text: `${d + 1}일차 · ${x.n}` }), { direction: 'top', offset: [0, -12] }).on('click', () => viewItem(x)).addTo(layer); });
       { const L2 = its.filter(x => Number.isFinite(x.lat));   // 사이마다: 받아 둔 실제 길은 굵은 실선, 없으면 직선 점선
         for (let i = 1; i < L2.length; i++) planLegLine(layer, L2[i - 1], L2[i], p, planPast(p, d, L2[i]) ? PLAN_PAST : SHm && (L2[i].mine || L2[i - 1].mine) ? '#FF6B4A' : col0, 5); }   // 판 -370: 도착한 곳이 지났으면 그 길도 회색
+      planRealSegs(p, d).forEach(sg => { L.polyline(sg, { color: '#fff', weight: 9, opacity: .95, interactive: false }).addTo(layer); L.polyline(sg, { color: PLAN_REAL, weight: 5, opacity: 1 }).bindTooltip(planEN(p) ? 'Where I actually went' : '실제 다닌 길').addTo(layer); realOn = 1; });   // 판 -374
       { const tr = ls.get('navTrail:' + p.id + ':' + d, null); if (tr && tr.c && tr.c.length > 1) { L.polyline(tr.c, { color: '#fff', weight: 9, opacity: .9 }).addTo(layer); L.polyline(tr.c, { color: '#FF6B4A', weight: 5, opacity: .95 }).bindTooltip('길 안내로 실제 지나온 길').addTo(layer); } }   // 판 -121
     }
     { const EN = planEN(p), mineOn = planShared(p) && p.it.some(x => x.mine), pastOn = (k => k != null && k >= 0 && k < p.nd)(planToday(p));   // 판 -209: 지도는 기호만, 뜻은 지도 아래 한 줄(범례) · 핀을 누르면 이름
-      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), 'Done') : null, el('span', { text: 'Tap a pin for its name' })]
-        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), '지난 길') : null, el('span', { text: '핀을 누르면 이름' }), ...memKey()]).filter(Boolean))); }
+      const KI = (...a) => el('b', {}, ...a); sumEl.replaceChildren(el('div', { class: 'pl-key', style: 'margin:0 2px 8px' }, ...(EN ? [KI(el('i', { class: 'n', text: '1' }), 'Stop order'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), 'Hotel'), KI('👣 Walk'), KI('🚗 Car'), KI('🚆 Train'), KI('✈ Flight'), mineOn ? KI(el('i', { class: 'm' }), 'Only me') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), 'Done') : null, realOn ? KI(el('i', { style: 'display:inline-block;width:16px;height:4px;border-radius:2px;background:' + PLAN_REAL + ';vertical-align:middle' }), 'Actual route') : null, el('span', { text: 'Tap a pin for its name' })]
+        : [KI(el('i', { class: 'n', text: '1' }), '일정 차례'), KI(el('i', { class: 'h' }, cSvg('home', 11, '#fff')), '숙소'), KI('👣 걷기'), KI('🚗 차'), KI('🚆 전철'), KI('✈ 비행'), mineOn ? KI(el('i', { class: 'm' }), '내 일정') : null, pastOn ? KI(el('i', { class: 'n', style: 'background:' + PLAN_PAST, text: '✓' }), '지난 길') : null, realOn ? KI(el('i', { style: 'display:inline-block;width:16px;height:4px;border-radius:2px;background:' + PLAN_REAL + ';vertical-align:middle' }), '실제 다닌 길') : null, el('span', { text: '핀을 누르면 이름' }), ...memKey()]).filter(Boolean))); }
     if (0) sumEl.replaceChildren();   // 판 -171 (사용자 장가계 캡처 '이부분을 모두 빼봐'): 지도 아래 이동 요약 칸은 안 보임 · 구간마다 줄(도보 10분 · 670m)이 대신 · 길 안내는 ⋯ 더보기
     if (!drawMap.busy) { drawMap.busy = 1; (async () => { let any = 0, eh = 0; try { for (let d = 0; d < p.nd; d++) if (await planRoutes(p, d)) any = 1; } finally { drawMap.busy = 0; } if (any) { drawMap(); drawList(); } })(); }
     const real = pts.filter(q => q[1] > -180);
