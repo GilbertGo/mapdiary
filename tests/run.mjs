@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
+const EXPOSE = ['planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1332,6 +1332,17 @@ await test('사진 보기: 위치를 누르면 찍은 곳 지도', async page =>
   ok(r.btn, '위치 있는 사진에 위치 단추가 없어요');
   ok(r.mapOk && r.cap, '위치를 눌러도 찍은 곳 지도가 안 열려요');
   noErr(page, '사진 위치');
+});
+
+// ─── 판 -370: 여행 중 지난 일정·길은 회색 (사용자 '지도에 과거에 간길과 미래에 갈길 색깔을 다르게 하자') ───
+await test('지난 길 · 여행 중에만 지난 날·다녀온 곳·지난 시각은 지난 것', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => { const d = new Date(), ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    const y = new Date(d); y.setDate(d.getDate() - 1); const now = new Date(d); now.setHours(12, 0, 0, 0);
+    const on = { id: 'a', start: ymd(y), nd: 3 }, before = { id: 'b', start: ymd(new Date(d.getTime() + 5 * 864e5)), nd: 3 };
+    const P = __T.planPast;
+    return [P(on, 0, {}, now), P(on, 1, { t: '09:00' }, now), P(on, 1, { t: '15:00' }, now), P(on, 1, { t: '15:00', ok: 1 }, now), P(on, 2, { t: '08:00' }, now), P(before, 0, { t: '01:00' }, now)]; });
+  ok(JSON.stringify(r) === JSON.stringify([true, true, false, true, false, false]), '지난 것 가르기가 틀려요: ' + JSON.stringify(r));
 });
 
 await browser.close();
