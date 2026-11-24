@@ -76,3 +76,12 @@
 - 로컬 확인: 이 PC에는 python/node가 없다. PowerShell `HttpListener`로 `Documents\GitHub`를 띄워 `/jidoilgi/`(이 폴더)를 확인했다(`.claude/launch.json`은 끝나면 지움). GPS·공유는 `navigator.geolocation`/`navigator.share`를 흉내 내서 시험.
 - 시험 데이터는 localStorage와 IndexedDB(`baldojang`)에서 비울 것.
 - 사용자는 휴대폰에서 원격 모드로 캡처를 보내며 확인하는 경우가 많다.
+
+## 판 -283 📸 포토스토리 따로 앱 (2026-11-20, 사용자가 진호 님 '포토스토리' 앱 캡처('AI 사례 만들기를 지금 쓸 수 없어요')를 보내며 '고쳐' → '내 계정으로 따로 만들어. 진호에게 의존하지 말고' · 'map diary에')
+- 주소 **https://gilbertgo.github.io/mapdiary/photostory/** (폴더 `photostory/`: index.html 하나 + manifest·아이콘, 바탕화면 추가 가능). 진호 님 앱(sisultong) 코드는 쓰지 않고 처음부터 새로 만듦. MPD 화면에는 단추를 더하지 않음(따로 주소)
+- 흐름: 첫 화면(제목·'새로 만들기' 파란 카드·'만든 카드 n장' 두 줄 칸) → '카드 만들기' → 사진 2~6장(1장이면 안내, 7장 넘으면 처음 6장) → EXIF 찍은 시각·GPS 읽기(직접 파싱) → 위치 있으면 Nominatim으로 장소 이름 → AI 열쇠 있으면 Claude(`claude-haiku-5-5`)가 {title, sub, text}(지어내지 말 것) → 1080px JPEG 카드(세로 1080×1350 / 정사각 1080×1080, 색 산호·파랑·보라·먹색) → 보내기(공유 창 파일)·저장. ⋯: 대표 사진 바꾸기·제목·글 고치기·AI로 다시 쓰기·카드 지우기(확인)
+- 저장: 이 브라우저 IndexedDB `photostory`(카드·사진 1600px·썸네일). 서버로 안 올림
+- AI 열쇠: MPD와 같은 `claudeKey`(같은 주소라 같이 씀) · 없으면 함께 쓰는 열쇠 `tripAiKey`(하루 `tripAiN` 같이 셈) · 오른쪽 위 사람 단추에서 넣기/지우기. 사용 기록 `labAiLog` '포토스토리(따로 앱)'
+- 원래 앱의 잘못을 되풀이하지 않게: AI가 없거나 실패해도 카드는 늘 만들어짐(날짜·장소 글), 까닭을 쉬운 말로 한 줄(열쇠 틀림·바쁨·잔액·인터넷), 노란 경고 + 그대로 눌리는 단추 같은 엇갈림 없음, 모든 글 `word-break:keep-all`, 카드 그림 줄바꿈도 낱말 단위
+- `sw.js`: `/photostory/` 화면은 건드리지 않게 함(전엔 같은 범위라 포토스토리 화면이 MPD 첫 화면 캐시('./')를 덮을 수 있었음)
+- 시험: 가짜 EXIF 사진 + 가짜 SDK·Nominatim(scratchpad `t/t.js`) — 2장 미만 안내·7장→6장·AI 글·AI 실패(529) 안내·모양·색·목록 확인. **실제 휴대폰·실제 열쇠로는 아직 확인 못 함**
