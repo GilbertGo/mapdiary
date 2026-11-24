@@ -941,7 +941,7 @@ await test('일행 권한 · 들어온 사람 표(일행 여부·권한·보는 
   ok(r('유진')[1] === '일행' && /기기 2대/.test(r('유진')[0]) && r('유진')[4] === '전체', '유진(기기 2대)이 한 줄 일행 전체여야 해요 ' + r('유진'));
   ok(r('옆집')[1] === '구경' && /목록에 없음/.test(r('옆집')[0]) && r('옆집')[4] === '일정·사진·위치', '옆집은 구경, 일정·사진·위치여야 해요 ' + r('옆집'));
   ok(/아직 안 들어옴/.test(r('민수')[0]), '민수는 아직 안 들어옴이어야 해요 ' + r('민수'));
-  await page.screenshot({ path: process.env.SHOT || '/tmp/pm_tab.png' });
+  await page.screenshot({ path: process.env.SHOT || '/tmp/pm_tab.png' }); await page.evaluate(() => document.querySelector('.pm-scw') && document.querySelector('.pm-scw').scrollIntoView()); await page.screenshot({ path: '/tmp/pm_tab2.png' }); await page.evaluate(() => document.querySelector('.pm-tbw').scrollIntoView());
   // 구분 칸: 구경 → 못 봄 → 일행(이때 함께 가는 사람에 들어감)
   const tap = async () => { await page.click('.pm-tb tr:has-text("옆집") .pm-rl'); await sleep(300); };
   await tap(); ok(/못 봄/.test(await page.innerText('.pm-tb tr:has-text("옆집")')), '구경을 누르면 못 봄이 돼야 해요');
@@ -949,8 +949,11 @@ await test('일행 권한 · 들어온 사람 표(일행 여부·권한·보는 
   ok(/일행/.test(t3) && /전체/.test(t3), '못 봄을 누르면 일행·전체가 돼야 해요 ' + t3);
   ok(await page.evaluate(() => __T.planAll().find(x => x.id === 'ptab1').mem.some(m => m.n === '옆집')), '일행으로 바꾸면 함께 가는 사람에 들어가야 해요');
   // 같은 사람 두 기기는 고치기도 같이
-  await page.click('.pm-tb tr:has-text("유진") .pm-ck'); await sleep(300);
-  ok(/✕/.test(await page.innerText('.pm-tb tr:has-text("유진") .pm-ck')), '유진 고치기를 누르면 ✕가 돼야 해요');
+  ok(await page.getAttribute('.pm-tb tr:has-text("유진") button.pm-sw', 'aria-checked') === 'true', '유진 고치기 스위치가 켜져 있어야 해요');
+  await page.click('.pm-tb tr:has-text("유진") button.pm-sw'); await sleep(300);
+  ok(await page.getAttribute('.pm-tb tr:has-text("유진") button.pm-sw', 'aria-checked') === 'false', '유진 고치기 스위치를 누르면 꺼져야 해요');
+  // 판 -366: 표·설명에 ✓/✕ 글자가 없어야 해요(✕가 '안 됨'으로 읽혀서)
+  ok(!/[✓✕]/.test(await page.innerText('.pm-tb')) && !/[✓✕]/.test(await page.evaluate(() => [...document.querySelectorAll('.pm-scw')].map(x => x.innerText).join(''))), '권한 표나 설명에 ✓/✕가 남아 있어요');
   ok(await page.$$eval('.pm-tb tbody tr', trs => trs.filter(tr => /유진/.test(tr.innerText)).length) === 1, '같은 사람 두 기기는 한 줄이어야 해요');
 });
 
