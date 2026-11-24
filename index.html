@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-379-joinhint';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-380-locone';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "초대받은 사람 지도에 내 위치 공유 자리와 로그인 안내가 늘 보여요 · 같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
+const UI_NOTES = "첫 화면 맨 아래에 받아 둔 새 판이나 못 받은 까닭이 보여요 · 초대받은 사람도 내 위치 공유 스위치 하나만 누르면 카카오 로그인 뒤 저절로 켜져요 · 같은 날 둘로 나뉜 여행 기록을 하루치 하나로 합쳐요 · 계획 오늘 칸의 기록 줄을 제목 바로 아래로 옮겼어요 · 여행 기록 중에도 앱을 켜면 바로 새 판으로 바뀌어요 · 여행 첫날 기록을 끝낸 뒤 다시 켜면 빈 2일차가 생기던 것을 고쳐 오늘 기록에 이어요 · 기록 중에도 앱을 켜고 3초면 새 화면을 받아 두어 다음에 켤 때 바뀌어요 · 여행 기록 화면 지도에 오늘 일정이 번호와 파란 점선으로 보여요 · 지도 위 일정 단추로 계획을 바로 열어요 · 잘못 끝낸 기록은 이어서 기록하기로 다시 이어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4877,7 +4877,7 @@ function appSettings() {
       row('☁️', '기록 모으기', (() => { const on = ls.get('cloudRt', null) || (!IN_NATIVE && ls.get('cloudOn', false)); if (!on) return '안 함';
         const L = ls.get('cloudLast', null); return !L ? '아직' : !L.ok || L.bad ? '⚠ 다시' : `✅ ${L.n}개`; })(), () => { location.href = './?my=1'; })),
       head('도움'), grp(row('🐞', '오류 기록', (() => { const n = errList().length; return n ? `${n}개` : '없음'; })(), errSheet)),
-      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(기록을 끝내면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}` })].filter(Boolean));
+      el('div', { class: 'sub center', style: 'font-size:12px;margin-top:8px', text: `판 ${UI_VER}${uiLatest ? ` · 새 판 ${uiLatest} 기다리는 중${ls.get('walkNow', null) ? '(앱을 껐다 켜면 바뀌어요)' : '(앱을 다시 켜면 바뀌어요)'}` : ''}${updNote()}` })].filter(Boolean));
   };
   paint();
   cb.append(el('div', { class: 'sheet st-full', role: 'dialog', 'aria-label': '나 · 설정' }, el('div', { class: 'st-in' },
@@ -14411,7 +14411,11 @@ function viewPlanOne(id) {
   }
   let memSwEl = null;
   function memSw() {   // 판 -256: 지도 왼쪽 아래 늘 보이는 내 위치 공유 스위치(켜짐 청록 / 꺼짐 흰색)
-    if (!memR || !mapEl) return; const nw = trLocSwitch(memR, () => { memSw(); memSend(); memDraw(); drawMap(); });
+    // 판 -380 (사용자 '이렇게 복잡하게 해야하면 안하지'): 초대받은 사람 누구나 같은 스위치 하나 — 로그인 안 했으면 누르면 바로 카카오 로그인, 돌아오면 저절로 켜짐(주인 허락·다른 브라우저·바로가기 없이)
+    if (!memR || !mapEl) return;
+    if (!trLoggedIn() && (trLoginNeed(p) || permIsV0(p))) { const nw = trLocSwitch(memR); nw.onclick = e => { e.stopPropagation(); ls.set('tripLocWant:' + memR.rid, Date.now()); ls.set('cloudOn', true); try { cloudWatch(); } catch {} cloudLogin('kakao'); };
+      nw.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; mapEl.querySelectorAll('.tr-sw').forEach(x => x.remove()); mapEl.append(nw); memSwEl = nw; return; }
+    const nw = trLocSwitch(memR, () => { memSw(); memSend(); memDraw(); drawMap(); });
     nw.style.cssText = 'position:absolute;left:10px;bottom:22px;z-index:900'; if (memSwEl) memSwEl.replaceWith(nw); else mapEl.append(nw); memSwEl = nw;
   }
   function memSwHint() {   // 판 -379: 구경·로그인 안 한 사람도 스위치 자리에 '일행만' 알약 → 누르면 일행 되는 길
@@ -14422,9 +14426,9 @@ function viewPlanOne(id) {
   }
   async function memStart() {
     if (!p.room || !p.room.code || !permCanR(p)) return;   // 판 -322: 구경은 '구경에게도'로 켠 일행 위치만 보고(memList), 내 위치는 안 보내요(스위치 없음)
-    if (memV) memSwHint();   // 판 -379: 방에 닿기 전에도 먼저
     try { memR = await trRoom(p.room.code); memS = await trLoad(memR); } catch { memR = null; return; }
-    memDraw(); drawMap(); if (!memV) { memSend(); memSw(); } else memSwHint();
+    { const w = ls.get('tripLocWant:' + memR.rid, 0); if (w && trLoggedIn()) { localStorage.removeItem('tripLocWant:' + memR.rid); if (Date.now() - w < 3600e3) { trLocSet(memR, true); setTimeout(() => toast('📍 로그인했어요 · 내 위치 공유를 켰어요'), 500); } } }   // 판 -380: 로그인하고 돌아오면 저절로 켜요
+    memDraw(); drawMap(); memSend(); memSw();   // 판 -380: 구경이어도 내 위치는 스스로 켤 수 있어요(자기 위치라 주인 허락 없이)
     const pull = async () => { if (!document.body.contains(list)) return false; if (document.hidden) return true; const n0 = memList().length; if (await trSync(memR, memS, ['tl', 'tc'])) { memDraw(); if (memList().length !== n0) drawMap(); } return true; };
     await pull(); const iv = setInterval(async () => { if (!(await pull())) { clearInterval(iv); memSend(); } }, 15000);
   }
@@ -14812,7 +14816,7 @@ async function recUpdate() {
     step = '받기'; const r = await fetch(WEB + 'index.html?u=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
     const txt = await r.text(), at = txt.indexOf('<script'); if (txt.length < 100000 || at < 0 || !/Map (Photo )?Diary/.test(txt)) return;
     const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)))].map(b => b.toString(16).padStart(2, '0')).join('');
-    const fresh = !MD_TOUCHED && Date.now() - REC_UP_T0 < 20000;   // 켠 뒤 아직 화면을 안 만졌으면 바로 새 판으로(기록은 그대로 이어져요)
+    const fresh = !MD_TOUCHED && Date.now() - REC_UP_T0 < 90000;   // 판 -380: 해외·느린 인터넷에선 받는 데 20초가 넘어서 90초   // 켠 뒤 아직 화면을 안 만졌으면 바로 새 판으로(기록은 그대로 이어져요)
     if (h === APP.h || (localStorage.getItem('mdWebNext') === h && !fresh)) return;
     const dir = 'web/' + h.slice(0, 16), html = txt.slice(0, at) + `<script>window.MD_APP=${JSON.stringify(Object.assign({}, APP, { h }))}<\/script>\n<script src="native.js"><\/script>\n` + txt.slice(at);
     step = '저장'; await FS.writeFile({ path: dir + '/index.html', data: html, directory: 'DATA', encoding: 'utf8', recursive: true });
@@ -14821,11 +14825,13 @@ async function recUpdate() {
     const { uri } = await FS.getUri({ path: dir, directory: 'DATA' }), path = decodeURIComponent(uri.replace(/^file:\/\//, ''));
     const m = /const UI_VER = '([^']+)'/.exec(txt), vn = m ? ' ' + m[1].split('-')[1] : '';
     if (fresh && !MD_TOUCHED) { step = '바꾸기'; try { sessionStorage.setItem('mdBack', location.search + location.hash); sessionStorage.setItem('mdToast', `새 판${vn}으로 바꿨어요 · 기록은 그대로 이어져요`); } catch {} await MA.setWeb({ path }); return; }
-    step = '다음 판'; await MA.setWebNext({ path }); localStorage.setItem('mdWebNext', h);
+    step = '다음 판'; await MA.setWebNext({ path }); localStorage.setItem('mdWebNext', h); try { localStorage.setItem('mdWebNextV', m ? m[1] : ''); localStorage.removeItem('mdUpErr'); } catch {}
     toast(`새 판${vn}을 받아 뒀어요 · 기록은 그대로, 앱을 다시 켜면 바뀌어요`);
-  } catch (e) { try { window.mpdErr && window.mpdErr('새 판 받기(' + step + '): ' + (e && e.message || e)); } catch {} }
+  } catch (e) { try { window.mpdErr && window.mpdErr('새 판 받기(' + step + '): ' + (e && e.message || e)); localStorage.setItem('mdUpErr', step + ' · ' + String(e && e.message || e).slice(0, 60)); } catch {} }
 }
-if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 3000); setInterval(recUpdate, 30 * 60000); }
+// 판 -380 (사용자 '기록중에도 업데이트 되게 했는데. 안되는 것 같네?'): 첫 화면 맨 아래 판 번호 옆에 받아 둔 새 판·못 받은 까닭을 보여요
+function updNote() { try { const v = localStorage.getItem('mdWebNextV') || '', er = localStorage.getItem('mdUpErr') || ''; if (v && v !== UI_VER) return ` · 새 판 ${v.split('-')[1] || v} 받아 둠(앱을 껐다 켜면 바뀌어요)`; if (er && IN_NATIVE) return ` · 새 판 못 받음: ${er}`; } catch {} return ''; }
+if (IN_NATIVE && !LAB_QUIET) { setTimeout(recUpdate, 3000); setInterval(recUpdate, 30 * 60000); let ru = Date.now(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - ru > 3 * 60000) { ru = Date.now(); recUpdate(); } }); }   // 판 -380: 앱으로 돌아올 때도
 // 첫 화면·설정에 보이는 지금 상태
 function autoStatus() {
   const S = autoSt(), moving = S.seg && S.last && Date.now() - S.last[2] < AUTO_STAY_MS;
@@ -17922,7 +17928,7 @@ function viewLandingMap(memSlot) {
     cStoryStrip(map),
     el('div', { class: 'mh-quick' }, q('book', '내 MPD', './?my=1'), q('pin', '전체 지도', './?map=1'), q('spark', '발견', './?find=1'), q('img', '가족 앨범', './?album=1'), q('fork', '밥값 내기', './?game=1')),
     others, memSlot, installSlot,
-    el('div', { class: 'c-foot', style: 'text-align:center', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }));
+    el('div', { class: 'c-foot', style: 'text-align:center', text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}${updNote()}` }));
   const sp = el('div', { class: 'mh-sp' }), top = cHomeTop(true); top.classList.add('mh-top');
   app.replaceChildren(map, top, sp, sheet, cTabs('home'));
   const solid = () => top.classList.toggle('solid', sheet.getBoundingClientRect().top < top.offsetHeight);
@@ -18168,7 +18174,7 @@ function viewLanding() {
       installSlot,
       el('div', { class: 'c-foot', style: 'display:flex;flex-direction:column;align-items:center;gap:8px' },   // '지금 연 곳' 알약은 뺌(아래 판 줄에 앱/바탕화면이 같이 나와서)
         // 화면 판(날짜): 캡처만 보고도 휴대폰이 새 화면을 받았는지 알 수 있게. 화면을 고칠 때마다 날짜를 바꿔요
-        el('span', { text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}` }))),
+        el('span', { text: `화면 ${UI_VER}${IN_NATIVE ? ' · 앱' : IS_APP ? ' · 바탕화면' : ''}${updNote()}` }))),
     cTabs('home'));
 }
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Photo Diary로 남아요 (이 휴대폰에만 저장)
