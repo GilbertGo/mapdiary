@@ -1803,6 +1803,26 @@ function guideWhere(route, lat, lng, from = 0) {
 const albumsLoad = () => ls.get('albums', []);
 const albumGet = aid => albumsLoad().find(a => a.id === aid) || null;
 function albumSave(a) { ls.set('albums', [a, ...albumsLoad().filter(x => x.id !== a.id)].slice(0, 30)); }
+// 판 -372 (사용자 '끝내기 안 눌러도 2일차로 자동으로 해'): 여러 날 여행 기록은 휴대폰 날짜가 바뀌면 저절로 다음 날 기록으로
+//   자정 뒤 점·사진·들른 곳은 새 날로 옮기고, 앞날은 자정 앞 점까지로 끝(지우는 것 없음) · 같은 여행(album)에 n일차로 붙음
+function albumRoll(id, now) {
+  now = now || Date.now();
+  if (!id || ls.get('walkNow', null) !== id) return null;
+  const aid = ls.get('walkAlbum:' + id, null), a = aid && albumGet(aid); if (!a) return null;
+  const mid = new Date(now); mid.setHours(0, 0, 0, 0); const m = mid.getTime();
+  const tr = ls.get('track:' + id, []), t0 = ls.get('walkAt', 0) || (tr[0] && tr[0][2]) || now;
+  if (!(t0 < m)) return null;
+  const nid = 'walk_' + rid(8), old = tr.filter(q => q[2] < m), nw = tr.filter(q => q[2] >= m);
+  ls.set('track:' + id, old); if (nw.length) ls.set('track:' + nid, nw);
+  const sp = ls.get('walkSpots:' + id, []); if (sp.length) { ls.set('walkSpots:' + id, sp.filter(s => !(s.ts >= m))); const ns = sp.filter(s => s.ts >= m); if (ns.length) ls.set('walkSpots:' + nid, ns); }
+  const mode = ls.get('walkMode:' + id, 'travel'); ls.set('walkMode:' + nid, mode);
+  const tz = ls.get('walkTz:' + id, null); if (tz) ls.set('walkTz:' + nid, tz);
+  a.days.push(nid); a.last = now; albumSave(a); ls.set('walkAlbum:' + nid, a.id); ls.set('trackName:' + nid, `${a.name} ${a.days.length}일차`);
+  ls.set('walkNow', nid); ls.set('walkAt', nw.length ? Math.min(nw[0][2], now) : m);
+  (async () => { try { for (const p of await photoList(id)) if (p.ts >= m) await photoPut(Object.assign({}, p, { t: nid })); } catch {}
+    try { syncPush(); } catch {} try { cloudSync(true); } catch {} })();
+  return nid;
+}
 function albumTrack(aid) {
   const a = albumGet(aid); if (!a) return [];
   return a.days.flatMap(d => ls.get('track:' + d, [])).sort((p, q) => p[2] - q[2]);
@@ -3751,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-371-triprec';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-372-dayroll';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 계획의 오늘 칸에서 바로 여행 기록을 시작해요 · 둘째 날부터 누르면 같은 여행에 그날이 이어져요";
+const UI_NOTES = "여러 날 여행 기록은 끝내기를 누르지 않아도 날짜가 바뀌면 저절로 다음 날 기록으로 이어져요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -18042,6 +18062,7 @@ function viewLanding() {
 // 혼자 걷기 기록: 앱을 켜 두고 걸으면 다닌 길이 Map Photo Diary로 남아요 (이 휴대폰에만 저장)
 function viewWalk() {
   let id = ls.get('walkNow', null), watch = null, wake = null, wantWake = true, map = null, line = null, dot = null, follow = true, gps = 'wait', phLayer = null, spLayer = null, lastFix = null, nPhotos = 0;
+  { const nr = albumRoll(id); if (nr) { id = nr; setTimeout(() => toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`), 600); } }   // 판 -372
   let pausedNow = isPaused(id), brkNext = false;   // 잠시 멈춤 중인지 / 다시 시작한 뒤 첫 점은 앞과 잇지 않기
   leaveWarn = () => id && !done ? '첫 화면으로 가면 기록이 잠깐 멈춰요. 다시 들어오면 이어서 기록해요. 갈까요?' : null;
   let pick = qs.get('mode') || ls.get('lastMode', 'hike');   // 고른 모드
@@ -19193,6 +19214,7 @@ function viewWalk() {
       if (late) { if (id && !pausedNow) trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, null, false, p.timestamp); stats(); return; }
       lastFix = { lat: ll[0], lng: ll[1], ts: Date.now(), pt: p.timestamp }; lastAcc = p.coords.accuracy;
       if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
+      { const nr = albumRoll(id); if (nr) { id = nr; toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`); setTimeout(() => { try { draw(); } catch {} }, 0); } }   // 판 -372
       // 잠시 멈춤 중엔 길을 남기지 않고 내 위치 점만 움직여요. 다시 시작하면 첫 점은 앞과 잇지 않아요(brkNext)
       if (!pausedNow && trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow(), brkNext, p.timestamp)) brkNext = false;
       if (!pausedNow && p.coords.accuracy <= TRACK_MAX_ACC) { stayCheck(ll[0], ll[1]); splitCheck(); goalCheck(); coachTick(); hikeCheck(); }
