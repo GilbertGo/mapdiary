@@ -1447,11 +1447,13 @@ await test('여행 첫날 끝낸 뒤 빈 2일차가 생기지 않게 (판 -376)'
     const w1 = window.__T.tripAutoEnsure(true, true);
     const a1 = { w1, e2: localStorage.getItem('track:walk_e2'), d1n: G('track:walk_d1').length, plan: G('planAlbum:tpq') };
     // 끝내기를 누른 뒤(기록 중 아님) 다시 켜도 새 기록을 만들지 않고 첫날에 이어요
-    S('walkNow', null); const w2 = window.__T.tripAutoEnsure(true, true);
+    S('walkNow', null); S('track:walk_e3', [[37.48, 126.46, Date.now() - 3e4]]); S('walkMode:walk_e3', 'travel'); S('walkAlbum:walk_e3', 'album_B'); S('walkAutoTrip', 'walk_e3');
+    { const B = G('albums'); B[1].days.push('walk_e3'); S('albums', B); }   // 끝내기로 멈춘 빈 자동 기록도 합쳐져야 (판 -377)
+    const w2 = window.__T.tripAutoEnsure(true, true);
     return { ...a1, w2, alb: G('albums').map(a => a.id + ':' + a.days.join(',')) };
   });
   ok(r.w1 === 'walk_d1' && r.e2 === null && r.d1n === 4 && r.plan === 'album_B', '빈 2일차를 첫날 기록에 합쳐야 해요 ' + JSON.stringify(r));
-  ok(r.w2 === 'walk_d1' && !r.alb.join().includes('walk_e2'), '끝낸 뒤에도 첫날에 이어야 해요 ' + JSON.stringify(r));
+  ok(r.w2 === 'walk_d1' && !r.alb.join().includes('walk_e2') && !r.alb.join().includes('walk_e3'), '끝낸 뒤에도 첫날에 이어야 해요 ' + JSON.stringify(r));
 });
 
 await browser.close();
