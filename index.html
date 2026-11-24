@@ -3771,9 +3771,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.24-382-sweep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.24-383-recpill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 계획에서 시작한 기록 이름이 계획 날짜와 같은 n일차로 붙어요 · 기록이 없을 때 발견 화면의 점검 링크를 숨겼어요";
+const UI_NOTES = "여행 날엔 여행 화면 맨 위에 기록 중 알약이 보여요 · 영상과 초대는 ⋯ 안으로 옮겼어요 · 여행 계획에서 시작한 기록 이름이 계획 날짜와 같은 n일차로 붙어요 · 기록이 없을 때 발견 화면의 점검 링크를 숨겼어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -13815,7 +13815,19 @@ function tvTop(back, ...acts) {   // 사진 위 동그란 단추 줄 (뒤로 · 
   // 넷째 값(글자)이 있으면 그림 + 글자 알약 (판 -134: 공유 단추가 초대인 줄 몰라서 '초대')
   const ib = (svg, label, on, txt) => { const cls = 'n-ib' + (txt ? ' pill' : ''), kids = [cSvg(svg, 20), txt ? el('span', { text: txt }) : null].filter(Boolean);
     return typeof on === 'string' ? el('a', { class: cls, href: on, 'aria-label': label, title: label }, ...kids) : el('button', { class: cls, type: 'button', 'aria-label': label, title: label, onclick: on }, ...kids); };
-  return el('div', { class: 'tv-topbar' }, ib('back', backLbl(back) + '(으)로', back, typeof back === 'string' ? backLbl(back) : '뒤로'), el('span', { class: 'sp' }), ...acts.filter(Boolean).map(a => ib(a[0], a[1], a[2], a[3])));
+  return el('div', { class: 'tv-topbar' }, ib('back', backLbl(back) + '(으)로', back, typeof back === 'string' ? backLbl(back) : '뒤로'), el('span', { class: 'sp' }), ...acts.filter(Boolean).map(a => a instanceof Node ? a : ib(a[0], a[1], a[2], a[3])));
+}
+// 판 -383 (사용자 계획 화면 캡처 '내가 표시한 두 버튼(▶ 영상·초대)은 ··· 안으로 넣고, 이 자리에 "기록중" 넣는거 생각해봐' → 추천안 '그렇게 해'):
+//   여행 날이면 맨 위 줄에 기록 알약 하나(기록 중 · 시간 / ⏸ 이어서 기록 / ● 기록 시작), 여행 전·끝난 뒤엔 그 자리에 '초대'(구경은 없음). 영상·초대는 ⋯ 안에도
+function planRecPill(p) {
+  const k = planToday(p);
+  if (!(k != null && k >= 0 && k < (p.nd || 1))) return null;
+  const pill = (txt, href, red) => el('a', { class: 'n-ib pill rec-pill', href, style: red ? 'background:#E5383B;color:#fff' : 'color:#E5383B', 'aria-label': txt }, el('span', { text: txt }));
+  const now = ls.get('walkNow', null);
+  if (now) { const t = ls.get('walkAt', 0); return pill(`● 기록 중${t ? ' · ' + fmtDur(Math.max(0, Date.now() - t)) : ''}`, './?walk=1', true); }
+  const al = albumGet(ls.get('planAlbum:' + p.id, '')), last = al && al.days[al.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;
+  if (last && t && new Date(t).toDateString() === new Date().toDateString()) return pill('⏸ 이어서 기록', `./?walk=1&resume=${encodeURIComponent(last)}`, false);
+  return pill('● 기록 시작', `./?walk=1&mode=travel&go=1&pt=${encodeURIComponent(p.id)}`, false);
 }
 function tvBar(p, on) {   // 여행 화면 아래 메뉴
   const id = encodeURIComponent(p.id), nw = el('span', { class: 'n', style: 'display:none' });
@@ -14153,6 +14165,7 @@ function viewPlanOne(id) {
   function moreSheet() {   // ⋯ 더보기: 자주 안 쓰는 것들
     const go = (txt, fn) => el('button', { class: 'n-row', style: 'width:100%;border:none;font:inherit;font-weight:700;text-align:left;cursor:pointer', onclick: () => { bg.remove(); fn(); } }, el('span', { style: 'flex:1', text: txt }), el('span', { class: 'chv', text: '›' }));
     const bg = labSheet(p.name,
+      permIsV(p) ? null : go('👥 일행 초대 · 일정 보내기', () => planShare(p)),   // 판 -383: 맨 위 줄에서 ⋯ 안으로(여행 전엔 맨 위에도)
       go('🗺 지도에서 경로 고치기', () => planMapEdit(p, day < 0 ? 0 : day, () => drawAll())),
       go('📝 여행 후기 만들기 (블로그·인스타)', () => planPostSheet(p)),   // 판 -262
       go('📖 포토스토리 · 사진 한 장 카드 (카톡·인스타용)', () => photoStory(null, p)),   // 판 -276
@@ -14259,12 +14272,7 @@ function viewPlanOne(id) {
     const untimed = !its.some(y => y.t) && !its.some(y => y.ok);
     return el('div', { style: 'background:#fff;border-radius:18px;padding:12px 14px;margin:4px 0 8px;border:2px solid #FF8A6B' },
       el('div', {}, el('div', { style: 'font:800 17px Pretendard,sans-serif;white-space:nowrap', text: `오늘 · ${d + 1}일차` }), el('div', { class: 'dt', text: `${planDayLabel(p, d)} · 지금 ${now.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })} (휴대폰 시계)` })),
-      (() => { const now = ls.get('walkNow', null);   // 판 -371: 여기서 바로 여행 기록 · 판 -378 (사용자 '기록중 위치 부적절'): 정보 칸 사이가 아니라 제목 바로 아래
-        return now ? row('기록', '● 기록 중', ls.get('trackName:' + now, ''), el('a', { class: 'btn primary small', href: './?walk=1', text: '이어서' }))
-          : (() => { const al = albumGet(ls.get('planAlbum:' + p.id, '')), last = al && al.days[al.days.length - 1], tr = last ? ls.get('track:' + last, []) : [], t = tr.length ? tr[tr.length - 1][2] : 0;   // 판 -375: 오늘 기록을 끝냈으면 '이어서'
-              return last && t && new Date(t).toDateString() === new Date().toDateString() ? row('기록', '⏸ 기록이 멈췄어요', `${ls.get('trackName:' + last, '')} · 마지막 ${fmtClock(t)}`, el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&resume=${encodeURIComponent(last)}`, text: '● 이어서' })) : null; })()
-          || row('기록', ls.get('planAlbum:' + p.id, '') && albumGet(ls.get('planAlbum:' + p.id, '')) ? `${d + 1}일차 기록 시작` : '여행 기록 시작', '다닌 길과 사진이 이 여행 한 장에 날마다 모여요',
-            el('a', { class: 'btn primary small', style: 'background:#FF6B4A;border:none', href: `./?walk=1&mode=travel&go=1&pt=${encodeURIComponent(p.id)}`, text: '● 시작' })); })(),
+      // 판 -383: 기록 줄은 여행 화면 맨 위 알약(planRecPill)으로 옮김(같은 내용 두 번 안 보이게)
       row('다음 갈 곳', x ? `${nx + 1}. ${x.n}` : untimed ? '앱이 짐작하지 않아요' : its.length && its.every(y => y.ok) ? '오늘 일정을 다 다녀왔어요' : '남은 일정이 없어요',
         x ? [x.t ? x.t + ' 예정' : '시각 없음', Number.isFinite(x.lat) ? '' : '지도 위치 없음'].filter(Boolean).join(' · ') : untimed ? '시각이 없는 일정이라 지금 어디쯤인지 몰라요 · 다녀온 곳을 ✓로 표시하면 다음 곳을 보여 줘요' : '',
         x ? el('div', { style: 'display:flex;flex-direction:column;gap:4px' }, Number.isFinite(x.lat) ? el('button', { class: 'btn primary small', text: '길찾기', onclick: () => planGo(x) }) : null, el('button', { class: 'btn line small', text: '✓ 다녀옴', onclick: () => { x.ok = true; x.okT = Date.now(); x.okA = 0; x.okNo = 0; planSave(p); drawAll(); } })) : null),
@@ -14464,7 +14472,7 @@ function viewPlanOne(id) {
   const noLoc = () => p.it.filter(x => !Number.isFinite(x.lat) && x.k !== 'fly').length;
   roleBar('member', '여행 계획');   // 제목만 (띠는 안 보임)
   const noPrep = p.hike && p.hike.on && p.nd === 1 && !p.start;
-  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', ['film', '미리 보기 영상 만들기', './?film=1&plan=' + encodeURIComponent(p.id)], permIsV(p) ? null : ['share', '일행 초대 · 일정 보내기', () => planShare(p), '초대'], ['more', '더보기', moreSheet]), hero,
+  app.replaceChildren(el('div', { class: 'stack', style: 'position:relative' }, tvTop('./?plan=1', planRecPill(p) || (permIsV(p) ? null : ['share', '일행 초대 · 일정 보내기', () => planShare(p), '초대']), ['more', '더보기', moreSheet]), hero,
     el('div', { class: 'tv-sheet' },
     // 판 -129: 한 화면 차례 = 날 고르기 → 그날 지도·요약 → 그날 일정 → (작게) 위치 확인. 준비·일행 채팅은 아래 메뉴에만
     sumEl, mapEl, tabs, p.hike && p.hike.on ? planHikeCard(p, day) : null, planChkCard(p), list, head)), tvBar(p, 'plan'));   // 판 -173: 날 탭을 지도 아래 · 일정 바로 위로 (내려 보면 위에 붙어 따라와요)
@@ -16578,7 +16586,7 @@ const labDay = ts => { const d = new Date(ts); return `${d.getFullYear()}-${Stri
 const labDate = ts => { const d = new Date(ts); return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; };
 function labSheet(title, ...kids) {
   const bg = el('div', { class: 'sheet-bg', style: 'z-index:4200', onclick: e => { if (e.target === bg) bg.remove(); } });
-  bg.append(el('div', { class: 'sheet stack', style: 'gap:12px;max-height:88vh;overflow:auto' }, el('h2', { style: 'margin:0', text: title }), ...kids));
+  bg.append(el('div', { class: 'sheet stack', style: 'gap:12px;max-height:88vh;overflow:auto' }, el('h2', { style: 'margin:0', text: title }), ...kids.filter(k => k != null && k !== false)));
   document.body.append(bg); ovGuard(); return bg;
 }
 // ---------- 하루 기록 찾기: 사진 시각이 기록 시간(앞뒤 30분) 안이면 '확실', 같은 날 기록만 있으면 '같은 날' ----------

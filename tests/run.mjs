@@ -1509,6 +1509,18 @@ await test('초대받은 구경·로그인 안 한 사람도 위치 공유 자�
   noErr(page, '구경 계획');
 });
 
+await test('여행 화면 맨 위 기록 알약 · 여행 전엔 초대 (판 -383)', async page => {
+  await page.goto(BASE); await sleep(600);
+  const ymd = o => { const d = new Date(); d.setDate(d.getDate() + o); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  await page.evaluate(([a, b]) => { localStorage.removeItem('walkNow'); localStorage.setItem('tripPlans', JSON.stringify([{ id: 'tpa', name: '장가계', start: a, nd: 3, it: [], at: 1, u: 1 }, { id: 'tpb', name: '오사카', start: b, nd: 3, it: [], at: 1, u: 1 }])); }, [ymd(0), ymd(10)]);
+  const top = async id => { await page.goto(BASE + '?plan=1&p=' + id); await sleep(1500); return page.evaluate(() => [...document.querySelectorAll('.tv-topbar .n-ib')].map(b => b.textContent.trim() || b.getAttribute('aria-label')).join('|')); };
+  const a = await top('tpa'); ok(/기록 시작/.test(a) && !/초대/.test(a) && !/영상/.test(a), '여행 날엔 기록 알약만 ' + a);
+  await page.evaluate(() => { localStorage.setItem('walkNow', '"walk_q1"'); localStorage.setItem('walkAt', String(Date.now() - 3600e3)); localStorage.setItem('track:walk_q1', '[]'); });
+  const a2 = await top('tpa'); if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT }); ok(/기록 중/.test(a2), '기록 중이면 빨간 알약 ' + a2);
+  const b = await top('tpb'); ok(/초대/.test(b) && !/기록/.test(b), '여행 전엔 초대 ' + b);
+  await page.evaluate(() => localStorage.removeItem('walkNow'));
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
