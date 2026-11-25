@@ -1567,6 +1567,25 @@ await test('여행 화면 맨 위 기록 알약 · 여행 전엔 초대 (판 -38
   await page.evaluate(() => localStorage.removeItem('walkNow'));
 });
 
+// ─── 판 -388: 기록 중 다른 화면에서도 기록이 이어짐 (사용자 '이 모드에서 기록이 멈추는 것 같네') ───
+await test('기록 중에 여행 계획·첫 화면으로 가도 길이 이어짐 · 멈춤 중엔 안 넣음 (판 -388)', async page => {
+  const t = await seed(page);
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({ latitude: 29.12, longitude: 110.48, accuracy: 10 });
+  await page.evaluate(t => { localStorage.setItem('walkNow', JSON.stringify(t)); localStorage.setItem('track:' + t, JSON.stringify([[29.10, 110.46, Date.now() - 60000]])); localStorage.removeItem('walkPause:' + t); }, t);
+  const n = () => page.evaluate(t => JSON.parse(localStorage.getItem('track:' + t)).length, t);
+  for (const url of ['?plan=1', '']) {
+    await page.goto(BASE + url); await sleep(2600);
+    const a = await n(); await page.context().setGeolocation({ latitude: 29.12 + Math.random() * 0.01, longitude: 110.49, accuracy: 10 }); await sleep(1500);
+    ok(await n() > a || a > 1, `'${url || '첫 화면'}'에서 기록 중인데 길이 안 늘어요(${a})`);
+  }
+  await page.evaluate(t => localStorage.setItem('walkPause:' + t, JSON.stringify({ at: Date.now() })), t);
+  await page.goto(BASE + '?plan=1'); await sleep(2600); const b = await n();
+  await page.context().setGeolocation({ latitude: 29.2, longitude: 110.6, accuracy: 10 }); await sleep(1500);
+  ok(await n() === b, '멈춤 중인데 길이 늘어요');
+  noErr(page, '다른 화면 기록');
+});
+
 await browser.close();
 server.close();
 console.log(`\n결과: 통과 ${pass} · 실패 ${fail}` + (fails.length ? '\n실패: ' + fails.join(', ') : ''));
