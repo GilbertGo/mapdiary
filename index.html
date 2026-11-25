@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.25-387-rechz';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.25-388-reckeep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "중국에서 기록 지도 단추가 あ로 잘못 나오던 것을 漢으로 고쳤어요 · 漢을 눌러 파랗게 켜면 한자 옆에 한국 발음과 중국 발음이 나와요";
+const UI_NOTES = "기록 중에 여행 계획이나 첫 화면 같은 다른 화면으로 가도 기록이 멈추지 않아요 · 예전엔 기록 화면을 떠나면 길이 끊길 수 있었어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14746,7 +14746,7 @@ function autoFix(lat, lng, acc, alt, ts) {
   const S = autoSt(), p = [+lat.toFixed(6), +lng.toFixed(6), ts]; if (Number.isFinite(alt)) p.push(Math.round(alt));
   const fresh = () => { S.seg = null; S.c = p; S.ci = 0; S.last = p; S.rb = [p]; autoPut(S, true); };
   { const w = tripAutoEnsure();   // 판 -373: 여행 중이면 그 여행 기록에 위치를 넣어요
-    if (w && ls.get('walkAlbum:' + w, null) && !isPaused(w)) trackAdd(w, lat, lng, Number.isFinite(acc) ? acc : 10, null, alt, null, false, ts); }
+    if (w && recKeepW == null && ls.get('walkAlbum:' + w, null) && !isPaused(w)) trackAdd(w, lat, lng, Number.isFinite(acc) ? acc : 10, null, alt, null, false, ts); }
   if (ls.get('walkNow', null)) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 손으로 하는 기록 중엔 쉬어요
   if (!S.c || !S.last || ts - S.last[2] > AUTO_STAY_MS) { if (S.seg) autoSave(S.seg, S.seg.length - 1); return fresh(); }   // 처음이거나 위치가 오래 끊겼다가 다시
   if (ts <= S.last[2]) return;
@@ -14877,6 +14877,21 @@ function autoStatus() {
   return `자동 기록 중 · 오늘 ${n}개`;
 }
 if (AUTO_OK && !LAB_QUIET) setTimeout(autoStart, 1500);
+// 판 -388 (사용자 여행 계획 화면 캡처 '이 모드에서 기록이 멈추는 것 같네. 확인해봐'): 기록 중에 다른 화면(여행 계획·첫 화면·내 기록 …)으로 가면
+//   위치를 받던 기록 화면이 닫혀 길이 끊겼음 — 자동 기록이 켜진 여행 기록만 autoFix가 이어 넣었고, 자동 기록이 꺼졌거나 여행이 아닌 기록,
+//   기록 지도 '🗓 n일차 일정' 단추처럼 묻지 않고 넘어가는 길에선 멈춤. → 기록 화면이 아닌 모든 화면에서 기록 중이면 위치를 받아 그 기록에 넣어요(recKeep)
+//   앱은 화면을 꺼도(알림 'MPD 기록 중'), 웹은 그 화면이 열려 있는 동안. 멈춤 중엔 안 넣고, 날이 바뀌면 albumRoll로 다음 날
+var recKeepW = null;
+function recKeep() {
+  if (recKeepW != null || LAB_QUIET || !navigator.geolocation || /[?&]walk=1/.test(location.search)) return;
+  const id0 = ls.get('walkNow', null); if (!id0 || GV) return;   // 받은 링크(구경)에선 안 함
+  recKeepW = navigator.geolocation.watchPosition(g => {
+    let w = ls.get('walkNow', null); if (!w || isPaused(w)) return;
+    try { const nr = albumRoll(w); if (nr) w = nr; } catch {}
+    trackAdd(w, g.coords.latitude, g.coords.longitude, g.coords.accuracy, null, g.coords.altitude, null, false, g.timestamp);
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000, mdBg: { title: 'MPD 기록 중', message: '다른 화면을 보는 동안에도 기록해요', distanceFilter: 5 } });
+}
+if (!LAB_QUIET) setTimeout(recKeep, 1800);
 // 판 -253 (사용자 'MPD가 열려 있을 때만 보이면 안 되지 · 본인 승인 후에 언제나 보여야 돼'): 일행 채팅에서 '내 위치 같이 보기'를 켠 사람은
 //   끌 때까지 화면을 꺼도 1분마다 위치를 보내요 — 안드로이드 MPD 앱만(백그라운드 위치, 알림 'MPD 일행과 위치 공유 중').
 //   웹·아이폰은 브라우저를 닫거나 화면을 끄면 멈춰요(기술 한계). 앱을 최근 앱에서 밀어 닫거나 휴대폰을 껐다 켜면 MPD를 다시 열 때까지 멈춰요
@@ -18227,7 +18242,7 @@ function viewWalk() {
   let id = ls.get('walkNow', null), watch = null, wake = null, wantWake = true, map = null, line = null, dot = null, follow = true, gps = 'wait', phLayer = null, spLayer = null, lastFix = null, nPhotos = 0;
   { const nr = albumRoll(id); if (nr) { id = nr; setTimeout(() => toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`), 600); } }   // 판 -372
   let pausedNow = isPaused(id), brkNext = false;   // 잠시 멈춤 중인지 / 다시 시작한 뒤 첫 점은 앞과 잇지 않기
-  leaveWarn = () => id && !done && !(autoOn() && ls.get('walkAlbum:' + id, null)) ? '첫 화면으로 가면 기록이 잠깐 멈춰요. 다시 들어오면 이어서 기록해요. 갈까요?' : null;   // 판 -373: 앱의 여행 기록은 다른 화면에서도 계속 기록돼서 묻지 않아요
+  leaveWarn = () => null;   // 판 -388: 다른 화면에서도 계속 기록돼서(recKeep) 묻지 않아요   // 판 -373: 앱의 여행 기록은 다른 화면에서도 계속 기록돼서 묻지 않아요
   let pick = qs.get('mode') || ls.get('lastMode', 'hike');   // 고른 모드
   // 따라가기: 기록에 붙은 길(guide), 시작하면 붙일 길(guideNext, 하루 지나면 버려요)
   let guide = id ? ls.get('walkGuide:' + id, null) : null, gLayer = null, gIdx = 0, gOff = false, gEnd = false;
