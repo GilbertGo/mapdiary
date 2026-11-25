@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.25-388-reckeep';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.25-389-gapfill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록 중에 여행 계획이나 첫 화면 같은 다른 화면으로 가도 기록이 멈추지 않아요 · 예전엔 기록 화면을 떠나면 길이 끊길 수 있었어요";
+const UI_NOTES = "기록이 끊겨 곧은 줄로 이어진 곳을 채울 수 있어요 · 기록 보기 ⋯ → 끊긴 길 채우기 · 그때 찍은 사진 위치와 걷는 길로 다시 그리고 되돌리기도 있어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14885,6 +14885,7 @@ var recKeepW = null;
 function recKeep() {
   if (recKeepW != null || LAB_QUIET || !navigator.geolocation || /[?&]walk=1/.test(location.search)) return;
   const id0 = ls.get('walkNow', null); if (!id0 || GV) return;   // 받은 링크(구경)에선 안 함
+  try { if (staleRec()) return; } catch {}   // 판 -389: 며칠 전 켜 두고 잊은 기록(첫 화면 '이어 갈까요?')엔 다른 화면에서 저절로 점을 붙이지 않아요(스스로 점검에서 찾음)
   recKeepW = navigator.geolocation.watchPosition(g => {
     let w = ls.get('walkNow', null); if (!w || isPaused(w)) return;
     try { const nr = albumRoll(w); if (nr) w = nr; } catch {}
@@ -15146,6 +15147,35 @@ async function ptTrack(list, st = {}, prog = () => {}) {   // 위치 있는 사�
   if (tr.length === 1) tr.push([tr[0][0], tr[0][1], tr[0][2] + 60000]);   // 위치 있는 사진이 한 장인 날도 지도에 점 하나로
   return tr;
 }
+// 판 -389 끊긴 길 채우기 (사용자 천문산 기록 캡처 '그래서 잃어버린 경로 복구해' → '해'): 기록이 끊겨 곧은 줄로 이어진 곳(3분·300m 넘게 빈 곳)을
+//   그 사이에 찍은 사진의 진짜 위치(기록 사진 + 앱이면 사진첩 galBetween)와 걷는 길 찾기(ptTrack, 15km 넘으면 찻길)로 채워요.
+//   누를 때만(⋯ → 끊긴 길 채우기), 예전 길은 gapUndo:{기록}에 남겨 '길 채우기 되돌리기'. 멈춤 뒤 이어진 곳(brk)·비행(시속 150km 넘음)은 빼요
+function trackGaps(tr) {
+  const out = [];
+  for (let i = 1; i < tr.length; i++) { const a = tr[i - 1], b = tr[i], dt = b[2] - a[2], d = dist(a[0], a[1], b[0], b[1]);
+    if (b[5] === 1 || dt < 180000 || d < 300 || d / 1000 / (dt / 3600000) > 150) continue; out.push(i); }
+  return out;
+}
+async function gapFill(t, prog = () => {}) {
+  const tr = trackLoad(t), gaps = trackGaps(tr); if (!gaps.length) return { n: 0 };
+  let ph = []; try { ph = (await photoList(t)).filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng) && !isVid(r)).map(r => ({ lat: r.lat, lng: r.lng, ts: r.ts })); } catch {}
+  const st = {}, ins = []; let used = 0;
+  for (const i of gaps) { const a = tr[i - 1], b = tr[i];
+    let mid = ph.filter(x => x.ts > a[2] && x.ts < b[2]);
+    try { mid = mid.concat((await galBetween(a[2], b[2])).filter(x => x.lat != null && x.ts > a[2] && x.ts < b[2]).map(x => ({ lat: x.lat, lng: x.lng, ts: x.ts }))); } catch {}
+    mid.sort((x, y) => x.ts - y.ts); mid = mid.filter((x, k) => !k || dist(x.lat, x.lng, mid[k - 1].lat, mid[k - 1].lng) > 30); used += mid.length;
+    prog(`끊긴 곳 ${ins.length + 1}/${gaps.length} 길 찾는 중`);
+    const path = await ptTrack([{ lat: a[0], lng: a[1], ts: a[2] }, ...mid, { lat: b[0], lng: b[1], ts: b[2] }], st);
+    ins.push([i, path.slice(1, -1).filter(q => q[2] > a[2] && q[2] < b[2])]); }
+  ls.set('gapUndo:' + t, tr);
+  const nt = tr.slice(); for (let k = ins.length - 1; k >= 0; k--) nt.splice(ins[k][0], 0, ...ins[k][1]);
+  if (!ls.set('track:' + t, nt)) { ls.set('gapUndo:' + t, null); return { n: 0, err: 1 }; }
+  try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {}
+  return { n: gaps.length, ph: used, road: st.road || 0, add: nt.length - tr.length };
+}
+function gapUndo(t) { const o = ls.get('gapUndo:' + t, null); if (!o) return false;
+  const cur = trackLoad(t), last = o[o.length - 1], extra = last ? cur.filter(q => q[2] > last[2]) : [];   // 채운 뒤 더 기록된 점은 남겨요(기록 중인 날)
+  ls.set('track:' + t, o.concat(extra)); ls.set('gapUndo:' + t, null); try { syncPush(); } catch {} return true; }
 function ptPlace(tr, ts) {   // 위치 없는 사진: 그 시각에 있었을 길 위 자리
   if (ts <= tr[0][2]) return tr[0]; if (ts >= tr[tr.length - 1][2]) return tr[tr.length - 1];
   for (let i = 1; i < tr.length; i++) if (tr[i][2] >= ts) { const p = tr[i - 1], q = tr[i], r = (ts - p[2]) / ((q[2] - p[2]) || 1); return [+(p[0] + (q[0] - p[0]) * r).toFixed(6), +(p[1] + (q[1] - p[1]) * r).toFixed(6)]; }
@@ -16137,11 +16167,17 @@ async function viewMyOne(t) {
       el('span', { style: 'flex:1;min-width:0' }, el('span', { style: 'display:block;font-size:16px', text: txt }), desc ? el('span', { style: 'display:block;font-size:12.5px;font-weight:500;color:#8B95A1;margin-top:2px', text: desc }) : null), el('span', { class: 'chv', text: '›' }));
     const grp = (h, ...rows) => { rows = rows.filter(Boolean); return rows.length ? el('div', { class: 'stack', style: 'gap:6px' }, el('div', { style: 'font-size:12.5px;font-weight:700;color:#8B95A1;margin:4px 4px 0', text: h }), ...rows) : null; };
     const hasPh = phAll.some(r => !isVid(r));
+    const dayIds = x.album ? ((albumGet(t) || {}).days || []) : [t], gapDays = GV ? [] : dayIds.map(d => [d, trackGaps(trackLoad(d)).length]).filter(d => d[1]), undoDays = GV ? [] : dayIds.filter(d => ls.get('gapUndo:' + d, null));
+    const gapGo = async () => { let n = 0, ph = 0; toast('끊긴 길을 찾는 중이에요 · 잠시만요');
+      for (const [d] of gapDays) { const r = await gapFill(d, m => toast(m)); n += r.n || 0; ph += r.ph || 0; }
+      toastLater(n ? `끊긴 ${n}곳을 채웠어요${ph ? ` · 그때 찍은 사진 ${ph}장 위치로` : ''} · 되돌리기: ⋯ → 길 채우기 되돌리기` : '채울 곳을 못 찾았어요'); location.reload(); };
     const bg = labSheet(info.name,
       grp('기록',
         live ? go('제목 바꾸기', rename) : go('수정하기', () => editMD(x), false, '제목 · 모드 · 장소 · 사진 더하기 · 길 자르기'),
         go(ls.get('walkNote:' + t, '') ? '메모 고치기' : '메모 쓰기', memoEdit),
-        hasPh ? go('대표 사진 바꾸기', () => coverPick(t)) : null),
+        hasPh ? go('대표 사진 바꾸기', () => coverPick(t)) : null,
+        gapDays.length ? go('끊긴 길 채우기', gapGo, false, `기록이 끊겨 곧은 줄로 이어진 ${gapDays.reduce((s, d) => s + d[1], 0)}곳을 그때 찍은 사진 위치와 걷는 길로`) : null,   // 판 -389
+        undoDays.length ? go('길 채우기 되돌리기', () => { undoDays.forEach(gapUndo); toastLater('채우기 전 길로 되돌렸어요'); location.reload(); }) : null),
       live ? null : grp('만들기',
         hasPh ? go('포토스토리', () => photoStory(t), false, '사진 한 장 카드 · 카톡·인스타에 바로') : null,   // 판 -275
         hasPh ? go('포토북', () => photoBook(t), false, '여러 쪽 PDF · 간직하고 인쇄하기') : null,   // 판 -277

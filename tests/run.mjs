@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer'];
+const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1584,6 +1584,30 @@ await test('기록 중에 여행 계획·첫 화면으로 가도 길이 이어�
   await page.context().setGeolocation({ latitude: 29.2, longitude: 110.6, accuracy: 10 }); await sleep(1500);
   ok(await n() === b, '멈춤 중인데 길이 늘어요');
   noErr(page, '다른 화면 기록');
+});
+
+// ─── 판 -389: 끊긴 길 채우기 (사용자 '그래서 잃어버린 경로 복구해') ───
+await test('끊긴 길 채우기 · 그 사이 사진 위치를 지나고 · 되돌리기 · 멈춤 뒤는 안 채움 (판 -389)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const t = 'walk_gap1', t0 = Date.now() - 5 * 3600e3, tr = [];
+    for (let i = 0; i < 10; i++) tr.push([29.05 + i * 0.0002, 110.48, t0 + i * 30000]);
+    const a = tr[tr.length - 1]; tr.push([29.07, 110.48, a[2] + 40 * 60000]);   // 40분 · 2km 끊김(곧은 줄)
+    for (let i = 1; i < 5; i++) tr.push([29.07 + i * 0.0002, 110.48, a[2] + 40 * 60000 + i * 30000]);
+    tr.push([29.09, 110.50, a[2] + 90 * 60000, null, null, 1]);   // 멈춤 뒤 이어진 점(brk) — 채우면 안 돼요
+    localStorage.setItem('track:' + t, JSON.stringify(tr)); localStorage.setItem('walkMode:' + t, '"hike"');
+    await __T.photoPut({ id: 'ph_gap1', t, ts: a[2] + 20 * 60000, lat: 29.06, lng: 110.47, thumb: 'data:,' });   // 끊긴 사이에 찍은 사진(옆으로 1km 비켜 있음)
+    const gaps = __T.trackGaps(tr).length, R = await __T.gapFill(t);
+    const nt = JSON.parse(localStorage.getItem('track:' + t)), near = nt.some(q => Math.abs(q[0] - 29.06) < 0.0005 && Math.abs(q[1] - 110.47) < 0.0005);
+    const sorted = nt.every((q, k) => !k || q[2] >= nt[k - 1][2]);
+    __T.gapUndo(t); const back = JSON.parse(localStorage.getItem('track:' + t)).length;
+    return { gaps, n: R.n, ph: R.ph, more: nt.length > tr.length, near, sorted, back, len: tr.length };
+  });
+  ok(r.gaps === 1 && r.n === 1, '끊긴 곳은 하나(멈춤 뒤는 빼고)여야 해요 ' + JSON.stringify(r));
+  ok(r.more && r.near && r.ph === 1, '끊긴 길이 그때 찍은 사진 자리를 지나야 해요 ' + JSON.stringify(r));
+  ok(r.sorted, '채운 점의 시각 차례가 섞였어요');
+  ok(r.back === r.len, '되돌리기 뒤 예전 길과 달라요 ' + JSON.stringify(r));
+  noErr(page, '끊긴 길 채우기');
 });
 
 await browser.close();
