@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-391-gapauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-392-photopts';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "끊긴 길을 묻지 않고 그때 찍은 사진 위치와 걷는 길로 저절로 채워요";
+const UI_NOTES = "사진 찍은 곳이 길에서 벗어나 있으면 그 자리도 길에 넣어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -15194,6 +15194,32 @@ function gapUndo(t) { const o = ls.get('gapUndo:' + t, null); if (!o) return fal
   ls.set('gapUndo:' + t, null); ls.set('gapAutoOff:' + t, true); try { syncPush(); } catch {} return true; }   // 되돌린 기록은 저절로 다시 채우지 않아요
 // 판 -391 (사용자 장가계 '자동으로 끊긴 길 채워. 귀찮게하거나 실망하게 하지말고!!!'): 기록 중인 기록과 3일 안에 끝낸 기록의 끊긴 길(trackGaps)을
 //   묻지 않고 채워요(켤 때·10분마다·화면 켤 때). 한 번 해 본 끊긴 곳은 다시 안 함(gapTried), ⋯ '길 채우기 되돌리기'로 되돌리면 그 기록은 다시 안 채움
+// 판 -392 (사용자 '사진 찍은 곳도 경로에 넣어야지'): 사진의 진짜 위치(기록 사진+사진첩)가 그 시각 앞뒤 길 점을 잇는 줄에서 60m 넘게 떨어져 있으면
+//   그 자리를 길에 끼워요(채운 점 [6]=1, 되돌리기 때 같이 빠짐). 사진 위치가 튄 것은 빼요: 둘러 가는 길이 그 시간에 시속 9km(걷기)·구간 빠르기의 1.5배 넘으면 안 넣음
+function ptSegM(p, a, b) { const kx = Math.cos(p[0] * Math.PI / 180) * 111320, ky = 110540, ax = (a[1] - p[1]) * kx, ay = (a[0] - p[0]) * ky, bx = (b[1] - p[1]) * kx, by = (b[0] - p[0]) * ky, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+  const t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0; return Math.hypot(ax + t * dx, ay + t * dy); }
+async function photoPtsFill(t) {
+  const tr = trackLoad(t); if (tr.length < 2) return 0;
+  let ph = []; try { ph = (await photoList(t)).filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng) && !isVid(r) && !r.mv).map(r => ({ lat: r.lat, lng: r.lng, ts: r.ts })); } catch {}
+  const since = ls.get('phPtsAt:' + t, 0), endT = tr[tr.length - 1][2]; ls.set('phPtsAt:' + t, endT);   // 사진첩은 지난번 본 뒤(10분 앞부터)만 다시 읽어요
+  if (endT > since) try { ph = ph.concat((await galBetween(Math.max(tr[0][2], since - 600000), endT)).filter(x => x.lat != null).map(x => ({ lat: x.lat, lng: x.lng, ts: x.ts }))); } catch {}
+  const add = []; let j = 1;
+  for (const x of ph.sort((a, b) => a.ts - b.ts)) {
+    if (x.ts <= tr[0][2] || x.ts >= tr[tr.length - 1][2]) continue;
+    while (j < tr.length - 1 && tr[j][2] < x.ts) j++;
+    const a = tr[j - 1], b = tr[j], p = [x.lat, x.lng]; if (b[2] - a[2] < 1000 || a[2] === x.ts || b[2] === x.ts) continue;
+    if (ptSegM(p, a, b) <= 60 || add.some(q => Math.abs(q[2] - x.ts) < 30000 && dist(q[0], q[1], x.lat, x.lng) < 60)) continue;
+    const sec = (b[2] - a[2]) / 1000, via = dist(a[0], a[1], x.lat, x.lng) + dist(x.lat, x.lng, b[0], b[1]), v0 = dist(a[0], a[1], b[0], b[1]) / sec;
+    if (via / sec > Math.max(2.5, v0 * 1.5)) continue;
+    add.push([+x.lat.toFixed(6), +x.lng.toFixed(6), Math.round(x.ts), null, null, null, 1]);
+  }
+  if (!add.length) return 0;
+  const nt = trackLoad(t).concat(add).sort((p, q) => p[2] - q[2]);
+  if (!ls.set('track:' + t, nt)) return 0;
+  if (!ls.get('gapUndo:' + t, null)) ls.set('gapUndo:' + t, true);
+  try { syncPush(); } catch {}
+  return add.length;
+}
 var gapAutoBusy = false;
 async function gapAuto() {
   if (gapAutoBusy || GV || LAB_QUIET || !navigator.onLine) return; gapAutoBusy = true;
@@ -15201,14 +15227,15 @@ async function gapAuto() {
     const now = Date.now(), cur = ls.get('walkNow', null), ids = new Set(cur ? [cur] : []);
     for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue; const t = k.slice(6); if (ids.has(t)) continue;
       try { const tr = ls.get(k, []); if (tr.length && now - tr[tr.length - 1][2] < 3 * 864e5) ids.add(t); } catch {} }
-    const tried = ls.get('gapTried', {}); let n = 0;
+    const tried = ls.get('gapTried', {}); let n = 0, np = 0;
     for (const t of ids) {
       if (ls.get('gapAutoOff:' + t, false) || isGone(t)) continue;
+      try { np += await photoPtsFill(t); } catch {}
       const tr = trackLoad(t), gs = trackGaps(tr).filter(i => !(tried[t] || []).includes(tr[i - 1][2])); if (!gs.length) continue;
       tried[t] = (tried[t] || []).concat(gs.map(i => tr[i - 1][2])).slice(-60); ls.set('gapTried', tried);
       try { const r = await gapFill(t); n += r.n || 0; } catch {}
     }
-    if (n) { toast(`끊긴 길 ${n}곳을 걷는 길·찻길로 채웠어요`); dispatchEvent(new Event('track-changed')); }
+    if (n || np) { toast([n ? `끊긴 길 ${n}곳을 채웠어요` : '', np ? `사진 찍은 곳 ${np}곳을 길에 넣었어요` : ''].filter(Boolean).join(' · ')); dispatchEvent(new Event('track-changed')); }
   } finally { gapAutoBusy = false; }
 }
 if (!LAB_QUIET) { setTimeout(gapAuto, 8000); setInterval(gapAuto, 10 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(gapAuto, 3000); }); }
