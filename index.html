@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-386-battery';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-390-stepmode';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "새 앱에서 화면을 꺼도 길이 촘촘히 남게 배터리 최적화에서 MPD를 빼도록 한 번 물어요";
+const UI_NOTES = "화면을 꺼도 걸음 센서로 걸은 길과 차로 간 길을 나눠요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -14881,6 +14881,18 @@ if (AUTO_OK && !LAB_QUIET) setTimeout(autoStart, 1500);
 //   위치를 받던 기록 화면이 닫혀 길이 끊겼음 — 자동 기록이 켜진 여행 기록만 autoFix가 이어 넣었고, 자동 기록이 꺼졌거나 여행이 아닌 기록,
 //   기록 지도 '🗓 n일차 일정' 단추처럼 묻지 않고 넘어가는 길에선 멈춤. → 기록 화면이 아닌 모든 화면에서 기록 중이면 위치를 받아 그 기록에 넣어요(recKeep)
 //   앱은 화면을 꺼도(알림 'MPD 기록 중'), 웹은 그 화면이 열려 있는 동안. 멈춤 중엔 안 넣고, 날이 바뀌면 albumRoll로 다음 날
+// 판 -390 (사용자 '근데 다른 앱은 꺼도 걸음 수 재던데? · 이 앱도 걸음수 재잖아 · 고쳐'): 화면을 끄면 흔들림(devicemotion)을 못 재서 걷기/탈것을 빠르기로만 나눴음
+//   → 앱 걸음 센서(화면 꺼도 셈)를 위치가 들어올 때마다 읽어 최근 15~40초 걸음 빠르기로: 초당 0.5걸음(분당 30) 넘으면 걸음(1), 거의 없으면(분당 6 아래) 흔들림 없음(0, 움직이면 탈것)
+var stLog = [], stBusy = false;
+async function stepSample() {
+  if (stBusy || !window.mdNativeSteps || (stLog.length && Date.now() - stLog[stLog.length - 1].t < 3000)) return; stBusy = true;
+  try { const r = await window.mdNativeSteps.now(false); if (r && r.has && r.n >= 0) { const t = Date.now(); stLog.push({ t, n: r.n }); stLog = stLog.filter(x => t - x.t < 120000); } } catch {} finally { stBusy = false; }
+}
+function stepShake() {
+  if (stLog.length < 2) return undefined; const b = stLog[stLog.length - 1]; if (Date.now() - b.t > 30000) return undefined;
+  const a = stLog.find(x => b.t - x.t <= 40000); if (!a || b.t - a.t < 15000 || b.n < a.n) return undefined;
+  const r = (b.n - a.n) / ((b.t - a.t) / 1000); return r >= 0.5 ? 1 : r < 0.1 ? 0 : undefined;
+}
 var recKeepW = null;
 function recKeep() {
   if (recKeepW != null || LAB_QUIET || !navigator.geolocation || /[?&]walk=1/.test(location.search)) return;
@@ -14889,7 +14901,7 @@ function recKeep() {
   recKeepW = navigator.geolocation.watchPosition(g => {
     let w = ls.get('walkNow', null); if (!w || isPaused(w)) return;
     try { const nr = albumRoll(w); if (nr) w = nr; } catch {}
-    trackAdd(w, g.coords.latitude, g.coords.longitude, g.coords.accuracy, null, g.coords.altitude, null, false, g.timestamp);
+    stepSample(); trackAdd(w, g.coords.latitude, g.coords.longitude, g.coords.accuracy, null, g.coords.altitude, stepShake() ?? null, false, g.timestamp);
   }, () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000, mdBg: { title: 'MPD 기록 중', message: '다른 화면을 보는 동안에도 기록해요', distanceFilter: 5 } });
 }
 if (!LAB_QUIET) setTimeout(recKeep, 1800);
@@ -18653,9 +18665,9 @@ function viewWalk() {
   const shakeB = [];
   function shakeNow() {
     const now = Math.floor(Date.now() / 1000), b = shakeB.filter(x => now - x.s < 20);
-    if (b.length < 12) return undefined;
+    if (b.length < 12) return stepShake();   // 판 -390: 화면이 꺼져 흔들림을 못 재면 걸음 센서로
     const n = b.reduce((a, x) => a + x.n, 0), st = b.reduce((a, x) => a + x.st, 0), rms = Math.sqrt(b.reduce((a, x) => a + x.ss, 0) / n), spm = st / (b.length / 60);
-    return spm >= 30 || rms >= 1.3 ? 1 : spm < 15 && rms < 0.9 ? 0 : undefined;
+    return spm >= 30 || rms >= 1.3 ? 1 : spm < 15 && rms < 0.9 ? 0 : stepShake();
   }
   // 흔들림 센서는 모든 모드에서 켜요 (케이던스는 러닝에만 보여요)
   function motionStart() {
@@ -19434,7 +19446,7 @@ function viewWalk() {
       if (late) { if (id && !pausedNow) trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, null, false, p.timestamp); stats(); return; }
       lastFix = { lat: ll[0], lng: ll[1], ts: Date.now(), pt: p.timestamp }; lastAcc = p.coords.accuracy;
       if (!id) { drawGpsReady(); return; }
-      batAsk();   // 러닝 시작 화면: 위치만 미리 잡아 둬요
+      batAsk(); stepSample();   // 러닝 시작 화면: 위치만 미리 잡아 둬요
       { const nr = albumRoll(id); if (nr) { id = nr; toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`); setTimeout(() => { try { draw(); } catch {} }, 0); } }   // 판 -372
       // 잠시 멈춤 중엔 길을 남기지 않고 내 위치 점만 움직여요. 다시 시작하면 첫 점은 앞과 잇지 않아요(brkNext)
       if (!pausedNow && trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow(), brkNext, p.timestamp)) brkNext = false;
