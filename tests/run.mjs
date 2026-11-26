@@ -1693,9 +1693,10 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
     __T.spotMarkers(ly, S); await new Promise(z => setTimeout(z, 2500));
     return { tips: [...box.querySelectorAll('.leaflet-tooltip.nm')].map(e => e.textContent), same: JSON.stringify(S) === keep };
   });
-  ok(r.tips.includes('10:35 천하제일교'), '중국 들른 곳에 우리 한자 읽기 이름이 안 붙어요: ' + JSON.stringify(r.tips));
-  ok(r.tips.includes('09:11 호수공원'), '들른 곳에 찾아 둔 지도 이름이 안 붙어요: ' + JSON.stringify(r.tips));
-  ok(r.tips.includes('11:22 들른 곳') && r.tips.includes('내가 붙인 이름'), '이름을 못 찾은 곳·사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
+  ok(r.tips.includes('천하제일교'), '중국 들른 곳에 우리 한자 읽기 이름이 안 붙어요: ' + JSON.stringify(r.tips));
+  ok(r.tips.includes('호수공원'), '들른 곳에 찾아 둔 지도 이름이 안 붙어요: ' + JSON.stringify(r.tips));
+  ok(!r.tips.some(t => /\d{1,2}:\d{2}/.test(t)), '지도 이름표에 시간이 있어요(판 -396 사용자 \'지도에는 시간 빼\'): ' + JSON.stringify(r.tips));
+  ok(r.tips.includes('내가 붙인 이름') && r.tips.length === 3, '이름 못 찾은 곳은 핀만, 사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
   ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
   noErr(page, '들른 곳 이름');
 });
@@ -1725,13 +1726,16 @@ await test('지도 이름표 겹침 · 겹치면 뒤엣것 숨김 · 확대하�
   const r = await page.evaluate(async () => {
     const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;width:360px;height:360px;z-index:99999'; document.body.append(d);
     const m = L.map(d).setView([29.35, 110.5], 11), ly = L.layerGroup().addTo(m);
-    __T.spotMarkers(ly, [{ k: 'stay', n: '09:11 들른 곳', lat: 29.35, lng: 110.5 }, { k: 'stay', n: '13:44 들른 곳', lat: 29.352, lng: 110.5 }, { n: '천자산 전망대', lat: 29.351, lng: 110.5 }]);
+    __T.spotMarkers(ly, [{ n: '천자산 전망대', lat: 29.351, lng: 110.5 }, { k: 'stay', n: '오룡채', lat: 29.35, lng: 110.5 }, { k: 'stay', n: '십리화랑', lat: 29.352, lng: 110.5 },
+      { k: 'stay', n: '원가계', lat: 29.33, lng: 110.45 }, { k: 'stay', n: '원가계', lat: 29.37, lng: 110.55 }, { k: 'stay', n: '09:11 들른 곳', lat: 29.36, lng: 110.47 }]);
     await new Promise(r => setTimeout(r, 300));
     const vis = () => [...d.querySelectorAll('.leaflet-tooltip.nm')].filter(e => e.style.visibility !== 'hidden').map(e => e.textContent);
     const far = vis(); m.setZoom(18, { animate: false }); await new Promise(r => setTimeout(r, 300)); const near = vis(); d.remove(); return { far, near };
   });
-  ok(r.far.length === 1 && r.far[0] === '천자산 전망대', '멀리서 보면 겹친 이름표는 하나(이름 있는 곳)만 보여야 해요 ' + JSON.stringify(r));
-  ok(r.near.length === 3, '확대하면 이름표가 다 보여야 해요 ' + JSON.stringify(r));
+  ok(r.far.filter(t => t !== '원가계').length === 1 && r.far.includes('천자산 전망대'), '멀리서 보면 겹친 이름표는 하나만 보여야 해요 ' + JSON.stringify(r));
+  ok(r.far.filter(t => t === '원가계').length === 1, '같은 이름은 지도에 한 번만 보여야 해요(판 -396) ' + JSON.stringify(r));
+  ok(!r.far.concat(r.near).some(t => /들른 곳/.test(t)), '이름 없는 들른 곳은 지도에 이름표 없이 핀만이어야 해요(판 -396) ' + JSON.stringify(r));
+  ok(r.near.filter(t => t !== '원가계').length === 3, '확대하면 겹쳤던 이름표가 다 보여야 해요 ' + JSON.stringify(r));
   noErr(page, '이름표 겹침');
 });
 
