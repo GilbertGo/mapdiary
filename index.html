@@ -1664,6 +1664,20 @@ function spotsOf(t) {
   if (String(t).startsWith('album_')) { const a = albumGet(t); return a ? a.days.flatMap(d => ls.get('walkSpots:' + d, [])) : []; }
   return ls.get('walkSpots:' + t, []);
 }
+// 판 -393 (사용자 3일차 기록 지도 캡처 — '09:11 들른 곳'·'13:44 들른 곳' 이름표가 겹겹이 쌓여 못 읽음): 늘 떠 있는 이름표(.leaflet-tooltip.nm)가
+//   화면에서 겹치면 뒤엣것은 숨겨요(이름 있는 곳·좋은 곳 먼저, 'n시 들른 곳'은 나중). 확대하면 다시 나타나고, 숨은 곳은 핀을 누르면 이름이 떠요. 모든 지도에 한 번에(L.Map 초기 훅)
+function nmDeclutter(map) {
+  try { const box = map.getContainer(), tips = [...box.querySelectorAll('.leaflet-tooltip.nm')];
+    const rank = e => /들른 곳$/.test(e.textContent || '') ? 1 : 0, kept = [];
+    tips.sort((a, b) => rank(a) - rank(b) || 0).forEach(e => { e.style.visibility = '';
+      if (e.dataset.nmPin === '1') { kept.push(e.getBoundingClientRect()); return; }
+      const r = e.getBoundingClientRect(); if (!r.width) return;
+      const hit = kept.some(k => r.left < k.right + 2 && r.right > k.left - 2 && r.top < k.bottom + 2 && r.bottom > k.top - 2);
+      if (hit) e.style.visibility = 'hidden'; else kept.push(r); }); } catch {}
+}
+if (window.L && L.Map && !L.Map.__nmHook) { L.Map.__nmHook = 1; L.Map.addInitHook(function () { let tm = 0; const go = () => { clearTimeout(tm); tm = setTimeout(() => nmDeclutter(this), 60); };
+  this.on('zoomend moveend layeradd viewreset resize', go);
+  this.on('layeradd', e => { const ly = e.layer; if (ly && ly.getTooltip && ly.getTooltip() && !ly.__nmTap) { ly.__nmTap = 1; ly.on('click', () => { const t = ly.getTooltip(), el2 = t && t.getElement && t.getElement(); if (el2 && el2.classList.contains('nm')) { el2.dataset.nmPin = el2.dataset.nmPin === '1' ? '' : '1'; nmDeclutter(this); } }); } }); }); }
 function spotMarkers(layer, spots) {
   spots.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng)).forEach(s => {
     const mk = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'spot-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: s.k === 'stay' ? icoSvg('pin', 18, '#F4A259') : icoSvg('star', 18, '#F4A259') }) })
@@ -3779,9 +3793,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-392-photopts';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-393-nmtidy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진 찍은 곳이 길에서 벗어나 있으면 그 자리도 길에 넣어요";
+const UI_NOTES = "지도에서 들른 곳 이름표가 겹겹이 쌓이지 않게 했어요 · 겹치는 이름표는 숨기고 확대하면 다시 보여요 · 숨은 곳은 핀을 누르면 이름이 떠요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;

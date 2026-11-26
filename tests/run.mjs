@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
+const EXPOSE = ['spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1676,6 +1676,22 @@ await test('끊긴 길 채우기 · 그 사이 사진 위치를 지나고 · 되
   ok(r.sorted, '채운 점의 시각 차례가 섞였어요');
   ok(r.back === r.len, '되돌리기 뒤 예전 길과 달라요 ' + JSON.stringify(r));
   noErr(page, '끊긴 길 채우기');
+});
+
+// ─── 판 -393: 지도 이름표가 겹겹이 쌓이지 않게 ───
+await test('지도 이름표 겹침 · 겹치면 뒤엣것 숨김 · 확대하면 다시 · 이름 있는 곳 먼저 (판 -393)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(async () => {
+    const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;width:360px;height:360px;z-index:99999'; document.body.append(d);
+    const m = L.map(d).setView([29.35, 110.5], 11), ly = L.layerGroup().addTo(m);
+    __T.spotMarkers(ly, [{ k: 'stay', n: '09:11 들른 곳', lat: 29.35, lng: 110.5 }, { k: 'stay', n: '13:44 들른 곳', lat: 29.352, lng: 110.5 }, { n: '천자산 전망대', lat: 29.351, lng: 110.5 }]);
+    await new Promise(r => setTimeout(r, 300));
+    const vis = () => [...d.querySelectorAll('.leaflet-tooltip.nm')].filter(e => e.style.visibility !== 'hidden').map(e => e.textContent);
+    const far = vis(); m.setZoom(18, { animate: false }); await new Promise(r => setTimeout(r, 300)); const near = vis(); d.remove(); return { far, near };
+  });
+  ok(r.far.length === 1 && r.far[0] === '천자산 전망대', '멀리서 보면 겹친 이름표는 하나(이름 있는 곳)만 보여야 해요 ' + JSON.stringify(r));
+  ok(r.near.length === 3, '확대하면 이름표가 다 보여야 해요 ' + JSON.stringify(r));
+  noErr(page, '이름표 겹침');
 });
 
 await browser.close();
