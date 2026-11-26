@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.25-389-gapfill';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-386-battery';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "기록이 끊겨 곧은 줄로 이어진 곳을 채울 수 있어요 · 기록 보기 ⋯ → 끊긴 길 채우기 · 그때 찍은 사진 위치와 걷는 길로 다시 그리고 되돌리기도 있어요";
+const UI_NOTES = "새 앱에서 화면을 꺼도 길이 촘촘히 남게 배터리 최적화에서 MPD를 빼도록 한 번 물어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -19420,14 +19420,21 @@ function viewWalk() {
       }
     }
   }
+  // 판 -386 (사용자 장가계 '핸드폰 닫았을 때, 아닐 때 차이도 있어'): 기록 중이면 배터리 최적화에서 MPD를 빼 달라고 휴대폰 창으로 물어요(하루 한 번까지, 빼면 다시 안 물어요)
+  let batDone = false;
+  function batAsk() { if (batDone || !id || !window.mdNativeBattery) return; batDone = true;
+    setTimeout(async () => { try { const day = new Date().toDateString(); if (ls.get('batAsk', '') === day) return; const r = await window.mdNativeBattery.free(false);
+      if (r && !r.ok) { ls.set('batAsk', day); toast('화면을 꺼도 길이 촘촘히 남도록, 다음 창에서 "허용"을 눌러 주세요'); setTimeout(() => window.mdNativeBattery.free(true).catch(() => {}), 1800); } } catch {} }, 1500); }
   function startGps() {
     if (watch != null || !navigator.geolocation) return;
+
     watch = navigator.geolocation.watchPosition(p => {
       const was = gps; gps = 'on';
       const ll = [p.coords.latitude, p.coords.longitude], late = lastFix && Number.isFinite(p.timestamp) && lastFix.pt && p.timestamp < lastFix.pt;   // 늦게 온 예전 위치는 길에만 끼우고 내 위치 점은 안 옮겨요
       if (late) { if (id && !pausedNow) trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, null, false, p.timestamp); stats(); return; }
       lastFix = { lat: ll[0], lng: ll[1], ts: Date.now(), pt: p.timestamp }; lastAcc = p.coords.accuracy;
-      if (!id) { drawGpsReady(); return; }   // 러닝 시작 화면: 위치만 미리 잡아 둬요
+      if (!id) { drawGpsReady(); return; }
+      batAsk();   // 러닝 시작 화면: 위치만 미리 잡아 둬요
       { const nr = albumRoll(id); if (nr) { id = nr; toast(`날짜가 바뀌어 ${ls.get('trackName:' + nr, '다음 날')} 기록으로 이어졌어요`); setTimeout(() => { try { draw(); } catch {} }, 0); } }   // 판 -372
       // 잠시 멈춤 중엔 길을 남기지 않고 내 위치 점만 움직여요. 다시 시작하면 첫 점은 앞과 잇지 않아요(brkNext)
       if (!pausedNow && trackAdd(id, ll[0], ll[1], p.coords.accuracy, nameOf(), p.coords.altitude, shakeNow(), brkNext, p.timestamp)) brkNext = false;

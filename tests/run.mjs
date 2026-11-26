@@ -403,6 +403,20 @@ await test('사진첩 사진의 진짜 위치', async page => {
   ok(r[0][1] === 29.35 && r[1][1] === 29.0 && r[2][1] === 29.37, '짐작 자리는 진짜 위치로, 손으로 옮긴 건 그대로, 새 사진은 진짜 위치: ' + JSON.stringify(r));
 });
 
+// 판 -386: 기록 중이면 배터리 최적화에서 빼 달라고 하루 한 번 물어요
+await test('기록 중 배터리 최적화 묻기', async page => {
+  await page.addInitScript(() => { window.__bat = []; window.mdNativeBattery = { free: async ask => { window.__bat.push(!!ask); return { ok: false }; } };
+    navigator.geolocation.watchPosition = ok => { setTimeout(() => { window.__pos = (window.__pos || 0) + 1; ok({ coords: { latitude: 37.5011, longitude: 127, accuracy: 10, altitude: null }, timestamp: Date.now() }); }, 300); return 1; }; navigator.geolocation.clearWatch = () => {}; });
+  await page.goto(BASE); await sleep(500);
+  await page.evaluate(() => { const t = Date.now(); localStorage.setItem('track:walk_bat1', JSON.stringify([[37.5, 127, t - 6e4], [37.501, 127, t]])); localStorage.setItem('walkMode:walk_bat1', '"walk"'); localStorage.setItem('walkNow', '"walk_bat1"'); localStorage.removeItem('batAsk'); });
+  await page.goto(BASE + '?walk=1&resume=walk_bat1'); await sleep(4500);
+  const b = await page.evaluate(() => window.__bat);
+  ok(b.includes(false) && b.includes(true), '기록 중이면 상태를 보고 물어야 해요: ' + JSON.stringify(b) + await page.evaluate(() => [window.__pos, location.search, document.body.innerText.slice(0, 200)].join('/')));
+  await page.goto(BASE + '?walk=1&resume=walk_bat1'); await sleep(4500);
+  ok(!(await page.evaluate(() => window.__bat)).includes(true), '같은 날 두 번은 안 물어요');
+  await page.evaluate(() => { localStorage.removeItem('walkNow'); localStorage.removeItem('track:walk_bat1'); });
+});
+
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
 await test('여러 날 여행 n박 m일은 현지 날짜로', async page => {
   await page.goto(BASE + '?my=1');

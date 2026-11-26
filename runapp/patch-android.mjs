@@ -135,6 +135,19 @@ public class MdAppPlugin extends Plugin {
         }, stN < 0 ? 1500 : 400);
     }
 
+    // 판 -386 (사용자 장가계 '핸드폰 닫았을 때, 아닐 때 차이도 있어. 고쳐'): 화면을 끄면 삼성·안드로이드 배터리 절약이 위치를 띄엄띄엄 줘서
+    //   길이 도로를 곧게 가로질렀음 → '배터리 사용량 최적화'에서 MPD를 빼 달라고 휴대폰 창으로 한 번 물어요(ask), 지금 상태는 ok로
+    @PluginMethod
+    public void batteryFree(PluginCall call) {
+        android.os.PowerManager pm = (android.os.PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        boolean ok = Build.VERSION.SDK_INT < 23 || (pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName()));
+        if (!ok && Boolean.TRUE.equals(call.getBoolean("ask", false))) {
+            try { Intent i = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + getContext().getPackageName())); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); }
+            catch (Exception e) { try { Intent j = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS); j.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(j); } catch (Exception e2) { } }
+        }
+        JSObject r = new JSObject(); r.put("ok", ok); call.resolve(r);
+    }
+
     // 갤러리 사진 찾기: 기록한 시간(from~to, ms)에 찍은 사진. 이 앱이 넣은 'MapDiary' 앨범과 스크린샷은 빼요
     String photoAlias() { return Build.VERSION.SDK_INT >= 33 ? "photos" : "photosOld"; }
 
@@ -419,7 +432,7 @@ const mf = 'android/app/src/main/AndroidManifest.xml', PERM = 'io.github.gilbert
 let m = readFileSync(mf, 'utf8');
 if (!m.includes('</application>') || !m.includes('</manifest>')) throw new Error('AndroidManifest 모양이 달라요');
 m = m.replace('</application>', `    <receiver android:name="${appId}.MdUpdateReceiver" android:exported="false" />\n    <provider android:name="${appId}.MdSyncProvider" android:authorities="${appId}.mdsync" android:exported="true" android:readPermission="${PERM}" />\n    </application>`)
-  .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />\n    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
+  .replace('</manifest>', `    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />\n    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <permission android:name="${PERM}" android:protectionLevel="signature" />\n    <uses-permission android:name="${PERM}" />\n    <queries>\n${Object.values(JSON.parse(readFileSync('apps.json', 'utf8'))).map(a => `        <package android:name="${a.appId}" />`).join('\n')}\n    </queries>\n</manifest>`);
 writeFileSync(mf, m);
 console.log('앱 고정·화면 바꾸기·기록 넘기기 플러그인 넣음 ·', jdir);
 // 시계 기록 받기 (2026-10-20 사용자 '와치에 러닝 데이터 폰으로 보내기 어렵다' → '저절로 연결'): 시계 MPD Run(같은 이름 io.github.gilbertgo.mdrun·같은 서명)이
