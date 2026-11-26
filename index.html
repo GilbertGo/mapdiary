@@ -4353,6 +4353,7 @@ function viewBragLink(given, feed) {
   }
   let destMap = null, destMark = null, curDest = null;
   const destBar = el('div', { class: 'mapbar' });
+  dests.forEach(d => { if (d.stay) stayNameLater({ k: 'stay', n: d.n, lat: d.lat, lng: d.lng }, t => { d.n = t; if (curDest) setDest(curDest, true); }); });   // 판 -394 길찾기 단추에도 들른 곳 이름
   // 네이버지도 길찾기: 휴대폰은 네이버지도 앱을 열어 지금 있는 곳 → 그곳 (대중교통, 앱에서 자동차·도보로 바꿀 수 있어요)
   // 앱이 없으면 네이버지도 웹에서 그곳을 보여줘요 (거기서 '길찾기')
   const naverGo = naverOpen;
