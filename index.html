@@ -1501,7 +1501,7 @@ var LAB_QUIET = qs.get('lab') === 'check';
 // 🧪 영상 2.0 시험판 (2026-11-13 사용자 '나안, 별도 시험용 주소'): 개발 가지를 운영 주소가 아닌 다른 주소(raw.githack.com 등)로 열면
 //   영상 화면만 보여요. 다른 주소라 운영 MPD(gilbertgo.github.io)의 기록·사진·설정을 읽지도 바꾸지도 못해요(브라우저가 주소마다 저장소를 따로 둬서).
 //   켜자마자 하는 일(공개 서버 연결·클라우드·새 판 확인·백업)도 쉬어요. 기록은 백업 파일을 불러와서 시험해요
-var FILM_TEST = /(^|\.)githack\.com$|(^|\.)statically\.io$/.test(location.hostname) || (location.hostname === '127.0.0.1' && qs.get('filmtest') === '1');
+var FILM_TEST = false;
 if (FILM_TEST) LAB_QUIET = true;
 
 // ---------- 작은 도구들 ----------
@@ -3364,7 +3364,7 @@ function mdTileLayer(opt) {
   // 판 -104 (사용자 '지도 해상도 왜 이래, 보기 싫어'): OSM 그림 지도는 256픽셀이라 촘촘한 휴대폰 화면에선 늘려 보여 흐려요 →
   //   화면이 촘촘하고 인터넷이 되면, 붙인 뒤 선명한 벡터 지도(OpenFreeMap, 한글 이름)로 바꿔요. 못 받으면 그림 지도 그대로.
   //   기록 중 지도(배터리·산속 인터넷)와 나라 밖 계획 지도(따로 한글 지도를 붙임)는 opt.vec === false
-  if (!(opt && opt.vec === false) && (window.devicePixelRatio || 1) >= 1.5 && navigator.onLine && !LAB_QUIET) base.once('add', () => {
+  if (!(opt && opt.vec === false) && navigator.onLine && !LAB_QUIET) base.once('add', () => {
     const [hz, btn] = mapHzArgs(opt);
     koMapLayer(hz, { btn }).then(ly => { const m = base._map; if (!ly || !m) return; ly.addTo(m);
       // 판 -369 (사용자: 받은 링크·앱에서 지도가 빈 베이지 칸): 예전엔 선명한 지도가 자료를 받든 못 받든 1.5초 뒤 그림 지도를 치워 빈 칸이 남았어요
