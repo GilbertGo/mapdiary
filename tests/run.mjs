@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto'];
+const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -451,6 +451,24 @@ await test('끊긴 길 저절로 채우기', async page => {
   });
   ok(r.filled > 0 && r.a === 4 + r.filled && r.b === r.a, '끊긴 곳이 채워지고 두 번 채우지 않아요: ' + JSON.stringify(r));
   ok(r.c === 4 && r.d === 4, '되돌리면 원래 4점, 다시 저절로 채우지 않아요: ' + JSON.stringify(r));
+});
+
+// 판 -392: 길에서 벗어난 사진 찍은 곳을 길에 넣고(튄 위치는 빼고), 되돌리면 빠짐
+await test('사진 찍은 곳을 길에 넣기', async page => {
+  await page.goto(BASE); await sleep(1000);
+  const r = await page.evaluate(async () => {
+    const id = 'walk_phpt1', t0 = Date.now() - 3600e3, set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:' + id, [[29.30, 110.40, t0], [29.30, 110.41, t0 + 20 * 60e3], [29.30, 110.42, t0 + 40 * 60e3]]); set('walkMode:' + id, 'walk');
+    const cv = document.createElement('canvas'); cv.width = 8; cv.height = 8; const b = await new Promise(r => cv.toBlob(r, 'image/jpeg'));
+    await __T.photoPut({ id: 'php1', t: id, ts: t0 + 10 * 60e3, lat: 29.302, lng: 110.405, blob: b, thumb: '' });   // 220m 옆, 걸어서 갈 만함
+    await __T.photoPut({ id: 'php2', t: id, ts: t0 + 30 * 60e3, lat: 29.40, lng: 110.415, blob: b, thumb: '' });    // 11km 튐
+    const n = await __T.photoPtsFill(id), a = JSON.parse(localStorage.getItem('track:' + id));
+    const n2 = await __T.photoPtsFill(id);
+    __T.gapUndo(id); const c = JSON.parse(localStorage.getItem('track:' + id));
+    return { n, n2, len: a.length, mid: a[1].slice(0, 2), c: c.length };
+  });
+  ok(r.n === 1 && r.len === 4 && r.mid[0] === 29.302 && r.n2 === 0, '가까운 사진 자리만 한 번 들어가요: ' + JSON.stringify(r));
+  ok(r.c === 3, '되돌리면 빠져요: ' + JSON.stringify(r));
 });
 
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)
