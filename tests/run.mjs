@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake'];
+const EXPOSE = ['gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -431,6 +431,26 @@ await test('걸음 센서로 걷기·탈것 나누기', async page => {
     Date.now = realNow; delete window.mdNativeSteps; return [walk, ride];
   });
   ok(r[0] === 1 && r[1] === 0, '걸음이 늘면 1, 그대로면 0: ' + JSON.stringify(r));
+});
+
+// 판 -391: 기록 중·3일 안 기록의 끊긴 길은 묻지 않고 채우고, 길을 찾는 동안 붙은 점은 남고, 되돌리면 채운 점만 빠지고 다시 안 채움
+await test('끊긴 길 저절로 채우기', async page => {
+  await page.goto(BASE); await sleep(1500);
+  const r = await page.evaluate(async () => {
+    const id = 'walk_gapa1', t0 = Date.now() - 3 * 3600e3, set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:' + id, [[29.33, 110.43, t0, 0, 1], [29.331, 110.431, t0 + 60e3, 0, 1], [29.34, 110.45, t0 + 20 * 60e3, 0, 1], [29.341, 110.451, t0 + 21 * 60e3, 0, 1]]);
+    set('walkMode:' + id, 'travel'); set('walkNow', id); localStorage.removeItem('gapTried');
+    await __T.gapAuto();
+    const a = JSON.parse(localStorage.getItem('track:' + id));
+    await __T.gapAuto();   // 두 번째는 할 게 없어요
+    const b = JSON.parse(localStorage.getItem('track:' + id));
+    __T.gapUndo(id); const c = JSON.parse(localStorage.getItem('track:' + id));
+    await __T.gapAuto(); const d = JSON.parse(localStorage.getItem('track:' + id));
+    localStorage.removeItem('walkNow');
+    return { a: a.length, filled: a.filter(q => q[6] === 1).length, b: b.length, c: c.length, d: d.length };
+  });
+  ok(r.filled > 0 && r.a === 4 + r.filled && r.b === r.a, '끊긴 곳이 채워지고 두 번 채우지 않아요: ' + JSON.stringify(r));
+  ok(r.c === 4 && r.d === 4, '되돌리면 원래 4점, 다시 저절로 채우지 않아요: ' + JSON.stringify(r));
 });
 
 // 판 -335: 여러 날 여행 날짜·n박 m일도 그 여행 시간대로(마드리드 밤 11시는 서울로 다음 날 아침이라 예전엔 하루가 더 셈)

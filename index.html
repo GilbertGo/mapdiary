@@ -3779,9 +3779,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-390-stepmode';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-391-gapauto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "화면을 꺼도 걸음 센서로 걸은 길과 차로 간 길을 나눠요";
+const UI_NOTES = "끊긴 길을 묻지 않고 그때 찍은 사진 위치와 걷는 길로 저절로 채워요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -15178,16 +15178,40 @@ async function gapFill(t, prog = () => {}) {
     mid.sort((x, y) => x.ts - y.ts); mid = mid.filter((x, k) => !k || dist(x.lat, x.lng, mid[k - 1].lat, mid[k - 1].lng) > 30); used += mid.length;
     prog(`끊긴 곳 ${ins.length + 1}/${gaps.length} 길 찾는 중`);
     const path = await ptTrack([{ lat: a[0], lng: a[1], ts: a[2] }, ...mid, { lat: b[0], lng: b[1], ts: b[2] }], st);
-    ins.push([i, path.slice(1, -1).filter(q => q[2] > a[2] && q[2] < b[2])]); }
-  ls.set('gapUndo:' + t, tr);
-  const nt = tr.slice(); for (let k = ins.length - 1; k >= 0; k--) nt.splice(ins[k][0], 0, ...ins[k][1]);
-  if (!ls.set('track:' + t, nt)) { ls.set('gapUndo:' + t, null); return { n: 0, err: 1 }; }
+    ins.push([i, path.slice(1, -1).filter(q => q[2] > a[2] && q[2] < b[2]).map(q => [q[0], q[1], q[2], null, q[4] ?? null, null, 1])]); }   // 판 -391: 채운 점은 7번째 값 1(되돌리기 때 이것만 뺌)
+  // 판 -391: 길을 찾는 동안 기록 중인 날에 점이 더 붙었을 수 있어 지금 길에 시각 차례로 끼워요(덮어쓰지 않게)
+  const add = ins.flatMap(x => x[1]); if (!add.length) return { n: 0 };
+  const nt = trackLoad(t).concat(add).sort((p, q) => p[2] - q[2]);
+  if (!ls.set('track:' + t, nt)) return { n: 0, err: 1 };
+  ls.set('gapUndo:' + t, true);
   try { syncPush(); } catch {} try { if (cloudUser) cloudSync(true); } catch {}
   return { n: gaps.length, ph: used, road: st.road || 0, add: nt.length - tr.length };
 }
 function gapUndo(t) { const o = ls.get('gapUndo:' + t, null); if (!o) return false;
-  const cur = trackLoad(t), last = o[o.length - 1], extra = last ? cur.filter(q => q[2] > last[2]) : [];   // 채운 뒤 더 기록된 점은 남겨요(기록 중인 날)
-  ls.set('track:' + t, o.concat(extra)); ls.set('gapUndo:' + t, null); try { syncPush(); } catch {} return true; }
+  const cur = trackLoad(t);
+  if (Array.isArray(o)) { const last = o[o.length - 1], extra = last ? cur.filter(q => q[2] > last[2]) : []; ls.set('track:' + t, o.concat(extra)); }   // 예전(판 -389) 방식
+  else ls.set('track:' + t, cur.filter(q => q[6] !== 1));   // 판 -391: 채운 점만 빼요
+  ls.set('gapUndo:' + t, null); ls.set('gapAutoOff:' + t, true); try { syncPush(); } catch {} return true; }   // 되돌린 기록은 저절로 다시 채우지 않아요
+// 판 -391 (사용자 장가계 '자동으로 끊긴 길 채워. 귀찮게하거나 실망하게 하지말고!!!'): 기록 중인 기록과 3일 안에 끝낸 기록의 끊긴 길(trackGaps)을
+//   묻지 않고 채워요(켤 때·10분마다·화면 켤 때). 한 번 해 본 끊긴 곳은 다시 안 함(gapTried), ⋯ '길 채우기 되돌리기'로 되돌리면 그 기록은 다시 안 채움
+var gapAutoBusy = false;
+async function gapAuto() {
+  if (gapAutoBusy || GV || LAB_QUIET || !navigator.onLine) return; gapAutoBusy = true;
+  try {
+    const now = Date.now(), cur = ls.get('walkNow', null), ids = new Set(cur ? [cur] : []);
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!k || !k.startsWith('track:')) continue; const t = k.slice(6); if (ids.has(t)) continue;
+      try { const tr = ls.get(k, []); if (tr.length && now - tr[tr.length - 1][2] < 3 * 864e5) ids.add(t); } catch {} }
+    const tried = ls.get('gapTried', {}); let n = 0;
+    for (const t of ids) {
+      if (ls.get('gapAutoOff:' + t, false) || isGone(t)) continue;
+      const tr = trackLoad(t), gs = trackGaps(tr).filter(i => !(tried[t] || []).includes(tr[i - 1][2])); if (!gs.length) continue;
+      tried[t] = (tried[t] || []).concat(gs.map(i => tr[i - 1][2])).slice(-60); ls.set('gapTried', tried);
+      try { const r = await gapFill(t); n += r.n || 0; } catch {}
+    }
+    if (n) { toast(`끊긴 길 ${n}곳을 걷는 길·찻길로 채웠어요`); dispatchEvent(new Event('track-changed')); }
+  } finally { gapAutoBusy = false; }
+}
+if (!LAB_QUIET) { setTimeout(gapAuto, 8000); setInterval(gapAuto, 10 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(gapAuto, 3000); }); }
 function ptPlace(tr, ts) {   // 위치 없는 사진: 그 시각에 있었을 길 위 자리
   if (ts <= tr[0][2]) return tr[0]; if (ts >= tr[tr.length - 1][2]) return tr[tr.length - 1];
   for (let i = 1; i < tr.length; i++) if (tr[i][2] >= ts) { const p = tr[i - 1], q = tr[i], r = (ts - p[2]) / ((q[2] - p[2]) || 1); return [+(p[0] + (q[0] - p[0]) * r).toFixed(6), +(p[1] + (q[1] - p[1]) * r).toFixed(6)]; }
