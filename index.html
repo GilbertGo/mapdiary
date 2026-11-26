@@ -3437,7 +3437,8 @@ async function drawBragCard(o) {
   const fit = (text, maxW) => { if (g.measureText(text).width <= maxW) return text; let s = text; while (s.length > 1 && g.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
   const wrap = (text, maxW, maxLines) => {
     const lines = []; let cur = '';
-    for (const ch of text) { if (g.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ch.trimStart(); } else cur += ch; }
+    for (const ch of text) { if (g.measureText(cur + ch).width > maxW && cur) {   // 판 -398: 넘치면 띄어쓰기에서 끊어요('3 / 일차'처럼 낱말 가운데서 안 끊게)
+        const sp = cur.lastIndexOf(' '); if (sp > cur.length * 0.4 && ch !== ' ') { lines.push(cur.slice(0, sp)); cur = cur.slice(sp + 1) + ch; } else { lines.push(cur); cur = ch.trimStart(); } } else cur += ch; }
     if (cur) lines.push(cur);
     if (lines.length > maxLines) {
       lines.length = maxLines; let s = lines[maxLines - 1];
@@ -3508,11 +3509,15 @@ async function drawBragCard(o) {
   const tiles = (o.stats || []).filter(x => x && x !== '진행 중').slice(0, 6).map(x => {
     if (x.startsWith('✓')) { const m = x.match(/(\d+명)/); return { k: '모두 도착', v: m ? m[1] : x.slice(1).trim() }; }
     const m = x.match(/^(\D*?)\s*(\d.*)$/); return m ? { k: m[1] || '걸린 시간', v: m[2] } : { k: '', v: x }; });
+  // 판 -398 (사용자 장가계 공유 카드 '전하면 볼까?' → '안볼것 같아'): 큰 사진이 있는 카드는 사진이 주인공 — 사진 줄을 두 배로, 숫자 칸은 한 줄 셋(거리·사진 n장·여행 중/걸린 시간), 출발·도착 시각 줄은 뺌
+  const slim = !!cov && PH.length > 0 && !gOn;
+  if (slim) { const nPh = (o.photoRecs || []).length, dist = tiles.find(t => /거리/.test(t.k)), rest = tiles.filter(t => t !== dist && !/^전체 이동|들른 곳/.test(t.k));
+    tiles.length = 0; if (dist) tiles.push(dist); if (nPh) tiles.push({ k: '사진', v: `${nPh}장` }); tiles.push(live ? { k: '지금', v: '여행 중' } : rest[0]); while (tiles.length > 3 || (tiles.length && !tiles[tiles.length - 1])) tiles.pop(); }
   const nT = tiles.length, cols = nT === 4 ? 2 : Math.min(3, nT), rows = cols ? Math.ceil(nT / cols) : 0;
   const realPlace = s => s && !/^(출발|도착)( 지점| 집결지)?$|^도착지$|^지금 여기$|^마지막 위치$/.test(s), plOn = realPlace(o.startPlace) || realPlace(o.endPlace);
-  const timeH = plOn ? 116 : 92, cellH = 112, panelH = 24 + timeH + rows * cellH + (rows ? 24 : 0), T = H - 50 - panelH;
+  const timeH = slim ? 0 : plOn ? 116 : 92, cellH = 112, panelH = slim ? (rows ? rows * cellH + 24 : 0) : 24 + timeH + rows * cellH + (rows ? 24 : 0), T = H - 50 - panelH;
   const gh = gOn ? 70 + GF.p.length * 46 : 0, gy = T - 18 - gh;
-  const sh = gOn ? 120 : 140, sy = gOn ? gy - 18 - sh : T - 20 - sh;
+  const sh = gOn ? 120 : slim ? 300 : 140, sy = gOn ? gy - 18 - sh : T - 20 - sh;
   const px = 72, py = Math.max(y + 48, cov ? COVH + 20 : 520), pw = W - 144, ph = Math.max(140, (PH.length ? sy - 20 : gOn ? gy - 20 : T - 20) - py);
   rr(px, py, pw, ph, 48); g.fillStyle = PINE; g.fill();
   g.save(); rr(px, py, pw, ph, 48); g.clip();
@@ -3636,8 +3641,8 @@ async function drawBragCard(o) {
   }
   // 아래 판: ○ 08:59 출발 ┄┄┄ 도착 12:45 ● + 숫자 칸
   const dark = P.bg === '#0F1B2D', VAL = cov ? P.ink : document.documentElement.dataset.theme === 'mt' ? PINE : '#0277BD';
-  rr(px, T, pw, panelH, 40); g.fillStyle = dark ? '#1F3049' : '#FFFDF8'; g.fill();
-  { const ty = T + 24 + 38, lx = px + 34, rx = px + pw - 34;
+  if (panelH) { rr(px, T, pw, panelH, 40); g.fillStyle = dark ? '#1F3049' : '#FFFDF8'; g.fill(); }
+  if (!slim) { const ty = T + 24 + 38, lx = px + 34, rx = px + pw - 34;
     g.beginPath(); g.arc(lx + 12, ty - 12, 12, 0, Math.PI * 2); g.lineWidth = 5; g.strokeStyle = VAL; g.stroke();
     g.beginPath(); g.arc(rx - 12, ty - 12, 13, 0, Math.PI * 2); g.fillStyle = ACC; g.fill();
     font(700, 42); g.fillStyle = P.ink; g.fillText(o.startTime || '', lx + 38, ty);
@@ -3650,7 +3655,7 @@ async function drawBragCard(o) {
     const a = lx + 38 + lw + 24, b = rx - 38 - rw - 24;
     if (b > a) { g.beginPath(); g.moveTo(a, ty - 13); g.lineTo(b, ty - 13); g.setLineDash([10, 8]); g.lineWidth = 3; g.strokeStyle = ACC; g.stroke(); g.setLineDash([]); } }
   if (rows) {
-    const gx = px + 24, gw = pw - 48, gy0 = T + 24 + timeH;
+    const gx = px + (slim ? 12 : 24), gw = pw - (slim ? 24 : 48), gy0 = T + (slim ? 12 : 24 + timeH);
     rr(gx, gy0, gw, rows * cellH, 28); g.fillStyle = dark ? '#16253A' : cov ? P.chip : '#F4F0E6'; g.fill();
     g.strokeStyle = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)'; g.lineWidth = 2;
     for (let r = 1; r < rows; r++) { g.beginPath(); g.moveTo(gx + 14, gy0 + r * cellH); g.lineTo(gx + gw - 14, gy0 + r * cellH); g.stroke(); }
@@ -3824,9 +3829,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-397-daynum';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-398-cardphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "여행 기록 이름의 며칠째가 계획 날짜와 같아졌어요 · 잘못 붙은 4일차 같은 이름은 한 번 바로잡고 알려 드려요";
+const UI_NOTES = "사진이 있는 공유 카드는 사진을 두 배로 크게 보여요 · 숫자는 한 줄로 줄이고 사진 수를 넣었어요 · 카톡 단추도 사진 n장 보기로 바꿨어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4045,7 +4050,7 @@ function linkText(o, url, code) {
   const ic = { hike: '⛰', trek: '🚶', run: '🏃', bike: '🚴', camp: '⛺', backpack: '🎒', travel: '✈️', date: '💕', daily: '☕', pgolf: '⛳' }[o.modeK] || '📍';
   const nums = (o.stats || []).filter(x => x && x !== '진행 중' && !/^전체 이동/.test(x)).slice(0, 3), nPh = (o.photoRecs || []).length;
   return [`${ic} ${o.name}`, `${o.dateText}${o.modeLabel ? ' · ' + o.modeLabel : ''}${(o.stats || []).includes('진행 중') ? ' · 지금 가는 중' : ''}`,
-    [...nums, nPh ? `사진 ${nPh}장` : ''].filter(Boolean).join(' · '), '',
+    [nPh ? `사진 ${nPh}장` : '', ...nums.slice(0, nPh ? 2 : 3)].filter(Boolean).join(' · '), '',   // 판 -398 사진 수를 맨 앞에
     `👉 눌러서 다닌 길${nPh ? '과 사진' : ''} 보기${code ? ' (비밀코드는 따로 알려 드릴게요)' : ''}`, url].filter((x, i) => x || i === 3).join('\n');
 }
 // 링크 뒤에 &c=1 같은 것을 붙일 때 # 앞에 붙여요
@@ -4146,7 +4151,7 @@ function bragView(img, getOpts) {
       if (!left && document.visibilityState === 'visible') kSay(`⚠ 카카오톡이 열리지 않았어요 (${kWhere()}). 아래 '문자 · 메일 · 다른 앱'에서 카카오톡을 고르면 사진은 가요`, true); }, 4000);
     const r = Kakao.Share.sendDefault({ objectType: 'feed',
       content: { title: o.name, description: lines.slice(1, 3).filter(Boolean).join('\n'), imageUrl: p.img, imageWidth: p.w, imageHeight: p.h, link: { mobileWebUrl: p.url, webUrl: p.url } },
-      buttons: [{ title: (o.photoRecs || []).length ? '지도·사진 보기' : '지도에서 보기', link: { mobileWebUrl: p.url, webUrl: p.url } }] });
+      buttons: [{ title: (o.photoRecs || []).length ? `사진 ${(o.photoRecs || []).length}장 보기` : '지도에서 보기', link: { mobileWebUrl: p.url, webUrl: p.url } }] });
     if (r && r.catch) r.catch(e => { left = true; kFail(e); });
   };
   const kakaoShare = async () => {
