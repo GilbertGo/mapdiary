@@ -1700,6 +1700,25 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   noErr(page, '들른 곳 이름');
 });
 
+// ─── 판 -395: 받은 링크 화면 (사용자 '보기 좋게. 관심가게 좀 해라. 이거 누가 보겠냐!!') ───
+await test('받은 링크 · 이름 붙은 곳만 짧게 · 같은 이름은 한 번 · 길찾기는 접기 · 기록 중에도 들어와서 보기 (판 -395)', async page => {
+  await page.addInitScript(() => { try { localStorage.setItem('sbNames', JSON.stringify({ '29.3980_110.4320': '天子山街道', '29.4070_110.4380': '天子山街道', '29.4160_110.4440': '袁家界' })); } catch {} });
+  const R = []; for (let i = 0; i < 40; i++) R.push([29.395 + i * 0.0006, 110.43 + i * 0.0004]);
+  const o = { name: '장가계 3일차', dateText: '11월 26일', modeLabel: '여행', modeK: 'travel', stats: ['걸은 거리 8.2km'], route: R,
+    spots: [{ n: '08:51 들른 곳', lat: 29.398, lng: 110.432, k: 'stay' }, { n: '10:35 들른 곳', lat: 29.407, lng: 110.438, k: 'stay' }, { n: '11:00 들른 곳', lat: 29.41, lng: 110.5, k: 'stay' }, { n: '12:19 들른 곳', lat: 29.416, lng: 110.444, k: 'stay' }] };
+  const b = Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await page.goto(BASE + '?brag=' + b); await sleep(2500);
+  const r = await page.evaluate(() => ({ rows: [...document.querySelectorAll('.bl-stop')].filter(e => e.style.display !== 'none').map(e => e.textContent),
+    go: !!document.querySelector('details.bl-go'), open: document.querySelector('details.bl-go') && document.querySelector('details.bl-go').open, list: (document.querySelector('.bl-stops') || {}).innerText.includes('11:00') }));
+  ok(JSON.stringify(r.rows) === JSON.stringify(['08:51천자산가도', '12:19원가계']), '들른 곳 시간표가 틀려요(같은 이름은 한 번, 이름 없는 곳은 빼야): ' + JSON.stringify(r.rows));
+  ok(r.go && !r.open, '길찾기·따라가기·GPX는 접힌 칸 안에 있어야 해요');
+  ok(!r.list, '이름 없는 들른 곳이 그대로 보여요');
+  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(/cardOpts\.gv = which === 'mine' && !room \?/.test(src), '기록 중에 보낸 링크가 다시 요약 화면이 돼요(판 -395)');
+  ok(/function guestLive\(\)/.test(src), '기록 중 들어와서 보기 링크를 새로 올리는 guestLive가 없어요');
+  noErr(page, '받은 링크 화면');
+});
+
 // ─── 판 -393: 지도 이름표가 겹겹이 쌓이지 않게 ───
 await test('지도 이름표 겹침 · 겹치면 뒤엣것 숨김 · 확대하면 다시 · 이름 있는 곳 먼저 (판 -393)', async page => {
   await page.goto(BASE + '?my=1'); await sleep(800);

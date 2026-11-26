@@ -428,6 +428,16 @@ body{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 .mdv-stats>div{background:#F8F5EE;padding:10px 6px;text-align:center;min-width:0}
 .mdv-stats b{display:block;font-size:19px;color:var(--pine);letter-spacing:-.02em;white-space:nowrap}
 .mdv-stats span{display:block;font-size:12px;color:#7A7F76;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-cover{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:24px;display:block;box-shadow:var(--shadow);margin-bottom:-28px;cursor:zoom-in}
+.bl-cover+.mdv-hero{position:relative;margin:0 12px}
+.bl-stops{background:#fff;border-radius:20px;padding:14px 16px 6px;box-shadow:var(--shadow)}
+.bl-stop{display:grid;grid-template-columns:12px 46px 1fr;align-items:baseline;gap:8px;padding:0 0 10px;position:relative}
+.bl-stop i{width:9px;height:9px;border-radius:50%;background:#F4A259;align-self:center}
+.bl-stop span{font-size:13px;color:#8B95A1;font-variant-numeric:tabular-nums}
+.bl-stop b{font-size:15.5px;color:#191F28;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-go{padding:14px 16px}.bl-go summary{font-weight:700;font-size:15.5px;cursor:pointer;color:#191F28}
+.bl-cta{display:flex;flex-direction:column;gap:6px;text-align:center;padding:26px 18px 18px;margin-top:8px}
+.bl-cta b{font-size:19px;color:#191F28}.bl-cta span{font-size:14px;color:#6B7684;margin-bottom:10px}
 .mdv-sec{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:4px 2px -4px}
 .mdv-sec h2{margin:0;font-size:18px;display:inline-flex;align-items:center;gap:6px}
 .mdv-sec span{font-size:13px;color:#7A7F76}
@@ -3730,7 +3740,7 @@ function openBrag(info, t, count, allDone, room) {
     cardOpts.hid = zone.length ? 1 : undefined;   // 받는 쪽: 길 끝은 진짜 출발·도착이 아니에요
     if (cardOpts.golf && zone.length) cardOpts.golf = Object.assign({}, cardOpts.golf, { h: cardOpts.golf.h.map(q => q && inZone({ lat: q[0], lng: q[1] }) ? null : q) });
     cardOpts.secret = secretOn;
-    cardOpts.gv = which === 'mine' && !info.live && !room ? { t, hide: zone.length ? 1 : 0, ph: sharePh ? 1 : 0 } : undefined;   // 판 -360 받은 사람도 내 화면 그대로
+    cardOpts.gv = which === 'mine' && !room ? { t, hide: zone.length ? 1 : 0, ph: sharePh ? 1 : 0 } : undefined;   // 판 -360 받은 사람도 내 화면 그대로 · 판 -395 기록 중에 보내도(사용자 '이거 누가 보겠냐!!' — 기록 중 링크는 요약 화면이었음)
     await card.draw(cardOpts);
   }
   let cardOpts = null;
@@ -3812,9 +3822,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-394-staynm';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-395-guestlook';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "저절로 남은 들른 곳에 그 자리 지도 이름이 붙어요 · 받은 링크·첫 화면 지도의 중국 이름도 우리 한자 읽기로 보여요 · 여행 길 따라가기 그림을 걷는 사람으로 바꿨어요";
+const UI_NOTES = "기록 중에 보낸 링크도 받은 사람이 내 화면과 똑같이 봐요 · 기록하는 동안 10분마다 새 사진과 길이 그 링크에 더해져요 · 예전 링크 화면은 큰 사진과 이름 붙은 곳 위주로 깔끔하게 바꿨어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4340,7 +4350,16 @@ function viewBragLink(given, feed) {
     if (phLayer) { phLayer.clearLayers(); photoMarkers(null, phLayer, feed.recs); }
   };
   if (feed) feed.on.push(refreshPh);
-  const mapEl = el('div', { class: 'mapbox', style: 'height:56vh;min-height:320px' });
+  // 판 -395 (사용자 받은 링크 캡처 '보기 좋게. 관심가게 좀 해라. 이거 누가 보겠냐!!'): 맨 위는 큰 사진, 들른 곳은 이름 붙은 곳만 짧은 시간표로, 길찾기·따라가기·GPX는 접어 둠
+  const coverImg = el('img', { alt: '', class: 'bl-cover', style: 'display:none', onclick: () => feed && feed.recs[0] && showPhoto(feed.recs[0], feed.recs) });
+  const paintCover = () => { const r = feed && hasKey && feed.recs[0]; if (r && !coverImg.dataset.on) { coverImg.dataset.on = '1'; coverImg.src = phSrc(r); coverImg.style.display = ''; } };
+  if (feed) feed.on.push(paintCover);
+  const stops = (() => { const ss = o.spots.filter(p => p && p.n), box = el('div', { class: 'bl-stops', style: 'display:none' });
+    const rows = ss.map(p => { const def = STAY_DEF.exec(p.n), tm = def ? def[1] : '', b = el('b', { text: def ? '' : p.n }), r = el('div', { class: 'bl-stop', style: def ? 'display:none' : '' }, el('i'), el('span', { text: tm }), b);
+      r._nm = def ? '' : p.n; if (def) stayNameLater(p, t => { r._nm = t.replace(/^\d{1,2}:\d{2} /, ''); b.textContent = r._nm; r.style.display = ''; tidy(); }); return r; });
+    const tidy = () => { let last = '', n = 0; for (const r of rows) { if (!r._nm) continue; const same = r._nm === last; r.style.display = same ? 'none' : ''; if (!same) n++; last = r._nm; } box.style.display = n ? '' : 'none'; };
+    box.append(...rows); tidy(); return box; })();
+  const mapEl = el('div', { class: 'mapbox', style: 'height:50vh;min-height:300px' });
   const toGpx = () => gpxSave(o.name, R, o.startAt);
   // 길찾기 목적지: ⭐ 좋았던 곳들, 출발, 도착 (지도를 누르면 '고른 곳')
   const dests = [];
@@ -4388,32 +4407,30 @@ function viewBragLink(given, feed) {
     tiles.length ? el('div', { class: 'mdv-stats' + (tiles.length === 4 || tiles.length === 2 ? ' n2' : tiles.length === 1 ? ' n1' : '') }, ...tiles.map(t => el('div', {}, el('b', { text: t.v, style: statColor(t.k) ? `color:${statColor(t.k)}` : '' }), t.k ? el('span', { text: t.k }) : null))) : null);
   app.replaceChildren(el('div', { class: 'stack mdv' },
     roleBar('leader', o.modeLabel || '받은 MPD', o.modeK || null),
-    hero,
+    coverImg, hero,
     o.golf ? [el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pgolf', 20), '점수표'), el('span', { text: `${o.golf.c ? o.golf.c + ' · ' : ''}${o.golf.n}홀` })),
       el('div', { class: 'card', style: 'padding:12px' }, golfTable(o.golf))] : null,
+    // 2) 지도 + 들른 곳
+    R.length > 1 ? [mapEl, stops] : null,
     // 사진 (잠가서 온 사진을 풀어서 보여줘요)
     phWrap,
-    // 2) 지도 + 길찾기
-    R.length > 1 ? [
-      el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pin', 20), '다닌 길'), el('span', { text: '지도를 누르면 그곳으로 길찾기' })),
-      mapEl, spotList(o.spots),
-      // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
-      o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(['travel', 'date', 'daily'].includes(o.modeK) ? 'trek' : o.modeK || 'hike', 24), '이 길 따라가기'),   // 판 -394: 여행은 ✈ 대신 걷는 사람(따라 걷는 길이라)
-      // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 네이버지도가 현위치에서 그곳까지 안내
-      el('div', { class: 'card stack', style: 'gap:10px' },
-        el('b', { text: '어디로 가 볼까요?' }), destBar, kakaoBtn,
-        el('div', { class: 'sub', text: '별표(좋았던 곳)를 고르거나 지도에서 원하는 곳을 누르면, 네이버지도가 지금 있는 곳에서 그곳까지 안내해요.' })),
-      el('button', { class: 'btn line small', text: 'GPX 받기 (트랭글·램블러 같은 등산앱용)', onclick: toGpx })
-    ] : null,
+    // 3) 나도 가 보기: 따라가기·길찾기·GPX는 접어 둠 (판 -395)
+    R.length > 1 ? el('details', { class: 'card bl-go' }, el('summary', { text: '이 길 나도 가 보기' }),
+      el('div', { class: 'stack', style: 'gap:10px;margin-top:12px' },
+        // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
+        o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(['travel', 'date', 'daily'].includes(o.modeK) ? 'trek' : o.modeK || 'hike', 20), '이 길 따라가기'),   // 판 -394: 여행은 ✈ 대신 걷는 사람
+        // 가고 싶은 곳 고르기 → 네이버지도가 현위치에서 그곳까지 안내 (지도를 눌러 아무 곳이나)
+        el('div', { class: 'sub', text: '가고 싶은 곳을 고르거나 지도를 누르면 네이버지도가 길을 알려 줘요.' }), destBar, kakaoBtn,
+        el('button', { class: 'btn line small', text: 'GPX 받기 (등산앱용)', onclick: toGpx }))) : null,
     // 3) 자랑 카드 사진은 인솔자가 사진을 저장하러 넘어왔을 때만 (?c=1)
     showCard ? [el('h2', { style: 'margin-top:8px', text: 'Map Photo Diary 카드' }), img, ...card.actions] : null,
     // 4) Map Photo Diary 소개
-    el('div', { class: 'card stack', style: 'gap:10px;margin-top:12px' },
-      el('b', { style: 'color:var(--pine);font-size:17px', text: '다닌 길을 Map Photo Diary로 남겨 보세요' }),
-      el('div', { class: 'sub', text: '하이킹, 러닝, 자전거, 캠핑, 여행… 앱 설치 없이 다닌 길을 지도에 남기고 공유해요.' }),
-      el('a', { class: 'btn primary full small', href: './', text: '나도 Map Photo Diary 시작하기' }))));
+    el('div', { class: 'bl-cta' },
+      el('b', { text: '내 여행도 이렇게 남겨 보세요' }),
+      el('span', { text: '켜 두기만 하면 다닌 길과 사진이 지도에 저절로 모여요' }),
+      el('a', { class: 'btn primary full', href: './', text: 'Map Photo Diary 시작하기' }))));
   if (showCard) card.draw(o);
-  refreshPh();
+  refreshPh(); paintCover();
   if (R.length > 1) setTimeout(() => {
     const m = routeMap(mapEl, R, null, o.modes, o.spots); addFullBtn(m, mapEl); destMap = m;
     if (o.golf) golfMarkers(L.layerGroup().addTo(m), o.golf);
@@ -15276,6 +15293,9 @@ async function gapAuto() {
     if (n || np) { toast([n ? `끊긴 길 ${n}곳을 채웠어요` : '', np ? `사진 찍은 곳 ${np}곳을 길에 넣었어요` : ''].filter(Boolean).join(' · ')); dispatchEvent(new Event('track-changed')); }
   } finally { gapAutoBusy = false; }
 }
+// 판 -395: 기록 중에 보낸 '들어와서 보기' 링크는 기록 중 10분마다(화면 켤 때도) 바뀐 것만 같은 링크에 다시 올려요(오늘 기록과 그 여행)
+function guestLive() { if (GV || LAB_QUIET) return; const w = ls.get('walkNow', null); if (!w) return; const aid = ls.get('walkAlbum:' + w, null); for (const t of [w, aid]) if (t) try { guestAuto(t); } catch {} }
+if (!LAB_QUIET) { setInterval(guestLive, 10 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(guestLive, 6000); }); }
 if (!LAB_QUIET) { setTimeout(gapAuto, 8000); setInterval(gapAuto, 10 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(gapAuto, 3000); }); }
 function ptPlace(tr, ts) {   // 위치 없는 사진: 그 시각에 있었을 길 위 자리
   if (ts <= tr[0][2]) return tr[0]; if (ts >= tr[tr.length - 1][2]) return tr[tr.length - 1];
