@@ -1701,6 +1701,16 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   noErr(page, '들른 곳 이름');
 });
 
+// ─── 판 -398: 사진 있는 공유 카드는 사진이 주인공 (사용자 '안볼것 같아') ───
+await test('공유 카드 · 큰 사진이 있으면 사진 줄 크게·숫자 한 줄·사진 수 · 제목은 띄어쓰기에서 끊기 (판 -398)', async page => {
+  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(/const slim = !!cov && PH\.length > 0 && !gOn;/.test(src) && /slim \? 300 : 140/.test(src), '사진 카드의 큰 사진 줄이 빠졌어요(판 -398)');
+  ok(/tiles\.push\(\{ k: '사진', v: `\$\{nPh\}장` \}\)/.test(src), '카드 숫자 칸에 사진 수가 빠졌어요');
+  ok(/`사진 \$\{\(o\.photoRecs \|\| \[\]\)\.length\}장 보기`/.test(src), '카톡 단추가 사진 n장 보기가 아니에요');
+  ok(/const sp = cur\.lastIndexOf\(' '\)/.test(src), '카드 제목이 낱말 가운데서 끊겨요');
+  await page.goto(BASE + '?my=1'); await sleep(500); noErr(page, '공유 카드');
+});
+
 // ─── 판 -397: 여행 기록 이름 며칠째 = 계획 날짜 (사용자 공유 카드 '3일차인데?') ───
 await test('여행 날 이름 · 여행 이름이 계획 이름보다 길어도 계획 날짜로 · 잘못 붙은 이름 한 번 바로잡기 (판 -397)', async page => {
   await page.goto(BASE + '?my=1'); await sleep(800);
