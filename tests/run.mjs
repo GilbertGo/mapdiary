@@ -1384,7 +1384,9 @@ await test('지도 한자 이름 · 다른 선명한 지도는 설정을 따르�
   ok(JSON.stringify(kd) === '["cn","jp","vn","","cn"]', '기록 지도 단추 종류가 틀려요(장가계는 漢이어야, 판 -387): ' + JSON.stringify(kd));
   ok(/mdTileLayer\(\{ keep: true, ko: true \}\)/.test(src), '첫 화면 지도(mhMap)는 한글만이어야 해요(판 -367 사용자 \'첫화면은 한글로만 보여줘\')');
   const ko = await page.evaluate(() => __T.mapHzArgs({ keep: true, ko: true }));
-  ok(ko[0] === false && ko[1] === false, '한글만 지도에 한자·漢 단추가 붙어요: ' + JSON.stringify(ko));
+  ok(ko[0] === 'kr' && ko[1] === 'off', '첫 화면 지도는 중국 이름을 우리 한자 읽기 한 줄로만 바꿔야 해요(판 -394, 네 줄·漢 단추는 없이): ' + JSON.stringify(ko));
+  ok(/koHanjaWire\(mm, jp, offOnly\)/.test(src) && /const hz = !offOnly && ls\.get\('mapHanzi'/.test(src), '첫 화면 지도가 설정을 켜면 네 줄 이름이 돼요(판 -394)');
+  ok(!/if \(hanja && o && o\.btn === false && !ls\.get\('mapHanzi', false\)\) hanja = false/.test(src), '漢 단추 없는 지도(받은 링크)가 다시 중국 글자 그대로예요(판 -394)');
   ok(!/koMapLayer\(\(opt && opt\.hz\) \|\| false\)/.test(src), 'mdTileLayer가 다시 hz 없으면 한자를 끄게 바뀌었어요');
   noErr(page, '지도 한자');
 });
@@ -1676,6 +1678,26 @@ await test('끊긴 길 채우기 · 그 사이 사진 위치를 지나고 · 되
   ok(r.sorted, '채운 점의 시각 차례가 섞였어요');
   ok(r.back === r.len, '되돌리기 뒤 예전 길과 달라요 ' + JSON.stringify(r));
   noErr(page, '끊긴 길 채우기');
+});
+
+// ─── 판 -394: 저절로 남은 '08:51 들른 곳'에 그 자리 이름 (사용자 장가계 받은 링크 캡처, 열 줄이 다 이름 없음) ───
+await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자는 우리 읽기 · 저장된 이름은 그대로 (판 -394)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(async () => {
+    localStorage.setItem('sbNames', JSON.stringify({ '29.3500_110.4600': '天下第一桥', '29.3600_110.4700': '', '37.5000_127.0000': '호수공원' }));
+    const box = document.createElement('div'); box.style.cssText = 'width:390px;height:400px'; document.body.append(box);
+    const m = L.map(box).setView([29.35, 110.46], 14), ly = L.layerGroup().addTo(m);
+    const S = [{ n: '10:35 들른 곳', k: 'stay', lat: 29.35, lng: 110.46, ts: 1 }, { n: '11:22 들른 곳', k: 'stay', lat: 29.36, lng: 110.47, ts: 2 },
+      { n: '09:11 들른 곳', k: 'stay', lat: 37.5, lng: 127.0, ts: 3 }, { n: '내가 붙인 이름', k: 'stay', lat: 29.35, lng: 110.46, ts: 4 }];
+    const keep = JSON.stringify(S);
+    __T.spotMarkers(ly, S); await new Promise(z => setTimeout(z, 2500));
+    return { tips: [...box.querySelectorAll('.leaflet-tooltip.nm')].map(e => e.textContent), same: JSON.stringify(S) === keep };
+  });
+  ok(r.tips.includes('10:35 천하제일교'), '중국 들른 곳에 우리 한자 읽기 이름이 안 붙어요: ' + JSON.stringify(r.tips));
+  ok(r.tips.includes('09:11 호수공원'), '들른 곳에 찾아 둔 지도 이름이 안 붙어요: ' + JSON.stringify(r.tips));
+  ok(r.tips.includes('11:22 들른 곳') && r.tips.includes('내가 붙인 이름'), '이름을 못 찾은 곳·사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
+  ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
+  noErr(page, '들른 곳 이름');
 });
 
 // ─── 판 -393: 지도 이름표가 겹겹이 쌓이지 않게 ───

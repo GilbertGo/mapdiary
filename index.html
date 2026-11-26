@@ -1678,10 +1678,28 @@ function nmDeclutter(map) {
 if (window.L && L.Map && !L.Map.__nmHook) { L.Map.__nmHook = 1; L.Map.addInitHook(function () { let tm = 0; const go = () => { clearTimeout(tm); tm = setTimeout(() => nmDeclutter(this), 60); };
   this.on('zoomend moveend layeradd viewreset resize', go);
   this.on('layeradd', e => { const ly = e.layer; if (ly && ly.getTooltip && ly.getTooltip() && !ly.__nmTap) { ly.__nmTap = 1; ly.on('click', () => { const t = ly.getTooltip(), el2 = t && t.getElement && t.getElement(); if (el2 && el2.classList.contains('nm')) { el2.dataset.nmPin = el2.dataset.nmPin === '1' ? '' : '1'; nmDeclutter(this); } }); } }); }); }
+// 판 -394 (사용자 장가계 3일차 받은 링크 캡처 — '08:51 들른 곳'·'09:11 들른 곳'… 열 줄이 다 이름 없이): 저절로 남은 들른 곳은
+//   보여 줄 때만 그 자리 지도 이름(postRevName, sbNames에 기억)을 붙여요 → '10:35 천하제일교'. 저장된 이름은 그대로(사용자 자료를 앱이 안 바꿈)
+//   중국·대만·홍콩 한자 이름은 우리 한자 읽기로(지도 이름과 같게). 지도 이름 찾기는 1초에 한 번(Nominatim 규칙), 찾아 둔 곳은 바로
+const STAY_DEF = /^(\d{1,2}:\d{2}) 들른 곳$/;
+let stayQ = Promise.resolve();
+function stayNameLater(s, cb) {
+  const m = s && s.k === 'stay' && Number.isFinite(s.lat) && Number.isFinite(s.lng) && STAY_DEF.exec(String(s.n || '').trim()); if (!m) return;
+  const k = `${(+s.lat).toFixed(4)}_${(+s.lng).toFixed(4)}`;
+  stayQ = stayQ.then(async () => {
+    const D = ls.get('sbNames', {}) || {}; let n = k in D ? D[k] : undefined, net = false;
+    if (n === undefined && navigator.onLine && !LAB_QUIET) { n = await postRevName(s.lat, s.lng); net = true; }
+    if (n && /[一-鿿]/.test(n)) try { const T = await koHanjaLoad(), h = (n.match(/^[^A-Za-z]+/) || [n])[0].trim(); const r = T && koHanjaRead(T, h); if (r && !/[一-鿿]/.test(r)) n = r; } catch {}
+    if (n) try { cb(`${m[1]} ${n}`); } catch {}
+    if (net) await new Promise(r => setTimeout(r, 1100));
+  }).catch(() => {});
+}
 function spotMarkers(layer, spots) {
   spots.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng)).forEach(s => {
+    const tip = el('span', { text: (s.food ? '🍽 ' : '') + (s.n || (s.k === 'stay' ? '들른 곳' : '좋았던 곳')) });
+    stayNameLater(s, t => { tip.textContent = (s.food ? '🍽 ' : '') + t; });
     const mk = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'spot-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: s.k === 'stay' ? icoSvg('pin', 18, '#F4A259') : icoSvg('star', 18, '#F4A259') }) })
-      .bindTooltip(el('span', { text: (s.food ? '🍽 ' : '') + (s.n || (s.k === 'stay' ? '들른 곳' : '좋았던 곳')) }), { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] });
+      .bindTooltip(tip, { permanent: true, direction: 'top', className: 'nm', offset: [0, -12] });
     if (s.m) mk.bindPopup(el('span', { text: s.m }));
     mk.addTo(layer);
   });
@@ -1751,7 +1769,7 @@ function spotList(spots, ids) {
   };
   const draw = () => box.replaceChildren(...ss.map(s => el('div', { class: 'row', style: 'gap:8px;align-items:flex-start;flex-wrap:nowrap' },
     el('span', { style: 'flex:none;margin-top:1px' }, ico(s.k === 'stay' ? 'pin' : 'star', 18, '#F4A259')),
-    el('div', { class: 'grow' }, el('b', { text: s.n }),
+    el('div', { class: 'grow' }, (b => (stayNameLater(s, t => { b.textContent = t; }), b))(el('b', { text: s.n })),
       s.k === 'stay' && s.te ? el('div', { class: 'sub', style: 'font-size:14px', text: `${fmtClock(s.ts)} ~ ${fmtClock(s.te)} · ${fmtDur(s.te - s.ts)} 머묾` }) : null,
       s.food ? el('div', { style: 'font-size:14px;color:#9A5A1C;font-weight:600', text: foodLine(s.food) }) : null,
       s.m ? el('div', { class: 'sub', style: 'font-size:14px', text: s.m }) : null),
@@ -3328,7 +3346,8 @@ async function tileBlob(url) {
 }
 // 판 -366 (사용자 '지도에 한자가 안보이네? 왜 바꿨어. 이거 정성들여서 설정한건데'): 지도마다 한자 이름(漢)을 따로 켜야 해서 새로 만든 첫 화면 지도에서 빠졌음
 //   → 선명한 지도는 어디서 만들든 이 휴대폰의 '한자·발음 같이 보기'(ls mapHanzi)를 따름. 漢 단추는 hz를 준 지도(계획·첫 화면)에만. 이 기본값을 끄지 말 것
-function mapHzArgs(opt) { if (opt && opt.ko) return [false, false]; if (opt && opt.hzLate) return ['kr', 'late'];   // 판 -386: late = 이름 붙이기는 늘 준비, 漢 단추는 나중에(기록 지도가 외국에 있을 때)
+function mapHzArgs(opt) { if (opt && opt.ko) return ['kr', 'off'];   // 판 -394: off = 한자 쓰는 중국권만 우리 한자 읽기 한 줄(朝天观 → 조천관), 네 줄·단추는 없음
+  if (opt && opt.hzLate) return ['kr', 'late'];   // 판 -386: late = 이름 붙이기는 늘 준비, 漢 단추는 나중에(기록 지도가 외국에 있을 때)
   return [(opt && opt.hz) || 'kr', !!(opt && opt.hz)]; }   // 판 -367: ko = 한글만(첫 화면, 사용자 '첫화면은 한글로만 보여줘')
 function mdTileLayer(opt) {
   const T = L.TileLayer.extend({
@@ -3793,9 +3812,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-393-nmtidy';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.26-394-staynm';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "지도에서 들른 곳 이름표가 겹겹이 쌓이지 않게 했어요 · 겹치는 이름표는 숨기고 확대하면 다시 보여요 · 숨은 곳은 핀을 누르면 이름이 떠요";
+const UI_NOTES = "저절로 남은 들른 곳에 그 자리 지도 이름이 붙어요 · 받은 링크·첫 화면 지도의 중국 이름도 우리 한자 읽기로 보여요 · 여행 길 따라가기 그림을 걷는 사람으로 바꿨어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4378,7 +4397,7 @@ function viewBragLink(given, feed) {
       el('div', { class: 'mdv-sec' }, el('h2', {}, ico('pin', 20), '다닌 길'), el('span', { text: '지도를 누르면 그곳으로 길찾기' })),
       mapEl, spotList(o.spots),
       // 이 길 따라가기: 이 길을 내 지도에 깔고 기록을 시작해요 (파크골프는 구장 안을 도는 거라 빼요)
-      o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(o.modeK || 'hike', 24), '이 길 따라가기'),
+      o.modeK === 'pgolf' ? null : el('button', { class: 'btn primary full big', onclick: () => followRoute({ name: o.name, route: R, spots: o.spots, modeK: o.modeK }) }, ico(['travel', 'date', 'daily'].includes(o.modeK) ? 'trek' : o.modeK || 'hike', 24), '이 길 따라가기'),   // 판 -394: 여행은 ✈ 대신 걷는 사람(따라 걷는 길이라)
       // 가고 싶은 곳 고르기: ⭐ 좋았던 곳, 출발, 도착, 또는 지도를 눌러 아무 곳이나 → 네이버지도가 현위치에서 그곳까지 안내
       el('div', { class: 'card stack', style: 'gap:10px' },
         el('b', { text: '어디로 가 볼까요?' }), destBar, kakaoBtn,
@@ -14013,7 +14032,7 @@ function koNameInfo(T, q, cc) {   // 한 장소 이름 → { on: 켰을 때 글,
   const r = koHanjaRead(T, h);   // 중국·대만·홍콩
   return { on: koNameLines([h, r, ko, en || (h !== n ? n.slice(h.length) : '')]), off: r || '' };
 }
-function koHanjaWire(mm, jp) {   // jp: 지도 모드(단추 모양만 다름 · 이름 고르기는 장소 위치로, 판 -327)
+function koHanjaWire(mm, jp, offOnly) {   // offOnly(판 -394 첫 화면): 설정과 상관없이 늘 '껐을 때' 이름(우리 한자 읽기 한 줄)   // jp: 지도 모드(단추 모양만 다름 · 이름 고르기는 장소 위치로, 판 -327)
   // 판 -356 (사용자 홍콩 기록 지도 캡처 '위치가 안맞아' → 빈 지도): 예전엔 보인 이름 전부(홍콩 시내는 수천 개, 24만 글자)를 글자 층 12개 모두에 넣고
   //   새 이름이 보일 때마다 다시 넣어서, 휴대폰이 지도 조각을 다시 그리느라 지도가 비거나 거친 바탕만 보였음
   //   → 층마다 그 층 자료(source-layer)에 있는 이름만, 새 이름이 생긴 층만, 자료마다 최근 1200개까지 다시 넣어요(보이는 이름은 예전과 같음)
@@ -14036,13 +14055,13 @@ function koHanjaWire(mm, jp) {   // jp: 지도 모드(단추 모양만 다름 ·
     } finally { busy = 0; }
   };
   const apply = only => {
-    const hz = ls.get('mapHanzi', false);
+    const hz = !offOnly && ls.get('mapHanzi', false);
     for (const l of layers) { if (only && !only.has(SL[l.id])) continue;
       const M = (hz ? ON : OFF)[SL[l.id]], pairs = []; if (M) for (const [k, v] of M) pairs.push(k, v);
       try { mm.setLayoutProperty(l.id, 'text-field', pairs.length ? ['match', ['get', 'name'], ...pairs, fb[l.id]] : fb[l.id]); } catch {} }
   };
   (koHanjaWire.maps = koHanjaWire.maps || []).push(() => apply());
-  if (ls.get('mapHanzi', false)) apply();
+  if (!offOnly && ls.get('mapHanzi', false)) apply();
   let tm = 0; mm.on('idle', () => { clearTimeout(tm); tm = setTimeout(run, 300); });
 }
 // 판 -387 (사용자 장가계 기록 지도 캡처 '발음안보여' — 중국인데 あ가 떴음): koHanziBtn은 true·'jp'면 あ라서 중국은 'cn'으로. 우리나라·그 밖은 '' (단추 없음)
@@ -14061,8 +14080,11 @@ function koHanziBtn(map, jp) {   // 판 -314: 중국 지도 왼쪽 위(확대 �
   new C().addTo(map);
 }
 async function koMapLayer(hanja, o) {
-  const btn = !o || o.btn === undefined || o.btn === true;   // 판 -366: 단추 없이 이름만(설정을 켰을 때만 이름 사전을 받아요)
-  if (hanja && o && o.btn === false && !ls.get('mapHanzi', false)) hanja = false;   // 'late'(판 -386 기록 지도)는 단추를 나중에 붙여 켤 수 있게 늘 준비
+  const btn = !o || o.btn === undefined || o.btn === true;   // 판 -366: 단추 없이 이름만
+  // 판 -394 (사용자 장가계 받은 링크 캡처 — 지도에 朝天观·狮子背 중국 글자 그대로): 예전엔 설정이 꺼져 있으면 이름 붙이기를 아예 안 해서
+  //   漢 단추 없는 지도(받은 링크·첫 화면·공유)는 중국 이름이 그대로였어요 → 꺼져 있어도 지도가 중국권을 보일 때만 사전을 받아 우리 한자 읽기로(판 -327 '껐을 때')
+  //   'off'(첫 화면)는 설정과 상관없이 늘 읽기 한 줄만
+  const lazy = hanja && o && (o.btn === 'off' || (o.btn === false && !ls.get('mapHanzi', false))), offOnly = !!(o && o.btn === 'off');   // 'late'(판 -386 기록 지도)는 단추를 나중에 붙여 켤 수 있게 늘 준비
   try {
     await vtLoad(FILM_LIB.css, true); await vtLoad(FILM_LIB.gl); await vtLoad(KO_MAP_PLUGIN);
     if (!L.maplibreGL || !window.maplibregl) return null;
@@ -14070,7 +14092,8 @@ async function koMapLayer(hanja, o) {
       try { await vtLoad(KO_CONTOUR_LIB); if (window.mlcontour) { const d = new mlcontour.DemSource({ url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding: 'terrarium', maxzoom: 13, worker: true, cacheSize: 60, timeoutMs: 10000 }); d.setupMaplibre(maplibregl); window.__mdDem = d; koMapStyle.s = null; } } catch {} }
     vtProto();   // 📥 미리 받아 둔 지도 조각이 있으면 그걸 먼저
     const ly = L.maplibreGL({ style: await koMapStyle(), attribution: '© <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap' });
-    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' || hanja === 'kr' ? hanja : false; koHanjaLoad(); ly.once('add', () => { try { if (btn) koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp); else mm.once('load', () => koHanjaWire(mm, jp)); }; go(); }); }
+    if (hanja) { const jp = hanja === 'jp' ? true : hanja === 'vn' || hanja === 'kr' ? hanja : false; if (!lazy) koHanjaLoad(); ly.once('add', () => { try { if (btn) koHanziBtn(ly._map, jp); } catch {} const go = () => { const mm = ly.getMaplibreMap && ly.getMaplibreMap(); if (!mm) return setTimeout(go, 300); if (mm.isStyleLoaded()) koHanjaWire(mm, jp, offOnly); else mm.once('load', () => koHanjaWire(mm, jp, offOnly)); };
+      if (!lazy) return go(); const m = ly._map; const chk = () => { try { const c = m.getCenter(), B = m.getBounds(); if ([c, B.getNorthWest(), B.getSouthEast()].some(q => koInHanzi(q.lat, q.lng))) { m.off('moveend', chk); go(); } } catch {} }; m.on('moveend', chk); setTimeout(chk, 0); }); }
     return ly;
   } catch { return null; }
 }
