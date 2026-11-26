@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
+const EXPOSE = ['albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1699,6 +1699,29 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   ok(r.tips.includes('내가 붙인 이름') && r.tips.length === 3, '이름 못 찾은 곳은 핀만, 사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
   ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
   noErr(page, '들른 곳 이름');
+});
+
+// ─── 판 -397: 여행 기록 이름 며칠째 = 계획 날짜 (사용자 공유 카드 '3일차인데?') ───
+await test('여행 날 이름 · 여행 이름이 계획 이름보다 길어도 계획 날짜로 · 잘못 붙은 이름 한 번 바로잡기 (판 -397)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(800);
+  const r = await page.evaluate(() => {
+    const D = 864e5, t0 = new Date(); t0.setHours(9, 0, 0, 0); const day = k => t0.getTime() - k * D;
+    const st = new Date(day(2)); const ymd = `${st.getFullYear()}-${String(st.getMonth() + 1).padStart(2, '0')}-${String(st.getDate()).padStart(2, '0')}`;
+    localStorage.setItem('tripPlans', JSON.stringify([{ id: 'pl1', name: '장가계 4박 5일', start: ymd, nd: 5, it: [] }, { id: 'pl2', name: '장가계 4박 5일 2안', start: '2027-01-01', nd: 3, it: [] }]));
+    const A = '장가계 4박 5일 · 하나투어', ids = ['r1', 'r1b', 'r2', 'r3'];
+    const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    set('track:r1', [[29.3, 110.4, day(2)]]); set('track:r1b', [[29.3, 110.4, day(2) + 3600e3]]); set('track:r2', [[29.3, 110.4, day(1)]]); set('track:r3', [[29.3, 110.4, day(0)]]);
+    set('trackName:r1', A + ' 1일차'); set('trackName:r1b', '내가 붙인 이름'); set('trackName:r2', A + ' 3일차'); set('trackName:r3', A + ' 4일차');
+    ids.forEach(i => set('walkAlbum:' + i, 'al1')); set('albums', [{ id: 'al1', name: A, days: ids, last: Date.now() }]);
+    const n = __T.albumDayN({ id: 'al1', name: A, days: ids }); __T.dayNameFix();
+    const g = k => JSON.parse(localStorage.getItem(k));
+    return { n, p: (__T.albumPlan({ id: 'al1', name: A, days: ids }) || {}).id, names: ids.map(i => g('trackName:' + i)), old: g('dayNameOld:r3') };
+  });
+  ok(r.p === 'pl1', '여행 이름이 계획 이름으로 시작하면 그 계획을 찾아야 해요(2안 아님): ' + r.p);
+  ok(r.n === 3, '오늘은 계획 3일차인데 다른 날 수예요: ' + r.n);
+  ok(JSON.stringify(r.names) === JSON.stringify(['장가계 4박 5일 · 하나투어 1일차', '내가 붙인 이름', '장가계 4박 5일 · 하나투어 2일차', '장가계 4박 5일 · 하나투어 3일차']), '날 이름 바로잡기가 틀려요: ' + JSON.stringify(r.names));
+  ok(r.old === '장가계 4박 5일 · 하나투어 4일차', '바꾸기 전 이름을 남겨야 해요: ' + r.old);
+  noErr(page, '여행 날 이름');
 });
 
 // ─── 판 -395: 받은 링크 화면 (사용자 '보기 좋게. 관심가게 좀 해라. 이거 누가 보겠냐!!') ───
