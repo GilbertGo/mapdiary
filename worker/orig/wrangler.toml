@@ -1,0 +1,10 @@
+# MPD 원본 사진 창구 (판 -399) — Cloudflare Worker + R2
+# 배포는 GitHub Actions '원본 사진 창구 배포'(.github/workflows/orig-deploy.yml)가 해요. 비밀 CLOUDFLARE_API_TOKEN·CLOUDFLARE_ACCOUNT_ID 필요
+name = "mpd-orig"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "ORIG"
+bucket_name = "mpd-orig"
