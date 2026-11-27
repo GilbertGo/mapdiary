@@ -1701,6 +1701,17 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   noErr(page, '들른 곳 이름');
 });
 
+// ─── 판 -401: 첫 화면 지도 (사용자 장가계 4일차 '지도가 왜 이렇게 됐어? 비행기는 또 뭐야?') ───
+await test('첫 화면 · 선명한 지도는 12초 뒤에도 빼지 않고 숨김 · 이름 읽기는 자료 온 뒤 · 핀에 비행기 그림 없음 (판 -401)', async page => {
+  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(!/if \(base\._map\) m\.removeLayer\(ly\); \}, 12000\)/.test(src), '12초 뒤 선명한 지도를 아예 빼면 늦게 와도 못 봐요(판 -401)');
+  ok(/c\.style\.opacity = '0'; \} catch \{\} \}, 12000\)/.test(src), '12초 뒤엔 선명한 지도를 숨겨야 해요');
+  ok(/if \(!ly\._mdOk\) return; const c = m\.getCenter\(\)/.test(src), '중국 이름 읽기는 선명한 지도 자료가 들어온 뒤에만 해야 해요(판 -401)');
+  ok(!/cPinIcon\(withPh \? it\.r\.cover\.thumb : null, \{ k: it\.r\.M\.k/.test(src), '첫 화면 핀에 탈것(✈) 그림이 다시 나와요(판 -401)');
+  ok((src.match(/recent\.filter\(r => r\.cover \|\| r\.first\)/g) || []).length === 2, '위치 없는 사진도 핀으로 써야 해요(지도 두 곳)');
+  await page.goto(BASE); await sleep(1500); noErr(page, '첫 화면');
+});
+
 // ─── 판 -400: 일행 사진 모으기 (사용자 '여행멤버들에게 어떻게 보여주는게 가장 좋은가' → '해보자') ───
 await test('일행 사진 · 링크 열쇠로 잠가 올리고 다른 사람이 풀어 봄 · 위치 없으면 길 위 자리 · 내 기록엔 안 섞임 · 지우기 (판 -400)', async page => {
   await page.goto(BASE + '?my=1'); await sleep(500);
