@@ -1,0 +1,36 @@
+name: 원본 사진 창구 배포
+# 판 -399: Cloudflare Worker(mpd-orig) + R2 버킷(mpd-orig). 비밀이 없으면 건너뛰어요(빨간 X 안 남)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['worker/orig/**', '.github/workflows/orig-deploy.yml']
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 비밀 확인
+        id: chk
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "::notice::CLOUDFLARE 비밀이 아직 없어서 건너뛰어요"; echo "go=0" >> $GITHUB_OUTPUT; else echo "go=1" >> $GITHUB_OUTPUT; fi
+      - uses: actions/setup-node@v4
+        if: steps.chk.outputs.go == '1'
+        with: { node-version: 20 }
+      - name: workers.dev 이름 · R2 버킷 · 배포
+        if: steps.chk.outputs.go == '1'
+        working-directory: worker/orig
+        run: |
+          API=https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID
+          SUB=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" $API/workers/subdomain | jq -r '.result.subdomain // empty')
+          if [ -z "$SUB" ]; then
+            SUB="mpd$(echo $CLOUDFLARE_ACCOUNT_ID | cut -c1-8)"
+            curl -s -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'content-type: application/json' -d "{\"subdomain\":\"$SUB\"}" $API/workers/subdomain | jq -c '.success,.errors'
+          fi
+          npx -y wrangler@3 r2 bucket create mpd-orig || echo "버킷이 이미 있어요"
+          npx -y wrangler@3 deploy
+          echo "::notice::원본 창구 주소: https://mpd-orig.$SUB.workers.dev"
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://mpd-orig.$SUB.workers.dev/o/gvtest0000/x0 || true); echo "확인(404면 정상): $code"

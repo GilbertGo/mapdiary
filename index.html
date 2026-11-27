@@ -2287,7 +2287,8 @@ function showPhoto(p, list, cover) {
     try { vid.pause(); } catch {}
     if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(r.blob); sc = 1; tx = ty = 0;
     if (isVid(r)) { img.style.display = 'none'; img.removeAttribute('src'); vid.style.display = ''; vid.poster = r.thumb || ''; vid.src = url; }
-    else { vid.style.display = 'none'; vid.removeAttribute('src'); img.style.display = ''; img.src = url; apply(false); }
+    else { vid.style.display = 'none'; vid.removeAttribute('src'); img.style.display = ''; img.src = url; apply(false);
+      if (GV && r._o && !r._big) origGet(r).then(b => { if (b && all[i] === r) { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(b); img.src = url; } }).catch(() => {}); }   // 판 -399 받은 사람은 원본으로
     cap.textContent = `${all.length > 1 ? `${i + 1} / ${all.length} · ` : ''}${isVid(r) ? `동영상 ${fmtVidDur(r.dur)} · ` : ''}${fmtClock(r.ts)}`;
     drawMemo();
   };
@@ -3829,9 +3830,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.26-398-cardphoto';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.27-399-orig';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "사진이 있는 공유 카드는 사진을 두 배로 크게 보여요 · 숫자는 한 줄로 줄이고 사진 수를 넣었어요 · 카톡 단추도 사진 n장 보기로 바꿨어요";
+const UI_NOTES = "원본 사진 보내기를 준비했어요 · 창구를 연결하면 링크 받은 사람이 사진을 크게 열 때 원본으로 보여요 · 원본은 안드로이드 앱에서 와이파이일 때만 올라가요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -3915,6 +3916,59 @@ async function shortLink(o, prog) {   // prog(i, n): 사진을 몇 장째 올리
   if (kh) { const all = ls.get('shareLinks', {}) || {}; all[kh] = { u: url, at: Date.now() }; ls.set('shareLinks', Object.fromEntries(Object.entries(all).sort((x, y) => y[1].at - x[1].at).slice(0, 40))); }
   return (shortCache[key] = url);
 }
+// ---------- 📷 원본 사진 (판 -399, 사용자 '공유받은 사람이 가장 빠르게, 원본을 볼 수 있는 방법은?' → '알아봐' → '추천대로' Cloudflare R2) ----------
+// MPD는 사진을 1280px로 줄여 두므로 원본은 휴대폰 사진첩에서 찍은 시각(±5초)으로 다시 찾아요(새 안드로이드 앱 mdNativePhotos.range·blob만).
+//   '들어와서 보기' 링크와 같은 열쇠로 잠가(sealRaw) 창구(worker/orig, ORIG_URL)에 올리고, 받은 사람은 사진을 크게 열 때 원본으로 바꿔 보여요(단추 없음).
+//   로밍 데이터를 아끼려고 와이파이일 때만 올려요. 어떤 사진이 올라갔나·쓰기 표는 ls guestOrig[방] = { w, og: {사진: 1 올림 · 0 사진첩에 없음 · -2 거절} } (기기에만)
+var ORIG_URL = '';   // 창구 배포(.github/workflows/orig-deploy.yml) 뒤 주소를 넣어요. 비어 있으면 원본 기능은 모두 꺼져 있어요
+const ORIG_FIND_MS = 5000;
+const origOn = () => !!ORIG_URL && IN_NATIVE && !!(window.mdNativePhotos && window.mdNativePhotos.range);
+const origWifi = () => { const c = navigator.connection; return !!(c && (c.type === 'wifi' || c.type === 'ethernet')); };
+function origSt(r) { const a = ls.get('guestOrig', {}) || {}; return a[r] || { w: '', og: {} }; }
+function origSave(r, st) { const a = ls.get('guestOrig', {}) || {}; if (st) a[r] = st; else delete a[r]; ls.set('guestOrig', a); }
+async function sealRaw(buf, key) { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buf)), o = new Uint8Array(12 + ct.length); o.set(iv); o.set(ct, 12); return o; }
+async function openRaw(u8, key) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.subarray(0, 12) }, key, u8.subarray(12)); }
+// 사진첩에서 같은 사진(찍은 시각 ±5초, 그림 파일, 200KB 넘음)을 찾아 원본을 돌려줘요. HEIC처럼 브라우저가 못 여는 것은 빼요
+async function origFind(p) {
+  const G = window.mdNativePhotos; if (!G || !G.range || !p || !p.ts) return null;
+  const r = await G.range(p.ts - ORIG_FIND_MS, p.ts + ORIG_FIND_MS), items = ((r && r.items) || []).filter(x => x && x.uri && /\.(jpe?g|png|webp)$/i.test(x.name || '.jpg'));
+  const it = items.sort((a, b) => Math.abs(a.ts - p.ts) - Math.abs(b.ts - p.ts))[0]; if (!it || Math.abs(it.ts - p.ts) > ORIG_FIND_MS) return null;
+  const b = await G.blob(it.uri); return b && b.size > 200000 && !/heic|heif/i.test(b.type || '') ? b : null;
+}
+let origBusy = false;
+async function origUp(t) {
+  if (origBusy || !origOn() || !origWifi() || !navigator.onLine || GV) return;
+  const g = (ls.get('guestLinks', {}) || {})[t]; if (!g || !g.phOn) return;
+  const os = origSt(g.r); os.og = os.og || {}; if (!os.w) { os.w = b64url(crypto.getRandomValues(new Uint8Array(18))); origSave(g.r, os); }
+  const todo = (await photoImgs(t)).filter(p => p.blob && !p.v && g.ph[String(p.id)] && os.og[String(p.id)] == null); if (!todo.length) return;
+  origBusy = true; let n = 0;
+  try {
+    const key = await crypto.subtle.importKey('raw', urlb64(g.k), 'AES-GCM', false, ['encrypt']);
+    for (const p of todo) {
+      if (!origWifi()) break;
+      let v = null;
+      try { const b = await origFind(p);
+        if (!b) v = 0;
+        else { const res = await fetch(`${ORIG_URL}/o/${g.r}/${g.ph[String(p.id)].h}`, { method: 'PUT', headers: { 'x-w': os.w }, body: await sealRaw(await b.arrayBuffer(), key) }); v = res.ok ? 1 : res.status === 403 || res.status === 413 ? -2 : null; }
+      } catch { v = null; }
+      if (v == null) continue;   // 인터넷이 끊기면 다음에 다시
+      const cur = origSt(g.r); cur.w = os.w; cur.og = Object.assign(cur.og || {}, { [String(p.id)]: v }); origSave(g.r, cur); if (v === 1) n++;
+    }
+  } finally { origBusy = false; }
+  if (n) guestLink({ t, hide: g.hide, ph: g.phOn }).catch(() => {});   // 받은 사람이 원본이 있는 사진을 알게 본문만 다시
+}
+async function origDel(r, h) { const os = origSt(r); if (!ORIG_URL || !os.w) return; try { await fetch(`${ORIG_URL}/o/${r}${h ? '/' + h : ''}`, { method: 'DELETE', headers: { 'x-w': os.w } }); } catch {} }
+// 받은 사람: 사진을 크게 열면 원본을 받아 바꿔 끼워요(그 뒤 저장도 원본)
+function origCfg(u) { ORIG_URL = String(u || '').replace(/\/+$/, ''); return ORIG_URL; }
+function origGet(p, room, kstr) {
+  room = room || (GV && GV.r); if (!p || !p._o || !ORIG_URL || !room) return Promise.resolve(null); if (p._og) return p._og;
+  p._og = (async () => { const km = kstr ? [0, kstr] : /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash); if (!km) return null;
+    const key = await crypto.subtle.importKey('raw', urlb64(km[1]), 'AES-GCM', false, ['decrypt']);
+    const res = await fetch(`${ORIG_URL}/o/${room}/${p._h}`); if (!res.ok) throw new Error('orig ' + res.status);
+    const b = new Blob([await openRaw(new Uint8Array(await res.arrayBuffer()), key)], { type: 'image/jpeg' });
+    p.blob = b; p._big = 1; if (phSrc.m) { const u = phSrc.m.get(p.id); if (u) URL.revokeObjectURL(u); phSrc.m.delete(p.id); } return b; })();
+  p._og.catch(() => { p._og = null; }); return p._og;
+}
 // ---------- 👀 들어와서 보기 (판 -360, 사용자 '이걸 공유하면, 나와 똑같이 볼 수 있게 해줘' · '요약본만 보이니 재미 없어 하더라') ----------
 // 내 기록(하루·여러 날 여행)을 받은 사람도 내 기록 화면(viewMyOne) 그대로 봐요: 대표 사진·제목·숫자·지도·사진 전부·날마다
 //   서버(rooms/gv…, 고치기·지우기가 되는 칸)에 잠가서(AES-GCM) 올리고, 열쇠는 링크 # 뒤에만. 링크는 기록마다 하나(ls guestLinks[기록] = {r, k, ph, mn, sig, hide, phOn})
@@ -3952,7 +4006,9 @@ async function guestPut(g, prog) {
   }
   // 사진: 새 것만 1280px로 잠가 올려요 · 동영상은 빼요
   const phs = st.phOn ? (await photoImgs(t)).filter(p => p.blob) : [], keep = new Set(phs.map(p => String(p.id)));
-  for (const [id, q] of Object.entries(st.ph)) if (!keep.has(id)) { for (let i = 0; i < (q.n || 1); i++) try { await fsDel(`rooms/${st.r}/p/${q.h}_${i}`); } catch {} delete st.ph[id]; }
+  const os = origSt(st.r);
+  for (const [id, q] of Object.entries(st.ph)) if (!keep.has(id)) { for (let i = 0; i < (q.n || 1); i++) try { await fsDel(`rooms/${st.r}/p/${q.h}_${i}`); } catch {}
+    if (os.og && os.og[id] === 1) { await origDel(st.r, q.h); delete os.og[id]; origSave(st.r, os); } delete st.ph[id]; }   // 판 -399: 지운 사진은 원본 창구에서도
   const todo = phs.filter(p => !st.ph[String(p.id)]); let n = 0;
   for (const p of todo) {
     if (prog) prog(++n, todo.length);
@@ -3965,13 +4021,14 @@ async function guestPut(g, prog) {
     all[t] = st; ls.set('guestLinks', all);   // 중간에 끊겨도 올린 사진은 다시 안 올려요
   }
   const man = { v: 1, t, kv, at: Date.now(), ph: phs.filter(p => st.ph[String(p.id)]).map(p => { const z = inZone && inZone(p.lat, p.lng); const q = st.ph[String(p.id)];
-    return { id: String(p.id), t: p.t, ts: p.ts, lat: z ? null : p.lat, lng: z ? null : p.lng, m: p.m || '', th: p.thumb || '', h: q.h, n: q.n }; }) };
+    return Object.assign({ id: String(p.id), t: p.t, ts: p.ts, lat: z ? null : p.lat, lng: z ? null : p.lng, m: p.m || '', th: p.thumb || '', h: q.h, n: q.n }, ORIG_URL && os.og && os.og[String(p.id)] === 1 ? { o: 1 } : {}); }) };
   const parts = gvChunks(await sealBytes(new TextEncoder().encode(JSON.stringify(man)), key));
   for (let i = 0; i < parts.length; i++) await fsPut(`rooms/${st.r}/m/${i}`, parts[i]);
   await fsPut(`rooms/${st.r}/m/h`, JSON.stringify({ n: parts.length, at: man.at }));
   for (let i = parts.length; i < (st.mn || 0); i++) try { await fsDel(`rooms/${st.r}/m/${i}`); } catch {}
   st.mn = parts.length; st.sig = guestSig(t, phs); st.at = man.at;
   all[t] = st; ls.set('guestLinks', all);
+  if (ORIG_URL) setTimeout(() => origUp(t).catch(() => {}), 3000);   // 판 -399 원본은 뒤에서 천천히(와이파이일 때만)
   return `${APP_BASE}?v=${st.r}#k=${st.k}`;
 }
 function guestSig(t, phs) { const A = String(t).startsWith('album_') ? albumGet(t) : null, ids = A ? [...(A.days || []), t] : [t];
@@ -3987,6 +4044,7 @@ async function guestDrop(t) {
   delete all[t]; ls.set('guestLinks', all);
   try { await fsDel(`rooms/${st.r}/m/h`); for (let i = 0; i < (st.mn || 1); i++) await fsDel(`rooms/${st.r}/m/${i}`);
     for (const q of Object.values(st.ph || {})) for (let i = 0; i < (q.n || 1); i++) await fsDel(`rooms/${st.r}/p/${q.h}_${i}`); } catch {}
+  await origDel(st.r); origSave(st.r, null);   // 판 -399 원본 창구의 그 방도 통째로
 }
 // 사진을 지우면 그 사진이 든 링크를 다시 올려요(본문의 작은 그림까지 빠지게)
 function guestPhGone(id) {
@@ -4014,7 +4072,7 @@ async function viewGuest() {
   GV.r = r; GV.loading = false; GV.kv.clear();
   for (const [k, v] of Object.entries(man.kv || {})) if (typeof v === 'string') GV.kv.set(k, v);
   const toBlob = u => { try { const [h, b] = String(u).split(','); return new Blob([b64u8(b)], { type: (/data:([^;]+)/.exec(h) || [])[1] || 'image/jpeg' }); } catch { return null; } };
-  GV.photos = (man.ph || []).filter(p => p && p.id && p.t).map(p => ({ id: 'gv_' + p.id, t: String(p.t), ts: +p.ts || 0, lat: num(p.lat), lng: num(p.lng), m: typeof p.m === 'string' ? p.m.slice(0, 200) : '', thumb: typeof p.th === 'string' && p.th.startsWith('data:image/') ? p.th : '', blob: null, _h: p.h, _n: +p.n || 1 }));
+  GV.photos = (man.ph || []).filter(p => p && p.id && p.t).map(p => ({ id: 'gv_' + p.id, t: String(p.t), ts: +p.ts || 0, lat: num(p.lat), lng: num(p.lng), m: typeof p.m === 'string' ? p.m.slice(0, 200) : '', thumb: typeof p.th === 'string' && p.th.startsWith('data:image/') ? p.th : '', blob: null, _h: p.h, _n: +p.n || 1, _o: p.o === 1 ? 1 : 0 }));
   GV.photos.forEach(p => { p.blob = p.thumb ? toBlob(p.thumb) : null; });
   // 대표 사진·사진 순서 키도 'gv_' 아이디로 맞춰요
   for (const [k, v] of [...GV.kv]) { if (k.startsWith('walkCover:')) { try { const c = JSON.parse(v); if (c && c !== 'none') GV.kv.set(k, JSON.stringify('gv_' + c)); } catch {} }
@@ -4025,8 +4083,9 @@ async function viewGuest() {
   const cid = ls.get('walkCover:' + man.t, null), order = GV.photos.slice().sort((a, b) => (b.id === cid) - (a.id === cid));
   let got = 0;
   for (const p of order) {
+    if (p._big) continue;   // 판 -399 이미 원본을 받았으면 그대로
     try { let s = ''; for (let i = 0; i < p._n; i++) { const d = await fsGet(`rooms/${r}/p/${p._h}_${i}`); if (typeof d !== 'string') throw 0; s += d; }
-      p.blob = new Blob([await openBytes(s, key)], { type: 'image/jpeg' }); if (phSrc.m) { const u = phSrc.m.get(p.id); if (u) URL.revokeObjectURL(u); phSrc.m.delete(p.id); }
+      if (p._big) continue; p.blob = new Blob([await openBytes(s, key)], { type: 'image/jpeg' }); if (phSrc.m) { const u = phSrc.m.get(p.id); if (u) URL.revokeObjectURL(u); phSrc.m.delete(p.id); }
       got++; if (got === 1 || got % 8 === 0) dispatchEvent(new Event('photo-changed'));
     } catch {}
   }

@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
+const EXPOSE = ['origFind', 'origGet', 'origCfg', 'sealRaw', 'openRaw', 'albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1699,6 +1699,34 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   ok(r.tips.includes('내가 붙인 이름') && r.tips.length === 3, '이름 못 찾은 곳은 핀만, 사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
   ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
   noErr(page, '들른 곳 이름');
+});
+
+// ─── 판 -399: 원본 사진 (사용자 '공유받은 사람이 가장 빠르게, 원본을 볼 수 있는 방법은?' → R2) ───
+await test('원본 사진 · 사진첩에서 찍은 시각으로 찾기 · 잠그고 풀기 · 받은 사람은 원본으로 바꿔 끼움 · 창구 주소 없으면 꺼짐 (판 -399)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(500);
+  const r = await page.evaluate(async () => {
+    const big = n => new Blob([new Uint8Array(n)], { type: 'image/jpeg' });
+    const items = [{ uri: 'a', ts: 1000000, name: 'a.jpg' }, { uri: 'b', ts: 1003000, name: 'b.jpg' }, { uri: 'c', ts: 1002000, name: 'c.heic' }, { uri: 'd', ts: 2000000, name: 'd.jpg' }];
+    window.mdNativePhotos = { range: async (f, t) => ({ items: items.filter(x => x.ts >= f && x.ts <= t) }), blob: async u => u === 'd' ? big(1000) : big(300000 + u.charCodeAt(0)) };
+    const f1 = await __T.origFind({ ts: 1002500 }), f2 = await __T.origFind({ ts: 1500000 }), f3 = await __T.origFind({ ts: 2000000 });
+    const kb = crypto.getRandomValues(new Uint8Array(16)), ks = btoa(String.fromCharCode(...kb)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const key = await crypto.subtle.importKey('raw', kb, 'AES-GCM', false, ['encrypt', 'decrypt']);
+    const orig = new Uint8Array(400000).map((_, i) => i % 251), sealed = await __T.sealRaw(orig, key), back = new Uint8Array(await __T.openRaw(sealed, key));
+    const off = await __T.origGet({ _o: 1, _h: 'x1' }, 'gvabcdef12', ks);   // 주소 없으면 아무것도 안 해요
+    __T.origCfg('https://orig.test/'); const f0 = window.fetch; let asked = '';
+    window.fetch = async u => { asked = String(u); return new Response(sealed, { status: 200 }); };
+    const p = { id: 'gv_1', _o: 1, _h: 'x1', blob: big(10) }, b = await __T.origGet(p, 'gvabcdef12', ks);
+    window.fetch = f0; __T.origCfg('');
+    return { f1: f1 && f1.size, f2, f3, same: back.length === orig.length && back.every((v, i) => v === orig[i]), off, asked, got: b && b.size, pb: p.blob.size, big: p._big };
+  });
+  ok(r.f1 === 300000 + 'b'.charCodeAt(0), '사진첩에서 가장 가까운 시각의 그림 파일(HEIC 빼고)을 골라야 해요: ' + r.f1);
+  ok(r.f2 === null, '5초 안에 같은 사진이 없으면 원본을 안 올려야 해요');
+  ok(r.f3 === null, '200KB 아래 파일은 원본으로 안 봐야 해요');
+  ok(r.same, '잠근 원본을 풀면 똑같아야 해요');
+  ok(r.off === null, '창구 주소가 비어 있으면 원본 받기가 꺼져 있어야 해요');
+  ok(r.asked === 'https://orig.test/o/gvabcdef12/x1', '원본 받는 주소가 틀려요: ' + r.asked);
+  ok(r.got === 400000 && r.pb === 400000 && r.big === 1, '받은 원본으로 사진을 바꿔 끼워야 해요: ' + JSON.stringify(r));
+  noErr(page, '원본 사진');
 });
 
 // ─── 판 -398: 사진 있는 공유 카드는 사진이 주인공 (사용자 '안볼것 같아') ───
