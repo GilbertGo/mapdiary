@@ -3830,9 +3830,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.27-399-orig';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.27-400-crew';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "원본 사진 보내기를 준비했어요 · 창구를 연결하면 링크 받은 사람이 사진을 크게 열 때 원본으로 보여요 · 원본은 안드로이드 앱에서 와이파이일 때만 올라가요";
+const UI_NOTES = "링크를 받은 일행이 앱 없이 자기 사진을 보탤 수 있어요 · 모인 사진은 기록 화면의 일행 사진 칸에 찍은 시각 순서로 보여요 · 내 기록과 사진에는 섞이지 않아요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -4033,6 +4033,110 @@ async function guestPut(g, prog) {
 }
 function guestSig(t, phs) { const A = String(t).startsWith('album_') ? albumGet(t) : null, ids = A ? [...(A.days || []), t] : [t];
   return hash32(JSON.stringify(ids.map(recPack)) + JSON.stringify(A || '') + '|' + (phs || []).map(p => p.id + ':' + (p.m || '') + ':' + p.lat).join(',')); }
+// ---------- 👥 일행 사진 모으기 (판 -400, 사용자 '여행멤버들에게 어떻게 보여주는게 가장 좋은가' → '별로...' → 다 같이 모으는 앨범 '해보자') ----------
+// '들어와서 보기' 링크를 받은 일행이 앱 없이 자기 사진을 보태요. 같은 열쇠로 잠가 rooms/{방}/c/{사진}(본문: 이름·시각·위치·작은 그림·조각 수)과
+//   rooms/{방}/q/{사진}_{i}(1280px 조각)에 올리고, 원본은 창구(ORIG_URL)가 있으면 R2 /o/{방}/c{사진}에도.
+//   🛑 보낸 사람의 기록·사진에는 섞지 않고 기록 화면의 '일행 사진' 칸에만 보여요. 보낸 사람은 누구 사진이든, 일행은 자기 사진만 지울 수 있어요(표 tk)
+//   받은 쪽 이름·내가 올린 사진 표는 MPD 저장 칸(ls)이 아닌 따로 된 키(mpdCrew)에 — 받은 사람 자기 MPD 자료는 안 건드려요
+const MATE_LS = 'mpdCrew';
+const mateMine = () => { try { return JSON.parse(localStorage.getItem(MATE_LS) || '{}') || {}; } catch { return {}; } };
+const mateMineSet = o => { try { localStorage.setItem(MATE_LS, JSON.stringify(o)); } catch {} };
+function mateRoom(t) { if (GV) { const km = /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash); return GV.r && km ? { r: GV.r, k: km[1], owner: false } : null; }
+  const g = (ls.get('guestLinks', {}) || {})[t]; return g ? { r: g.r, k: g.k, owner: true } : null; }
+async function mateKey(k) { return crypto.subtle.importKey('raw', urlb64(k), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+async function mateList(room) {
+  const key = await mateKey(room.k), out = [];
+  for (const d of await fsList(`rooms/${room.r}/c`)) {
+    try { const m = JSON.parse(new TextDecoder().decode(await openBytes(d.d, key))); if (!m || !m.ts) continue;
+      out.push({ id: 'cr_' + d.id, cid: d.id, ts: +m.ts, lat: num(m.lat), lng: num(m.lng), by: String(m.by || '').slice(0, 20), thumb: String(m.th || '').startsWith('data:image/') ? m.th : '', n: +m.n || 1, o: m.o ? 1 : 0, tk: m.tk || '', blob: null }); } catch {}
+  }
+  return out.sort((a, b) => a.ts - b.ts);
+}
+async function mateBig(room, p) {
+  if (p._big || p._got) return p.blob; const key = await mateKey(room.k); let s = '';
+  for (let i = 0; i < p.n; i++) { const d = await fsGet(`rooms/${room.r}/q/${p.cid}_${i}`); if (typeof d !== 'string') throw 0; s += d; }
+  p.blob = new Blob([await openBytes(s, key)], { type: 'image/jpeg' }); p._got = 1; return p.blob;
+}
+// 찍은 시각(EXIF)으로, 위치가 없으면 그 시각 보낸 사람의 길 위 자리에 놓아요(안드로이드 웹은 사진 위치를 지워서)
+async function mateAdd(room, files, by, t, prog) {
+  const key = await mateKey(room.k), mine = mateMine(); let n = 0;
+  for (const f of files) {
+    if (prog) prog(n + 1, files.length);
+    try {
+      if (/^video\//.test(f.type || '')) continue;
+      const ex = await photoTsOf(f), ts = ex.ts || f.lastModified || Date.now();
+      const at = ex.lat != null ? [ex.lat, ex.lng] : mateAt(t, ts);
+      const bmp = await imgDecode(f), big = imgCanvas(bmp, 1280); try { bmp.close && bmp.close(); } catch {}
+      const blob = await new Promise(r => big.toBlob(r, 'image/jpeg', 0.82)); if (!blob) continue;
+      const cid = rid(12).toLowerCase().replace(/[^a-z0-9]/g, '') || String(Date.now()), tk = b64url(crypto.getRandomValues(new Uint8Array(12)));
+      const parts = gvChunks(await sealBytes(await blob.arrayBuffer(), key));
+      for (let i = 0; i < parts.length; i++) await fsPut(`rooms/${room.r}/q/${cid}_${i}`, parts[i]);
+      let o = 0;
+      if (ORIG_URL && f.size > 200000 && !/heic|heif/i.test(f.type || '')) try { const r = await fetch(`${ORIG_URL}/o/${room.r}/c${cid}`, { method: 'PUT', headers: { 'x-w': tk }, body: await sealRaw(await f.arrayBuffer(), key) }); o = r.ok ? 1 : 0; } catch {}
+      const meta = { ts, lat: at ? at[0] : null, lng: at ? at[1] : null, by, th: imgCanvas(big, 160).toDataURL('image/jpeg', 0.7), n: parts.length, o, tk: await hashHex(tk) };
+      await fsPut(`rooms/${room.r}/c/${cid}`, await sealBytes(new TextEncoder().encode(JSON.stringify(meta)), key));
+      mine[room.r + '/' + cid] = tk; mateMineSet(mine); n++;
+    } catch {}
+  }
+  return n;
+}
+async function mateDel(room, p) {
+  for (let i = 0; i < p.n; i++) try { await fsDel(`rooms/${room.r}/q/${p.cid}_${i}`); } catch {}
+  try { await fsDel(`rooms/${room.r}/c/${p.cid}`); } catch {}
+  if (ORIG_URL && p.o) { const tk = mateMine()[room.r + '/' + p.cid] || (room.owner ? origSt(room.r).w : ''); if (tk) try { await fetch(`${ORIG_URL}/o/${room.r}/c${p.cid}`, { method: 'DELETE', headers: { 'x-w': tk } }); } catch {} }
+  const mine = mateMine(); delete mine[room.r + '/' + p.cid]; mateMineSet(mine);
+}
+// 그 시각 보낸 사람이 있던 자리: 여행이면 날마다 기록 모두에서, 앞뒤 점 사이를 시각으로 나눠요(2시간 넘게 비면 가까운 점, 3시간 넘으면 없음)
+function mateAt(t, ts) {
+  try { const A = String(t).startsWith('album_') ? albumGet(t) : null, pts = [];
+    for (const id of A ? A.days || [] : [t]) for (const q of trackLoad(id)) if (q && q[2]) pts.push(q);
+    if (!pts.length) return null; pts.sort((a, b) => a[2] - b[2]);
+    let i = pts.findIndex(q => q[2] >= ts); if (i < 0) i = pts.length;
+    const a = pts[i - 1], b = pts[i];
+    if (a && b && b[2] - a[2] < 2 * 3600e3) { const f = (ts - a[2]) / Math.max(1, b[2] - a[2]); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; }
+    const c = [a, b].filter(Boolean).sort((x, y) => Math.abs(x[2] - ts) - Math.abs(y[2] - ts))[0];
+    return Math.abs(c[2] - ts) < 3 * 3600e3 ? [c[0], c[1]] : null; } catch { return null; }
+}
+async function hashHex(s) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join(''); }
+// 기록 화면의 '일행 사진' 칸: 받은 사람에겐 '내 사진도 보태기', 보낸 사람에겐 모인 사진(링크를 보낸 기록만)
+function mateSection(t) {
+  const room = mateRoom(t); if (!room) return null;
+  const hd = el('span', { text: '일행 사진' }), cnt = el('small'), gal = el('div', { class: 'gallery' }), note = el('div', { class: 'sub', style: 'font-size:13px' });
+  const pick = el('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });
+  const addBtn = GV ? el('button', { class: 'btn primary full', onclick: () => pick.click() }, '📷 내 사진도 보태기') : null;
+  const box = el('div', { class: 'stack', style: 'gap:10px' + (GV ? '' : ';display:none') }, el('div', { class: 'vw-sec' }, hd, cnt), gal, note, addBtn, pick);
+  let list = [];
+  const draw = () => {
+    if (!GV) box.style.display = list.length ? '' : 'none';
+    cnt.textContent = list.length ? `${list.length}장 · ${[...new Set(list.map(p => p.by).filter(Boolean))].slice(0, 4).join(', ')}` : '';
+    note.textContent = GV ? (list.length ? '같이 간 분이면 찍은 사진을 보태 주세요. 찍은 시각 순서로 모여요.' : '같이 간 분이면 찍은 사진을 보태 주세요. 앱 없이 바로 돼요.') : '링크를 받은 일행이 보탠 사진이에요. 내 기록에는 섞이지 않아요.';
+    gal.replaceChildren(...list.map(p => el('div', { style: 'position:relative;flex-shrink:0' },
+      el('img', { src: p.thumb || '', alt: (p.by || '일행') + ' 사진', loading: 'lazy', onclick: () => open(p) }),
+      p.by ? el('span', { style: 'position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 6px;border-radius:8px', text: p.by }) : null)));
+  };
+  const open = async p => {
+    try { toast('사진을 받는 중…'); await mateBig(room, p); } catch { toast('사진을 받지 못했어요'); return; }
+    const can = room.owner || !!mateMine()[room.r + '/' + p.cid];
+    const recs = list.filter(q => q.blob && (q._got || q._big)).map(q => Object.assign(q, { m: q.by ? `${q.by} 님 사진` : '' }));
+    showPhoto(p, recs.length ? recs : [p]);
+    if (can && !mateSection.told) { mateSection.told = 1; setTimeout(() => toast(room.owner ? '일행 사진은 작은 그림을 길게 누르면 지울 수 있어요' : '내가 올린 사진은 작은 그림을 길게 눌러 지울 수 있어요'), 1500); }
+  };
+  gal.addEventListener('contextmenu', async e => { const img = e.target.closest('img'); if (!img) return; e.preventDefault();
+    const i = [...gal.querySelectorAll('img')].indexOf(img), p = list[i]; if (!p) return;
+    if (!(room.owner || mateMine()[room.r + '/' + p.cid])) return;
+    if (!confirm(`${p.by ? p.by + ' 님 ' : ''}사진을 지울까요? 링크를 받은 모두에게서 사라지고 되돌릴 수 없어요.`)) return;
+    await mateDel(room, p); list = list.filter(q => q !== p); draw(); toast('사진을 지웠어요'); });
+  pick.onchange = async () => {
+    const fs = [...pick.files]; pick.value = ''; if (!fs.length) return;
+    let by = mateMine()._name; if (!by) { by = await askText('이름', '사진 밑에 나올 이름', '', '예: 유진', '일행이 누가 찍었는지 알 수 있게요.', 12); if (by == null) return; by = by.trim() || '일행'; const m = mateMine(); m._name = by; mateMineSet(m); }
+    addBtn.disabled = true; const n = await mateAdd(room, fs, by, t, (i, all) => { addBtn.textContent = `올리는 중 ${i} / ${all}`; });
+    addBtn.disabled = false; addBtn.textContent = '📷 내 사진도 보태기';
+    toast(n ? `사진 ${n}장을 보탰어요. 링크를 받은 모두가 봐요` : '사진을 올리지 못했어요. 인터넷을 확인해 주세요');
+    list = await mateList(room); draw();
+  };
+  (async () => { try { list = await mateList(room); draw(); } catch {} })(); draw();
+  return box;
+}
 // 내가 그 기록을 열 때: 보낸 링크가 있고 바뀐 게 있으면 조용히 같은 링크에 다시 올려요
 async function guestAuto(t) {
   const st = (ls.get('guestLinks', {}) || {})[t]; if (!st || !navigator.onLine) return;
@@ -16413,6 +16517,7 @@ async function viewMyOne(t) {
       whereEl, noteEl,
       el('div', { class: 'vw-mapw' }, mapEl, legEl),
       phBox,
+      mateSection(t),   // 판 -400 일행 사진
     (() => {   // 판 -238: 위 큰 숫자 셋과 겹치는 칸은 빼고, 6칸 넘으면 '자세히 보기'로 접어요
       if (!stats) return null; const top = new Set([...big3.querySelectorAll('small')].map(e => e.textContent)), alias = { '시간': '다닌 시간' };
       top.forEach(k => { if (alias[k]) top.add(alias[k]); });

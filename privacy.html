@@ -30,6 +30,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <h2>2. 공유할 때</h2>
 <ul>
 <li>사용자가 '링크 보내기'나 '모임방에 올리기'를 누를 때만 그 기록이 서버(Google Firebase)에 올라갑니다. 제목·길·장소·메모·사진과 사진의 위치·시각을 모두 <b>잠가서(AES 암호화)</b> 올리고, 여는 열쇠는 링크의 # 뒤에만 있어 서버는 내용을 읽을 수 없습니다. (2026년 11월 8일 전에 만든 일반 링크는 사진만 잠겼고, 공개 MQTT 서버에도 올라갔습니다.)</li>
+<li><b>일행 사진</b>: '들어와서 보기' 링크를 받은 사람이 '내 사진도 보태기'로 고른 사진은 그 링크의 열쇠로 <b>잠가서</b> Google Firebase(원본은 창구가 켜져 있으면 Cloudflare R2)에 올라가고, 같은 링크를 가진 사람만 봅니다. 올린 사람의 이름(직접 적은 것)과 찍은 시각이 함께 들어가고, 위치가 없으면 보낸 사람의 길에서 그 시각 자리를 씁니다. 올린 사람과 링크를 보낸 사람이 지울 수 있습니다.</li>
 <li><b>원본 사진</b>(안드로이드 앱, 링크를 보낼 때 · 와이파이일 때만): 받은 사람이 원본 화질로 볼 수 있게, 그 링크에 든 사진의 원본을 휴대폰 사진첩에서 찾아 <b>같은 열쇠로 잠가</b> Cloudflare R2에 올립니다. 서버는 내용을 읽을 수 없고, 사진이나 기록을 지우면 거기서도 지웁니다.</li>
 <li>모임방·같이 달리기에 올린 글을 쓴 사람만 고치고 지울 수 있게, 이 휴대폰에 이름·이메일이 없는 <b>익명 번호</b>(Firebase 익명 로그인)를 하나 만들어 글에 함께 적습니다.</li>
 <li>기본으로 출발·도착 근처 500m는 가려서 보냅니다(집 위치 보호).</li>
@@ -68,6 +69,7 @@ h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 8px;color:var(-
 <li><b>Camera</b> is used only when you open "Read with camera": the single frame you capture is sent to Anthropic (with your own or a shared API key) to read the text on signs or menus. The photo is not stored on the phone or any server.</li>
 <li><b>Google or Kakao sign-in</b> (optional) stores your email, name or Kakao nickname and records in your own space in Google Firebase to sync your devices; only you can access it.</li>
 <li>When you choose to share a link or post to a group, the record (title, route, places, notes, photos and photo location/time) is uploaded <b>encrypted</b> to Google Firebase; the key stays in the link fragment, so servers cannot read it. Start/end areas are hidden by default. (Plain links made before 8 Nov 2026 encrypted only the photos and were also posted to a public MQTT server.)</li>
+<li><b>Companion photos</b>: photos added by link recipients via 'Add my photos' are <b>encrypted with the link key</b> and stored on Google Firebase (originals on Cloudflare R2 when enabled), visible only to holders of that link, together with the name they typed and the time taken. The uploader and the link sender can delete them.</li>
 <li><b>Original photos</b> (Android app, when you share a link, on Wi-Fi only): so recipients can see full quality, the originals of that link's photos are read from your phone gallery, <b>encrypted with the same link key</b> and stored on Cloudflare R2. Servers cannot read them, and they are deleted when you delete the photo or record.</li>
 <li>To let only the author edit or remove group and group-run posts, the app creates an <b>anonymous ID</b> on this phone (Firebase anonymous sign-in, no name or email) and attaches it to those posts.</li>
 <li><b>Run together</b> (optional): while you run in a crew, your name, distance, time, pace and current position (only beyond 500 m from the start) are uploaded encrypted every 10 seconds and can be read only by friends who know the crew code. Leaving the crew deletes your entry.</li>
