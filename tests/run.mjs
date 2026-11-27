@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['origFind', 'origGet', 'origCfg', 'sealRaw', 'openRaw', 'albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
+const EXPOSE = ['mateAdd', 'mateList', 'mateDel', 'mateBig', 'origFind', 'origGet', 'origCfg', 'sealRaw', 'openRaw', 'albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1699,6 +1699,46 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   ok(r.tips.includes('내가 붙인 이름') && r.tips.length === 3, '이름 못 찾은 곳은 핀만, 사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
   ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
   noErr(page, '들른 곳 이름');
+});
+
+// ─── 판 -400: 일행 사진 모으기 (사용자 '여행멤버들에게 어떻게 보여주는게 가장 좋은가' → '해보자') ───
+await test('일행 사진 · 링크 열쇠로 잠가 올리고 다른 사람이 풀어 봄 · 위치 없으면 길 위 자리 · 내 기록엔 안 섞임 · 지우기 (판 -400)', async page => {
+  await page.goto(BASE + '?my=1'); await sleep(500);
+  const r = await page.evaluate(async () => {
+    const DB = new Map(), f0 = window.fetch;
+    window.fetch = async (u, o = {}) => { u = String(u);
+      if (!u.includes('firestore.googleapis.com')) return new Response('{}', { status: 500 });
+      const path = decodeURIComponent(u.split('/documents/')[1].split('?')[0]), mth = (o.method || 'GET').toUpperCase();
+      if (mth === 'PATCH') { DB.set(path, JSON.parse(o.body).fields.d.stringValue); return new Response('{}'); }
+      if (mth === 'DELETE') { DB.delete(path); return new Response('{}'); }
+      if (DB.has(path)) return new Response(JSON.stringify({ fields: { d: { stringValue: DB.get(path) } } }));
+      const docs = [...DB].filter(([k]) => k.startsWith(path + '/') && !k.slice(path.length + 1).includes('/')).map(([k, v]) => ({ name: 'x/' + k, fields: { d: { stringValue: v } } }));
+      return docs.length ? new Response(JSON.stringify({ documents: docs })) : new Response('{}', { status: 404 }); };
+    const t = 'crewT1', t0 = Date.parse('2026-11-26T09:00:00+08:00');
+    localStorage.setItem('track:' + t, JSON.stringify([[29.35, 110.43, t0], [29.36, 110.44, t0 + 3600e3]]));
+    const before = await __T.photoList ? (await __T.photoList(t)).length : 0;
+    const cv = document.createElement('canvas'); cv.width = 400; cv.height = 300; cv.getContext('2d').fillRect(0, 0, 400, 300);
+    const b = await new Promise(z => cv.toBlob(z, 'image/jpeg', .9)), f = new File([b], 'a.jpg', { type: 'image/jpeg', lastModified: t0 + 1800e3 });
+    const kb = crypto.getRandomValues(new Uint8Array(16)), k = btoa(String.fromCharCode(...kb)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const room = { r: 'gvcrewtest01', k, owner: false };
+    const n = await __T.mateAdd(room, [f, f], '유진', t);
+    const raw = [...DB.values()].join('');
+    const L = await __T.mateList({ r: 'gvcrewtest01', k, owner: true });
+    const big = L[0] ? await __T.mateBig(room, L[0]) : null;
+    const bad = await __T.mateList({ r: 'gvcrewtest01', k: 'AAAAAAAAAAAAAAAAAAAAAA', owner: false });
+    const after = __T.photoList ? (await __T.photoList(t)).length : 0;
+    await __T.mateDel(room, L[0]); const L2 = await __T.mateList({ r: 'gvcrewtest01', k, owner: true });
+    window.fetch = f0;
+    return { n, len: L.length, by: L[0] && L[0].by, lat: L[0] && L[0].lat, ts: L[0] && L[0].ts, th: !!(L[0] && L[0].thumb), big: big && big.size, plain: raw.includes('유진'), bad: bad.length, before, after, left: L2.length, docs: DB.size };
+  });
+  ok(r.n === 2 && r.len === 2, '일행 사진 두 장이 올라가고 보여야 해요: ' + JSON.stringify(r));
+  ok(r.by === '유진' && r.th && r.big > 1000, '이름·작은 그림·큰 사진이 풀려야 해요: ' + JSON.stringify(r));
+  ok(Math.abs(r.lat - 29.355) < 0.002, '위치 없는 사진은 그 시각 길 위 자리에 놓여야 해요: ' + r.lat);
+  ok(!r.plain, '서버에 이름이 그대로 보여요(잠가야 해요)');
+  ok(r.bad === 0, '열쇠가 다르면 하나도 못 봐야 해요');
+  ok(r.before === r.after, '일행 사진이 내 기록 사진에 섞이면 안 돼요');
+  ok(r.left === 1, '지운 사진은 목록에서 빠져야 해요: ' + r.left);
+  noErr(page, '일행 사진');
 });
 
 // ─── 판 -399: 원본 사진 (사용자 '공유받은 사람이 가장 빠르게, 원본을 볼 수 있는 방법은?' → R2) ───
