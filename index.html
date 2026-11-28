@@ -3025,7 +3025,9 @@ const ICONS = {
   bike: ['M2.5 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M14.5 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M6 16.5l3.5-7h5.5l3 7', 'M9.5 9.5l2.8 7H6', 'M13.5 6.5h2.8l-1.3 3'],
   backpack: ['M7 9a5 5 0 0 1 10 0v10.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5z', 'M9.5 4.2h5', 'M9.5 13.5h5v4h-5z'],
   camp: ['M3.5 20 12 5.5 20.5 20z', 'M9.5 20 12 15.5 14.5 20', 'M1.5 20h21', 'M12 5.5 10.5 3', 'M12 5.5 13.5 3'],
-  travel: ['M12 2.5c1 0 1.5 1 1.5 2.5v4.5l8 4.5v2l-8-2.5v4.5l2.5 2v1.5L12 20l-4 1.5V20l2.5-2v-4.5L2.5 16v-2l8-4.5V5c0-1.5.5-2.5 1.5-2.5z'],
+  // 판 -402 (사용자 첫 화면 '비행기는 또 뭐야?'): 여행 그림을 ✈ 대신 여행 가방으로 — ✈는 지도에서 실제 비행 길 표시와 헷갈려요(비행기 그림은 plane으로 남김)
+  travel: ['M4.5 8.5h15A1.5 1.5 0 0 1 21 10v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5V10a1.5 1.5 0 0 1 1.5-1.5z', 'M9 8.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v3', 'M8 8.5V20', 'M16 8.5V20'],
+  plane: ['M12 2.5c1 0 1.5 1 1.5 2.5v4.5l8 4.5v2l-8-2.5v4.5l2.5 2v1.5L12 20l-4 1.5V20l2.5-2v-4.5L2.5 16v-2l8-4.5V5c0-1.5.5-2.5 1.5-2.5z'],
   date: ['M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z'],
   daily: ['M5 10h11v5.5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 15.5z', 'M16 11.5h1.5a2.5 2.5 0 0 1 0 5H16', 'M8.5 3.5c-.8 1 .8 2 0 3', 'M12 3.5c-.8 1 .8 2 0 3', 'M3.5 21h14'],
   pgolf: ['M8 21V3.5', 'M8 3.5l8.5 3.2L8 10', 'M14.5 18.5a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M3.5 21h9'],
@@ -3383,13 +3385,15 @@ function mdTileLayer(opt) {
       // 판 -369 (사용자: 받은 링크·앱에서 지도가 빈 베이지 칸): 예전엔 선명한 지도가 자료를 받든 못 받든 1.5초 뒤 그림 지도를 치워 빈 칸이 남았어요
       //   → 선명한 지도 자료가 실제로 들어온 뒤에만 그림 지도를 치우고, 12초가 지나도 안 들어오면 선명한 지도를 빼고 그림 지도를 그대로 둬요(오류 기록에도 남김)
       const mm = ly.getMaplibreMap && ly.getMaplibreMap(); let got = false;
-      const has = () => { try { return mm.isSourceLoaded('openmaptiles') && ['water', 'place', 'transportation', 'landcover'].some(sl => mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }).length); } catch { return false; } };
+      // 판 -402 (사용자 장가계 캡처: 11:13 선명한 지도 → 11:14 줄이니 다시 그림 지도): 예전엔 '조각을 다 받았나'(isSourceLoaded)까지 봐서 로밍처럼 느리면
+      //   그리고 있는 지도도 '못 받음'으로 보고 12초 뒤 숨겼어요 → 받은 조각에 그릴 거리가 있으면 받은 것으로, 'idle'만이 아니라 조각이 들어올 때마다 확인
+      const has = () => { try { return ['water', 'place', 'transportation', 'landcover'].some(sl => mm.querySourceFeatures('openmaptiles', { sourceLayer: sl }).length); } catch { return false; } };
       // 판 -401 (사용자 장가계 4일차 첫 화면 캡처 '지도가 왜 이렇게 됐어?' — 그림 지도에 중국 글자): 판 -394에서 첫 화면도 중국 이름 읽기를 붙였는데, 그 일이
       //   선명한 지도가 자료를 받는 중에 같이 돌아 12초 안에 못 그리면 선명한 지도를 아예 빼 버렸어요 → 이름 읽기는 자료가 들어온 뒤(ly._mdOk)에만,
       //   12초가 지나도 빼지 않고 숨겨 두었다가 늦게라도 자료가 오면 다시 보여요
       const ok = () => { if (got) return; got = true; ly._mdOk = true; try { const c = ly.getContainer && ly.getContainer(); if (c) c.style.opacity = ''; } catch {} try { ly._mdKick && ly._mdKick(); } catch {}
         if (!(opt && opt.keep)) setTimeout(() => { if (base._map) m.removeLayer(base); }, 300); };
-      if (mm) { mm.on('idle', () => { if (has()) ok(); }); mm.on('error', e => { try { window.mpdErr && window.mpdErr('지도: ' + String(e && e.error && e.error.message || e && e.message || e).slice(0, 120)); } catch {} }); }
+      if (mm) { mm.on('idle', () => { if (has()) ok(); }); let hx = 0; mm.on('sourcedata', e => { if (got || hx || !e || e.sourceId !== 'openmaptiles') return; hx = setTimeout(() => { hx = 0; if (has()) ok(); }, 600); }); mm.on('error', e => { try { window.mpdErr && window.mpdErr('지도: ' + String(e && e.error && e.error.message || e && e.message || e).slice(0, 120)); } catch {} }); }
       setTimeout(() => { if (got || !ly._map) return; if (has()) return ok(); try { window.mpdErr && window.mpdErr('지도: 12초 지나도 선명한 지도 자료를 못 받아 그림 지도로'); } catch {}
         try { const c = ly.getContainer && ly.getContainer(); if (c) c.style.opacity = '0'; } catch {} }, 12000);   // 판 -401 빼지 않고 숨김(늦게 오면 ok()가 다시 보임)
     }).catch(() => {});   // keep: 기록 화면은 밑에 그림 지도를 남겨 인터넷이 끊기면 그게 보여요(판 -303)
@@ -3835,9 +3839,9 @@ const IN_NATIVE = !!window.MD_NATIVE;
 // 🛰 자동 기록(아래 '자동 기록' 칸): MPD 전체 앱(안드로이드, MD_APP.mode 빈칸)만. 여기 두는 까닭: route()가 스크립트 중간에 돌아 첫 화면이 먼저 그려져서(TDZ)
 const AUTO_OK = IN_NATIVE && !!window.MD_APP && !window.MD_APP.mode;
 const AUTO_STAY_M = 150, AUTO_STAY_MS = 10 * 60000, AUTO_MIN_M = 500, AUTO_MIN_MS = 3 * 60000, AUTO_MAX_MS = 12 * 3600e3;
-const UI_VER = '2026.11.28-401-homefix';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
+const UI_VER = '2026.11.28-402-mapslow';   // 화면 판: 첫 화면 맨 아래에 보여요. index.html을 고칠 때마다 바꿔요
 // 새로워진 점: 화면이 새 판으로 바뀌면 '화면이 새로 바뀌었어요' 창에 보여요. UI_VER를 바꿀 때 같이 고쳐요(· 로 나눠 줄마다)
-const UI_NOTES = "첫 화면 지도가 그림 지도로 바뀌던 것을 고쳤어요 · 선명한 지도가 늦게 와도 다시 보여요 · 첫 화면 핀은 비행기 그림 대신 사진으로 보여요";
+const UI_NOTES = "인터넷이 느려도 선명한 지도가 그림 지도로 바뀌지 않게 고쳤어요 · 중국 지명도 느린 인터넷에서 우리 한자 읽기로 바뀌어요 · 여행 그림을 비행기 대신 여행 가방으로 바꿨어요";
 window.MPD_VER = UI_VER;
 // 판 -296 (사용자 'MPD는 좀 불안해, 가끔씩 딴 화면으로 바뀌고 사진도 바뀌고'): 화면을 한 번이라도 만졌으면 앱이 저절로 다시 불러오지 않아요
 var MD_TOUCHED = false;
@@ -7091,7 +7095,7 @@ function filmPhotoTimes(F, plan, st, adv, T, order) {
 // 사진 카드: 한 카드는 적어도 3초(예전 2초) (2026-11-13 사용자 '사진은 최소 2초' → 1번 '같은 자리 사진은 한 카드에 묶기')
 //   몰려 있는 사진은 2~4장(넘치면 6·9장)을 한 카드에 같이 보여 줘요 · 사진은 하나도 빼지 않고 · 영상 길이는 그대로
 // 이동 영상의 움직이는 그림 선 (24칸, MPD 모드 아이콘과 같은 선): 비행기(위에서 본 모습)·차·걷기·러닝·자전거
-var FILM_VEH = { fly: ICONS.travel, run: ICONS.run, bike: ICONS.bike,
+var FILM_VEH = { fly: ICONS.plane, run: ICONS.run, bike: ICONS.bike,
   car: ['M4 16.5V12l2.2-5h11.6L20 12v4.5', 'M3 12h18', 'M6.5 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.9 16.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M3 16.5h3.5', 'M10.1 16.5h3.8', 'M17.5 16.5H21'],
   boat: ['M12 10.2V14', 'M12 2v3', 'M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6', 'M19.4 20A11.6 11.6 0 0 0 21 14l-8.2-3.6a2 2 0 0 0-1.6 0L3 14a11.6 11.6 0 0 0 2.8 7.8', 'M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1'],   // ⛴ 판 -357
   walk: ['M12.4 3.6a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0', 'M13.2 7.6l-1.6 6.4', 'M11.6 14l2.6 2.9.4 4.1', 'M11.6 14l-2 3.4-1.6 3.6', 'M13 8.6l2.4 2.6 2.2.8', 'M13 8.6l-2.8 1.6-1 3'] };
@@ -14273,6 +14277,8 @@ function koHanjaWire(mm, jp, offOnly) {   // offOnly(판 -394 첫 화면): 설�
   (koHanjaWire.maps = koHanjaWire.maps || []).push(() => apply());
   if (!offOnly && ls.get('mapHanzi', false)) apply();
   let tm = 0; mm.on('idle', () => { clearTimeout(tm); tm = setTimeout(run, 300); });
+  // 판 -402: 느린 인터넷(로밍)에선 지도 조각을 계속 받느라 'idle'이 거의 안 와서 이름 읽기가 안 붙었어요 → 조각이 들어올 때도 2.5초에 한 번
+  let tx = 0; mm.on('sourcedata', e => { if (tx || !e || e.sourceId !== 'openmaptiles') return; tx = setTimeout(() => { tx = 0; run(); }, 2500); });
 }
 // 판 -387 (사용자 장가계 기록 지도 캡처 '발음안보여' — 중국인데 あ가 떴음): koHanziBtn은 true·'jp'면 あ라서 중국은 'cn'으로. 우리나라·그 밖은 '' (단추 없음)
 function hzKind(lat, lng) {   // 우리나라 → 베트남 → 일본 → 중국권 차례(중국 상자가 하노이를, 일본 짐작이 서울을 덮어서)

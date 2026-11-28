@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEAF = path.join(ROOT, 'tests/node_modules/leaflet/dist');
-const EXPOSE = ['mateAdd', 'mateList', 'mateDel', 'mateBig', 'origFind', 'origGet', 'origCfg', 'sealRaw', 'openRaw', 'albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
+const EXPOSE = ['icoSvg', 'mateAdd', 'mateList', 'mateDel', 'mateBig', 'origFind', 'origGet', 'origCfg', 'sealRaw', 'openRaw', 'albumDayN', 'dayNameFix', 'albumPlan', 'spotMarkers', 'nmDeclutter', 'gapFill', 'gapUndo', 'trackGaps', 'hzKind', 'planRealSegs', 'tripAutoEnsure', 'albumRoll', 'planPast', 'mapHzArgs', 'destFx', 'cardDistStats', 'trackStats', 'recApply', 'permSheet', 'koNameInfo', 'koPlaceCC', 'koHanjaLoad', 'expWho', 'planAskName', 'permOf', 'permIsV', 'trSet', 'planPhotos', 'filmTripRange', 'filmInset', 'filmAutoStyle', 'photoPut', 'photoDel', 'photoList', 'planSave', 'planDel', 'planAll', 'planMerge', 'errSheet', 'trackAdd', 'trackLoad', 'trackStats', 'trackModes', 'flyFlags', 'planCopy', 'planPack', 'planUnpack', 'backupMake', 'backupLoad', 'goneMark', 'recMerge', 'trRoom', 'trSet', 'autoFix', 'autoSt', 'expCalc', 'expGuess', 'decoSync', 'planHeroAll', 'planHeroTake', 'tripMeSync', 'trLocOne', 'trLoginNeed', 'permIsV0', 'ptMake', 'ptOpen', 'ptWallTs', 'ptRoute', 'cRecordSheet', 'filmSplitSel', 'filmSplitAt', 'filmDirector', 'filmPhotoPlace', 'filmAt', 'FILM_STYLES', 'filmAiHero', 'vtGet', 'koHanjaWire', 'filmPath', 'filmCoverG', 'stepDayFeed', 'guestLink', 'guestDrop', 'shrinkImage', 'mapTiles', 'showPhoto', 'galleryOffer', 'stepSample', 'stepShake', 'gapAuto', 'photoPtsFill'];
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.webmanifest': 'application/json', '.txt': 'text/plain; charset=utf-8' };
 
 // 저장소를 /mapdiary/ 주소로 띄움 (GitHub Pages와 같은 모양)
@@ -1699,6 +1699,19 @@ await test('들른 곳 이름 · 지도 이름을 붙여 보이고 중국 한자
   ok(r.tips.includes('내가 붙인 이름') && r.tips.length === 3, '이름 못 찾은 곳은 핀만, 사용자가 붙인 이름은 그대로여야 해요: ' + JSON.stringify(r.tips));
   ok(r.same, '보여 주기만 해야 하는데 들른 곳 자료가 바뀌었어요');
   noErr(page, '들른 곳 이름');
+});
+
+// ─── 판 -402: 느린 인터넷에서도 선명한 지도 · 여행 그림은 가방 ───
+await test('지도 · 다 받았나(isSourceLoaded)로 숨기지 않음 · 조각 들어올 때도 확인 · 이름 읽기도 · 여행 그림 가방 (판 -402)', async page => {
+  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(!/const has = \(\) => \{ try \{ return mm\.isSourceLoaded\('openmaptiles'\) &&/.test(src), '느린 인터넷에서 그리던 지도를 못 받은 것으로 봐요(판 -402)');
+  ok(/mm\.on\('sourcedata', e => \{ if \(got \|\| hx/.test(src), '조각이 들어올 때도 선명한 지도를 확인해야 해요');
+  ok(/let tx = 0; mm\.on\('sourcedata'/.test(src), '느린 인터넷에서도 중국 이름 읽기가 붙어야 해요');
+  ok(/var FILM_VEH = \{ fly: ICONS\.plane,/.test(src), '영상의 비행기는 비행기 그림이어야 해요');
+  await page.goto(BASE + '?my=1'); await sleep(500);
+  const r = await page.evaluate(() => { const d = document.createElement('div'); d.innerHTML = __T.icoSvg ? __T.icoSvg('travel', 20) : ''; return d.innerHTML; });
+  ok(/svg/.test(r) && !/M12 2\.5c1 0 1\.5 1/.test(r), '여행 그림이 아직 비행기예요: ' + r.slice(0, 80));
+  noErr(page, '지도·여행 그림');
 });
 
 // ─── 판 -401: 첫 화면 지도 (사용자 장가계 4일차 '지도가 왜 이렇게 됐어? 비행기는 또 뭐야?') ───
